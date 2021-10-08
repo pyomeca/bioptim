@@ -37,6 +37,7 @@ class SolverOptions(ABC):
             Global constraint tolerance value
         """
 
+    @abstractmethod
     def set_maximum_iterations(self, num: int):
         """
          This function set the number of maximal iterations.
@@ -46,6 +47,7 @@ class SolverOptions(ABC):
         tol: int
             Number of iterations
         """
+
 
 @dataclass
 class SolverOptionsIpopt(SolverOptions):
@@ -78,6 +80,18 @@ class SolverOptionsIpopt(SolverOptions):
         Maximum size of the history for the limited quasi-Newton Hessian approximation.
     linear_solver: str
         Linear solver used for step computations.
+    mu_init: float
+        Initial value for the barrier parameter.
+    warm_start_init_point: float
+        Warm-start for initial point
+    warm_start_mult_bound_push: float
+        same as mult_bound_push for the regular initializer
+     warm_start_slack_bound_push: float
+        same as slack_bound_push for the regular initializer
+     warm_start_slack_bound_frac: float
+        same as slack_bound_frac for the regular initializer
+     warm_start_bound_frac: float
+        same as bound_frac for the regular initializer
     """
 
     tol: float = 1e-6  # default in ipopt 1e-8
@@ -92,6 +106,13 @@ class SolverOptionsIpopt(SolverOptions):
     hessian_approximation: str = "exact"  # "exact", "limited-memory"
     limited_memory_max_history: int = 50
     linear_solver: str = "mumps"  # "ma57", "ma86", "mumps"
+    mu_init: float = 0.1
+    warm_start_init_point: str = "no"
+    warm_start_mult_bound_push: float = 0.001
+    warm_start_slack_bound_push: float = 0.001
+    warm_start_bound_push: float = 0.001
+    warm_start_slack_bound_frac: float = 0.001
+    warm_start_bound_frac: float = 0.001
 
     def set_convergence_tolerance(self, val: float):
         self.tol = val
@@ -105,6 +126,15 @@ class SolverOptionsIpopt(SolverOptions):
 
     def set_maximum_iterations(self, num):
         self.max_iter = num
+
+    def set_warm_start_options(self, val: float = 1e-10):
+        self.warm_start_init_point = "yes"
+        self.mu_init = val
+        self.warm_start_mult_bound_push = val
+        self.warm_start_slack_bound_push = val
+        self.warm_start_bound_push = val
+        self.warm_start_slack_bound_frac = val
+        self.warm_start_bound_frac = val
 
 
 @dataclass
@@ -172,7 +202,7 @@ class SolverOptionsAcados(SolverOptions):
 
     def set_constraint_tolerance(self, val: float):
         self.nlp_solver_tol_eq = val
-        self.nlp_solver_tol_ineq = val
+        nlp_solver_tol_ineq = val
 
     def set_maximum_iterations(self, num):
         self.nlp_solver_max_iter = num

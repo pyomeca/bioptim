@@ -85,7 +85,7 @@ class IpoptInterface(SolverInterface):
             raise RuntimeError("Online graphics are not available on Windows")
         self.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
-    def configure(self, solver_options: SolverOptionsIpopt):
+    def configure(self, solver_options: SolverOptionsIpopt = SolverOptionsIpopt()):
         """
         Set some Ipopt options
 
@@ -100,19 +100,11 @@ class IpoptInterface(SolverInterface):
             else:
                 solver_options = SolverOptionsIpopt()
 
-        options = {
-            "ipopt.tol": 1e-6,
-            "ipopt.max_iter": 1000,
-            "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
-            "ipopt.limited_memory_max_history": 50,
-            "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
-        }
-
-        for key in solver_options.__dict__:
-            ipopt_key = key
-            if key[:6] != "ipopt.":
-                ipopt_key = "ipopt." + key
-            options[ipopt_key] = solver_options.__dict__[key]
+        solver_options = solver_options.__dict__
+        options = {}
+        for key in solver_options:
+            ipopt_key = "ipopt." + key
+            options[ipopt_key] = solver_options[key]
         self.opts = {**options, **self.options_common}
 
     def solve(self) -> dict:

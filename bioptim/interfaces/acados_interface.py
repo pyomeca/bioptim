@@ -8,6 +8,7 @@ from casadi import SX, vertcat
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .solver_interface import SolverInterface
+from ..interfaces.SolverOptions import SolverOptionsAcados
 from ..misc.enums import Node, Solver
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds
@@ -83,13 +84,13 @@ class AcadosInterface(SolverInterface):
         Solve the prepared ocp
     """
 
-    def __init__(self, ocp, **solver_options):
+    def __init__(self, ocp, solver_options):
         """
         Parameters
         ----------
         ocp: OptimalControlProgram
             A reference to the current OptimalControlProgram
-        solver_options: dict
+        solver_options: SolverOptionsAcados
             The options to pass to the solver
         """
 
@@ -97,6 +98,8 @@ class AcadosInterface(SolverInterface):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Please set use_sx to True in OCP")
 
         super().__init__(ocp)
+
+        solver_options = solver_options.__dict__
 
         # If Acados is installed using the acados_install.sh file, you probably can leave this to unset
         acados_path = ""
@@ -172,7 +175,7 @@ class AcadosInterface(SolverInterface):
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
-        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(x[self.nparams :, :], u, p))
+        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(x[self.nparams:, :], u, p))
         f_impl = x_dot - f_expl
 
         self.acados_model.f_impl_expr = f_impl
@@ -282,10 +285,10 @@ class AcadosInterface(SolverInterface):
             raise NotImplementedError("u_bounds max must be the same at each shooting point with ACADOS")
 
         if (
-            not np.isfinite(u_min).all()
-            or not np.isfinite(x_min).all()
-            or not np.isfinite(u_max).all()
-            or not np.isfinite(x_max).all()
+                not np.isfinite(u_min).all()
+                or not np.isfinite(x_min).all()
+                or not np.isfinite(u_max).all()
+                or not np.isfinite(x_max).all()
         ):
             raise NotImplementedError(
                 "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it "
@@ -606,17 +609,17 @@ class AcadosInterface(SolverInterface):
             else:
                 self.ocp_solver.set(self.acados_ocp.dims.N, "x", self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])
 
-    def configure(self, options: dict):
+    def configure(self, options: SolverOptionsAcados = SolverOptionsAcados()):
         """
         Set some ACADOS options
 
         Parameters
         ----------
-        options: dict
+        options: SolverOptionsAcados
             The dictionary of options
         """
-        if options is None:
-            options = {}
+
+        options = options.__dict__
 
         if "acados_dir" in options:
             del options["acados_dir"]

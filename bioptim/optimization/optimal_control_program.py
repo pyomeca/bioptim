@@ -821,10 +821,8 @@ class OptimalControlProgram:
             from ..interfaces.acados_interface import AcadosInterface
 
             if solver_options is None:
-                solver_options = SolverOptionsAcados().__dict__
-            else:
-                solver_options = solver_options.__dict__
-            self.solver = AcadosInterface(self, **solver_options)
+                solver_options = SolverOptionsAcados()
+            self.solver = AcadosInterface(self, solver_options)
 
         elif self.solver_type == Solver.NONE:
             raise RuntimeError("Solver not specified")
@@ -838,14 +836,8 @@ class OptimalControlProgram:
 
         if self.is_warm_starting:
             if self.solver_type == Solver.IPOPT:
-                solver_options = {} if solver_options is None else solver_options
-                solver_options["warm_start_init_point"] = "yes"
-                solver_options["mu_init"] = 1e-10
-                solver_options["warm_start_mult_bound_push"] = 1e-10
-                solver_options["warm_start_slack_bound_push"] = 1e-10
-                solver_options["warm_start_bound_push"] = 1e-10
-                solver_options["warm_start_slack_bound_frac"] = 1e-10
-                solver_options["warm_start_bound_frac"] = 1e-10
+                solver_options = SolverOptionsIpopt if solver_options is None else solver_options
+                solver_options.set_warm_start_options(1e-10)
 
         self.solver.configure(solver_options)
         self.solver.solve()
