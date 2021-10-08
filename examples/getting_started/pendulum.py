@@ -10,8 +10,6 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 """
 
 import biorbd_casadi as biorbd
-import numpy as np
-import tests.utils
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
@@ -23,9 +21,6 @@ from bioptim import (
     Objective,
     OdeSolver,
     CostType,
-    Solver,
-    Shooting,
-    # SolverOptionsIpopt,
 )
 
 
@@ -97,7 +92,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
-        use_sx=False,
+        use_sx=use_sx,
         n_threads=n_threads,
     )
 
@@ -108,8 +103,8 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=50,
-                      ode_solver=OdeSolver.COLLOCATION())
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
 
@@ -117,30 +112,13 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    # opts = SolverOptionsIpopt()
-    # opts.set_constraint_tolerance(1e-4)
-    # opts.set_convergence_tolerance(1e-6)
-
-    sol = ocp.solve(solver=Solver.IPOPT, show_online_optim=False) #, solver_options=opts)
+    sol = ocp.solve(show_online_optim=True)
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
     sol.print()
-    # sol.graphs()
-    # sol.animate()
+    sol.animate(n_frames=100)
 
-    sol_single = sol.integrate(
-        shooting_type=Shooting.SINGLE_CONTINUOUS,
-        keep_intermediate_points=False,
-        use_scipy_integrator=False,
-    )
-
-    # Evaluate the final error of the single shooting integration versus the finale node
-    print(sol.states["all"].shape)
-    print(sol_single.states["all"].shape)
-    np.testing.assert_almost_equal(
-        sol.states["all"][:, -1], sol_single.states["all"][:, -1], decimal=20
-    )
 
 if __name__ == "__main__":
     main()
