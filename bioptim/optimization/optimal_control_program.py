@@ -839,7 +839,13 @@ class OptimalControlProgram:
                 solver_options = SolverOptionsIpopt() if solver_options is None else solver_options
                 solver_options.set_warm_start_options(1e-10)
 
-        self.solver.configure(solver_options)
+        if self.solver_type == Solver.IPOPT:
+            solver_options = SolverOptionsIpopt() if solver_options is None else solver_options
+            self.solver.opts = solver_options.finalize_options(self.solver)
+        elif self.solver_type == Solver.ACADOS:
+            solver_options = SolverOptionsAcados() if solver_options is None else solver_options
+            self.solver.opts = solver_options.finalize_options(self.solver)
+
         self.solver.solve()
         self.is_warm_starting = False
 

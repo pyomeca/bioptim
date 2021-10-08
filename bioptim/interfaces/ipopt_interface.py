@@ -36,8 +36,6 @@ class IpoptInterface(SolverInterface):
     -------
     online_optim(self, ocp: OptimalControlProgram)
         Declare the online callback to update the graphs while optimizing
-    configure(self, solver_options: dict)
-        Set some Ipopt options
     solve(self) -> dict
         Solve the prepared ocp
     set_lagrange_multiplier(self, sol: dict)
@@ -84,28 +82,6 @@ class IpoptInterface(SolverInterface):
         if platform == "win32":
             raise RuntimeError("Online graphics are not available on Windows")
         self.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
-
-    def configure(self, solver_options: SolverOptionsIpopt = SolverOptionsIpopt()):
-        """
-        Set some Ipopt options
-
-        Parameters
-        ----------
-        solver_options: dict
-            The dictionary of options
-        """
-        if solver_options is None:
-            if self.opts:
-                return
-            else:
-                solver_options = SolverOptionsIpopt()
-
-        solver_options = solver_options.__dict__
-        options = {}
-        for key in solver_options:
-            ipopt_key = "ipopt." + key
-            options[ipopt_key] = solver_options[key]
-        self.opts = {**options, **self.options_common}
 
     def solve(self) -> dict:
         """

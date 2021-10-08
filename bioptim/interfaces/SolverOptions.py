@@ -48,6 +48,17 @@ class SolverOptions(ABC):
             Number of iterations
         """
 
+    @abstractmethod
+    def finalize_options(self, solver):
+        """
+        This function return the finalize options structure to launch the optimization
+
+        Parameters
+        ----------
+        solver: SolverInterface
+            Ipopt ou Acados interface
+        """
+
 
 @dataclass
 class SolverOptionsIpopt(SolverOptions):
@@ -145,6 +156,15 @@ class SolverOptionsIpopt(SolverOptions):
         self.warm_start_slack_bound_frac = val
         self.warm_start_bound_frac = val
 
+    def finalize_options(self, solver):
+
+        solver_options = self.__dict__
+        options = {}
+        for key in solver_options:
+            ipopt_key = "ipopt." + key
+            options[ipopt_key] = solver_options[key]
+        return {**options, **solver.options_common}
+
 
 @dataclass
 class SolverOptionsAcados(SolverOptions):
@@ -215,3 +235,32 @@ class SolverOptionsAcados(SolverOptions):
 
     def set_maximum_iterations(self, num):
         self.nlp_solver_max_iter = num
+
+    def finalize_options(self, solver):
+        options = self.__dict__
+
+        if "acados_dir" in options:
+            del options["acados_dir"]
+        if "cost_type" in options:
+            del options["cost_type"]
+        if "constr_type" in options:
+            del options["constr_type"]
+
+        if solver.ocp_solver is None:
+            for key in options:
+                setattr(solver.acados_ocp.solver_options, key, options[key])
+        else:
+            available_options = [
+                "nlp_solver_tol_comp",
+                "nlp_solver_tol_eq",
+                "nlp_solver_tol_ineq",
+                "nlp_solver_tol_stat",
+            ]
+            for key in options:
+                if key in available_options:
+                    short_key = key[11:]
+                    solver.ocp_solver.options_set(short_key, options[key])
+                else:
+                    raise RuntimeError(
+                        f"[ACADOS] Only editable solver options after solver creation are :\n {available_options}"
+                    )
