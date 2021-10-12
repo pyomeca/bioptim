@@ -764,7 +764,12 @@ def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_sol
             np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected, decimal=decimal)
             np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -2]], expected, decimal=decimal)
 
-        assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * (steps + 1) + 1)
+        if ode_solver == OdeSolver.COLLOCATION:
+            n_nodes = sum(n_shooting) * (steps + 1) + len(n_shooting) + 1
+        else:
+            n_nodes = sum(n_shooting) * (steps + 1) + 1
+
+        assert sol_integrated.states[key].shape == (shapes[k], n_nodes)
 
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
