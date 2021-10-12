@@ -251,22 +251,7 @@ class SolverOptionsAcados(SolverOptions):
         if "constr_type" in options:
             del options["constr_type"]
 
-        if solver.ocp_solver is None:
-            for key in options:
-                setattr(solver.acados_ocp.solver_options, key, options[key])
-        else:
-            available_options = [
-                "nlp_solver_tol_comp",
-                "nlp_solver_tol_eq",
-                "nlp_solver_tol_ineq",
-                "nlp_solver_tol_stat",
-            ]
-            for key in options:
-                if key in available_options:
-                    short_key = key[11:]
-                    solver.ocp_solver.options_set(short_key, options[key])
-                else:
-                    raise RuntimeError(
-                        f"[ACADOS] Only editable solver options after solver creation are :\n {available_options}"
-                    )
-        return solver
+        for key in options:
+            setattr(solver.acados_ocp.solver_options, key, options[key])
+
+        return solver.acados_ocp.solver_options

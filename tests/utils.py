@@ -17,6 +17,7 @@ from bioptim import (
     Bounds,
     InitialGuess,
     Shooting,
+    SolverOptionsIpopt,
 )
 
 
@@ -85,7 +86,13 @@ class TestUtils:
     @staticmethod
     def assert_warm_start(ocp, sol, state_decimal=2, control_decimal=2, param_decimal=2):
         ocp.set_warm_start(sol)
-        sol_warm_start = ocp.solve(solver_options={"max_iter": 0, "bound_push": 1e-10, "bound_frac": 1e-10})
+
+        options = SolverOptionsIpopt()
+        options.set_maximum_iterations(0)
+        options.bound_push = 1e-10
+        options.bound_frac = 1e-10
+
+        sol_warm_start = ocp.solve(solver_options=options)
         if ocp.n_phases > 1:
             for i in range(ocp.n_phases):
                 np.testing.assert_almost_equal(
