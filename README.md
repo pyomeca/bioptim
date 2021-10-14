@@ -243,8 +243,8 @@ dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 ```
 
 The pendulum is required to start in a downward position (0 rad) and to finish in an upward position (3.14 rad) with no velocity at start and end nodes.
-In this case, the degree of freedom with index 0 is translation y, and the index 1 refers to rotation x. 
-Finally, the index 2 and 3 are respectively the velocity of translation y and rotation x 
+In this case, the state with index 0 is translation y, and the index 1 refers to rotation about x. 
+Finally, the index 2 and 3 are respectively the velocity of translation y and rotation about x 
 
 QAndQDotBounds waits for a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
 How convenient!
@@ -252,7 +252,7 @@ How convenient!
 x_bounds = QAndQDotBounds(biorbd_model)
 The first dimension of x_bounds is the degrees of freedom (*q*) `and` their velocities (*qdot*) that match those `in` the bioMod `file`. The time `is` discretized `in` nodes wich `is` the second dimension declared `in` x_bounds.
 If you have more than one phase, we would have x_bound[*phase*][*q `and` qdot*, *nodes*]
-
+```
 In the first place, we want the first `and` last column(which `is` equivalent to nodes 0 `and` -1) to be 0, that is the translations `and` rotations to be null `for` both the position `and` so the velocities.
 ```python
 x_bounds[:, [0, -1]] = 0
@@ -289,7 +289,7 @@ u_init = InitialGuess([0, 0])
 
 ```
 Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*)
-In this case, we have both the positions `and` their velocities to be 0
+In this case, we have both the positions `and` their velocities to be 0.
 
 We now have everything to create the ocp!
 For that we have to decide how much time the pendulum has to get up there (`phase_time`) and how many shooting point are defined for the multishoot (`n_shooting`).
@@ -886,7 +886,7 @@ constraint_list = ConstraintList()
 constraint_list.add(constraint)
 ```
 
-### Class: ConstraintFcn (pour TRACK_STATE, TRACK_MARKERS)
+### Class: ConstraintFcn (TRACK_STATE, TRACK_MARKERS)
 The `ConstraintFcn` class is the declaration of all the already available constraints in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
 
