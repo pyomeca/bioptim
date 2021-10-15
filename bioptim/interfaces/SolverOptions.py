@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -49,7 +50,7 @@ class SolverOptions(ABC):
         """
 
     @abstractmethod
-    def finalize_options(self, solver):
+    def finalize_options(self, solver) -> Any:
         """
         This function return the finalize options structure to launch the optimization
 
@@ -57,6 +58,17 @@ class SolverOptions(ABC):
         ----------
         solver: SolverInterface
             Ipopt ou Acados interface
+        """
+
+    @abstractmethod
+    def set_print_level(self, num: int):
+        """
+        This function set Output verbosity level.
+
+        Parameters
+        ----------
+        num: int
+            print_level
         """
 
 
@@ -107,6 +119,8 @@ class SolverOptionsIpopt(SolverOptions):
         Desired minimum absolute distance from the initial point to bound.
     bound_frac: float
         Desired minimum relative distance from the initial point to bound.
+    print_level: float
+    Output verbosity level. Sets the default verbosity level for console output. The larger this value the more detailed is the output. The valid range for this integer option is 0 ≤ print_level ≤ 12 and its default value is 5.
     """
 
     tol: float = 1e-6  # default in ipopt 1e-8
@@ -130,6 +144,7 @@ class SolverOptionsIpopt(SolverOptions):
     warm_start_bound_frac: float = 0.001
     bound_push: float = 0.01
     bound_frac: float = 0.01
+    print_level: int = 5
 
     def set_convergence_tolerance(self, val: float):
         self.tol = val
@@ -146,7 +161,7 @@ class SolverOptionsIpopt(SolverOptions):
 
     def set_warm_start_options(self, val: float = 1e-10):
         """
-        This function global set warm start options
+        This function set global warm start options
 
         Parameters
         ----------
@@ -162,6 +177,18 @@ class SolverOptionsIpopt(SolverOptions):
         self.warm_start_slack_bound_frac = val
         self.warm_start_bound_frac = val
 
+    def set_initialization_options(self, val: float):
+        """
+        This function set global initialization options
+
+        Parameters
+        ----------
+        val: float
+            warm start value
+        """
+        self.bound_push = val
+        self.bound_frac = val
+
     def finalize_options(self, solver):
         solver_options = self.__dict__
         options = {}
@@ -169,6 +196,9 @@ class SolverOptionsIpopt(SolverOptions):
             ipopt_key = "ipopt." + key
             options[ipopt_key] = solver_options[key]
         return {**options, **solver.options_common}
+
+    def set_print_level(self, num: int):
+        self.print_level = num
 
 
 @dataclass
@@ -255,3 +285,6 @@ class SolverOptionsAcados(SolverOptions):
             setattr(solver.acados_ocp.solver_options, key, options[key])
 
         return solver.acados_ocp.solver_options
+
+    def set_print_level(self, num: int):
+        self.print_level = num

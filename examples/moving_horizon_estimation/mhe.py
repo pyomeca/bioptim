@@ -114,7 +114,7 @@ def get_solver_options(solver):
         mhe_dict["solver"] = Solver.ACADOS
         options = SolverOptionsAcados()
         options.set_maximum_iterations(1000)
-        options.print_level = 0
+        options.set_print_level(0)
         options.integrator_type = "ERK"
         mhe_dict["solver_options"] = options
 
@@ -124,10 +124,9 @@ def get_solver_options(solver):
         options.hessian_approximation = "limited-memory"
         options.limited_memory_max_history = 50
         options.set_maximum_iterations(5)
-        options.print_level = 0
+        options.set_print_level(0)
         options.tol = 1e-1
-        options.bound_frac = 1e-10
-        options.bound_push = 1e-10
+        options.set_initialization_options(1e-10)
         mhe_dict["solver_options"] = options
         mhe_dict["solver_options_first_iter"] = copy(mhe_dict["solver_options"])
         mhe_dict["solver_options_first_iter"].set_maximum_iterations(50)
@@ -180,7 +179,7 @@ def main():
     # Solve the program
     sol = mhe.solve(update_functions, **get_solver_options(solver))
 
-    print("ACADOS with BiorbdOptim")
+    print("ACADOS with Bioptim")
     print(f"Window size of MHE : {window_duration} s.")
     print(f"New measurement every : {1 / n_shoot_per_second} s.")
     print(f"Average time per iteration of MHE : {sol.solver_time_to_optimize / (n_frames_total - 1)} s.")

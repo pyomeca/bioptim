@@ -89,8 +89,7 @@ class TestUtils:
 
         options = SolverOptionsIpopt()
         options.set_maximum_iterations(0)
-        options.bound_push = 1e-10
-        options.bound_frac = 1e-10
+        options.set_initialization_options(1e-10)
 
         sol_warm_start = ocp.solve(solver_options=options)
         if ocp.n_phases > 1:
