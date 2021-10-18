@@ -449,10 +449,18 @@ def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
         "keep_intermediate_points": False,
         "use_scipy_integrator": use_scipy,
     }
-    if shooting == Shooting.MULTIPLE:
+    if shooting == Shooting.SINGLE_CONTINUOUS:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
+            match="Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction",
+        ):
+            _ = sol.integrate(**opts)
+        return
+    elif shooting == Shooting.MULTIPLE:
+        with pytest.raises(
+            ValueError,
+            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "
+                  "simultaneously since it would do nothing",
         ):
             _ = sol.integrate(**opts)
 
@@ -515,21 +523,33 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode
         "keep_intermediate_points": keep_intermediate_points,
         "use_scipy_integrator": use_scipy,
     }
-    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
-        if shooting != Shooting.MULTIPLE:
-            with pytest.raises(
-                RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
-            ):
-                _ = sol.integrate(**opts)
-            return
 
-    if shooting == Shooting.MULTIPLE and not keep_intermediate_points:
+    if shooting == Shooting.SINGLE_CONTINUOUS:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
+            match="Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction",
         ):
             _ = sol.integrate(**opts)
         return
+
+    if ode_solver == OdeSolver.COLLOCATION:
+        if not use_scipy:
+            if shooting != Shooting.MULTIPLE:
+                with pytest.raises(
+                    RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
+                ):
+                    _ = sol.integrate(**opts)
+                return
+
+    if shooting == Shooting.MULTIPLE:
+        if not keep_intermediate_points:
+            with pytest.raises(
+                ValueError,
+                match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "
+                      "simultaneously since it would do nothing",
+            ):
+                _ = sol.integrate(**opts)
+            return
 
     opts["continuous"] = True
     if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
@@ -592,6 +612,15 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_sci
         "keep_intermediate_points": keep_intermediate_points,
         "use_scipy_integrator": use_scipy,
     }
+
+    if shooting == Shooting.SINGLE_CONTINUOUS:
+        with pytest.raises(
+            ValueError,
+            match="Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction",
+        ):
+            _ = sol.integrate(**opts)
+        return
+
     if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
         if shooting != Shooting.MULTIPLE:
             with pytest.raises(
@@ -600,13 +629,15 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_sci
                 _ = sol.integrate(**opts)
             return
 
-    if shooting == Shooting.MULTIPLE and not keep_intermediate_points:
-        with pytest.raises(
-            ValueError,
-            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
-        ):
-            _ = sol.integrate(**opts)
-        return
+    if shooting == Shooting.MULTIPLE:
+        if not keep_intermediate_points:
+            with pytest.raises(
+                ValueError,
+                match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "
+                      "simultaneously since it would do nothing",
+            ):
+                _ = sol.integrate(**opts)
+            return
 
     opts["merge_phases"] = True
     opts["continuous"] = True
@@ -675,6 +706,15 @@ def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
         "keep_intermediate_points": True,
         "use_scipy_integrator": use_scipy,
     }
+
+    if shooting == Shooting.SINGLE_CONTINUOUS:
+        with pytest.raises(
+            ValueError, match="Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used "
+                                "simultaneously it is a contradiction"
+        ):
+            _ = sol.integrate(**opts)
+        return
+
     if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
         if shooting != Shooting.MULTIPLE:
             with pytest.raises(
@@ -735,14 +775,23 @@ def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_sol
         "keep_intermediate_points": False,
         "use_scipy_integrator": use_scipy,
     }
-    if shooting == Shooting.MULTIPLE:
+    if shooting == Shooting.SINGLE_CONTINUOUS:
+        with pytest.raises(
+            ValueError,
+            match="Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction",
+        ):
+            _ = sol.integrate(**opts)
+        return
+
+    elif shooting == Shooting.MULTIPLE:
         with pytest.raises(
             ValueError,
             match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
         ):
             _ = sol.integrate(**opts)
-    else:
-        if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+
+    elif ode_solver == OdeSolver.COLLOCATION:
+        if not use_scipy:
             with pytest.raises(
                 RuntimeError,
                 match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE",
@@ -764,7 +813,7 @@ def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_sol
             np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected, decimal=decimal)
             np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -2]], expected, decimal=decimal)
 
-        assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * (steps + 1) + 1)
+        assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * (steps + 1) + 1 * len(n_shooting))
 
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
