@@ -460,7 +460,7 @@ def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
         with pytest.raises(
             ValueError,
             match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "
-                  "simultaneously since it would do nothing",
+            "simultaneously since it would do nothing",
         ):
             _ = sol.integrate(**opts)
 
@@ -546,7 +546,7 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode
             with pytest.raises(
                 ValueError,
                 match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "
-                      "simultaneously since it would do nothing",
+                "simultaneously since it would do nothing",
             ):
                 _ = sol.integrate(**opts)
             return
@@ -634,7 +634,7 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_sci
             with pytest.raises(
                 ValueError,
                 match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "
-                      "simultaneously since it would do nothing",
+                "simultaneously since it would do nothing",
             ):
                 _ = sol.integrate(**opts)
             return
@@ -709,8 +709,9 @@ def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
 
     if shooting == Shooting.SINGLE_CONTINUOUS:
         with pytest.raises(
-            ValueError, match="Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used "
-                                "simultaneously it is a contradiction"
+            ValueError,
+            match="Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used "
+            "simultaneously it is a contradiction",
         ):
             _ = sol.integrate(**opts)
         return
