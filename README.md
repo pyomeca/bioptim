@@ -247,13 +247,17 @@ dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 ```
 
 The pendulum is required to start in a downward position (0 rad) and to finish in an upward position (3.14 rad) with no velocity at start and end nodes.
-To define that, it would be nice to first define boundary constraints on the position (*q*) and velocities (*qdot*) that match those in the bioMod file and to apply them at the very beginning, the very end and all the intermediate nodes as well.
+In this case, the state with index 0 is translation y, and the index 1 refers to rotation about x. 
+Finally, the index 2 and 3 are respectively the velocity of translation y and rotation about x 
+
 QAndQDotBounds waits for a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
 How convenient!
 ```python
 x_bounds = QAndQDotBounds(biorbd_model)
 ```
-Then, override the first and last column to be 0, that is the sideways and rotation to be null for both the position and the velocities
+The first dimension of x_bounds is the degrees of freedom (*q*) `and` their velocities (*qdot*) that match those `in` the bioMod `file`. The time `is` discretized `in` nodes wich `is` the second dimension declared `in` x_bounds.
+If you have more than one phase, we would have x_bound[*phase*][*q `and` qdot*, *nodes*]
+In the first place, we want the first `and` last column(which `is` equivalent to nodes 0 `and` -1) to be 0, that is the translations `and` rotations to be null `for` both the position `and` so the velocities.
 ```python
 x_bounds[:, [0, -1]] = 0
 ```
@@ -286,8 +290,10 @@ So let's define both of them quickly
 ```python
 x_init = InitialGuess([0, 0, 0, 0])
 u_init = InitialGuess([0, 0])
+
 ```
-Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*)
+Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*).
+In this case, we have both the positions `and` their velocities to be 0.
 
 We now have everything to create the ocp!
 For that we have to decide how much time the pendulum has to get up there (`phase_time`) and how many shooting point are defined for the multishoot (`n_shooting`).
@@ -502,7 +508,7 @@ Of these, only the first 4 are mandatory.
 `biorbd_model` is the `biorbd` model to use. If the model is not loaded, a string can be passed. 
 In the case of a multiphase optimization, one model per phase should be passed in a list.
 `dynamics` is the dynamics of the system during each phase (see The dynamics section).
-`n_shooting` is the number of shooting point of the direct multiple shooting for each phase.
+`n_shooting` is the number of shooting point of the direct multiple shooting (method) for each phase.
 `phase_time` is the final time of each phase. If the time is free, this is the initial guess.
 `x_init` is the initial guess for the states variables (see The initial conditions section)
 `u_init` is the initial guess for the controls variables (see The initial conditions section)
@@ -664,7 +670,7 @@ Since this is an Enum, it is possible to use tab key on the keyboard to dynamica
 Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
 For more information on this, please refer to the Dynamics and DynamicsList section right before. 
 
-#### TORQUE_DRIVEN
+#### TORQUE_DRIVEN 
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = biorbd_model.ForwardDynamics(q, qdot, tau)`. 
