@@ -250,9 +250,9 @@ QAndQDotBounds waits for a biorbd model and returns a structure with the minimal
 How convenient!
 ```python
 x_bounds = QAndQDotBounds(biorbd_model)
+```
 The first dimension of x_bounds is the degrees of freedom (*q*) `and` their velocities (*qdot*) that match those `in` the bioMod `file`. The time `is` discretized `in` nodes wich `is` the second dimension declared `in` x_bounds.
 If you have more than one phase, we would have x_bound[*phase*][*q `and` qdot*, *nodes*]
-```
 In the first place, we want the first `and` last column(which `is` equivalent to nodes 0 `and` -1) to be 0, that is the translations `and` rotations to be null `for` both the position `and` so the velocities.
 ```python
 x_bounds[:, [0, -1]] = 0
@@ -288,7 +288,7 @@ x_init = InitialGuess([0, 0, 0, 0])
 u_init = InitialGuess([0, 0])
 
 ```
-Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*)
+Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*).
 In this case, we have both the positions `and` their velocities to be 0.
 
 We now have everything to create the ocp!
@@ -886,7 +886,7 @@ constraint_list = ConstraintList()
 constraint_list.add(constraint)
 ```
 
-### Class: ConstraintFcn (TRACK_STATE, TRACK_MARKERS)
+### Class: ConstraintFcn
 The `ConstraintFcn` class is the declaration of all the already available constraints in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
 
