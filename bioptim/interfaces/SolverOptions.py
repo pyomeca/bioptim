@@ -606,16 +606,3 @@ class SolverOptionsAcados(SolverOptions):
             "_nlp_solver_tol_ineq",
             "_nlp_solver_tol_stat",
         ]
-
-    @staticmethod
-    def get_non_editable_options():
-        return ["_qp_solver",
-                "_hessian_approx",
-                "_integrator_type",
-                "_nlp_solver_type",
-                "_nlp_solver_max_iter",
-                "_sim_method_newton_iter",
-                "_sim_method_num_stages",
-                "_sim_method_num_steps",
-                "_print_level",
-                ]
