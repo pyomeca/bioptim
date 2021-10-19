@@ -532,6 +532,10 @@ class Solution:
                 "Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously "
                 "since it would do nothing"
             )
+        if shooting_type == Shooting.SINGLE_CONTINUOUS and not continuous:
+            raise ValueError(
+                "Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction"
+            )
 
         out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, use_scipy_integrator)
 
@@ -539,7 +543,7 @@ class Solution:
             if continuous:
                 out = out.interpolate(sum(out.ns) + 1)
             else:
-                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
+                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
                 out.is_merged = True
         out.is_integrated = True
 
@@ -551,10 +555,15 @@ class Solution:
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
         if n_direct_collocation > 0 and not use_scipy_integrator:
             if continuous:
-                raise RuntimeError("Integration with direct collocation must be not continuous")
+                raise RuntimeError(
+                    "Integration with direct collocation must be not continuous if not use_scipy_integrator"
+                )
 
             if shooting_type != Shooting.MULTIPLE:
-                raise RuntimeError("Integration with direct collocation must using shooting_type=Shooting.MULTIPLE")
+                raise RuntimeError(
+                    "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
+                    "if not use_scipy_integrator"
+                )
 
         # Copy the data
         out = self.copy(skip_data=True)
@@ -741,7 +750,7 @@ class Solution:
         new.is_merged = True
         return new
 
-    def _merge_phases(self, skip_states: bool = False, skip_controls: bool = False) -> tuple:
+    def _merge_phases(self, skip_states: bool = False, skip_controls: bool = False, continuous: bool = True) -> tuple:
         """
         Actually performing the phase merging
 
@@ -751,6 +760,8 @@ class Solution:
             If the merge should ignore the states
         skip_controls: bool
             If the merge should ignore the controls
+        continuous: bool
+            If the last frame of each phase should be kept [False] or discard [True]
 
         Returns
         -------
@@ -761,7 +772,7 @@ class Solution:
         if self.is_merged:
             return deepcopy(self._states), deepcopy(self._controls), deepcopy(self.phase_time), deepcopy(self.ns)
 
-        def _merge(data: list) -> Union[list, dict]:
+        def _merge(data: list, is_control: bool) -> Union[list, dict]:
             """
             Merge the phases of a states or controls data structure
 
@@ -769,6 +780,9 @@ class Solution:
             ----------
             data: list
                 The data to structure to merge the phases
+            is_control: bool
+                If the current data is a control
+
             Returns
             -------
             The data merged
@@ -788,28 +802,32 @@ class Solution:
             for i, key in enumerate(keys):
                 data_out[0][key] = np.ndarray((sizes[i], 0))
 
+            add = 0 if is_control or continuous else 1
             for p in range(len(data)):
                 d = data[p]
                 for key in d:
-                    if self.ocp.nlp[p].ode_solver.is_direct_collocation:
+                    if self.ocp.nlp[p].ode_solver.is_direct_collocation and not is_control:
                         steps = self.ocp.nlp[p].ode_solver.steps + 1
-                        data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p] * steps]), axis=1)
+                        data_out[0][key] = np.concatenate(
+                            (data_out[0][key], d[key][:, : self.ns[p] * steps + add]), axis=1
+                        )
                     else:
-                        data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p]]), axis=1)
-            for key in data[-1]:
-                data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
+                        data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p] + add]), axis=1)
+            if add == 0:
+                for key in data[-1]:
+                    data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 
             return data_out
 
         if len(self._states) == 1:
             out_states = deepcopy(self._states)
         else:
-            out_states = _merge(self.states) if not skip_states and self._states else None
+            out_states = _merge(self.states, is_control=False) if not skip_states and self._states else None
 
         if len(self._controls) == 1:
             out_controls = deepcopy(self._controls)
         else:
-            out_controls = _merge(self.controls) if not skip_controls and self._controls else None
+            out_controls = _merge(self.controls, is_control=True) if not skip_controls and self._controls else None
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
