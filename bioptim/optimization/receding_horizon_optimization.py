@@ -143,7 +143,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             )
             if self.total_optimization_run == 0:
                 solver_option_current = solver_options
-                if solver == Solver.ACADOS and solver_option_current.only_first_options_has_changed:
+                if solver_options is not None \
+                        and solver == Solver.ACADOS and solver_option_current.only_first_options_has_changed:
                     raise RuntimeError(f"Some options has been changed for the second iteration of acados.\n"
                                        f"Only {SolverOptionsAcados.get_tolerance_keys()} can be modified.")
             else:

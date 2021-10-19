@@ -132,8 +132,8 @@ class SolverOptionsIpopt(SolverOptions):
     _dual_inf_tol: float = 1.0
     _constr_viol_tol: float = 0.0001
     _compl_inf_tol: float = 0.0001
-    _acceptable_tol: float = 1e-2
-    _acceptable_dual_inf_tol: float = 1e-2
+    _acceptable_tol: float = 1e-6
+    _acceptable_dual_inf_tol: float = 1e+10
     _acceptable_constr_viol_tol: float = 1e-2
     _acceptable_compl_inf_tol: float = 1e-2
     _max_iter: int = 1000
