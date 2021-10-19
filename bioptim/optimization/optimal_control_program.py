@@ -814,15 +814,12 @@ class OptimalControlProgram:
 
         if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
             from ..interfaces.ipopt_interface import IpoptInterface
-
             self.solver = IpoptInterface(self)
 
         elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
-
-            if solver_options is None:
-                solver_options = SolverOptionsAcados()
             self.solver = AcadosInterface(self, solver_options)
+            solver_options = None
 
         elif self.solver_type == Solver.NONE:
             raise RuntimeError("Solver not specified")
@@ -839,14 +836,8 @@ class OptimalControlProgram:
                 solver_options = SolverOptionsIpopt() if solver_options is None else solver_options
                 solver_options.set_warm_start_options(1e-10)
 
-        if solver_options is None:
-            if self.solver_type == Solver.IPOPT:
-                solver_options = SolverOptionsIpopt()
-            elif self.solver_type == Solver.ACADOS:
-                solver_options = SolverOptionsAcados()
-            else:
-                raise NotImplementedError(f"The solver {solver_options} is not implemented yet")
-        self.solver.opts = solver_options.finalize_options(self.solver)
+        if solver_options is not None:
+            self.solver.opts = solver_options
 
         self.solver.solve()
         self.is_warm_starting = False

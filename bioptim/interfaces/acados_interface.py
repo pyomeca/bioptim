@@ -59,7 +59,8 @@ class AcadosInterface(SolverInterface):
         The Lagrange state objective functions
     Vxe: np.ndarray
         The Mayer state objective functions
-
+    opts: SolverOptionsAcados
+        Options of Acados from SolverOptionsAcados
     Methods
     -------
     __acados_export_model(self, ocp: OptimalControlProgram)
@@ -82,7 +83,7 @@ class AcadosInterface(SolverInterface):
         Solve the prepared ocp
     """
 
-    def __init__(self, ocp, solver_options):
+    def __init__(self, ocp, solver_options: SolverOptionsAcados = None):
         """
         Parameters
         ----------
@@ -97,24 +98,13 @@ class AcadosInterface(SolverInterface):
 
         super().__init__(ocp)
 
-        solver_options = solver_options.__dict__
+        # solver_options = solver_options.__dict__
 
-        # If Acados is installed using the acados_install.sh file, you probably can leave this to unset
-        acados_path = ""
-        if "acados_dir" in solver_options:
-            acados_path = solver_options["acados_dir"]
-        self.acados_ocp = AcadosOcp(acados_path=acados_path)
+        self.acados_ocp = AcadosOcp(acados_path=solver_options.acados_dir)
         self.acados_model = AcadosModel()
 
-        if "cost_type" in solver_options:
-            self.__set_cost_type(solver_options["cost_type"])
-        else:
-            self.__set_cost_type()
-
-        if "constr_type" in solver_options:
-            self.__set_constr_type(solver_options["constr_type"])
-        else:
-            self.__set_constr_type()
+        self.__set_cost_type(solver_options.cost_type)
+        self.__set_constr_type(solver_options.constr_type)
 
         self.lagrange_costs = SX()
         self.mayer_costs = SX()
@@ -141,6 +131,8 @@ class AcadosInterface(SolverInterface):
         self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].controls.shape)
         self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
         self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
+
+        self.opts = SolverOptionsAcados() if solver_options is None else solver_options
 
     def __acados_export_model(self, ocp):
         """
@@ -659,8 +651,25 @@ class AcadosInterface(SolverInterface):
         # Populate costs and constraints vectors
         self.__set_costs(self.ocp)
         self.__set_constraints(self.ocp)
+
+        options = self.opts.as_dict(self)
         if self.ocp_solver is None:
+            for key in options:
+                setattr(self.acados_ocp.solver_options, key, options[key])
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
+            self.opts.set_only_first_options_has_changed(False)
+            self.opts.set_has_tolerance_changed(False)
+        else:
+            if self.opts.only_first_options_has_changed:
+                raise RuntimeError("Some options has been changed the second time acados was run.",
+                                   "Only" + str(SolverOptionsAcados.get_tolerance_keys()) + "can be modified.")
+
+            if self.opts.has_tolerance_changed:
+                for key in self.opts.get_tolerance_keys():
+                    short_key = key[11:]
+                    self.ocp_solver.options_set(short_key, options[key])
+                self.opts.has_tolerance_changed = False
+
         self.__update_solver()
 
         self.status = self.ocp_solver.solve()
