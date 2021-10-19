@@ -99,6 +99,8 @@ class AcadosInterface(SolverInterface):
         super().__init__(ocp)
 
         # solver_options = solver_options.__dict__
+        if solver_options is None:
+            solver_options = SolverOptionsAcados()
 
         self.acados_ocp = AcadosOcp(acados_path=solver_options.acados_dir)
         self.acados_model = AcadosModel()
@@ -662,13 +664,13 @@ class AcadosInterface(SolverInterface):
         else:
             if self.opts.only_first_options_has_changed:
                 raise RuntimeError("Some options has been changed the second time acados was run.",
-                                   "Only" + str(SolverOptionsAcados.get_tolerance_keys()) + "can be modified.")
+                                   "Only " + str(SolverOptionsAcados.get_tolerance_keys()) + " can be modified.")
 
             if self.opts.has_tolerance_changed:
                 for key in self.opts.get_tolerance_keys():
-                    short_key = key[11:]
-                    self.ocp_solver.options_set(short_key, options[key])
-                self.opts.has_tolerance_changed = False
+                    short_key = key[12:]
+                    self.ocp_solver.options_set(short_key, options[key[1:]])
+                self.opts.set_has_tolerance_changed(False)
 
         self.__update_solver()
 

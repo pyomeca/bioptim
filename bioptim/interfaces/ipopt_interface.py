@@ -21,7 +21,7 @@ class IpoptInterface(SolverInterface):
     ----------
     options_common: dict
         Options irrelevant of a specific ocp
-    opts: dict
+    opts: SolverOptionsIpopt
         Options of the current ocp
     ipopt_nlp: dict
         The declaration of the variables Ipopt-friendly
@@ -57,7 +57,7 @@ class IpoptInterface(SolverInterface):
         super().__init__(ocp)
 
         self.options_common = {}
-        self.opts = {}
+        self.opts = SolverOptionsIpopt()
 
         self.ipopt_nlp = {}
         self.ipopt_limits = {}
@@ -96,14 +96,15 @@ class IpoptInterface(SolverInterface):
         all_g, all_g_bounds = self.__dispatch_bounds()
 
         self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
-        self.c_compile = self.c_compile if "ipopt.c_compile" not in self.opts else self.opts.pop("ipopt.c_compile")
+        self.c_compile = self.opts.c_compile
+        options = self.opts.as_dict(self)
         if self.c_compile:
             if not self.ocp_solver or self.ocp.program_changed:
-                nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts).generate_dependencies("nlp.c")
-                self.ocp_solver = nlpsol("nlpsol", "ipopt", Importer("nlp.c", "shell"), self.opts)
+                nlpsol("nlpsol", "ipopt", self.ipopt_nlp, options).generate_dependencies("nlp.c")
+                self.ocp_solver = nlpsol("nlpsol", "ipopt", Importer("nlp.c", "shell"), options)
                 self.ocp.program_changed = False
         else:
-            self.ocp_solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
+            self.ocp_solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, options)
 
         v_bounds = self.ocp.v.bounds
         v_init = self.ocp.v.init

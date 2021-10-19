@@ -115,22 +115,22 @@ def get_solver_options(solver):
         options = SolverOptionsAcados()
         options.set_maximum_iterations(1000)
         options.set_print_level(0)
-        options.integrator_type = "ERK"
+        options.set_integrator_type("ERK")
         mhe_dict["solver_options"] = options
 
     elif solver == Solver.IPOPT:
         mhe_dict["solver"] = Solver.IPOPT
         options = SolverOptionsIpopt()
-        options.hessian_approximation = "limited-memory"
-        options.limited_memory_max_history = 50
+        options.set_hessian_approximation("limited-memory")
+        options.set_limited_memory_max_history(50)
         options.set_maximum_iterations(5)
         options.set_print_level(0)
-        options.tol = 1e-1
+        options.set_tol(1e-1)
         options.set_initialization_options(1e-10)
         mhe_dict["solver_options"] = options
         mhe_dict["solver_options_first_iter"] = copy(mhe_dict["solver_options"])
         mhe_dict["solver_options_first_iter"].set_maximum_iterations(50)
-        mhe_dict["solver_options_first_iter"].tol = 1e-6
+        mhe_dict["solver_options_first_iter"].set_tol(1e-6)
     else:
         raise NotImplementedError("Solver not recognized")
 

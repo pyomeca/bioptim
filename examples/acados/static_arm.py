@@ -111,12 +111,12 @@ def main():
     )
 
     opts_ipopt = SolverOptionsIpopt()
-    opts_ipopt.linear_solver = 'ma57'
-    opts_ipopt.dual_inf_tol = 1e-3
+    opts_ipopt.set_linear_solver('ma57')
+    opts_ipopt.set_dual_inf_tol(1e-3)
     opts_ipopt.set_constraint_tolerance(1e-3)
     opts_ipopt.set_convergence_tolerance(1e-3)
     opts_ipopt.set_maximum_iterations(100)
-    opts_ipopt.hessian_approximation = "exact"
+    opts_ipopt.set_hessian_approximation("exact")
 
     sol_ipopt = ocp_ipopt.solve(
         solver=Solver.IPOPT,

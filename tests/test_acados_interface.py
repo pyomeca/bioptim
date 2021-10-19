@@ -45,7 +45,7 @@ def test_acados_no_obj(cost_type):
         tf=2,
     )
     options = SolverOptionsAcados()
-    options.cost_type = cost_type
+    options.set_cost_type(cost_type)
     sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Clean test folder
@@ -70,7 +70,7 @@ def test_acados_one_mayer(cost_type):
     ocp.update_objectives(objective_functions)
 
     options = SolverOptionsAcados()
-    options.cost_type = cost_type
+    options.set_cost_type(cost_type)
     sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
@@ -100,7 +100,7 @@ def test_acados_several_mayer(cost_type):
     ocp.update_objectives(objective_functions)
 
     options = SolverOptionsAcados()
-    options.cost_type = cost_type
+    options.set_cost_type(cost_type)
     sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
@@ -142,7 +142,7 @@ def test_acados_one_lagrange(cost_type):
     ocp.update_objectives(objective_functions)
 
     options = SolverOptionsAcados()
-    options.cost_type = cost_type
+    options.set_cost_type(cost_type)
     sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
@@ -185,7 +185,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     ocp.update_objectives(objective_functions)
 
     options = SolverOptionsAcados()
-    options.cost_type = cost_type
+    options.set_cost_type(cost_type)
     sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
@@ -219,7 +219,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     ocp.update_objectives(objective_functions)
 
     options = SolverOptionsAcados()
-    options.cost_type = cost_type
+    options.set_cost_type(cost_type)
     sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
@@ -248,8 +248,8 @@ def test_acados_options(cost_type):
     iter = []
     for tol in tols:
         options = SolverOptionsAcados()
-        options.cost_type = cost_type
-        options.nlp_solver_tol_stat = tol
+        options.set_cost_type(cost_type)
+        options.set_nlp_solver_tol_stat(tol)
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
         iter += [sol.iterations]
 
@@ -275,7 +275,7 @@ def test_acados_fail_external():
     )
 
     options = SolverOptionsAcados()
-    options.cost_type = "EXTERNAL"
+    options.set_cost_type("EXTERNAL")
 
     with pytest.raises(RuntimeError, match="EXTERNAL is not interfaced yet, please use NONLINEAR_LS"):
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
@@ -295,7 +295,7 @@ def test_acados_fail_lls():
     )
 
     options = SolverOptionsAcados()
-    options.cost_type = "LINEAR_LS"
+    options.set_cost_type("LINEAR_LS")
 
     with pytest.raises(
         RuntimeError, match="SUPERIMPOSE_MARKERS is an incompatible objective term with LINEAR_LS cost type"
@@ -372,7 +372,7 @@ def test_acados_one_parameter():
     ocp.update_bounds(x_bounds, u_bounds)
 
     options = SolverOptionsAcados()
-    options.nlp_solver_tol_eq = 1e-3
+    options.set_nlp_solver_tol_eq(1e-3)
     sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check some of the results
@@ -433,7 +433,7 @@ def test_acados_several_parameter():
     ocp.update_bounds(x_bounds, u_bounds)
 
     options = SolverOptionsAcados()
-    options.nlp_solver_tol_eq = 1e-3
+    options.set_nlp_solver_tol_eq(1e-3)
     sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check some of the results
