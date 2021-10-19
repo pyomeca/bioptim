@@ -814,10 +814,12 @@ class OptimalControlProgram:
 
         if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
             from ..interfaces.ipopt_interface import IpoptInterface
+
             self.solver = IpoptInterface(self)
 
         elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
+
             self.solver = AcadosInterface(self, solver_options)
             solver_options = None
 

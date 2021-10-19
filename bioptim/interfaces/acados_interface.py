@@ -167,7 +167,7 @@ class AcadosInterface(SolverInterface):
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
-        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(x[self.nparams:, :], u, p))
+        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(x[self.nparams :, :], u, p))
         f_impl = x_dot - f_expl
 
         self.acados_model.f_impl_expr = f_impl
@@ -277,10 +277,10 @@ class AcadosInterface(SolverInterface):
             raise NotImplementedError("u_bounds max must be the same at each shooting point with ACADOS")
 
         if (
-                not np.isfinite(u_min).all()
-                or not np.isfinite(x_min).all()
-                or not np.isfinite(u_max).all()
-                or not np.isfinite(x_max).all()
+            not np.isfinite(u_min).all()
+            or not np.isfinite(x_min).all()
+            or not np.isfinite(u_max).all()
+            or not np.isfinite(x_max).all()
         ):
             raise NotImplementedError(
                 "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it "
@@ -663,8 +663,10 @@ class AcadosInterface(SolverInterface):
             self.opts.set_has_tolerance_changed(False)
         else:
             if self.opts.only_first_options_has_changed:
-                raise RuntimeError("Some options has been changed the second time acados was run.",
-                                   "Only " + str(SolverOptionsAcados.get_tolerance_keys()) + " can be modified.")
+                raise RuntimeError(
+                    "Some options has been changed the second time acados was run.",
+                    "Only " + str(SolverOptionsAcados.get_tolerance_keys()) + " can be modified.",
+                )
 
             if self.opts.has_tolerance_changed:
                 for key in self.opts.get_tolerance_keys():

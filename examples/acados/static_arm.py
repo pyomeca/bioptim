@@ -111,7 +111,7 @@ def main():
     )
 
     opts_ipopt = SolverOptionsIpopt()
-    opts_ipopt.set_linear_solver('ma57')
+    opts_ipopt.set_linear_solver("ma57")
     opts_ipopt.set_dual_inf_tol(1e-3)
     opts_ipopt.set_constraint_tolerance(1e-3)
     opts_ipopt.set_convergence_tolerance(1e-3)

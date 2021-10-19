@@ -27,13 +27,13 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     """
 
     def __init__(
-            self,
-            biorbd_model: Union[str, biorbd.Model, list, tuple],
-            dynamics: Union[Dynamics, DynamicsList],
-            window_len: Union[int, list, tuple],
-            window_duration: Union[int, float, list, tuple],
-            use_sx=True,
-            **kwargs,
+        self,
+        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        dynamics: Union[Dynamics, DynamicsList],
+        window_len: Union[int, list, tuple],
+        window_duration: Union[int, float, list, tuple],
+        use_sx=True,
+        **kwargs,
     ):
         """
         Parameters
@@ -56,16 +56,16 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         self.total_optimization_run = 0
 
     def solve(
-            self,
-            update_function: Callable,
-            solver: Solver = Solver.ACADOS,
-            warm_start: Solution = None,
-            solver_options: SolverOptions = None,
-            solver_options_first_iter: SolverOptions = None,
-            export_options: dict = None,
-            show_online_optim: bool = False,
-            show_options: dict = None,
-            **advance_options,
+        self,
+        update_function: Callable,
+        solver: Solver = Solver.ACADOS,
+        warm_start: Solution = None,
+        solver_options: SolverOptions = None,
+        solver_options_first_iter: SolverOptions = None,
+        export_options: dict = None,
+        show_online_optim: bool = False,
+        show_options: dict = None,
+        **advance_options,
     ) -> Solution:
         """
         Solve MHE program. The program runs until 'update_function' returns False. This function can be used to
@@ -143,10 +143,15 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             )
             if self.total_optimization_run == 0:
                 solver_option_current = solver_options
-                if solver_options is not None \
-                        and solver == Solver.ACADOS and solver_option_current.only_first_options_has_changed:
-                    raise RuntimeError(f"Some options has been changed for the second iteration of acados.\n"
-                                       f"Only {SolverOptionsAcados.get_tolerance_keys()} can be modified.")
+                if (
+                    solver_options is not None
+                    and solver == Solver.ACADOS
+                    and solver_option_current.only_first_options_has_changed
+                ):
+                    raise RuntimeError(
+                        f"Some options has been changed for the second iteration of acados.\n"
+                        f"Only {SolverOptionsAcados.get_tolerance_keys()} can be modified."
+                    )
             else:
                 solver_option_current = None
 
@@ -294,9 +299,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                     if not pen_fun:
                         continue
                     if (
-                            pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
-                            or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
-                            or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
+                        pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
+                        or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
+                        or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
                     ):
                         raise ValueError("Time cannot be optimized in Receding Horizon Optimization")
 
@@ -308,13 +313,13 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
 class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def __init__(
-            self,
-            biorbd_model: Union[str, biorbd.Model, list, tuple],
-            dynamics: Union[Dynamics, DynamicsList],
-            cycle_len: Union[int, list, tuple],
-            cycle_duration: Union[int, float, list, tuple],
-            use_sx=True,
-            **kwargs,
+        self,
+        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        dynamics: Union[Dynamics, DynamicsList],
+        cycle_len: Union[int, list, tuple],
+        cycle_duration: Union[int, float, list, tuple],
+        use_sx=True,
+        **kwargs,
     ):
         super(CyclicRecedingHorizonOptimization, self).__init__(
             biorbd_model=biorbd_model,
@@ -327,13 +332,13 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         self.time_idx_to_cycle = -1
 
     def solve(
-            self,
-            update_function: Callable,
-            solver: Solver = Solver.ACADOS,
-            cyclic_options: dict = None,
-            solver_options: SolverOptions = None,
-            solver_options_first_iter: SolverOptions = None,
-            **extra_options,
+        self,
+        update_function: Callable,
+        solver: Solver = Solver.ACADOS,
+        cyclic_options: dict = None,
+        solver_options: SolverOptions = None,
+        solver_options_first_iter: SolverOptions = None,
+        **extra_options,
     ) -> Solution:
 
         if solver == Solver.IPOPT and solver_options is None:
@@ -343,7 +348,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             solver_options = SolverOptionsAcados()
             solver_options_first_iter = SolverOptionsAcados()
         else:
-            raise NotImplementedError('Solver not implemented yet')
+            raise NotImplementedError("Solver not implemented yet")
 
         if not cyclic_options:
             cyclic_options = {}
@@ -442,15 +447,15 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
 class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def __init__(
-            self,
-            biorbd_model: Union[str, biorbd.Model, list, tuple],
-            dynamics: Union[Dynamics, DynamicsList],
-            cycle_len: Union[int, list, tuple],
-            cycle_duration: Union[int, float, list, tuple],
-            n_cycles_simultaneous: int,
-            n_cycles_to_advance: int = 1,
-            use_sx=True,
-            **kwargs,
+        self,
+        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        dynamics: Union[Dynamics, DynamicsList],
+        cycle_len: Union[int, list, tuple],
+        cycle_duration: Union[int, float, list, tuple],
+        n_cycles_simultaneous: int,
+        n_cycles_to_advance: int = 1,
+        use_sx=True,
+        **kwargs,
     ):
         """
         Parameters

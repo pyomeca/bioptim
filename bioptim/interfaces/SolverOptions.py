@@ -133,7 +133,7 @@ class SolverOptionsIpopt(SolverOptions):
     _constr_viol_tol: float = 0.0001
     _compl_inf_tol: float = 0.0001
     _acceptable_tol: float = 1e-6
-    _acceptable_dual_inf_tol: float = 1e+10
+    _acceptable_dual_inf_tol: float = 1e10
     _acceptable_constr_viol_tol: float = 1e-2
     _acceptable_compl_inf_tol: float = 1e-2
     _max_iter: int = 1000
@@ -580,8 +580,13 @@ class SolverOptionsAcados(SolverOptions):
     def as_dict(self, solver):
         options = {}
         for key in self.__annotations__.keys():
-            if key == "_acados_dir" or key == "_cost_type" or key == "_constr_type" \
-                    or key == "_has_tolerance_changed" or key == "_only_first_options_has_changed":
+            if (
+                key == "_acados_dir"
+                or key == "_cost_type"
+                or key == "_constr_type"
+                or key == "_has_tolerance_changed"
+                or key == "_only_first_options_has_changed"
+            ):
                 continue
             if key[0] == "_":
                 options[key[1:]] = self.__getattribute__(key)

@@ -33,7 +33,7 @@ from bioptim import (
     Solver,
     Node,
     SolverOptionsIpopt,
-    SolverOptionsAcados
+    SolverOptionsAcados,
 )
 
 
@@ -171,7 +171,7 @@ def main():
 
     def update_functions(mhe, t, _):
         def target(i: int):
-            return markers_noised[:, :, i: i + window_len + 1]
+            return markers_noised[:, :, i : i + window_len + 1]
 
         mhe.update_objectives_target(target=target(t), list_index=0)
         return t < n_frames_total  # True if there are still some frames to reconstruct
