@@ -585,11 +585,7 @@ def test_multiphase_time_constraint(ode_solver):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
-
-    if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(tau[:, -3], np.array((-8.92857121, 9.81, -14.01785679)))
-    else:
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-8.92857121, 9.81, -14.01785679)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-8.92857121, 9.81, -14.01785679)))
 
     # optimized time
     np.testing.assert_almost_equal(tf_all.T, [[1.0, 3, 0.8]])
