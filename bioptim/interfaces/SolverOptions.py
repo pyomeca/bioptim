@@ -524,7 +524,7 @@ class SolverOptionsAcados(SolverOptions):
         return self._nlp_solver_tol_eq
 
     def set_nlp_solver_tol_eq(self, val: float):
-        self._nlp_solver_tol_comp = val
+        self._nlp_solver_tol_eq = val
         self.set_has_tolerance_changed(True)
 
     @property
