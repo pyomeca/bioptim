@@ -26,7 +26,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
     ode_solver = ode_solver()
 
     ocp = jump.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=False,
@@ -103,7 +103,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     ode_solver = ode_solver()
 
     ocp = jump.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=True,

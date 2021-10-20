@@ -26,6 +26,7 @@ from bioptim import (
     DynamicsFcn,
     InitialGuess,
     InterpolationType,
+    SolverOptionsAcados,
 )
 
 from .utils import TestUtils
@@ -39,12 +40,13 @@ def test_acados_no_obj(cost_type):
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/cube.bioMod",
         n_shooting=10,
         tf=2,
     )
-
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -59,7 +61,7 @@ def test_acados_one_mayer(cost_type):
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
 
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/cube.bioMod",
         n_shooting=10,
         tf=2,
     )
@@ -67,7 +69,9 @@ def test_acados_one_mayer(cost_type):
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=np.array([[1.0]]).T)
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -86,7 +90,7 @@ def test_acados_several_mayer(cost_type):
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/cube.bioMod",
         n_shooting=10,
         tf=2,
     )
@@ -95,7 +99,9 @@ def test_acados_several_mayer(cost_type):
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[2], target=np.array([[3.0]]))
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -119,7 +125,7 @@ def test_acados_one_lagrange(cost_type):
     target = np.expand_dims(np.arange(0, n_shooting + 1), axis=0)
     target[0, -1] = n_shooting - 2
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
     )
@@ -135,7 +141,9 @@ def test_acados_one_lagrange(cost_type):
     )
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -157,7 +165,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     target = np.expand_dims(np.arange(0, n_shooting + 1), axis=0)
     target[0, -1] = n_shooting - 2
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
     )
@@ -176,7 +184,9 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     )
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -197,7 +207,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     n_shooting = 10
     target = np.array([[2]])
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
     )
@@ -208,7 +218,9 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     )
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -221,27 +233,29 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_options(cost_type):
-    if platform == "win32":
-        print("Test for ACADOS on Windows is skipped")
+    if platform == "win32" or platform == "darwin":
+        print("Tests for ACADOS options on Windows and Mac are skipped")
         return
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/pendulum.bioMod",
-        final_time=3,
-        n_shooting=12,
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/pendulum.bioMod",
+        final_time=0.6,
+        n_shooting=200,
     )
 
-    tol = [1e-1, 1e-0, 1e1]
+    tols = [1e-1, 1e1]
     iter = []
-    for i in range(3):
-        solver_options = {"nlp_solver_tol_stat": tol[i], "cost_type": cost_type}
-        sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+    for tol in tols:
+        options = SolverOptionsAcados()
+        options.set_cost_type(cost_type)
+        options.set_nlp_solver_tol_stat(tol)
+        sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
         iter += [sol.iterations]
 
     # Check that tol impacted convergence
-    np.testing.assert_array_less(iter[1], iter[0])
-    np.testing.assert_array_less(iter[2], iter[1])
+    for i in range(len(tols) - 1):
+        np.testing.assert_array_less(iter[i + 1], iter[i])
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -255,15 +269,16 @@ def test_acados_fail_external():
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/pendulum.bioMod",
         final_time=1,
         n_shooting=2,
     )
 
-    solver_options = {"cost_type": "EXTERNAL"}
+    options = SolverOptionsAcados()
+    options.set_cost_type("EXTERNAL")
 
     with pytest.raises(RuntimeError, match="EXTERNAL is not interfaced yet, please use NONLINEAR_LS"):
-        sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+        sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
 
 def test_acados_fail_lls():
@@ -273,18 +288,19 @@ def test_acados_fail_lls():
     bioptim_folder = TestUtils.bioptim_folder()
     arm = TestUtils.load_module(bioptim_folder + "/examples/acados/static_arm.py")
     ocp = arm.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/arm26.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/arm26.bioMod",
         final_time=1,
         n_shooting=2,
         use_sx=True,
     )
 
-    solver_options = {"cost_type": "LINEAR_LS"}
+    options = SolverOptionsAcados()
+    options.set_cost_type("LINEAR_LS")
 
     with pytest.raises(
         RuntimeError, match="SUPERIMPOSE_MARKERS is an incompatible objective term with LINEAR_LS cost type"
     ):
-        sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+        sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
@@ -295,7 +311,7 @@ def test_acados_custom_dynamics(problem_type_custom):
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_dynamics.py")
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=OdeSolver.RK4(),
         use_sx=True,
@@ -328,8 +344,8 @@ def test_acados_one_parameter():
     bioptim_folder = TestUtils.bioptim_folder()
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
     ocp = parameters.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+        final_time=1,
         n_shooting=100,
         optim_gravity=True,
         optim_mass=False,
@@ -355,7 +371,9 @@ def test_acados_one_parameter():
     u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
     ocp.update_bounds(x_bounds, u_bounds)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"nlp_solver_tol_eq": 1e-3})
+    options = SolverOptionsAcados()
+    options.set_nlp_solver_tol_eq(1e-3)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check some of the results
     q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_xyz"]
@@ -383,8 +401,8 @@ def test_acados_several_parameter():
     bioptim_folder = TestUtils.bioptim_folder()
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
     ocp = parameters.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+        final_time=1,
         n_shooting=100,
         optim_gravity=True,
         optim_mass=True,
@@ -414,7 +432,9 @@ def test_acados_several_parameter():
     u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
     ocp.update_bounds(x_bounds, u_bounds)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"nlp_solver_tol_eq": 1e-3})
+    options = SolverOptionsAcados()
+    options.set_nlp_solver_tol_eq(1e-3)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check some of the results
     q, qdot, tau, gravity, mass = (
@@ -449,7 +469,7 @@ def test_acados_one_end_constraints():
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/models/cube.bioMod",
         n_shooting=10,
         tf=2,
     )
@@ -492,7 +512,7 @@ def test_acados_constraints_all():
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
     ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/track/cube_and_line.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/track/models/cube_and_line.bioMod",
         n_shooting=30,
         final_time=2,
         initialize_near_solution=True,
@@ -530,7 +550,7 @@ def test_acados_constraints_end_all():
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
     ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/track/cube_and_line.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/track/models/cube_and_line.bioMod",
         n_shooting=30,
         final_time=2,
         initialize_near_solution=True,
@@ -568,7 +588,7 @@ def test_acados_bounds_not_implemented(failing):
         print("Test for ACADOS on Windows is skipped")
         return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
+    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
     nq = biorbd_model.nbQ()
     ntau = biorbd_model.nbGeneralizedTorque()
 

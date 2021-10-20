@@ -117,7 +117,7 @@ def main():
     Runs and animate the program
     """
 
-    ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, loop_from_constraint=True)
+    ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, loop_from_constraint=True)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

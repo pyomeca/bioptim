@@ -449,7 +449,7 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
         return
 
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
+    model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(
         model_path, with_mayer=with_mayer, with_lagrange=with_lagrange, with_constraints=with_constraints
     )
@@ -467,7 +467,7 @@ def test_parameters():
     optim_gravity = True
     optim_mass = True
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "/examples/getting_started/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/getting_started/models/pendulum.bioMod"
     ocp = prepare_ocp_parameters(
         biorbd_model_path=model_path,
         final_time=3,
@@ -493,7 +493,7 @@ def test_objectives_target(quadratic):
         return
 
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
+    model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
     ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path)
     ocp.nlp[0].J[1].quadratic = quadratic
     ocp.nlp[0].J[1].target = np.repeat([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], ocp.nlp[0].ns, axis=0).T

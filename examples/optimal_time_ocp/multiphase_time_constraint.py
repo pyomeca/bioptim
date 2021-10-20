@@ -27,7 +27,7 @@ def prepare_ocp(
     time_min: list,
     time_max: list,
     n_shooting: list,
-    biorbd_model_path: str = "cube.bioMod",
+    biorbd_model_path: str = "models/cube.bioMod",
     ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """

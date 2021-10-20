@@ -107,7 +107,7 @@ def main():
     time_min = 0.6
     time_max = 1
     ocp = prepare_ocp(
-        biorbd_model_path="pendulum.bioMod",
+        biorbd_model_path="models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
         time_min=time_min,

@@ -24,8 +24,16 @@ The current status of `bioptim` on conda-forge is
 | --- | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-bioptim-green.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pyomeca/bioptim-tutorial/HEAD?urlpath=lab) |
 
+# Try bioptim
+Anyone can play with bioptim with a working (but slightly limited in terms of graphics) MyBinder by clicking the following badge
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pyomeca/bioptim-tutorial/HEAD?urlpath=lab)
+
+As a tour guide that uses this binder, you can watch the `bioptim` workshop that we gave at the CMBBE conference on September 2021 by following this link:
+[https://youtu.be/z7fhKoW1y60](https://youtu.be/z7fhKoW1y60)
+
 # Table of Contents  
-[Testing bioptim](#testing-bioptim)
+[Testing bioptim](#try-bioptim)
 
 [How to install](#how-to-install)
 - [From anaconda](#installing-from-anaconda-for-windows-linux-and-mac)
@@ -80,6 +88,8 @@ The current status of `bioptim` on conda-forge is
   - [InterpolationType](#enum-interpolationtype)
   - [Shooting](#enum-shooting)
   - [CostType](#enum-costtype)
+  - [SolverOptionsIpopt](#Class-SolverOptionsIpopt)
+  - [SolverOptionsAcados](#Class-SolverOptionsAcados)
         
 [Examples](#examples)
 - [Getting started](#getting-started)
@@ -94,10 +104,6 @@ The current status of `bioptim` on conda-forge is
 
 [Citing](#Citing)
 
-# Testing bioptim
-Anyone can play with bioptim with a working (but slightly limited in terms of graphics) MyBinder by clicking the following badge
-
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pyomeca/bioptim-tutorial/HEAD?urlpath=lab)
 
 # How to install 
 The preferred way to install for the lay user is using anaconda. 
@@ -152,7 +158,7 @@ and optionally:
 #### Linux - Installing dependencies with conda
 All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
 ```bash
-conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* bioviz=*=*casadi* python-graphviz -cconda-forge
+conda install biorbd bioviz python-graphviz -cconda-forge
 ```
 Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`. 
 The installer can be found and run at `[ROOT_BIOPTIM]/external/acados_install_linux.sh`.
@@ -287,6 +293,7 @@ So let's define both of them quickly
 ```python
 x_init = InitialGuess([0, 0, 0, 0])
 u_init = InitialGuess([0, 0])
+
 ```
 Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*).
 In this case, we have both the positions `and` their velocities to be 0.
@@ -666,7 +673,7 @@ Since this is an Enum, it is possible to use tab key on the keyboard to dynamica
 Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
 For more information on this, please refer to the Dynamics and DynamicsList section right before. 
 
-#### TORQUE_DRIVEN
+#### TORQUE_DRIVEN 
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = biorbd_model.ForwardDynamics(q, qdot, tau)`. 
@@ -1388,6 +1395,16 @@ The type of cost
 - OBJECTIVES: The objective functions
 - CONSTRAINTS: The constraints
 - ALL: All the previously described cost type
+
+### Class: SolverOptionsIpopt
+
+The SolverOptionsIpopt provides a class that prepares the options of the solver IPOPT, so it can be added to the 'solver_options' when solving an ocp.
+When running an `ocp.solve()`, the argument `solver_options` expect the class.
+
+### Class: SolverOptionsAcados
+
+The SolverOptionsAcados provides a class that prepares the options of the solver ACADOS, so it can be added to the 'solver_options' when solving an ocp.
+When running an `ocp.solve()`, the argument `solver_options` expect the class.
 
 # Examples
 In this section, you will find the description of all the examples implemented with bioptim. They are ordered in 

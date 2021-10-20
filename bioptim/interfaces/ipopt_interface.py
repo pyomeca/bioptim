@@ -1,11 +1,13 @@
 from time import time
 from sys import platform
 
+from casadi import Importer
 import numpy as np
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
+from ..interfaces.SolverOptions import SolverOptionsIpopt
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType, ControlType, Node, Solver
 from ..optimization.solution import Solution
@@ -19,7 +21,7 @@ class IpoptInterface(SolverInterface):
     ----------
     options_common: dict
         Options irrelevant of a specific ocp
-    opts: dict
+    opts: SolverOptionsIpopt
         Options of the current ocp
     ipopt_nlp: dict
         The declaration of the variables Ipopt-friendly
@@ -34,8 +36,6 @@ class IpoptInterface(SolverInterface):
     -------
     online_optim(self, ocp: OptimalControlProgram)
         Declare the online callback to update the graphs while optimizing
-    configure(self, solver_options: dict)
-        Set some Ipopt options
     solve(self) -> dict
         Solve the prepared ocp
     set_lagrange_multiplier(self, sol: dict)
@@ -57,11 +57,12 @@ class IpoptInterface(SolverInterface):
         super().__init__(ocp)
 
         self.options_common = {}
-        self.opts = {}
+        self.opts = SolverOptionsIpopt()
 
         self.ipopt_nlp = {}
         self.ipopt_limits = {}
         self.ocp_solver = None
+        self.c_compile = False
 
         self.lam_g = None
         self.lam_x = None
@@ -82,35 +83,6 @@ class IpoptInterface(SolverInterface):
             raise RuntimeError("Online graphics are not available on Windows")
         self.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
-    def configure(self, solver_options: dict):
-        """
-        Set some Ipopt options
-
-        Parameters
-        ----------
-        solver_options: dict
-            The dictionary of options
-        """
-        if solver_options is None:
-            if self.opts:
-                return
-            else:
-                solver_options = {}
-
-        options = {
-            "ipopt.tol": 1e-6,
-            "ipopt.max_iter": 1000,
-            "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
-            "ipopt.limited_memory_max_history": 50,
-            "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
-        }
-        for key in solver_options:
-            ipopt_key = key
-            if key[:6] != "ipopt.":
-                ipopt_key = "ipopt." + key
-            options[ipopt_key] = solver_options[key]
-        self.opts = {**options, **self.options_common}
-
     def solve(self) -> dict:
         """
         Solve the prepared ocp
@@ -124,6 +96,16 @@ class IpoptInterface(SolverInterface):
         all_g, all_g_bounds = self.__dispatch_bounds()
 
         self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
+        self.c_compile = self.opts.c_compile
+        options = self.opts.as_dict(self)
+        if self.c_compile:
+            if not self.ocp_solver or self.ocp.program_changed:
+                nlpsol("nlpsol", "ipopt", self.ipopt_nlp, options).generate_dependencies("nlp.c")
+                self.ocp_solver = nlpsol("nlpsol", "ipopt", Importer("nlp.c", "shell"), options)
+                self.ocp.program_changed = False
+        else:
+            self.ocp_solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, options)
+
         v_bounds = self.ocp.v.bounds
         v_init = self.ocp.v.init
         self.ipopt_limits = {
@@ -139,18 +121,20 @@ class IpoptInterface(SolverInterface):
         if self.lam_x is not None:
             self.ipopt_limits["lam_x0"] = self.lam_x
 
-        solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
-
         # Solve the problem
         tic = time()
-        self.out = {"sol": solver.call(self.ipopt_limits)}
-        self.out["sol"]["solver_time_to_optimize"] = solver.stats()["t_wall_total"]
+        self.out = {"sol": self.ocp_solver.call(self.ipopt_limits)}
+        self.out["sol"]["solver_time_to_optimize"] = self.ocp_solver.stats()["t_wall_total"]
         self.out["sol"]["real_time_to_optimize"] = time() - tic
-        self.out["sol"]["iter"] = solver.stats()["iter_count"]
-        self.out["sol"]["inf_du"] = solver.stats()["iterations"]["inf_du"] if "iteration" in solver.stats() else None
-        self.out["sol"]["inf_pr"] = solver.stats()["iterations"]["inf_pr"] if "iteration" in solver.stats() else None
+        self.out["sol"]["iter"] = self.ocp_solver.stats()["iter_count"]
+        self.out["sol"]["inf_du"] = (
+            self.ocp_solver.stats()["iterations"]["inf_du"] if "iteration" in self.ocp_solver.stats() else None
+        )
+        self.out["sol"]["inf_pr"] = (
+            self.ocp_solver.stats()["iterations"]["inf_pr"] if "iteration" in self.ocp_solver.stats() else None
+        )
         # To match acados convention (0 = success, 1 = error)
-        self.out["sol"]["status"] = int(not solver.stats()["success"])
+        self.out["sol"]["status"] = int(not self.ocp_solver.stats()["success"])
         self.out["sol"]["solver"] = Solver.IPOPT
 
         return self.out

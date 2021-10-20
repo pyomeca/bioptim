@@ -5,7 +5,6 @@ The arm must reach a marker while minimizing the muscles activity and the states
 ACADOS and Ipopt.
 """
 
-
 import biorbd_casadi as biorbd
 from time import time
 import numpy as np
@@ -21,6 +20,8 @@ from bioptim import (
     InitialGuess,
     Solver,
     InterpolationType,
+    SolverOptionsAcados,
+    SolverOptionsIpopt,
 )
 
 
@@ -87,22 +88,21 @@ def main():
     warm_start_ipopt_from_acados_solution = False
 
     # --- Solve the program using ACADOS --- #
-    ocp_acados = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
+    ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
+
+    opts = SolverOptionsAcados()
+    opts.set_convergence_tolerance(1e-3)
 
     sol_acados = ocp_acados.solve(
         solver=Solver.ACADOS,
         show_online_optim=False,
-        solver_options={
-            "nlp_solver_tol_comp": 1e-3,
-            "nlp_solver_tol_eq": 1e-3,
-            "nlp_solver_tol_stat": 1e-3,
-        },
+        solver_options=opts,
     )
 
     # --- Solve the program using IPOPT --- #
     x_warm = sol_acados["qqdot"] if warm_start_ipopt_from_acados_solution else None
     ocp_ipopt = prepare_ocp(
-        biorbd_model_path="arm26.bioMod",
+        biorbd_model_path="models/arm26.bioMod",
         final_time=2,
         x_warm=x_warm,
         n_shooting=51,
@@ -110,18 +110,18 @@ def main():
         n_threads=6,
     )
 
+    opts_ipopt = SolverOptionsIpopt()
+    opts_ipopt.set_linear_solver("ma57")
+    opts_ipopt.set_dual_inf_tol(1e-3)
+    opts_ipopt.set_constraint_tolerance(1e-3)
+    opts_ipopt.set_convergence_tolerance(1e-3)
+    opts_ipopt.set_maximum_iterations(100)
+    opts_ipopt.set_hessian_approximation("exact")
+
     sol_ipopt = ocp_ipopt.solve(
         solver=Solver.IPOPT,
         show_online_optim=False,
-        solver_options={
-            "tol": 1e-3,
-            "dual_inf_tol": 1e-3,
-            "constr_viol_tol": 1e-3,
-            "compl_inf_tol": 1e-3,
-            "linear_solver": "ma57",
-            "max_iter": 100,
-            "hessian_approximation": "exact",
-        },
+        solver_options=opts_ipopt,
     )
 
     # --- Show results --- #

@@ -14,7 +14,7 @@ def test_muscle_driven_ocp(ode_solver):
     static_arm = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/static_arm.py")
 
     ocp = static_arm.prepare_ocp(
-        bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod",
+        bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod",
         final_time=0.1,
         n_shooting=5,
         weight=1,

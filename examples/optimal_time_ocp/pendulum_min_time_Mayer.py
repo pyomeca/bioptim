@@ -19,6 +19,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
+    CostType,
 )
 
 
@@ -112,17 +113,19 @@ def main():
     Prepare, solve and animate a time minimizer ocp using a Mayer criteria
     """
 
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
+    ocp = prepare_ocp(
+        biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=50, ode_solver=OdeSolver.RK4()
+    )
 
     # Let's show the objectives
-    ocp.add_plot_penalty("objectives")
+    ocp.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}, good job Mayer!")
-
+    sol.print()
     sol.animate()
 
 

@@ -25,14 +25,14 @@ from bioptim import (
 
 
 class MyCyclicNMPC(CyclicNonlinearModelPredictiveControl):
-    def advance_window(self, sol: Solution, steps: int = 0):
+    def advance_window_bounds_states(self, sol):
         # Reimplementation of the advance_window method so the rotation of the wheel restart at -pi
-        super(MyCyclicNMPC, self).advance_window(sol, steps)
+        super(MyCyclicNMPC, self).advance_window_bounds_states(sol)
         self.nlp[0].x_bounds[0, 0] = -np.pi
-        self.update_bounds(self.nlp[0].x_bounds)
+        return True
 
 
-def prepare_nmpc(model_path, window_len, window_duration, max_torque):
+def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque):
     model = biorbd.Model(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
@@ -53,7 +53,7 @@ def prepare_nmpc(model_path, window_len, window_duration, max_torque):
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q")
 
     # Rotate the wheel and force the marker of the hand to follow the marker on the wheel
-    wheel_target = np.linspace(-np.pi, np.pi, window_len + 1)[np.newaxis, :]
+    wheel_target = np.linspace(-np.pi, np.pi, cycle_len + 1)[np.newaxis, :]
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.ALL, target=wheel_target)
     constraints.add(
@@ -67,8 +67,8 @@ def prepare_nmpc(model_path, window_len, window_duration, max_torque):
     return MyCyclicNMPC(
         model,
         dynamics,
-        window_len,
-        window_duration,
+        cycle_len,
+        cycle_duration,
         objective_functions=new_objectives,
         constraints=constraints,
         x_init=x_init,
@@ -79,20 +79,21 @@ def prepare_nmpc(model_path, window_len, window_duration, max_torque):
 
 
 def main():
-    model_path = "./arm2.bioMod"
+    model_path = "models/arm2.bioMod"
     torque_max = 50
 
-    window_duration = 1
-    window_len = 20
+    cycle_duration = 1
+    cycle_len = 20
     n_cycles = 3
 
-    nmpc = prepare_nmpc(model_path, window_len=window_len, window_duration=window_duration, max_torque=torque_max)
+    nmpc = prepare_nmpc(model_path, cycle_len=cycle_len, cycle_duration=cycle_duration, max_torque=torque_max)
 
     def update_functions(_nmpc: CyclicNonlinearModelPredictiveControl, cycle_idx: int, _sol: Solution):
         return cycle_idx < n_cycles  # True if there are still some cycle to perform
 
     # Solve the program
     sol = nmpc.solve(update_functions, solver=Solver.IPOPT)
+    sol.graphs()
     sol.print()
     sol.animate(n_frames=100)
 

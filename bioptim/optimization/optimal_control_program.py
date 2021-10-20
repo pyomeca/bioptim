@@ -18,6 +18,7 @@ from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
+from ..interfaces.SolverOptions import SolverOptions, SolverOptionsIpopt, SolverOptionsAcados
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
@@ -33,7 +34,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.7.2", "1.8.0")
+check_version(biorbd, "1.8.0", "1.9.0")
 
 
 class OptimalControlProgram:
@@ -329,6 +330,7 @@ class OptimalControlProgram:
             self.cx = MX
 
         # Declare optimization variables
+        self.program_changed = True
         self.J = []
         self.J_internal = []
         self.g = []
@@ -350,6 +352,7 @@ class OptimalControlProgram:
         NLP.add(self, "n_threads", n_threads, True)
         self.solver_type = Solver.NONE
         self.solver = None
+        self.is_warm_starting = False
 
         # External forces
         if external_forces is not None:
@@ -727,9 +730,6 @@ class OptimalControlProgram:
 
         color = penalty_color()
         for i_phase, nlp in enumerate(self.nlp):
-            if not isinstance(nlp.ode_solver, OdeSolverRK):
-                raise NotImplementedError("add_plot_penalty is only available for RK based integration yet")
-
             if cost_type == CostType.OBJECTIVES:
                 penalties = nlp.J
                 penalties_internal = nlp.J_internal
@@ -787,7 +787,7 @@ class OptimalControlProgram:
         warm_start: Solution = None,
         show_online_optim: bool = False,
         show_options: dict = None,
-        solver_options: dict = None,
+        solver_options: SolverOptions = None,
     ) -> Solution:
         """
         Call the solver to actually solve the ocp
@@ -803,7 +803,7 @@ class OptimalControlProgram:
             available with Solver.IPOPT
         show_options: dict
             The graphs option to pass to PlotOcp
-        solver_options: dict
+        solver_options: SolverOptions
             Any options to change the behavior of the solver. To know which options are available, you can refer to the
             manual of the corresponding solver
 
@@ -820,9 +820,8 @@ class OptimalControlProgram:
         elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
 
-            if solver_options is None:
-                solver_options = {}
-            self.solver = AcadosInterface(self, **solver_options)
+            self.solver = AcadosInterface(self, solver_options)
+            solver_options = None
 
         elif self.solver_type == Solver.NONE:
             raise RuntimeError("Solver not specified")
@@ -831,10 +830,19 @@ class OptimalControlProgram:
         if show_online_optim:
             self.solver.online_optim(self, show_options)
 
-        self.solver.configure(solver_options)
         if warm_start is not None:
             self.set_warm_start(sol=warm_start)
+
+        if self.is_warm_starting:
+            if self.solver_type == Solver.IPOPT:
+                solver_options = SolverOptionsIpopt() if solver_options is None else solver_options
+                solver_options.set_warm_start_options(1e-10)
+
+        if solver_options is not None:
+            self.solver.opts = solver_options
+
         self.solver.solve()
+        self.is_warm_starting = False
 
         return Solution(self, self.solver.get_optimized_value())
 
@@ -870,8 +878,11 @@ class OptimalControlProgram:
             if key != "all":
                 param_init_guess.add(param[key], name=key)
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=param_init_guess)
+
         if self.solver:
             self.solver.set_lagrange_multiplier(sol)
+
+        self.is_warm_starting = True
 
     def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
@@ -1089,3 +1100,5 @@ class OptimalControlProgram:
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
+
+        self.program_changed = True

@@ -137,7 +137,7 @@ def main():
     """
 
     ocp = prepare_ocp(
-        "TruncAnd2Arm_Quaternion.bioMod",
+        "models/TruncAnd2Arm_Quaternion.bioMod",
         n_shooting=5,
         final_time=0.25,
     )

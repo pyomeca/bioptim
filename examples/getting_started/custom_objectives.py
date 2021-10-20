@@ -151,11 +151,11 @@ def main():
     Solve and animate the solution
     """
 
-    model_path = "cube.bioMod"
+    model_path = "models/cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=model_path)
 
     # Custom plots
-    ocp.add_plot_objectives()
+    ocp.add_plot_penalty()
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

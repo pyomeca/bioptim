@@ -90,7 +90,7 @@ def main():
     """
 
     # Prepare the Optimal Control Program
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=50)
 
     # Add my lovely new plot
     ocp.add_plot("My New Extra Plot", lambda t, x, u, p: custom_plot_callback(x, [0, 1, 3]), plot_type=PlotType.PLOT)
