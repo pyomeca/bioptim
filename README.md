@@ -243,6 +243,7 @@ dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 ```
 
 The pendulum is required to start in a downward position (0 rad) and to finish in an upward position (3.14 rad) with no velocity at start and end nodes.
+To define that, it would be nice to first define boundary constraints on the position (*q*) and velocities (*qdot*) that match those in the bioMod file and to apply them at the very beginning, the very end and all the intermediate nodes as well.
 In this case, the state with index 0 is translation y, and the index 1 refers to rotation about x. 
 Finally, the index 2 and 3 are respectively the velocity of translation y and rotation about x 
 
@@ -286,7 +287,6 @@ So let's define both of them quickly
 ```python
 x_init = InitialGuess([0, 0, 0, 0])
 u_init = InitialGuess([0, 0])
-
 ```
 Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*).
 In this case, we have both the positions `and` their velocities to be 0.
@@ -666,7 +666,7 @@ Since this is an Enum, it is possible to use tab key on the keyboard to dynamica
 Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
 For more information on this, please refer to the Dynamics and DynamicsList section right before. 
 
-#### TORQUE_DRIVEN 
+#### TORQUE_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = biorbd_model.ForwardDynamics(q, qdot, tau)`. 
