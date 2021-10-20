@@ -512,7 +512,7 @@ class Solution:
             If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
             arrival node and the beginning of the next one are expected to be almost equal when the problem converged
         use_scipy_integrator: bool
-            Ignore the dynamics defined by OCP and use an separate integrator provided by scipy
+            Ignore the dynamics defined by OCP and use a separate integrator provided by scipy
 
         Returns
         -------

@@ -32,6 +32,8 @@ from bioptim import (
     InterpolationType,
     Solver,
     Node,
+    SolverOptionsIpopt,
+    SolverOptionsAcados,
 )
 
 
@@ -110,25 +112,25 @@ def get_solver_options(solver):
     mhe_dict = {"solver": None, "solver_options": None, "solver_options_first_iter": None}
     if solver == Solver.ACADOS:
         mhe_dict["solver"] = Solver.ACADOS
-        mhe_dict["solver_options"] = {
-            "nlp_solver_max_iter": 1000,
-            "integrator_type": "ERK",
-            "print_level": 0,
-        }
+        options = SolverOptionsAcados()
+        options.set_maximum_iterations(1000)
+        options.set_print_level(0)
+        options.set_integrator_type("ERK")
+        mhe_dict["solver_options"] = options
+
     elif solver == Solver.IPOPT:
         mhe_dict["solver"] = Solver.IPOPT
-        mhe_dict["solver_options"] = {
-            "hessian_approximation": "limited-memory",
-            "limited_memory_max_history": 50,
-            "max_iter": 5,
-            "print_level": 0,
-            "tol": 1e-1,
-            "bound_frac": 1e-10,
-            "bound_push": 1e-10,
-        }
+        options = SolverOptionsIpopt()
+        options.set_hessian_approximation("limited-memory")
+        options.set_limited_memory_max_history(50)
+        options.set_maximum_iterations(5)
+        options.set_print_level(0)
+        options.set_tol(1e-1)
+        options.set_initialization_options(1e-10)
+        mhe_dict["solver_options"] = options
         mhe_dict["solver_options_first_iter"] = copy(mhe_dict["solver_options"])
-        mhe_dict["solver_options_first_iter"]["max_iter"] = 50
-        mhe_dict["solver_options_first_iter"]["tol"] = 1e-6
+        mhe_dict["solver_options_first_iter"].set_maximum_iterations(50)
+        mhe_dict["solver_options_first_iter"].set_tol(1e-6)
     else:
         raise NotImplementedError("Solver not recognized")
 
@@ -177,12 +179,12 @@ def main():
     # Solve the program
     sol = mhe.solve(update_functions, **get_solver_options(solver))
 
-    print("ACADOS with BiorbdOptim")
+    print("ACADOS with Bioptim")
     print(f"Window size of MHE : {window_duration} s.")
-    print(f"New measurement every : {1/n_shoot_per_second} s.")
+    print(f"New measurement every : {1 / n_shoot_per_second} s.")
     print(f"Average time per iteration of MHE : {sol.solver_time_to_optimize / (n_frames_total - 1)} s.")
-    print(f"Average real time per iteration of MHE : {sol.real_time_to_optimize/(n_frames_total - 1)} s.")
-    print(f"Norm of the error on state = {np.linalg.norm(states[:,:n_frames_total] - sol.states['all'])}")
+    print(f"Average real time per iteration of MHE : {sol.real_time_to_optimize / (n_frames_total - 1)} s.")
+    print(f"Norm of the error on state = {np.linalg.norm(states[:, :n_frames_total] - sol.states['all'])}")
 
     markers_estimated = states_to_markers(biorbd_model, sol.states["all"])
 

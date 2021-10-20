@@ -20,6 +20,7 @@ from bioptim import (
     InitialGuessList,
     Node,
     Solver,
+    SolverOptionsAcados,
 )
 
 

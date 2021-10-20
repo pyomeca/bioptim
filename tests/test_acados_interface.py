@@ -26,6 +26,7 @@ from bioptim import (
     DynamicsFcn,
     InitialGuess,
     InterpolationType,
+    SolverOptionsAcados,
 )
 
 from .utils import TestUtils
@@ -43,8 +44,9 @@ def test_acados_no_obj(cost_type):
         n_shooting=10,
         tf=2,
     )
-
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -67,7 +69,9 @@ def test_acados_one_mayer(cost_type):
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=np.array([[1.0]]).T)
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -95,7 +99,9 @@ def test_acados_several_mayer(cost_type):
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[2], target=np.array([[3.0]]))
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -135,7 +141,9 @@ def test_acados_one_lagrange(cost_type):
     )
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -176,7 +184,9 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     )
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -208,7 +218,9 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     )
     ocp.update_objectives(objective_functions)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    options = SolverOptionsAcados()
+    options.set_cost_type(cost_type)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check end state value
     q = sol.states["q"]
@@ -235,8 +247,10 @@ def test_acados_options(cost_type):
     tols = [1e-1, 1e1]
     iter = []
     for tol in tols:
-        solver_options = {"nlp_solver_tol_stat": tol, "cost_type": cost_type}
-        sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+        options = SolverOptionsAcados()
+        options.set_cost_type(cost_type)
+        options.set_nlp_solver_tol_stat(tol)
+        sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
         iter += [sol.iterations]
 
     # Check that tol impacted convergence
@@ -260,10 +274,11 @@ def test_acados_fail_external():
         n_shooting=2,
     )
 
-    solver_options = {"cost_type": "EXTERNAL"}
+    options = SolverOptionsAcados()
+    options.set_cost_type("EXTERNAL")
 
     with pytest.raises(RuntimeError, match="EXTERNAL is not interfaced yet, please use NONLINEAR_LS"):
-        sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+        sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
 
 def test_acados_fail_lls():
@@ -279,12 +294,13 @@ def test_acados_fail_lls():
         use_sx=True,
     )
 
-    solver_options = {"cost_type": "LINEAR_LS"}
+    options = SolverOptionsAcados()
+    options.set_cost_type("LINEAR_LS")
 
     with pytest.raises(
         RuntimeError, match="SUPERIMPOSE_MARKERS is an incompatible objective term with LINEAR_LS cost type"
     ):
-        sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+        sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
@@ -355,7 +371,9 @@ def test_acados_one_parameter():
     u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
     ocp.update_bounds(x_bounds, u_bounds)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"nlp_solver_tol_eq": 1e-3})
+    options = SolverOptionsAcados()
+    options.set_nlp_solver_tol_eq(1e-3)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check some of the results
     q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_xyz"]
@@ -414,7 +432,9 @@ def test_acados_several_parameter():
     u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
     ocp.update_bounds(x_bounds, u_bounds)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"nlp_solver_tol_eq": 1e-3})
+    options = SolverOptionsAcados()
+    options.set_nlp_solver_tol_eq(1e-3)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options)
 
     # Check some of the results
     q, qdot, tau, gravity, mass = (

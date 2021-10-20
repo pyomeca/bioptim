@@ -18,6 +18,7 @@ from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
+from ..interfaces.SolverOptions import SolverOptions, SolverOptionsIpopt, SolverOptionsAcados
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
@@ -786,7 +787,7 @@ class OptimalControlProgram:
         warm_start: Solution = None,
         show_online_optim: bool = False,
         show_options: dict = None,
-        solver_options: dict = None,
+        solver_options: SolverOptions = None,
     ) -> Solution:
         """
         Call the solver to actually solve the ocp
@@ -802,7 +803,7 @@ class OptimalControlProgram:
             available with Solver.IPOPT
         show_options: dict
             The graphs option to pass to PlotOcp
-        solver_options: dict
+        solver_options: SolverOptions
             Any options to change the behavior of the solver. To know which options are available, you can refer to the
             manual of the corresponding solver
 
@@ -819,9 +820,8 @@ class OptimalControlProgram:
         elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
 
-            if solver_options is None:
-                solver_options = {}
-            self.solver = AcadosInterface(self, **solver_options)
+            self.solver = AcadosInterface(self, solver_options)
+            solver_options = None
 
         elif self.solver_type == Solver.NONE:
             raise RuntimeError("Solver not specified")
@@ -835,16 +835,12 @@ class OptimalControlProgram:
 
         if self.is_warm_starting:
             if self.solver_type == Solver.IPOPT:
-                solver_options = {} if solver_options is None else solver_options
-                solver_options["warm_start_init_point"] = "yes"
-                solver_options["mu_init"] = 1e-10
-                solver_options["warm_start_mult_bound_push"] = 1e-10
-                solver_options["warm_start_slack_bound_push"] = 1e-10
-                solver_options["warm_start_bound_push"] = 1e-10
-                solver_options["warm_start_slack_bound_frac"] = 1e-10
-                solver_options["warm_start_bound_frac"] = 1e-10
+                solver_options = SolverOptionsIpopt() if solver_options is None else solver_options
+                solver_options.set_warm_start_options(1e-10)
 
-        self.solver.configure(solver_options)
+        if solver_options is not None:
+            self.solver.opts = solver_options
+
         self.solver.solve()
         self.is_warm_starting = False
 

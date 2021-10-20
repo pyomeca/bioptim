@@ -12,6 +12,7 @@ from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import Solver, InterpolationType
+from ..interfaces.SolverOptions import SolverOptions, SolverOptionsIpopt, SolverOptionsAcados
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):
@@ -59,8 +60,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         update_function: Callable,
         solver: Solver = Solver.ACADOS,
         warm_start: Solution = None,
-        solver_options: dict = None,
-        solver_options_first_iter: dict = None,
+        solver_options: SolverOptions = None,
+        solver_options_first_iter: SolverOptions = None,
         export_options: dict = None,
         show_online_optim: bool = False,
         show_options: dict = None,
@@ -112,6 +113,11 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         states = []
         controls = []
 
+        if solver == Solver.ACADOS and solver_options is None:
+            solver_options = SolverOptionsAcados()
+        elif solver == Solver.IPOPT and solver_options is None:
+            solver_options = SolverOptionsIpopt()
+
         if solver_options_first_iter is None and solver_options is not None:
             solver_options_first_iter = solver_options
             solver_options = None
@@ -135,7 +141,20 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 show_online_optim=show_online_optim,
                 show_options=show_options,
             )
-            solver_option_current = solver_options if self.total_optimization_run == 0 else None
+            if self.total_optimization_run == 0:
+                solver_option_current = solver_options
+                if (
+                    solver_options is not None
+                    and solver == Solver.ACADOS
+                    and solver_option_current.only_first_options_has_changed
+                ):
+                    raise RuntimeError(
+                        f"Some options has been changed for the second iteration of acados.\n"
+                        f"Only {SolverOptionsAcados.get_tolerance_keys()} can be modified."
+                    )
+            else:
+                solver_option_current = None
+
             warm_start = None
 
             total_time += sol.real_time_to_optimize
@@ -317,10 +336,19 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         update_function: Callable,
         solver: Solver = Solver.ACADOS,
         cyclic_options: dict = None,
-        solver_options: dict = None,
-        solver_options_first_iter: dict = None,
+        solver_options: SolverOptions = None,
+        solver_options_first_iter: SolverOptions = None,
         **extra_options,
     ) -> Solution:
+
+        if solver == Solver.IPOPT and solver_options is None:
+            solver_options = SolverOptionsIpopt()
+            solver_options_first_iter = SolverOptionsIpopt()
+        elif solver == Solver.ACADOS and solver_options is None:
+            solver_options = SolverOptionsAcados()
+            solver_options_first_iter = SolverOptionsAcados()
+        else:
+            raise NotImplementedError("Solver not implemented yet")
 
         if not cyclic_options:
             cyclic_options = {}
