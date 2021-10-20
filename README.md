@@ -249,6 +249,7 @@ dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 ```
 
 The pendulum is required to start in a downward position (0 rad) and to finish in an upward position (3.14 rad) with no velocity at start and end nodes.
+To define that, it would be nice to first define boundary constraints on the position (*q*) and velocities (*qdot*) that match those in the bioMod file and to apply them at the very beginning, the very end and all the intermediate nodes as well.
 In this case, the state with index 0 is translation y, and the index 1 refers to rotation about x. 
 Finally, the index 2 and 3 are respectively the velocity of translation y and rotation about x 
 

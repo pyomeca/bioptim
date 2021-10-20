@@ -4,19 +4,24 @@ same rod at the end, while keeping the degrees of freedom opposed. It does this 
 mapping, that is by completely removing the degree of freedom from the solver variables but interpreting the numbers
 properly when computing the dynamics
 
-A BiMapping is used. The way to understand the mapping is that if one is provided with two vectors, what
-would be the correspondence between those vector. For instance, BiMapping([None, 0, 1, 2, -2], [0, 1, 2])
-would mean that the first vector (v1) has 3 components and to create it from the second vector (v2), you would do:
-v1 = [v2[0], v2[1], v2[2]]. Conversely, the second v2 has 5 components and is created from the vector v1 using:
-v2 = [0, v1[0], v1[1], v1[2], -v1[2]]. For the dynamics, it is assumed that v1 is what is to be sent to the dynamic
-functions (the full vector with all the degrees of freedom), while v2 is the one sent to the solver (the one with less
-degrees of freedom).
+A BiMapping is used to link the degrees of freedom of the model to the optimization variables, that is converting a
+vector of dimension M to dimension N, and vice versa. The way to understand the mapping is that if one is provided with
+two vectors, what would be the correspondence between those vectors.
+For instance, BiMapping([0, 1, None, 2, 2], [0, 1, 3], [4]) would mean that the first vector (v1) has 3 components and
+to create it from a vector v2 of dimension 5 (using the [0, 1, 2] mapping), you would do: v1 = [v2[0], v2[1], v2[3]],
+while ignoring the v2[2] and v2[4]. Conversely, the second v2 has 5 components and is created from the vector v1 of
+dimension 3 using the [0, 1, None, 2, 2]/[4] mapping: v2 = [v1[0], v1[1], 0, v1[2], -v1[2]].
+While used in dynamics, it is assumed that v1 is what is to be sent to biorbd (the full vector with all
+the degrees of freedom), while v2 is the one sent to the solver (the one with less degrees of freedom).
 
 The difference between symmetry_by_mapping and symmetry_by_constraint is that one (mapping) removes the degree of
 freedom from the solver, while the other (constraints) imposes a proportional constraint (equals to -1) so they
 are opposed.
 Please note that even though removing a degree of freedom seems a good idea, it is unclear if it is actually faster when
 solving with IPOPT.
+
+Please note that while BiMapping is used in that context for reducing dof, it is only one of many more
+applications one can do with the Mappings
 """
 
 import biorbd_casadi as biorbd
@@ -62,7 +67,17 @@ def prepare_ocp(
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
     dof_mappings = BiMappingList()
-    dof_mappings.add("q", [0, 1, None, 2, 2], [0, 1, 3], 4)
+    dof_mappings.add("q", to_second=[0, 1, None, 2, 2], to_first=[0, 1, 3], oppose_to_second=4)
+    # For convenience, if only q is defined, qdot and tau are automatically defined too
+    # While computing the derivatives, the states is 6 dimensions (3 for q and 3 for qdot) and controls is 3 dimensions
+    # However, the forward dynamics ([q, qdot, tau] => qddot) needs 5 dimensions vectors (due to the chosen model)
+    # 'to_second' is used to convert these 3 dimensions vectors (q, qdot and tau) to their corresponding 5 dimensions
+    #       As discussed in the docstring at the beginning of the file, the first two dofs are conserved, the 3rd
+    #       value is a numerical zero and the final two are equal but opposed.
+    # The dynamics is computed (qddot) and returns a 5 dimensions vector
+    # 'to_first' convert back this 5 dimensions qddot to a 3 dimensions needed by Ipopt
+    #       the first two dofs are conserved and the 4th (index 3) is put at the last position (3rd component). The
+    #       other dofs are ignored
 
     # Add objective functions
     objective_functions = ObjectiveList()
