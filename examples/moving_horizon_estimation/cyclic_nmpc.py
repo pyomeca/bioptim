@@ -92,7 +92,7 @@ def main():
         return cycle_idx < n_cycles  # True if there are still some cycle to perform
 
     # Solve the program
-    sol = nmpc.solve(update_functions, solver=Solver.IPOPT)
+    sol = nmpc.solve(update_functions, solver=Solver.SolverOptionsIpopt(show_online_optim=True))
     sol.graphs()
     sol.print()
     sol.animate(n_frames=100)

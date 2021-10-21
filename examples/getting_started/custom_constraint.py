@@ -23,6 +23,7 @@ from bioptim import (
     InitialGuess,
     OdeSolver,
     BiorbdInterface,
+    Solver,
 )
 
 
@@ -142,7 +143,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.SolverOptionsIpopt(show_online_optim=True))
 
     # --- Show results --- #
     sol.animate()

@@ -6,7 +6,6 @@ ACADOS and Ipopt.
 """
 
 import biorbd_casadi as biorbd
-from time import time
 import numpy as np
 from bioptim import (
     OptimalControlProgram,
@@ -20,8 +19,6 @@ from bioptim import (
     InitialGuess,
     Solver,
     InterpolationType,
-    SolverOptionsAcados,
-    SolverOptionsIpopt,
 )
 
 
@@ -90,14 +87,10 @@ def main():
     # --- Solve the program using ACADOS --- #
     ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
 
-    opts = SolverOptionsAcados()
-    opts.set_convergence_tolerance(1e-3)
+    solver_acados = Solver.SolverOptionsAcados()
+    solver_acados.set_convergence_tolerance(1e-3)
 
-    sol_acados = ocp_acados.solve(
-        solver=Solver.ACADOS,
-        show_online_optim=False,
-        solver_options=opts,
-    )
+    sol_acados = ocp_acados.solve(solver=solver_acados)
 
     # --- Solve the program using IPOPT --- #
     x_warm = sol_acados["qqdot"] if warm_start_ipopt_from_acados_solution else None
@@ -110,19 +103,15 @@ def main():
         n_threads=6,
     )
 
-    opts_ipopt = SolverOptionsIpopt()
-    opts_ipopt.set_linear_solver("ma57")
-    opts_ipopt.set_dual_inf_tol(1e-3)
-    opts_ipopt.set_constraint_tolerance(1e-3)
-    opts_ipopt.set_convergence_tolerance(1e-3)
-    opts_ipopt.set_maximum_iterations(100)
-    opts_ipopt.set_hessian_approximation("exact")
+    solver_ipopt = Solver.SolverOptionsIpopt()
+    solver_ipopt.set_linear_solver("ma57")
+    solver_ipopt.set_dual_inf_tol(1e-3)
+    solver_ipopt.set_constraint_tolerance(1e-3)
+    solver_ipopt.set_convergence_tolerance(1e-3)
+    solver_ipopt.set_maximum_iterations(100)
+    solver_ipopt.set_hessian_approximation("exact")
 
-    sol_ipopt = ocp_ipopt.solve(
-        solver=Solver.IPOPT,
-        show_online_optim=False,
-        solver_options=opts_ipopt,
-    )
+    sol_ipopt = ocp_ipopt.solve(solver=solver_ipopt)
 
     # --- Show results --- #
     print("\n\n")

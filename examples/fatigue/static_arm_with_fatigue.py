@@ -32,6 +32,7 @@ from bioptim import (
     Node,
     Axis,
     VariableType,
+    Solver,
 )
 
 
@@ -185,7 +186,9 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True, solver_options={"hessian_approximation": "exact"})
+    solver = Solver.SolverOptionsIpopt(show_online_optim=True)
+    solver.set_hessian_approximation("exact")
+    sol = ocp.solve(solver)
     sol.print()
 
     # --- Show results --- #

@@ -20,6 +20,7 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
+    Solver,
 )
 
 
@@ -110,7 +111,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.SolverOptionsIpopt(show_online_optim=True))
 
     nlp = ocp.nlp[0]
     nlp.model = biorbd.Model(biorbd_model_path)

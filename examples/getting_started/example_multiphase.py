@@ -22,6 +22,7 @@ from bioptim import (
     InitialGuessList,
     OdeSolver,
     Node,
+    Solver,
 )
 
 
@@ -139,7 +140,7 @@ def main():
     ocp = prepare_ocp(long_optim=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.SolverOptionsIpopt(show_online_optim=True))
 
     # --- Show results --- #
     sol.animate()

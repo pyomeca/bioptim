@@ -7,18 +7,18 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, sum2, horzcat
+from casadi import MX, SX, Function, sum1, horzcat
 from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
 from ..dynamics.configure_problem import DynamicsList, Dynamics
-from ..dynamics.ode_solver import RK as OdeSolverRK, OdeSolver, OdeSolverBase
+from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.SolverOptions import SolverOptions, SolverOptionsIpopt, SolverOptionsAcados
+from ..interfaces.SolverOptions import Solver
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
@@ -28,7 +28,7 @@ from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
-from ..misc.enums import ControlType, Solver, Shooting, PlotType, CostType
+from ..misc.enums import ControlType, SolverType, Shooting, PlotType, CostType
 from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
@@ -350,7 +350,7 @@ class OptimalControlProgram:
 
         self.n_threads = n_threads
         NLP.add(self, "n_threads", n_threads, True)
-        self.solver_type = Solver.NONE
+        self.solver_type = SolverType.NONE
         self.solver = None
         self.is_warm_starting = False
 
@@ -783,63 +783,51 @@ class OptimalControlProgram:
 
     def solve(
         self,
-        solver: Solver = Solver.IPOPT,
+        solver: Solver.SolverOptions = None,
         warm_start: Solution = None,
-        show_online_optim: bool = False,
-        show_options: dict = None,
-        solver_options: SolverOptions = None,
     ) -> Solution:
         """
         Call the solver to actually solve the ocp
 
         Parameters
         ----------
-        solver: Solver
+        solver: SolverOptions
             The solver which will be used to solve the ocp
         warm_start: Solution
             The solution to pass to the warm start method
-        show_online_optim: bool
-            If the plot should be shown while optimizing. It will slow down the optimization a bit and is only
-            available with Solver.IPOPT
-        show_options: dict
-            The graphs option to pass to PlotOcp
-        solver_options: SolverOptions
-            Any options to change the behavior of the solver. To know which options are available, you can refer to the
-            manual of the corresponding solver
 
         Returns
         -------
         The optimized solution structure
         """
 
-        if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
+        if solver is None:
+            solver = Solver.SolverOptionsIpopt()
+
+        if solver.type == SolverType.IPOPT and self.solver_type != SolverType.IPOPT:
             from ..interfaces.ipopt_interface import IpoptInterface
 
             self.solver = IpoptInterface(self)
 
-        elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
+        elif solver.type == SolverType.ACADOS and self.solver_type != SolverType.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
 
-            self.solver = AcadosInterface(self, solver_options)
+            self.solver = AcadosInterface(self, solver)
+
             solver_options = None
 
-        elif self.solver_type == Solver.NONE:
+        elif self.solver_type == SolverType.NONE:
             raise RuntimeError("Solver not specified")
-        self.solver_type = solver
-
-        if show_online_optim:
-            self.solver.online_optim(self, show_options)
+        self.solver_type = solver.type
 
         if warm_start is not None:
             self.set_warm_start(sol=warm_start)
 
         if self.is_warm_starting:
-            if self.solver_type == Solver.IPOPT:
-                solver_options = SolverOptionsIpopt() if solver_options is None else solver_options
-                solver_options.set_warm_start_options(1e-10)
+            if self.solver_type == SolverType.IPOPT:
+                solver.set_warm_start_options(1e-10)
 
-        if solver_options is not None:
-            self.solver.opts = solver_options
+        self.solver.opts = solver
 
         self.solver.solve()
         self.is_warm_starting = False

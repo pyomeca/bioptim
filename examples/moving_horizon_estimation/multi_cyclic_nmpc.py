@@ -116,7 +116,7 @@ def main():
 
     # Solve the program
     sol = nmpc.solve(
-        update_functions, solver=Solver.IPOPT, n_cycles_simultaneous=n_cycles_simultaneous, show_online_optim=True
+        update_functions, solver=Solver.SolverOptionsIpopt(show_online_optim=True), n_cycles_simultaneous=n_cycles_simultaneous,
     )
     sol.print()
     sol.graphs()

@@ -18,7 +18,6 @@ from bioptim import (
     InitialGuess,
     OdeSolver,
     Solver,
-    SolverOptionsAcados,
 )
 
 
@@ -80,7 +79,7 @@ def main():
     ocp.update_objectives(objective_functions)
 
     # --- Solve the program --- #
-    sol = ocp.solve(solver=Solver.ACADOS)
+    sol = ocp.solve(solver=Solver.SolverOptionsAcados())
     sol.graphs()
 
     objective_functions = ObjectiveList()
@@ -103,10 +102,9 @@ def main():
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10, multi_thread=False)
     ocp.update_objectives(objective_functions)
 
-    solver_options = SolverOptionsAcados()
-    solver_options.nlp_solver_tol_stat = 1e-2
-
-    sol = ocp.solve(solver=Solver.ACADOS, show_online_optim=False, solver_options=solver_options)
+    solver = Solver.SolverOptionsAcados()
+    solver.set_nlp_solver_tol_stat(1e-2)
+    sol = ocp.solve(solver=solver)
 
     # --- Show results --- #
     sol.graphs()

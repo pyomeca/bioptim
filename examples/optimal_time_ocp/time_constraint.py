@@ -18,6 +18,7 @@ from bioptim import (
     InitialGuess,
     Node,
     OdeSolver,
+    Solver,
 )
 
 
@@ -115,7 +116,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.SolverOptionsIpopt(show_online_optim=True))
 
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}")

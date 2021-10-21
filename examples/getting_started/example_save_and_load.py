@@ -10,7 +10,6 @@ prevents from using the class methods Solution offers after loading the file.
 """
 
 import pickle
-from time import time
 
 import numpy as np
 from casadi import MX
@@ -25,7 +24,6 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
-    PlotType,
 )
 
 
@@ -130,7 +128,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=100, n_threads=4)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve()
     print(f"Time to solve : {sol.real_time_to_optimize}sec")
 
     # --- Print objective cost  --- #

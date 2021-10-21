@@ -21,6 +21,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
+    Solver,
 )
 
 
@@ -128,7 +129,7 @@ def main():
     ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, actuator_type=2)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.SolverOptionsIpopt(show_online_optim=True))
 
     # --- Show results --- #
     sol.animate()

@@ -7,9 +7,9 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
-from ..interfaces.SolverOptions import SolverOptionsIpopt
+from ..interfaces.SolverOptions import Solver
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType, Node, Solver
+from ..misc.enums import InterpolationType, ControlType, Node, SolverType
 from ..optimization.solution import Solution
 
 
@@ -57,7 +57,7 @@ class IpoptInterface(SolverInterface):
         super().__init__(ocp)
 
         self.options_common = {}
-        self.opts = SolverOptionsIpopt()
+        self.opts = Solver.SolverOptionsIpopt()
 
         self.ipopt_nlp = {}
         self.ipopt_limits = {}
@@ -94,6 +94,9 @@ class IpoptInterface(SolverInterface):
 
         all_objectives = self.__dispatch_obj_func()
         all_g, all_g_bounds = self.__dispatch_bounds()
+
+        if self.opts.show_online_optim:
+            self.online_optim(self.ocp, self.opts.show_options)
 
         self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
         self.c_compile = self.opts.c_compile
@@ -135,7 +138,7 @@ class IpoptInterface(SolverInterface):
         )
         # To match acados convention (0 = success, 1 = error)
         self.out["sol"]["status"] = int(not self.ocp_solver.stats()["success"])
-        self.out["sol"]["solver"] = Solver.IPOPT
+        self.out["sol"]["solver"] = SolverType.IPOPT
 
         return self.out
 
