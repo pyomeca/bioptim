@@ -188,7 +188,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
         state_bounds_have_changed = self.advance_window_bounds_states(sol, **advance_options)
         control_bounds_have_changed = self.advance_window_bounds_controls(sol, **advance_options)
-        if self.solver_type != SolverType.ACADOS:
+        if self.ocp_solver.opts.type != SolverType.ACADOS:
             self.update_bounds(
                 self.nlp[0].x_bounds if state_bounds_have_changed else None,
                 self.nlp[0].u_bounds if control_bounds_have_changed else None,
@@ -197,7 +197,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         init_states_have_changed = self.advance_window_initial_guess_states(sol, **advance_options)
         init_controls_have_changed = self.advance_window_initial_guess_controls(sol, **advance_options)
 
-        if self.solver_type != SolverType.ACADOS:
+        if self.ocp_solver.opts.type != SolverType.ACADOS:
             self.update_initial_guess(
                 self.nlp[0].x_init if init_states_have_changed else None,
                 self.nlp[0].u_init if init_controls_have_changed else None,
@@ -387,8 +387,8 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
         super(CyclicRecedingHorizonOptimization, self).advance_window(sol, steps, **advance_options)
-        if self.solver_type == SolverType.IPOPT:
-            self.solver.set_lagrange_multiplier(sol)
+        if self.ocp_solver.opts.type == SolverType.IPOPT:
+            self.ocp_solver.set_lagrange_multiplier(sol)
 
     def advance_window_bounds_states(self, sol, **advance_options):
         # Update the initial frame bounds
