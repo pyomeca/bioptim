@@ -72,10 +72,8 @@ class OptimalControlProgram:
         A copy of the ocp as it is after defining everything
     phase_transitions: list[PhaseTransition]
         The list of transition constraint between phases
-    solver: SolverInterface
+    ocp_solver: SolverInterface
         A reference to the ocp solver
-    solver_type: Solver
-        The designated solver to solve the ocp
     v: OptimizationVector
         The variable optimization holder
     version: dict
@@ -350,8 +348,7 @@ class OptimalControlProgram:
 
         self.n_threads = n_threads
         NLP.add(self, "n_threads", n_threads, True)
-        self.solver_type = SolverType.NONE
-        self.solver = None
+        self.ocp_solver = None
         self.is_warm_starting = False
 
         # External forces
@@ -804,35 +801,33 @@ class OptimalControlProgram:
         if solver is None:
             solver = Solver.IPOPT()
 
-        if solver.type == SolverType.IPOPT and self.solver_type != SolverType.IPOPT:
-            from ..interfaces.ipopt_interface import IpoptInterface
+        if self.ocp_solver is None:
+            if solver.type == SolverType.IPOPT:
+                from ..interfaces.ipopt_interface import IpoptInterface
 
-            self.solver = IpoptInterface(self)
+                self.ocp_solver = IpoptInterface(self)
 
-        elif solver.type == SolverType.ACADOS and self.solver_type != SolverType.ACADOS:
-            from ..interfaces.acados_interface import AcadosInterface
+            elif solver.type == SolverType.ACADOS:
+                from ..interfaces.acados_interface import AcadosInterface
 
-            self.solver = AcadosInterface(self, solver)
+                self.ocp_solver = AcadosInterface(self, solver)
 
-            solver_options = None
-
-        elif self.solver_type == SolverType.NONE:
-            raise RuntimeError("Solver not specified")
-        self.solver_type = solver.type
+            elif solver.type == SolverType.NONE:
+                raise RuntimeError("Invalid solver")
 
         if warm_start is not None:
             self.set_warm_start(sol=warm_start)
 
         if self.is_warm_starting:
-            if self.solver_type == SolverType.IPOPT:
+            if solver.type == SolverType.IPOPT:
                 solver.set_warm_start_options(1e-10)
 
-        self.solver.opts = solver
+        self.ocp_solver.opts = solver
 
-        self.solver.solve()
+        self.ocp_solver.solve()
         self.is_warm_starting = False
 
-        return Solution(self, self.solver.get_optimized_value())
+        return Solution(self, self.ocp_solver.get_optimized_value())
 
     def set_warm_start(self, sol: Solution):
         """
@@ -867,8 +862,8 @@ class OptimalControlProgram:
                 param_init_guess.add(param[key], name=key)
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=param_init_guess)
 
-        if self.solver:
-            self.solver.set_lagrange_multiplier(sol)
+        if self.ocp_solver:
+            self.ocp_solver.set_lagrange_multiplier(sol)
 
         self.is_warm_starting = True
 
