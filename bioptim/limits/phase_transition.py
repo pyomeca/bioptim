@@ -299,12 +299,11 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             for key in nlp_pre.states:
                 cx_end = vertcat(cx_end, nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end))
                 cx = vertcat(cx, nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx))
-                if key != "qdot":
-                    # Continuity constraint
-                    val_tp = vertcat(val, nlp_pre.states[key].mx - nlp_post.states[key].mx)
-                else:
-                    val_tp = vertcat(val, qdot_impact - nlp_post.states["qdot"].mx)
-                val = vertcat(val, nlp_post.states[key].mapping.to_first.map(val_tp))
+                post_mx = nlp_post.states[key].mx
+                continuity = nlp_post.states["qdot"].mapping.to_first.map(
+                    qdot_impact - post_mx if key == "qdot" else nlp_pre.states[key].mx - post_mx
+                )
+                val = vertcat(val, continuity)
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
             func = biorbd.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
