@@ -13,6 +13,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     PlotType,
+    Solver,
 )
 
 
@@ -108,7 +109,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # --- Show results --- #
     sol.graphs()

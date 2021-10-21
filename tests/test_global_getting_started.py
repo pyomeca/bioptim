@@ -411,7 +411,7 @@ def test_phase_transitions(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 104392.80817678942)
+    np.testing.assert_almost_equal(f[0, 0], 109443.6239236211)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -435,8 +435,8 @@ def test_phase_transitions(ode_solver):
     np.testing.assert_almost_equal(states[0]["q"][:, -1], states[1]["q"][:, 0])
 
     # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.73170732, 12.71705188, 0)))
-    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0.06960796, 8.71969435, 1.01173324)))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.73170732, 12.71705188, -0.0928732)))
+    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0.11614402, 8.70686126, 1.05599166)))
 
     # save and load
     with pytest.raises(PicklingError, match="import of module 'custom_phase_transitions' failed"):

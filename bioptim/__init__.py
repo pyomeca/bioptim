@@ -46,9 +46,9 @@ ControlType
     Selection of valid controls
 CostType
     Selection of valid penalty type
-SolverOptionsIpopt
+IPOPT
     Selection of IPOPT options
-SolverOptionsAcados
+ACADOS
     Selection of ACADOS options
 
 # --- Managing the dynamics --- #
@@ -158,14 +158,14 @@ from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver
 from .interfaces.biorbd_interface import BiorbdInterface
-from .interfaces.SolverOptions import SolverOptionsIpopt, SolverOptionsAcados
+from .interfaces.SolverOptions import Solver
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_node import PenaltyNode, PenaltyNodeList
-from .misc.enums import Axis, Node, InterpolationType, PlotType, Solver, ControlType, CostType, Shooting, VariableType
+from .misc.enums import Axis, Node, InterpolationType, PlotType, ControlType, CostType, Shooting, VariableType
 from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram

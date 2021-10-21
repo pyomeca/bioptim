@@ -19,6 +19,7 @@ from bioptim import (
     InterpolationType,
     OdeSolver,
     Node,
+    Solver,
 )
 
 
@@ -141,7 +142,7 @@ def main():
         n_shooting=5,
         final_time=0.25,
     )
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # Print the last solution
     sol.animate()

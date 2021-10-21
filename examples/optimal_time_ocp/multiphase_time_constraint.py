@@ -6,7 +6,7 @@ It is designed to show how one can define a multi-phase ocp problem with free ti
 
 import biorbd_casadi as biorbd
 from bioptim import (
-    Node,
+    Solver,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -166,7 +166,7 @@ def main():
     ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
     param = sol.parameters

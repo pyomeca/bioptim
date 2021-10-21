@@ -10,7 +10,7 @@ from casadi import Function, MX
 
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OptimalControlProgram, CostType, OdeSolver, SolverOptionsIpopt
+from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver
 
 from .utils import TestUtils
 
@@ -85,9 +85,9 @@ def test_add_new_plot():
         n_shooting=20,
         final_time=0.5,
     )
-    opts = SolverOptionsIpopt()
-    opts.set_maximum_iterations(1)
-    sol = ocp.solve(solver_options=opts)
+    solver = Solver.IPOPT()
+    solver.set_maximum_iterations(1)
+    sol = ocp.solve(solver)
 
     # Saving/loading files reset the plot settings to normal
     save_name = "test_plot.bo"

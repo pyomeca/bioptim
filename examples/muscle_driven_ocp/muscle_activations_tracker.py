@@ -27,6 +27,7 @@ from bioptim import (
     InitialGuessList,
     OdeSolver,
     Node,
+    Solver,
 )
 
 
@@ -252,7 +253,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show the results --- #
     q = sol.states["q"]

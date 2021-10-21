@@ -11,8 +11,8 @@ from ..dynamics.configure_problem import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
-from ..misc.enums import Solver, InterpolationType
-from ..interfaces.SolverOptions import SolverOptions, SolverOptionsIpopt, SolverOptionsAcados
+from ..misc.enums import SolverType, InterpolationType
+from ..interfaces.SolverOptions import Solver
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):
@@ -58,13 +58,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def solve(
         self,
         update_function: Callable,
-        solver: Solver = Solver.ACADOS,
+        solver: Solver.Generic = None,
         warm_start: Solution = None,
-        solver_options: SolverOptions = None,
-        solver_options_first_iter: SolverOptions = None,
+        solver_first_iter: Solver.Generic = None,
         export_options: dict = None,
-        show_online_optim: bool = False,
-        show_options: dict = None,
         **advance_options,
     ) -> Solution:
         """
@@ -85,19 +82,12 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             bounds.
         solver: Solver
             The Solver to use (default being ACADOS)
+        solver: Solver
+            The Solver to use for the first iteration (must be the same as solver, but more options can be changed)
         warm_start: Solution
             A Solution to initiate the first iteration from
-        solver_options: dict
-            The options to pass to the solver.
-        solver_options_first_iter: dict
-            A special set of options to pass to the solver for the first frame only,
-            and then replaced by solver_options if present.
         export_options: dict
             Any options related to the saving of the data at each iteration
-        show_online_optim: bool
-            If the online optimization should be True, Only relevant with Ipopt
-        show_options: dict
-            The show options to pass to OPC
         advance_options: Any
             The extra options to pass to the advancing methods
 
@@ -113,19 +103,12 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         states = []
         controls = []
 
-        if solver == Solver.ACADOS and solver_options is None:
-            solver_options = SolverOptionsAcados()
-        elif solver == Solver.IPOPT and solver_options is None:
-            solver_options = SolverOptionsIpopt()
-
-        if solver_options_first_iter is None and solver_options is not None:
-            solver_options_first_iter = solver_options
-            solver_options = None
-        solver_option_current = solver_options_first_iter
-
-        if solver == Solver.IPOPT:
-            if solver_options is None:
-                solver_options = solver_options_first_iter if solver_options_first_iter else {}
+        solver_all_iter = Solver.ACADOS() if solver is None else solver
+        if solver_first_iter is None and solver is not None:
+            # If not first iter was sent, the all iter becomes the first and is not updated afterward
+            solver_first_iter = solver_all_iter
+            solver_all_iter = None
+        solver_current = solver_first_iter
 
         self._initialize_frame_to_export(export_options)
 
@@ -135,26 +118,22 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         self.total_optimization_run = 0
         while update_function(self, self.total_optimization_run, sol):
             sol = super(RecedingHorizonOptimization, self).solve(
-                solver=solver,
+                solver=solver_current,
                 warm_start=warm_start,
-                solver_options=solver_option_current,
-                show_online_optim=show_online_optim,
-                show_options=show_options,
             )
-            if self.total_optimization_run == 0:
-                solver_option_current = solver_options
-                if (
-                    solver_options is not None
-                    and solver == Solver.ACADOS
-                    and solver_option_current.only_first_options_has_changed
-                ):
-                    raise RuntimeError(
-                        f"Some options has been changed for the second iteration of acados.\n"
-                        f"Only {SolverOptionsAcados.get_tolerance_keys()} can be modified."
-                    )
-            else:
-                solver_option_current = None
 
+            # Set the option for the next iteration
+            if self.total_optimization_run == 0:
+                # Update the solver if first and the rest are different
+                if solver_all_iter:
+                    solver_current = solver_all_iter
+                    if solver_current.type == SolverType.ACADOS and solver_current.only_first_options_has_changed:
+                        raise RuntimeError(
+                            f"Some options has been changed for the second iteration of acados.\n"
+                            f"Only {solver_current.get_tolerance_keys()} can be modified."
+                        )
+                if solver_current.type == SolverType.IPOPT:
+                    solver_current.show_online_optim = False
             warm_start = None
 
             total_time += sol.real_time_to_optimize
@@ -169,7 +148,6 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             # Update the initial frame bounds and initial guess
             self.advance_window(sol, **advance_options)
 
-            show_online_optim = False
             self.total_optimization_run += 1
 
         real_time = time() - real_time
@@ -210,7 +188,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
         state_bounds_have_changed = self.advance_window_bounds_states(sol, **advance_options)
         control_bounds_have_changed = self.advance_window_bounds_controls(sol, **advance_options)
-        if self.solver_type != Solver.ACADOS:
+        if self.ocp_solver.opts.type != SolverType.ACADOS:
             self.update_bounds(
                 self.nlp[0].x_bounds if state_bounds_have_changed else None,
                 self.nlp[0].u_bounds if control_bounds_have_changed else None,
@@ -219,7 +197,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         init_states_have_changed = self.advance_window_initial_guess_states(sol, **advance_options)
         init_controls_have_changed = self.advance_window_initial_guess_controls(sol, **advance_options)
 
-        if self.solver_type != Solver.ACADOS:
+        if self.ocp_solver.opts.type != SolverType.ACADOS:
             self.update_initial_guess(
                 self.nlp[0].x_init if init_states_have_changed else None,
                 self.nlp[0].u_init if init_controls_have_changed else None,
@@ -334,36 +312,28 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def solve(
         self,
         update_function: Callable,
-        solver: Solver = Solver.ACADOS,
+        solver: Solver.Generic = None,
         cyclic_options: dict = None,
-        solver_options: SolverOptions = None,
-        solver_options_first_iter: SolverOptions = None,
+        solver_first_iter: Solver.Generic = None,
         **extra_options,
     ) -> Solution:
 
-        if solver == Solver.IPOPT and solver_options is None:
-            solver_options = SolverOptionsIpopt()
-            solver_options_first_iter = SolverOptionsIpopt()
-        elif solver == Solver.ACADOS and solver_options is None:
-            solver_options = SolverOptionsAcados()
-            solver_options_first_iter = SolverOptionsAcados()
-        else:
-            raise NotImplementedError("Solver not implemented yet")
+        if solver is None:
+            solver = Solver.ACADOS()
 
         if not cyclic_options:
             cyclic_options = {}
         self._initialize_state_idx_to_cycle(cyclic_options)
 
         self._set_cyclic_bound()
-        if solver == Solver.IPOPT:
+        if solver.type == SolverType.IPOPT:
             self.update_bounds(self.nlp[0].x_bounds)
 
         export_options = {"frame_to_export": slice(0, self.time_idx_to_cycle)}
         return super(CyclicRecedingHorizonOptimization, self).solve(
             update_function=update_function,
             solver=solver,
-            solver_options=solver_options,
-            solver_options_first_iter=solver_options_first_iter,
+            solver_first_iter=solver_first_iter,
             export_options=export_options,
             **extra_options,
         )
@@ -417,8 +387,8 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
         super(CyclicRecedingHorizonOptimization, self).advance_window(sol, steps, **advance_options)
-        if self.solver_type == Solver.IPOPT:
-            self.solver.set_lagrange_multiplier(sol)
+        if self.ocp_solver.opts.type == SolverType.IPOPT:
+            self.ocp_solver.set_lagrange_multiplier(sol)
 
     def advance_window_bounds_states(self, sol, **advance_options):
         # Update the initial frame bounds

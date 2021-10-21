@@ -27,6 +27,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
+    Solver,
 )
 
 
@@ -122,7 +123,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
     sol.animate()

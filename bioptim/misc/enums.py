@@ -11,7 +11,7 @@ class Axis(IntEnum):
     Z = 2
 
 
-class Solver(Enum):
+class SolverType(Enum):
     """
     Selection of valid nonlinear solvers
     The goto value IPOPT

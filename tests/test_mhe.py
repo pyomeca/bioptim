@@ -16,11 +16,13 @@ from bioptim import (
 )
 
 from .utils import TestUtils
+from bioptim.misc.enums import SolverType
 
 
 @pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
 def test_mhe(solver):
-    if platform == "win32" and solver == Solver.ACADOS:
+    solver = solver()
+    if platform == "win32" and solver.type == SolverType.ACADOS:
         print("Test for ACADOS on Windows is skipped")
         return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
@@ -29,7 +31,7 @@ def test_mhe(solver):
     nq = biorbd_model.nbQ()
     torque_max = 5  # Give a bit of slack on the max torque
 
-    n_cycles = 5 if solver == Solver.ACADOS else 1
+    n_cycles = 5 if solver.type == SolverType.ACADOS else 1
     n_frame_by_cycle = 20
     window_len = 5
     window_duration = 0.2
@@ -60,7 +62,7 @@ def test_mhe(solver):
         u_init=u_init,
     ).solve(update_functions, **pendulum.get_solver_options(solver))
 
-    if solver == Solver.ACADOS:
+    if solver.type == SolverType.ACADOS:
         # Compare the position on the first few frames (only ACADOS, since IPOPT is not precise with current options)
         np.testing.assert_almost_equal(
             sol.states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len - 1], decimal=3
@@ -99,7 +101,7 @@ def test_mhe_redim_xbounds_and_init():
     def update_functions(mhe, t, _):
         return t < n_cycles
 
-    mhe.solve(update_functions, Solver.IPOPT)
+    mhe.solve(update_functions, Solver.IPOPT())
 
 
 def test_mhe_redim_xbounds_not_implemented():
@@ -140,4 +142,4 @@ def test_mhe_redim_xbounds_not_implemented():
         match="The MHE is not implemented yet for x_bounds not being "
         "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT",
     ):
-        mhe.solve(update_functions, Solver.IPOPT)
+        mhe.solve(update_functions, Solver.IPOPT())

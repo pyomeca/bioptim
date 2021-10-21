@@ -25,6 +25,7 @@ from bioptim import (
     OdeSolver,
     PhaseTransitionList,
     PhaseTransitionFcn,
+    Solver,
 )
 
 
@@ -120,7 +121,7 @@ def main():
     ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, loop_from_constraint=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
     sol.animate()

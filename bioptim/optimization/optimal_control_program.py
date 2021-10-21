@@ -7,18 +7,18 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, sum2, horzcat
+from casadi import MX, SX, Function, sum1, horzcat
 from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
 from ..dynamics.configure_problem import DynamicsList, Dynamics
-from ..dynamics.ode_solver import RK as OdeSolverRK, OdeSolver, OdeSolverBase
+from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.SolverOptions import SolverOptions, SolverOptionsIpopt, SolverOptionsAcados
+from ..interfaces.SolverOptions import Solver
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
@@ -28,7 +28,7 @@ from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
-from ..misc.enums import ControlType, Solver, Shooting, PlotType, CostType
+from ..misc.enums import ControlType, SolverType, Shooting, PlotType, CostType
 from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
@@ -72,10 +72,8 @@ class OptimalControlProgram:
         A copy of the ocp as it is after defining everything
     phase_transitions: list[PhaseTransition]
         The list of transition constraint between phases
-    solver: SolverInterface
+    ocp_solver: SolverInterface
         A reference to the ocp solver
-    solver_type: Solver
-        The designated solver to solve the ocp
     v: OptimizationVector
         The variable optimization holder
     version: dict
@@ -350,8 +348,7 @@ class OptimalControlProgram:
 
         self.n_threads = n_threads
         NLP.add(self, "n_threads", n_threads, True)
-        self.solver_type = Solver.NONE
-        self.solver = None
+        self.ocp_solver = None
         self.is_warm_starting = False
 
         # External forces
@@ -783,68 +780,54 @@ class OptimalControlProgram:
 
     def solve(
         self,
-        solver: Solver = Solver.IPOPT,
+        solver: Solver.Generic = None,
         warm_start: Solution = None,
-        show_online_optim: bool = False,
-        show_options: dict = None,
-        solver_options: SolverOptions = None,
     ) -> Solution:
         """
         Call the solver to actually solve the ocp
 
         Parameters
         ----------
-        solver: Solver
+        solver: Generic
             The solver which will be used to solve the ocp
         warm_start: Solution
             The solution to pass to the warm start method
-        show_online_optim: bool
-            If the plot should be shown while optimizing. It will slow down the optimization a bit and is only
-            available with Solver.IPOPT
-        show_options: dict
-            The graphs option to pass to PlotOcp
-        solver_options: SolverOptions
-            Any options to change the behavior of the solver. To know which options are available, you can refer to the
-            manual of the corresponding solver
 
         Returns
         -------
         The optimized solution structure
         """
 
-        if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
-            from ..interfaces.ipopt_interface import IpoptInterface
+        if solver is None:
+            solver = Solver.IPOPT()
 
-            self.solver = IpoptInterface(self)
+        if self.ocp_solver is None:
+            if solver.type == SolverType.IPOPT:
+                from ..interfaces.ipopt_interface import IpoptInterface
 
-        elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
-            from ..interfaces.acados_interface import AcadosInterface
+                self.ocp_solver = IpoptInterface(self)
 
-            self.solver = AcadosInterface(self, solver_options)
-            solver_options = None
+            elif solver.type == SolverType.ACADOS:
+                from ..interfaces.acados_interface import AcadosInterface
 
-        elif self.solver_type == Solver.NONE:
-            raise RuntimeError("Solver not specified")
-        self.solver_type = solver
+                self.ocp_solver = AcadosInterface(self, solver)
 
-        if show_online_optim:
-            self.solver.online_optim(self, show_options)
+            elif solver.type == SolverType.NONE:
+                raise RuntimeError("Invalid solver")
 
         if warm_start is not None:
             self.set_warm_start(sol=warm_start)
 
         if self.is_warm_starting:
-            if self.solver_type == Solver.IPOPT:
-                solver_options = SolverOptionsIpopt() if solver_options is None else solver_options
-                solver_options.set_warm_start_options(1e-10)
+            if solver.type == SolverType.IPOPT:
+                solver.set_warm_start_options(1e-10)
 
-        if solver_options is not None:
-            self.solver.opts = solver_options
+        self.ocp_solver.opts = solver
 
-        self.solver.solve()
+        self.ocp_solver.solve()
         self.is_warm_starting = False
 
-        return Solution(self, self.solver.get_optimized_value())
+        return Solution(self, self.ocp_solver.get_optimized_value())
 
     def set_warm_start(self, sol: Solution):
         """
@@ -879,8 +862,8 @@ class OptimalControlProgram:
                 param_init_guess.add(param[key], name=key)
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=param_init_guess)
 
-        if self.solver:
-            self.solver.set_lagrange_multiplier(sol)
+        if self.ocp_solver:
+            self.ocp_solver.set_lagrange_multiplier(sol)
 
         self.is_warm_starting = True
 

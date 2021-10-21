@@ -32,8 +32,6 @@ from bioptim import (
     InterpolationType,
     Solver,
     Node,
-    SolverOptionsIpopt,
-    SolverOptionsAcados,
 )
 
 
@@ -109,28 +107,23 @@ def prepare_mhe(biorbd_model, window_len, window_duration, max_torque, x_init, u
 
 
 def get_solver_options(solver):
-    mhe_dict = {"solver": None, "solver_options": None, "solver_options_first_iter": None}
-    if solver == Solver.ACADOS:
-        mhe_dict["solver"] = Solver.ACADOS
-        options = SolverOptionsAcados()
-        options.set_maximum_iterations(1000)
-        options.set_print_level(0)
-        options.set_integrator_type("ERK")
-        mhe_dict["solver_options"] = options
+    mhe_dict = {"solver_first_iter": None, "solver": solver}
+    if isinstance(solver, Solver.ACADOS):
+        mhe_dict["solver"].set_maximum_iterations(1000)
+        mhe_dict["solver"].set_print_level(0)
+        mhe_dict["solver"].set_integrator_type("ERK")
 
-    elif solver == Solver.IPOPT:
-        mhe_dict["solver"] = Solver.IPOPT
-        options = SolverOptionsIpopt()
-        options.set_hessian_approximation("limited-memory")
-        options.set_limited_memory_max_history(50)
-        options.set_maximum_iterations(5)
-        options.set_print_level(0)
-        options.set_tol(1e-1)
-        options.set_initialization_options(1e-10)
-        mhe_dict["solver_options"] = options
-        mhe_dict["solver_options_first_iter"] = copy(mhe_dict["solver_options"])
-        mhe_dict["solver_options_first_iter"].set_maximum_iterations(50)
-        mhe_dict["solver_options_first_iter"].set_tol(1e-6)
+    elif isinstance(solver, Solver.IPOPT):
+        mhe_dict["solver"].set_hessian_approximation("limited-memory")
+        mhe_dict["solver"].set_limited_memory_max_history(50)
+        mhe_dict["solver"].set_maximum_iterations(5)
+        mhe_dict["solver"].set_print_level(0)
+        mhe_dict["solver"].set_tol(1e-1)
+        mhe_dict["solver"].set_initialization_options(1e-10)
+
+        mhe_dict["solver_first_iter"] = copy(mhe_dict["solver"])
+        mhe_dict["solver_first_iter"].set_maximum_iterations(50)
+        mhe_dict["solver_first_iter"].set_tol(1e-6)
     else:
         raise NotImplementedError("Solver not recognized")
 
@@ -141,7 +134,7 @@ def main():
     biorbd_model_path = "models/cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    solver = Solver.ACADOS  # or Solver.IPOPT
+    solver = Solver.ACADOS()  # or Solver.IPOPT()
     final_time = 5
     n_shoot_per_second = 100
     window_len = 10

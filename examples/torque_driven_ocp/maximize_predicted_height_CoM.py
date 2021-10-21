@@ -22,6 +22,7 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Node,
+    Solver,
 )
 
 
@@ -158,7 +159,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
     sol.animate(n_frames=40)
