@@ -88,8 +88,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [InterpolationType](#enum-interpolationtype)
   - [Shooting](#enum-shooting)
   - [CostType](#enum-costtype)
-  - [SolverOptionsIpopt](#Class-SolverOptionsIpopt)
-  - [SolverOptionsAcados](#Class-SolverOptionsAcados)
         
 [Examples](#examples)
 - [Getting started](#getting-started)
@@ -1395,16 +1393,6 @@ The type of cost
 - OBJECTIVES: The objective functions
 - CONSTRAINTS: The constraints
 - ALL: All the previously described cost type
-
-### Class: SolverOptionsIpopt
-
-The SolverOptionsIpopt provides a class that prepares the options of the solver IPOPT, so it can be added to the 'solver_options' when solving an ocp.
-When running an `ocp.solve()`, the argument `solver_options` expect the class.
-
-### Class: SolverOptionsAcados
-
-The SolverOptionsAcados provides a class that prepares the options of the solver ACADOS, so it can be added to the 'solver_options' when solving an ocp.
-When running an `ocp.solve()`, the argument `solver_options` expect the class.
 
 # Examples
 In this section, you will find the description of all the examples implemented with bioptim. They are ordered in 

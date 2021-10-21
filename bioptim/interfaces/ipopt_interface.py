@@ -21,7 +21,7 @@ class IpoptInterface(SolverInterface):
     ----------
     options_common: dict
         Options irrelevant of a specific ocp
-    opts: SolverOptionsIpopt
+    opts: IPOPT
         Options of the current ocp
     ipopt_nlp: dict
         The declaration of the variables Ipopt-friendly
@@ -57,7 +57,7 @@ class IpoptInterface(SolverInterface):
         super().__init__(ocp)
 
         self.options_common = {}
-        self.opts = Solver.SolverOptionsIpopt()
+        self.opts = Solver.IPOPT()
 
         self.ipopt_nlp = {}
         self.ipopt_limits = {}

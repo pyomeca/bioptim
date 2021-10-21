@@ -272,7 +272,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.SolverOptionsIpopt(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show the results --- #
     q = sol.states["q"]

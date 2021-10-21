@@ -59,8 +59,8 @@ class AcadosInterface(SolverInterface):
         The Lagrange state objective functions
     Vxe: np.ndarray
         The Mayer state objective functions
-    opts: SolverOptionsAcados
-        Options of Acados from SolverOptionsAcados
+    opts: ACADOS
+        Options of Acados from ACADOS
     Methods
     -------
     __acados_export_model(self, ocp: OptimalControlProgram)
@@ -83,13 +83,13 @@ class AcadosInterface(SolverInterface):
         Solve the prepared ocp
     """
 
-    def __init__(self, ocp, solver_options: Solver.SolverOptionsAcados = None):
+    def __init__(self, ocp, solver_options: Solver.ACADOS = None):
         """
         Parameters
         ----------
         ocp: OptimalControlProgram
             A reference to the current OptimalControlProgram
-        solver_options: SolverOptionsAcados
+        solver_options: ACADOS
             The options to pass to the solver
         """
 
@@ -100,7 +100,7 @@ class AcadosInterface(SolverInterface):
 
         # solver_options = solver_options.__dict__
         if solver_options is None:
-            solver_options = Solver.SolverOptionsAcados()
+            solver_options = Solver.ACADOS()
 
         self.acados_ocp = AcadosOcp(acados_path=solver_options.acados_dir)
         self.acados_model = AcadosModel()
@@ -134,7 +134,7 @@ class AcadosInterface(SolverInterface):
         self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
         self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
 
-        self.opts = Solver.SolverOptionsAcados() if solver_options is None else solver_options
+        self.opts = Solver.ACADOS() if solver_options is None else solver_options
 
     def __acados_export_model(self, ocp):
         """
@@ -665,7 +665,7 @@ class AcadosInterface(SolverInterface):
             if self.opts.only_first_options_has_changed:
                 raise RuntimeError(
                     "Some options has been changed the second time acados was run.",
-                    "Only " + str(Solver.SolverOptionsAcados.get_tolerance_keys()) + " can be modified.",
+                    "Only " + str(Solver.ACADOS.get_tolerance_keys()) + " can be modified.",
                 )
 
             if self.opts.has_tolerance_changed:

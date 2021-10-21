@@ -21,7 +21,7 @@ from bioptim import (
     Objective,
     OdeSolver,
     CostType,
-    Solver
+    Solver,
 )
 
 
@@ -113,7 +113,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.SolverOptionsIpopt(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #

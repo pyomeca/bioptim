@@ -110,7 +110,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=100)
 
     # --- Solve the program --- #
-    sol = ocp.solve(solver=Solver.SolverOptionsAcados())
+    sol = ocp.solve(solver=Solver.ACADOS())
     sol.print()
 
     # --- Show results --- #

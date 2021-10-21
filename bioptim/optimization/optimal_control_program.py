@@ -783,7 +783,7 @@ class OptimalControlProgram:
 
     def solve(
         self,
-        solver: Solver.SolverOptions = None,
+        solver: Solver.Generic = None,
         warm_start: Solution = None,
     ) -> Solution:
         """
@@ -791,7 +791,7 @@ class OptimalControlProgram:
 
         Parameters
         ----------
-        solver: SolverOptions
+        solver: Generic
             The solver which will be used to solve the ocp
         warm_start: Solution
             The solution to pass to the warm start method
@@ -802,7 +802,7 @@ class OptimalControlProgram:
         """
 
         if solver is None:
-            solver = Solver.SolverOptionsIpopt()
+            solver = Solver.IPOPT()
 
         if solver.type == SolverType.IPOPT and self.solver_type != SolverType.IPOPT:
             from ..interfaces.ipopt_interface import IpoptInterface

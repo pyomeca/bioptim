@@ -19,7 +19,7 @@ from .utils import TestUtils
 from bioptim.misc.enums import SolverType
 
 
-@pytest.mark.parametrize("solver", [Solver.SolverOptionsAcados, Solver.SolverOptionsIpopt])
+@pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
 def test_mhe(solver):
     solver = solver()
     if platform == "win32" and solver.type == SolverType.ACADOS:
@@ -101,7 +101,7 @@ def test_mhe_redim_xbounds_and_init():
     def update_functions(mhe, t, _):
         return t < n_cycles
 
-    mhe.solve(update_functions, Solver.SolverOptionsIpopt())
+    mhe.solve(update_functions, Solver.IPOPT())
 
 
 def test_mhe_redim_xbounds_not_implemented():
@@ -142,4 +142,4 @@ def test_mhe_redim_xbounds_not_implemented():
         match="The MHE is not implemented yet for x_bounds not being "
         "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT",
     ):
-        mhe.solve(update_functions, Solver.SolverOptionsIpopt())
+        mhe.solve(update_functions, Solver.IPOPT())

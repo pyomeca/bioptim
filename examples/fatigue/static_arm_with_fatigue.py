@@ -186,7 +186,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    solver = Solver.SolverOptionsIpopt(show_online_optim=True)
+    solver = Solver.IPOPT(show_online_optim=True)
     solver.set_hessian_approximation("exact")
     sol = ocp.solve(solver)
     sol.print()

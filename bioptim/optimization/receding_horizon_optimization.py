@@ -58,9 +58,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def solve(
         self,
         update_function: Callable,
-        solver: Solver.SolverOptions = None,
+        solver: Solver.Generic = None,
         warm_start: Solution = None,
-        solver_first_iter: Solver.SolverOptions = None,
+        solver_first_iter: Solver.Generic = None,
         export_options: dict = None,
         **advance_options,
     ) -> Solution:
@@ -103,7 +103,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         states = []
         controls = []
 
-        solver_all_iter = Solver.SolverOptionsAcados() if solver is None else solver
+        solver_all_iter = Solver.ACADOS() if solver is None else solver
         if solver_first_iter is None and solver is not None:
             # If not first iter was sent, the all iter becomes the first and is not updated afterward
             solver_first_iter = solver_all_iter
@@ -312,14 +312,14 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def solve(
         self,
         update_function: Callable,
-        solver: Solver.SolverOptions = None,
+        solver: Solver.Generic = None,
         cyclic_options: dict = None,
-        solver_first_iter: Solver.SolverOptions = None,
+        solver_first_iter: Solver.Generic = None,
         **extra_options,
     ) -> Solution:
 
         if solver is None:
-            solver = Solver.SolverOptionsAcados()
+            solver = Solver.ACADOS()
 
         if not cyclic_options:
             cyclic_options = {}

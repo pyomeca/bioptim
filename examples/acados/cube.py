@@ -79,7 +79,8 @@ def main():
     ocp.update_objectives(objective_functions)
 
     # --- Solve the program --- #
-    sol = ocp.solve(solver=Solver.SolverOptionsAcados())
+    solver = Solver.ACADOS()
+    sol = ocp.solve(solver)
     sol.graphs()
 
     objective_functions = ObjectiveList()
@@ -102,9 +103,8 @@ def main():
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10, multi_thread=False)
     ocp.update_objectives(objective_functions)
 
-    solver = Solver.SolverOptionsAcados()
     solver.set_nlp_solver_tol_stat(1e-2)
-    sol = ocp.solve(solver=solver)
+    sol = ocp.solve(solver)
 
     # --- Show results --- #
     sol.graphs()

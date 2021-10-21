@@ -85,7 +85,7 @@ def test_add_new_plot():
         n_shooting=20,
         final_time=0.5,
     )
-    solver = Solver.SolverOptionsIpopt()
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(1)
     sol = ocp.solve(solver)
 

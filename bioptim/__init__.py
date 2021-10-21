@@ -46,9 +46,9 @@ ControlType
     Selection of valid controls
 CostType
     Selection of valid penalty type
-SolverOptionsIpopt
+IPOPT
     Selection of IPOPT options
-SolverOptionsAcados
+ACADOS
     Selection of ACADOS options
 
 # --- Managing the dynamics --- #

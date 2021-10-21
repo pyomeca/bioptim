@@ -109,7 +109,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.SolverOptionsIpopt(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # --- Show results --- #
     sol.graphs()

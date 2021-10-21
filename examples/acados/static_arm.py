@@ -87,7 +87,7 @@ def main():
     # --- Solve the program using ACADOS --- #
     ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
 
-    solver_acados = Solver.SolverOptionsAcados()
+    solver_acados = Solver.ACADOS()
     solver_acados.set_convergence_tolerance(1e-3)
 
     sol_acados = ocp_acados.solve(solver=solver_acados)
@@ -103,7 +103,7 @@ def main():
         n_threads=6,
     )
 
-    solver_ipopt = Solver.SolverOptionsIpopt()
+    solver_ipopt = Solver.IPOPT()
     solver_ipopt.set_linear_solver("ma57")
     solver_ipopt.set_dual_inf_tol(1e-3)
     solver_ipopt.set_constraint_tolerance(1e-3)

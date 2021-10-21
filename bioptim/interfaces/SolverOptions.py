@@ -6,7 +6,7 @@ from ..misc.enums import SolverType
 
 class Solver:
     @dataclass
-    class SolverOptions(ABC):
+    class Generic(ABC):
         """
         Abstract class for Solver Options
 
@@ -76,7 +76,7 @@ class Solver:
             """
 
     @dataclass
-    class SolverOptionsIpopt(SolverOptions):
+    class IPOPT(Generic):
         """
         Class for Solver Options of IPOPT
 
@@ -84,7 +84,7 @@ class Solver:
         ----------
         show_online_optim: bool
             If the plot should be shown while optimizing. It will slow down the optimization a bit
-        solver_options: SolverOptions
+        solver_options: Generic
             Any options to change the behavior of the solver. To know which options are available, you can refer to the
             manual of the corresponding solver
         show_options: dict
@@ -375,7 +375,7 @@ class Solver:
             return {**options, **solver.options_common}
 
     @dataclass
-    class SolverOptionsAcados(SolverOptions):
+    class ACADOS(Generic):
         """
         Class for Solver Options of ACADOS
 

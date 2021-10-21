@@ -43,7 +43,7 @@ def test_acados_no_obj(cost_type):
         n_shooting=10,
         tf=2,
     )
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_cost_type(cost_type)
     sol = ocp.solve(solver=solver)
 
@@ -68,7 +68,7 @@ def test_acados_one_mayer(cost_type):
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=np.array([[1.0]]).T)
     ocp.update_objectives(objective_functions)
 
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_cost_type(cost_type)
     sol = ocp.solve(solver=solver)
 
@@ -98,7 +98,7 @@ def test_acados_several_mayer(cost_type):
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[2], target=np.array([[3.0]]))
     ocp.update_objectives(objective_functions)
 
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_cost_type(cost_type)
     sol = ocp.solve(solver=solver)
 
@@ -140,7 +140,7 @@ def test_acados_one_lagrange(cost_type):
     )
     ocp.update_objectives(objective_functions)
 
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_cost_type(cost_type)
     sol = ocp.solve(solver=solver)
 
@@ -183,7 +183,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     )
     ocp.update_objectives(objective_functions)
 
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_cost_type(cost_type)
     sol = ocp.solve(solver=solver)
 
@@ -217,7 +217,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     )
     ocp.update_objectives(objective_functions)
 
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_cost_type(cost_type)
     sol = ocp.solve(solver=solver)
 
@@ -246,7 +246,7 @@ def test_acados_options(cost_type):
     tols = [1e-1, 1e1]
     iter = []
     for tol in tols:
-        solver = Solver.SolverOptionsAcados()
+        solver = Solver.ACADOS()
         solver.set_cost_type(cost_type)
         solver.set_nlp_solver_tol_stat(tol)
         sol = ocp.solve(solver=solver)
@@ -273,7 +273,7 @@ def test_acados_fail_external():
         n_shooting=2,
     )
 
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_cost_type("EXTERNAL")
 
     with pytest.raises(RuntimeError, match="EXTERNAL is not interfaced yet, please use NONLINEAR_LS"):
@@ -293,7 +293,7 @@ def test_acados_fail_lls():
         use_sx=True,
     )
 
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_cost_type("LINEAR_LS")
 
     with pytest.raises(
@@ -318,7 +318,7 @@ def test_acados_custom_dynamics(problem_type_custom):
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
     ocp.update_constraints(constraints)
-    sol = ocp.solve(solver=Solver.SolverOptionsAcados())
+    sol = ocp.solve(solver=Solver.ACADOS())
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -370,7 +370,7 @@ def test_acados_one_parameter():
     u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
     ocp.update_bounds(x_bounds, u_bounds)
 
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_nlp_solver_tol_eq(1e-3)
     sol = ocp.solve(solver=solver)
 
@@ -431,7 +431,7 @@ def test_acados_several_parameter():
     u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
     ocp.update_bounds(x_bounds, u_bounds)
 
-    solver = Solver.SolverOptionsAcados()
+    solver = Solver.ACADOS()
     solver.set_nlp_solver_tol_eq(1e-3)
     sol = ocp.solve(solver=solver)
 
@@ -491,7 +491,7 @@ def test_acados_one_end_constraints():
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
     ocp.update_constraints(constraints)
 
-    sol = ocp.solve(solver=Solver.SolverOptionsAcados())
+    sol = ocp.solve(solver=Solver.ACADOS())
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -525,7 +525,7 @@ def test_acados_constraints_all():
     )
     ocp.update_constraints(constraints)
 
-    sol = ocp.solve(solver=Solver.SolverOptionsAcados())
+    sol = ocp.solve(solver=Solver.ACADOS())
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -564,7 +564,7 @@ def test_acados_constraints_end_all():
     )
     ocp.update_constraints(constraints)
 
-    sol = ocp.solve(solver=Solver.SolverOptionsAcados())
+    sol = ocp.solve(solver=Solver.ACADOS())
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -624,4 +624,4 @@ def test_acados_bounds_not_implemented(failing):
         NotImplementedError,
         match=f"ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT for the {failing}",
     ):
-        mhe.solve(update_functions, Solver.SolverOptionsAcados())
+        mhe.solve(update_functions, Solver.ACADOS())

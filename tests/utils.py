@@ -87,7 +87,7 @@ class TestUtils:
     def assert_warm_start(ocp, sol, state_decimal=2, control_decimal=2, param_decimal=2):
         ocp.set_warm_start(sol)
 
-        solver = Solver.SolverOptionsIpopt()
+        solver = Solver.IPOPT()
         solver.set_maximum_iterations(0)
         solver.set_initialization_options(1e-10)
 
