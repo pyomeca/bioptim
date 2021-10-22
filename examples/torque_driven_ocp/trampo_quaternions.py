@@ -7,6 +7,7 @@ It is designed to show how to use a model that has quaternions in their degrees 
 
 import numpy as np
 import biorbd_casadi as biorbd
+from casadi import MX, Function
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -36,21 +37,9 @@ def eul2quat(eul: np.ndarray) -> np.ndarray:
     -------
     The quaternion associated to the Euler angles in the format [W, X, Y, Z]
     """
-
-    ph = eul[0]
-    th = eul[1]
-    ps = eul[2]
-    cph = np.cos(ph * 0.5)
-    sph = np.sin(ph * 0.5)
-    cth = np.cos(th * 0.5)
-    sth = np.sin(th * 0.5)
-    cps = np.cos(ps * 0.5)
-    sps = np.sin(ps * 0.5)
-    w = -sph * sth * sps + cph * cth * cps
-    x = sph * cth * cps + cph * sth * sps
-    y = cph * sth * cps - sph * cth * sps
-    z = sph * sth * cps + cph * cth * sps
-    return np.array([w, x, y, z])
+    eul_sym = MX.sym('eul', 3)
+    Quat = Function('Quaternion_fromEulerAngles', [eul_sym], [biorbd.Quaternion_fromXYZAngles(eul_sym).to_mx()])(eul)
+    return Quat
 
 
 def prepare_ocp(
