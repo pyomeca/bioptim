@@ -167,7 +167,7 @@ def test_effort_fatigable_muscles():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 15.670921245579846)
+    np.testing.assert_almost_equal(f[0, 0], 13.407276567592714)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -185,26 +185,26 @@ def test_effort_fatigable_muscles():
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-3.88775204, 3.6333437)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((6.01095651, -5.75458521)))
 
     # fatigue parameters
     np.testing.assert_almost_equal(mf[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(
         mf[:, -1],
-        np.array((0, 3.59773278e-04, 3.59740895e-04, 0, 0, 0)),
+        np.array((0, 3.59870425e-03, 3.59870425e-03, 0, 0, 3.59870425e-03)),
     )
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((1.00151725, 0.75680955)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.5258675, -0.65113292)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.92759495,  0.79642827)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0.8945831 , -0.20409685)))
 
     np.testing.assert_almost_equal(
         muscles[:, 0],
-        np.array((-3.28714919e-09, 3.22449026e-01, 2.29706846e-01, 2.48558352e-08, 2.48558352e-08, 1.68035357e-01)),
+        np.array((1.65595235e-01, 1.42533251e-01, 1.29634429e-01, 1.96833601e-08, 1.96833601e-08, 1.72371249e-01)),
     )
     np.testing.assert_almost_equal(
         muscles[:, -2],
-        np.array((3.86483779e-02, 1.10050544e-09, 2.74222976e-09, 4.25097691e-02, 4.25097691e-02, 6.56233979e-09)),
+        np.array((1.12882206e-09, 5.95811351e-02, 5.90055373e-08, 2.48256830e-03, 2.48256830e-03, 6.98781453e-08)),
     )
 
     # save and load
