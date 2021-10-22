@@ -191,7 +191,7 @@ def test_effort_fatigable_muscles():
     np.testing.assert_almost_equal(mf[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(
         mf[:, -1],
-        np.array((0, 3.59773278e-03,  3.59740895e-03, 0, 0, 0)),
+        np.array((0, 3.59773278e-03, 3.59740895e-03, 0, 0, 0)),
     )
 
     # initial and final controls
