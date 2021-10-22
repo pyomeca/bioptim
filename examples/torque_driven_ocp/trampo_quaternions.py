@@ -37,8 +37,8 @@ def eul2quat(eul: np.ndarray) -> np.ndarray:
     -------
     The quaternion associated to the Euler angles in the format [W, X, Y, Z]
     """
-    eul_sym = MX.sym('eul', 3)
-    Quat = Function('Quaternion_fromEulerAngles', [eul_sym], [biorbd.Quaternion_fromXYZAngles(eul_sym).to_mx()])(eul)
+    eul_sym = MX.sym("eul", 3)
+    Quat = Function("Quaternion_fromEulerAngles", [eul_sym], [biorbd.Quaternion_fromXYZAngles(eul_sym).to_mx()])(eul)
     return Quat
 
 
@@ -103,8 +103,8 @@ def prepare_ocp(
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:biorbd_model.nbQ(), 0] = x[:biorbd_model.nbQ(), 0]
-    x_bounds[0].max[:biorbd_model.nbQ(), 0] = x[:biorbd_model.nbQ(), 0]
+    x_bounds[0].min[: biorbd_model.nbQ(), 0] = x[: biorbd_model.nbQ(), 0]
+    x_bounds[0].max[: biorbd_model.nbQ(), 0] = x[: biorbd_model.nbQ(), 0]
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * n_tau)
@@ -128,11 +128,7 @@ def main():
     Prepares and solves an ocp that has quaternion in it. Animates the results
     """
 
-    ocp = prepare_ocp(
-        "models/TruncAnd2Arm_Quaternion.bioMod",
-        n_shooting=5,
-        final_time=0.25,
-    )
+    ocp = prepare_ocp("models/TruncAnd2Arm_Quaternion.bioMod", n_shooting=5, final_time=0.25,)
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # Print the last solution

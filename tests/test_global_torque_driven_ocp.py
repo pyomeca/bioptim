@@ -304,7 +304,9 @@ def test_trampo_quaternions():
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 1.]))
+    np.testing.assert_almost_equal(
+        q[:, 0], np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0])
+    )
     np.testing.assert_almost_equal(
         q[:, -1],
         np.array(
@@ -322,7 +324,7 @@ def test_trampo_quaternions():
                 0.62348603,
                 0.38590688,
                 0.63453499,
-                0.64012494
+                0.64012494,
             ]
         ),
     )
@@ -343,7 +345,7 @@ def test_trampo_quaternions():
                 4.88561749,
                 4.18495164,
                 5.12235989,
-                1.65628252
+                1.65628252,
             ]
         ),
     )
@@ -362,7 +364,7 @@ def test_trampo_quaternions():
                 0.97705102,
                 -0.0532827,
                 7.28333747,
-                2.68097813
+                2.68097813,
             ]
         ),
     )
