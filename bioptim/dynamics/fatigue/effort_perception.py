@@ -25,6 +25,7 @@ class EffortPerception(MuscleFatigue):
         super(EffortPerception, self).__init__(scaling=scaling)
         self.effort_threshold = effort_threshold
         self.effort_factor = effort_factor
+        self.abs_scaling = self.scaling if self.scaling >= 0 else -self.scaling
 
     @staticmethod
     def suffix(variable_type: VariableType) -> tuple:
@@ -44,12 +45,12 @@ class EffortPerception(MuscleFatigue):
         return (0,)
 
     def default_bounds(self, variable_type: VariableType) -> tuple:
-        return (0,), (self.scaling,)
+        return (0,), (1,)
 
     def apply_dynamics(self, target_load, *states):
         effort = states[0]
         delta_load = target_load - self.effort_threshold
-        mf_long_dot = self.effort_factor * if_else(gt(delta_load, 0), self.scaling - effort, -effort)
+        mf_long_dot = self.effort_factor * if_else(gt(delta_load, 0), self.abs_scaling - effort, -effort)
         return mf_long_dot
 
     @staticmethod
