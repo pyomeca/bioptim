@@ -75,10 +75,6 @@ def prepare_ocp(
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
-    # Path constraint
-    x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()  # biorbd_model.nbGeneralizedTorque()
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -97,12 +93,18 @@ def prepare_ocp(
     for i in range(2):
         Arm_Quat_D = eul2quat(Arm_init_D[:, i])
         Arm_Quat_G = eul2quat(Arm_init_G[:, i])
-        x[6:9, i] = Arm_Quat_D[1:]
+        x[6:9, i] = np.reshape(Arm_Quat_D[1:], 3)
         x[12, i] = Arm_Quat_D[0]
-        x[9:12, i] = Arm_Quat_G[1:]
+        x[9:12, i] = np.reshape(Arm_Quat_G[1:], 3)
         x[13, i] = Arm_Quat_G[0]
     x_init = InitialGuessList()
     x_init.add(x, interpolation=InterpolationType.LINEAR)
+
+    # Path constraint
+    x_bounds = BoundsList()
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds[0].min[:biorbd_model.nbQ(), 0] = x[:biorbd_model.nbQ(), 0]
+    x_bounds[0].max[:biorbd_model.nbQ(), 0] = x[:biorbd_model.nbQ(), 0]
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * n_tau)
