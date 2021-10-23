@@ -10,7 +10,7 @@ class EffortPerception(MuscleFatigue):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, effort_threshold: float, effort_factor: float, **kwargs):
+    def __init__(self, effort_threshold: float, effort_factor: float, scaling=10):
         """
         Parameters
         ----------
@@ -19,12 +19,13 @@ class EffortPerception(MuscleFatigue):
         effort_factor: float
             Effort perception build up rate
         scaling: float
-            The scaling factor to convert so input / scale => TL
+            The scaling factor to the max value
         """
 
-        super(EffortPerception, self).__init__(**kwargs)
+        super(EffortPerception, self).__init__(scaling=scaling)
         self.effort_threshold = effort_threshold
         self.effort_factor = effort_factor
+        self.abs_scaling = self.scaling if self.scaling >= 0 else -self.scaling
 
     @staticmethod
     def suffix(variable_type: VariableType) -> tuple:
@@ -49,7 +50,7 @@ class EffortPerception(MuscleFatigue):
     def apply_dynamics(self, target_load, *states):
         effort = states[0]
         delta_load = target_load - self.effort_threshold
-        mf_long_dot = self.effort_factor * if_else(gt(delta_load, 0), 1 - effort, -effort)
+        mf_long_dot = self.effort_factor * if_else(gt(delta_load, 0), self.abs_scaling - effort, -effort)
         return mf_long_dot
 
     @staticmethod
