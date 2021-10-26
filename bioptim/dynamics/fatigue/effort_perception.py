@@ -55,7 +55,7 @@ class EffortPerception(MuscleFatigue):
         delta_load = (abs_target_load - self.abs_effort_factor) * if_else(
             abs_target_load > self.abs_effort_factor,
             1 / (self.abs_scaling - self.abs_effort_factor),
-            1 / self.abs_effort_factor
+            1 / self.abs_effort_factor,
         )
         mf_long_dot = self.effort_factor * if_else(delta_load > 0, 1 - effort, effort) * delta_load
         return mf_long_dot
