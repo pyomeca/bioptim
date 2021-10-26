@@ -49,8 +49,12 @@ class EffortPerception(MuscleFatigue):
 
     def apply_dynamics(self, target_load, *states):
         effort = states[0]
-        delta_load = target_load - self.effort_threshold
-        mf_long_dot = self.effort_factor * if_else(gt(delta_load, 0), self.abs_scaling - effort, -effort)
+        delta_load = (target_load - self.effort_threshold) * if_else(
+            gt(target_load - self.effort_threshold, 0),
+            1 / (self.abs_scaling - self.effort_threshold),
+            1 / self.effort_threshold
+        )
+        mf_long_dot = self.effort_factor * if_else(gt(delta_load, 0), 1 - effort, effort) * delta_load
         return mf_long_dot
 
     @staticmethod

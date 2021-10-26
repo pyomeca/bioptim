@@ -167,7 +167,7 @@ def test_effort_fatigable_muscles():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 15.68419188108197)
+    np.testing.assert_almost_equal(f[0, 0], 15.6707872174798)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -191,20 +191,20 @@ def test_effort_fatigable_muscles():
     np.testing.assert_almost_equal(mf[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(
         mf[:, -1],
-        np.array((0, 3.59773278e-03, 3.59740895e-03, 0, 0, 0)),
+        np.array((0, 5.20374400e-06,  3.66692929e-06, 0, 0, 0)),
     )
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((1.00151702, 0.75680978)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.52586753, -0.65113297)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((1.00151658, 0.75680837)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0.52586746, -0.65113291)))
 
     np.testing.assert_almost_equal(
         muscles[:, 0],
-        np.array((-3.28714919e-09, 3.22449026e-01, 2.29706846e-01, 2.48558352e-08, 2.48558352e-08, 1.68035357e-01)),
+        np.array((0, 3.22448960e-01,  2.29707272e-01,  2.48558904e-08, 2.48558904e-08,  1.68035094e-01)),
     )
     np.testing.assert_almost_equal(
         muscles[:, -2],
-        np.array((3.86483779e-02, 1.10050544e-09, 2.74222976e-09, 4.25097691e-02, 4.25097691e-02, 6.56233979e-09)),
+        np.array((3.86483801e-02, 1.10050570e-09, 2.74223027e-09, 4.25097689e-02, 4.25097689e-02, 6.56234006e-09)),
     )
 
     # save and load
@@ -483,7 +483,7 @@ def test_fatigable_effort_torque_non_split():
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     if platform.system() == "Linux":
-        np.testing.assert_almost_equal(f[0, 0], 124.09811189707075)
+        np.testing.assert_almost_equal(f[0, 0], 681.4936347682992)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -507,10 +507,10 @@ def test_fatigable_effort_torque_non_split():
     np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
 
     if platform.system() == "Linux":
-        np.testing.assert_almost_equal(mf_minus[:, -1], np.array((0, 0)))
-        np.testing.assert_almost_equal(mf_plus[:, -1], np.array((9.99850012e-03, 0)))
-        np.testing.assert_almost_equal(tau[:, 0], np.array((5.85068584, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-12.03087216, 0)))
+        np.testing.assert_almost_equal(mf_minus[:, -1], np.array((1.87657915e-07, 0)))
+        np.testing.assert_almost_equal(mf_plus[:, -1], np.array((4.77189576e-07, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((4.65387489, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-21.75316318, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -537,7 +537,7 @@ def test_fatigable_effort_torque_split():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 946.1348332836792)
+    np.testing.assert_almost_equal(f[0, 0], 946.1348332835429)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -558,11 +558,11 @@ def test_fatigable_effort_torque_split():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((2.99925013e-02, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((2.69183343e-07, 0)))
     np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((9.99850012e-03, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((6.16744176e-07, 0)))
 
-    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-8.39473327e-08, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-8.39473318e-08, 0)))
     np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-25.58603374, 0)))
     np.testing.assert_almost_equal(tau_plus[:, 0], np.array((4.83833953, 0)))
     np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
