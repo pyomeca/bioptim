@@ -163,6 +163,7 @@ class PenaltyOption(OptionGeneric):
         self.dt = 0
         self.weight = weight
         self.function: Union[Function, None] = None
+        self.function_non_threaded: Union[Function, None] = None
         self.weighted_function: Union[Function, None] = None
         self.weighted_function_non_threaded: Union[Function, None] = None
         self.derivative = derivative
