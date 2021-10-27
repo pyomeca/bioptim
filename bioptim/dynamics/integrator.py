@@ -613,3 +613,22 @@ class IRK(COLLOCATION):
             ["x0", "p", "params"],
             ["xf", "xall"],
         )
+
+
+class CVODES(Integrator):
+    """
+    Abstract class for CVODES integrators
+
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
+        super(CVODES, self).__init__(ode, ode_opt)

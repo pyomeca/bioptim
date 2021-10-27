@@ -2,7 +2,7 @@ from typing import Union, Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
-from .integrator import RK4, RK8, IRK, COLLOCATION
+from .integrator import RK4, RK8, IRK, COLLOCATION, CVODES
 from ..misc.enums import ControlType
 
 
@@ -303,6 +303,10 @@ class OdeSolver:
 
         def __init__(self):
             super(OdeSolver.CVODES, self).__init__()
+            self.rk_integrator = CVODES
+            self.is_direct_collocation = False
+            self.is_direct_shooting = True
+            self.steps = 1
 
         def integrator(self, ocp, nlp) -> list:
             """
