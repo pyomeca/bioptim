@@ -1,4 +1,3 @@
-import time
 from typing import Any, Union
 from copy import deepcopy
 
@@ -981,8 +980,8 @@ class Solution:
                     u = self._controls[phase_idx]["all"][:, col_u_idx]
                 target = penalty.target[:, penalty.node_idx.index(idx)] if penalty.target is not None else []
 
-            val.append(penalty.function(x, u, p))
-            val_weighted.append(penalty.weighted_function(x, u, p, penalty.weight, target, dt))
+            val.append(penalty.function_non_threaded(x, u, p))
+            val_weighted.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)

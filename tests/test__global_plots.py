@@ -7,10 +7,10 @@ import os
 import pytest
 
 from casadi import Function, MX
-
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver
+from bioptim.limits.penalty import PenaltyOption
 
 from .utils import TestUtils
 
@@ -135,7 +135,7 @@ def test_console_objective_functions():
     sol.solver_time_to_optimize = 1.2345
     sol.real_time_to_optimize = 5.4321
 
-    def override_penalty(pen):
+    def override_penalty(pen: list[PenaltyOption]):
         for cmp, p in enumerate(pen):
             if p:
                 name = p.name.replace("->", "_").replace(" ", "_")
@@ -147,9 +147,11 @@ def test_console_objective_functions():
                 dt = MX.sym("dt", *p.weighted_function.sparsity_in("i5").shape)
 
                 p.function = Function(name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T])
+                p.function_non_threaded = p.function
                 p.weighted_function = Function(
                     name, [x, u, param, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
                 )
+                p.weighted_function_non_threaded = p.weighted_function
 
     override_penalty(ocp.g_internal)  # Override constraints in the ocp
     override_penalty(ocp.g)  # Override constraints in the ocp

@@ -163,6 +163,7 @@ class PenaltyOption(OptionGeneric):
         self.dt = 0
         self.weight = weight
         self.function: Union[Function, None] = None
+        self.function_non_threaded: Union[Function, None] = None
         self.weighted_function: Union[Function, None] = None
         self.weighted_function_non_threaded: Union[Function, None] = None
         self.derivative = derivative
@@ -316,6 +317,8 @@ class PenaltyOption(OptionGeneric):
         self.function = biorbd.to_casadi_func(
             name, fcn[self.rows, self.cols], state_cx, control_cx, param_cx, expand=self.expand
         )
+        self.function_non_threaded = self.function
+
         if self.derivative:
             state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
             control_cx = horzcat(all_pn.nlp.controls.cx_end, all_pn.nlp.controls.cx)
