@@ -14,14 +14,18 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.CVODES, OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize(
+    "ode_solver", [OdeSolver.CVODES, OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION]
+)
 def test_pendulum(ode_solver, use_sx, n_threads):
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     ode_solver = ode_solver()
 
     if isinstance(ode_solver, (OdeSolver.IRK, OdeSolver.CVODES)) and use_sx:
-        with pytest.raises(RuntimeError, match=f"use_sx=True and OdeSolver.{ode_solver.rk_integrator.__name__} are not yet compatible"):
+        with pytest.raises(
+            RuntimeError, match=f"use_sx=True and OdeSolver.{ode_solver.rk_integrator.__name__} are not yet compatible"
+        ):
             pendulum.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
                 final_time=2,
