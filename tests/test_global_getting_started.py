@@ -116,7 +116,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
 
     if isinstance(ode_solver, OdeSolver.IRK):
         if use_sx:
-            with pytest.raises(NotImplementedError, match="use_sx=True and OdeSolver.IRK are not yet compatible"):
+            with pytest.raises(RuntimeError, match="use_sx=True and OdeSolver.IRK are not yet compatible"):
                 pendulum.prepare_ocp(
                     biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
                     final_time=1,
