@@ -617,7 +617,7 @@ class IRK(COLLOCATION):
 
 class CVODES(Integrator):
     """
-    Abstract class for CVODES integrators
+    Class for CVODES integrators
 
     """
 

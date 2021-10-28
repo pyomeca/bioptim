@@ -14,9 +14,14 @@ class OdeSolverBase:
     ----------
     steps: int
         The number of integration steps
+    steps_scipy: int
+        Number of steps while integrating with scipy
     rk_integrator: Union[RK4, RK8, IRK]
         The corresponding integrator class
-
+    is_direct_collocation: bool
+        indicating if the ode solver is direct collocation method
+    is_direct_shooting: bool
+        indicating if the ode solver is direct shooting method
     Methods
     -------
     integrator(self, ocp, nlp) -> list
@@ -27,7 +32,7 @@ class OdeSolverBase:
 
     def __init__(self):
         self.steps = 1
-        self.steps_scipy = 5  # Number of steps while integrating with scipy
+        self.steps_scipy = 5
         self.rk_integrator = None
         self.is_direct_collocation = False
         self.is_direct_shooting = False
@@ -292,7 +297,7 @@ class OdeSolver:
             """
 
             if ocp.cx is SX:
-                raise NotImplementedError("use_sx=True and OdeSolver.IRK are not yet compatible")
+                raise RuntimeError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
             return super(OdeSolver.IRK, self).integrator(ocp, nlp)
 
@@ -324,7 +329,7 @@ class OdeSolver:
             A list of integrators
             """
             if not isinstance(ocp.cx(), MX):
-                raise RuntimeError("CVODES integrator can only be used with MX graphs")
+                raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
             if ocp.v.parameters_in_list.shape != 0:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
             if nlp.external_forces:
