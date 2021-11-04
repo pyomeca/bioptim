@@ -11,11 +11,27 @@ from functools import lru_cache
 from collections import OrderedDict
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+try:
+    import acados
+
+    is_acados = True
+except ModuleNotFoundError:
+    is_acados = False
+
 
 # Avoid clash with module name
 examples_ = OrderedDict(
     [
         ("acados", OrderedDict([("Static arm", "static_arm.py"), ("Cube", "cube.py"), ("Pendulum", "pendulum.py")])),
+        (
+            "fatigue",
+            OrderedDict(
+                [
+                    ("Pendulum with fatigue", "pendulum_with_fatigue.py"),
+                    ("Static arm with fatigue", "static_arm_with_fatigue.py"),
+                ]
+            ),
+        ),
         (
             "getting_started",
             OrderedDict(
@@ -180,6 +196,7 @@ class Ui_Form(object):
         self.exampleFilter.setPlaceholderText(_translate("Form", "Type to filter..."))
         self.searchFiles.setItemText(0, _translate("Form", "Title Search"))
         self.searchFiles.setItemText(1, _translate("Form", "Content Search"))
+
 
 path = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, path)
@@ -615,19 +632,22 @@ class ExampleLoader(QtWidgets.QMainWindow):
 
     def populateTree(self, root, examples, root_dir=None):
         for key, val in examples.items():
-            item = QtWidgets.QTreeWidgetItem([key.replace("_", " ").capitalize()])
-            if isinstance(val, OrderedDict):
-                bold_font = item.font(0)
-                bold_font.setBold(True)
-                item.setFont(0, bold_font)
-            self.itemCache.append(item)
-            if root_dir:
-                val = root_dir + "/" + val
-            if isinstance(val, OrderedDict):
-                self.populateTree(item, val, root_dir=key)
+            if not is_acados and key == "acados":
+                pass
             else:
-                item.file = val
-            root.addChild(item)
+                item = QtWidgets.QTreeWidgetItem([key.replace("_", " ").capitalize()])
+                if isinstance(val, OrderedDict):
+                    bold_font = item.font(0)
+                    bold_font.setBold(True)
+                    item.setFont(0, bold_font)
+                self.itemCache.append(item)
+                if root_dir:
+                    val = root_dir + "/" + val
+                if isinstance(val, OrderedDict):
+                    self.populateTree(item, val, root_dir=key)
+                else:
+                    item.file = val
+                root.addChild(item)
 
     def currentFile(self):
         item = self.ui.exampleTree.currentItem()
@@ -636,7 +656,6 @@ class ExampleLoader(QtWidgets.QMainWindow):
         return None
 
     def loadFile(self, edited=False):
-
         # Change current directory to executable directory
         main_dir = os.getcwd()
         executable_dir = os.path.dirname(self.currentFile())
