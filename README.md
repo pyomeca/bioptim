@@ -149,6 +149,7 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [graphviz](https://graphviz.org/)
 - [`Ipopt`](https://github.com/coin-or/Ipopt)
 - [`Acados`](https://github.com/acados/acados)
+- [pyqtgraph](https://www.pyqtgraph.org/)
 
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
@@ -1399,6 +1400,13 @@ In this section, you will find the description of all the examples implemented w
 separate files. Each subsection corresponds to the different files, dealing with different examples and topics.
 Please note that the examples from the paper (see [Citing](#citing)) can be found in this repo
 [https://github.com/s2mLab/BioptimPaperExamples](https://github.com/s2mLab/BioptimPaperExamples).
+
+## Run examples
+Examples can be runs with a PyQt application. You can run the file `__main__.py` in the examples folder or excecute the following command in your environnement.
+```
+python -m bioptim.examples
+```
+Please not that `pyqtgraph` need to be installed if bioptim has not been installed using conda. 
 
 ## Getting started
 In this subsection, all the examples of the getting_started file are described.
