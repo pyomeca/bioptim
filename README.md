@@ -90,6 +90,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [CostType](#enum-costtype)
         
 [Examples](#examples)
+- [Run examples](#run-examples)
 - [Getting started](#getting-started)
 - [Muscle driven OCP](#muscle-driven-ocp)
 - [Muscle driven with contact](#muscle-driven-with-contact)
@@ -1402,11 +1403,12 @@ Please note that the examples from the paper (see [Citing](#citing)) can be foun
 [https://github.com/s2mLab/BioptimPaperExamples](https://github.com/s2mLab/BioptimPaperExamples).
 
 ## Run examples
-Examples can be runs with a PyQt application. You can run the file `__main__.py` in the examples folder or excecute the following command in your environnement.
-```
+An GUI to access the examples can be run to facilitate the testing of bioptim
+You can either run the file `__main__.py` in the `examples` folder or execute the following command.
+```bash
 python -m bioptim.examples
 ```
-Please not that `pyqtgraph` need to be installed if bioptim has not been installed using conda. 
+Please note that `pyqtgraph` must be installed to run this GUI. 
 
 ## Getting started
 In this subsection, all the examples of the getting_started file are described.

@@ -303,8 +303,7 @@ DARK_STYLES = {
 
 
 class PythonHighlighter(QSyntaxHighlighter):
-    """Syntax highlighter for the Python language.
-    """
+    """Syntax highlighter for the Python language."""
 
     # Python keywords
     keywords = keyword.kwlist
@@ -387,8 +386,7 @@ class PythonHighlighter(QSyntaxHighlighter):
         return DARK_STYLES if app.property("darkMode") else LIGHT_STYLES
 
     def highlightBlock(self, text):
-        """Apply syntax highlighting to the given block of text.
-        """
+        """Apply syntax highlighting to the given block of text."""
         # Do other syntax formatting
         rules = self.rules.copy()
         for expression, nth, format in rules:
