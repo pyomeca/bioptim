@@ -368,8 +368,9 @@ class Solver:
         def as_dict(self, solver):
             solver_options = self.__dict__
             options = {}
+            non_python_options = ["_c_compile", "type", "show_online_optim", "show_options"]
             for key in solver_options:
-                if key != "_c_compile" and key != "type" and key != "show_online_optim" and key != "show_options":
+                if key not in non_python_options:
                     ipopt_key = "ipopt." + key[1:]
                     options[ipopt_key] = solver_options[key]
             return {**options, **solver.options_common}
