@@ -147,4 +147,3 @@ def test_mhe_redim_xbounds_not_implemented():
         "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT",
     ):
         mhe.solve(update_functions, Solver.IPOPT())
-

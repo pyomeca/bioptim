@@ -827,4 +827,3 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 
     # simulate
     TestUtils.simulate(sol)
-

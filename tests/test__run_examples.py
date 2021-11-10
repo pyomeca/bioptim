@@ -9,6 +9,6 @@ def test_run_examples():
         return  # AppVeyor cannot work with graphic interface on Linux
 
     from bioptim.examples.__main__ import ExampleLoader
+
     loader = ExampleLoader()
     loader.ui.exampleTree.setCurrentIndex(loader.ui.exampleTree.model().index(0, 0))
-

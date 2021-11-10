@@ -111,4 +111,3 @@ def test_muscle_driven_ocp(ode_solver):
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
-

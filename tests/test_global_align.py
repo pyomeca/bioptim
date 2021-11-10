@@ -102,4 +102,3 @@ def test_track_marker_on_segment(ode_solver):
 
     # simulate
     TestUtils.simulate(sol)
-

@@ -100,4 +100,3 @@ def test_symmetry_by_constraint(ode_solver):
 
     # simulate
     TestUtils.simulate(sol)
-

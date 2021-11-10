@@ -389,4 +389,3 @@ def test_trampo_quaternions():
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
-

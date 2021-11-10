@@ -210,4 +210,3 @@ def test_console_objective_functions():
 
     sys.stdout = sys.__stdout__  # Reset redirect.
     assert captured_output.getvalue() == expected_output
-

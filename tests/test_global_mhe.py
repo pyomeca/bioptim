@@ -81,4 +81,3 @@ def test_multi_cyclic_nmpc():
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.00992505, 4.88488618, 2.4400698)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.00992505, 9.18387711, 5.22418771)), decimal=6)
-

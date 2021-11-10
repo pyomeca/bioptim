@@ -669,4 +669,3 @@ def test_acados_bounds_not_implemented(failing):
         match=f"ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT for the {failing}",
     ):
         mhe.solve(update_functions, Solver.ACADOS())
-

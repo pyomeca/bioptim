@@ -1031,4 +1031,3 @@ def test_mayer_neg_two_objectives():
             u_bounds,
             objective_functions,
         )
-

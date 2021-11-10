@@ -838,4 +838,3 @@ def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_sol
         "integrated and interpolated structure",
     ):
         _ = sol_integrated.controls
-

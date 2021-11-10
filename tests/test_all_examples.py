@@ -394,4 +394,3 @@ def test__track__track_segment_on_rt():
         n_shooting=30,
         final_time=1,
     )
-

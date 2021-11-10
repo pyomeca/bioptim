@@ -32,4 +32,3 @@ def test_custom_constraint_mx_fail():
 
     with pytest.raises(RuntimeError, match="Ipopt doesn't support SX/MX types in constraints bounds"):
         ocp.solve()
-

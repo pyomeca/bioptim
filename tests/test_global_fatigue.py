@@ -582,4 +582,3 @@ def test_fatigable_effort_torque_split():
 
     # simulate
     TestUtils.simulate(sol)
-

@@ -241,4 +241,3 @@ def test_simulate_from_initial_single_shoot():
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.89, 1.8)))
-

@@ -171,4 +171,3 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
-
