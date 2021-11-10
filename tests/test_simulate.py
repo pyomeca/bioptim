@@ -1,20 +1,20 @@
 import warnings
+import os
 from sys import platform
 import pytest
 
 import numpy as np
 from bioptim import Shooting, OdeSolver
 
-from .utils import TestUtils
-
 
 def test_merge_phases_one_phase():
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+    from bioptim.examples.getting_started import pendulum as ocp_module
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
     )
@@ -29,11 +29,12 @@ def test_merge_phases_one_phase():
 
 def test_merge_phases_multi_phase():
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
     )
 
     sol = ocp.solve()
@@ -54,12 +55,14 @@ def test_merge_phases_multi_phase():
 
 def test_interpolate():
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     n_shooting = 10
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=n_shooting,
     )
@@ -94,12 +97,11 @@ def test_interpolate():
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 def test_interpolate_multiphases(ode_solver):
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod", ode_solver=ode_solver()
-    )
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver())
 
     sol = ocp.solve()
     n_frames = 100
@@ -135,11 +137,12 @@ def test_interpolate_multiphases(ode_solver):
 
 def test_interpolate_multiphases_merge_phase():
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
     )
 
     sol = ocp.solve()
@@ -167,12 +170,14 @@ def test_interpolate_multiphases_merge_phase():
 @pytest.mark.parametrize("use_scipy", [True, False])
 def test_integrate(use_scipy, ode_solver):
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     n_shooting = 80
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
@@ -221,12 +226,14 @@ def test_integrate(use_scipy, ode_solver):
 @pytest.mark.parametrize("keep_intermediate_points", [False, True])
 def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     n_shooting = 10
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
@@ -274,12 +281,14 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
         return
 
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     n_shooting = 10
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
@@ -430,12 +439,14 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
 @pytest.mark.parametrize("use_scipy", [False, True])
 def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     n_shooting = 10
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
@@ -507,12 +518,11 @@ def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
 @pytest.mark.parametrize("use_scipy", [False, True])
 def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode_solver):
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod", ode_solver=ode_solver()
-    )
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver())
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
@@ -596,11 +606,12 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode
 @pytest.mark.parametrize("use_scipy", [False, True])
 def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_scipy, ode_solver):
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver(),
     )
 
@@ -690,12 +701,11 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_sci
 @pytest.mark.parametrize("use_scipy", [False, True])
 def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod", ode_solver=ode_solver()
-    )
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver())
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
@@ -761,12 +771,11 @@ def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
 @pytest.mark.parametrize("use_scipy", [False, True])
 def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_solver):
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod", ode_solver=ode_solver()
-    )
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver())
 
     sol = ocp.solve()
 

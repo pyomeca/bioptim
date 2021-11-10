@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+import os
 import pickle
 from pickle import PicklingError
 import re
@@ -18,16 +19,18 @@ from .utils import TestUtils
     "ode_solver", [OdeSolver.CVODES, OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION]
 )
 def test_pendulum(ode_solver, use_sx, n_threads):
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
     if isinstance(ode_solver, (OdeSolver.IRK, OdeSolver.CVODES)) and use_sx:
         with pytest.raises(
             RuntimeError, match=f"use_sx=True and OdeSolver.{ode_solver.rk_integrator.__name__} are not yet compatible"
         ):
-            pendulum.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
                 final_time=2,
                 n_shooting=10,
                 n_threads=n_threads,
@@ -36,8 +39,8 @@ def test_pendulum(ode_solver, use_sx, n_threads):
             )
         return
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=30,
         n_threads=n_threads,
@@ -110,15 +113,17 @@ def test_pendulum(ode_solver, use_sx, n_threads):
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
+    from bioptim.examples.getting_started import example_save_and_load as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
     if isinstance(ode_solver, OdeSolver.IRK):
         if use_sx:
             with pytest.raises(RuntimeError, match="use_sx=True and OdeSolver.IRK are not yet compatible"):
-                pendulum.prepare_ocp(
-                    biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+                ocp_module.prepare_ocp(
+                    biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
                     final_time=1,
                     n_shooting=30,
                     n_threads=n_threads,
@@ -126,8 +131,8 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
                     ode_solver=ode_solver,
                 )
         else:
-            ocp = pendulum.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+            ocp = ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
                 final_time=1,
                 n_shooting=30,
                 n_threads=n_threads,
@@ -162,8 +167,8 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             # simulate
             TestUtils.simulate(sol)
     else:
-        ocp = pendulum.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
             final_time=1,
             n_shooting=30,
             n_threads=n_threads,
@@ -222,13 +227,13 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_custom_constraint_track_markers(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    custom_constraint = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_constraint.py")
+    from bioptim.examples.getting_started import custom_constraint as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = custom_constraint.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod", ode_solver=ode_solver
-    )
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check constraints
@@ -268,13 +273,15 @@ def test_custom_constraint_track_markers(ode_solver):
 @pytest.mark.parametrize("interpolation", InterpolationType)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_initial_guesses(interpolation, ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    initial_guess = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_initial_guess.py")
+    from bioptim.examples.getting_started import custom_initial_guess as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
     np.random.seed(42)
-    ocp = initial_guess.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         final_time=1,
         n_shooting=5,
         initial_guess=interpolation,
@@ -318,13 +325,15 @@ def test_initial_guesses(interpolation, ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_cyclic_objective(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    cyclic_movement = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_cyclic_movement.py")
+    from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
     np.random.seed(42)
-    ocp = cyclic_movement.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         final_time=1,
         n_shooting=10,
         loop_from_constraint=False,
@@ -364,13 +373,15 @@ def test_cyclic_objective(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_cyclic_constraint(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    cyclic_movement = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_cyclic_movement.py")
+    from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
     np.random.seed(42)
-    ocp = cyclic_movement.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         final_time=1,
         n_shooting=10,
         loop_from_constraint=True,
@@ -410,13 +421,13 @@ def test_cyclic_constraint(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_phase_transitions(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    phase_transition = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_phase_transitions.py")
+    from bioptim.examples.getting_started import custom_phase_transitions as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = phase_transition.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod", ode_solver=ode_solver
-    )
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check objective function value
@@ -450,8 +461,7 @@ def test_phase_transitions(ode_solver):
     np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0.11614402, 8.70686126, 1.05599166)))
 
     # save and load
-    with pytest.raises(PicklingError, match="import of module 'custom_phase_transitions' failed"):
-        TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
     with pytest.raises(
@@ -467,12 +477,14 @@ def test_phase_transitions(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_parameter_optimization(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    parameter = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
+    from bioptim.examples.getting_started import custom_parameters as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = parameter.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=80,
         optim_gravity=True,
@@ -542,8 +554,7 @@ def test_parameter_optimization(ode_solver):
         np.testing.assert_almost_equal(gravity, np.array([[0, 0.05059018, -9.8065527]]).T)
 
     # save and load
-    with pytest.raises(PicklingError, match="import of module 'custom_parameters' failed"):
-        TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
     TestUtils.simulate(sol)
@@ -555,12 +566,14 @@ def test_parameter_optimization(ode_solver):
 @pytest.mark.parametrize("problem_type_custom", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_dynamics.py")
+    from bioptim.examples.getting_started import custom_dynamics as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=ode_solver,
     )
@@ -594,12 +607,14 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_example_external_forces(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    external_forces = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_external_forces.py")
+    from bioptim.examples.getting_started import example_external_forces as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = external_forces.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube_with_forces.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -651,12 +666,11 @@ def test_example_external_forces(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_example_multiphase(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    multiphase = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    ocp = multiphase.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod", ode_solver=ode_solver()
-    )
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver())
     sol = ocp.solve()
 
     # Check objective function value
@@ -701,8 +715,7 @@ def test_example_multiphase(ode_solver):
     np.testing.assert_almost_equal(controls[2]["tau"][:, -2], np.array((-0.36233407, 9.81, -0.58394606)))
 
     # save and load
-    with pytest.raises(pickle.PickleError):
-        TestUtils.save_and_load(sol, ocp, False)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -716,13 +729,15 @@ def test_example_multiphase(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_contact_forces_inequality_greater_than_constraint(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    contact = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_inequality_constraint.py")
+    from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     min_bound = 50
     ode_solver = ode_solver()
 
-    ocp = contact.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.1,
         n_shooting=10,
         min_bound=min_bound,
@@ -765,13 +780,15 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    contact = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_inequality_constraint.py")
+    from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     max_bound = 75
     ode_solver = ode_solver()
 
-    ocp = contact.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.1,
         n_shooting=10,
         min_bound=-np.inf,

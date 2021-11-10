@@ -2,6 +2,8 @@
 Test for file IO
 """
 import pytest
+import os
+
 import numpy as np
 from bioptim import OdeSolver
 
@@ -10,12 +12,15 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_segment_on_rt(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    track = TestUtils.load_module(bioptim_folder + "/examples/track/track_segment_on_rt.py")
+
+    from bioptim.examples.track import track_segment_on_rt as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/track/models/cube_and_line.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
         ode_solver=ode_solver,
@@ -54,12 +59,14 @@ def test_track_segment_on_rt(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_marker_on_segment(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
+    from bioptim.examples.track import track_marker_on_segment as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/track/models/cube_and_line.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
         initialize_near_solution=True,

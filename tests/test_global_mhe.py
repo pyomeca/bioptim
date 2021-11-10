@@ -1,23 +1,24 @@
 """
 Test for file IO
 """
+import os
+
 import numpy as np
 from bioptim import Solver
-
-from .utils import TestUtils
 
 
 def test_cyclic_nmpc():
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles  # True if there are still some cycle to perform
 
-    bioptim_folder = TestUtils.bioptim_folder()
-    nmpc_module = TestUtils.load_module(bioptim_folder + "/examples/moving_horizon_estimation/cyclic_nmpc.py")
+    from bioptim.examples.moving_horizon_estimation import cyclic_nmpc as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     n_cycles = 3
     cycle_len = 20
-    nmpc = nmpc_module.prepare_nmpc(
-        model_path=bioptim_folder + "/examples/moving_horizon_estimation/models/arm2.bioMod",
+    nmpc = ocp_module.prepare_nmpc(
+        model_path=bioptim_folder + "/models/arm2.bioMod",
         cycle_len=cycle_len,
         cycle_duration=1,
         max_torque=50,
@@ -46,15 +47,16 @@ def test_multi_cyclic_nmpc():
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
-    bioptim_folder = TestUtils.bioptim_folder()
-    nmpc_module = TestUtils.load_module(bioptim_folder + "/examples/moving_horizon_estimation/multi_cyclic_nmpc.py")
+    from bioptim.examples.moving_horizon_estimation import multi_cyclic_nmpc as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     n_cycles_simultaneous = 2
     n_cycles_to_advance = 1
     n_cycles_total = 3
     cycle_len = 20
-    nmpc = nmpc_module.prepare_nmpc(
-        model_path=bioptim_folder + "/examples/moving_horizon_estimation/models/arm2.bioMod",
+    nmpc = ocp_module.prepare_nmpc(
+        model_path=bioptim_folder + "/models/arm2.bioMod",
         cycle_len=cycle_len,
         cycle_duration=1,
         n_cycles_simultaneous=n_cycles_simultaneous,

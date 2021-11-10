@@ -1,7 +1,9 @@
 """
 Test for file IO
 """
+import os
 import pytest
+
 import numpy as np
 from bioptim import OdeSolver
 
@@ -10,11 +12,12 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_muscle_driven_ocp(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    static_arm = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/static_arm.py")
+    from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
 
-    ocp = static_arm.prepare_ocp(
-        bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        bioptim_folder + "/models/arm26.bioMod",
         final_time=0.1,
         n_shooting=5,
         weight=1,

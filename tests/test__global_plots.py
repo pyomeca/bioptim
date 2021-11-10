@@ -12,8 +12,6 @@ import biorbd_casadi as biorbd
 from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver
 from bioptim.limits.penalty import PenaltyOption
 
-from .utils import TestUtils
-
 import matplotlib
 
 matplotlib.use("Agg")
@@ -21,11 +19,12 @@ matplotlib.use("Agg")
 
 def test_plot_graphs_one_phase():
     # Load graphs_one_phase
-    bioptim_folder = TestUtils.bioptim_folder()
-    graph = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py")
+    from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
-    ocp = graph.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
     )
@@ -36,21 +35,22 @@ def test_plot_graphs_one_phase():
 
 def test_plot_merged_graphs():
     # Load graphs_one_phase
-    bioptim_folder = TestUtils.bioptim_folder()
-    merged_graphs = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
+    from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod"
+    model_path = bioptim_folder + "/models/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.1
     n_shooting = 5
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_excitations_ref = merged_graphs.generate_data(biorbd_model, final_time, n_shooting)
+    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(biorbd_model, final_time, n_shooting)
 
     biorbd_model = biorbd.Model(model_path)  # To prevent from free variable, the model must be reloaded
-    ocp = merged_graphs.prepare_ocp(
+    ocp = ocp_module.prepare_ocp(
         biorbd_model,
         final_time,
         n_shooting,
@@ -67,21 +67,23 @@ def test_plot_merged_graphs():
 
 def test_plot_graphs_multi_phases():
     # Load graphs_one_phase
-    bioptim_folder = TestUtils.bioptim_folder()
-    graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
-    ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod")
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
 
 def test_add_new_plot():
     # Load graphs_one_phase
-    bioptim_folder = TestUtils.bioptim_folder()
-    graphs = TestUtils.load_module(
-        bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
-    )
-    ocp = graphs.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
+    from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=20,
         final_time=0.5,
     )
@@ -124,9 +126,11 @@ def test_add_new_plot():
 
 def test_console_objective_functions():
     # Load graphs_one_phase
-    bioptim_folder = TestUtils.bioptim_folder()
-    graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
-    ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod")
     sol = ocp.solve()
     ocp = sol.ocp  # We will override ocp with known and controlled values for the test
 

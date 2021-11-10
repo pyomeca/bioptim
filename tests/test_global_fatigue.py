@@ -1,4 +1,5 @@
 import platform
+import os
 
 import numpy as np
 from bioptim import OdeSolver
@@ -7,11 +8,12 @@ from .utils import TestUtils
 
 
 def test_xia_fatigable_muscles():
-    bioptim_folder = TestUtils.bioptim_folder()
-    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/static_arm_with_fatigue.py")
+    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    model_path = f"{bioptim_folder}/examples/fatigue/models/arm26_constant.bioMod"
-    ocp = fatigue.prepare_ocp(
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
         n_shooting=5,
@@ -80,11 +82,12 @@ def test_xia_fatigable_muscles():
 
 
 def test_michaud_fatigable_muscles():
-    bioptim_folder = TestUtils.bioptim_folder()
-    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/static_arm_with_fatigue.py")
+    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    model_path = f"{bioptim_folder}/examples/fatigue/models/arm26_constant.bioMod"
-    ocp = fatigue.prepare_ocp(
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
         n_shooting=5,
@@ -150,11 +153,12 @@ def test_michaud_fatigable_muscles():
 
 
 def test_effort_fatigable_muscles():
-    bioptim_folder = TestUtils.bioptim_folder()
-    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/static_arm_with_fatigue.py")
+    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    model_path = f"{bioptim_folder}/examples/fatigue/models/arm26_constant.bioMod"
-    ocp = fatigue.prepare_ocp(
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
         n_shooting=5,
@@ -215,11 +219,12 @@ def test_effort_fatigable_muscles():
 
 
 def test_fatigable_xia_torque_non_split():
-    bioptim_folder = TestUtils.bioptim_folder()
-    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
-    ocp = fatigue.prepare_ocp(
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
         n_shooting=10,
@@ -277,11 +282,12 @@ def test_fatigable_xia_torque_non_split():
 
 
 def test_fatigable_xia_torque_split():
-    bioptim_folder = TestUtils.bioptim_folder()
-    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
-    ocp = fatigue.prepare_ocp(
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path, final_time=1, n_shooting=30, fatigue_type="xia", split_controls=True, use_sx=False
     )
     sol = ocp.solve()
@@ -336,11 +342,12 @@ def test_fatigable_xia_torque_split():
 
 
 def test_fatigable_michaud_torque_non_split():
-    bioptim_folder = TestUtils.bioptim_folder()
-    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
-    ocp = fatigue.prepare_ocp(
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
         n_shooting=10,
@@ -400,11 +407,12 @@ def test_fatigable_michaud_torque_non_split():
 
 
 def test_fatigable_michaud_torque_split():
-    bioptim_folder = TestUtils.bioptim_folder()
-    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
-    ocp = fatigue.prepare_ocp(
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
         n_shooting=10,
@@ -465,11 +473,12 @@ def test_fatigable_michaud_torque_split():
 
 
 def test_fatigable_effort_torque_non_split():
-    bioptim_folder = TestUtils.bioptim_folder()
-    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
-    ocp = fatigue.prepare_ocp(
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
         n_shooting=10,
@@ -520,11 +529,12 @@ def test_fatigable_effort_torque_non_split():
 
 
 def test_fatigable_effort_torque_split():
-    bioptim_folder = TestUtils.bioptim_folder()
-    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
-    ocp = fatigue.prepare_ocp(
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
         n_shooting=10,

@@ -12,6 +12,7 @@ setup(
     long_description=long_description,
     url="https://github.com/bioptim/bioptim",
     packages=[
+        ".",
         "bioptim",
         "bioptim/dynamics",
         "bioptim/dynamics/fatigue",
@@ -20,6 +21,7 @@ setup(
         "bioptim/limits",
         "bioptim/misc",
         "bioptim/optimization",
+        "examples",
     ],
     license="LICENSE",
     keywords=["biorbd", "Ipopt", "CasADi", "Optimal control", "biomechanics"],
@@ -27,6 +29,7 @@ setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
     ],
+    include_package_data=True,
     python_requires=">=3.7",
     zip_safe=False,
 )

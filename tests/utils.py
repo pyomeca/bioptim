@@ -24,7 +24,7 @@ from bioptim import (
 class TestUtils:
     @staticmethod
     def bioptim_folder() -> str:
-        return str(Path(__file__).parent / "..")
+        return str(Path(__file__).parent / "../bioptim")
 
     @staticmethod
     def load_module(path: str) -> Any:

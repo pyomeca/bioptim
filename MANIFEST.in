@@ -1,3 +1,12 @@
+include __init__.py
 include LICENSE
 include README.md
 recursive-include docs *.md
+recursive-include examples *.py
+recursive-include examples *.bioMod
+recursive-include examples *.vtp
+recursive-include examples *.STL
+prune *sandbox*
+prune *c_generated_code*
+global-exclude *.py[cod]
+

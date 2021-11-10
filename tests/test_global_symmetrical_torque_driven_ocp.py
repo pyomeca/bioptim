@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+import os
 import pytest
 import numpy as np
 from bioptim import OdeSolver
@@ -10,11 +11,12 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_symmetry_by_mapping(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    sym = TestUtils.load_module(bioptim_folder + "/examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py")
+    from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
 
-    ocp = sym.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/models/cubeSym.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
     )
     sol = ocp.solve()
@@ -55,11 +57,12 @@ def test_symmetry_by_mapping(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_symmetry_by_constraint(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    sym = TestUtils.load_module(bioptim_folder + "/examples/symmetrical_torque_driven_ocp/symmetry_by_constraint.py")
+    from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_constraint as ocp_module
 
-    ocp = sym.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/models/cubeSym.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
     )
     sol = ocp.solve()

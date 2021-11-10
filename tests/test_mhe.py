@@ -25,9 +25,12 @@ def test_mhe(solver):
     if platform == "win32" and solver.type == SolverType.ACADOS:
         print("Test for ACADOS on Windows is skipped")
         return
-    root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    pendulum = TestUtils.load_module(root_folder + "mhe.py")
-    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
+
+    from bioptim.examples.moving_horizon_estimation import mhe as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    biorbd_model = biorbd.Model(bioptim_folder + "/models/cart_pendulum.bioMod")
     nq = biorbd_model.nbQ()
     torque_max = 5  # Give a bit of slack on the max torque
 
@@ -40,10 +43,10 @@ def test_mhe(solver):
     x_init = np.zeros((nq * 2, window_len + 1))
     u_init = np.zeros((nq, window_len))
 
-    target_q, _, _, _ = pendulum.generate_data(
+    target_q, _, _, _ = ocp_module.generate_data(
         biorbd_model, final_time, [0, np.pi / 2, 0, 0], torque_max, n_cycles * n_frame_by_cycle, 0
     )
-    target = pendulum.states_to_markers(biorbd_model, target_q)
+    target = ocp_module.states_to_markers(biorbd_model, target_q)
 
     def update_functions(mhe, t, _):
         def target_func(i: int):
@@ -52,15 +55,15 @@ def test_mhe(solver):
         mhe.update_objectives_target(target=target_func(t), list_index=0)
         return t < n_frame_by_cycle * n_cycles - window_len - 1
 
-    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
-    sol = pendulum.prepare_mhe(
+    biorbd_model = biorbd.Model(bioptim_folder + "/models/cart_pendulum.bioMod")
+    sol = ocp_module.prepare_mhe(
         biorbd_model=biorbd_model,
         window_len=window_len,
         window_duration=window_duration,
         max_torque=torque_max,
         x_init=x_init,
         u_init=u_init,
-    ).solve(update_functions, **pendulum.get_solver_options(solver))
+    ).solve(update_functions, **ocp_module.get_solver_options(solver))
 
     if solver.type == SolverType.ACADOS:
         # Compare the position on the first few frames (only ACADOS, since IPOPT is not precise with current options)
@@ -75,6 +78,7 @@ def test_mhe(solver):
 def test_mhe_redim_xbounds_and_init():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
+
     nq = biorbd_model.nbQ()
     ntau = biorbd_model.nbGeneralizedTorque()
 

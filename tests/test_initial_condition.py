@@ -1,9 +1,8 @@
+import os
 import pytest
 
 import numpy as np
 from bioptim import InterpolationType, InitialGuess, Solution, Shooting
-
-from .utils import TestUtils
 
 # TODO: Add negative test for sizes
 
@@ -104,11 +103,12 @@ def test_initial_guess_spline():
 
 def test_initial_guess_update():
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
+    from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/models/pendulum.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
     )
@@ -171,11 +171,12 @@ def test_initial_guess_custom():
 
 
 def test_simulate_from_initial_multiple_shoot():
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
+    from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         n_threads=4,
@@ -207,10 +208,12 @@ def test_simulate_from_initial_multiple_shoot():
 
 def test_simulate_from_initial_single_shoot():
     # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+    from bioptim.examples.getting_started import example_save_and_load as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         n_threads=4,

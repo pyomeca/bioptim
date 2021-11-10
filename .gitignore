@@ -94,7 +94,7 @@ examples/*/biorbd_optim
 examples/biorbd_optim
 
 # Remove other development artifacts
-examples/sandbox
+*/examples/sandbox
 *.npy
 *.bo
 *.bob
