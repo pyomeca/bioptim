@@ -1,7 +1,9 @@
 """
 Test for file IO
 """
+import os
 import pytest
+
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node
@@ -13,12 +15,14 @@ from .utils import TestUtils
 @pytest.mark.parametrize("actuator_type", [None, 2])
 def test_track_markers(ode_solver, actuator_type):
     # Load track_markers
-    bioptim_folder = TestUtils.bioptim_folder()
-    track = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py")
+    from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=actuator_type,
@@ -62,12 +66,14 @@ def test_track_markers(ode_solver, actuator_type):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_markers_changing_constraints(ode_solver):
     # Load track_markers
-    bioptim_folder = TestUtils.bioptim_folder()
-    track = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py")
+    from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         ode_solver=ode_solver,
@@ -155,12 +161,14 @@ def test_track_markers_changing_constraints(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_markers_with_actuators(ode_solver):
     # Load track_markers
-    bioptim_folder = TestUtils.bioptim_folder()
-    track = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py")
+    from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=1,
@@ -201,12 +209,14 @@ def test_track_markers_with_actuators(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_marker_2D_pendulum(ode_solver):
     # Load muscle_activations_contact_tracker
-    bioptim_folder = TestUtils.bioptim_folder()
-    track = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_2D_pendulum.py")
+    from bioptim.examples.torque_driven_ocp import track_markers_2D_pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/getting_started/models/pendulum.bioMod"
+    model_path = bioptim_folder + "/models/pendulum.bioMod"
     biorbd_model = biorbd.Model(model_path)
 
     final_time = 2
@@ -220,7 +230,7 @@ def test_track_marker_2D_pendulum(ode_solver):
     if isinstance(ode_solver, OdeSolver.IRK):
         tau_ref = tau_ref * 5
 
-    ocp = track.prepare_ocp(biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check constraints
@@ -279,15 +289,16 @@ def test_track_marker_2D_pendulum(ode_solver):
 
 def test_trampo_quaternions():
     # Load trampo_quaternion
-    bioptim_folder = TestUtils.bioptim_folder()
-    trampo = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/trampo_quaternions.py")
+    from bioptim.examples.torque_driven_ocp import trampo_quaternions as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/torque_driven_ocp/models/TruncAnd2Arm_Quaternion.bioMod"
+    model_path = bioptim_folder + "/models/TruncAnd2Arm_Quaternion.bioMod"
     final_time = 0.25
     n_shooting = 5
 
-    ocp = trampo.prepare_ocp(model_path, n_shooting, final_time)
+    ocp = ocp_module.prepare_ocp(model_path, n_shooting, final_time)
     sol = ocp.solve()
 
     # Check objective function value
@@ -378,3 +389,4 @@ def test_trampo_quaternions():
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
+

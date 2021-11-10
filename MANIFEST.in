@@ -6,5 +6,7 @@ recursive-include examples *.py
 recursive-include examples *.bioMod
 recursive-include examples *.vtp
 recursive-include examples *.STL
-recursive-exclude examples/sandbox *.*
-recursive-exclude examples c_generated_code
+prune *sandbox*
+prune *c_generated_code*
+global-exclude *.py[cod]
+

@@ -5,10 +5,9 @@ It tests the results of an optimal control problem with torque_driven_with_conta
 - the contact_forces_inequality constraint
 - the non_slipping constraint
 """
-import importlib.util
-from pathlib import Path
-
+import os
 import pytest
+
 import numpy as np
 from bioptim import OdeSolver
 
@@ -21,12 +20,14 @@ from .utils import TestUtils
 )
 @pytest.mark.parametrize("com_constraints", [False, True])
 def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constraints):
-    bioptim_folder = TestUtils.bioptim_folder()
-    jump = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/maximize_predicted_height_CoM.py")
+    from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = jump.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/2segments_4dof_2contacts.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=False,
@@ -98,12 +99,14 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
-    bioptim_folder = TestUtils.bioptim_folder()
-    jump = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/maximize_predicted_height_CoM.py")
+    from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
     ode_solver = ode_solver()
 
-    ocp = jump.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/2segments_4dof_2contacts.bioMod",
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=True,
@@ -168,3 +171,4 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
+

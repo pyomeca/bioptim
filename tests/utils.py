@@ -24,7 +24,7 @@ from bioptim import (
 class TestUtils:
     @staticmethod
     def bioptim_folder() -> str:
-        return str(Path(__file__).parent / "..")
+        return str(Path(__file__).parent / "../bioptim")
 
     @staticmethod
     def load_module(path: str) -> Any:
@@ -124,3 +124,4 @@ class TestUtils:
         np.testing.assert_almost_equal(
             sol_merged.states["all"][:, -1], sol_single.states["all"][:, -1], decimal=decimal_value
         )
+
