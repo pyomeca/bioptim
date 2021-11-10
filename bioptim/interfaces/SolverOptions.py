@@ -369,7 +369,7 @@ class Solver:
             solver_options = self.__dict__
             options = {}
             for key in solver_options:
-                if key != "_c_compile" and key != "type" and key != "show_online_optim":
+                if key != "_c_compile" and key != "type" and key != "show_online_optim" and key != "show_options":
                     ipopt_key = "ipopt." + key[1:]
                     options[ipopt_key] = solver_options[key]
             return {**options, **solver.options_common}
