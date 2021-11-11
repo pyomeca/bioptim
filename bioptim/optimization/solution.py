@@ -510,7 +510,7 @@ class Solution:
             If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
             arrival node and the beginning of the next one are expected to be almost equal when the problem converged
         integrator: SolutionIntegrator
-            use the ode defined by OCP or use a separate integrator provided by scipy
+            Use the ode defined by OCP or use a separate integrator provided by scipy
 
         Returns
         -------
@@ -548,27 +548,25 @@ class Solution:
         return out
 
     def __perform_integration(
-        self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator):
+        self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator
+    ):
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
 
-        scipy_integrator = integrator.value
-        use_scipy_integrator = scipy_integrator is not None
-
-        if n_direct_collocation > 0 and not use_scipy_integrator:
+        if n_direct_collocation > 0 and integrator != SolutionIntegrator.DEFAULT:
             if continuous:
                 raise RuntimeError(
-                    "Integration with direct collocation must be not continuous if not use_scipy_integrator"
+                    "Integration with direct collocation must be not continuous if a scipy integrator is used"
                 )
 
             if shooting_type != Shooting.MULTIPLE:
                 raise RuntimeError(
                     "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
-                    "if not use_scipy_integrator"
+                    "if not a scipy integrator is not used"
                 )
 
         # Copy the data
         out = self.copy(skip_data=True)
-        out.recomputed_time_steps = use_scipy_integrator
+        out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
         out._states = []
         for _ in range(len(self._states)):
             out._states.append({})
@@ -578,7 +576,7 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             param_scaling = nlp.parameters.scaling
             n_states = self._states[p]["all"].shape[0]
-            n_steps = nlp.ode_solver.steps_scipy if use_scipy_integrator else nlp.ode_solver.steps
+            n_steps = nlp.ode_solver.steps_scipy if integrator == SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
             if not continuous:
                 n_steps += 1
             if keep_intermediate_points:
@@ -599,7 +597,11 @@ class Solution:
                         )
                     x0 += np.array(val)[:, 0]
             else:
-                col = slice(0, n_steps) if nlp.ode_solver.is_direct_collocation and not use_scipy_integrator else 0
+                col = (
+                    slice(0, n_steps)
+                    if nlp.ode_solver.is_direct_collocation and integrator != SolutionIntegrator.DEFAULT
+                    else 0
+                )
                 x0 = self._states[p]["all"][:, col]
 
             for s in range(self.ns[p]):
@@ -610,15 +612,20 @@ class Solution:
                 else:
                     raise NotImplementedError(f"ControlType {nlp.control_type} " f"not yet implemented in integrating")
 
-                if use_scipy_integrator:
+                if integrator != SolutionIntegrator.DEFAULT:
                     t_init = sum(out.phase_time[:p]) / nlp.ns
                     t_end = sum(out.phase_time[: (p + 2)]) / nlp.ns
                     n_points = n_steps + 1 if continuous else n_steps
                     t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
                     integrated = solve_ivp(
-                        lambda t, x: np.array(nlp.dynamics_func(x, u, params))[:, 0], [t_init, t_end], x0,
+                        lambda t, x: np.array(nlp.dynamics_func(x, u, params))[:, 0],
+                        [t_init, t_end],
+                        x0,
                         t_eval=t_eval,
-                        method=scipy_integrator, atol=1e-10, rtol=1e-10).y
+                        method=integrator.value,
+                        atol=1e-10,
+                        rtol=1e-10,
+                    ).y
 
                     next_state_col = (
                         (s + 1) * (nlp.ode_solver.steps + 1) if nlp.ode_solver.is_direct_collocation else s + 1
@@ -872,7 +879,7 @@ class Solution:
             If the show method should be called. This is blocking
         shooting_type: Shooting
             The type of interpolation
-        use_scipy_integrator: bool
+        integrator: SolutionIntegrator
             Use the scipy solve_ivp integrator for RungeKutta 45 instead of currently defined integrator
         """
 

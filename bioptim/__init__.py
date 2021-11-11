@@ -165,7 +165,17 @@ from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_node import PenaltyNode, PenaltyNodeList
-from .misc.enums import Axis, Node, InterpolationType, PlotType, ControlType, CostType, Shooting, VariableType, SolutionIntegrator
+from .misc.enums import (
+    Axis,
+    Node,
+    InterpolationType,
+    PlotType,
+    ControlType,
+    CostType,
+    Shooting,
+    VariableType,
+    SolutionIntegrator,
+)
 from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram

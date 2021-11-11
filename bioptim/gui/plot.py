@@ -197,7 +197,7 @@ class PlotOcp:
         automatically_organize: bool = True,
         show_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
-        integrator: SolutionIntegrator = False,
+        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
     ):
         """
         Prepares the figures during the simulation
@@ -213,7 +213,7 @@ class PlotOcp:
         shooting_type: Shooting
             The type of integration method
         integrator: SolutionIntegrator
-            use the ode defined by OCP or use a separate integrator provided by scipy
+             Use the ode defined by OCP or use a separate integrator provided by scipy
 
         """
         for i in range(1, ocp.n_phases):
@@ -237,7 +237,7 @@ class PlotOcp:
         self.t = []
         self.t_integrated = []
         self.integrator = integrator
-        self.use_scipy_integrator = self.integrator.value is not None
+
         if isinstance(self.ocp.original_phase_time, (int, float)):
             self.tf = [self.ocp.original_phase_time]
         else:
@@ -296,12 +296,14 @@ class PlotOcp:
         self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
-            n_int_steps = nlp.ode_solver.steps_scipy if self.use_scipy_integrator else nlp.ode_solver.steps
+            n_int_steps = (
+                nlp.ode_solver.steps_scipy if self.integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
+            )
             dt_ns = self.tf[phase_idx] / nlp.ns
             time_phase_integrated = []
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
-                if nlp.ode_solver.is_direct_collocation and not self.use_scipy_integrator:
+                if nlp.ode_solver.is_direct_collocation and self.integrator == SolutionIntegrator.DEFAULT:
                     time_phase_integrated.append(np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int)
                 else:
                     time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
@@ -428,7 +430,11 @@ class PlotOcp:
                         )
                     elif plot_type == PlotType.INTEGRATED:
                         plots_integrated = []
-                        n_int_steps = nlp.ode_solver.steps_scipy if self.use_scipy_integrator else nlp.ode_solver.steps
+                        n_int_steps = (
+                            nlp.ode_solver.steps_scipy
+                            if self.integrator != SolutionIntegrator.DEFAULT
+                            else nlp.ode_solver.steps
+                        )
                         zero = np.zeros(n_int_steps + 1)
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         for cmp in range(nlp.ns):
@@ -600,7 +606,11 @@ class PlotOcp:
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
-            step_size = nlp.ode_solver.steps_scipy + 1 if self.use_scipy_integrator else nlp.ode_solver.steps + 1
+            step_size = (
+                nlp.ode_solver.steps_scipy + 1
+                if self.integrator != SolutionIntegrator.DEFAULT
+                else nlp.ode_solver.steps + 1
+            )
             n_elements = nlp.ns * step_size + 1
 
             state = np.ndarray((0, n_elements))

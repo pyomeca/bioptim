@@ -1384,7 +1384,6 @@ The accepted values are:
 - SPLINE: Requires five columns. It performs a cubic spline to interpolate between the nodes.
 - CUSTOM: User defined interpolation function
 
-
 ### Enum: Shooting
 The type of integration to perform
 - MULTIPLE: resets the state at each node

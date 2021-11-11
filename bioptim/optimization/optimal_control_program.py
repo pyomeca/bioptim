@@ -763,7 +763,7 @@ class OptimalControlProgram:
         shooting_type: Shooting
             What type of integration
         integrator: SolutionIntegrator
-            use the ode defined by OCP or use a separate integrator provided by scipy
+            Use the ode defined by OCP or use a separate integrator provided by scipy
 
         Returns
         -------
