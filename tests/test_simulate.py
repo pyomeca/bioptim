@@ -194,7 +194,7 @@ def test_integrate(integrator, ode_solver):
         _ = sol.integrate(**opts)
 
     opts["keep_intermediate_points"] = True
-    if ode_solver == OdeSolver.COLLOCATION and integrator.value is None:
+    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
         with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
             sol.integrate(**opts)
         return

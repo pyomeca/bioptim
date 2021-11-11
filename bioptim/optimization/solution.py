@@ -552,7 +552,7 @@ class Solution:
     ):
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
 
-        if n_direct_collocation > 0 and integrator != SolutionIntegrator.DEFAULT:
+        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT:
             if continuous:
                 raise RuntimeError(
                     "Integration with direct collocation must be not continuous if a scipy integrator is used"
@@ -576,7 +576,7 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             param_scaling = nlp.parameters.scaling
             n_states = self._states[p]["all"].shape[0]
-            n_steps = nlp.ode_solver.steps_scipy if integrator == SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
+            n_steps = nlp.ode_solver.steps_scipy if integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
             if not continuous:
                 n_steps += 1
             if keep_intermediate_points:
@@ -599,7 +599,7 @@ class Solution:
             else:
                 col = (
                     slice(0, n_steps)
-                    if nlp.ode_solver.is_direct_collocation and integrator != SolutionIntegrator.DEFAULT
+                    if nlp.ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT
                     else 0
                 )
                 x0 = self._states[p]["all"][:, col]
