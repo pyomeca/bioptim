@@ -103,3 +103,17 @@ class VariableType(Enum):
 
     STATES = "states"
     CONTROLS = "controls"
+
+
+class SolutionIntegrator(Enum):
+    """
+    Selection of integrator to use integrate function
+    """
+    DEFAULT = None
+    SCIPY_RK23 = "RK23"
+    SCIPY_RK45 = 'RK45'
+    SCIPY_DOP853 = "DOP853"
+    SCIPY_BDF = 'BDF'
+    SCIPY_LSODA = "LSODA"
+
+

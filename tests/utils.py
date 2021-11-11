@@ -18,6 +18,7 @@ from bioptim import (
     InitialGuess,
     Shooting,
     Solver,
+    SolutionIntegrator,
 )
 
 
@@ -117,7 +118,7 @@ class TestUtils:
             merge_phases=True,
             shooting_type=Shooting.SINGLE_CONTINUOUS,
             keep_intermediate_points=True,
-            use_scipy_integrator=False,
+            integrator=SolutionIntegrator.DEFAULT,
         )
 
         # Evaluate the final error of the single shooting integration versus the finale node
