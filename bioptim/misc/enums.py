@@ -110,7 +110,7 @@ class SolutionIntegrator(Enum):
     Selection of integrator to use integrate function
     """
 
-    DEFAULT = None
+    DEFAULT = ""
     SCIPY_RK23 = "RK23"
     SCIPY_RK45 = "RK45"
     SCIPY_DOP853 = "DOP853"
