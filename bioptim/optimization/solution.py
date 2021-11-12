@@ -623,8 +623,6 @@ class Solution:
                         x0,
                         t_eval=t_eval,
                         method=integrator.value,
-                        atol=1e-10,
-                        rtol=1e-10,
                     ).y
 
                     next_state_col = (
