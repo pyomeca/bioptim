@@ -805,10 +805,10 @@ def test_integrate_multiphase_merged_non_continuous(shooting, integrator, ode_so
             _ = sol.integrate(**opts)
 
     elif ode_solver == OdeSolver.COLLOCATION:
-        if integrator != SolutionIntegrator.DEFAULT:
+        if integrator == SolutionIntegrator.DEFAULT:
             with pytest.raises(
                 RuntimeError,
-                match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
+                match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
                 "if a scipy integrator is not used",
             ):
                 _ = sol.integrate(**opts)
