@@ -561,7 +561,7 @@ class Solution:
             if shooting_type != Shooting.MULTIPLE:
                 raise RuntimeError(
                     "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
-                    "if not a scipy integrator is not used"
+                    "if a scipy integrator is not used"
                 )
 
         # Copy the data
