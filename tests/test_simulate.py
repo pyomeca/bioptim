@@ -4,7 +4,7 @@ from sys import platform
 import pytest
 
 import numpy as np
-from bioptim import Shooting, OdeSolver
+from bioptim import Shooting, OdeSolver, SolutionIntegrator
 
 
 def test_merge_phases_one_phase():
@@ -167,8 +167,8 @@ def test_interpolate_multiphases_merge_phase():
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-@pytest.mark.parametrize("use_scipy", [True, False])
-def test_integrate(use_scipy, ode_solver):
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.SCIPY_RK45, SolutionIntegrator.DEFAULT])
+def test_integrate(integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -185,7 +185,7 @@ def test_integrate(use_scipy, ode_solver):
 
     sol = ocp.solve()
 
-    opts = {"shooting_type": Shooting.MULTIPLE, "keep_intermediate_points": False, "use_scipy_integrator": use_scipy}
+    opts = {"shooting_type": Shooting.MULTIPLE, "keep_intermediate_points": False, "integrator": integrator}
     with pytest.raises(
         ValueError,
         match="Shooting.MULTIPLE and keep_intermediate_points=False "
@@ -194,7 +194,7 @@ def test_integrate(use_scipy, ode_solver):
         _ = sol.integrate(**opts)
 
     opts["keep_intermediate_points"] = True
-    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
         with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
             sol.integrate(**opts)
         return
@@ -202,7 +202,7 @@ def test_integrate(use_scipy, ode_solver):
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
 
-    decimal = 5 if use_scipy else 8
+    decimal = 5 if integrator != SolutionIntegrator.DEFAULT else 8
     for i, key in enumerate(sol.states):
         np.testing.assert_almost_equal(
             sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
@@ -241,7 +241,7 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
 
     sol = ocp.solve()
 
-    opts = {"keep_intermediate_points": keep_intermediate_points, "use_scipy_integrator": False}
+    opts = {"keep_intermediate_points": keep_intermediate_points, "integrator": SolutionIntegrator.DEFAULT}
     if ode_solver == OdeSolver.COLLOCATION:
         with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
             sol.integrate(**opts)
@@ -296,7 +296,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
 
     sol = ocp.solve()
 
-    opts = {"keep_intermediate_points": keep_intermediate_points, "use_scipy_integrator": True}
+    opts = {"keep_intermediate_points": keep_intermediate_points, "integrator": SolutionIntegrator.SCIPY_RK45}
 
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
@@ -436,8 +436,8 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 @pytest.mark.parametrize("merge", [False, True])
-@pytest.mark.parametrize("use_scipy", [False, True])
-def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.DEFAULT, SolutionIntegrator.SCIPY_RK45])
+def test_integrate_non_continuous(shooting, merge, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -458,7 +458,7 @@ def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
         "shooting_type": shooting,
         "continuous": False,
         "keep_intermediate_points": False,
-        "use_scipy_integrator": use_scipy,
+        "integrator": integrator,
     }
     if shooting == Shooting.SINGLE_CONTINUOUS:
         with pytest.raises(
@@ -477,7 +477,11 @@ def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
 
     opts["keep_intermediate_points"] = True
     opts["merge_phases"] = merge
-    if ode_solver == OdeSolver.COLLOCATION and shooting != Shooting.MULTIPLE and not use_scipy:
+    if (
+        ode_solver == OdeSolver.COLLOCATION
+        and shooting != Shooting.MULTIPLE
+        and integrator == SolutionIntegrator.DEFAULT
+    ):
         with pytest.raises(
             RuntimeError,
             match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE",
@@ -488,14 +492,14 @@ def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
 
-    decimal = 1 if use_scipy or ode_solver == OdeSolver.COLLOCATION else 8
+    decimal = 1 if integrator != SolutionIntegrator.DEFAULT or ode_solver == OdeSolver.COLLOCATION else 8
     for i, key in enumerate(sol.states):
         np.testing.assert_almost_equal(
             sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
         )
 
         if ode_solver == OdeSolver.COLLOCATION:
-            if use_scipy:
+            if integrator != SolutionIntegrator.DEFAULT:
                 assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
             else:
                 assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (4 + 1) + 1)
@@ -515,8 +519,8 @@ def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
-@pytest.mark.parametrize("use_scipy", [False, True])
-def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode_solver):
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.DEFAULT, SolutionIntegrator.SCIPY_RK45])
+def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -531,7 +535,7 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode
         "shooting_type": shooting,
         "continuous": False,
         "keep_intermediate_points": keep_intermediate_points,
-        "use_scipy_integrator": use_scipy,
+        "integrator": integrator,
     }
 
     if shooting == Shooting.SINGLE_CONTINUOUS:
@@ -543,7 +547,7 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode
         return
 
     if ode_solver == OdeSolver.COLLOCATION:
-        if not use_scipy:
+        if integrator == SolutionIntegrator.DEFAULT:
             if shooting != Shooting.MULTIPLE:
                 with pytest.raises(
                     RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
@@ -562,7 +566,7 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode
             return
 
     opts["continuous"] = True
-    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
         with pytest.raises(
             RuntimeError,
             match="Integration with direct collocation must be not continuous",
@@ -573,10 +577,10 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode
     sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
 
-    decimal = 1 if use_scipy else 8
+    decimal = 1 if integrator != SolutionIntegrator.DEFAULT else 8
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
-            if not use_scipy or shooting == Shooting.MULTIPLE:
+            if integrator == SolutionIntegrator.DEFAULT or shooting == Shooting.MULTIPLE:
                 np.testing.assert_almost_equal(
                     sol_integrated.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
                 )
@@ -584,7 +588,7 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode
             if keep_intermediate_points:
                 assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
             else:
-                if not use_scipy or shooting == Shooting.MULTIPLE:
+                if integrator == SolutionIntegrator.DEFAULT or shooting == Shooting.MULTIPLE:
                     np.testing.assert_almost_equal(sol_integrated.states[i][key], sol.states[i][key])
                 assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
             if ode_solver == OdeSolver.COLLOCATION:
@@ -603,8 +607,8 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
-@pytest.mark.parametrize("use_scipy", [False, True])
-def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_scipy, ode_solver):
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.DEFAULT, SolutionIntegrator.SCIPY_RK45])
+def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -621,7 +625,7 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_sci
         "shooting_type": shooting,
         "continuous": False,
         "keep_intermediate_points": keep_intermediate_points,
-        "use_scipy_integrator": use_scipy,
+        "integrator": integrator,
     }
 
     if shooting == Shooting.SINGLE_CONTINUOUS:
@@ -632,7 +636,7 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_sci
             _ = sol.integrate(**opts)
         return
 
-    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
         if shooting != Shooting.MULTIPLE:
             with pytest.raises(
                 RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
@@ -652,7 +656,7 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_sci
 
     opts["merge_phases"] = True
     opts["continuous"] = True
-    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
         with pytest.raises(
             RuntimeError,
             match="Integration with direct collocation must be not continuous",
@@ -664,17 +668,17 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_sci
     sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
 
-    decimal = 0 if use_scipy else 8
+    decimal = 0 if integrator != SolutionIntegrator.DEFAULT else 8
     for k, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
-        if not use_scipy or shooting == Shooting.MULTIPLE:
+        if integrator == SolutionIntegrator.DEFAULT or shooting == Shooting.MULTIPLE:
             np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected, decimal=decimal)
 
         if keep_intermediate_points:
             assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 5 + 1)
         else:
             # The interpolation prevents from comparing all points
-            if not use_scipy or shooting == Shooting.MULTIPLE:
+            if integrator == SolutionIntegrator.DEFAULT or shooting == Shooting.MULTIPLE:
                 expected = np.concatenate(
                     (sol.states[0][key][:, 0:1], sol.states[-1][key][:, -1][:, np.newaxis]), axis=1
                 )
@@ -698,8 +702,8 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_sci
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
-@pytest.mark.parametrize("use_scipy", [False, True])
-def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.DEFAULT, SolutionIntegrator.SCIPY_RK45])
+def test_integrate_multiphase_non_continuous(shooting, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -714,7 +718,7 @@ def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
         "shooting_type": shooting,
         "continuous": False,
         "keep_intermediate_points": True,
-        "use_scipy_integrator": use_scipy,
+        "integrator": integrator,
     }
 
     if shooting == Shooting.SINGLE_CONTINUOUS:
@@ -726,7 +730,7 @@ def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
             _ = sol.integrate(**opts)
         return
 
-    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
         if shooting != Shooting.MULTIPLE:
             with pytest.raises(
                 RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
@@ -737,10 +741,10 @@ def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
     sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
 
-    decimal = 1 if use_scipy or ode_solver == OdeSolver.COLLOCATION else 8
+    decimal = 1 if integrator != SolutionIntegrator.DEFAULT or ode_solver == OdeSolver.COLLOCATION else 8
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
-            if not use_scipy or shooting == Shooting.MULTIPLE:
+            if integrator == SolutionIntegrator.DEFAULT or shooting == Shooting.MULTIPLE:
                 np.testing.assert_almost_equal(
                     sol_integrated.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
                 )
@@ -748,7 +752,7 @@ def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
                     sol_integrated.states[i][key][:, [0, -2]], sol.states[i][key][:, [0, -1]], decimal=decimal
                 )
 
-            if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+            if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
                 assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * (4 + 1) + 1)
             else:
                 assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * (5 + 1) + 1)
@@ -768,8 +772,8 @@ def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
-@pytest.mark.parametrize("use_scipy", [False, True])
-def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_solver):
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.DEFAULT, SolutionIntegrator.SCIPY_RK45])
+def test_integrate_multiphase_merged_non_continuous(shooting, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -783,7 +787,7 @@ def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_sol
         "shooting_type": shooting,
         "continuous": False,
         "keep_intermediate_points": False,
-        "use_scipy_integrator": use_scipy,
+        "integrator": integrator,
     }
     if shooting == Shooting.SINGLE_CONTINUOUS:
         with pytest.raises(
@@ -801,10 +805,11 @@ def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_sol
             _ = sol.integrate(**opts)
 
     elif ode_solver == OdeSolver.COLLOCATION:
-        if not use_scipy:
+        if integrator == SolutionIntegrator.DEFAULT:
             with pytest.raises(
                 RuntimeError,
-                match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE",
+                match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
+                "if a scipy integrator is not used",
             ):
                 _ = sol.integrate(**opts)
             return
@@ -815,11 +820,11 @@ def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_sol
     sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
 
-    decimal = 0 if use_scipy or ode_solver == OdeSolver.COLLOCATION else 8
-    steps = 4 if not use_scipy and ode_solver == OdeSolver.COLLOCATION else 5
+    decimal = 0 if integrator != SolutionIntegrator.DEFAULT or ode_solver == OdeSolver.COLLOCATION else 8
+    steps = 4 if integrator == SolutionIntegrator.DEFAULT and ode_solver == OdeSolver.COLLOCATION else 5
     for k, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
-        if not use_scipy or shooting == Shooting.MULTIPLE:
+        if integrator == SolutionIntegrator.DEFAULT or shooting == Shooting.MULTIPLE:
             np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected, decimal=decimal)
             np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -2]], expected, decimal=decimal)
 

@@ -88,6 +88,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [InterpolationType](#enum-interpolationtype)
   - [Shooting](#enum-shooting)
   - [CostType](#enum-costtype)
+  - [SolutionIntegrator](#enum-solutionintegrator)
         
 [Examples](#examples)
 - [Run examples](#run-examples)
@@ -1383,7 +1384,6 @@ The accepted values are:
 - SPLINE: Requires five columns. It performs a cubic spline to interpolate between the nodes.
 - CUSTOM: User defined interpolation function
 
-
 ### Enum: Shooting
 The type of integration to perform
 - MULTIPLE: resets the state at each node
@@ -1395,6 +1395,16 @@ The type of cost
 - OBJECTIVES: The objective functions
 - CONSTRAINTS: The constraints
 - ALL: All the previously described cost type
+
+### Enum: SolutionIntegrator
+The type of integrator used to integrate the solution of the optimal control problem
+- DEFAULT: The default integrator initially chosen with [OdeSolver](#class-odesolver)
+- SCIPY_RK23: The scipy integrator RK23
+- SCIPY_RK45: The scipy integrator RK45
+- SCIPY_DOP853: The scipy integrator DOP853
+- SCIPY_BDF: The scipy integrator BDF
+- SCIPY_LSODA: The scipy integrator LSODA
+
 
 # Examples
 In this section, you will find the description of all the examples implemented with bioptim. They are ordered in 

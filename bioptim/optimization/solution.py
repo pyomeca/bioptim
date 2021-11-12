@@ -9,7 +9,7 @@ from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType
+from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -492,7 +492,7 @@ class Solution:
         keep_intermediate_points: bool = False,
         merge_phases: bool = False,
         continuous: bool = True,
-        use_scipy_integrator: bool = False,
+        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
     ) -> Any:
         """
         Integrate the states
@@ -509,8 +509,8 @@ class Solution:
         continuous: bool
             If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
             arrival node and the beginning of the next one are expected to be almost equal when the problem converged
-        use_scipy_integrator: bool
-            Ignore the dynamics defined by OCP and use a separate integrator provided by scipy
+        integrator: SolutionIntegrator
+            Use the ode defined by OCP or use a separate integrator provided by scipy
 
         Returns
         -------
@@ -535,7 +535,7 @@ class Solution:
                 "Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction"
             )
 
-        out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, use_scipy_integrator)
+        out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, integrator)
 
         if merge_phases:
             if continuous:
@@ -548,24 +548,25 @@ class Solution:
         return out
 
     def __perform_integration(
-        self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, use_scipy_integrator: bool
+        self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator
     ):
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
-        if n_direct_collocation > 0 and not use_scipy_integrator:
+
+        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT:
             if continuous:
                 raise RuntimeError(
-                    "Integration with direct collocation must be not continuous if not use_scipy_integrator"
+                    "Integration with direct collocation must be not continuous if a scipy integrator is used"
                 )
 
             if shooting_type != Shooting.MULTIPLE:
                 raise RuntimeError(
                     "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
-                    "if not use_scipy_integrator"
+                    "if a scipy integrator is not used"
                 )
 
         # Copy the data
         out = self.copy(skip_data=True)
-        out.recomputed_time_steps = use_scipy_integrator
+        out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
         out._states = []
         for _ in range(len(self._states)):
             out._states.append({})
@@ -575,7 +576,7 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             param_scaling = nlp.parameters.scaling
             n_states = self._states[p]["all"].shape[0]
-            n_steps = nlp.ode_solver.steps_scipy if use_scipy_integrator else nlp.ode_solver.steps
+            n_steps = nlp.ode_solver.steps_scipy if integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
             if not continuous:
                 n_steps += 1
             if keep_intermediate_points:
@@ -596,7 +597,11 @@ class Solution:
                         )
                     x0 += np.array(val)[:, 0]
             else:
-                col = slice(0, n_steps) if nlp.ode_solver.is_direct_collocation and not use_scipy_integrator else 0
+                col = (
+                    slice(0, n_steps)
+                    if nlp.ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT
+                    else 0
+                )
                 x0 = self._states[p]["all"][:, col]
 
             for s in range(self.ns[p]):
@@ -607,13 +612,17 @@ class Solution:
                 else:
                     raise NotImplementedError(f"ControlType {nlp.control_type} " f"not yet implemented in integrating")
 
-                if use_scipy_integrator:
+                if integrator != SolutionIntegrator.DEFAULT:
                     t_init = sum(out.phase_time[:p]) / nlp.ns
                     t_end = sum(out.phase_time[: (p + 2)]) / nlp.ns
                     n_points = n_steps + 1 if continuous else n_steps
                     t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
                     integrated = solve_ivp(
-                        lambda t, x: np.array(nlp.dynamics_func(x, u, params))[:, 0], [t_init, t_end], x0, t_eval=t_eval
+                        lambda t, x: np.array(nlp.dynamics_func(x, u, params))[:, 0],
+                        [t_init, t_end],
+                        x0,
+                        t_eval=t_eval,
+                        method=integrator.value,
                     ).y
 
                     next_state_col = (
@@ -853,7 +862,7 @@ class Solution:
         show_bounds: bool = False,
         show_now: bool = True,
         shooting_type: Shooting = Shooting.MULTIPLE,
-        use_scipy_integrator: bool = False,
+        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
     ):
         """
         Show the graphs of the simulation
@@ -868,14 +877,14 @@ class Solution:
             If the show method should be called. This is blocking
         shooting_type: Shooting
             The type of interpolation
-        use_scipy_integrator: bool
+        integrator: SolutionIntegrator
             Use the scipy solve_ivp integrator for RungeKutta 45 instead of currently defined integrator
         """
 
         if self.is_merged or self.is_interpolated or self.is_integrated:
             raise NotImplementedError("It is not possible to graph a modified Solution yet")
 
-        plot_ocp = self.ocp.prepare_plots(automatically_organize, show_bounds, shooting_type, use_scipy_integrator)
+        plot_ocp = self.ocp.prepare_plots(automatically_organize, show_bounds, shooting_type, integrator)
         plot_ocp.update_data(self.vector)
         if show_now:
             plt.show()
