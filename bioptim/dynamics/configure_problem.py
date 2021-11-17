@@ -3,6 +3,7 @@ from enum import Enum
 
 from casadi import MX, vertcat, Function
 import numpy as np
+from biorbd_casadi import biorbd
 
 from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
@@ -44,6 +45,8 @@ class ConfigureProblem:
         Configure the dynamics of the system
     configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params)
         Configure the contact points
+    configure_soft_contact_function
+        Configure the soft contact function
     configure_new_variable(
         name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_state_control_plot: bool = False
     )
@@ -122,6 +125,7 @@ class ConfigureProblem:
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def torque_derivative_driven(ocp, nlp, with_contact=False):
@@ -311,6 +315,68 @@ class ConfigureProblem:
             axes_idx=phase_mappings,
             legend=all_contact_names,
         )
+
+    @staticmethod
+    def configure_soft_contact_function(ocp, nlp):
+        """
+        Configure the soft contact sphere
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        nlp.soft_contact_forces_func = []
+        for i_sc in range(nlp.model.nbSoftContacts()):
+            soft_contact = nlp.model.softContact(i_sc)
+            n = int(nlp.states.mx_reduced.shape[0] / 2)
+            softcontact_force_func = (
+                biorbd.SoftContactSphere(soft_contact)
+                .computeForceAtOrigin(nlp.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
+                .to_mx()
+            )
+
+            nlp.soft_contact_forces_func.append(
+                Function(
+                    "soft_contact_forces_func",
+                    [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+                    [softcontact_force_func],
+                    ["x", "u", "p"],
+                    ["soft_contact_forces"],
+                ).expand()
+            )
+
+            all_soft_contact_names = []
+            l = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
+            all_soft_contact_names.extend(
+                [
+                    f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
+                    for name in l
+                    if nlp.model.softContactName(i_sc).to_string() not in all_soft_contact_names
+                ]
+            )
+
+            if "soft_contact_forces" in nlp.plot_mapping:
+                phase_mappings = nlp.plot_mapping["soft_contact_forces"]
+            else:
+
+                soft_contact_names_in_phase = [
+                    f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
+                    for name in l
+                    if nlp.model.softContactName(i_sc).to_string() not in all_soft_contact_names
+                ]
+                phase_mappings = Mapping(
+                    [i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase]
+                )
+
+            nlp.plot["soft_contact_forces"] = CustomPlot(
+                lambda t, x, u, p: nlp.soft_contact_forces_func[i_sc](x, u, p),
+                plot_type=PlotType.INTEGRATED,
+                axes_idx=phase_mappings,
+                legend=all_soft_contact_names,
+            )
 
     @staticmethod
     def _manage_fatigue_to_new_variable(
