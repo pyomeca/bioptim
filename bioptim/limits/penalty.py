@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat
+from casadi import horzcat, vertcat, MX
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -433,6 +433,38 @@ class PenaltyFunctionAbstract:
 
             contact_force = nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
             return contact_force
+
+        @staticmethod
+        def minimize_soft_contact_forces(
+                penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None
+        ):
+            """
+            Minimize the soft contact forces computed from dynamics with contact
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            contact_index: Union[tuple, list]
+                The index of contact to minimize, must be an int or a list.
+                penalty.cols should not be defined if contact_index is defined
+            """
+
+            nlp = all_pn.nlp
+            if nlp.soft_contact_forces_func is None:
+                raise RuntimeError("minimize_contact_forces requires a soft contact dynamics")
+
+            PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            soft_contact_force = MX.zeros(3,1)
+            for i in range(len(nlp.soft_contact_forces_func)):
+                soft_contact_force[:, 0] += nlp.soft_contact_forces_func[i](nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[3:, :]
+            return soft_contact_force
 
         @staticmethod
         def track_segment_with_custom_rt(
