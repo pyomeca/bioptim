@@ -328,7 +328,7 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
-        nlp.soft_contact_forces_func = []
+
         for i_sc in range(nlp.model.nbSoftContacts()):
             soft_contact = nlp.model.softContact(i_sc)
             n = int(nlp.states.mx_reduced.shape[0] / 2)
