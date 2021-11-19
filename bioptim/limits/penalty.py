@@ -461,10 +461,13 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            soft_contact_force = MX.zeros(3,1)
-            for i in range(len(nlp.soft_contact_forces_func)):
-                soft_contact_force[:, 0] += nlp.soft_contact_forces_func[i](nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[3:, :]
-            return soft_contact_force
+            force_idx = []
+            for i_sc in range(nlp.model.nbSoftContacts()):
+                force_idx.append(3+(6*i_sc))
+                force_idx.append(4+(6*i_sc))
+                force_idx.append(5+(6*i_sc))
+            soft_contact_force = nlp.soft_contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+            return soft_contact_force[force_idx]
 
         @staticmethod
         def track_segment_with_custom_rt(

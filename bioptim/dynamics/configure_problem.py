@@ -156,6 +156,7 @@ class ConfigureProblem:
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def torque_activations_driven(ocp, nlp, with_contact=False):
@@ -189,15 +190,16 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(
                 ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven
             )
+        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def muscle_driven(
-        ocp,
-        nlp,
-        with_excitations: bool = False,
-        fatigue: FatigueList = None,
-        with_torque: bool = False,
-        with_contact: bool = False,
+            ocp,
+            nlp,
+            with_excitations: bool = False,
+            fatigue: FatigueList = None,
+            with_torque: bool = False,
+            with_contact: bool = False,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -245,6 +247,7 @@ class ConfigureProblem:
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven)
+        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
@@ -329,27 +332,28 @@ class ConfigureProblem:
             A reference to the phase
         """
 
+        global_soft_contact_force_func = MX.zeros(nlp.model.nbSoftContacts() * 6, 1)
+
         for i_sc in range(nlp.model.nbSoftContacts()):
             soft_contact = nlp.model.softContact(i_sc)
             n = int(nlp.states.mx_reduced.shape[0] / 2)
-            softcontact_force_func = (
+
+            global_soft_contact_force_func[i_sc * 6:(i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)
-                .computeForceAtOrigin(nlp.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
-                .to_mx()
+                    .computeForceAtOrigin(nlp.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
+                    .to_mx()
             )
+        nlp.soft_contact_forces_func = Function(
+            "soft_contact_forces_func",
+            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [global_soft_contact_force_func],
+            ["x", "u", "p"],
+            ["soft_contact_forces"],
+        ).expand()
 
-            nlp.soft_contact_forces_func.append(
-                Function(
-                    "soft_contact_forces_func",
-                    [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
-                    [softcontact_force_func],
-                    ["x", "u", "p"],
-                    ["soft_contact_forces"],
-                ).expand()
-            )
-
+        for i_sc in range(nlp.model.nbSoftContacts()):
             all_soft_contact_names = []
-            l = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
+            l = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]  # TODO: find a better place to hold this or define it in biorbd ?
             all_soft_contact_names.extend(
                 [
                     f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
@@ -361,7 +365,6 @@ class ConfigureProblem:
             if "soft_contact_forces" in nlp.plot_mapping:
                 phase_mappings = nlp.plot_mapping["soft_contact_forces"]
             else:
-
                 soft_contact_names_in_phase = [
                     f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
                     for name in l
@@ -370,9 +373,8 @@ class ConfigureProblem:
                 phase_mappings = Mapping(
                     [i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase]
                 )
-
-            nlp.plot["soft_contact_forces"] = CustomPlot(
-                lambda t, x, u, p: nlp.soft_contact_forces_func[i_sc](x, u, p),
+            nlp.plot[f"soft_contact_forces_{nlp.model.softContactName(i_sc).to_string()}"] = CustomPlot(
+                lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6):((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
                 legend=all_soft_contact_names,
@@ -380,12 +382,12 @@ class ConfigureProblem:
 
     @staticmethod
     def _manage_fatigue_to_new_variable(
-        name: str,
-        name_elements: list,
-        nlp,
-        as_states: bool,
-        as_controls: bool,
-        fatigue: FatigueList = None,
+            name: str,
+            name_elements: list,
+            nlp,
+            as_states: bool,
+            as_controls: bool,
+            fatigue: FatigueList = None,
     ):
         if fatigue is None or name not in fatigue:
             return False
@@ -485,15 +487,15 @@ class ConfigureProblem:
 
     @staticmethod
     def configure_new_variable(
-        name: str,
-        name_elements: list,
-        nlp,
-        as_states: bool,
-        as_controls: bool,
-        fatigue: FatigueList = None,
-        combine_name: str = None,
-        combine_state_control_plot: bool = False,
-        skip_plot: bool = False,
+            name: str,
+            name_elements: list,
+            nlp,
+            as_states: bool,
+            as_controls: bool,
+            fatigue: FatigueList = None,
+            combine_name: str = None,
+            combine_state_control_plot: bool = False,
+            skip_plot: bool = False,
     ):
         """
         Add a new variable to the states/controls pool
@@ -774,10 +776,10 @@ class Dynamics(OptionGeneric):
     """
 
     def __init__(
-        self,
-        dynamics_type: Union[Callable, DynamicsFcn],
-        expand: bool = False,
-        **params: Any,
+            self,
+            dynamics_type: Union[Callable, DynamicsFcn],
+            expand: bool = False,
+            **params: Any,
     ):
         """
         Parameters

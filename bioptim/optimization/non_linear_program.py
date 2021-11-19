@@ -102,9 +102,9 @@ class NonLinearProgram:
     """
 
     def __init__(self):
-        self.soft_contact_forces_func = []
         self.casadi_func = {}
         self.contact_forces_func = None
+        self.soft_contact_forces_func = None
         self.control_type = ControlType.NONE
         self.cx = None
         self.dt = None
