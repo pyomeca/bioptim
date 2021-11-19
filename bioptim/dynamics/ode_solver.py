@@ -342,7 +342,7 @@ class OdeSolver:
                 "p": nlp.controls.cx,
                 "ode": nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx),
             }
-            ode_opt = {"t0": 0, "tf": nlp.dt, "abstol": 1e-10, "reltol": 1e-10}
+            ode_opt = {"t0": 0, "tf": nlp.dt}
 
             integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
 
