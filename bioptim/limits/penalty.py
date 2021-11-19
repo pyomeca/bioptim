@@ -436,7 +436,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_soft_contact_forces(
-                penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None
         ):
             """
             Minimize the soft contact forces computed from dynamics with contact
@@ -463,9 +463,9 @@ class PenaltyFunctionAbstract:
 
             force_idx = []
             for i_sc in range(nlp.model.nbSoftContacts()):
-                force_idx.append(3+(6*i_sc))
-                force_idx.append(4+(6*i_sc))
-                force_idx.append(5+(6*i_sc))
+                force_idx.append(3 + (6 * i_sc))
+                force_idx.append(4 + (6 * i_sc))
+                force_idx.append(5 + (6 * i_sc))
             soft_contact_force = nlp.soft_contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
             return soft_contact_force[force_idx]
 
