@@ -71,7 +71,7 @@ cmake . .. \
   -DACADOS_WITH_QPDUNES=ON\
   -DACADOS_WITH_OPENMP=ON\
   -DACADOS_NUM_THREADS="$ARG1"
-make install -j$ARG1
+make install -j$NB_CPU
 
 
 
