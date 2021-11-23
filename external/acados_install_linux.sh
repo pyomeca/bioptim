@@ -9,33 +9,42 @@ if [ ! -f acados/CMakeLists.txt ]; then
   git submodule update --recursive --init
 fi
 
-# Check if there are a number of CPUs for Acados multiprocessing
-ARG1=${1:NB_CPU}
-if [ -z "$ARG1" ]; then
-  $ARG1=$CPU_COUNT
-  echo " Argument 2 (NB_CPU) not provided, falling back on maximum number of CPUs."
-  echo ""
-fi
 
 # Check if everything required by the script is present
 echo "Processing arguments"
 echo ""
+
+NB_CPU=`cat /proc/cpuinfo | grep processor | wc -l`
+
+# Check if there are a number of CPUs for Acados multiprocessing
+ARG1=${1:-$NB_CPU}
+if [ -z "$1" ]; then
+  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($ARG1)."
+  echo ""
+fi
+
+if [ "$1" ]; then
+	echo "  NB_CPU=$1"
+	echo ""
+fi
+
+
 ARG2=${2:-$CONDA_PREFIX}
 if [ -z "$ARG2" ]; then
-  echo "  Argument 1 (CMAKE_INSTALL_PREFIX) is missing and you are not using conda."
+  echo "  Argument 2 (CMAKE_INSTALL_PREFIX) is missing and you are not using conda."
   echo "  Please provide a path for installation"
   exit 1
 fi
 
-if [ -z "$1" ]; then
-  echo "  Argument 1 (CMAKE_INSTALL_PREFIX) not provided, falling back on CONDA_PREFIX"
+if [ -z "$2" ]; then
+  echo "  Argument 2 (CMAKE_INSTALL_PREFIX) not provided, falling back on CONDA_PREFIX"
   echo "  CONDA_PREFIX=$CONDA_PREFIX"
   echo ""
 fi
 
 ARG3=${3:-X64_AUTOMATIC}
 if [ -z "$3" ]; then
-  echo "  Argument 2 (BLASFEO_TARGET) not provided, falling back on X64_AUTOMATIC"
+  echo "  Argument 3 (BLASFEO_TARGET) not provided, falling back on X64_AUTOMATIC"
   echo ""
 fi
 
@@ -56,11 +65,13 @@ cmake . .. \
   -DACADOS_INSTALL_DIR="$ARG2"\
   -DACADOS_PYTHON=ON\
   -DACADOS_WITH_QPOASES=ON\
+  -DACADOS_WITH_OSQP=ON\
   -DBLASFEO_TARGET="$ARG3"\
   -DCMAKE_INSTALL_PREFIX="$ARG2"\
+  -DACADOS_WITH_QPDUNES=ON\
   -DACADOS_WITH_OPENMP=ON\
   -DACADOS_NUM_THREADS="$ARG1"
-make install -j$CPU_COUNT
+make install -j$ARG1
 
 
 
