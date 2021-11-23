@@ -9,6 +9,10 @@ if [ ! -f acados/CMakeLists.txt ]; then
   git submodule update --recursive --init
 fi
 
+# Check if everything required by the script is present
+echo "Processing arguments"
+echo ""
+
 # Check if there are a number of CPUs for Acados multiprocessing
 ARG1=${1:NB_CPU}
 if [ -z "$ARG1" ]; then
@@ -17,9 +21,6 @@ if [ -z "$ARG1" ]; then
   echo ""
 fi
 
-# Check if everything required by the script is present
-echo "Processing arguments"
-echo ""
 ARG2=${2:-$CONDA_PREFIX}
 if [ -z "$ARG2" ]; then
   echo "  Argument 2 (CMAKE_INSTALL_PREFIX) is missing and you are not using conda."
