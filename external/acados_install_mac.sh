@@ -21,6 +21,11 @@ if [ -z "$ARG1" ]; then
   echo ""
 fi
 
+if [ "$1" ]; then
+	echo "  Number of threads for acados with openMP asked : NB_CPU=$1"
+	echo ""
+fi
+
 ARG2=${2:-$CONDA_PREFIX}
 if [ -z "$ARG2" ]; then
   echo "  Argument 2 (CMAKE_INSTALL_PREFIX) is missing and you are not using conda."

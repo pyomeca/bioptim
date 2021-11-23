@@ -24,7 +24,7 @@ if [ -z "$1" ]; then
 fi
 
 if [ "$1" ]; then
-	echo "  NB_CPU=$1"
+	echo "  Number of threads for acados with openMP asked : NB_CPU=$1"
 	echo ""
 fi
 
