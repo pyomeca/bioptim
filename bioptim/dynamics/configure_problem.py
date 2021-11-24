@@ -10,9 +10,10 @@ from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
-from ..misc.enums import PlotType, ControlType, VariableType
+from ..misc.enums import PlotType, ControlType, VariableType, Node
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
+from ..limits.constraints import ImplicitConstraintFcn, Constraint
 
 
 class ConfigureProblem:
@@ -96,7 +97,7 @@ class ConfigureProblem:
         nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
-    def torque_driven(ocp, nlp, with_contact: bool = False, fatigue: FatigueList = None):
+    def torque_driven(ocp, nlp, with_contact: bool = False, implicit_dynamics: bool = False, fatigue: FatigueList = None):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
 
@@ -108,6 +109,8 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
+        implicit_dynamics: bool
+            If the implicit dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
         """
@@ -116,19 +119,23 @@ class ConfigureProblem:
         ConfigureProblem.configure_qdot(nlp, True, False)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
 
+        if implicit_dynamics:
+            ConfigureProblem.configure_qddot(nlp, False, True)
+            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT, node=Node.ALL_SHOOTING)
+
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             ConfigureProblem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.torque_driven, with_contact=with_contact, fatigue=fatigue
-            )
+                ocp, nlp, DynamicsFunctions.torque_driven, with_contact=with_contact, fatigue=fatigue,
+                implicit_dynamics=implicit_dynamics)
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def torque_derivative_driven(ocp, nlp, with_contact=False):
+    def torque_derivative_driven(ocp, nlp, with_contact=False, implicit_dynamics: bool = False):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
 
@@ -140,6 +147,8 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
+        implicit_dynamics: bool
+            If the implicit dynamic should be used
         """
 
         ConfigureProblem.configure_q(nlp, True, False)
@@ -147,11 +156,17 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(nlp, True, False)
         ConfigureProblem.configure_taudot(nlp, False, True)
 
+        if implicit_dynamics:
+            ConfigureProblem.configure_qddot(nlp, True, False)
+            ConfigureProblem.configure_qdddot(nlp, False, True)
+            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT, node=Node.ALL_SHOOTING)
+
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             ConfigureProblem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.torque_derivative_driven, with_contact=with_contact
+                ocp, nlp, DynamicsFunctions.torque_derivative_driven, with_contact=with_contact,
+                implicit_dynamics=implicit_dynamics
             )
 
         if with_contact:
@@ -619,6 +634,44 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
 
     @staticmethod
+    def configure_qddot(nlp, as_states: bool, as_controls: bool):
+        """
+        Configure the generalized accelerations
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized velocities should be a state
+        as_controls: bool
+            If the generalized velocities should be a control
+        """
+
+        name_qddot = [str(i) for i in range(nlp.model.nbQdot())]
+        ConfigureProblem._adjust_mapping("qddot", ["q", "qdot"], nlp)
+        ConfigureProblem.configure_new_variable("qddot", name_qddot, nlp, as_states, as_controls)
+
+    @staticmethod
+    def configure_qdddot(nlp, as_states: bool, as_controls: bool):
+        """
+        Configure the generalized accelerations
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized velocities should be a state
+        as_controls: bool
+            If the generalized velocities should be a control
+        """
+
+        name_qdddot = [str(i) for i in range(nlp.model.nbQdot())]
+        ConfigureProblem._adjust_mapping("qdddot", ["q", "qdot", "qddot"], nlp)
+        ConfigureProblem.configure_new_variable("qdddot", name_qdddot, nlp, as_states, as_controls)
+
+    @staticmethod
     def configure_tau(nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
         """
         Configure the generalized forces
@@ -680,9 +733,9 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
+        name_taudot = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
         ConfigureProblem._adjust_mapping("taudot", ["qdot", "tau"], nlp)
-        ConfigureProblem.configure_new_variable("taudot", name_tau, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable("taudot", name_taudot, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_muscles(nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):

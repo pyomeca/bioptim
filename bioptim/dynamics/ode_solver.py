@@ -2,7 +2,7 @@ from typing import Union, Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
-from .integrator import RK4, RK8, IRK, COLLOCATION, CVODES
+from .integrator import RK1, RK4, RK8, IRK, COLLOCATION, CVODES
 from ..misc.enums import ControlType
 
 
@@ -145,6 +145,21 @@ class OdeSolver:
     """
     The public interface to the different OdeSolvers
     """
+    class RK1(RK):
+        """
+        A Runge-Kutta 4 solver
+        """
+
+        def __init__(self, n_integration_steps: int = 5):
+            """
+            Parameters
+            ----------
+            n_integration_steps: int
+                The number of steps for the integration
+            """
+
+            super(OdeSolver.RK1, self).__init__(n_integration_steps)
+            self.rk_integrator = RK1
 
     class RK4(RK):
         """
