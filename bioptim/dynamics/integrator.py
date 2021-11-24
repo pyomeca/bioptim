@@ -257,10 +257,58 @@ class RK(Integrator):
                     x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
                 )
                 quaternion /= norm_fro(quaternion)
-                x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
+                x[quat_idx[j][0]: quat_idx[j][2] + 1, i] = quaternion[1:4]
                 x[quat_idx[j][3], i] = quaternion[0]
 
         return x[:, -1], x
+
+
+class RK1(RK):
+    """
+    Numerical integration using fourth order Runge-Kutta method.
+
+    Methods
+    -------
+    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+        Compute the next integrated state (abstract)
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
+        super(RK1, self).__init__(ode, ode_opt)
+        self._finish_init()
+
+    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+        """
+        Compute the next integrated state
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        t: float
+            The initial time of the integration
+        x_prev: Union[MX, SX]
+            The current state of the system
+        u: Union[MX, SX]
+            The control of the system
+        p: Union[MX, SX]
+            The parameters of the system
+
+        Returns
+        -------
+        The next integrate states
+        """
+
+        return x_prev + h * self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
 
 
 class RK4(RK):
@@ -592,7 +640,7 @@ class IRK(COLLOCATION):
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
         x_irk_points = ifcn(self.cx(), states[0], controls, params)
-        x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
+        x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx: r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
         xf = self.cx.zeros(nx, self.degree + 1)  # 0 #
