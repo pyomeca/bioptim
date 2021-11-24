@@ -247,10 +247,9 @@ class DynamicsFunctions:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
-        taudot = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        dtau = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+        dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
         dq = horzcat(*[dq for _ in range(dq.shape[1])])
         dtau = horzcat(*[dtau for _ in range(dq.shape[1])])
