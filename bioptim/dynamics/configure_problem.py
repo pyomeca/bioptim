@@ -153,7 +153,8 @@ class ConfigureProblem:
         ConfigureProblem.configure_taudot(nlp, False, True)
 
         if implicit_dynamics:
-            ConfigureProblem.configure_qddot(nlp, False, True)
+            ConfigureProblem.configure_qddot(nlp, True, False)
+            ConfigureProblem.configure_qdddot(nlp, False, True)
             ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT, node=Node.ALL_SHOOTING)
 
         if nlp.dynamics_type.dynamic_function:
@@ -579,9 +580,28 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name_qdot = [str(i) for i in range(nlp.model.nbQdot())]
+        name_qddot = [str(i) for i in range(nlp.model.nbQdot())]
         ConfigureProblem._adjust_mapping("qddot", ["q", "qdot"], nlp)
-        ConfigureProblem.configure_new_variable("qddot", name_qdot, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable("qddot", name_qddot, nlp, as_states, as_controls)
+
+    @staticmethod
+    def configure_qdddot(nlp, as_states: bool, as_controls: bool):
+        """
+        Configure the generalized accelerations
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized velocities should be a state
+        as_controls: bool
+            If the generalized velocities should be a control
+        """
+
+        name_qdddot = [str(i) for i in range(nlp.model.nbQdot())]
+        ConfigureProblem._adjust_mapping("qdddot", ["q", "qdot", "qddot"], nlp)
+        ConfigureProblem.configure_new_variable("qdddot", name_qdddot, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_tau(nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):

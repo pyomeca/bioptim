@@ -323,13 +323,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
             if 'tau' in nlp.states.keys():
-                res = BiorbdInterface.mx_to_cx("ForwardDynamics", all_pn.nlp.controls["qddot"].mx - qddot,
+                res = BiorbdInterface.mx_to_cx("ForwardDynamics", all_pn.nlp.states["qddot"].mx - qddot,
                                                nlp.states["q"],
                                                nlp.states["qdot"], nlp.states["tau"],
                                                nlp.controls["taudot"],
-                                               nlp.controls["qddot"])
-                # nlp.states["q"],
-                # nlp.states["qdot"], nlp.states["tau"],
+                                               nlp.states["qddot"], nlp.controls["qdddot"])
+
             else:
                 res = BiorbdInterface.mx_to_cx("ForwardDynamics", all_pn.nlp.controls["qddot"].mx - qddot,
                                                nlp.states["q"],
