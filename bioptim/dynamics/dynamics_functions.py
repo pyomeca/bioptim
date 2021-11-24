@@ -213,7 +213,12 @@ class DynamicsFunctions:
         return vertcat(dq, ddq)
 
     @staticmethod
-    def torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+    def torque_derivative_driven(states: MX.sym,
+                                 controls: MX.sym,
+                                 parameters: MX.sym,
+                                 nlp,
+                                 implicit_dynamics: bool,
+                                 with_contact: bool) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -227,6 +232,8 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
+        implicit_dynamics: bool
+            If the implicit dynamics should be used
         with_contact: bool
             If the dynamic with contact should be used
 
@@ -243,13 +250,22 @@ class DynamicsFunctions:
         taudot = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
-        dtau = nlp.controls["taudot"].mapping.to_first.map(taudot)
+        dtau = DynamicsFunctions.get(nlp.controls["qddot"], controls)
 
-        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
-        dtau = horzcat(*[dtau for _ in range(ddq.shape[1])])
+        dq = horzcat(*[dq for _ in range(dq.shape[1])])
+        dtau = horzcat(*[dtau for _ in range(dq.shape[1])])
 
-        return vertcat(dq, ddq, dtau)
+        dxdt = MX(nlp.states.shape, 1)
+        if implicit_dynamics:
+            dxdt[nlp.states["q"].index, :] = dq
+            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+            dxdt[nlp.states["tau"].index, :] = dtau
+        else:
+            dxdt[nlp.states["q"].index, :] = dq
+            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+            dxdt[nlp.states["tau"].index, :] = dtau
+
+        return dxdt
 
     @staticmethod
     def forces_from_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:

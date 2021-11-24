@@ -25,13 +25,13 @@ class Constraint(PenaltyOption):
     """
 
     def __init__(
-        self,
-        constraint: Any,
-        min_bound: Union[np.ndarray, float] = None,
-        max_bound: Union[np.ndarray, float] = None,
-        quadratic: bool = False,
-        phase: int = -1,
-        **params: Any,
+            self,
+            constraint: Any,
+            min_bound: Union[np.ndarray, float] = None,
+            max_bound: Union[np.ndarray, float] = None,
+            quadratic: bool = False,
+            phase: int = -1,
+            **params: Any,
     ):
         """
         Parameters
@@ -179,11 +179,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def non_slipping(
-            constraint: Constraint,
-            all_pn: PenaltyNodeList,
-            tangential_component_idx: int,
-            normal_component_idx: int,
-            static_friction_coefficient: float,
+                constraint: Constraint,
+                all_pn: PenaltyNodeList,
+                tangential_component_idx: int,
+                normal_component_idx: int,
+                static_friction_coefficient: float,
         ):
             """
             Add a constraint of static friction at contact points constraining for small tangential forces.
@@ -228,8 +228,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
             elif len(tangential_component_idx) == 2:
                 tangential_contact_force_squared = (
-                    sum1(contact[tangential_component_idx[0], 0]) ** 2
-                    + sum1(contact[tangential_component_idx[1], 0]) ** 2
+                        sum1(contact[tangential_component_idx[0], 0]) ** 2
+                        + sum1(contact[tangential_component_idx[1], 0]) ** 2
                 )
             else:
                 raise (ValueError("tangential_component_idx should either be x and y or only one component"))
@@ -318,9 +318,23 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
-            tau = nlp.controls["tau"].mx
+            tau = nlp.states["tau"].mx if 'tau' in nlp.states.keys() else nlp.controls["tau"].mx
+
             qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
-            return BiorbdInterface.mx_to_cx("ForwardDynamics", all_pn.nlp.controls["qddot"].mx - qddot, nlp.states["q"], nlp.states["qdot"], nlp.controls["tau"], nlp.controls["qddot"])
+
+            if 'tau' in nlp.states.keys():
+                res = BiorbdInterface.mx_to_cx("ForwardDynamics", all_pn.nlp.controls["qddot"].mx - qddot,
+                                               nlp.states["q"],
+                                               nlp.states["qdot"], nlp.states["tau"],
+                                               nlp.controls["taudot"],
+                                               nlp.controls["qddot"])
+                # nlp.states["q"],
+                # nlp.states["qdot"], nlp.states["tau"],
+            else:
+                res = BiorbdInterface.mx_to_cx("ForwardDynamics", all_pn.nlp.controls["qddot"].mx - qddot,
+                                               nlp.states["q"],
+                                               nlp.states["qdot"], nlp.controls["tau"], nlp.controls["qddot"])
+            return res
 
     @staticmethod
     def inner_phase_continuity(ocp):
