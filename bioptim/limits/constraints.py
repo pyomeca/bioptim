@@ -330,9 +330,42 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                                                nlp.states["qddot"], nlp.controls["qdddot"])
 
             else:
-                res = BiorbdInterface.mx_to_cx("ForwardDynamics", all_pn.nlp.controls["qddot"].mx - qddot,
+                res = BiorbdInterface.mx_to_cx("ForwardDynamics", nlp.controls["qddot"].mx - qddot,
                                                nlp.states["q"],
                                                nlp.states["qdot"], nlp.controls["tau"], nlp.controls["qddot"])
+            return res
+
+        @staticmethod
+        def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+            """
+            The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            **unused_param: dict
+                Since the function does nothing, we can safely ignore any argument
+            """
+
+            nlp = all_pn.nlp
+
+            force_idx = []
+            for i_sc in range(nlp.model.nbSoftContacts()):
+                force_idx.append(3 + (6 * i_sc))
+                force_idx.append(4 + (6 * i_sc))
+                force_idx.append(5 + (6 * i_sc))
+
+            soft_contact_all = nlp.soft_contact_forces_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)
+            soft_contact_force = soft_contact_all[force_idx]
+
+            res = BiorbdInterface.mx_to_cx("ForwardDynamics", nlp.controls["fext"].mx - soft_contact_force,
+                                           nlp.states["q"],
+                                           nlp.states["qdot"],
+                                           nlp.controls["tau"],
+                                           nlp.controls["fext"])
             return res
 
     @staticmethod
@@ -424,6 +457,7 @@ class ImplicitConstraintFcn(Enum):
     """
 
     QDDOT = (ConstraintFunction.Functions.implicit_qddot,)
+    SOFT_CONTACT_FORCES = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
 
     @staticmethod
     def get_type():
