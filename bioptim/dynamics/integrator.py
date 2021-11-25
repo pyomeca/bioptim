@@ -257,7 +257,7 @@ class RK(Integrator):
                     x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
                 )
                 quaternion /= norm_fro(quaternion)
-                x[quat_idx[j][0]: quat_idx[j][2] + 1, i] = quaternion[1:4]
+                x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
                 x[quat_idx[j][3], i] = quaternion[0]
 
         return x[:, -1], x
@@ -640,7 +640,7 @@ class IRK(COLLOCATION):
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
         x_irk_points = ifcn(self.cx(), states[0], controls, params)
-        x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx: r * nx] for r in range(self.degree + 1)]
+        x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
         xf = self.cx.zeros(nx, self.degree + 1)  # 0 #

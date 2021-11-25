@@ -94,7 +94,9 @@ class ConfigureProblem:
         nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
-    def torque_driven(ocp, nlp, with_contact: bool = False, implicit_dynamics: bool = False, fatigue: FatigueList = None):
+    def torque_driven(
+        ocp, nlp, with_contact: bool = False, implicit_dynamics: bool = False, fatigue: FatigueList = None
+    ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
 
@@ -118,14 +120,19 @@ class ConfigureProblem:
 
         if implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, False, True)
-            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT, node=Node.ALL_SHOOTING)
+            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS, node=Node.ALL_SHOOTING)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             ConfigureProblem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.torque_driven, with_contact=with_contact, fatigue=fatigue,
-                implicit_dynamics=implicit_dynamics)
+                ocp,
+                nlp,
+                DynamicsFunctions.torque_driven,
+                with_contact=with_contact,
+                fatigue=fatigue,
+                implicit_dynamics=implicit_dynamics,
+            )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
@@ -155,14 +162,17 @@ class ConfigureProblem:
         if implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
-            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT, node=Node.ALL_SHOOTING)
+            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS, node=Node.ALL_SHOOTING)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             ConfigureProblem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.torque_derivative_driven, with_contact=with_contact,
-                implicit_dynamics=implicit_dynamics
+                ocp,
+                nlp,
+                DynamicsFunctions.torque_derivative_driven,
+                with_contact=with_contact,
+                implicit_dynamics=implicit_dynamics,
             )
 
         if with_contact:

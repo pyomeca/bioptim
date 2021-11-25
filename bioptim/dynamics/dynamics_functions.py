@@ -213,12 +213,9 @@ class DynamicsFunctions:
         return vertcat(dq, ddq)
 
     @staticmethod
-    def torque_derivative_driven(states: MX.sym,
-                                 controls: MX.sym,
-                                 parameters: MX.sym,
-                                 nlp,
-                                 implicit_dynamics: bool,
-                                 with_contact: bool) -> MX:
+    def torque_derivative_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool, with_contact: bool
+    ) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -253,7 +250,7 @@ class DynamicsFunctions:
 
         dq = horzcat(*[dq for _ in range(dq.shape[1])])
         dtau = horzcat(*[dtau for _ in range(dq.shape[1])])
-
+        # TODO: verify when the external forces are added
         dxdt = MX(nlp.states.shape, 1)
         if implicit_dynamics:
             ddq = DynamicsFunctions.get(nlp.states["qddot"], states)

@@ -145,9 +145,10 @@ class OdeSolver:
     """
     The public interface to the different OdeSolvers
     """
+
     class RK1(RK):
         """
-        A Runge-Kutta 4 solver
+        A Runge-Kutta 1 solver (Forward Euler Method)
         """
 
         def __init__(self, n_integration_steps: int = 5):
