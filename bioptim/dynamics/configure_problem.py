@@ -13,7 +13,7 @@ from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, VariableType, Node
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..limits.constraints import ImplicitConstraintFcn, Constraint
+from ..limits.constraints import ImplicitConstraintFcn
 
 
 class ConfigureProblem:
@@ -130,7 +130,7 @@ class ConfigureProblem:
 
         if implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, False, True)
-            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS, node=Node.ALL_SHOOTING)
+            ocp.implicit_constraints.add(ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS, node=Node.ALL_SHOOTING)
 
         if implicit_soft_contacts:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
@@ -183,7 +183,7 @@ class ConfigureProblem:
         if implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
-            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS, node=Node.ALL_SHOOTING)
+            ocp.implicit_constraints.add(ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS, node=Node.ALL_SHOOTING)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)

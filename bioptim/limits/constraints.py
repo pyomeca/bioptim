@@ -301,9 +301,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return all_pn.nlp.tf
 
         @staticmethod
-        def implicit_qddot(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def qddot_equals_forward_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
             """
-            The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
+            Compute the difference between symbolic joint accelerations and forward dynamic results
+            It includes the inversion of mass matrix
 
             Parameters
             ----------
@@ -325,7 +326,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if "tau" in nlp.states.keys():
                 res = BiorbdInterface.mx_to_cx(
                     "ForwardDynamics",
-                    all_pn.nlp.states["qddot"].mx - qddot,
+                    nlp.states["qddot"].mx - qddot,
                     nlp.states["q"],
                     nlp.states["qdot"],
                     nlp.states["tau"],
@@ -337,7 +338,55 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             else:
                 res = BiorbdInterface.mx_to_cx(
                     "ForwardDynamics",
-                    all_pn.nlp.controls["qddot"].mx - qddot,
+                    nlp.controls["qddot"].mx - qddot,
+                    nlp.states["q"],
+                    nlp.states["qdot"],
+                    nlp.controls["tau"],
+                    nlp.controls["qddot"],
+                )
+            return res
+
+        @staticmethod
+        def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+            """
+            Compute the difference between symbolic joint torques and inverse dynamic results
+            It does not include any inversion of mass matrix
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            **unused_param: dict
+                Since the function does nothing, we can safely ignore any argument
+            """
+
+            nlp = all_pn.nlp
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+
+            # Todo: add fext
+            tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
+
+            if "tau" in nlp.states.keys():
+                res = BiorbdInterface.mx_to_cx(
+                    "InverseDynamics",
+                    tau_id - tau,
+                    nlp.states["q"],
+                    nlp.states["qdot"],
+                    nlp.states["tau"],
+                    nlp.controls["taudot"],
+                    nlp.states["qddot"],
+                    nlp.controls["qdddot"],
+                )
+
+            else:
+                res = BiorbdInterface.mx_to_cx(
+                    "InverseDynamics",
+                    tau_id - tau,
                     nlp.states["q"],
                     nlp.states["qdot"],
                     nlp.controls["tau"],
@@ -469,7 +518,8 @@ class ImplicitConstraintFcn(Enum):
         Returns the type of the penalty
     """
 
-    QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.implicit_qddot,)
+    QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
+    TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
 
     @staticmethod
