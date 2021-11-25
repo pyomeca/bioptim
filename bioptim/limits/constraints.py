@@ -25,13 +25,13 @@ class Constraint(PenaltyOption):
     """
 
     def __init__(
-            self,
-            constraint: Any,
-            min_bound: Union[np.ndarray, float] = None,
-            max_bound: Union[np.ndarray, float] = None,
-            quadratic: bool = False,
-            phase: int = -1,
-            **params: Any,
+        self,
+        constraint: Any,
+        min_bound: Union[np.ndarray, float] = None,
+        max_bound: Union[np.ndarray, float] = None,
+        quadratic: bool = False,
+        phase: int = -1,
+        **params: Any,
     ):
         """
         Parameters
@@ -179,11 +179,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def non_slipping(
-                constraint: Constraint,
-                all_pn: PenaltyNodeList,
-                tangential_component_idx: int,
-                normal_component_idx: int,
-                static_friction_coefficient: float,
+            constraint: Constraint,
+            all_pn: PenaltyNodeList,
+            tangential_component_idx: int,
+            normal_component_idx: int,
+            static_friction_coefficient: float,
         ):
             """
             Add a constraint of static friction at contact points constraining for small tangential forces.
@@ -228,8 +228,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
             elif len(tangential_component_idx) == 2:
                 tangential_contact_force_squared = (
-                        sum1(contact[tangential_component_idx[0], 0]) ** 2
-                        + sum1(contact[tangential_component_idx[1], 0]) ** 2
+                    sum1(contact[tangential_component_idx[0], 0]) ** 2
+                    + sum1(contact[tangential_component_idx[1], 0]) ** 2
                 )
             else:
                 raise (ValueError("tangential_component_idx should either be x and y or only one component"))
@@ -318,21 +318,31 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
-            tau = nlp.states["tau"].mx if 'tau' in nlp.states.keys() else nlp.controls["tau"].mx
+            tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
 
             qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
-            if 'tau' in nlp.states.keys():
-                res = BiorbdInterface.mx_to_cx("ForwardDynamics", all_pn.nlp.states["qddot"].mx - qddot,
-                                               nlp.states["q"],
-                                               nlp.states["qdot"], nlp.states["tau"],
-                                               nlp.controls["taudot"],
-                                               nlp.states["qddot"], nlp.controls["qdddot"])
+            if "tau" in nlp.states.keys():
+                res = BiorbdInterface.mx_to_cx(
+                    "ForwardDynamics",
+                    all_pn.nlp.states["qddot"].mx - qddot,
+                    nlp.states["q"],
+                    nlp.states["qdot"],
+                    nlp.states["tau"],
+                    nlp.controls["taudot"],
+                    nlp.states["qddot"],
+                    nlp.controls["qdddot"],
+                )
 
             else:
-                res = BiorbdInterface.mx_to_cx("ForwardDynamics", nlp.controls["qddot"].mx - qddot,
-                                               nlp.states["q"],
-                                               nlp.states["qdot"], nlp.controls["tau"], nlp.controls["qddot"])
+                res = BiorbdInterface.mx_to_cx(
+                    "ForwardDynamics",
+                    all_pn.nlp.controls["qddot"].mx - qddot,
+                    nlp.states["q"],
+                    nlp.states["qdot"],
+                    nlp.controls["tau"],
+                    nlp.controls["qddot"],
+                )
             return res
 
         @staticmethod
@@ -361,11 +371,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             soft_contact_all = nlp.soft_contact_forces_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)
             soft_contact_force = soft_contact_all[force_idx]
 
-            res = BiorbdInterface.mx_to_cx("ForwardDynamics", nlp.controls["fext"].mx - soft_contact_force,
-                                           nlp.states["q"],
-                                           nlp.states["qdot"],
-                                           nlp.controls["tau"],
-                                           nlp.controls["fext"])
+            res = BiorbdInterface.mx_to_cx(
+                "ForwardDynamics",
+                nlp.controls["fext"].mx - soft_contact_force,
+                nlp.states["q"],
+                nlp.states["qdot"],
+                nlp.controls["tau"],
+                nlp.controls["fext"],
+            )
             return res
 
     @staticmethod
@@ -457,7 +470,6 @@ class ImplicitConstraintFcn(Enum):
     """
 
     QDDOT = (ConstraintFunction.Functions.implicit_qddot,)
-    SOFT_CONTACT_FORCES = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
 
     @staticmethod
     def get_type():

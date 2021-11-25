@@ -97,10 +97,14 @@ class ConfigureProblem:
         nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
-    def torque_driven(ocp, nlp, with_contact: bool = False,
-                      implicit_dynamics: bool = False,
-                      implicit_soft_contacts: bool = False,
-                      fatigue: FatigueList = None):
+    def torque_driven(
+        ocp,
+        nlp,
+        with_contact: bool = False,
+        implicit_dynamics: bool = False,
+        implicit_soft_contacts: bool = False,
+        fatigue: FatigueList = None,
+    ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
 
@@ -126,7 +130,7 @@ class ConfigureProblem:
 
         if implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, False, True)
-            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT, node=Node.ALL_SHOOTING)
+            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS, node=Node.ALL_SHOOTING)
 
         if implicit_soft_contacts:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
@@ -135,8 +139,13 @@ class ConfigureProblem:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             ConfigureProblem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.torque_driven, with_contact=with_contact, fatigue=fatigue,
-                implicit_dynamics=implicit_dynamics)
+                ocp,
+                nlp,
+                DynamicsFunctions.torque_driven,
+                with_contact=with_contact,
+                fatigue=fatigue,
+                implicit_dynamics=implicit_dynamics,
+            )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
@@ -146,8 +155,9 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(ImplicitConstraintFcn.SOFT_CONTACT_FORCES, node=Node.ALL_SHOOTING)
 
     @staticmethod
-    def torque_derivative_driven(ocp, nlp, with_contact=False, implicit_dynamics: bool = False,
-                                 implicit_soft_contacts: bool = False):
+    def torque_derivative_driven(
+        ocp, nlp, with_contact=False, implicit_dynamics: bool = False, implicit_soft_contacts: bool = False
+    ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
 
@@ -173,14 +183,17 @@ class ConfigureProblem:
         if implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
-            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT, node=Node.ALL_SHOOTING)
+            ocp.implicit_constraints.add(ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS, node=Node.ALL_SHOOTING)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             ConfigureProblem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.torque_derivative_driven, with_contact=with_contact,
-                implicit_dynamics=implicit_dynamics
+                ocp,
+                nlp,
+                DynamicsFunctions.torque_derivative_driven,
+                with_contact=with_contact,
+                implicit_dynamics=implicit_dynamics,
             )
 
         if with_contact:
@@ -223,12 +236,12 @@ class ConfigureProblem:
 
     @staticmethod
     def muscle_driven(
-            ocp,
-            nlp,
-            with_excitations: bool = False,
-            fatigue: FatigueList = None,
-            with_torque: bool = False,
-            with_contact: bool = False,
+        ocp,
+        nlp,
+        with_excitations: bool = False,
+        fatigue: FatigueList = None,
+        with_torque: bool = False,
+        with_contact: bool = False,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -367,10 +380,10 @@ class ConfigureProblem:
             soft_contact = nlp.model.softContact(i_sc)
             n = int(nlp.states.mx_reduced.shape[0] / 2)
 
-            global_soft_contact_force_func[i_sc * 6: (i_sc + 1) * 6, :] = (
+            global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)
-                    .computeForceAtOrigin(nlp.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
-                    .to_mx()
+                .computeForceAtOrigin(nlp.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
+                .to_mx()
             )
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
@@ -403,7 +416,7 @@ class ConfigureProblem:
                     [i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase]
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.softContactName(i_sc).to_string()}"] = CustomPlot(
-                lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6): ((i_sc + 1) * 6), :],
+                lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
                 legend=all_soft_contact_names,
@@ -411,12 +424,12 @@ class ConfigureProblem:
 
     @staticmethod
     def _manage_fatigue_to_new_variable(
-            name: str,
-            name_elements: list,
-            nlp,
-            as_states: bool,
-            as_controls: bool,
-            fatigue: FatigueList = None,
+        name: str,
+        name_elements: list,
+        nlp,
+        as_states: bool,
+        as_controls: bool,
+        fatigue: FatigueList = None,
     ):
         if fatigue is None or name not in fatigue:
             return False
@@ -516,15 +529,15 @@ class ConfigureProblem:
 
     @staticmethod
     def configure_new_variable(
-            name: str,
-            name_elements: list,
-            nlp,
-            as_states: bool,
-            as_controls: bool,
-            fatigue: FatigueList = None,
-            combine_name: str = None,
-            combine_state_control_plot: bool = False,
-            skip_plot: bool = False,
+        name: str,
+        name_elements: list,
+        nlp,
+        as_states: bool,
+        as_controls: bool,
+        fatigue: FatigueList = None,
+        combine_name: str = None,
+        combine_state_control_plot: bool = False,
+        skip_plot: bool = False,
     ):
         """
         Add a new variable to the states/controls pool
@@ -769,12 +782,12 @@ class ConfigureProblem:
         l = ["fx", "fy", "fz"]  # TODO: find a better place to hold this or define it in biorbd ?
         for ii in range(nlp.model.nbSoftContacts()):
             name_soft_contact_forces.extend(
-                    [
-                        f"{nlp.model.softContactName(ii).to_string()}_{name}"
-                        for name in l
-                        if nlp.model.softContactName(ii).to_string() not in name_soft_contact_forces
-                    ]
-                )
+                [
+                    f"{nlp.model.softContactName(ii).to_string()}_{name}"
+                    for name in l
+                    if nlp.model.softContactName(ii).to_string() not in name_soft_contact_forces
+                ]
+            )
 
         ConfigureProblem.configure_new_variable("fext", name_soft_contact_forces, nlp, as_states, as_controls)
 
@@ -870,10 +883,10 @@ class Dynamics(OptionGeneric):
     """
 
     def __init__(
-            self,
-            dynamics_type: Union[Callable, DynamicsFcn],
-            expand: bool = False,
-            **params: Any,
+        self,
+        dynamics_type: Union[Callable, DynamicsFcn],
+        expand: bool = False,
+        **params: Any,
     ):
         """
         Parameters
