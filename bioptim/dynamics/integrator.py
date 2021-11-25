@@ -265,7 +265,7 @@ class RK(Integrator):
 
 class RK1(RK):
     """
-    Numerical integration using fourth order Runge-Kutta method.
+    Numerical integration using first order Runge-Kutta 1 Method (Forward Euler Method).
 
     Methods
     -------
