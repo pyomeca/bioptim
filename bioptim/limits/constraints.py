@@ -469,7 +469,8 @@ class ImplicitConstraintFcn(Enum):
         Returns the type of the penalty
     """
 
-    QDDOT = (ConstraintFunction.Functions.implicit_qddot,)
+    QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.implicit_qddot,)
+    SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
 
     @staticmethod
     def get_type():
