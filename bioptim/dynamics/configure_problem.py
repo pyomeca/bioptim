@@ -9,7 +9,7 @@ from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
-from ..misc.enums import PlotType, ControlType, VariableType, Node
+from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
@@ -120,7 +120,11 @@ class ConfigureProblem:
 
         if implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, False, True)
-            ocp.implicit_constraints.add(ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS, node=Node.ALL_SHOOTING)
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
+            )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -162,7 +166,11 @@ class ConfigureProblem:
         if implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
-            ocp.implicit_constraints.add(ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS, node=Node.ALL_SHOOTING)
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
+            )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)

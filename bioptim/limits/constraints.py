@@ -1,14 +1,13 @@
 from typing import Callable, Union, Any
 from enum import Enum
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..misc.enums import Node, InterpolationType
+from ..misc.enums import Node, InterpolationType, ConstraintType
 from ..misc.options import OptionList
 
 
@@ -92,17 +91,25 @@ class Constraint(PenaltyOption):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
     def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
-        if self.is_internal:
+        if self.constraint_type == ConstraintType.INTERNAL:
             pool = all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
-        else:
+        elif self.constraint_type == ConstraintType.IMPLICIT:
+            pool = all_pn.nlp.g_implicit if all_pn is not None and all_pn.nlp else all_pn.ocp.g_implicit
+        elif self.constraint_type == ConstraintType.USER:
             pool = all_pn.nlp.g if all_pn is not None and all_pn.nlp else all_pn.ocp.g
+        else:
+            raise ValueError(f"Invalid constraint type {self.contraint_type}.")
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        if self.is_internal:
+        if self.constraint_type == ConstraintType.INTERNAL:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        else:
+        elif self.constraint_type == ConstraintType.IMPLICIT:
+            g_to_add_to = nlp.g_implicit if nlp else ocp.g_implicit
+        elif self.constraint_type == ConstraintType.USER:
             g_to_add_to = nlp.g if nlp else ocp.g
+        else:
+            raise ValueError(f"Invalid Type of Constraint {self.constraint_type}")
 
         if self.list_index < 0:
             for i, j in enumerate(g_to_add_to):
@@ -407,7 +414,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         # Dynamics must be sound within phases
         for i, nlp in enumerate(ocp.nlp):
-            penalty = Constraint(ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, is_internal=True)
+            penalty = Constraint(
+                ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, constraint_type=ConstraintType.INTERNAL
+            )
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
