@@ -154,6 +154,7 @@ class ConfigureProblem:
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
+        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         if implicit_soft_contacts:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
@@ -212,6 +213,7 @@ class ConfigureProblem:
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
+        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         if implicit_soft_contacts:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
@@ -418,7 +420,7 @@ class ConfigureProblem:
             all_soft_contact_names.extend(
                 [
                     f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
-                    for name in l
+                    for name in component_list
                     if nlp.model.softContactName(i_sc).to_string() not in all_soft_contact_names
                 ]
             )

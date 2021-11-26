@@ -72,9 +72,9 @@ class BiorbdInterface:
         ----------
         name: str
             The unique name of the function to add to the casadi functions pool
-        function: Callable
+        function: Union[Callable, SX, MX]
             The biorbd function to add
-        all_param: dict
+        all_param: Any
             Any parameters to pass to the biorbd function
         """
         from ..optimization.optimization_variable import OptimizationVariable, OptimizationVariableList

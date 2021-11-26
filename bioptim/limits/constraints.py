@@ -433,16 +433,46 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             soft_contact_all = nlp.soft_contact_forces_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)
             soft_contact_force = soft_contact_all[force_idx]
 
-            res = BiorbdInterface.mx_to_cx(
-                "ForwardDynamics",
-                nlp.controls["fext"].mx - soft_contact_force,
-                nlp.states["q"],
-                nlp.states["qdot"],
-                nlp.controls["tau"],
-                nlp.controls["fext"],
-                # nlp.controls["qddot"],
-            )
-            return res
+            var = [nlp.states["q"], nlp.states["qdot"]]
+            dynamic_name = nlp.dynamics_type.type.name
+            if nlp.dynamics_type.params["implicit_dynamics"]:
+                if dynamic_name == "TORQUE_DERIVATIVE_DRIVEN":
+                    var.extend(
+                        [
+                            nlp.states["tau"],
+                            nlp.states["taudot"],
+                            nlp.controls["fext"],
+                            nlp.states["qddot"],
+                            nlp.controls["qdddot"],
+                        ]
+                    )
+                elif dynamic_name == "TORQUE_DRIVEN":
+                    var.extend([nlp.controls["tau"], nlp.controls["fext"], nlp.controls["qddot"]])
+                else:
+                    raise NotImplementedError(
+                        "Implicit Soft Contact with implicit dynamics has not been implemented yet"
+                        f" for such as dynamic: {dynamic_name}. "
+                        "It is only implemented for these dynamics:"
+                        " TORQUE_DRIVEN and TORQUE_DERIVATIVE_DRIVEN."
+                    )
+            else:
+                if dynamic_name == "TORQUE_DERIVATIVE_DRIVEN":
+                    var.extend([
+                        nlp.states["tau"],
+                        nlp.controls["taudot"],
+                        nlp.controls["fext"],
+                    ])
+                elif dynamic_name == "TORQUE_DRIVEN":
+                    var.extend([nlp.controls["tau"], nlp.controls["fext"]])
+                else:
+                    raise NotImplementedError(
+                        "Implicit Soft Contact has not been implemented yet"
+                        f" for such as dynamic: {dynamic_name}. "
+                        "It is only implemented for these dynamics:"
+                        " TORQUE_DRIVEN and TORQUE_DERIVATIVE_DRIVEN."
+                    )
+
+            return BiorbdInterface.mx_to_cx("ForwardDynamics", nlp.controls["fext"].mx - soft_contact_force, *var)
 
     @staticmethod
     def inner_phase_continuity(ocp):
