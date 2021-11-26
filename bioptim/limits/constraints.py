@@ -457,11 +457,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     )
             else:
                 if dynamic_name == "TORQUE_DERIVATIVE_DRIVEN":
-                    var.extend([
-                        nlp.states["tau"],
-                        nlp.controls["taudot"],
-                        nlp.controls["fext"],
-                    ])
+                    var.extend(
+                        [
+                            nlp.states["tau"],
+                            nlp.controls["taudot"],
+                            nlp.controls["fext"],
+                        ]
+                    )
                 elif dynamic_name == "TORQUE_DRIVEN":
                     var.extend([nlp.controls["tau"], nlp.controls["fext"]])
                 else:
