@@ -9,33 +9,39 @@ if [ ! -f acados/CMakeLists.txt ]; then
   git submodule update --recursive --init
 fi
 
+# Check if everything required by the script is present
+echo "Processing arguments"
+echo ""
+
 # Check if there are a number of CPUs for Acados multiprocessing
 ARG1=${1:NB_CPU}
 if [ -z "$ARG1" ]; then
   $ARG1=$CPU_COUNT
-  echo " Argument 2 (NB_CPU) not provided, falling back on maximum number of CPUs."
+  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs."
   echo ""
 fi
 
-# Check if everything required by the script is present
-echo "Processing arguments"
-echo ""
+if [ "$1" ]; then
+	echo "  Number of threads for acados with openMP asked : NB_CPU=$1"
+	echo ""
+fi
+
 ARG2=${2:-$CONDA_PREFIX}
 if [ -z "$ARG2" ]; then
-  echo "  Argument 1 (CMAKE_INSTALL_PREFIX) is missing and you are not using conda."
+  echo "  Argument 2 (CMAKE_INSTALL_PREFIX) is missing and you are not using conda."
   echo "  Please provide a path for installation"
   exit 1
 fi
 
 if [ -z "$1" ]; then
-  echo "  Argument 1 (CMAKE_INSTALL_PREFIX) not provided, falling back on CONDA_PREFIX"
+  echo "  Argument 2 (CMAKE_INSTALL_PREFIX) not provided, falling back on CONDA_PREFIX"
   echo "  CONDA_PREFIX=$CONDA_PREFIX"
   echo ""
 fi
 
 ARG3=${3:-X64_AUTOMATIC}
 if [ -z "$3" ]; then
-  echo "  Argument 2 (BLASFEO_TARGET) not provided, falling back on X64_AUTOMATIC"
+  echo "  Argument 3 (BLASFEO_TARGET) not provided, falling back on X64_AUTOMATIC"
   echo ""
 fi
 
