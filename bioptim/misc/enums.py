@@ -116,3 +116,13 @@ class SolutionIntegrator(Enum):
     SCIPY_DOP853 = "DOP853"
     SCIPY_BDF = "BDF"
     SCIPY_LSODA = "LSODA"
+
+
+class ConstraintType(Enum):
+    """
+    Selection of constraint types
+    """
+
+    USER = "user"
+    INTERNAL = "internal"
+    IMPLICIT = "implicit"

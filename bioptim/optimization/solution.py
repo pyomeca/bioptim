@@ -201,6 +201,7 @@ class Solution:
             self.J_internal = nlp.J_internal
             self.g = nlp.g
             self.g_internal = nlp.g_internal
+            self.g_implicit = nlp.g_implicit
             self.ns = nlp.ns
             self.parameters = nlp.parameters
 
@@ -238,6 +239,7 @@ class Solution:
             self.J_internal = ocp.J_internal
             self.g = ocp.g
             self.g_internal = ocp.g_internal
+            self.g_implicit = ocp.g_implicit
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
 
@@ -1054,12 +1056,17 @@ class Solution:
 
             # Todo, min/mean/max
             print(f"\n--------- CONSTRAINTS ---------")
-            if print_penalty_list(None, ocp.g_internal, True) + print_penalty_list(None, ocp.g, True):
+            if (
+                print_penalty_list(None, ocp.g_internal, True)
+                + print_penalty_list(None, ocp.g_implicit, True)
+                + print_penalty_list(None, ocp.g, True)
+            ):
                 print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
                 print_penalty_list(nlp, nlp.g_internal, True)
+                print_penalty_list(nlp, nlp.g_implicit, True)
                 print_penalty_list(nlp, nlp.g, True)
                 print("")
             print(f"------------------------------")
