@@ -31,7 +31,7 @@ def prepare_ocp(
     n_shooting: int,
     ode_solver: OdeSolver = OdeSolver.RK4(),
     use_sx: bool = True,
-    n_threads: int = 8,
+    n_threads: int = 1,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
