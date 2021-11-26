@@ -248,23 +248,20 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        dq = horzcat(*[dq for _ in range(dq.shape[1])])
-        dtau = horzcat(*[dtau for _ in range(dq.shape[1])])
-        # TODO: verify when the external forces are added
         dxdt = MX(nlp.states.shape, 1)
         if implicit_dynamics:
             ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
-            ddq = horzcat(*[ddq for _ in range(dq.shape[1])])
-            qdddot = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
+            dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 
             dxdt[nlp.states["q"].index, :] = dq
             dxdt[nlp.states["qdot"].index, :] = ddq
-            dxdt[nlp.states["qddot"].index, :] = qdddot
+            dxdt[nlp.states["qddot"].index, :] = dddq
             dxdt[nlp.states["tau"].index, :] = dtau
         else:
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
-            dxdt[nlp.states["tau"].index, :] = dtau
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+            dxdt[nlp.states["qdot"].index, :] = ddq
+            dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
 
         return dxdt
 

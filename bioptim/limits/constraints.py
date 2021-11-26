@@ -375,7 +375,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
-            # Todo: add fext
+            if nlp.external_forces:
+                raise NotImplementedError(
+                    "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
+                )
+                # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
+                # fext need to be a mx
+
             tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
 
             if "tau" in nlp.states.keys():

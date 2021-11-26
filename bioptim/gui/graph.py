@@ -366,7 +366,7 @@ class OcpToConsole(GraphAbstract):
                         continue
                     node_index = self._analyze_nodes(phase_idx, constraint)
                     if node_index == node_idx:
-                        print(f"*** Constraint: {constraint.name}")
+                        print(f"*** Implicit Constraint: {constraint.name}")
                 print("")
 
 
