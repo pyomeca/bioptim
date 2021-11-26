@@ -214,7 +214,9 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         if implicit_soft_contacts:
             ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS, node=Node.ALL_SHOOTING
+                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
             )
 
     @staticmethod
@@ -392,10 +394,11 @@ class ConfigureProblem:
         """
 
         global_soft_contact_force_func = MX.zeros(nlp.model.nbSoftContacts() * 6, 1)
+        n = nlp.model.nbQ()
+        component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
         for i_sc in range(nlp.model.nbSoftContacts()):
             soft_contact = nlp.model.softContact(i_sc)
-            n = int(nlp.states.mx_reduced.shape[0] / 2)
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)
@@ -412,7 +415,6 @@ class ConfigureProblem:
 
         for i_sc in range(nlp.model.nbSoftContacts()):
             all_soft_contact_names = []
-            l = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]  # TODO: find a better place to hold this or define it in biorbd ?
             all_soft_contact_names.extend(
                 [
                     f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
@@ -426,7 +428,7 @@ class ConfigureProblem:
             else:
                 soft_contact_names_in_phase = [
                     f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
-                    for name in l
+                    for name in component_list
                     if nlp.model.softContactName(i_sc).to_string() not in all_soft_contact_names
                 ]
                 phase_mappings = Mapping(
@@ -796,12 +798,12 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
         name_soft_contact_forces = []
-        l = ["fx", "fy", "fz"]  # TODO: find a better place to hold this or define it in biorbd ?
+        component_list = ["fx", "fy", "fz"]  # TODO: find a better place to hold this or define it in biorbd ?
         for ii in range(nlp.model.nbSoftContacts()):
             name_soft_contact_forces.extend(
                 [
                     f"{nlp.model.softContactName(ii).to_string()}_{name}"
-                    for name in l
+                    for name in component_list
                     if nlp.model.softContactName(ii).to_string() not in name_soft_contact_forces
                 ]
             )

@@ -27,6 +27,7 @@ from bioptim import (
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
@@ -179,17 +180,18 @@ def main():
     cost_ex = np.sum(sol_explicit.cost)
     cost_im = np.sum(sol_implicit.cost)
     plt.bar([0, 1], width=0.3, height=[cost_ex, cost_im])
-    plt.xticks([0, 1], ['explicit', 'implicit'])
+    plt.xticks([0, 1], ["explicit", "implicit"])
     plt.ylabel(" weighted cost function")
 
     plt.figure()
     time_ex = np.sum(sol_explicit.real_time_to_optimize)
     time_im = np.sum(sol_implicit.real_time_to_optimize)
     plt.bar([0, 1], width=0.3, height=[time_ex, time_im])
-    plt.xticks([0, 1], ['explicit', 'implicit'])
+    plt.xticks([0, 1], ["explicit", "implicit"])
     plt.ylabel("time (s)")
 
     plt.show()
+
 
 if __name__ == "__main__":
     main()
