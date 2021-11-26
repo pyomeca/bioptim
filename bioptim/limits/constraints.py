@@ -434,6 +434,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 nlp.states["qdot"],
                 nlp.controls["tau"],
                 nlp.controls["fext"],
+                # nlp.controls["qddot"],
             )
             return res
 

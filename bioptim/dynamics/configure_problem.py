@@ -156,7 +156,11 @@ class ConfigureProblem:
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         if implicit_soft_contacts:
-            ocp.implicit_constraints.add(ImplicitConstraintFcn.SOFT_CONTACT_FORCES, node=Node.ALL_SHOOTING)
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
+            )
 
     @staticmethod
     def torque_derivative_driven(
@@ -206,7 +210,12 @@ class ConfigureProblem:
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+        if implicit_soft_contacts:
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS, node=Node.ALL_SHOOTING
+            )
 
     @staticmethod
     def torque_activations_driven(ocp, nlp, with_contact=False):
