@@ -154,7 +154,6 @@ class ConfigureProblem:
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         if implicit_soft_contacts:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
@@ -196,6 +195,8 @@ class ConfigureProblem:
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
             )
+        if implicit_soft_contacts:
+            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -211,7 +212,6 @@ class ConfigureProblem:
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         if implicit_soft_contacts:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
