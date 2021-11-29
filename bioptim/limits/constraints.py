@@ -328,30 +328,37 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
 
-            qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+            qddot = nlp.states["qddot"].mx
+            qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
-            if "tau" in nlp.states.keys():
-                res = BiorbdInterface.mx_to_cx(
-                    "ForwardDynamics",
-                    nlp.states["qddot"].mx - qddot,
-                    nlp.states["q"],
-                    nlp.states["qdot"],
-                    nlp.states["tau"],
-                    nlp.controls["taudot"],
-                    nlp.states["qddot"],
-                    nlp.controls["qdddot"],
+            var = [nlp.states["q"], nlp.states["qdot"]]
+            dynamic_name = nlp.dynamics_type.type.name
+
+            if dynamic_name == "TORQUE_DERIVATIVE_DRIVEN":
+                var.extend(
+                    [
+                        nlp.states["tau"],
+                        nlp.controls["taudot"],
+                        nlp.states["qddot"],
+                        nlp.controls["qdddot"],
+                    ]
                 )
-
+            elif dynamic_name == "TORQUE_DRIVEN":
+                var.extend(
+                    [
+                        nlp.controls["tau"],
+                        nlp.controls["qddot"],
+                    ]
+                )
             else:
-                res = BiorbdInterface.mx_to_cx(
-                    "ForwardDynamics",
-                    nlp.controls["qddot"].mx - qddot,
-                    nlp.states["q"],
-                    nlp.states["qdot"],
-                    nlp.controls["tau"],
-                    nlp.controls["qddot"],
+                raise NotImplementedError(
+                    "Implicit Dynamics has not been implemented yet"
+                    f" for such as dynamic: {dynamic_name}. "
+                    "It is only implemented for these dynamics:"
+                    " TORQUE_DRIVEN and TORQUE_DERIVATIVE_DRIVEN."
                 )
-            return res
+
+            return BiorbdInterface.mx_to_cx("ForwardDynamics", qddot - qddot_fd, *var)
 
         @staticmethod
         def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
@@ -383,29 +390,34 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # fext need to be a mx
 
             tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
-
-            if "tau" in nlp.states.keys():
-                res = BiorbdInterface.mx_to_cx(
-                    "InverseDynamics",
-                    tau_id - tau,
-                    nlp.states["q"],
-                    nlp.states["qdot"],
-                    nlp.states["tau"],
-                    nlp.controls["taudot"],
-                    nlp.states["qddot"],
-                    nlp.controls["qdddot"],
+            var = [nlp.states["q"], nlp.states["qdot"]]
+            dynamic_name = nlp.dynamics_type.type.name
+            if dynamic_name == "TORQUE_DERIVATIVE_DRIVEN":
+                var.extend(
+                    [
+                        nlp.states["tau"],
+                        nlp.controls["taudot"],
+                        nlp.states["qddot"],
+                        nlp.controls["qdddot"],
+                    ]
                 )
 
+            elif dynamic_name == "TORQUE_DRIVEN":
+                var.extend(
+                    [
+                        nlp.controls["tau"],
+                        nlp.controls["qddot"],
+                    ]
+                )
             else:
-                res = BiorbdInterface.mx_to_cx(
-                    "InverseDynamics",
-                    tau_id - tau,
-                    nlp.states["q"],
-                    nlp.states["qdot"],
-                    nlp.controls["tau"],
-                    nlp.controls["qddot"],
+                raise NotImplementedError(
+                    "Implicit Dynamics has not been implemented yet"
+                    f" for such as dynamic: {dynamic_name}. "
+                    "It is only implemented for these dynamics:"
+                    " TORQUE_DRIVEN and TORQUE_DERIVATIVE_DRIVEN."
                 )
-            return res
+
+            return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - tau, *var)
 
         @staticmethod
         def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
