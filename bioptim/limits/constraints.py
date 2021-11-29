@@ -334,6 +334,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var = [nlp.states["q"], nlp.states["qdot"]]
             dynamic_name = nlp.dynamics_type.type.name
 
+            if nlp.external_forces:
+                raise NotImplementedError(
+                    "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
+                )
+                # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
+                # fext need to be a mx
+
             if dynamic_name == "TORQUE_DERIVATIVE_DRIVEN":
                 var.extend(
                     [
