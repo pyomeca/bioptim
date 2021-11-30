@@ -483,9 +483,7 @@ def test_implicit_soft_contacts_errors(dynamics):
     elif dynamics == DynamicsFcn.MUSCLE_DRIVEN:
         with pytest.raises(
             TypeError,
-            match=re.escape(
-                "muscle_driven() got an unexpected keyword argument " "'implicit_soft_contacts'"
-            ),
+            match=re.escape("muscle_driven() got an unexpected keyword argument " "'implicit_soft_contacts'"),
         ):
             ConfigureProblem.initialize(ocp, nlp)
 
@@ -517,17 +515,13 @@ def test_implicit_dynamics_errors(dynamics):
     if dynamics == DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN:
         with pytest.raises(
             TypeError,
-            match=re.escape(
-                "torque_activations_driven() got an unexpected keyword argument " "'implicit_dynamics'"
-            ),
+            match=re.escape("torque_activations_driven() got an unexpected keyword argument " "'implicit_dynamics'"),
         ):
             ConfigureProblem.initialize(ocp, nlp)
     elif dynamics == DynamicsFcn.MUSCLE_DRIVEN:
         with pytest.raises(
             TypeError,
-            match=re.escape(
-                "muscle_driven() got an unexpected keyword argument " "'implicit_dynamics'"
-            ),
+            match=re.escape("muscle_driven() got an unexpected keyword argument " "'implicit_dynamics'"),
         ):
             ConfigureProblem.initialize(ocp, nlp)
 
