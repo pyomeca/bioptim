@@ -311,6 +311,54 @@ class RK1(RK):
         return x_prev + h * self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
 
 
+class RK2(RK):
+    """
+    Numerical integration using second order Runge-Kutta Method (Midpoint Method).
+
+    Methods
+    -------
+    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+        Compute the next integrated state (abstract)
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
+        super(RK2, self).__init__(ode, ode_opt)
+        self._finish_init()
+
+    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+        """
+        Compute the next integrated state
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        t: float
+            The initial time of the integration
+        x_prev: Union[MX, SX]
+            The current state of the system
+        u: Union[MX, SX]
+            The control of the system
+        p: Union[MX, SX]
+            The parameters of the system
+
+        Returns
+        -------
+        The next integrate states
+        """
+        k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
+        return x_prev + h * self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
+
+
 class RK4(RK):
     """
     Numerical integration using fourth order Runge-Kutta method.

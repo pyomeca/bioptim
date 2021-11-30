@@ -67,7 +67,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=implicit_dynamics)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=implicit_dynamics, implicit_soft_contacts=False)
 
     # Path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -123,7 +123,7 @@ def main():
     """
     model_path = "models/pendulum.bioMod"
     n_shooting = 200  # The higher it is, the closer implicit and explicit solutions are.
-    ode_solver = OdeSolver.RK1(n_integration_steps=1)
+    ode_solver = OdeSolver.RK2(n_integration_steps=1)
     time = 1
 
     # --- Prepare the ocp with implicit dynamics --- #

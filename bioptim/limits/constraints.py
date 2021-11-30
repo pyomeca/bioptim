@@ -328,7 +328,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
 
-            qddot = nlp.states["qddot"].mx
+            qddot = nlp.controls["qddot"].mx
             qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
             var = [nlp.states["q"], nlp.states["qdot"]]

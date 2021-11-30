@@ -102,7 +102,7 @@ class ConfigureProblem:
         nlp,
         with_contact: bool = False,
         implicit_dynamics: bool = False,
-        implicit_soft_contacts: bool = False,
+        implicit_soft_contacts: bool = True,
         fatigue: FatigueList = None,
     ):
         """
@@ -135,9 +135,12 @@ class ConfigureProblem:
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
             )
-
-        if implicit_soft_contacts:
-            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
+        if nlp.model.nbSoftContacts() > 0:
+            if implicit_soft_contacts and not implicit_dynamics:
+                ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
+            elif implicit_soft_contacts and implicit_dynamics:
+                raise ValueError("This is not recommended to use both implicit_dynamics and implicit_soft_contacts."
+                                 " Set one of them at False.")
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -155,7 +158,8 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if implicit_soft_contacts:
+
+        if nlp.model.nbSoftContacts() > 0 and implicit_soft_contacts and not implicit_dynamics:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -164,7 +168,7 @@ class ConfigureProblem:
 
     @staticmethod
     def torque_derivative_driven(
-        ocp, nlp, with_contact=False, implicit_dynamics: bool = False, implicit_soft_contacts: bool = False
+        ocp, nlp, with_contact=False, implicit_dynamics: bool = False, implicit_soft_contacts: bool = True,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -196,8 +200,13 @@ class ConfigureProblem:
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
             )
-        if implicit_soft_contacts:
-            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
+
+        if nlp.model.nbSoftContacts() > 0:
+            if implicit_soft_contacts and not implicit_dynamics:
+                ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
+            elif implicit_soft_contacts and implicit_dynamics:
+                raise ValueError("This is not recommended to use both implicit_dynamics and implicit_soft_contacts."
+                                 " Set one of them at False.")
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -214,7 +223,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if implicit_soft_contacts:
+        if nlp.model.nbSoftContacts() > 0 and implicit_soft_contacts and not implicit_dynamics:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
