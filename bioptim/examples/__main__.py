@@ -52,6 +52,7 @@ examples_ = OrderedDict(
                     ("Example optimal time", "example_optimal_time.py"),
                     ("Example save and load", "example_save_and_load.py"),
                     ("Example simulation", "example_simulation.py"),
+                    ("Example Implicit Dynamics", "example_implicit_dynamics.py"),
                     ("Pendulum", "pendulum.py"),
                 ]
             ),
@@ -116,6 +117,7 @@ examples_ = OrderedDict(
                     ("Track markers 2D pendulum", "track_markers_2D_pendulum.py"),
                     ("Track markers with torque actuators", "track_markers_with_torque_actuators.py"),
                     ("Trampo quaternions", "trampo_quaternions.py"),
+                    ("Soft contact", "example_soft_contact.py"),
                 ]
             ),
         ),
