@@ -102,7 +102,7 @@ class ConfigureProblem:
         nlp,
         with_contact: bool = False,
         implicit_dynamics: bool = False,
-        implicit_soft_contacts: bool = True,
+        implicit_soft_contacts: bool = False,
         fatigue: FatigueList = None,
     ):
         """
