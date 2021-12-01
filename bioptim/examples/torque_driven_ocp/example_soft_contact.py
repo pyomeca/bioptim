@@ -1,3 +1,10 @@
+"""
+A very simple optimal control program playing with a soft contact sphere rolling going from one point to another.
+
+The soft contact sphere are hard to make converge and sensitive to parameters.
+One could use implicit_soft_contacts or implicit_dynamics to ease the convergence.
+"""
+
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -65,12 +72,35 @@ def prepare_single_shooting(
     )
 
 
+def initial_states_from_single_shooting(model, ns, tf, ode_solver):
+    ocp = prepare_single_shooting(model, ns, tf, ode_solver)
+
+    # Find equilibrium
+    X = InitialGuess([0, 0.10, 0, 1e-10, 1e-10, 1e-10])
+    U = InitialGuess([0, 0, 0])
+
+    sol_from_initial_guess = Solution(ocp, [X, U])
+    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, continuous=True)
+    # s.animate()
+
+    # Rolling Sphere at equilibrium
+    x0 = s.states["q"][:, -1]
+    dx0 = [0] * 3
+    X0 = np.concatenate([x0, np.array(dx0)])
+    X = InitialGuess(X0)
+    U = InitialGuess([0, 0, -10])
+
+    sol_from_initial_guess = Solution(ocp, [X, U])
+    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, continuous=True)
+    # s.animate()
+    return X0
+
+
 def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int,
     final_time: float,
     ode_solver: OdeSolver,
-    X0: np.array,
     slack: float = 1e-4,
     n_threads: int = 8,
     use_sx: bool = False,
@@ -124,6 +154,7 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     nQ = biorbd_model.nbQ()
+    X0 = initial_states_from_single_shooting(biorbd_model_path, 100, 1, ode_solver)
     x_bounds[0].min[:nQ, 0] = X0[:nQ] - slack
     x_bounds[0].max[:nQ, 0] = X0[:nQ] + slack
     x_bounds[0].min[nQ:, 0] = -slack
@@ -161,33 +192,11 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-    model = "models/soft_contact_sphere.bioMod"
+    model = "../torque_driven_ocp/models/soft_contact_sphere.bioMod"
     ode_solver = OdeSolver.RK8()
-    tf = 1
-    ns = 100
-    ocp = prepare_single_shooting(model, ns, tf, ode_solver)
-
-    # Find equilibrium
-    X = InitialGuess([0, 0.10, 0, 1e-10, 1e-10, 1e-10])
-    U = InitialGuess([0, 0, 0])
-
-    sol_from_initial_guess = Solution(ocp, [X, U])
-    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, continuous=True)
-    # s.animate()
-
-    # Rolling Sphere at equilibrium
-    x0 = s.states["q"][:, -1]
-    dx0 = [0] * 3
-    X0 = np.concatenate([x0, np.array(dx0)])
-    X = InitialGuess(X0)
-    U = InitialGuess([0, 0, -10])
-
-    sol_from_initial_guess = Solution(ocp, [X, U])
-    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, continuous=True)
-    # s.animate()
 
     # Prepare OCP to reach the second marker
-    ocp = prepare_ocp(model, 37, 0.37, OdeSolver.RK8(), X0, slack=1e-4)
+    ocp = prepare_ocp(model, 37, 0.37, ode_solver, slack=1e-4)
     ocp.add_plot_penalty(CostType.ALL)
     ocp.print(to_graph=True)
 

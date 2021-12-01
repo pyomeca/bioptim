@@ -11,7 +11,7 @@ from .utils import TestUtils
 @pytest.mark.parametrize("use_sx", [False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK8])
 def test_soft_contact(ode_solver, use_sx, n_threads):
-    from bioptim.examples.getting_started import example_soft_contact as ocp_module
+    from bioptim.examples.torque_driven_ocp import example_soft_contact as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -24,7 +24,6 @@ def test_soft_contact(ode_solver, use_sx, n_threads):
         n_threads=n_threads,
         use_sx=use_sx,
         ode_solver=ode_solver,
-        X0=np.array([-2.35534724e-05, 9.33176954e-02, 6.76617214e-05, 0.00000000e00, 0.00000000e00, 0.00000000e00]),
     )
 
     ocp.print(to_console=True, to_graph=False)

@@ -67,14 +67,14 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=implicit_dynamics, implicit_soft_contacts=False)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=implicit_dynamics)
 
     # Path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
     if implicit_dynamics:
-        qddot_min, qddot_max, qddot_init = -20000, 20000, 0
+        qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
@@ -84,22 +84,23 @@ def prepare_ocp(
     # Initial guess
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
+    n_qddot = biorbd_model.nbQddot()
     n_tau = biorbd_model.nbGeneralizedTorque()
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
     # There are extra controls in implicit dynamics which are joint acceleration qddot.
     if implicit_dynamics:
-        u_bounds = Bounds([tau_min] * n_tau + [qddot_min] * n_tau, [tau_max] * n_tau + [qddot_max] * n_tau)
+        u_bounds = Bounds([tau_min] * n_tau + [qddot_min] * n_qddot, [tau_max] * n_tau + [qddot_max] * n_qddot)
     else:
         u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
 
-    u_bounds[n_tau - 1, :] = 0
+    u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
     if implicit_dynamics:
-        u_init = InitialGuess([0] * n_q * 2)
+        u_init = InitialGuess([0] * (n_tau + n_qddot))
     else:
-        u_init = InitialGuess([0] * n_q)
+        u_init = InitialGuess([0] * n_tau)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -119,7 +120,7 @@ def prepare_ocp(
 
 def main():
     """
-    If pendulum is run as a script, it will perform the optimization and animates it
+    The pendulum runs two ocp with implicit and explicit dynamics and plot comparison for the results
     """
     model_path = "models/pendulum.bioMod"
     n_shooting = 200  # The higher it is, the closer implicit and explicit solutions are.

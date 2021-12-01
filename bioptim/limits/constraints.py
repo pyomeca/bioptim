@@ -360,8 +360,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             else:
                 raise NotImplementedError(
                     "Implicit Dynamics has not been implemented yet"
-                    f" for such as dynamic: {dynamic_name}. "
-                    "It is only implemented for these dynamics:"
+                    f" for such as dynamic: {dynamic_name}. It is only implemented for these dynamics:"
                     " TORQUE_DRIVEN and TORQUE_DERIVATIVE_DRIVEN."
                 )
 
@@ -419,8 +418,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             else:
                 raise NotImplementedError(
                     "Implicit Dynamics has not been implemented yet"
-                    f" for such as dynamic: {dynamic_name}. "
-                    "It is only implemented for these dynamics:"
+                    f" for such as dynamic: {dynamic_name}. It is only implemented for these dynamics:"
                     " TORQUE_DRIVEN and TORQUE_DERIVATIVE_DRIVEN."
                 )
 
@@ -470,8 +468,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 else:
                     raise NotImplementedError(
                         "Implicit Soft Contact with implicit dynamics has not been implemented yet"
-                        f" for such as dynamic: {dynamic_name}. "
-                        "It is only implemented for these dynamics:"
+                        f" for such as dynamic: {dynamic_name}. It is only implemented for these dynamics:"
                         " TORQUE_DRIVEN and TORQUE_DERIVATIVE_DRIVEN."
                     )
             else:
@@ -487,7 +484,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     var.extend([nlp.controls["tau"], nlp.controls["fext"]])
                 else:
                     raise NotImplementedError(
-                        "Implicit Soft Contact has not been implemented yet"
+                        "Implicit Soft Contact with implicit dynamics has not been implemented yet"
                         f" for such as dynamic: {dynamic_name}. "
                         "It is only implemented for these dynamics:"
                         " TORQUE_DRIVEN and TORQUE_DERIVATIVE_DRIVEN."

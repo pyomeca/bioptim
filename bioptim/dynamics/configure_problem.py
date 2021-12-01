@@ -102,7 +102,7 @@ class ConfigureProblem:
         nlp,
         with_contact: bool = False,
         implicit_dynamics: bool = False,
-        implicit_soft_contacts: bool = False,
+        implicit_soft_contacts: bool = True,
         fatigue: FatigueList = None,
     ):
         """
@@ -124,6 +124,14 @@ class ConfigureProblem:
             A list of fatigue elements
         """
 
+        if implicit_dynamics:
+            if not implicit_soft_contacts:
+                raise ValueError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
+            # We don't need to add a constraint to ensure implicit dynamic with soft contacts
+            implicit_soft_contacts = False
+        if nlp.model.nbSoftContacts() == 0:
+            implicit_soft_contacts = False
+
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
@@ -135,14 +143,8 @@ class ConfigureProblem:
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
             )
-        if nlp.model.nbSoftContacts() > 0:
-            if implicit_soft_contacts and not implicit_dynamics:
-                ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
-            elif implicit_soft_contacts and implicit_dynamics:
-                raise ValueError(
-                    "This is not recommended to use both implicit_dynamics and implicit_soft_contacts."
-                    " Set one of them at False."
-                )
+        if implicit_soft_contacts:
+            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -159,9 +161,8 @@ class ConfigureProblem:
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-
-        if nlp.model.nbSoftContacts() > 0 and implicit_soft_contacts and not implicit_dynamics:
+        if implicit_soft_contacts:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -193,6 +194,14 @@ class ConfigureProblem:
             If the implicit soft contact dynamic should be used
         """
 
+        if implicit_dynamics:
+            if not implicit_soft_contacts:
+                raise ValueError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
+            # We don't need to add a constraint to ensure implicit dynamic with soft contacts
+            implicit_soft_contacts = False
+        if nlp.model.nbSoftContacts() == 0:
+            implicit_soft_contacts = False
+
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
         ConfigureProblem.configure_tau(nlp, True, False)
@@ -206,15 +215,8 @@ class ConfigureProblem:
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
             )
-
-        if nlp.model.nbSoftContacts() > 0:
-            if implicit_soft_contacts and not implicit_dynamics:
-                ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
-            elif implicit_soft_contacts and implicit_dynamics:
-                raise ValueError(
-                    "This is not recommended to use both implicit_dynamics and implicit_soft_contacts."
-                    " Set one of them at False."
-                )
+        if implicit_soft_contacts:
+            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -230,8 +232,8 @@ class ConfigureProblem:
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if nlp.model.nbSoftContacts() > 0 and implicit_soft_contacts and not implicit_dynamics:
+        if implicit_soft_contacts:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
