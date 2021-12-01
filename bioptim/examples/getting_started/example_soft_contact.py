@@ -28,6 +28,8 @@ def prepare_single_shooting(
     n_shooting: int,
     final_time: float,
     ode_solver: OdeSolver,
+    n_threads: int = 1,
+    use_sx: bool = False,
 ) -> OptimalControlProgram:
     """
     Prepare the ss
@@ -58,7 +60,8 @@ def prepare_single_shooting(
         x_init,
         u_init,
         ode_solver=ode_solver,
-        use_sx=False,
+        use_sx=use_sx,
+        n_threads=n_threads,
     )
 
 
@@ -68,7 +71,9 @@ def prepare_ocp(
     final_time: float,
     ode_solver: OdeSolver,
     X0: np.array,
-    slack: float,
+    slack: float = 1e-4,
+    n_threads: int = 8,
+    use_sx: bool = False,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -87,6 +92,7 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_SOFT_CONTACT_FORCES, weight=0.0001)
     objective_functions.add(
         ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS,
         node=Node.START,
@@ -146,8 +152,8 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        use_sx=False,
-        n_threads=8,
+        use_sx=use_sx,
+        n_threads=n_threads,
     )
 
 
