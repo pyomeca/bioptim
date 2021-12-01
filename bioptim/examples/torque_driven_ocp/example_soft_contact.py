@@ -49,7 +49,7 @@ def prepare_single_shooting(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=False, implicit_soft_contacts=False)
 
     # Initial guess
     x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
@@ -141,7 +141,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=False, implicit_soft_contacts=False)
 
     # Constraints
     constraints = ConstraintList()
@@ -166,6 +166,8 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
+    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+
     u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
 
     u_init = InitialGuessList()

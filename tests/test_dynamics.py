@@ -474,9 +474,7 @@ def test_implicit_soft_contacts_errors(dynamics):
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(
-            f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_soft_contacts'"
-        ),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_soft_contacts'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 
@@ -503,13 +501,11 @@ def test_implicit_dynamics_errors(dynamics):
         Dynamics(dynamics, implicit_dynamics=True),
         False,
     )
-    
+
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(
-            f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_dynamics'"
-        ),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 
