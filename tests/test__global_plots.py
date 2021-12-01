@@ -124,6 +124,23 @@ def test_add_new_plot():
     os.remove(save_name)
 
 
+def test_plot_graphs_for_implicit_constraints():
+    # Load graphs_one_phase
+    from bioptim.examples.getting_started import example_implicit_dynamics as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_shooting=5,
+        final_time=1,
+        implicit_dynamics=True,
+    )
+    ocp.add_plot_penalty(CostType.ALL)
+    sol = ocp.solve()
+    sol.graphs(automatically_organize=False)
+
+
 def test_console_objective_functions():
     # Load graphs_one_phase
     from bioptim.examples.getting_started import example_multiphase as ocp_module

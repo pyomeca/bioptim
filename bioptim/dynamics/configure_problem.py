@@ -139,8 +139,10 @@ class ConfigureProblem:
             if implicit_soft_contacts and not implicit_dynamics:
                 ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
             elif implicit_soft_contacts and implicit_dynamics:
-                raise ValueError("This is not recommended to use both implicit_dynamics and implicit_soft_contacts."
-                                 " Set one of them at False.")
+                raise ValueError(
+                    "This is not recommended to use both implicit_dynamics and implicit_soft_contacts."
+                    " Set one of them at False."
+                )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -168,7 +170,11 @@ class ConfigureProblem:
 
     @staticmethod
     def torque_derivative_driven(
-        ocp, nlp, with_contact=False, implicit_dynamics: bool = False, implicit_soft_contacts: bool = True,
+        ocp,
+        nlp,
+        with_contact=False,
+        implicit_dynamics: bool = False,
+        implicit_soft_contacts: bool = True,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -205,8 +211,10 @@ class ConfigureProblem:
             if implicit_soft_contacts and not implicit_dynamics:
                 ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
             elif implicit_soft_contacts and implicit_dynamics:
-                raise ValueError("This is not recommended to use both implicit_dynamics and implicit_soft_contacts."
-                                 " Set one of them at False.")
+                raise ValueError(
+                    "This is not recommended to use both implicit_dynamics and implicit_soft_contacts."
+                    " Set one of them at False."
+                )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)

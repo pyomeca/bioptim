@@ -118,18 +118,8 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     nQ = biorbd_model.nbQ()
-    x_bounds[0].min[:nQ, 0] = (
-        X0[
-            :nQ,
-        ]
-        - slack
-    )
-    x_bounds[0].max[:nQ, 0] = (
-        X0[
-            :nQ,
-        ]
-        + slack
-    )
+    x_bounds[0].min[:nQ, 0] = X0[:nQ] - slack
+    x_bounds[0].max[:nQ, 0] = X0[:nQ] + slack
     x_bounds[0].min[nQ:, 0] = -slack
     x_bounds[0].max[nQ:, 0] = +slack
 

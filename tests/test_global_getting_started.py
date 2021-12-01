@@ -16,7 +16,16 @@ from .utils import TestUtils
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize(
-    "ode_solver", [OdeSolver.RK1, OdeSolver.RK2, OdeSolver.CVODES, OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION]
+    "ode_solver",
+    [
+        OdeSolver.RK1,
+        OdeSolver.RK2,
+        OdeSolver.CVODES,
+        OdeSolver.RK4,
+        OdeSolver.RK8,
+        OdeSolver.IRK,
+        OdeSolver.COLLOCATION,
+    ],
 )
 def test_pendulum(ode_solver, use_sx, n_threads):
     from bioptim.examples.getting_started import pendulum as ocp_module
