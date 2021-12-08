@@ -1,7 +1,6 @@
 from typing import Callable, Union, Any
 from enum import Enum
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
 
@@ -50,7 +49,7 @@ class Constraint(PenaltyOption):
             Generic parameters for options
         """
         custom_function = None
-        if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn)):
+        if not isinstance(constraint, ConstraintFcn):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
@@ -300,28 +299,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return all_pn.nlp.tf
 
-        @staticmethod
-        def implicit_qddot(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
-            """
-            The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
-
-            Parameters
-            ----------
-            _: Constraint
-                The actual constraint to declare
-            all_pn: PenaltyNodeList
-                The penalty node elements
-            **unused_param: dict
-                Since the function does nothing, we can safely ignore any argument
-            """
-
-            nlp = all_pn.nlp
-            q = nlp.states["q"].mx
-            qdot = nlp.states["qdot"].mx
-            tau = nlp.controls["tau"].mx
-            qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
-            return BiorbdInterface.mx_to_cx("ForwardDynamics", all_pn.nlp.controls["qddot"].mx - qddot, nlp.states["q"], nlp.states["qdot"], nlp.controls["tau"], nlp.controls["qddot"])
-
     @staticmethod
     def inner_phase_continuity(ocp):
         """
@@ -390,27 +367,6 @@ class ConstraintFcn(Enum):
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
-
-    @staticmethod
-    def get_type():
-        """
-        Returns the type of the penalty
-        """
-
-        return ConstraintFunction
-
-
-class ImplicitConstraintFcn(Enum):
-    """
-    Selection of valid constraint functions
-
-    Methods
-    -------
-    def get_type() -> Callable
-        Returns the type of the penalty
-    """
-
-    QDDOT = (ConstraintFunction.Functions.implicit_qddot,)
 
     @staticmethod
     def get_type():

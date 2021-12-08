@@ -75,7 +75,6 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
-        implicit_dynamics: bool,
         fatigue: FatigueList,
     ) -> MX:
         """
@@ -93,8 +92,6 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
-        implicit_dynamics: bool
-            If the implicit dynamic should be used
         fatigue : FatigueList
             A list of fatigue elements
 
@@ -107,19 +104,14 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        if implicit_dynamics:
-            dxdt = MX(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
-        else:
-            tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
-            dxdt = MX(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
 
         if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
