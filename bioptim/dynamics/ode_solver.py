@@ -74,18 +74,6 @@ class OdeSolverBase:
         if len(nlp.dynamics) == 1:
             nlp.dynamics = nlp.dynamics * nlp.ns
 
-    def __str__(self):
-        if self.is_direct_collocation or self.rk_integrator.__name__ == "IRK":
-            ode_solver_string = f"{self.rk_integrator.__name__}\n{self.method}\n{self.polynomial_degree}"
-        elif self.rk_integrator.__name__ == "CVODES":
-            ode_solver_string = f"{self.rk_integrator.__name__}"
-        else:
-            ode_solver_string = f"{self.rk_integrator.__name__}\n{self.steps} step"
-            if self.steps > 1:
-                ode_solver_string += "s"
-
-        return ode_solver_string
-
 
 class RK(OdeSolverBase):
     """
@@ -151,6 +139,13 @@ class RK(OdeSolverBase):
             return dynamics_out
         else:
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+
+    def __str__(self):
+        ode_solver_string = f"{self.rk_integrator.__name__}\n{self.steps} step"
+        if self.steps > 1:
+            ode_solver_string += "s"
+
+        return ode_solver_string
 
 
 class OdeSolver:
@@ -262,6 +257,9 @@ class OdeSolver:
                 "method": self.method,
             }
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+
+        def __str__(self):
+            return f"{self.rk_integrator.__name__}\n{self.method}\n{self.polynomial_degree}"
 
     class IRK(COLLOCATION):
         """
@@ -389,3 +387,6 @@ class OdeSolver:
 
             xf = integrator_func(x0=x0, p=p)["xf"]
             return xf, horzcat(x0, xf)
+
+        def __str__(self):
+            return self.rk_integrator.__name__
