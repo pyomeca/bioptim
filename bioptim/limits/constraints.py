@@ -1,6 +1,7 @@
 from typing import Callable, Union, Any
 from enum import Enum
 
+import biorbd_casadi as biorbd
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
 
@@ -308,7 +309,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return all_pn.nlp.tf
 
         @staticmethod
-        def qddot_equals_forward_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def qddot_equals_forward_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, **unused_param):
             """
             Compute the difference between symbolic joint accelerations and forward dynamic results
             It includes the inversion of mass matrix
@@ -319,6 +320,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The actual constraint to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            with_contact: bool
+                True if the contact dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -329,7 +332,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
 
             qddot = nlp.controls["qddot"].mx
-            qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+            if with_contact:
+                model = biorbd.Model(nlp.model.path().absolutePath().to_string())
+                qddot_fd = model.ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
+            else:
+                qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
