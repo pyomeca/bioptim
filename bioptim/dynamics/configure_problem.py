@@ -167,7 +167,8 @@ class ConfigureProblem:
                         with_contact=with_contact,
                         contact_index=ii,
                         node=Node.ALL_SHOOTING,
-                        constraint_type=ConstraintType.IMPLICIT)
+                        constraint_type=ConstraintType.IMPLICIT,
+                    )
         if implicit_soft_contacts:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
