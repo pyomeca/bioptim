@@ -348,7 +348,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return BiorbdInterface.mx_to_cx("ForwardDynamics", qddot - qddot_fd, *var)
 
         @staticmethod
-        def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, **unused_param):
             """
             Compute the difference between symbolic joint torques and inverse dynamic results
             It does not include any inversion of mass matrix
@@ -359,6 +359,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The actual constraint to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            with_contact: bool
+                True if the contact dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -374,9 +376,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
                 )
                 # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
-                # fext need to be a mx
-
-            tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
+            if with_contact:
+                fext = nlp.controls["fext"].mx
+                fext_vec = MX.zeros((6, 1))
+                fext_vec[4:, :] = fext
+                # TODO : affect fext components to external forces array as a 6xn array
+                # TODO : create a subfunction to convert mx_array to spatial vector
+                external_forces = BiorbdInterface.convert_array_to_external_forces([fext_vec])
+                tau_id = nlp.model.InverseDynamics(q, qdot, qddot, external_forces[0][0]).to_mx()
+            else:
+                tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
