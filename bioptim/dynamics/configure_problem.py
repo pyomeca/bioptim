@@ -106,6 +106,7 @@ class ConfigureProblem:
         nlp,
         with_contact: bool = False,
         implicit_dynamics: bool = False,
+        semi_implicit_dynamics: bool = False,
         implicit_soft_contacts: bool = True,
         fatigue: FatigueList = None,
     ):
@@ -122,6 +123,8 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         implicit_dynamics: bool
             If the implicit dynamic should be used
+        semi_implicit_dynamics: bool
+            If the semi implicit dynamic should be used
         implicit_soft_contacts: bool
             If the implicit soft contact dynamic should be used
         fatigue: FatigueList
@@ -140,13 +143,21 @@ class ConfigureProblem:
         ConfigureProblem.configure_qdot(nlp, True, False)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
 
-        if implicit_dynamics:
+        if semi_implicit_dynamics:
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
+                with_contact=with_contact,
+            )
+        elif implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
+                with_contact=with_contact,
             )
         if implicit_soft_contacts:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)

@@ -388,7 +388,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
             """
-            The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
+            Compute the difference between symbolic soft contact forces and actual force contact dynamic
 
             Parameters
             ----------
