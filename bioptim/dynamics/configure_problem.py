@@ -154,6 +154,15 @@ class ConfigureProblem:
                 constraint_type=ConstraintType.IMPLICIT,
                 with_contact=with_contact,
             )
+            if with_contact:
+                ConfigureProblem.configure_contact_forces(nlp, False, True)
+                for ii, contact in enumerate(nlp.model.contactNames()):
+                    ocp.implicit_constraints.add(
+                        ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
+                        with_contact=with_contact,
+                        contact_index=ii,
+                        node=Node.ALL_SHOOTING,
+                        constraint_type=ConstraintType.IMPLICIT)
         if implicit_soft_contacts:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
@@ -814,6 +823,24 @@ class ConfigureProblem:
         name_taudot = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
         ConfigureProblem._adjust_mapping("taudot", ["qdot", "tau"], nlp)
         ConfigureProblem.configure_new_variable("taudot", name_taudot, nlp, as_states, as_controls)
+
+    @staticmethod
+    def configure_contact_forces(nlp, as_states: bool, as_controls: bool):
+        """
+        Configure the generalized forces derivative
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized force derivatives should be a state
+        as_controls: bool
+            If the generalized force derivatives should be a control
+        """
+
+        name_contact_forces = [f"{nlp.model.contactNames()[ii].to_string()}" for ii in range(nlp.model.nbContacts())]
+        ConfigureProblem.configure_new_variable("fext", name_contact_forces, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_soft_contact_forces(nlp, as_states: bool, as_controls: bool):

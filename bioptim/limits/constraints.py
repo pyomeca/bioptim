@@ -393,6 +393,46 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - tau, *var)
 
         @staticmethod
+        def implicit_marker_acceleration(_: Constraint, all_pn: PenaltyNodeList, contact_index: int, **unused_param):
+            """
+            Compute the acceleration of the contact node to set it at zero
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            contact_index: int
+                The contact index
+            **unused_param: dict
+                Since the function does nothing, we can safely ignore any argument
+            """
+
+            nlp = all_pn.nlp
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+
+            # TODO get the index of the marker
+            # nlp.model.contactAcceleration(q, qdot, qddot, contact_index)
+            contact_name = nlp.model.contactNames()[contact_index].to_string()
+            if "_X" in nlp.model.contactNames()[contact_index].to_string():
+                idx_dir = 0
+            elif "_Y" in nlp.model.contactNames()[contact_index].to_string():
+                idx_dir = 1
+            elif "_Z" in nlp.model.contactNames()[contact_index].to_string():
+                idx_dir = 2
+            marker_acceleration = nlp.model.markerAcceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
+
+            var = []
+            var.extend([nlp.states[key] for key in nlp.states])
+            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([nlp.parameters[key] for key in nlp.parameters])
+
+            return BiorbdInterface.mx_to_cx("marker_acceleration", marker_acceleration, *var)
+
+        @staticmethod
         def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
             """
             Compute the difference between symbolic soft contact forces and actual force contact dynamic
@@ -518,6 +558,7 @@ class ImplicitConstraintFcn(Enum):
     QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
     TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
+    CONTACT_ACCELERATION_EQUALS_ZERO = (ConstraintFunction.Functions.implicit_marker_acceleration,)
 
     @staticmethod
     def get_type():
