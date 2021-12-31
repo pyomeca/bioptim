@@ -100,7 +100,7 @@ def test_xia_stabilized_fatigable_muscles():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 18.87186755587346)
+    np.testing.assert_almost_equal(f[0, 0], 18.904146147978263)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -118,35 +118,40 @@ def test_xia_stabilized_fatigable_muscles():
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.51470552, 0.47150191)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-1.78119672,  1.76347727)))
 
     # fatigue parameters
     np.testing.assert_almost_equal(ma[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(
         ma[:, -1],
-        np.array((4.59631610e-08, 2.05996350e-02, 6.29426241e-03, 1.61170047e-02, 1.61170047e-02, 1.76115611e-03)),
+        np.array((3.39538234e-06, 6.02070039e-03, 3.21988283e-03, 1.95918805e-02,
+       1.95918805e-02, 7.88670707e-04)),
     )
     np.testing.assert_almost_equal(mr[:, 0], np.array((1, 1, 1, 1, 1, 1)))
     np.testing.assert_almost_equal(
-        mr[:, -1], np.array((0.99999995, 0.97773956, 0.99212385, 0.98383876, 0.98383876, 0.997487))
+        mr[:, -1], np.array((0.9999966 , 0.99236943, 0.99537329, 0.98030776, 0.98030776,
+       0.9985729))
     )
     np.testing.assert_almost_equal(mf[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(
         mf[:, -1],
-        np.array((1.18739784e-10, 8.20871255e-04, 7.87872501e-04, 1.83381358e-05, 1.83381358e-05, 3.75066880e-04)),
+        np.array((2.02250160e-09, 1.58159634e-03, 1.38994305e-03, 7.92778775e-05,
+       7.92778775e-05, 6.33575125e-04)),
     )
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((1.32708122, 1.48102137)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((1.13167499, -1.07683239)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((1.11808666, 0.92779318)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0.96700045, -0.92269412)))
 
     np.testing.assert_almost_equal(
         muscles[:, 0],
-        np.array((3.78422024e-08, 2.20315063e-01, 2.20315053e-01, 4.94579128e-07, 4.94579101e-07, 1.85204211e-01)),
+        np.array((5.70272945e-08, 3.85244803e-01, 3.11772581e-01, 5.96397281e-07,
+       5.96397280e-07, 1.74119901e-01)),
     )
     np.testing.assert_almost_equal(
         muscles[:, -2],
-        np.array((5.19344283e-08, 1.35880229e-08, 9.22355395e-09, 1.72842588e-02, 1.72842588e-02, 1.67237100e-08)),
+        np.array((4.06360849e-06, 1.23286848e-08, 1.10684255e-08, 1.84235398e-02,
+       1.84235398e-02, 1.98894149e-08)),
     )
 
     # save and load
@@ -356,69 +361,6 @@ def test_fatigable_xia_torque_non_split():
     TestUtils.simulate(sol)
 
 
-def test_fatigable_xia_stabilized_torque_non_split():
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=model_path,
-        final_time=1,
-        n_shooting=10,
-        fatigue_type="xia_stabilized",
-        split_controls=False,
-        use_sx=False,
-    )
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    if platform.system() == "Linux":
-        np.testing.assert_almost_equal(f[0, 0], 681.4936347682981)
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (160, 1))
-    np.testing.assert_almost_equal(g, np.zeros((160, 1)))
-
-    # Check some of the results
-    states, controls = sol.states, sol.controls
-    q, qdot = states["q"], states["qdot"]
-    ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
-    ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
-    tau = controls["tau"]
-
-    # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
-    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
-    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
-    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-
-    if platform.system() == "Linux":
-        np.testing.assert_almost_equal(ma_minus[:, -1], np.array((2.05715389e-01, 0)))
-        np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.65255054, 1)))
-        np.testing.assert_almost_equal(mf_minus[:, -1], np.array((6.42653942e-02, 0)))
-        np.testing.assert_almost_equal(ma_plus[:, -1], np.array((0.00454577, 0)))
-        np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.80299725, 1)))
-        np.testing.assert_almost_equal(mf_plus[:, -1], np.array((1.09659477e-01, 0)))
-        np.testing.assert_almost_equal(tau[:, 0], np.array((4.65387493, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-21.7531631, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, True)
-
-    # simulate
-    TestUtils.simulate(sol)
-
-
 def test_fatigable_xia_torque_split():
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
@@ -498,7 +440,7 @@ def test_fatigable_xia_stabilized_torque_split():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 46.97293009727551)
+    np.testing.assert_almost_equal(f[0, 0], 58.3380274895759)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -520,21 +462,21 @@ def test_fatigable_xia_stabilized_torque_split():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
-    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((9.74835522e-02, 0)))
+    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((1.28587581e-01, 0)))
     np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
-    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.87616808, 1)))
+    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.84200964, 1)))
     np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((6.50018063e-03, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((6.53188577e-03, 0)))
     np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((5.69110126e-06, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((2.91160036e-05, 0)))
     np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
-    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.97030256, 1)))
+    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.98087163, 1)))
     np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((1.88562360e-02, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array(( 3.59780294e-02, 0)))
 
-    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-2.5369149e-07, 0)))
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-10.29111862, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((7.05461936, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-3.01735252e-07, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-13.61176916, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((6.8734662, 0)))
     np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 
     # save and load
