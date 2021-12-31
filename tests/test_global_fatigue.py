@@ -118,25 +118,22 @@ def test_xia_stabilized_fatigable_muscles():
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-1.78119672,  1.76347727)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-1.78119672, 1.76347727)))
 
     # fatigue parameters
     np.testing.assert_almost_equal(ma[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(
         ma[:, -1],
-        np.array((3.39538234e-06, 6.02070039e-03, 3.21988283e-03, 1.95918805e-02,
-       1.95918805e-02, 7.88670707e-04)),
+        np.array((3.39538234e-06, 6.02070039e-03, 3.21988283e-03, 1.95918805e-02, 1.95918805e-02, 7.88670707e-04)),
     )
     np.testing.assert_almost_equal(mr[:, 0], np.array((1, 1, 1, 1, 1, 1)))
     np.testing.assert_almost_equal(
-        mr[:, -1], np.array((0.9999966 , 0.99236943, 0.99537329, 0.98030776, 0.98030776,
-       0.9985729))
+        mr[:, -1], np.array((0.9999966, 0.99236943, 0.99537329, 0.98030776, 0.98030776, 0.9985729))
     )
     np.testing.assert_almost_equal(mf[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(
         mf[:, -1],
-        np.array((2.02250160e-09, 1.58159634e-03, 1.38994305e-03, 7.92778775e-05,
-       7.92778775e-05, 6.33575125e-04)),
+        np.array((2.02250160e-09, 1.58159634e-03, 1.38994305e-03, 7.92778775e-05, 7.92778775e-05, 6.33575125e-04)),
     )
 
     # initial and final controls
@@ -145,13 +142,11 @@ def test_xia_stabilized_fatigable_muscles():
 
     np.testing.assert_almost_equal(
         muscles[:, 0],
-        np.array((5.70272945e-08, 3.85244803e-01, 3.11772581e-01, 5.96397281e-07,
-       5.96397280e-07, 1.74119901e-01)),
+        np.array((5.70272945e-08, 3.85244803e-01, 3.11772581e-01, 5.96397281e-07, 5.96397280e-07, 1.74119901e-01)),
     )
     np.testing.assert_almost_equal(
         muscles[:, -2],
-        np.array((4.06360849e-06, 1.23286848e-08, 1.10684255e-08, 1.84235398e-02,
-       1.84235398e-02, 1.98894149e-08)),
+        np.array((4.06360849e-06, 1.23286848e-08, 1.10684255e-08, 1.84235398e-02, 1.84235398e-02, 1.98894149e-08)),
     )
 
     # save and load
@@ -472,7 +467,7 @@ def test_fatigable_xia_stabilized_torque_split():
     np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
     np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.98087163, 1)))
     np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_plus[:, -1], np.array(( 3.59780294e-02, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((3.59780294e-02, 0)))
 
     np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-3.01735252e-07, 0)))
     np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-13.61176916, 0)))
