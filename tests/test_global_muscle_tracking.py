@@ -62,60 +62,60 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
-        np.testing.assert_almost_equal(f[0, 0], 3.624795808383824e-08)
+        np.testing.assert_almost_equal(f[0, 0], 1.6168687925491806e-08)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-1.26294409e-05, -5.94685627e-06]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.10541975, -0.48577985]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-9.27332670e-06, -1.92130847e-06]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.13095414, -0.52519196]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00074118, -0.00036854]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-4.21473881, 7.26398638]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0003876, 0.00011132]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.48898607, 5.69081695]))
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([-3.19231945e-08, 1.78181204e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([2.55285701e-06, -5.12710950e-06]))
+        np.testing.assert_almost_equal(tau[:, 0], np.array([9.20045224e-07, -1.43441728e-06]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([1.02698339e-06, -1.45090939e-06]))
         np.testing.assert_almost_equal(
-            mus[:, 0], np.array([0.37451645, 0.95067812, 0.73199474, 0.59864193, 0.15601703, 0.15600089])
+            mus[:, 0], np.array([0.37453715, 0.95067227, 0.73198611, 0.5986687, 0.15604161, 0.15601083])
         )
         np.testing.assert_almost_equal(
-            mus[:, -2], np.array([0.4559321, 0.78521782, 0.19970124, 0.51419847, 0.59238012, 0.04656187])
+            mus[:, -2], np.array([0.45602115, 0.78518567, 0.19968753, 0.51422336, 0.59240291, 0.04651572])
         )
 
     elif ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(f[0, 0], 3.6846293820760475e-08)
+        np.testing.assert_almost_equal(f[0, 0], 1.6168383151995866e-08)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-1.26294409e-05, -5.94685627e-06]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.10541975, -0.48577985]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-9.26023358e-06, -1.95272568e-06]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.13095416, -0.52519198]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00074233, -0.00037249]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-4.21473503, 7.26397692]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00038863, 0.00010772]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.4889827, 5.69080853]))
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([-3.19231945e-08, 1.78181204e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([2.55285701e-06, -5.12710950e-06]))
+        np.testing.assert_almost_equal(tau[:, 0], np.array([9.11529554e-07, -1.41077143e-06]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([1.03121849e-06, -1.46222274e-06]))
         np.testing.assert_almost_equal(
-            mus[:, 0], np.array([0.37451633, 0.95067815, 0.73199481, 0.5986417, 0.15601682, 0.15600081])
+            mus[:, 0], np.array([0.37453703, 0.9506723, 0.73198617, 0.5986685, 0.15604142, 0.15601076])
         )
         np.testing.assert_almost_equal(
-            mus[:, -2], np.array([0.4559318, 0.78521793, 0.19970129, 0.51419838, 0.59238004, 0.04656203])
+            mus[:, -2], np.array([0.45602088, 0.78518577, 0.19968758, 0.51422328, 0.59240284, 0.04651587])
         )
 
     elif ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(f[0, 0], 3.624795808383824e-08)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-1.24603457e-05, -5.56567245e-06]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.10542008, -0.48578046]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-9.10806301e-06, -1.53310138e-06]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.13095467, -0.52519196]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00071319, -0.00034956]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-4.21476386, 7.26402641]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00036361, 0.00013356]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.4890094, 5.69101925]))
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([7.86364319e-08, 1.43718933e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([2.33336715e-06, -4.52483197e-06]))
+        np.testing.assert_almost_equal(tau[:, 0], np.array([1.04127177e-06, -1.80879296e-06]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([9.55112770e-07, -1.31205473e-06]))
         np.testing.assert_almost_equal(
-            mus[:, 0], np.array([0.3745183, 0.9506776, 0.7319939, 0.59864459, 0.15601947, 0.15600189])
+            mus[:, 0], np.array([0.37453927, 0.95067167, 0.73198512, 0.59867185, 0.1560445, 0.15601199])
         )
         np.testing.assert_almost_equal(
-            mus[:, -2], np.array([0.45594578, 0.78521284, 0.19969902, 0.51420259, 0.5923839, 0.04655438])
+            mus[:, -2], np.array([0.45602514, 0.78518424, 0.19968701, 0.51422439, 0.59240386, 0.04651392])
         )
 
     else:
@@ -181,46 +181,46 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
 
     if ode_solver == OdeSolver.IRK:
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-1.26502327e-05, -5.98498658e-06]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.10541969, -0.48577983]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-9.27680641e-06, -1.96170122e-06]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.13095414, -0.52519198]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00074251, -0.00036937]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-4.21474217, 7.26398954]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00038904, 0.00010936]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.48898818, 5.69081901]))
         # initial and final controls
         np.testing.assert_almost_equal(
-            mus[:, 0], np.array([0.37451604, 0.95067823, 0.73199494, 0.59864126, 0.15601641, 0.15600064])
+            mus[:, 0], np.array([0.37453701, 0.95067231, 0.73198617, 0.5986685, 0.15604143, 0.15601076])
         )
         np.testing.assert_almost_equal(
-            mus[:, -2], np.array([0.45593194, 0.78521787, 0.19970125, 0.51419844, 0.5923801, 0.04656193])
+            mus[:, -2], np.array([0.45602116, 0.78518566, 0.19968753, 0.51422337, 0.59240292, 0.0465157])
         )
     elif ode_solver == OdeSolver.COLLOCATION:
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-1.26434090e-05, -5.99992755e-06]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.10541971, -0.48577986]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-9.27680641e-06, -1.96170122e-06]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.13095414, -0.52519198]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00074381, -0.00037358]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-4.21473839, 7.26398039]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00039019, 0.00010557]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.48898481, 5.69081085]))
         # initial and final controls
         np.testing.assert_almost_equal(
-            mus[:, 0], np.array([0.37451604, 0.95067823, 0.73199495, 0.59864125, 0.1560164, 0.15600064])
+            mus[:, 0], np.array([0.37453699, 0.95067231, 0.73198618, 0.59866847, 0.15604139, 0.15601075])
         )
         np.testing.assert_almost_equal(
-            mus[:, -2], np.array([0.45593167, 0.78521797, 0.1997013, 0.51419836, 0.59238002, 0.04656208])
+            mus[:, -2], np.array([0.4560209, 0.78518576, 0.19968757, 0.51422329, 0.59240285, 0.04651584])
         )
 
     elif ode_solver == OdeSolver.RK4:
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-1.24679103e-05, -5.63685028e-06]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.10542003, -0.48578047]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-9.11977097e-06, -1.55461431e-06]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.13095464, -0.52519197]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00071458, -0.00035055]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-4.21476717, 7.26402945]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00036513, 0.0001314]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.48901148, 5.69102134]))
         # initial and final controls
         np.testing.assert_almost_equal(
-            mus[:, 0], np.array([0.3745179, 0.95067771, 0.7319941, 0.59864394, 0.15601888, 0.15600164])
+            mus[:, 0], np.array([0.37453916, 0.9506717, 0.73198517, 0.59867169, 0.15604435, 0.15601192])
         )
         np.testing.assert_almost_equal(
-            mus[:, -2], np.array([0.45594564, 0.78521289, 0.19969903, 0.51420257, 0.59238388, 0.04655442])
+            mus[:, -2], np.array([0.45602515, 0.78518424, 0.199687, 0.51422441, 0.59240387, 0.0465139])
         )
     else:
         raise ValueError("Test not ready")
@@ -286,82 +286,83 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
     )
 
     if ode_solver == OdeSolver.IRK:
-        np.testing.assert_almost_equal(f[0, 0], 3.9377280548492226e-05)
+        np.testing.assert_almost_equal(f[0, 0], 4.008048594676488e-05)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00351782, 0.01702219]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.14352637, -0.72030433]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-0.0034705, 0.01684031]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.17038944, -0.76762623]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.02984019, -3.91364352]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.67284629, 3.62405443]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.03547075, -3.92740332]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.92301008, 1.78684668]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
             mus_states[:, 0], np.array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864, 0.15599452])
         )
         np.testing.assert_almost_equal(
-            mus_states[:, -1], np.array([0.51285729, 0.69943619, 0.40390569, 0.48032451, 0.53752346, 0.31437668])
+            mus_states[:, -1], np.array([0.5126714, 0.69948007, 0.4039512, 0.48028695, 0.537475, 0.3144467])
         )
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([5.42775569e-05, -3.45713249e-04]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-2.73167136e-05, -3.83494902e-05]))
+        np.testing.assert_almost_equal(tau[:, 0], np.array([5.40602693e-05, -3.43792358e-04]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([-2.45516586e-05, -4.60440912e-05]))
         np.testing.assert_almost_equal(
-            mus_controls[:, 0], np.array([0.37743387, 0.95055777, 0.73174428, 0.60093014, 0.15924303, 0.15866534])
+            mus_controls[:, 0], np.array([0.37747088, 0.95057098, 0.73173072, 0.60097506, 0.15936616, 0.15866445])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.4560975, 0.78519158, 0.19973384, 0.51408083, 0.59227422, 0.04659415])
+            mus_controls[:, -2], np.array([0.45605498, 0.78523283, 0.19974774, 0.51404221, 0.59223931, 0.04661602])
         )
 
     elif ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(f[0, 0], 3.9378422266498184e-05)
+        np.testing.assert_almost_equal(f[0, 0], 4.0081629979408034e-05)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00351729, 0.01701928]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.14352497, -0.72030059]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00346988, 0.0168371]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.17038802, -0.76762245]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.02972633, -3.91317111]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.6728683, 3.62413508]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.0353528, -3.92691666]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.92303481, 1.78693516]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
             mus_states[:, 0], np.array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864, 0.15599452])
         )
         np.testing.assert_almost_equal(
-            mus_states[:, -1], np.array([0.51285285, 0.69943161, 0.40390586, 0.48032585, 0.53752527, 0.31437738])
+            mus_states[:, -1], np.array([0.51266712, 0.69947546, 0.40395133, 0.48028832, 0.53747684, 0.31444732])
         )
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([5.42926592e-05, -3.45716906e-04]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-2.72776735e-05, -3.84479459e-05]))
+        np.testing.assert_almost_equal(tau[:, 0], np.array([5.40731145e-05, -3.43788410e-04]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([-2.45153875e-05, -4.61335015e-05]))
         np.testing.assert_almost_equal(
-            mus_controls[:, 0], np.array([0.37744597, 0.95044549, 0.73173082, 0.60092211, 0.15932209, 0.15869578])
+            mus_controls[:, 0], np.array([0.37748314, 0.95045862, 0.73171724, 0.600967, 0.15944509, 0.1586948])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.45609644, 0.78518702, 0.19973488, 0.51408246, 0.59227441, 0.04659677])
+            mus_controls[:, -2], np.array([0.45605398, 0.78522824, 0.19974877, 0.51404386, 0.59223952, 0.04661861])
         )
 
     elif ode_solver == OdeSolver.RK4:
-        np.testing.assert_almost_equal(f[0, 0], 3.9163147567423305e-05)
+        np.testing.assert_almost_equal(f[0, 0], 3.9794313261046896e-05)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00352334, 0.01700853]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.14350606, -0.72027301]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00345137, 0.01676553]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.17039042, -0.76764697]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.02920952, -3.91032827]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.67351448, 3.62485659]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.03373366, -3.92126655]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.92313029, 1.78640863]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
             mus_states[:, 0], np.array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864, 0.15599452])
         )
         np.testing.assert_almost_equal(
-            mus_states[:, -1], np.array([0.51283945, 0.6994339, 0.40390624, 0.48031161, 0.53750849, 0.31441088])
+            mus_states[:, -1], np.array([0.51268549, 0.69947117, 0.40394632, 0.48027953, 0.53746661, 0.31446889])
         )
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([5.44773721e-05, -3.45454293e-04]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-2.68029143e-05, -3.90467765e-05]))
+        np.testing.assert_almost_equal(tau[:, 0], np.array([5.37097242e-05, -3.42250644e-04]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([-2.45733125e-05, -4.55068941e-05]))
         np.testing.assert_almost_equal(
-            mus_controls[:, 0], np.array([0.37740553, 0.95056685, 0.73174651, 0.60092669, 0.15924254, 0.15856357])
+            mus_controls[:, 0], np.array([0.3774798, 0.95056816, 0.73173097, 0.60096548, 0.15935417, 0.15854798])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.45609247, 0.7851955, 0.19973458, 0.51407787, 0.59227145, 0.04659596])
+            mus_controls[:, -2], np.array([0.4560568, 0.78523111, 0.19974709, 0.51404432, 0.59224108, 0.04661467])
         )
+
     else:
         raise ValueError("Test not ready")
 
@@ -425,76 +426,77 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     )
 
     if ode_solver == OdeSolver.IRK:
-        np.testing.assert_almost_equal(f[0, 0], 3.939617534835209e-05)
+        np.testing.assert_almost_equal(f[0, 0], 4.0100479928729196e-05)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00352248, 0.01703644]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.1435249, -0.7202986]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-0.0034751, 0.01685431]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.17038791, -0.76762034]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.03023126, -3.91481759]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.67283616, 3.62412467]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.03586838, -3.92859333]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.92300111, 1.78692532]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
             mus_states[:, 0], np.array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864, 0.15599452])
         )
         np.testing.assert_almost_equal(
-            mus_states[:, -1], np.array([0.51285401, 0.69943683, 0.40390633, 0.48032393, 0.53752275, 0.31437821])
+            mus_states[:, -1], np.array([0.51266794, 0.69948076, 0.40395187, 0.48028633, 0.53747424, 0.31444829])
         )
         # initial and final controls
         np.testing.assert_almost_equal(
-            mus_controls[:, 0], np.array([0.37743017, 0.95055919, 0.73174445, 0.60093176, 0.15924552, 0.15866818])
+            mus_controls[:, 0], np.array([0.37746726, 0.9505724, 0.73173087, 0.60097671, 0.15936876, 0.15866727])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.45609693, 0.78519207, 0.19973399, 0.51408032, 0.59227376, 0.04659447])
+            mus_controls[:, -2], np.array([0.45605437, 0.78523337, 0.1997479, 0.51404166, 0.59223881, 0.04661636])
         )
 
     elif ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(f[0, 0], 3.939731707680551e-05)
+        np.testing.assert_almost_equal(f[0, 0], 4.0101623987442914e-05)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00352196, 0.01703354]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.1435235, -0.72029486]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00347448, 0.0168511]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.17038649, -0.76761656]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.03011751, -3.91434553]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.6728582, 3.62420546]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.03575054, -3.92810697]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.92302588, 1.78701392]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
             mus_states[:, 0], np.array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864, 0.15599452])
         )
         np.testing.assert_almost_equal(
-            mus_states[:, -1], np.array([0.51284957, 0.69943225, 0.40390649, 0.48032527, 0.53752456, 0.31437891])
+            mus_states[:, -1], np.array([0.51266365, 0.69947614, 0.403952, 0.4802877, 0.53747608, 0.31444892])
         )
         # initial and final controls
         np.testing.assert_almost_equal(
-            mus_controls[:, 0], np.array([0.37744227, 0.95044691, 0.73173098, 0.60092373, 0.15932458, 0.15869862])
+            mus_controls[:, 0], np.array([0.37747952, 0.95046004, 0.73171739, 0.60096865, 0.15944769, 0.15869762])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.45609587, 0.78518751, 0.19973503, 0.51408194, 0.59227395, 0.04659709])
+            mus_controls[:, -2], np.array([0.45605336, 0.78522878, 0.19974893, 0.51404331, 0.59223902, 0.04661895])
         )
 
     elif ode_solver == OdeSolver.RK4:
-        np.testing.assert_almost_equal(f[0, 0], 3.918210818142734e-05)
+        np.testing.assert_almost_equal(f[0, 0], 3.981409409342779e-05)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00352802, 0.01702281]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.14350458, -0.72026726]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-0.00345594, 0.01677944]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.17038891, -0.76764111]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.02960131, -3.91150408]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.67350467, 3.62492773]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.03412935, -3.92245047]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.92312113, 1.78648617]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
             mus_states[:, 0], np.array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864, 0.15599452])
         )
         np.testing.assert_almost_equal(
-            mus_states[:, -1], np.array([0.51283615, 0.69943454, 0.40390687, 0.48031102, 0.53750777, 0.31441242])
+            mus_states[:, -1], np.array([0.51268205, 0.69947185, 0.40394699, 0.48027891, 0.53746585, 0.31447048])
         )
         # initial and final controls
         np.testing.assert_almost_equal(
-            mus_controls[:, 0], np.array([0.37740184, 0.95056827, 0.73174668, 0.60092831, 0.15924504, 0.15856629])
+            mus_controls[:, 0], np.array([0.37747623, 0.95056957, 0.73173112, 0.60096712, 0.15935676, 0.15855066])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.4560919, 0.785196, 0.19973472, 0.51407736, 0.59227099, 0.04659628])
+            mus_controls[:, -2], np.array([0.45605619, 0.78523164, 0.19974724, 0.51404377, 0.59224058, 0.04661501])
         )
+
     else:
         raise ValueError("Test not implemented")
 

@@ -1,4 +1,5 @@
 from itertools import chain
+from math import inf
 from typing import Union, Callable
 from time import time
 
@@ -62,6 +63,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         warm_start: Solution = None,
         solver_first_iter: Solver.Generic = None,
         export_options: dict = None,
+        max_consecutive_failing: int = inf,
         **advance_options,
     ) -> Solution:
         """
@@ -88,6 +90,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             A Solution to initiate the first iteration from
         export_options: dict
             Any options related to the saving of the data at each iteration
+        max_consecutive_failing: int
+            The number of consecutive failing before stopping the nmpc. Default is infinite
         advance_options: Any
             The extra options to pass to the advancing methods
 
@@ -114,13 +118,15 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         total_time = 0
         real_time = 0
+        consecutive_failing = 0
 
         self.total_optimization_run = 0
-        while update_function(self, self.total_optimization_run, sol):
+        while update_function(self, self.total_optimization_run, sol) and consecutive_failing < max_consecutive_failing:
             sol = super(RecedingHorizonOptimization, self).solve(
                 solver=solver_current,
                 warm_start=warm_start,
             )
+            consecutive_failing = 0 if sol.status == 0 else consecutive_failing + 1
 
             # Set the option for the next iteration
             if self.total_optimization_run == 0:
