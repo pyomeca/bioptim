@@ -24,6 +24,7 @@ from bioptim import (
     FatigueInitialGuess,
     Bounds,
     XiaFatigue,
+    XiaFatigueStabilized,
     XiaTauFatigue,
     MichaudFatigue,
     MichaudTauFatigue,
@@ -76,6 +77,10 @@ def prepare_ocp(
     for i in range(n_muscles):
         if fatigue_type == "xia":
             fatigue_dynamics.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
+        elif fatigue_type == "xia_stabilized":
+            fatigue_dynamics.add(
+                XiaFatigueStabilized(LD=10, LR=10, F=0.01, R=0.002, stabilization_factor=10), state_only=False
+            )
         elif fatigue_type == "michaud":
             fatigue_dynamics.add(
                 MichaudFatigue(
@@ -94,6 +99,14 @@ def prepare_ocp(
                     XiaTauFatigue(
                         XiaFatigue(LD=10, LR=10, F=5, R=10, scaling=tau_min),
                         XiaFatigue(LD=10, LR=10, F=5, R=10, scaling=tau_max),
+                    ),
+                    state_only=False,
+                )
+            elif fatigue_type == "xia_stabilized":
+                fatigue_dynamics.add(
+                    XiaTauFatigue(
+                        XiaFatigueStabilized(LD=10, LR=10, F=5, R=10, stabilization_factor=10, scaling=tau_min),
+                        XiaFatigueStabilized(LD=10, LR=10, F=5, R=10, stabilization_factor=10, scaling=tau_max),
                     ),
                     state_only=False,
                 )

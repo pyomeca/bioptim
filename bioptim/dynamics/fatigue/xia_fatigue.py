@@ -15,13 +15,13 @@ class XiaFatigue(MuscleFatigue):
         Parameters
         ----------
         LD: float
-            Joint development coefficient
+            Muscle development coefficient
         LR: float
-            Joint relaxation coefficient
+            Muscle relaxation coefficient
         F: float
-            Joint fibers recovery rate
+            Muscle fiber recovery rate
         R: float
-            Joint fibers relaxation rate
+            Muscle fiber relaxation rate
         """
 
         super(XiaFatigue, self).__init__(**kwargs)
@@ -62,6 +62,29 @@ class XiaFatigue(MuscleFatigue):
         ma_dot = c - self.F * ma
         mr_dot = -c + self.R * mf
         mf_dot = self.F * ma - self.R * mf
+        return vertcat(ma_dot, mr_dot, mf_dot)
+
+
+class XiaFatigueStabilized(XiaFatigue):
+    def __init__(self, LD: float, LR: float, F: float, R: float, stabilization_factor: float, **kwargs):
+        """
+        stabilization_factor: float
+            Stabilization factor so: ma + mr + mf => 1
+        """
+        super(XiaFatigueStabilized, self).__init__(LD, LR, F, R, **kwargs)
+        self.stabilization_factor = stabilization_factor
+
+    def apply_dynamics(self, target_load, *states):
+        ma, mr, mf = states
+        # Implementation of Xia dynamics
+        c = if_else(
+            lt(ma, target_load),
+            if_else(gt(mr, target_load - ma), self.LD * (target_load - ma), self.LD * mr),
+            self.LR * (target_load - ma),
+        )
+        ma_dot = c - self.F * ma
+        mr_dot = -c + self.R * mf
+        mf_dot = self.stabilization_factor * (1 - ma - mr - mf - mf)
         return vertcat(ma_dot, mr_dot, mf_dot)
 
 
