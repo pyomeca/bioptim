@@ -23,6 +23,7 @@ from bioptim import (
     FatigueInitialGuess,
     FatigueList,
     XiaFatigue,
+    XiaFatigueStabilized,
     XiaTauFatigue,
     MichaudFatigue,
     MichaudTauFatigue,
@@ -80,6 +81,15 @@ def prepare_ocp(
                 XiaTauFatigue(
                     XiaFatigue(LD=100, LR=100, F=5, R=10, scaling=tau_min),
                     XiaFatigue(LD=100, LR=100, F=5, R=10, scaling=tau_max),
+                    state_only=False,
+                    split_controls=split_controls,
+                ),
+            )
+        elif fatigue_type == "xia_stabilized":
+            fatigue_dynamics.add(
+                XiaTauFatigue(
+                    XiaFatigueStabilized(LD=100, LR=100, F=5, R=10, stabilization_factor=10, scaling=tau_min),
+                    XiaFatigueStabilized(LD=100, LR=100, F=5, R=10, stabilization_factor=10, scaling=tau_max),
                     state_only=False,
                     split_controls=split_controls,
                 ),
