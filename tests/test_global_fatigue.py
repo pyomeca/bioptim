@@ -685,6 +685,9 @@ def test_fatigable_effort_torque_split():
     sol = ocp.solve()
 
     # Check objective function value
+    print("coucou")
+    print(platform)
+    print("coucou")
     if platform != "darwin":
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
