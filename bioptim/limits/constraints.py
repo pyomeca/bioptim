@@ -1,7 +1,6 @@
 from typing import Callable, Union, Any
 from enum import Enum
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
 
