@@ -181,8 +181,6 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
             idx_phase = pt.phase_pre_idx
-            if idx_phase in existing_phases:
-                raise RuntimeError("It is not possible to define two phase transitions for the same phase")
             if idx_phase >= ocp.n_phases:
                 raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
             existing_phases.append(idx_phase)
