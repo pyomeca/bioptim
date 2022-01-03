@@ -378,11 +378,37 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
             if with_contact:
                 fext = nlp.controls["fext"].mx
-                fext_vec = MX.zeros((6, 1))
-                fext_vec[4:, :] = fext
-                # TODO : affect fext components to external forces array as a 6xn array
+                nb_contacts = nlp.model.nbContacts()
+                idx_dir = nb_contacts * [0]
+                col_f = nb_contacts * [0]
+                last_col_f = -1
+                last_idx = 3
+                for contact_index in range(0, nlp.model.nbContacts()):
+                    contact_name = nlp.model.contactNames()[contact_index].to_string()
+                    if "_X" in contact_name:
+                        idx_dir[contact_index] = 0
+                        if last_idx >= idx_dir[contact_index]:
+                            last_col_f += 1
+                        col_f[contact_index] = last_col_f
+                    elif "_Y" in contact_name:
+                        idx_dir[contact_index] = 1
+                        if last_idx >= idx_dir[contact_index]:
+                            last_col_f += 1
+                        col_f[contact_index] = last_col_f
+                    elif "_Z" in contact_name:
+                        idx_dir[contact_index] = 2
+                        if last_idx >= idx_dir[contact_index]:
+                            last_col_f += 1
+                        col_f[contact_index] = last_col_f
+                    last_idx = idx_dir[contact_index]
+
+                fext_vec = MX.zeros((6, np.max(col_f) + 1))
+                for contact_index, (row, col) in enumerate(zip(idx_dir, col_f)):
+                    fext_vec[row + 3, col] = fext[contact_index]
                 # TODO : create a subfunction to convert mx_array to spatial vector
-                external_forces = BiorbdInterface.convert_array_to_external_forces([fext_vec])
+                external_forces = BiorbdInterface.convert_array_to_external_forces(
+                    [fext_vec[:, i] for i in range(fext_vec.size()[1])]
+                )
                 tau_id = nlp.model.InverseDynamics(q, qdot, qddot, external_forces[0][0]).to_mx()
             else:
                 tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
@@ -417,7 +443,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
             # TODO get the index of the marker
-            # nlp.model.contactAcceleration(q, qdot, qddot, contact_index)
             contact_name = nlp.model.contactNames()[contact_index].to_string()
             if "_X" in nlp.model.contactNames()[contact_index].to_string():
                 idx_dir = 0
@@ -425,14 +450,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 idx_dir = 1
             elif "_Z" in nlp.model.contactNames()[contact_index].to_string():
                 idx_dir = 2
-            marker_acceleration = nlp.model.markerAcceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
+            contact_acceleration = nlp.model.rigidContactAcceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([nlp.parameters[key] for key in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("marker_acceleration", marker_acceleration, *var)
+            return BiorbdInterface.mx_to_cx("contact_acceleration", contact_acceleration, *var)
 
         @staticmethod
         def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):

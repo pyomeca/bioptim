@@ -161,7 +161,7 @@ class ConfigureProblem:
             )
             if with_contact:
                 ConfigureProblem.configure_contact_forces(nlp, False, True)
-                for ii, contact in enumerate(nlp.model.contactNames()):
+                for ii in range(nlp.model.nbContacts):
                     ocp.implicit_constraints.add(
                         ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
                         with_contact=with_contact,
