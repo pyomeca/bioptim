@@ -161,7 +161,7 @@ class ConfigureProblem:
             )
             if with_contact:
                 ConfigureProblem.configure_contact_forces(nlp, False, True)
-                for ii in range(nlp.model.nbContacts):
+                for ii in range(nlp.model.nbContacts()):
                     ocp.implicit_constraints.add(
                         ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
                         with_contact=with_contact,
@@ -169,6 +169,12 @@ class ConfigureProblem:
                         node=Node.ALL_SHOOTING,
                         constraint_type=ConstraintType.IMPLICIT,
                     )
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
+                with_contact=with_contact,
+            )
         if implicit_soft_contacts:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
