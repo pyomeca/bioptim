@@ -4,6 +4,8 @@ from enum import Enum
 import biorbd_casadi as biorbd
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
+from biorbd_casadi import to_spatial_vector
+
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
@@ -379,6 +381,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if with_contact:
                 fext = nlp.controls["fext"].mx
                 nb_contacts = nlp.model.nbContacts()
+                nb_segments = nlp.model.nbSegment()
                 idx_dir = nb_contacts * [0]
                 col_f = nb_contacts * [0]
                 last_col_f = -1
@@ -402,14 +405,17 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                         col_f[contact_index] = last_col_f
                     last_idx = idx_dir[contact_index]
 
-                fext_vec = MX.zeros((6, np.max(col_f) + 1))
+                # fext_vec = MX.zeros((6, np.max(col_f) + 1))
+                fext_vec = MX.zeros((6, nb_segments))
                 for contact_index, (row, col) in enumerate(zip(idx_dir, col_f)):
-                    fext_vec[row + 3, col] = fext[contact_index]
-                # TODO : create a subfunction to convert mx_array to spatial vector
-                external_forces = BiorbdInterface.convert_array_to_external_forces(
-                    [fext_vec[:, i] for i in range(fext_vec.size()[1])]
+                    fext_vec[row + 3, 1] = fext[contact_index]
+                    # TODO : assign columns with segment Id.
+
+                external_forces = to_spatial_vector(
+                    fext_vec
                 )
-                tau_id = nlp.model.InverseDynamics(q, qdot, qddot, external_forces[0][0]).to_mx()
+
+                tau_id = nlp.model.InverseDynamics(q, qdot, qddot, external_forces).to_mx()
             else:
                 tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
 
