@@ -140,6 +140,13 @@ class RK(OdeSolverBase):
         else:
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
+    def __str__(self):
+        ode_solver_string = f"{self.rk_integrator.__name__}\n{self.steps} step"
+        if self.steps > 1:
+            ode_solver_string += "s"
+
+        return ode_solver_string
+
 
 class OdeSolver:
     """
@@ -283,6 +290,9 @@ class OdeSolver:
             }
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
+        def __str__(self):
+            return f"{self.rk_integrator.__name__}\n{self.method}\n{self.polynomial_degree}"
+
     class IRK(COLLOCATION):
         """
         An implicit Runge-Kutta solver
@@ -409,3 +419,6 @@ class OdeSolver:
 
             xf = integrator_func(x0=x0, p=p)["xf"]
             return xf, horzcat(x0, xf)
+
+        def __str__(self):
+            return self.rk_integrator.__name__
