@@ -18,7 +18,7 @@ from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.SolverOptions import Solver
+from ..interfaces.solver_options import Solver
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
