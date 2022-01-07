@@ -167,6 +167,10 @@ class IpoptInterface(SolverInterface):
         for g in self.ocp.g_internal:
             all_g_bounds.concatenate(g.bounds)
 
+        all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g_implicit))
+        for g in self.ocp.g_implicit:
+            all_g_bounds.concatenate(g.bounds)
+
         all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g))
         for g in self.ocp.g:
             all_g_bounds.concatenate(g.bounds)
@@ -174,6 +178,11 @@ class IpoptInterface(SolverInterface):
         for nlp in self.ocp.nlp:
             all_g = vertcat(all_g, self.__get_all_penalties(nlp, nlp.g_internal))
             for g in nlp.g_internal:
+                for _ in g.node_idx:
+                    all_g_bounds.concatenate(g.bounds)
+
+            all_g = vertcat(all_g, self.__get_all_penalties(nlp, nlp.g_implicit))
+            for g in nlp.g_implicit:
                 for _ in g.node_idx:
                     all_g_bounds.concatenate(g.bounds)
 

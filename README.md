@@ -1118,6 +1118,12 @@ Minimizes the non-acceleration points reaction forces towards zero (or a target)
 #### TRACK_CONTACT_FORCES (Lagrange)
 Tracks the non-acceleration points reaction forces towards a target
 
+#### MINIMIZE_SOFT_CONTACT_FORCES (Lagrange)
+Minimizes the external forces induced by soft contacts (or a target)
+
+#### TRACK_SOFT_CONTACT_FORCES  (Lagrange)
+Tracks the external forces induced by soft contacts towards a target
+
 #### MINIMIZE_COM_POSITION (Lagrange and Mayer)
 Minimizes the center of mass position towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
@@ -1336,6 +1342,8 @@ IRK is supposed to be a bit more robust, but may be slower too.
 CVODES is the one with the least options, since it is not in-house implemented.
 
 The accepted values are:
+- RK1: Runge-Kutta of the 1st order also known as Forward Euler
+- RK2: Runge-Kutta of the 2nd order also known as Midpoint Euler
 - RK4: Runge-Kutta of the 4th order
 - RK8: Runge-Kutta of the 8th order
 - IRK: Implicit runge-Kutta

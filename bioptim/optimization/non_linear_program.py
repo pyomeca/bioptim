@@ -39,6 +39,8 @@ class NonLinearProgram:
         All the constraints at each of the node of the phase
     g_internal: list[list[Constraint]]
         All the constraints internally defined by the OCP at each of the node of the phase
+    g_implicit: list[list[Constraint]]
+        All the implicit constraints defined by the OCP at each of the node of the phase
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
     J_internal: list[list[Objective]]
@@ -104,6 +106,7 @@ class NonLinearProgram:
     def __init__(self):
         self.casadi_func = {}
         self.contact_forces_func = None
+        self.soft_contact_forces_func = None
         self.control_type = ControlType.NONE
         self.cx = None
         self.dt = None
@@ -113,6 +116,7 @@ class NonLinearProgram:
         self.external_forces = []
         self.g = []
         self.g_internal = []
+        self.g_implicit = []
         self.J = []
         self.J_internal = []
         self.model = None
