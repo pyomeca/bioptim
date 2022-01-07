@@ -137,7 +137,7 @@ def test_plot_graphs_for_implicit_constraints():
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
-    if sys.platform == "linux":
+    if sys.platform != "linux":
         sol.graphs(automatically_organize=False)
 
 
