@@ -138,7 +138,7 @@ def test_plot_graphs_for_implicit_constraints():
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
-    sol.graphs(automatically_organize=False)
+    # sol.graphs(automatically_organize=False)
 
 
 def test_console_objective_functions():
