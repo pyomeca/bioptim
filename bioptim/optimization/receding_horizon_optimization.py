@@ -13,7 +13,7 @@ from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import SolverType, InterpolationType
-from ..interfaces.SolverOptions import Solver
+from ..interfaces.solver_options import Solver
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):

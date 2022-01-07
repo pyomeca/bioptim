@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
-from ..interfaces.SolverOptions import Solver
+from ..interfaces.solver_options import Solver
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType, ControlType, Node, SolverType
 from ..optimization.solution import Solution

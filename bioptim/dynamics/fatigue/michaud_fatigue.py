@@ -77,7 +77,7 @@ class MichaudFatigue(MuscleFatigue):
 
     def apply_dynamics(self, target_load, *states):
         # Implementation of modified Xia dynamics
-        ma, mr, mf_xia, mf_long = states
+        ma, mr, mf, effort = states
 
         c = if_else(
             lt(ma, target_load),
@@ -85,15 +85,22 @@ class MichaudFatigue(MuscleFatigue):
             self.LR * (target_load - ma),
         )
 
-        fatigue_load = target_load - self.effort_threshold
-        fatigue_dyn = self.effort_factor * if_else(gt(fatigue_load, 0), 1 - mf_long, -mf_long)
+        effort_perception_dot = (
+            self.effort_factor
+            * (target_load - self.effort_threshold)
+            * if_else(
+                target_load > self.effort_threshold,
+                1 / (1 - self.effort_threshold) * (1 - effort),
+                1 / self.effort_threshold * effort,
+            )
+        )
 
-        ma_dot = c - self.F * ma - if_else(gt(fatigue_load, 0), fatigue_dyn, 0)
-        mr_dot = -c + self.R * mf_xia - if_else(lt(fatigue_load, 0), fatigue_dyn, 0)
-        mf_dot = self.F * ma - self.R * mf_xia
-        mf_long_dot = fatigue_dyn + self.stabilization_factor * (1 - ma - mr - mf_xia - mf_long)
+        ma_dot = c - self.F * ma - if_else(target_load > self.effort_threshold, effort_perception_dot, 0)
+        mr_dot = -c + self.R * mf - if_else(target_load < self.effort_threshold, effort_perception_dot, 0)
+        mf_dot = self.F * ma - self.R * mf
+        effort_perception_dot += self.stabilization_factor * (1 - ma - mr - mf - effort)
 
-        return vertcat(ma_dot, mr_dot, mf_dot, mf_long_dot)
+        return vertcat(ma_dot, mr_dot, mf_dot, effort_perception_dot)
 
     @property
     def multi_type(self):
