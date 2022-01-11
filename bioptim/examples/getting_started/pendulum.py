@@ -78,7 +78,7 @@ def prepare_ocp(
     n_tau = biorbd_model.nbGeneralizedTorque()
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[n_tau - 1, :] = 0
+    u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
     u_init = InitialGuess([tau_init] * n_tau)
 

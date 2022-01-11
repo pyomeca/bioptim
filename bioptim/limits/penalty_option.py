@@ -5,7 +5,7 @@ from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node, PlotType, ControlType
+from ..misc.enums import Node, PlotType, ControlType, ConstraintType
 from ..misc.mapping import Mapping, BiMapping
 from ..misc.options import OptionGeneric
 
@@ -54,8 +54,8 @@ class PenaltyOption(OptionGeneric):
         The index of the nlp of pre when penalty is transition
     phase_post_idx: int
         The index of the nlp of post when penalty is transition
-    is_internal: bool
-        If the penalty is from the user or from bioptim
+    constraint_type: ConstraintType
+        If the penalty is from the user or from bioptim (implicit or internal)
     multi_thread: bool
         If the penalty is multithreaded
 
@@ -100,7 +100,7 @@ class PenaltyOption(OptionGeneric):
         cols: Union[list, tuple, range, np.ndarray] = None,
         states_mapping: BiMapping = None,
         custom_function: Callable = None,
-        is_internal: bool = False,
+        constraint_type: ConstraintType = ConstraintType.USER,
         multi_thread: bool = None,
         expand: bool = False,
         **params: Any,
@@ -128,8 +128,8 @@ class PenaltyOption(OptionGeneric):
             The component index the penalty is acting on
         custom_function: Callable
             A user defined function to call to get the penalty
-        is_internal: bool
-            If the penalty is internally defined [True] or by the user
+        constraint_type: ConstraintType
+            If the penalty is from the user or from bioptim (implicit or internal)
         **params: dict
             Generic parameters for the penalty
         """
@@ -174,7 +174,7 @@ class PenaltyOption(OptionGeneric):
         self.phase_post_idx = None
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be both True")
-        self.is_internal = is_internal
+        self.constraint_type = constraint_type
 
         self.multi_thread = multi_thread
 

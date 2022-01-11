@@ -9,7 +9,7 @@ from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType
+from ..misc.enums import Node, InterpolationType, ConstraintType
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -41,8 +41,8 @@ class PhaseTransition(Constraint):
         The index of the node in nlp pre
     transition: bool
         The nature of the cost function is transition
-    is_internal: bool
-        Phase transition are considered internal cost functions
+    constraint_type: ConstraintType
+        If the penalty is from the user or from bioptim (implicit or internal)
 
 
     """
@@ -83,7 +83,7 @@ class PhaseTransition(Constraint):
         self.dt = 1
         self.node_idx = [0]
         self.transition = True
-        self.is_internal = True
+        self.constraint_type = ConstraintType.INTERNAL
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         ocp = all_pn[0].ocp

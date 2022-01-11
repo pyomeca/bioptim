@@ -75,6 +75,7 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
+        implicit_dynamics: bool,
         fatigue: FatigueList,
     ) -> MX:
         """
@@ -92,6 +93,8 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
+        implicit_dynamics: bool
+            If the implicit dynamic should be used
         fatigue : FatigueList
             A list of fatigue elements
 
@@ -104,14 +107,19 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        dxdt = MX(nlp.states.shape, ddq.shape[1])
-        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-        dxdt[nlp.states["qdot"].index, :] = ddq
+        if implicit_dynamics:
+            dxdt = MX(nlp.states.shape, 1)
+            dxdt[nlp.states["q"].index, :] = dq
+            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+        else:
+            tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+            dxdt = MX(nlp.states.shape, ddq.shape[1])
+            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+            dxdt[nlp.states["qdot"].index, :] = ddq
 
         if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
@@ -205,7 +213,9 @@ class DynamicsFunctions:
         return vertcat(dq, ddq)
 
     @staticmethod
-    def torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+    def torque_derivative_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool, with_contact: bool
+    ) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -219,6 +229,8 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
+        implicit_dynamics: bool
+            If the implicit dynamics should be used
         with_contact: bool
             If the dynamic with contact should be used
 
@@ -232,16 +244,27 @@ class DynamicsFunctions:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
-        taudot = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
-        dtau = nlp.controls["taudot"].mapping.to_first.map(taudot)
+        dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
-        dtau = horzcat(*[dtau for _ in range(ddq.shape[1])])
+        if implicit_dynamics:
+            ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
+            dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 
-        return vertcat(dq, ddq, dtau)
+            dxdt = MX(nlp.states.shape, 1)
+            dxdt[nlp.states["q"].index, :] = dq
+            dxdt[nlp.states["qdot"].index, :] = ddq
+            dxdt[nlp.states["qddot"].index, :] = dddq
+            dxdt[nlp.states["tau"].index, :] = dtau
+        else:
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+            dxdt = MX(nlp.states.shape, ddq.shape[1])
+            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+            dxdt[nlp.states["qdot"].index, :] = ddq
+            dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
+
+        return dxdt
 
     @staticmethod
     def forces_from_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:

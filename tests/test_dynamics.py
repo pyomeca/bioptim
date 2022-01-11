@@ -1,4 +1,5 @@
 import pytest
+import re
 
 import numpy as np
 from casadi import MX, SX
@@ -10,7 +11,7 @@ from bioptim.misc.enums import ControlType
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector
 from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
-
+from bioptim.limits.constraints import ConstraintList
 from .utils import TestUtils
 
 
@@ -19,6 +20,7 @@ class OptimalControlProgram:
         self.n_phases = 1
         self.nlp = [nlp]
         self.v = OptimizationVector(self)
+        self.implicit_constraints = ConstraintList()
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
@@ -78,6 +80,101 @@ def test_torque_driven(with_contact, with_external_force, cx):
                 x_out[:, 0],
                 [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
             )
+
+
+@pytest.mark.parametrize("cx", [MX, SX])
+@pytest.mark.parametrize("with_contact", [False, True])
+def test_torque_driven_implicit(with_contact, cx):
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = biorbd.Model(
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+    )
+    nlp.ns = 5
+    nlp.cx = cx
+
+    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, implicit_dynamics=True),
+        False,
+    )
+
+    # Prepare the dynamics
+    ConfigureProblem.initialize(ocp, nlp)
+
+    # Test the results
+    np.random.seed(42)
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    params = np.random.rand(nlp.parameters.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params))
+
+    if with_contact:
+        contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+        np.testing.assert_almost_equal(
+            x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
+        )
+
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+
+    else:
+        np.testing.assert_almost_equal(
+            x_out[:, 0],
+            [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+        )
+
+
+@pytest.mark.parametrize("cx", [MX, SX])
+@pytest.mark.parametrize("with_contact", [False, True])
+@pytest.mark.parametrize("implicit_contact", [False, True])
+def test_torque_driven_implicit_soft_contacts(with_contact, cx, implicit_contact):
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = biorbd.Model(
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+    )
+    nlp.ns = 5
+    nlp.cx = cx
+
+    nlp.x_bounds = np.zeros((nlp.model.nbQ() * (2 + 3), 1))
+    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, implicit_soft_contacts=implicit_contact),
+        False,
+    )
+
+    # Prepare the dynamics
+    ConfigureProblem.initialize(ocp, nlp)
+
+    # Test the results
+    np.random.seed(42)
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    params = np.random.rand(nlp.parameters.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params))
+
+    if with_contact:
+        contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+        np.testing.assert_almost_equal(
+            x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
+        )
+
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+
+    else:
+        np.testing.assert_almost_equal(
+            x_out[:, 0],
+            [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3024137, -10.3850379, 1.6044517, 35.8023864],
+        )
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
@@ -192,6 +289,225 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
                     0.72900717,
                 ],
             )
+
+
+@pytest.mark.parametrize("cx", [MX, SX])
+@pytest.mark.parametrize("with_contact", [False, True])
+def test_torque_derivative_driven_implicit(with_contact, cx):
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = biorbd.Model(
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+    )
+    nlp.ns = 5
+    nlp.cx = cx
+
+    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 2))
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, implicit_dynamics=True),
+        False,
+    )
+
+    # Prepare the dynamics
+    ConfigureProblem.initialize(ocp, nlp)
+
+    # Test the results
+    np.random.seed(42)
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    params = np.random.rand(nlp.parameters.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params))
+
+    if with_contact:
+        contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+        np.testing.assert_almost_equal(
+            x_out[:, 0],
+            [
+                0.6118529,
+                0.785176,
+                0.6075449,
+                0.8083973,
+                0.3886773,
+                0.5426961,
+                0.7722448,
+                0.7290072,
+                0.8631034,
+                0.3251833,
+                0.1195942,
+                0.4937956,
+                0.0314292,
+                0.2492922,
+                0.2897515,
+                0.8714606,
+            ],
+        )
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+    else:
+        np.testing.assert_almost_equal(
+            x_out[:, 0],
+            [
+                0.6118529,
+                0.785176,
+                0.6075449,
+                0.8083973,
+                0.3886773,
+                0.5426961,
+                0.7722448,
+                0.7290072,
+                0.8631034,
+                0.3251833,
+                0.1195942,
+                0.4937956,
+                0.0314292,
+                0.2492922,
+                0.2897515,
+                0.8714606,
+            ],
+        )
+
+
+@pytest.mark.parametrize("cx", [MX, SX])
+@pytest.mark.parametrize("with_contact", [False, True])
+@pytest.mark.parametrize("implicit_contact", [False, True])
+def test_torque_derivative_driven_implicit_soft_contacts(with_contact, cx, implicit_contact):
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = biorbd.Model(
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+    )
+    nlp.ns = 5
+    nlp.cx = cx
+
+    nlp.x_bounds = np.zeros((nlp.model.nbQ() * (2 + 3), 1))
+    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, implicit_soft_contacts=implicit_contact
+        ),
+        False,
+    )
+
+    # Prepare the dynamics
+    ConfigureProblem.initialize(ocp, nlp)
+
+    # Test the results
+    np.random.seed(42)
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    params = np.random.rand(nlp.parameters.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params))
+
+    if with_contact:
+        contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+        np.testing.assert_almost_equal(
+            x_out[:, 0],
+            [
+                0.6118529,
+                0.785176,
+                0.6075449,
+                0.8083973,
+                -0.3214905,
+                -0.1912131,
+                0.6507164,
+                -0.2359716,
+                0.3886773,
+                0.5426961,
+                0.7722448,
+                0.7290072,
+            ],
+        )
+
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+
+    else:
+        np.testing.assert_almost_equal(
+            x_out[:, 0],
+            [
+                0.6118529,
+                0.785176,
+                0.6075449,
+                0.8083973,
+                -0.3024137,
+                -10.3850379,
+                1.6044517,
+                35.8023864,
+                0.3886773,
+                0.5426961,
+                0.7722448,
+                0.7290072,
+            ],
+        )
+
+
+@pytest.mark.parametrize(
+    "dynamics",
+    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
+)
+def test_implicit_soft_contacts_errors(dynamics):
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = biorbd.Model(
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+    )
+    nlp.ns = 5
+    nlp.cx = MX
+
+    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(dynamics, implicit_soft_contacts=True),
+        False,
+    )
+
+    # Prepare the dynamics
+    with pytest.raises(
+        TypeError,
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_soft_contacts'"),
+    ):
+        ConfigureProblem.initialize(ocp, nlp)
+
+
+@pytest.mark.parametrize(
+    "dynamics",
+    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
+)
+def test_implicit_dynamics_errors(dynamics):
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = biorbd.Model(
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+    )
+    nlp.ns = 5
+    nlp.cx = MX
+
+    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(dynamics, implicit_dynamics=True),
+        False,
+    )
+
+    # Prepare the dynamics
+    with pytest.raises(
+        TypeError,
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_dynamics'"),
+    ):
+        ConfigureProblem.initialize(ocp, nlp)
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
