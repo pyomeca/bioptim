@@ -1,4 +1,4 @@
-from time import time
+from time import perf_counter
 from sys import platform
 
 from casadi import Importer
@@ -125,10 +125,10 @@ class IpoptInterface(SolverInterface):
             self.ipopt_limits["lam_x0"] = self.lam_x
 
         # Solve the problem
-        tic = time()
+        tic = perf_counter()
         self.out = {"sol": self.ocp_solver.call(self.ipopt_limits)}
         self.out["sol"]["solver_time_to_optimize"] = self.ocp_solver.stats()["t_wall_total"]
-        self.out["sol"]["real_time_to_optimize"] = time() - tic
+        self.out["sol"]["real_time_to_optimize"] = perf_counter() - tic
         self.out["sol"]["iter"] = self.ocp_solver.stats()["iter_count"]
         self.out["sol"]["inf_du"] = (
             self.ocp_solver.stats()["iterations"]["inf_du"] if "iteration" in self.ocp_solver.stats() else None
