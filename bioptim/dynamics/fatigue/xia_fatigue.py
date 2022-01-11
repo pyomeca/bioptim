@@ -84,7 +84,7 @@ class XiaFatigueStabilized(XiaFatigue):
         )
         ma_dot = c - self.F * ma
         mr_dot = -c + self.R * mf
-        mf_dot = self.stabilization_factor * (1 - ma - mr - mf)
+        mf_dot = self.F * ma - self.R * mf + self.stabilization_factor * (1 - ma - mr - mf)
         return vertcat(ma_dot, mr_dot, mf_dot)
 
 

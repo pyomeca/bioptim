@@ -118,9 +118,17 @@ def prepare_ocp(
     )
 
 
-def main():
+def solve_ocp(implicit_dynamics: bool) -> OptimalControlProgram:
     """
-    The pendulum runs two ocp with implicit and explicit dynamics and plot comparison for the results
+    The initialization of ocp with implicit_dynamics as the only argument
+
+    Parameters
+    ----------
+    implicit_dynamics: bool
+        implicit
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
     """
     model_path = "models/pendulum.bioMod"
     n_shooting = 200  # The higher it is, the closer implicit and explicit solutions are.
@@ -133,41 +141,20 @@ def main():
         final_time=time,
         n_shooting=n_shooting,
         ode_solver=ode_solver,
-        implicit_dynamics=True,
+        implicit_dynamics=implicit_dynamics,
     )
-    # Custom plots
+
+    # --- Custom Plots --- #
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the ocp --- #
     sol_opt = Solver.IPOPT(show_online_optim=False)
-    sol_implicit = ocp.solve(sol_opt)
+    sol = ocp.solve(sol_opt)
 
-    # --- Show the results in a bioviz animation --- #
-    sol_implicit.print()
-    # sol_implicit.animate(n_frames=100)
-    # sol_implicit.graphs()
+    return sol
 
-    # --- Prepare the ocp with explicit dynamics --- #
-    ocp = prepare_ocp(
-        biorbd_model_path=model_path,
-        final_time=time,
-        n_shooting=n_shooting,
-        ode_solver=ode_solver,
-        implicit_dynamics=False,
-    )
-    # Custom plots
-    ocp.add_plot_penalty(CostType.ALL)
 
-    # --- Solve the ocp --- #
-    sol_opt = Solver.IPOPT(show_online_optim=False)
-    sol_explicit = ocp.solve(sol_opt)
-
-    # --- Show the results in a bioviz animation --- #
-    sol_explicit.print()
-    # sol_explicit.animate(n_frames=100)
-    # sol_explicit.graphs()
-
-    # Values are the same between implicit and explicit the more the dynamic is discretized
+def prepare_plots(sol_implicit, sol_explicit):
     plt.figure()
     tau_ex = sol_explicit.controls["tau"][0, :]
     tau_im = sol_implicit.controls["tau"][0, :]
@@ -192,6 +179,30 @@ def main():
     plt.ylabel("time (s)")
 
     plt.show()
+
+
+def main():
+    """
+    The pendulum runs two ocp with implicit and explicit dynamics and plot comparison for the results
+    """
+
+    # --- Prepare the ocp with implicit and explicit dynamics --- #
+    sol_implicit = solve_ocp(implicit_dynamics=True)
+    sol_explicit = solve_ocp(implicit_dynamics=False)
+
+    # --- Show the results in a bioviz animation --- #
+    sol_implicit.print()
+    # sol_implicit.animate(n_frames=100)
+    # sol_implicit.graphs()
+
+    # --- Show the results in a bioviz animation --- #
+    sol_explicit.print()
+    # sol_explicit.animate(n_frames=100)
+    # sol_explicit.graphs()
+
+    # Tau are closer between implicit and explicit when the dynamic is more discretized,
+    # meaning the more n_shooting is high, the more tau are close.
+    prepare_plots(sol_implicit, sol_explicit)
 
 
 if __name__ == "__main__":

@@ -6,22 +6,23 @@ from bioptim import OdeSolver
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("n_threads", [8])
-@pytest.mark.parametrize("use_sx", [False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK8])
-def test_soft_contact(ode_solver, use_sx, n_threads):
+# @pytest.mark.parametrize("n_threads", [8])
+# @pytest.mark.parametrize("use_sx", [False])
+# @pytest.mark.parametrize("ode_solver", [OdeSolver.RK8])
+# def test_soft_contact(ode_solver, use_sx, n_threads):
+def test_soft_contact():
     from bioptim.examples.torque_driven_ocp import example_soft_contact as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ode_solver = ode_solver()
+    ode_solver = OdeSolver.RK8()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/soft_contact_sphere.bioMod",
         final_time=0.37,
         n_shooting=37,
-        n_threads=n_threads,
-        use_sx=use_sx,
+        n_threads=8,
+        use_sx=False,
         ode_solver=ode_solver,
     )
 
@@ -56,9 +57,3 @@ def test_soft_contact(ode_solver, use_sx, n_threads):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-0.16347455, 0.02123226, -13.25955361]))
     np.testing.assert_almost_equal(tau[:, -2], np.array([0.00862357, -0.00298151, -0.16425701]))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, True)
-
-    # simulate
-    TestUtils.simulate(sol)

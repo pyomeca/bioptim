@@ -34,7 +34,6 @@ install:
   - conda env update -n bioptim -f environment.yml
   - conda activate bioptim
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
-  - sh: if [[ $CI_LINUX == true ]]; then conda install xorg-libx11 xorg-libxtst -cconda-forge; fi
   - conda list
   
   # Install ACADOS on LINUX and MAC
