@@ -10,7 +10,7 @@ class EffortPerception(MuscleFatigue):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, effort_threshold: float, effort_factor: float, scaling=10):
+    def __init__(self, effort_threshold: float, effort_factor: float, scaling: float = 1):
         """
         Parameters
         ----------
@@ -19,7 +19,7 @@ class EffortPerception(MuscleFatigue):
         effort_factor: float
             Effort perception build up rate
         scaling: float
-            The scaling factor to the max value
+            The scaling factor to the max value of the target load
         """
 
         super(EffortPerception, self).__init__(scaling=scaling)
