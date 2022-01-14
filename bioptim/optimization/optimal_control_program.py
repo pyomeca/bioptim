@@ -18,7 +18,7 @@ from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.SolverOptions import Solver
+from ..interfaces.solver_options import Solver
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
@@ -50,6 +50,8 @@ class OptimalControlProgram:
         Constraints that are not phase dependent (mostly parameters and continuity constraints)
     g_internal: list[list[Constraint]]
         All the constraints internally defined by the OCP at each of the node of the phase
+    g_implicit: list[list[Constraint]]
+        All the implicit constraints defined by the OCP at each of the node of the phase
     J: list
         Objective values that are not phase dependent (mostly parameters)
     isdef_x_init: bool
@@ -294,6 +296,8 @@ class OptimalControlProgram:
         elif not isinstance(objective_functions, ObjectiveList):
             raise RuntimeError("objective_functions should be built from an Objective or ObjectiveList")
 
+        self.implicit_constraints = ConstraintList()
+
         if constraints is None:
             constraints = ConstraintList()
         elif isinstance(constraints, Constraint):
@@ -333,6 +337,8 @@ class OptimalControlProgram:
         self.J_internal = []
         self.g = []
         self.g_internal = []
+        self.g_implicit = []
+
         self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
@@ -412,6 +418,7 @@ class OptimalControlProgram:
         self.update_initial_guess(x_init, u_init)
 
         # Prepare constraints
+        self.update_constraints(self.implicit_constraints)
         self.update_constraints(constraints)
 
         # Prepare objectives
@@ -639,9 +646,11 @@ class OptimalControlProgram:
                 if cost_type == CostType.OBJECTIVES:
                     penalties = nlp.J
                     penalties_internal = nlp.J_internal
+                    penalties_implicit = []
                 else:  # Constraints
                     penalties = nlp.g
                     penalties_internal = nlp.g_internal
+                    penalties_implicit = nlp.g_implicit
 
                 for penalty in penalties:
                     if not penalty:
@@ -651,6 +660,10 @@ class OptimalControlProgram:
                     if not penalty_internal:
                         continue
                     name_unique_objective.append(penalty_internal.name)
+                for penalty_implicit in penalties_implicit:
+                    if not penalty_implicit:
+                        continue
+                    name_unique_objective.append(penalty_implicit.name)
             color = {}
             for i, name in enumerate(name_unique_objective):
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
@@ -730,9 +743,11 @@ class OptimalControlProgram:
             if cost_type == CostType.OBJECTIVES:
                 penalties = nlp.J
                 penalties_internal = nlp.J_internal
+                penalties_implicit = []
             elif cost_type == CostType.CONSTRAINTS:
                 penalties = nlp.g
                 penalties_internal = nlp.g_internal
+                penalties_implicit = nlp.g_implicit
             elif cost_type == CostType.ALL:
                 self.add_plot_penalty(CostType.OBJECTIVES)
                 self.add_plot_penalty(CostType.CONSTRAINTS)
@@ -742,6 +757,7 @@ class OptimalControlProgram:
 
             add_penalty(penalties)
             add_penalty(penalties_internal)
+            add_penalty(penalties_implicit)
         return
 
     def prepare_plots(

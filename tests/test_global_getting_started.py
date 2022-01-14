@@ -16,7 +16,16 @@ from .utils import TestUtils
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize(
-    "ode_solver", [OdeSolver.CVODES, OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION]
+    "ode_solver",
+    [
+        OdeSolver.RK1,
+        OdeSolver.RK2,
+        OdeSolver.CVODES,
+        OdeSolver.RK4,
+        OdeSolver.RK8,
+        OdeSolver.IRK,
+        OdeSolver.COLLOCATION,
+    ],
 )
 def test_pendulum(ode_solver, use_sx, n_threads):
     from bioptim.examples.getting_started import pendulum as ocp_module
@@ -64,6 +73,10 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(f[0, 0], 46.667345680854794)
+    elif isinstance(ode_solver, OdeSolver.RK1):
+        np.testing.assert_almost_equal(f[0, 0], 47.360621044913245)
+    elif isinstance(ode_solver, OdeSolver.RK2):
+        np.testing.assert_almost_equal(f[0, 0], 76.24887695462857)
     else:
         np.testing.assert_almost_equal(f[0, 0], 41.58259426)
 
@@ -98,6 +111,12 @@ def test_pendulum(ode_solver, use_sx, n_threads):
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.78386563, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-18.22245512, 0)))
+    elif isinstance(ode_solver, OdeSolver.RK1):
+        np.testing.assert_almost_equal(tau[:, 0], np.array((5.498956, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-17.6888209, 0)))
+    elif isinstance(ode_solver, OdeSolver.RK2):
+        np.testing.assert_almost_equal(tau[:, 0], np.array((5.6934385, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-27.6610711, 0)))
     else:
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.01549798, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-13.68877181, 0)))

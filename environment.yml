@@ -4,10 +4,12 @@ channels:
 - conda-forge
 - default
 dependencies:
-- biorbd >=1.7.2
+- python >=3.9
+- biorbd >=1.8.3
 - bioviz
 - scipy
 - numpy
 - packaging
 - python-graphviz
 - pyqtgraph
+

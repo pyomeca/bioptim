@@ -1,4 +1,4 @@
-from time import time
+from time import perf_counter
 from sys import platform
 
 from casadi import Importer
@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
-from ..interfaces.SolverOptions import Solver
+from ..interfaces.solver_options import Solver
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType, ControlType, Node, SolverType
 from ..optimization.solution import Solution
@@ -125,10 +125,10 @@ class IpoptInterface(SolverInterface):
             self.ipopt_limits["lam_x0"] = self.lam_x
 
         # Solve the problem
-        tic = time()
+        tic = perf_counter()
         self.out = {"sol": self.ocp_solver.call(self.ipopt_limits)}
         self.out["sol"]["solver_time_to_optimize"] = self.ocp_solver.stats()["t_wall_total"]
-        self.out["sol"]["real_time_to_optimize"] = time() - tic
+        self.out["sol"]["real_time_to_optimize"] = perf_counter() - tic
         self.out["sol"]["iter"] = self.ocp_solver.stats()["iter_count"]
         self.out["sol"]["inf_du"] = (
             self.ocp_solver.stats()["iterations"]["inf_du"] if "iteration" in self.ocp_solver.stats() else None
@@ -167,6 +167,10 @@ class IpoptInterface(SolverInterface):
         for g in self.ocp.g_internal:
             all_g_bounds.concatenate(g.bounds)
 
+        all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g_implicit))
+        for g in self.ocp.g_implicit:
+            all_g_bounds.concatenate(g.bounds)
+
         all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g))
         for g in self.ocp.g:
             all_g_bounds.concatenate(g.bounds)
@@ -174,6 +178,11 @@ class IpoptInterface(SolverInterface):
         for nlp in self.ocp.nlp:
             all_g = vertcat(all_g, self.__get_all_penalties(nlp, nlp.g_internal))
             for g in nlp.g_internal:
+                for _ in g.node_idx:
+                    all_g_bounds.concatenate(g.bounds)
+
+            all_g = vertcat(all_g, self.__get_all_penalties(nlp, nlp.g_implicit))
+            for g in nlp.g_implicit:
                 for _ in g.node_idx:
                     all_g_bounds.concatenate(g.bounds)
 

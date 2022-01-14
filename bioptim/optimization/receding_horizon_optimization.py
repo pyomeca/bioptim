@@ -1,7 +1,7 @@
 from itertools import chain
 from math import inf
 from typing import Union, Callable
-from time import time
+from time import perf_counter
 
 import numpy as np
 import biorbd_casadi as biorbd
@@ -13,7 +13,7 @@ from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import SolverType, InterpolationType
-from ..interfaces.SolverOptions import Solver
+from ..interfaces.solver_options import Solver
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):
@@ -144,7 +144,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
             total_time += sol.real_time_to_optimize
             if self.total_optimization_run == 0:
-                real_time = time()  # Skip the compile time (so skip the first call to solve)
+                real_time = perf_counter()  # Skip the compile time (so skip the first call to solve)
 
             # Solve and save the current window
             _states, _controls = self.export_data(sol)
@@ -156,7 +156,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
             self.total_optimization_run += 1
 
-        real_time = time() - real_time
+        real_time = perf_counter() - real_time
 
         # Prepare the modified ocp that fits the solution dimension
         sol = self._initialize_solution(states, controls)

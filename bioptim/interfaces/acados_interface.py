@@ -1,5 +1,5 @@
 from typing import Union
-from time import time
+from time import perf_counter
 from datetime import datetime
 
 import numpy as np
@@ -8,7 +8,7 @@ from casadi import SX, vertcat
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .solver_interface import SolverInterface
-from ..interfaces.SolverOptions import Solver
+from ..interfaces.solver_options import Solver
 from ..misc.enums import Node, SolverType
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds
@@ -649,7 +649,7 @@ class AcadosInterface(SolverInterface):
         A reference to the solution
         """
 
-        tic = time()
+        tic = perf_counter()
         # Populate costs and constraints vectors
         self.__set_costs(self.ocp)
         self.__set_constraints(self.ocp)
@@ -680,6 +680,6 @@ class AcadosInterface(SolverInterface):
         self.__update_solver()
 
         self.status = self.ocp_solver.solve()
-        self.real_time_to_optimize = time() - tic
+        self.real_time_to_optimize = perf_counter() - tic
 
         return self.get_optimized_value()
