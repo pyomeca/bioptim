@@ -655,8 +655,6 @@ class AcadosInterface(SolverInterface):
         self.__set_constraints(self.ocp)
 
         options = self.opts.as_dict(self)
-        if options["qp_solver"] != "PARTIAL_CONDENSING_HPIPM":
-            options.pop("qp_solver_cond_N")
         if self.ocp_solver is None:
             for key in options:
                 setattr(self.acados_ocp.solver_options, key, options[key])

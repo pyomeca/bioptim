@@ -429,7 +429,7 @@ class Solver:
 
         type: SolverType = SolverType.ACADOS
         _qp_solver: str = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
-        _qp_solver_cond_N: int = 5
+        # _qp_solver_cond_N: int = 5
         _hessian_approx: str = "GAUSS_NEWTON"
         _integrator_type: str = "IRK"
         _nlp_solver_type: str = "SQP"
@@ -456,12 +456,8 @@ class Solver:
             self._qp_solver = val
             self.set_only_first_options_has_changed(True)
 
-        @property
-        def qp_solver_cond_N(self):
-            return self._qp_solver_cond_N
-
         def set_qp_solver_cond_N(self, val: int):
-            self._qp_solver_cond_N = val
+            self.__setattr__("_qp_solver_cond_N", val)
             self.set_only_first_options_has_changed(True)
 
         @property
