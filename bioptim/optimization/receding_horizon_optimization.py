@@ -126,7 +126,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         update_function_extra_params = {} if update_function_extra_params is None else update_function_extra_params
 
         self.total_optimization_run = 0
-        while update_function(self, self.total_optimization_run, sol, **update_function_extra_params) and consecutive_failing < max_consecutive_failing:
+        while (
+            update_function(self, self.total_optimization_run, sol, **update_function_extra_params)
+            and consecutive_failing < max_consecutive_failing
+        ):
             sol = super(RecedingHorizonOptimization, self).solve(
                 solver=solver_current,
                 warm_start=warm_start,
