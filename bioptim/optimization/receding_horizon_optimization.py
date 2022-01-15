@@ -64,6 +64,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         solver_first_iter: Solver.Generic = None,
         export_options: dict = None,
         max_consecutive_failing: int = inf,
+        update_function_extra_params: dict = None,
         **advance_options,
     ) -> Solution:
         """
@@ -92,6 +93,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             Any options related to the saving of the data at each iteration
         max_consecutive_failing: int
             The number of consecutive failing before stopping the nmpc. Default is infinite
+        update_function_extra_params: dict
+            Any parameters to pass to the update function
         advance_options: Any
             The extra options to pass to the advancing methods
 
@@ -117,11 +120,16 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         self._initialize_frame_to_export(export_options)
 
         total_time = 0
-        real_time = 0
+        real_time = perf_counter()
+        iterations = []
         consecutive_failing = 0
+        update_function_extra_params = {} if update_function_extra_params is None else update_function_extra_params
 
         self.total_optimization_run = 0
-        while update_function(self, self.total_optimization_run, sol) and consecutive_failing < max_consecutive_failing:
+        while (
+            update_function(self, self.total_optimization_run, sol, **update_function_extra_params)
+            and consecutive_failing < max_consecutive_failing
+        ):
             sol = super(RecedingHorizonOptimization, self).solve(
                 solver=solver_current,
                 warm_start=warm_start,
@@ -143,13 +151,14 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             warm_start = None
 
             total_time += sol.real_time_to_optimize
-            if self.total_optimization_run == 0:
-                real_time = perf_counter()  # Skip the compile time (so skip the first call to solve)
+            if solver_current == Solver.ACADOS and self.total_optimization_run == 0:
+                real_time = perf_counter()  # Reset timer to skip the compiling time (so skip the first call to solve)
 
             # Solve and save the current window
             _states, _controls = self.export_data(sol)
             states.append(_states)
             controls.append(_controls)
+            iterations.append(sol.iterations)
 
             # Update the initial frame bounds and initial guess
             self.advance_window(sol, **advance_options)
@@ -162,6 +171,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         sol = self._initialize_solution(states, controls)
         sol.solver_time_to_optimize = total_time
         sol.real_time_to_optimize = real_time
+        sol.iterations = iterations
         return sol
 
     def _initialize_frame_to_export(self, export_options):
