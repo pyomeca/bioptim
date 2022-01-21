@@ -453,7 +453,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("InverseDynamics", qddot_root - qddot_root_from_dynamics, *var)
+            return BiorbdInterface.mx_to_cx("RootDynamics", qddot_root - qddot_root_from_dynamics, *var)
 
     @staticmethod
     def inner_phase_continuity(ocp):
