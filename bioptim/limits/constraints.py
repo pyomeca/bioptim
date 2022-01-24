@@ -432,9 +432,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
-            qddot_root = qddot[:nb_root]
-            qddot_joints = qddot[nb_root:]
-
             if nlp.external_forces:
                 raise NotImplementedError(
                     "This implicit constraint implicit_root_dynamics is not implemented yet with external forces"
@@ -443,17 +440,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # fext need to be a mx
 
             mass_matrix = nlp.model.massMatrixInverse(q).to_mx()
-            mass_matrix_inverse = nlp.model.massMatrixInverse(q).to_mx()
             nl_effects = nlp.model.NonLinearEffect(q, qdot).to_mx()
-            qddot_root_from_dynamics = mass_matrix_inverse[:nb_root, :nb_root] @ (
-                        -mass_matrix[:nb_root, nb_root:] @ qddot_joints - nl_effects[:nb_root])
+
+            nl_effects_reduced = nl_effects[:nb_root]
+            mass_matrix_reduced = mass_matrix[:nb_root, :]
+
+            floating_base_constraint = mass_matrix_reduced * qddot + nl_effects_reduced
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("RootDynamics", qddot_root - qddot_root_from_dynamics, *var)
+            return BiorbdInterface.mx_to_cx("FloatingBaseConstraint", floating_base_constraint, *var)
 
     @staticmethod
     def inner_phase_continuity(ocp):
