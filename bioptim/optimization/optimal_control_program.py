@@ -689,7 +689,8 @@ class OptimalControlProgram:
 
             out = []
             if penalty.transition:
-                raise NotImplementedError("add_plot_penalty with phase transition is not implemented yet")
+                # raise NotImplementedError("add_plot_penalty with phase transition is not implemented yet")
+                print("add_plot_penalty with phase transition is not implemented yet")
             elif penalty.derivative or penalty.explicit_derivative:
                 out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
             else:
