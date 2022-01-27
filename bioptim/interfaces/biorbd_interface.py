@@ -82,5 +82,9 @@ class BiorbdInterface:
 
         cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
         mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
-        cx = [var.mapping.to_second.map(var.cx) for var in all_param if isinstance(var, cx_types)]
+        cx = [
+            var.mapping.to_second.map(var.cx) if hasattr(var, "mapping") else var.cx
+            for var in all_param
+            if isinstance(var, cx_types)
+        ]
         return biorbd.to_casadi_func(name, function, *mx)(*cx)
