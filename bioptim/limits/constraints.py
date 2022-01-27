@@ -439,13 +439,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
                 # fext need to be a mx
 
-            mass_matrix = nlp.model.massMatrixInverse(q).to_mx()
+            mass_matrix = nlp.model.massMatrix(q).to_mx()
             nl_effects = nlp.model.NonLinearEffect(q, qdot).to_mx()
 
             nl_effects_reduced = nl_effects[:nb_root]
-            mass_matrix_reduced = mass_matrix[:nb_root, :]
+            mass_matrix_reduced = mass_matrix[:nb_root,: ]
 
-            floating_base_constraint = mass_matrix_reduced * qddot + nl_effects_reduced
+            # floating_base_constraint = mass_matrix_reduced @ qddot + nl_effects_reduced
+            floating_base_constraint = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()[:nb_root]
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
