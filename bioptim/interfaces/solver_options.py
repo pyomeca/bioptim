@@ -365,6 +365,10 @@ class Solver:
             self._bound_push = val
             self._bound_frac = val
 
+        def set_option(self, val, name):
+            if f"_{name}" not in self.__dict__.keys():
+                self.__dict__[f"_{name}"] = val
+
         def as_dict(self, solver):
             solver_options = self.__dict__
             options = {}
@@ -429,7 +433,6 @@ class Solver:
 
         type: SolverType = SolverType.ACADOS
         _qp_solver: str = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
-        # _qp_solver_cond_N: int = 5
         _hessian_approx: str = "GAUSS_NEWTON"
         _integrator_type: str = "IRK"
         _nlp_solver_type: str = "SQP"
@@ -456,9 +459,11 @@ class Solver:
             self._qp_solver = val
             self.set_only_first_options_has_changed(True)
 
-        def set_qp_solver_cond_N(self, val: int):
-            self.__setattr__("_qp_solver_cond_N", val)
-            self.set_only_first_options_has_changed(True)
+        def set_option(self, val, name):
+            if f"_{name}" not in self.__annotations__.keys():
+                self.__annotations__[f"_{name}"] = val
+                self.__setattr__(f"_{name}", val)
+                self.set_only_first_options_has_changed(True)
 
         @property
         def hessian_approx(self):
@@ -561,11 +566,13 @@ class Solver:
             self._nlp_solver_tol_stat = val
             self.set_has_tolerance_changed(True)
 
-        def set_convergence_tolerance(self, val: float):
-            self.set_nlp_solver_tol_eq(val)
-            self.set_nlp_solver_tol_ineq(val)
-            self.set_nlp_solver_tol_comp(val)
-            self.set_nlp_solver_tol_stat(val)
+        def set_convergence_tolerance(self, val):
+            if isinstance(val, (float, int)):
+                val = [val] * 4
+            self.set_nlp_solver_tol_eq(val[0])
+            self.set_nlp_solver_tol_ineq(val[1])
+            self.set_nlp_solver_tol_comp(val[2])
+            self.set_nlp_solver_tol_stat(val[3])
             self.set_has_tolerance_changed(True)
 
         def set_constraint_tolerance(self, val: float):
@@ -611,7 +618,6 @@ class Solver:
                     options[key[1:]] = self.__getattribute__(key)
                 else:
                     options[key] = self.__getattribute__(key)
-
             return options
 
         @property
