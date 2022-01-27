@@ -146,6 +146,7 @@ class ConfigureProblem:
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
             )
         if implicit_soft_contacts:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
@@ -171,6 +172,7 @@ class ConfigureProblem:
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
             )
 
     @staticmethod
@@ -218,6 +220,7 @@ class ConfigureProblem:
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
             )
         if implicit_soft_contacts:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
@@ -242,6 +245,7 @@ class ConfigureProblem:
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
             )
 
     @staticmethod
