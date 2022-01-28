@@ -144,11 +144,13 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
 
         if semi_implicit_dynamics:
+            ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
                 with_contact=with_contact,
+                phase=nlp.phase_idx,
             )
         elif implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, False, True)
@@ -168,6 +170,7 @@ class ConfigureProblem:
                         contact_index=ii,
                         node=Node.ALL_SHOOTING,
                         constraint_type=ConstraintType.IMPLICIT,
+                        phase=nlp.phase_idx,
                     )
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
@@ -858,7 +861,7 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_contact_forces = [f"{nlp.model.contactNames()[ii].to_string()}" for ii in range(nlp.model.nbContacts())]
+        name_contact_forces = [name.to_string() for name in nlp.model.contactNames()]
         ConfigureProblem.configure_new_variable("fext", name_contact_forces, nlp, as_states, as_controls)
 
     @staticmethod

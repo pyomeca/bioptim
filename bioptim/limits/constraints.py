@@ -4,8 +4,7 @@ from enum import Enum
 import biorbd_casadi as biorbd
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
-from biorbd_casadi import to_spatial_vector
-
+import biorbd_casadi as biorbd
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
@@ -337,7 +336,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             qddot = nlp.controls["qddot"].mx
             if with_contact:
-                model = biorbd.Model(nlp.model.path().absolutePath().to_string())
+                model = biorbd.Model(
+                    nlp.model.path().absolutePath().to_string()
+                )  # TODO: find a better solution if possible
                 qddot_fd = model.ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
             else:
                 qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
@@ -379,43 +380,17 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
                 # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
             if with_contact:
-                fext = nlp.controls["fext"].mx
-                nb_contacts = nlp.model.nbContacts()
-                nb_segments = nlp.model.nbSegment()
-                idx_dir = nb_contacts * [0]
-                col_f = nb_contacts * [0]
-                last_col_f = -1
-                last_idx = 3
-                for contact_index in range(0, nlp.model.nbContacts()):
-                    contact_name = nlp.model.contactNames()[contact_index].to_string()
-                    if "_X" in contact_name:
-                        idx_dir[contact_index] = 0
-                        if last_idx >= idx_dir[contact_index]:
-                            last_col_f += 1
-                        col_f[contact_index] = last_col_f
-                    elif "_Y" in contact_name:
-                        idx_dir[contact_index] = 1
-                        if last_idx >= idx_dir[contact_index]:
-                            last_col_f += 1
-                        col_f[contact_index] = last_col_f
-                    elif "_Z" in contact_name:
-                        idx_dir[contact_index] = 2
-                        if last_idx >= idx_dir[contact_index]:
-                            last_col_f += 1
-                        col_f[contact_index] = last_col_f
-                    last_idx = idx_dir[contact_index]
+                f_contact = nlp.controls["fext"].mx
+                count = 0
+                f_contact_vec = biorbd.VecBiorbdVector()
+                for ii in range(nlp.model.nbRigidContacts()):
+                    n_f_contact = len(nlp.model.rigidContactAxisIdx(ii))
+                    idx = [i + count for i in range(n_f_contact)]
+                    f_contact_vec.append(f_contact[idx])
+                    count = count + n_f_contact
 
-                # fext_vec = MX.zeros((6, np.max(col_f) + 1))
-                fext_vec = MX.zeros((6, nb_segments))
-                for contact_index, (row, col) in enumerate(zip(idx_dir, col_f)):
-                    fext_vec[row + 3, 1] = fext[contact_index]
-                    # TODO : assign columns with segment Id.
+                tau_id = nlp.model.InverseDynamics(q, qdot, qddot, None, f_contact_vec).to_mx()
 
-                external_forces = to_spatial_vector(
-                    fext_vec
-                )
-
-                tau_id = nlp.model.InverseDynamics(q, qdot, qddot, external_forces).to_mx()
             else:
                 tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
 
