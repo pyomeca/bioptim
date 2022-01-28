@@ -307,7 +307,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
-
+    nlp.phase_idx = 0
     nlp.x_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 2))
     ocp = OptimalControlProgram(nlp)
