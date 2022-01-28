@@ -56,6 +56,10 @@ class ConfigureProblem:
         Configure the generalized coordinates
     configure_qdot(nlp, as_states: bool, as_controls: bool)
         Configure the generalized velocities
+    configure_qddot(nlp, as_states: bool, as_controls: bool)
+        Configure the generalized accelerations
+    configure_qdddot(nlp, as_states: bool, as_controls: bool)
+        Configure the generalized jerks
     configure_tau(nlp, as_states: bool, as_controls: bool)
         Configure the generalized forces
     configure_taudot(nlp, as_states: bool, as_controls: bool)
@@ -162,6 +166,7 @@ class ConfigureProblem:
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
                 with_contact=with_contact,
             )
         if implicit_soft_contacts:
@@ -188,6 +193,7 @@ class ConfigureProblem:
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
             )
 
     @staticmethod
@@ -235,6 +241,7 @@ class ConfigureProblem:
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
             )
         if implicit_soft_contacts:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
@@ -259,6 +266,7 @@ class ConfigureProblem:
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
             )
 
     @staticmethod

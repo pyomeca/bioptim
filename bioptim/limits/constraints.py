@@ -342,7 +342,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
             var.extend([nlp.controls[key] for key in nlp.controls])
-            var.extend([nlp.parameters[key] for key in nlp.parameters])
+            var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("ForwardDynamics", qddot - qddot_fd, *var)
 
@@ -419,7 +419,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
             var.extend([nlp.controls[key] for key in nlp.controls])
-            var.extend([nlp.parameters[key] for key in nlp.parameters])
+            var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - tau, *var)
 
@@ -491,7 +491,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
             var.extend([nlp.controls[key] for key in nlp.controls])
-            var.extend([nlp.parameters[key] for key in nlp.parameters])
+            var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("ForwardDynamics", nlp.controls["fext"].mx - soft_contact_force, *var)
 

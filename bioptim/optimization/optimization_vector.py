@@ -4,7 +4,6 @@ import numpy as np
 from casadi import vertcat, DM, MX, SX
 
 from .parameters import ParameterList, Parameter
-from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess
 from ..misc.enums import ControlType, InterpolationType
 
