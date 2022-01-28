@@ -198,7 +198,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     nlp.phase_idx = 0
-    
+
     NonLinearProgram.add(
         ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact), False
     )
