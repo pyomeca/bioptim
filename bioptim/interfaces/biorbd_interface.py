@@ -40,19 +40,13 @@ class BiorbdInterface:
 
         sv_over_all_phases = []
         for f_ext in all_f_ext:
-            f_ext = np.array(f_ext) if isinstance(f_ext, list) else f_ext
+            f_ext = np.array(f_ext)
             if len(f_ext.shape) < 2 or len(f_ext.shape) > 3:
                 raise RuntimeError(
                     "f_ext should be a list of (6 x n_external_forces x n_shooting) or (6 x n_shooting) matrix"
                 )
-            if len(f_ext.shape) == 2 and type(f_ext).__module__ == "numpy":
+            if len(f_ext.shape) == 2:
                 f_ext = f_ext[:, :, np.newaxis]
-                size_3rd_dimension = f_ext.shape[2]
-
-            elif len(f_ext.shape) == 2 and type(f_ext).__module__ == "casadi.casadi":
-                size_3rd_dimension = 1
-            else:
-                size_3rd_dimension = f_ext.shape[2]
 
             if f_ext.shape[0] != 6:
                 raise RuntimeError(
@@ -60,15 +54,10 @@ class BiorbdInterface:
                 )
 
             sv_over_phase = []
-            for node in range(size_3rd_dimension):
+            for node in range(f_ext.shape[2]):
                 sv = biorbd.VecBiorbdSpatialVector()
                 for idx in range(f_ext.shape[1]):
-                    if type(f_ext).__module__ == "casadi.casadi":
-                        sv.append(biorbd.SpatialVector(f_ext[:, idx]))
-                    elif type(f_ext).__module__ == "numpy":
-                        sv.append(biorbd.SpatialVector(MX(f_ext[:, idx, node])))
-                    else:
-                        raise NotImplementedError("This function is only implemented for list of numpy or casadi array")
+                    sv.append(biorbd.SpatialVector(MX(f_ext[:, idx, node])))
                 sv_over_phase.append(sv)
             sv_over_all_phases.append(sv_over_phase)
 
