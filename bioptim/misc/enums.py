@@ -126,3 +126,9 @@ class ConstraintType(Enum):
     USER = "user"
     INTERNAL = "internal"
     IMPLICIT = "implicit"
+
+
+class MultiBodyDynamics(Enum):
+    EXPLICIT = "explicit"
+    IMPLICIT = "implicit"
+    SEMI_EXPLICIT = "semi_explicit"
