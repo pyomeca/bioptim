@@ -27,6 +27,7 @@ from bioptim import (
     InitialGuess,
     CostType,
     InterpolationType,
+    MultiBodyDynamics,
 )
 
 
@@ -49,7 +50,9 @@ def prepare_single_shooting(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=False, implicit_soft_contacts=False)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN, multibody_dynamics=MultiBodyDynamics.EXPLICIT, implicit_soft_contacts=False
+    )
 
     # Initial guess
     x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
@@ -141,7 +144,9 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=False, implicit_soft_contacts=False)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN, multibody_dynamics=MultiBodyDynamics.EXPLICIT, implicit_soft_contacts=False
+    )
 
     # Constraints
     constraints = ConstraintList()
