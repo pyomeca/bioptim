@@ -315,7 +315,11 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, multibody_dynamics=MultiBodyDynamics.IMPLICIT),
+        Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+            with_contact=with_contact,
+            multibody_dynamics=MultiBodyDynamics.IMPLICIT,
+        ),
         False,
     )
 
