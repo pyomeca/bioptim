@@ -23,6 +23,7 @@ from bioptim import (
     Solver,
     BoundsList,
     ObjectiveList,
+    MultiBodyDynamics,
 )
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +36,7 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK1(n_integration_steps=1),
     use_sx: bool = False,
     n_threads: int = 1,
-    implicit_dynamics: bool = False,
+    multibody_dynamics: MultiBodyDynamics = MultiBodyDynamics.EXPLICIT,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -54,8 +55,8 @@ def prepare_ocp(
         If the SX variable should be used instead of MX (can be extensive on RAM)
     n_threads: int
         The number of threads to use in the paralleling (1 = no parallel computing)
-    implicit_dynamics: bool
-        implicit
+    multibody_dynamics: MultiBodyDynamics
+        formulation of multibody dynamics (explicit, implicit or semi-explicit)
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -67,13 +68,13 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=implicit_dynamics)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, multibody_dynamics=multibody_dynamics)
 
     # Path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
-    if implicit_dynamics:
+    if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
         qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     x_bounds = BoundsList()
@@ -90,14 +91,14 @@ def prepare_ocp(
 
     # Define control path constraint
     # There are extra controls in implicit dynamics which are joint acceleration qddot.
-    if implicit_dynamics:
+    if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
         u_bounds = Bounds([tau_min] * n_tau + [qddot_min] * n_qddot, [tau_max] * n_tau + [qddot_max] * n_qddot)
     else:
         u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
 
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    if implicit_dynamics:
+    if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
         u_init = InitialGuess([0] * (n_tau + n_qddot))
     else:
         u_init = InitialGuess([0] * n_tau)
@@ -118,14 +119,14 @@ def prepare_ocp(
     )
 
 
-def solve_ocp(implicit_dynamics: bool) -> OptimalControlProgram:
+def solve_ocp(multibody_dynamics: MultiBodyDynamics) -> OptimalControlProgram:
     """
     The initialization of ocp with implicit_dynamics as the only argument
 
     Parameters
     ----------
-    implicit_dynamics: bool
-        implicit
+    multibody_dynamics: MultiBodyDynamics
+        formulation of multibody dynamics (explicit, implicit or semi-explicit)
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -141,7 +142,7 @@ def solve_ocp(implicit_dynamics: bool) -> OptimalControlProgram:
         final_time=time,
         n_shooting=n_shooting,
         ode_solver=ode_solver,
-        implicit_dynamics=implicit_dynamics,
+        multibody_dynamics=multibody_dynamics,
     )
 
     # --- Custom Plots --- #
@@ -187,8 +188,8 @@ def main():
     """
 
     # --- Prepare the ocp with implicit and explicit dynamics --- #
-    sol_implicit = solve_ocp(implicit_dynamics=True)
-    sol_explicit = solve_ocp(implicit_dynamics=False)
+    sol_implicit = solve_ocp(multibody_dynamics=MultiBodyDynamics.IMPLICIT)
+    sol_explicit = solve_ocp(multibody_dynamics=MultiBodyDynamics.EXPLICIT)
 
     # --- Show the results in a bioviz animation --- #
     sol_implicit.print()

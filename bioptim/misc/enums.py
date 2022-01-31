@@ -137,3 +137,9 @@ class IntegralApproximation(Enum):
     RECTANGLE = "rectangle"
     TRAPEZOIDAL = "trapezoidal"
     TRUE_TRAPEZOIDAL = "true_trapezoidal"
+
+
+class MultiBodyDynamics(Enum):
+    EXPLICIT = "explicit"
+    IMPLICIT = "implicit"
+    SEMI_EXPLICIT = "semi_explicit"
