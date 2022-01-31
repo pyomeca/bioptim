@@ -7,7 +7,7 @@ import biorbd_casadi as biorbd
 from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
 from bioptim.interfaces.biorbd_interface import BiorbdInterface
-from bioptim.misc.enums import ControlType
+from bioptim.misc.enums import ControlType, MultiBodyDynamics
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector
 from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
@@ -102,7 +102,7 @@ def test_torque_driven_implicit(with_contact, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, implicit_dynamics=True),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, multibody_dynamics=MultiBodyDynamics.IMPLICIT),
         False,
     )
 
@@ -315,7 +315,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, implicit_dynamics=True),
+        Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, multibody_dynamics=MultiBodyDynamics.IMPLICIT),
         False,
     )
 
@@ -504,14 +504,14 @@ def test_implicit_dynamics_errors(dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, implicit_dynamics=True),
+        Dynamics(dynamics, multibody_dynamics=MultiBodyDynamics.IMPLICIT),
         False,
     )
 
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_dynamics'"),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'multibody_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 
