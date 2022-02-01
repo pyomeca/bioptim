@@ -225,7 +225,7 @@ class Parameter(PenaltyOption):
         target_cx = ocp.cx.sym("target", modified_fcn.shape)
 
         modified_fcn = modified_fcn - target_cx
-        modified_fcn = modified_fcn ** 2 if objective.quadratic else modified_fcn
+        modified_fcn = modified_fcn**2 if objective.quadratic else modified_fcn
 
         objective.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
             f"{self.name}",
