@@ -340,7 +340,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -352,6 +352,8 @@ class ConfigureProblem:
             A reference to the phase
         dyn_func: Callable[states, controls, param]
             The function to get the derivative of the states
+        expand: bool
+            if the function need to be expanded
         """
 
         nlp.parameters = ocp.v.parameters_in_list
@@ -359,13 +361,22 @@ class ConfigureProblem:
         dynamics = dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)
         if isinstance(dynamics, (list, tuple)):
             dynamics = vertcat(*dynamics)
-        nlp.dynamics_func = Function(
-            "ForwardDyn",
-            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
-            [dynamics],
-            ["x", "u", "p"],
-            ["xdot"],
-        ).expand()
+        if expand:
+            nlp.dynamics_func = Function(
+                "ForwardDyn",
+                [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+                [dynamics],
+                ["x", "u", "p"],
+                ["xdot"],
+            ).expand()
+        else:
+            nlp.dynamics_func = Function(
+                "ForwardDyn",
+                [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+                [dynamics],
+                ["x", "u", "p"],
+                ["xdot"],
+            ).expand()
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
