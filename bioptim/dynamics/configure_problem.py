@@ -376,7 +376,7 @@ class ConfigureProblem:
                 [dynamics],
                 ["x", "u", "p"],
                 ["xdot"],
-            ).expand()
+            )
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
