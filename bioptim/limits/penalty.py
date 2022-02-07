@@ -405,6 +405,31 @@ class PenaltyFunctionAbstract:
             return com_dot_cx
 
         @staticmethod
+        def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+            """
+            Adds the objective that the angular momentum of the model in the global reference frame should be minimized.
+            If no axis is specified, the three components of the angular momentum are minimized.
+            Otherwise, the projection of the angular momentum on the specified axis is minimized.
+            By default this function is quadratic, meaning that it minimizes towards zero.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
+            """
+
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = all_pn.nlp
+            angular_momentum_cx = BiorbdInterface.mx_to_cx("angular_momentum", nlp.model.angularMomentum, nlp.states["q"], nlp.states["qdot"])
+            return angular_momentum_cx
+
+        @staticmethod
         def minimize_contact_forces(
             penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None
         ):
