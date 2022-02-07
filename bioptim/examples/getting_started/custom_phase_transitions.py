@@ -27,12 +27,12 @@ from bioptim import (
     PhaseTransition,
     BiMapping,
     Solver,
-    NonLinearProgram
+    NonLinearProgram,
 )
 
 
 def custom_phase_transition(
-    transition: PhaseTransition, nlp_pre: NonLinearProgram,  nlp_post: NonLinearProgram, coef: float
+    transition: PhaseTransition, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to

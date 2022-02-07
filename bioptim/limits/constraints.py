@@ -225,7 +225,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             elif not isinstance(normal_component_idx, (tuple, list)):
                 raise RuntimeError("normal_component_idx must be a unique integer or a list of integer")
 
-            mu_squared = static_friction_coefficient ** 2
+            mu_squared = static_friction_coefficient**2
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
 
