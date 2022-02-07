@@ -117,7 +117,7 @@ def main():
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol.print()
+    sol.print(to_console=True)
     sol.animate(n_frames=100)
 
 
