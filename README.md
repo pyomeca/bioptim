@@ -959,6 +959,14 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 Constraints the center of mass velocity towards a target.
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
 
+#### TRACK_ANGULAR_MOMENTUM
+Constraints the angular momentum in the global reference frame towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
+
+#### TRACK_LINEAR_MOMENTUM
+Constraints the linear momentum towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
+
 #### CONTACT_FORCE
 Adds a constraint to the non-acceleration point reaction forces.
 It is usually used in conjunction with changing the bounds, so it creates an inequality constraint on this contact force.
@@ -1131,6 +1139,14 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 #### MINIMIZE_COM_VELOCITY (Lagrange and Mayer)
 Minimizes the center of mass velocity towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+
+#### MINIMIZE_ANGULAR_MOMENTUM
+Minimizes the angular momentum in the global reference frame towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
+
+#### MINIMIZE_LINEAR_MOMENTUM
+Minimizes the linear momentum towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
 
 #### MINIMIZE_PREDICTED_COM_HEIGHT (Mayer)
 Minimizes the prediction of the center of mass maximal height from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2].
