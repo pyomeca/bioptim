@@ -1082,7 +1082,6 @@ class Solution:
             if to_console:
                 print(f"------------------------------")
 
-
         if cost_type == CostType.OBJECTIVES:
             print_objective_functions(self.ocp, to_console)
         elif cost_type == CostType.CONSTRAINTS:
