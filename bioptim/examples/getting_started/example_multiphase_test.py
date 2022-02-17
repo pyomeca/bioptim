@@ -160,8 +160,8 @@ def main():
     ocp = prepare_ocp(long_optim=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
-
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol.print()
     # --- Show results --- #
     sol.animate()
 

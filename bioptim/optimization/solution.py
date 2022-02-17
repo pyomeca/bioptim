@@ -969,6 +969,9 @@ class Solution:
             if "time" in self.parameters
             else penalty.dt
         )
+        if penalty.multi_node_constraint and len(penalty.node_idx) == 2:
+            penalty.node_idx = [penalty.node_idx]
+
         for idx in penalty.node_idx:
             x = []
             u = []
@@ -980,6 +983,21 @@ class Solution:
                     u = np.concatenate(
                         (self._controls[phase_idx]["all"][:, -1], self._controls[phase_post]["all"][:, 0])
                     )
+                elif penalty.multi_node_constraint:
+
+                    x = np.concatenate(
+                        (
+                            self._states[penalty.phase_first_idx]["all"][:, idx[0]],
+                            self._states[penalty.phase_second_idx]["all"][:, idx[1]],
+                        )
+                    )
+                    u = np.concatenate(
+                        (
+                            self._controls[penalty.phase_first_idx]["all"][:, idx[0]],
+                            self._controls[penalty.phase_second_idx]["all"][:, idx[1]],
+                        )
+                    )
+
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
