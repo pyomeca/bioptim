@@ -225,7 +225,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             elif not isinstance(normal_component_idx, (tuple, list)):
                 raise RuntimeError("normal_component_idx must be a unique integer or a list of integer")
 
-            mu_squared = static_friction_coefficient ** 2
+            mu_squared = static_friction_coefficient**2
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
 
@@ -455,9 +455,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         for i, pt in enumerate(ocp.multi_node_constraints):
             # Dynamics must be respected between phases
-            pt.name = f"MULTI_NODE_CONSTRAINT " \
-                      f"P{pt.phase_first_idx},Node {pt.first_node.name}" \
-                      f"->P{pt.phase_second_idx},Node {pt.second_node.name}"
+            pt.name = (
+                f"MULTI_NODE_CONSTRAINT "
+                f"P{pt.phase_first_idx},Node {pt.first_node.name}"
+                f"->P{pt.phase_second_idx},Node {pt.second_node.name}"
+            )
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_first_idx])
 

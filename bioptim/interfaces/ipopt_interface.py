@@ -229,10 +229,14 @@ class IpoptInterface(SolverInterface):
                 _u = vertcat(ocp.nlp[_penalty.phase_pre_idx].U[-1], ocp.nlp[_penalty.phase_post_idx].U[0])
             elif _penalty.multi_node_constraint:
                 ocp = self.ocp
-                _x = vertcat(ocp.nlp[_penalty.phase_first_idx].X[_penalty.node_idx[0]],
-                             ocp.nlp[_penalty.phase_second_idx].X[_penalty.node_idx[1]][:, 0])
-                _u = vertcat(ocp.nlp[_penalty.phase_first_idx].U[_penalty.node_idx[0]],
-                             ocp.nlp[_penalty.phase_second_idx].U[_penalty.node_idx[1]])
+                _x = vertcat(
+                    ocp.nlp[_penalty.phase_first_idx].X[_penalty.node_idx[0]],
+                    ocp.nlp[_penalty.phase_second_idx].X[_penalty.node_idx[1]][:, 0],
+                )
+                _u = vertcat(
+                    ocp.nlp[_penalty.phase_first_idx].U[_penalty.node_idx[0]],
+                    ocp.nlp[_penalty.phase_second_idx].U[_penalty.node_idx[1]],
+                )
             elif _penalty.integrate:
                 _x = nlp.X[_idx]
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []

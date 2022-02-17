@@ -97,8 +97,14 @@ def prepare_ocp(
 
     # Constraints
     multi_node_constraints = MultiNodeConstraintList()
-    multi_node_constraints.add(MultiNodeConstraintFcn.CONTINUOUS, phase_first_idx=0, phase_second_idx=2,
-                               first_node=Node.START, second_node=Node.MID, weight=2)
+    multi_node_constraints.add(
+        MultiNodeConstraintFcn.CONTINUOUS,
+        phase_first_idx=0,
+        phase_second_idx=2,
+        first_node=Node.START,
+        second_node=Node.MID,
+        weight=2,
+    )
 
     # Path constraint
     x_bounds = BoundsList()

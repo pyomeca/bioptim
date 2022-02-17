@@ -352,7 +352,7 @@ class PenaltyOption(OptionGeneric):
         modified_fcn = modified_fcn - target_cx
 
         if self.weight:
-            modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
+            modified_fcn = modified_fcn**2 if self.quadratic else modified_fcn
             modified_fcn = weight_cx * modified_fcn * dt_cx
         else:
             modified_fcn = modified_fcn * dt_cx

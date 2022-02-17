@@ -266,7 +266,10 @@ class MultiNodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             ocp = all_pn[0].ocp
-            if ocp.nlp[multi_node_constraint.phase_pre_idx].states.shape != ocp.nlp[multi_node_constraint.phase_post_idx].states.shape:
+            if (
+                ocp.nlp[multi_node_constraint.phase_pre_idx].states.shape
+                != ocp.nlp[multi_node_constraint.phase_post_idx].states.shape
+            ):
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
@@ -319,7 +322,9 @@ class MultiNodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            return multi_node_constraint.custom_function(multi_node_constraint, nlp_pre.states, nlp_post.states, **extra_params)
+            return multi_node_constraint.custom_function(
+                multi_node_constraint, nlp_pre.states, nlp_post.states, **extra_params
+            )
 
 
 class MultiNodeConstraintFcn(Enum):
