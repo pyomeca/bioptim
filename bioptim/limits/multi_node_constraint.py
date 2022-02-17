@@ -84,6 +84,8 @@ class MultiNodeConstraint(Constraint):
         self.quadratic = True
         self.phase_first_idx = phase_first_idx
         self.phase_second_idx = phase_second_idx
+        self.phase_pre_idx = phase_second_idx
+        self.phase_post_idx = phase_first_idx
         self.first_node = first_node
         self.second_node = second_node
         self.node = [self.first_node, self.second_node]
