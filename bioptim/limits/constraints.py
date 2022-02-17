@@ -173,6 +173,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         Add continuity constraints between each nodes of a phase.
     inter_phase_continuity(ocp)
         Add phase transition constraints between two phases.
+    inter_node_continuity(ocp)
+        Add phase multi node constraints between specified nodes and phases.
     clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Constraint)
         Resets a penalty. A negative penalty index creates a new empty penalty.
     penalty_nature() -> str
@@ -453,15 +455,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, pt in enumerate(ocp.multi_node_constraints):
+        for i, mnc in enumerate(ocp.multi_node_constraints):
             # Dynamics must be respected between phases
-            pt.name = (
+            mnc.name = (
                 f"MULTI_NODE_CONSTRAINT "
-                f"P{pt.phase_first_idx},Node {pt.first_node.name}"
-                f"->P{pt.phase_second_idx},Node {pt.second_node.name}"
+                f"P{mnc.phase_first_idx},Node {mnc.first_node.name}"
+                f"->P{mnc.phase_second_idx},Node {mnc.second_node.name}"
             )
-            pt.list_index = -1
-            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_first_idx])
+            mnc.list_index = -1
+            mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
 
     @staticmethod
     def get_dt(_):

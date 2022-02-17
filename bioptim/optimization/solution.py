@@ -9,7 +9,7 @@ from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator
+from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -991,10 +991,17 @@ class Solution:
                             self._states[penalty.phase_second_idx]["all"][:, idx[1]],
                         )
                     )
+                    # Make an exception to the fact that U is not available for the last node
+                    mod0 = 0
+                    mod1 = 0
+                    if penalty.first_node == Node.END:
+                        mod0 = 1
+                    if penalty.second_node == Node.END:
+                        mod1 = 1
                     u = np.concatenate(
                         (
-                            self._controls[penalty.phase_first_idx]["all"][:, idx[0]],
-                            self._controls[penalty.phase_second_idx]["all"][:, idx[1]],
+                            self._controls[penalty.phase_first_idx]["all"][:, idx[0] - mod0],
+                            self._controls[penalty.phase_second_idx]["all"][:, idx[1] - mod0],
                         )
                     )
 

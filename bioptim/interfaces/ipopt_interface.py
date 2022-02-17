@@ -233,9 +233,16 @@ class IpoptInterface(SolverInterface):
                     ocp.nlp[_penalty.phase_first_idx].X[_penalty.node_idx[0]],
                     ocp.nlp[_penalty.phase_second_idx].X[_penalty.node_idx[1]][:, 0],
                 )
+                # Make an exception to the fact that U is not available for the last node
+                mod0 = 0
+                mod1 = 0
+                if _penalty.first_node == Node.END:
+                    mod0 = 1
+                if _penalty.second_node == Node.END:
+                    mod1 = 1
                 _u = vertcat(
-                    ocp.nlp[_penalty.phase_first_idx].U[_penalty.node_idx[0]],
-                    ocp.nlp[_penalty.phase_second_idx].U[_penalty.node_idx[1]],
+                    ocp.nlp[_penalty.phase_first_idx].U[_penalty.node_idx[0]-mod0],
+                    ocp.nlp[_penalty.phase_second_idx].U[_penalty.node_idx[1]-mod1],
                 )
             elif _penalty.integrate:
                 _x = nlp.X[_idx]

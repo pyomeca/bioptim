@@ -484,19 +484,24 @@ class PenaltyOption(OptionGeneric):
             self.node = self.node_list[0]
             nlp = ocp.nlp[self.phase_first_idx]
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
-            # todo: handle Node.END case
-            # all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
+            if self.node == Node.END:
+                all_pn[0].u = [nlp.U[-1]]
+                # Make an exception to the fact that U is not available for the last node
 
             self.node = self.node_list[1]
             nlp = ocp.nlp[self.phase_second_idx]
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
+            if self.node == Node.END:
+                all_pn[1].u = [nlp.U[-1]]
+                # Make an exception to the fact that U is not available for the last node
 
+            # reset the node list
             self.node = self.node_list
 
             penalty_type.validate_penalty_time_index(self, all_pn[0])
             penalty_type.validate_penalty_time_index(self, all_pn[1])
             self.node_idx = [all_pn[0].t[0], all_pn[1].t[0]]
-            # self.clear_penalty(ocp, all_pn[0].nlp)
+            self.clear_penalty(ocp, all_pn[0].nlp)
         else:
             all_pn = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, all_pn)

@@ -73,9 +73,13 @@ class MultiNodeConstraint(Constraint):
 
         if not isinstance(multi_node_constraint, MultiNodeConstraintFcn):
             custom_function = multi_node_constraint
-            transition = MultiNodeConstraintFcn.CUSTOM
+            multi_node_constraint = MultiNodeConstraintFcn.CUSTOM
         super(Constraint, self).__init__(penalty=multi_node_constraint, custom_function=custom_function, **params)
 
+        if (first_node and second_node) not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
+            raise NotImplementedError(
+                "Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END"
+            )
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
@@ -84,8 +88,8 @@ class MultiNodeConstraint(Constraint):
         self.quadratic = True
         self.phase_first_idx = phase_first_idx
         self.phase_second_idx = phase_second_idx
-        self.phase_pre_idx = phase_second_idx
-        self.phase_post_idx = phase_first_idx
+        self.phase_pre_idx = phase_first_idx
+        self.phase_post_idx = phase_second_idx
         self.first_node = first_node
         self.second_node = second_node
         self.node = [self.first_node, self.second_node]

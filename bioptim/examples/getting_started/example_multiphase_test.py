@@ -66,9 +66,9 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
-    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
-    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
     objective_functions.add(
         minimize_difference,
         custom_type=ObjectiveFcn.Mayer,
@@ -94,9 +94,19 @@ def prepare_ocp(
 
     pt = PhaseTransitionList()
     pt.add(PhaseTransitionFcn.CYCLIC, phase_pre_idx=0, weight=22)
+    pt.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0)
 
     # Constraints
     multi_node_constraints = MultiNodeConstraintList()
+    # hard constraint
+    multi_node_constraints.add(
+        MultiNodeConstraintFcn.CONTINUOUS,
+        phase_first_idx=0,
+        phase_second_idx=2,
+        first_node=Node.START,
+        second_node=Node.START,
+    )
+    # Objectives with the weight argument
     multi_node_constraints.add(
         MultiNodeConstraintFcn.CONTINUOUS,
         phase_first_idx=0,
@@ -104,6 +114,15 @@ def prepare_ocp(
         first_node=Node.START,
         second_node=Node.MID,
         weight=2,
+    )
+    # Objectives with the weight argument
+    multi_node_constraints.add(
+        MultiNodeConstraintFcn.CONTINUOUS,
+        phase_first_idx=0,
+        phase_second_idx=1,
+        first_node=Node.MID,
+        second_node=Node.END,
+        weight=0.1,
     )
 
     # Path constraint
@@ -162,6 +181,7 @@ def main():
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     sol.print()
+    sol.graphs()
     # --- Show results --- #
     sol.animate()
 
