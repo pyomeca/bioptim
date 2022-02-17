@@ -241,8 +241,8 @@ class IpoptInterface(SolverInterface):
                 if _penalty.second_node == Node.END:
                     mod1 = 1
                 _u = vertcat(
-                    ocp.nlp[_penalty.phase_first_idx].U[_penalty.node_idx[0]-mod0],
-                    ocp.nlp[_penalty.phase_second_idx].U[_penalty.node_idx[1]-mod1],
+                    ocp.nlp[_penalty.phase_first_idx].U[_penalty.node_idx[0] - mod0],
+                    ocp.nlp[_penalty.phase_second_idx].U[_penalty.node_idx[1] - mod1],
                 )
             elif _penalty.integrate:
                 _x = nlp.X[_idx]
