@@ -455,12 +455,20 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, mnc in enumerate(ocp.multi_node_constraints):
-            # Dynamics must be respected between phases
+        for i, mnc in enumerate(ocp.multinode_constraints):
+            # Equality constraint between nodes
+            if isinstance(mnc.first_node, int):
+                first_node_name = f"idx {str(mnc.first_node)}"
+            else:
+                first_node_name = mnc.first_node.name
+            if isinstance(mnc.second_node, int):
+                second_node_name = f"idx {str(mnc.second_node)}"
+            else:
+                second_node_name = mnc.second_node.name
             mnc.name = (
-                f"MULTI_NODE_CONSTRAINT "
-                f"P{mnc.phase_first_idx},Node {mnc.first_node.name}"
-                f"->P{mnc.phase_second_idx},Node {mnc.second_node.name}"
+                f"MULTINODE "
+                f"Phase {mnc.phase_first_idx} Node {first_node_name}"
+                f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
             )
             mnc.list_index = -1
             mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
@@ -555,5 +563,5 @@ class ContinuityFunctions:
         # Dynamics must be respected between phases
         ConstraintFunction.inter_phase_continuity(ocp)
 
-        if ocp.multi_node_constraints:
+        if ocp.multinode_constraints:
             ConstraintFunction.inter_node_continuity(ocp)

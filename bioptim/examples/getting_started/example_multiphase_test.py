@@ -23,8 +23,8 @@ from bioptim import (
     OdeSolver,
     Node,
     Solver,
-    MultiNodeConstraintList,
-    MultiNodeConstraintFcn,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
     PhaseTransitionList,
     PhaseTransitionFcn,
 )
@@ -69,14 +69,14 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
-    objective_functions.add(
-        minimize_difference,
-        custom_type=ObjectiveFcn.Mayer,
-        node=Node.TRANSITION,
-        weight=100,
-        phase=1,
-        quadratic=True,
-    )
+    # objective_functions.add(
+    #     minimize_difference,
+    #     custom_type=ObjectiveFcn.Mayer,
+    #     node=Node.TRANSITION,
+    #     weight=100,
+    #     phase=1,
+    #     quadratic=True,
+    # )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -93,31 +93,31 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2)
 
     pt = PhaseTransitionList()
-    pt.add(PhaseTransitionFcn.CYCLIC, phase_pre_idx=0, weight=22)
-    pt.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0)
+    # pt.add(PhaseTransitionFcn.CYCLIC)
+    # pt.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0)
 
     # Constraints
-    multi_node_constraints = MultiNodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
     # hard constraint
-    multi_node_constraints.add(
-        MultiNodeConstraintFcn.CONTINUOUS,
+    multinode_constraints.add(
+        MultinodeConstraintFcn.CONTINUOUS,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=Node.START,
         second_node=Node.START,
     )
     # Objectives with the weight argument
-    multi_node_constraints.add(
-        MultiNodeConstraintFcn.CONTINUOUS,
+    multinode_constraints.add(
+        MultinodeConstraintFcn.CONTINUOUS,
         phase_first_idx=0,
         phase_second_idx=2,
-        first_node=Node.START,
+        first_node=2,
         second_node=Node.MID,
         weight=2,
     )
     # Objectives with the weight argument
-    multi_node_constraints.add(
-        MultiNodeConstraintFcn.CONTINUOUS,
+    multinode_constraints.add(
+        MultinodeConstraintFcn.CONTINUOUS,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.MID,
@@ -166,7 +166,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         phase_transitions=pt,
-        multi_node_constraints=multi_node_constraints,
+        multinode_constraints=multinode_constraints,
         ode_solver=ode_solver,
     )
 
