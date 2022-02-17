@@ -405,6 +405,36 @@ class PenaltyFunctionAbstract:
             return com_dot_cx
 
         @staticmethod
+        def minimize_com_acceleration(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+            """
+            Adds the objective that the velocity of the center of mass of the model should be minimized.
+            If no axis is specified, the squared-norm of the CoM's velocity is minimized.
+            Otherwise, the projection of the CoM's velocity on the specified axis is minimized.
+            By default this function is not quadratic, meaning that it minimizes towards infinity.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
+            """
+
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = all_pn.nlp
+
+            qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
+
+            com_ddot_cx = BiorbdInterface.mx_to_cx(
+                "com_ddot", nlp.model.CoMddot, nlp.states["q"], nlp.states["qdot"], qddot
+            )
+            return com_ddot_cx
+
+        @staticmethod
         def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
             """
             Adds the objective that the angular momentum of the model in the global reference frame should be minimized.
