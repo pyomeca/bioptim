@@ -76,10 +76,16 @@ class MultinodeConstraint(Constraint):
             multinode_constraint = MultinodeConstraintFcn.CUSTOM
         super(Constraint, self).__init__(penalty=multinode_constraint, custom_function=custom_function, **params)
 
-        if (first_node and second_node) not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
-            raise NotImplementedError(
-                "Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END"
-            )
+        if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
+            if not isinstance(first_node, int):
+                raise NotImplementedError(
+                    "Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
+                )
+        if second_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
+            if not isinstance(second_node, int):
+                raise NotImplementedError(
+                    "Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
+                )
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
@@ -329,7 +335,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
             return multinode_constraint.custom_function(
-                multinode_constraint, nlp_pre.states, nlp_post.states, **extra_params
+                multinode_constraint, nlp_pre, nlp_post, **extra_params
             )
 
 
