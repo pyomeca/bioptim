@@ -161,6 +161,7 @@ from .interfaces.biorbd_interface import BiorbdInterface
 from .interfaces.solver_options import Solver
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
+from .limits.multi_node_constraint import MultiNodeConstraintFcn, MultiNodeConstraintList, MultiNodeConstraint
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
