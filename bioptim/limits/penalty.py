@@ -426,7 +426,10 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-
+            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+                raise NotImplementedError(
+                    "MINIMIZE_COM_ACCELERATION is only working if qddot is defined as a state or a control."
+                )
             qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
 
             com_ddot_cx = BiorbdInterface.mx_to_cx(
