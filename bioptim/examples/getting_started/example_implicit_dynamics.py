@@ -23,7 +23,7 @@ from bioptim import (
     Solver,
     BoundsList,
     ObjectiveList,
-    MultiBodyDynamics,
+    Transcription,
 )
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,7 +36,7 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK1(n_integration_steps=1),
     use_sx: bool = False,
     n_threads: int = 1,
-    multibody_dynamics: MultiBodyDynamics = MultiBodyDynamics.EXPLICIT,
+    multibody_dynamics: Transcription = Transcription.EXPLICIT,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -55,8 +55,8 @@ def prepare_ocp(
         If the SX variable should be used instead of MX (can be extensive on RAM)
     n_threads: int
         The number of threads to use in the paralleling (1 = no parallel computing)
-    multibody_dynamics: MultiBodyDynamics
-        formulation of multibody dynamics (explicit, implicit or semi-explicit)
+    multibody_dynamics: Transcription
+        transcription of multibody dynamics (explicit, implicit or semi-explicit)
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -74,7 +74,7 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
-    if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
+    if multibody_dynamics == Transcription.IMPLICIT:
         qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     x_bounds = BoundsList()
@@ -91,14 +91,14 @@ def prepare_ocp(
 
     # Define control path constraint
     # There are extra controls in implicit dynamics which are joint acceleration qddot.
-    if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
+    if multibody_dynamics == Transcription.IMPLICIT:
         u_bounds = Bounds([tau_min] * n_tau + [qddot_min] * n_qddot, [tau_max] * n_tau + [qddot_max] * n_qddot)
     else:
         u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
 
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
+    if multibody_dynamics == Transcription.IMPLICIT:
         u_init = InitialGuess([0] * (n_tau + n_qddot))
     else:
         u_init = InitialGuess([0] * n_tau)
@@ -119,14 +119,14 @@ def prepare_ocp(
     )
 
 
-def solve_ocp(multibody_dynamics: MultiBodyDynamics) -> OptimalControlProgram:
+def solve_ocp(multibody_dynamics: Transcription) -> OptimalControlProgram:
     """
     The initialization of ocp with implicit_dynamics as the only argument
 
     Parameters
     ----------
-    multibody_dynamics: MultiBodyDynamics
-        formulation of multibody dynamics (explicit, implicit or semi-explicit)
+    multibody_dynamics: Transcription
+        transcription of multibody dynamics (explicit, implicit or semi-explicit)
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -188,8 +188,8 @@ def main():
     """
 
     # --- Prepare the ocp with implicit and explicit dynamics --- #
-    sol_implicit = solve_ocp(multibody_dynamics=MultiBodyDynamics.IMPLICIT)
-    sol_explicit = solve_ocp(multibody_dynamics=MultiBodyDynamics.EXPLICIT)
+    sol_implicit = solve_ocp(multibody_dynamics=Transcription.IMPLICIT)
+    sol_explicit = solve_ocp(multibody_dynamics=Transcription.EXPLICIT)
 
     # --- Show the results in a bioviz animation --- #
     sol_implicit.print()

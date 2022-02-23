@@ -139,7 +139,7 @@ class IntegralApproximation(Enum):
     TRUE_TRAPEZOIDAL = "true_trapezoidal"
 
 
-class MultiBodyDynamics(Enum):
+class Transcription(Enum):
     EXPLICIT = "explicit"
     IMPLICIT = "implicit"
     SEMI_EXPLICIT = "semi_explicit"

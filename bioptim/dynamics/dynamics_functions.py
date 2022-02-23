@@ -2,7 +2,7 @@ from typing import Union
 
 from casadi import horzcat, vertcat, MX, SX
 
-from ..misc.enums import MultiBodyDynamics
+from ..misc.enums import Transcription
 from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
 from ..optimization.non_linear_program import NonLinearProgram
@@ -76,7 +76,7 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
-        multibody_dynamics: MultiBodyDynamics,
+        multibody_dynamics: Transcription,
         fatigue: FatigueList,
     ) -> MX:
         """
@@ -94,7 +94,7 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
-        multibody_dynamics: MultiBodyDynamics
+        multibody_dynamics: Transcription
             which multibody dynamics should be used (explicit, implicit, semi_explicit)
         fatigue : FatigueList
             A list of fatigue elements
@@ -111,7 +111,7 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
+        if multibody_dynamics == Transcription.IMPLICIT:
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq
             dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
@@ -219,7 +219,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         nlp,
-        multibody_dynamics: MultiBodyDynamics,
+        multibody_dynamics: Transcription,
         with_contact: bool,
     ) -> MX:
         """
@@ -235,7 +235,7 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
-        multibody_dynamics: MultiBodyDynamics
+        multibody_dynamics: Transcription
             which multibody dynamics should be used (explicit, implicit, semi_explicit)
         with_contact: bool
             If the dynamic with contact should be used
@@ -254,7 +254,7 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
+        if multibody_dynamics == Transcription.IMPLICIT:
             ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
             dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 

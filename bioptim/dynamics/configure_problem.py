@@ -10,7 +10,7 @@ from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
-from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType, MultiBodyDynamics
+from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType, Transcription
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
@@ -105,7 +105,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact: bool = False,
-        multibody_dynamics: MultiBodyDynamics = MultiBodyDynamics.EXPLICIT,
+        multibody_dynamics: Transcription = Transcription.EXPLICIT,
         implicit_soft_contacts: bool = True,
         fatigue: FatigueList = None,
     ):
@@ -120,7 +120,7 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        multibody_dynamics: MultiBodyDynamics
+        multibody_dynamics: Transcription
             which multibody dynamics should be used (explicit, implicit, semi_explicit)
         implicit_soft_contacts: bool
             If the implicit soft contact dynamic should be used
@@ -128,7 +128,7 @@ class ConfigureProblem:
             A list of fatigue elements
         """
 
-        if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
+        if multibody_dynamics == Transcription.IMPLICIT:
             if not implicit_soft_contacts:
                 raise ValueError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
             # We don't need to add a constraint to ensure implicit dynamic with soft contacts
@@ -140,7 +140,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_qdot(nlp, True, False)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
 
-        if multibody_dynamics == MultiBodyDynamics.SEMI_EXPLICIT:
+        if multibody_dynamics == Transcription.SEMI_EXPLICIT:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
@@ -149,7 +149,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 phase=nlp.phase_idx,
             )
-        elif multibody_dynamics == MultiBodyDynamics.IMPLICIT:
+        elif multibody_dynamics == Transcription.IMPLICIT:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
@@ -207,7 +207,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact=False,
-        multibody_dynamics: MultiBodyDynamics = MultiBodyDynamics.EXPLICIT,
+        multibody_dynamics: Transcription = Transcription.EXPLICIT,
         implicit_soft_contacts: bool = True,
     ):
         """
@@ -221,13 +221,13 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        multibody_dynamics: MultiBodyDynamics
+        multibody_dynamics: Transcription
             which multibody dynamics should be used (explicit, implicit, semi_explicit)
         implicit_soft_contacts: bool
             If the implicit soft contact dynamic should be used
         """
 
-        if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
+        if multibody_dynamics == Transcription.IMPLICIT:
             if not implicit_soft_contacts:
                 raise ValueError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
             # We don't need to add a constraint to ensure implicit dynamic with soft contacts
@@ -240,7 +240,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(nlp, True, False)
         ConfigureProblem.configure_taudot(nlp, False, True)
 
-        if multibody_dynamics == MultiBodyDynamics.IMPLICIT:
+        if multibody_dynamics == Transcription.IMPLICIT:
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
             ocp.implicit_constraints.add(
