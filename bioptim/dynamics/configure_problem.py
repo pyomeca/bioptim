@@ -106,7 +106,7 @@ class ConfigureProblem:
         nlp,
         with_contact: bool = False,
         rigidbody_dynamics: Transcription = Transcription.EXPLICIT,
-        implicit_soft_contacts: bool = True,
+        soft_contacts_dynamics: Transcription = None,
         fatigue: FatigueList = None,
     ):
         """
@@ -122,19 +122,20 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         rigidbody_dynamics: Transcription
             which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
-        implicit_soft_contacts: bool
-            If the implicit soft contact dynamic should be used
+        soft_contacts_dynamics: Transcription
+            which soft contact dynamic should be used (EXPLICIT or IMPLICIT)
         fatigue: FatigueList
             A list of fatigue elements
         """
+        if soft_contacts_dynamics is None and nlp.model.nbSoftContacts() != 0:
+            soft_contacts_dynamics = Transcription.EXPLICIT
+        elif soft_contacts_dynamics == Transcription.SEMI_EXPLICIT:
+            raise ValueError("soft_contacts_dynamics cannot be used with Transcription.SEMI_EXPLICIT")
 
         if rigidbody_dynamics == Transcription.IMPLICIT:
-            if not implicit_soft_contacts:
-                raise NotImplementedError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
-            # We don't need to add a constraint to ensure implicit dynamic with soft contacts
-            implicit_soft_contacts = False
-        if nlp.model.nbSoftContacts() == 0:
-            implicit_soft_contacts = False
+            if soft_contacts_dynamics == Transcription.EXPLICIT:
+                raise ValueError("Soft contacts dynamics should not be EXPLICIT when rigidbody dynamics is IMPLICIT. "
+                                 "Please set soft_contacts_dynamics=Transcription.IMPLICIT")
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
@@ -177,7 +178,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
             )
 
-        if implicit_soft_contacts:
+        if soft_contacts_dynamics == Transcription.IMPLICIT:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
@@ -196,7 +197,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if implicit_soft_contacts:
+        if soft_contacts_dynamics == Transcription.IMPLICIT:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -210,7 +211,7 @@ class ConfigureProblem:
         nlp,
         with_contact=False,
         rigidbody_dynamics: Transcription = Transcription.EXPLICIT,
-        implicit_soft_contacts: bool = True,
+        soft_contacts_dynamics: Transcription = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -225,18 +226,20 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         rigidbody_dynamics: Transcription
             which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
-        implicit_soft_contacts: bool
-            If the implicit soft contact dynamic should be used
+        soft_contacts_dynamics: Transcription
+            which soft contact dynamic should be used (EXPLICIT or IMPLICIT)
         """
         if rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with Transcription.SEMI_EXPLICIT")
+        if soft_contacts_dynamics is None and nlp.model.nbSoftContacts() != 0:
+            soft_contacts_dynamics = Transcription.EXPLICIT
+        elif soft_contacts_dynamics == Transcription.SEMI_EXPLICIT:
+            raise ValueError("soft_contacts_dynamics cannot be used with Transcription.SEMI_EXPLICIT")
+
         if rigidbody_dynamics == Transcription.IMPLICIT:
-            if not implicit_soft_contacts:
-                raise ValueError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
-            # We don't need to add a constraint to ensure implicit dynamic with soft contacts
-            implicit_soft_contacts = False
-        if nlp.model.nbSoftContacts() == 0:
-            implicit_soft_contacts = False
+            if soft_contacts_dynamics == Transcription.EXPLICIT:
+                raise ValueError("Soft contacts dynamics should not be EXPLICIT when rigidbody dynamics is IMPLICIT. "
+                                 "Please set soft_contacts_dynamics=Transcription.IMPLICIT")
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
@@ -252,7 +255,7 @@ class ConfigureProblem:
                 constraint_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
-        if implicit_soft_contacts:
+        if soft_contacts_dynamics == Transcription.IMPLICIT:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
@@ -270,7 +273,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if implicit_soft_contacts:
+        if soft_contacts_dynamics == Transcription.IMPLICIT:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
