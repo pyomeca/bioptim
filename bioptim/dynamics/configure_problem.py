@@ -105,7 +105,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact: bool = False,
-        multibody_dynamics: Transcription = Transcription.EXPLICIT,
+        rigidbody_dynamics: Transcription = Transcription.EXPLICIT,
         implicit_soft_contacts: bool = True,
         fatigue: FatigueList = None,
     ):
@@ -120,15 +120,15 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        multibody_dynamics: Transcription
-            which multibody dynamics should be used (explicit, implicit, semi_explicit)
+        rigidbody_dynamics: Transcription
+            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
         implicit_soft_contacts: bool
             If the implicit soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
         """
 
-        if multibody_dynamics == Transcription.IMPLICIT:
+        if rigidbody_dynamics == Transcription.IMPLICIT:
             if not implicit_soft_contacts:
                 raise ValueError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
             # We don't need to add a constraint to ensure implicit dynamic with soft contacts
@@ -140,7 +140,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_qdot(nlp, True, False)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
 
-        if multibody_dynamics == Transcription.SEMI_EXPLICIT:
+        if rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
@@ -149,7 +149,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 phase=nlp.phase_idx,
             )
-        elif multibody_dynamics == Transcription.IMPLICIT:
+        elif rigidbody_dynamics == Transcription.IMPLICIT:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
@@ -187,7 +187,7 @@ class ConfigureProblem:
                 DynamicsFunctions.torque_driven,
                 with_contact=with_contact,
                 fatigue=fatigue,
-                multibody_dynamics=multibody_dynamics,
+                rigidbody_dynamics=rigidbody_dynamics,
             )
 
         if with_contact:
@@ -207,7 +207,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact=False,
-        multibody_dynamics: Transcription = Transcription.EXPLICIT,
+        rigidbody_dynamics: Transcription = Transcription.EXPLICIT,
         implicit_soft_contacts: bool = True,
     ):
         """
@@ -221,13 +221,13 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        multibody_dynamics: Transcription
-            which multibody dynamics should be used (explicit, implicit, semi_explicit)
+        rigidbody_dynamics: Transcription
+            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
         implicit_soft_contacts: bool
             If the implicit soft contact dynamic should be used
         """
 
-        if multibody_dynamics == Transcription.IMPLICIT:
+        if rigidbody_dynamics == Transcription.IMPLICIT:
             if not implicit_soft_contacts:
                 raise ValueError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
             # We don't need to add a constraint to ensure implicit dynamic with soft contacts
@@ -240,7 +240,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(nlp, True, False)
         ConfigureProblem.configure_taudot(nlp, False, True)
 
-        if multibody_dynamics == Transcription.IMPLICIT:
+        if rigidbody_dynamics == Transcription.IMPLICIT:
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
             ocp.implicit_constraints.add(
@@ -260,7 +260,7 @@ class ConfigureProblem:
                 nlp,
                 DynamicsFunctions.torque_derivative_driven,
                 with_contact=with_contact,
-                multibody_dynamics=multibody_dynamics,
+                rigidbody_dynamics=rigidbody_dynamics,
             )
 
         if with_contact:

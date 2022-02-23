@@ -102,7 +102,7 @@ def test_torque_driven_implicit(with_contact, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, multibody_dynamics=Transcription.IMPLICIT),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=Transcription.IMPLICIT),
         False,
     )
 
@@ -318,7 +318,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
         Dynamics(
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
             with_contact=with_contact,
-            multibody_dynamics=Transcription.IMPLICIT,
+            rigidbody_dynamics=Transcription.IMPLICIT,
         ),
         False,
     )
@@ -508,14 +508,14 @@ def test_implicit_dynamics_errors(dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, multibody_dynamics=Transcription.IMPLICIT),
+        Dynamics(dynamics, rigidbody_dynamics=Transcription.IMPLICIT),
         False,
     )
 
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'multibody_dynamics'"),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'rigidbody_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 

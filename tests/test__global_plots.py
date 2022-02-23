@@ -133,7 +133,7 @@ def test_plot_graphs_for_implicit_constraints():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         n_shooting=5,
         final_time=1,
-        multibody_dynamics=Transcription.IMPLICIT,
+        rigidbody_dynamics=Transcription.IMPLICIT,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
