@@ -128,7 +128,7 @@ class ConstraintType(Enum):
     IMPLICIT = "implicit"
 
 
-class MultiBodyDynamics(Enum):
+class Transcription(Enum):
     EXPLICIT = "explicit"
     IMPLICIT = "implicit"
     SEMI_EXPLICIT = "semi_explicit"
