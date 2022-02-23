@@ -134,7 +134,7 @@ def test_torque_driven_implicit(with_contact, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_driven_implicit_soft_contacts(with_contact, cx, implicit_contact):
+def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -152,7 +152,7 @@ def test_torque_driven_implicit_soft_contacts(with_contact, cx, implicit_contact
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, implicit_soft_contacts=implicit_contact),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact),
         False,
     )
 
@@ -384,7 +384,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_derivative_driven_implicit_soft_contacts(with_contact, cx, implicit_contact):
+def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -401,7 +401,7 @@ def test_torque_derivative_driven_implicit_soft_contacts(with_contact, cx, impli
         ocp,
         "dynamics_type",
         Dynamics(
-            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, implicit_soft_contacts=implicit_contact
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact
         ),
         False,
     )
@@ -462,7 +462,7 @@ def test_torque_derivative_driven_implicit_soft_contacts(with_contact, cx, impli
     "dynamics",
     [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
 )
-def test_implicit_soft_contacts_errors(dynamics):
+def test_soft_contacts_dynamics_errors(dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -477,14 +477,14 @@ def test_implicit_soft_contacts_errors(dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, implicit_soft_contacts=True),
+        Dynamics(dynamics, soft_contacts_dynamics=True),
         False,
     )
 
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_soft_contacts'"),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'soft_contacts_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 

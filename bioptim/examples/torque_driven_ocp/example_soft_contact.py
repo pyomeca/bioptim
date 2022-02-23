@@ -2,7 +2,7 @@
 A very simple optimal control program playing with a soft contact sphere rolling going from one point to another.
 
 The soft contact sphere are hard to make converge and sensitive to parameters.
-One could use implicit_soft_contacts or implicit_dynamics to ease the convergence.
+One could use soft_contacts_dynamics or implicit_dynamics to ease the convergence.
 """
 
 import numpy as np
@@ -51,7 +51,7 @@ def prepare_single_shooting(
 
     # Dynamics
     dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.EXPLICIT, implicit_soft_contacts=False
+        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.EXPLICIT, soft_contacts_dynamics=False
     )
 
     # Initial guess
@@ -145,7 +145,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.EXPLICIT, implicit_soft_contacts=False
+        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.EXPLICIT, soft_contacts_dynamics=False
     )
 
     # Constraints
