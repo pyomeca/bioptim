@@ -134,8 +134,10 @@ class ConfigureProblem:
 
         if rigidbody_dynamics == Transcription.IMPLICIT:
             if soft_contacts_dynamics == Transcription.EXPLICIT:
-                raise ValueError("Soft contacts dynamics should not be EXPLICIT when rigidbody dynamics is IMPLICIT. "
-                                 "Please set soft_contacts_dynamics=Transcription.IMPLICIT")
+                raise ValueError(
+                    "Soft contacts dynamics should not be EXPLICIT when rigidbody dynamics is IMPLICIT. "
+                    "Please set soft_contacts_dynamics=Transcription.IMPLICIT"
+                )
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
@@ -238,8 +240,10 @@ class ConfigureProblem:
 
         if rigidbody_dynamics == Transcription.IMPLICIT:
             if soft_contacts_dynamics == Transcription.EXPLICIT:
-                raise ValueError("Soft contacts dynamics should not be EXPLICIT when rigidbody dynamics is IMPLICIT. "
-                                 "Please set soft_contacts_dynamics=Transcription.IMPLICIT")
+                raise ValueError(
+                    "Soft contacts dynamics should not be EXPLICIT when rigidbody dynamics is IMPLICIT. "
+                    "Please set soft_contacts_dynamics=Transcription.IMPLICIT"
+                )
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
