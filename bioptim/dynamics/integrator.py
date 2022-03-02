@@ -542,8 +542,11 @@ class COLLOCATION(Integrator):
                     _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-            lfcn = Function("lfcn", [time_control_interval], [_l])
-            self._d[j] = lfcn(1.0)
+            if self.method == "radau":
+                self._d[j] = 1 if j == self.degree else 0
+            else:
+                lfcn = Function("lfcn", [time_control_interval], [_l])
+                self._d[j] = lfcn(1.0)
 
             # Construct Lagrange polynomials to get the polynomial basis at the collocation point
             _l = 1
