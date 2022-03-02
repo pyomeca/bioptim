@@ -29,7 +29,8 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolver = OdeSolver.COLLOCATION(polynomial_degree=3, method="radau"),
+    # ode_solver: OdeSolver = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
 ) -> OptimalControlProgram:
@@ -104,7 +105,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=300)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)

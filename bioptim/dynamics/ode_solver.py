@@ -276,6 +276,7 @@ class OdeSolver:
                 "x": [nlp.states.cx] + nlp.states.cx_intermediates_list,
                 "p": nlp.controls.cx,
                 "ode": nlp.dynamics_func,
+                "inv_dyn": nlp.inverse_dynamics_func,
             }
             ode_opt = {
                 "t0": 0,

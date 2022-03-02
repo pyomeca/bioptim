@@ -163,6 +163,8 @@ class ConfigureProblem:
                 implicit_dynamics=implicit_dynamics,
             )
 
+        ConfigureProblem.configure_inverse_dynamics_function(ocp, nlp)
+
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
@@ -366,6 +368,57 @@ class ConfigureProblem:
             ["x", "u", "p"],
             ["xdot"],
         ).expand()
+
+    @staticmethod
+    def configure_inverse_dynamics_function(ocp, nlp, expand: bool = True):
+        """
+        Configure the dynamics of the system
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        expand: bool
+            if the function need to be expanded
+        """
+
+        nlp.parameters = ocp.v.parameters_in_list
+        q = nlp.states["q"].mx
+        qdot = nlp.states["qdot"].mx
+        if "qddot" in nlp.states.keys():
+            qddot = nlp.states["qddot"].mx
+        elif "qddot" in nlp.controls.keys():
+            qddot = nlp.controls["qddot"].mx
+        else:
+            qddot = MX.sym("qddot", qdot.shape)
+
+        if nlp.external_forces:
+            raise NotImplementedError(
+                "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
+            )
+            # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
+            # fext need to be a mx
+
+        tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
+
+        if expand:
+            nlp.inverse_dynamics_func = Function(
+                "InverseDyn",
+                [q, qdot, qddot],
+                [tau_id],
+                ["q", "qdot", "qddot"],
+                ["tau"],
+            ).expand()
+        else:
+            nlp.inverse_dynamics_func = Function(
+                "InverseDyn",
+                [q, qdot, qddot],
+                [tau_id],
+                ["q", "qdot", "qddot"],
+                ["tau"],
+            )
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
