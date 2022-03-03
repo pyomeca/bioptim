@@ -1140,11 +1140,15 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 Minimizes the center of mass velocity towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
 
-#### MINIMIZE_ANGULAR_MOMENTUM
+#### MINIMIZE_COM_ACCELERATION (Lagrange and Mayer)
+Minimizes the center of mass acceleration towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+
+#### MINIMIZE_ANGULAR_MOMENTUM (Lagrange and Mayer)
 Minimizes the angular momentum in the global reference frame towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
 
-#### MINIMIZE_LINEAR_MOMENTUM
+#### MINIMIZE_LINEAR_MOMENTUM (Lagrange and Mayer)
 Minimizes the linear momentum towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
 
