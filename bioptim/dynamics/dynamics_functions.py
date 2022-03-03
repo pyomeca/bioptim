@@ -136,7 +136,7 @@ class DynamicsFunctions:
             defects = MX.zeros(1)
         else:
             defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
-            defects[:dq.shape[0], :] = horzcat(
+            defects[: dq.shape[0], :] = horzcat(
                 *[
                     dq
                     - DynamicsFunctions.compute_qdot(
@@ -147,7 +147,7 @@ class DynamicsFunctions:
             )
 
             tau_var = nlp.states["tau"] if "tau" in nlp.states else nlp.controls["tau"]
-            defects[dq.shape[0]:, :] = tau_var.mapping.to_first.map(tau) - tau_id
+            defects[dq.shape[0] :, :] = tau_var.mapping.to_first.map(tau) - tau_id
 
         return dxdt, defects
 
