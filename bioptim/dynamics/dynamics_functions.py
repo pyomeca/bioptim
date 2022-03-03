@@ -128,13 +128,12 @@ class DynamicsFunctions:
         if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
-        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-        qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
-        tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
-
-        if with_contact:
+        if with_contact or fatigue is not None:
             defects = MX.zeros(1)
         else:
+            tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
+            qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
+            tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
             defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
             defects[: dq.shape[0], :] = horzcat(
                 *[
