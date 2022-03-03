@@ -26,7 +26,8 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_driven(with_contact, with_external_force, cx):
+@pytest.mark.parametrize("transcription", [Transcription.EXPLICIT, Transcription.SEMI_EXPLICIT, Transcription.IMPLICIT])
+def test_torque_driven(with_contact, with_external_force, cx, transcription):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -34,12 +35,18 @@ def test_torque_driven(with_contact, with_external_force, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.phase_idx = 0
 
     nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    NonLinearProgram.add(ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact), False)
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=transcription),
+        False,
+    )
 
     np.random.seed(42)
     if with_external_force:
@@ -54,32 +61,94 @@ def test_torque_driven(with_contact, with_external_force, cx):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
+    if transcription == Transcription.EXPLICIT:
+        if with_contact:
+            contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, -7.7700092, -7.5782306, 21.7073786, -16.3059315],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
-    if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(states, controls, params))
-        if with_external_force:
-            np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.8631034, 0.3251833, 0.1195942, 0.4937956, -7.7700092, -7.5782306, 21.7073786, -16.3059315],
-            )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
         else:
-            np.testing.assert_almost_equal(
-                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
-            )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.86310343, 0.32518332, 0.11959425, 0.4937956, 0.30731739, -9.97912778, 1.15263778, 36.02430956],
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [
+                        0.61185289,
+                        0.78517596,
+                        0.60754485,
+                        0.80839735,
+                        -0.30241366,
+                        -10.38503791,
+                        1.60445173,
+                        35.80238642,
+                    ],
+                )
+    elif transcription == Transcription.SEMI_EXPLICIT:
+        if with_contact:
+            contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
-    else:
-        if with_external_force:
-            np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.86310343, 0.32518332, 0.11959425, 0.4937956, 0.30731739, -9.97912778, 1.15263778, 36.02430956],
-            )
         else:
-            np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
-            )
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                )
+    elif transcription == Transcription.IMPLICIT:
+        if with_contact:
+            contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+
+        else:
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                )
 
 
 @pytest.mark.parametrize("cx", [MX, SX])

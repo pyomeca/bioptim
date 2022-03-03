@@ -74,7 +74,7 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
-    if rigidbody_dynamics == Transcription.IMPLICIT:
+    if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
         qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     x_bounds = BoundsList()
@@ -91,14 +91,14 @@ def prepare_ocp(
 
     # Define control path constraint
     # There are extra controls in implicit dynamics which are joint acceleration qddot.
-    if rigidbody_dynamics == Transcription.IMPLICIT:
+    if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
         u_bounds = Bounds([tau_min] * n_tau + [qddot_min] * n_qddot, [tau_max] * n_tau + [qddot_max] * n_qddot)
     else:
         u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
 
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    if rigidbody_dynamics == Transcription.IMPLICIT:
+    if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
         u_init = InitialGuess([0] * (n_tau + n_qddot))
     else:
         u_init = InitialGuess([0] * n_tau)
@@ -155,28 +155,34 @@ def solve_ocp(rigidbody_dynamics: Transcription) -> OptimalControlProgram:
     return sol
 
 
-def prepare_plots(sol_implicit, sol_explicit):
+def prepare_plots(sol_implicit, sol_semi_explicit, sol_explicit):
     plt.figure()
     tau_ex = sol_explicit.controls["tau"][0, :]
+    tau_sex = sol_semi_explicit.controls["tau"][0, :]
     tau_im = sol_implicit.controls["tau"][0, :]
     plt.plot(tau_ex, label="tau in explicit dynamics")
+    plt.plot(tau_sex, label="tau in semi-explicit dynamics")
     plt.plot(tau_im, label="tau in implicit dynamics")
     plt.xlabel("frames")
     plt.ylabel("Torque (Nm)")
     plt.legend()
 
+    lalbels = ["explicit", "semi-explicit", "implicit"]
+
     plt.figure()
     cost_ex = np.sum(sol_explicit.cost)
+    cost_sex = np.sum(sol_semi_explicit.cost)
     cost_im = np.sum(sol_implicit.cost)
-    plt.bar([0, 1], width=0.3, height=[cost_ex, cost_im])
-    plt.xticks([0, 1], ["explicit", "implicit"])
-    plt.ylabel(" weighted cost function")
+    plt.bar([0, 1, 2], width=0.3, height=[cost_ex, cost_sex, cost_im])
+    plt.xticks([0, 1, 2], lalbels)
+    plt.ylabel("weighted cost function")
 
     plt.figure()
     time_ex = np.sum(sol_explicit.real_time_to_optimize)
+    time_sex = np.sum(sol_semi_explicit.real_time_to_optimize)
     time_im = np.sum(sol_implicit.real_time_to_optimize)
-    plt.bar([0, 1], width=0.3, height=[time_ex, time_im])
-    plt.xticks([0, 1], ["explicit", "implicit"])
+    plt.bar([0, 1, 2], width=0.3, height=[time_ex, time_sex, time_im])
+    plt.xticks([0, 1, 2], lalbels)
     plt.ylabel("time (s)")
 
     plt.show()
@@ -189,6 +195,7 @@ def main():
 
     # --- Prepare the ocp with implicit and explicit dynamics --- #
     sol_implicit = solve_ocp(rigidbody_dynamics=Transcription.IMPLICIT)
+    sol_semi_explicit = solve_ocp(rigidbody_dynamics=Transcription.SEMI_EXPLICIT)
     sol_explicit = solve_ocp(rigidbody_dynamics=Transcription.EXPLICIT)
 
     # --- Show the results in a bioviz animation --- #
@@ -197,13 +204,18 @@ def main():
     # sol_implicit.graphs()
 
     # --- Show the results in a bioviz animation --- #
+    sol_semi_explicit.print()
+    # sol_semi_explicit.animate(n_frames=100)
+    # sol_semi_explicit.graphs()
+
+    # --- Show the results in a bioviz animation --- #
     sol_explicit.print()
     # sol_explicit.animate(n_frames=100)
     # sol_explicit.graphs()
 
     # Tau are closer between implicit and explicit when the dynamic is more discretized,
     # meaning the more n_shooting is high, the more tau are close.
-    prepare_plots(sol_implicit, sol_explicit)
+    prepare_plots(sol_implicit, sol_semi_explicit, sol_explicit)
 
 
 if __name__ == "__main__":
