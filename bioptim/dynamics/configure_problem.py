@@ -137,8 +137,9 @@ class ConfigureProblem:
             implicit_soft_contacts = False
 
         ConfigureProblem.configure_q(nlp, True, False)
-        ConfigureProblem.configure_qdot(nlp, True, False)
+        ConfigureProblem.configure_qdot(nlp, True, False, True)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
+        ConfigureProblem.configure_qddot(nlp, False, False, True)
 
         if implicit_dynamics:
             ConfigureProblem.configure_qddot(nlp, False, True)
@@ -162,8 +163,6 @@ class ConfigureProblem:
                 fatigue=fatigue,
                 implicit_dynamics=implicit_dynamics,
             )
-
-        ConfigureProblem.configure_inverse_dynamics_function(ocp, nlp)
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
@@ -358,9 +357,12 @@ class ConfigureProblem:
 
         nlp.parameters = ocp.v.parameters_in_list
 
-        dynamics = dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)
+        dynamics, defects = dyn_func(
+            nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params
+        )
         if isinstance(dynamics, (list, tuple)):
             dynamics = vertcat(*dynamics)
+
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
@@ -369,56 +371,13 @@ class ConfigureProblem:
             ["xdot"],
         ).expand()
 
-    @staticmethod
-    def configure_inverse_dynamics_function(ocp, nlp, expand: bool = True):
-        """
-        Configure the dynamics of the system
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        expand: bool
-            if the function need to be expanded
-        """
-
-        nlp.parameters = ocp.v.parameters_in_list
-        q = nlp.states["q"].mx
-        qdot = nlp.states["qdot"].mx
-        if "qddot" in nlp.states.keys():
-            qddot = nlp.states["qddot"].mx
-        elif "qddot" in nlp.controls.keys():
-            qddot = nlp.controls["qddot"].mx
-        else:
-            qddot = MX.sym("qddot", qdot.shape)
-
-        if nlp.external_forces:
-            raise NotImplementedError(
-                "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
-            )
-            # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
-            # fext need to be a mx
-
-        tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
-
-        if expand:
-            nlp.inverse_dynamics_func = Function(
-                "InverseDyn",
-                [q, qdot, qddot],
-                [tau_id],
-                ["q", "qdot", "qddot"],
-                ["tau"],
-            ).expand()
-        else:
-            nlp.inverse_dynamics_func = Function(
-                "InverseDyn",
-                [q, qdot, qddot],
-                [tau_id],
-                ["q", "qdot", "qddot"],
-                ["tau"],
-            )
+        nlp.implicit_dynamics_func = Function(
+            "DynamicsDefects",
+            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp.states_dot.mx_reduced],
+            [defects],
+            ["x", "u", "p", "xdot"],
+            ["defects"],
+        ).expand()
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -635,6 +594,7 @@ class ConfigureProblem:
         nlp,
         as_states: bool,
         as_controls: bool,
+        as_states_dot: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
@@ -653,6 +613,8 @@ class ConfigureProblem:
             A reference to the phase
         as_states: bool
             If the new variable should be added to the state variable set
+        as_states_dot: bool
+            If the new variable should be added to the state_dot variable set
         as_controls: bool
             If the new variable should be added to the control variable set
         fatigue: FatigueList
@@ -690,6 +652,7 @@ class ConfigureProblem:
         ]
 
         mx_states = []
+        mx_states_dot = []
         mx_controls = []
         for i in nlp.variable_mappings[name].to_second.map_idx:
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
@@ -724,6 +687,12 @@ class ConfigureProblem:
                     combine_to=f"{name}_states" if as_states and combine_state_control_plot else combine_name,
                 )
 
+        if as_states_dot:
+            n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
+            cx = define_cx(n_col=n_cx)
+
+            nlp.states_dot.append(name, cx, mx_states_dot, nlp.variable_mappings[name])
+
     @staticmethod
     def configure_q(nlp, as_states: bool, as_controls: bool):
         """
@@ -743,7 +712,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable("q", name_q, nlp, as_states, as_controls)
 
     @staticmethod
-    def configure_qdot(nlp, as_states: bool, as_controls: bool):
+    def configure_qdot(nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
         """
         Configure the generalized velocities
 
@@ -755,14 +724,16 @@ class ConfigureProblem:
             If the generalized velocities should be a state
         as_controls: bool
             If the generalized velocities should be a control
+        as_states_dot: bool
+            If the generalized velocities should be a state_dot
         """
 
         name_qdot = [str(i) for i in range(nlp.model.nbQdot())]
         ConfigureProblem._adjust_mapping("qdot", ["q", "qdot", "taudot"], nlp)
-        ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls, as_states_dot)
 
     @staticmethod
-    def configure_qddot(nlp, as_states: bool, as_controls: bool):
+    def configure_qddot(nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
         """
         Configure the generalized accelerations
 
@@ -774,11 +745,13 @@ class ConfigureProblem:
             If the generalized velocities should be a state
         as_controls: bool
             If the generalized velocities should be a control
+        as_states_dot: bool
+            If the generalized accelerations should be a state_dot
         """
 
         name_qddot = [str(i) for i in range(nlp.model.nbQdot())]
         ConfigureProblem._adjust_mapping("qddot", ["q", "qdot"], nlp)
-        ConfigureProblem.configure_new_variable("qddot", name_qddot, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable("qddot", name_qddot, nlp, as_states, as_controls, as_states_dot)
 
     @staticmethod
     def configure_qdddot(nlp, as_states: bool, as_controls: bool):
