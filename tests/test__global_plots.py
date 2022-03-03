@@ -124,7 +124,8 @@ def test_add_new_plot():
     os.remove(save_name)
 
 
-def test_plot_graphs_for_implicit_constraints():
+@pytest.mark.parametrize("transcription", [Transcription.EXPLICIT, Transcription.SEMI_EXPLICIT, Transcription.IMPLICIT])
+def test_plot_graphs_for_implicit_constraints(transcription):
     from bioptim.examples.getting_started import example_implicit_dynamics as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -133,7 +134,7 @@ def test_plot_graphs_for_implicit_constraints():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         n_shooting=5,
         final_time=1,
-        rigidbody_dynamics=Transcription.IMPLICIT,
+        rigidbody_dynamics=transcription,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
