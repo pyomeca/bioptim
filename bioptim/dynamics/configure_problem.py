@@ -139,10 +139,13 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False, True)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
-        ConfigureProblem.configure_qddot(nlp, False, False, True)
 
         if implicit_dynamics:
-            ConfigureProblem.configure_qddot(nlp, False, True)
+            ConfigureProblem.configure_qddot(nlp, False, True, True)
+        else:
+            ConfigureProblem.configure_qddot(nlp, False, False, True)
+
+        if implicit_dynamics:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,

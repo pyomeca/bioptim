@@ -9,7 +9,7 @@ More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE
 
 from typing import Union
 
-from casadi import MX, SX
+from casadi import MX, SX, vertcat
 import biorbd_casadi as biorbd
 from bioptim import (
     Node,
@@ -68,7 +68,8 @@ def custom_dynamic(
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
     ddq = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
-    return dq, ddq
+    defects = MX.zeros(1)
+    return (dq, ddq), defects
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1):

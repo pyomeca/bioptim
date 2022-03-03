@@ -867,7 +867,8 @@ def test_custom_dynamics(with_contact):
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        return dq, ddq
+        defects = MX.zeros(1)
+        return (dq, ddq), defects
 
     def configure(ocp, nlp, with_contact=None):
         ConfigureProblem.configure_q(nlp, True, False)

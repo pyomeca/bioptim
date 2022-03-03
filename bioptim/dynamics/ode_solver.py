@@ -385,7 +385,6 @@ class OdeSolver:
                 "x": nlp.states.cx,
                 "p": nlp.controls.cx,
                 "ode": nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx),
-                "implicit_ode": nlp.implicit_dynamics_func,
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
 

@@ -614,15 +614,11 @@ class COLLOCATION(Integrator):
             for r in range(self.degree + 1):
                 xp_j += self._c[r, j] * states[r]
 
-            # Append collocation equations
-            # f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
-            # defects.append(h * f_j - xp_j)
-            #
-            defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params, xp_j / h))
-
-            # tau_j = self.implicit_fun(states[j][:4], states[j][4:], xp_j[4:]/h)
-            # defects.append(self.get_u(controls, self.step_time[j]) - tau_j)
-            # defects.append(states[j][4:] - xp_j[:4]/h)
+            if self.implicit_fun()["defects"][0] == 0:  # todo: remove the flag
+                f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
+                defects.append(h * f_j - xp_j)
+            else:
+                defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params, xp_j / h))
 
             # Add contribution to the end state
             states_end += self._d[j] * states[j]

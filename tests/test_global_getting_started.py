@@ -72,7 +72,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
     elif isinstance(ode_solver, OdeSolver.IRK):
         np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
-        np.testing.assert_almost_equal(f[0, 0], 46.667345680854794)
+        np.testing.assert_almost_equal(f[0, 0], 46.66734568083396)
     elif isinstance(ode_solver, OdeSolver.RK1):
         np.testing.assert_almost_equal(f[0, 0], 47.360621044913245)
     elif isinstance(ode_solver, OdeSolver.RK2):

@@ -44,7 +44,7 @@ class DynamicsFunctions:
     """
 
     @staticmethod
-    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> list[MX, MX]:
         """
         Interface to custom dynamic function provided by the user.
 
@@ -63,10 +63,12 @@ class DynamicsFunctions:
         ----------
         MX.sym
             The derivative of the states
+        MX.sym
+            The defects of the implicit dynamics
         """
 
-        qdot, qddot = nlp.dynamics_type.dynamic_function(states, controls, parameters, nlp)
-        return vertcat(qdot, qddot)
+        xdot, defects = nlp.dynamics_type.dynamic_function(states, controls, parameters, nlp)
+        return xdot, defects
 
     @staticmethod
     def torque_driven(
@@ -128,13 +130,24 @@ class DynamicsFunctions:
 
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
         qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
-        defects = MX(nlp.states.shape, qddot.shape[1])
-        defects[nlp.states_dot["qdot"].index, :] = qdot - DynamicsFunctions.get(
-            nlp.states_dot["qdot"], nlp.states_dot.mx_reduced
-        )
-        defects[nlp.states_dot["qddot"].index, :] = tau - DynamicsFunctions.inverse_dynamics(
-            nlp, q, qdot, qddot, with_contact
-        )
+        tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
+
+        if with_contact:
+            defects = MX.zeros(1)
+        else:
+            defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
+            defects[:dq.shape[0], :] = horzcat(
+                *[
+                    dq
+                    - DynamicsFunctions.compute_qdot(
+                        nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced)
+                    )
+                    for _ in range(tau_id.shape[1])
+                ]
+            )
+
+            tau_var = nlp.states["tau"] if "tau" in nlp.states else nlp.controls["tau"]
+            defects[dq.shape[0]:, :] = tau_var.mapping.to_first.map(tau) - tau_id
 
         return dxdt, defects
 
@@ -188,7 +201,9 @@ class DynamicsFunctions:
         return tau
 
     @staticmethod
-    def torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact) -> MX:
+    def torque_activations_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact
+    ) -> list[MX, MX]:
         """
         Forward dynamics driven by joint torques activations.
 
@@ -209,6 +224,8 @@ class DynamicsFunctions:
         ----------
         MX.sym
             The derivative of the states
+        MX.sym
+            defects of the dynamics for implicit transcription
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
@@ -222,12 +239,12 @@ class DynamicsFunctions:
 
         dq = horzcat(*[dq for _ in range(ddq.shape[1])])
 
-        return vertcat(dq, ddq)
+        return vertcat(dq, ddq), MX(nlp.states.shape, ddq.shape[1])
 
     @staticmethod
     def torque_derivative_driven(
         states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool, with_contact: bool
-    ) -> MX:
+    ) -> list[MX, MX]:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -250,6 +267,8 @@ class DynamicsFunctions:
         ----------
         MX.sym
             The derivative of the states
+        MX.sym
+            defects of the dynamics for implicit transcription
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
@@ -276,7 +295,7 @@ class DynamicsFunctions:
             dxdt[nlp.states["qdot"].index, :] = ddq
             dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
 
-        return dxdt
+        return dxdt, MX(nlp.states.shape, ddq.shape[1])
 
     @staticmethod
     def forces_from_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
@@ -355,7 +374,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_torque: bool = False,
         fatigue=None,
-    ) -> MX:
+    ) -> list[MX, MX]:
         """
         Forward dynamics driven by muscle.
 
@@ -380,6 +399,8 @@ class DynamicsFunctions:
         ----------
         MX.sym
             The derivative of the states
+        MX.sym
+            defects of the dynamics for implicit transcription
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
@@ -427,7 +448,7 @@ class DynamicsFunctions:
         if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
-        return dxdt
+        return dxdt, MX(nlp.states.shape, ddq.shape[1])
 
     @staticmethod
     def forces_from_muscle_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
@@ -617,10 +638,11 @@ class DynamicsFunctions:
 
         tau_var = nlp.states["tau"] if "tau" in nlp.states else nlp.controls["tau"]
 
-        if nlp.external_forces or with_contact:
-            raise NotImplementedError(
-                "Inverse dynamics, implicit dynamic function is not implemented yet with external forces and contacts"
-            )
+        if nlp.external_forces:
+            tau = MX(len(tau_var.mapping.to_first), nlp.ns)
+            for i, f_ext in enumerate(nlp.external_forces):
+                tau[:, i] = nlp.model.InverseDynamics(q, qdot, qddot, f_ext).to_mx()
+            return tau_var.mapping.to_first.map(tau)  # is it fine ?
         else:
             tau = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
             return tau_var.mapping.to_first.map(tau)  # is it fine ?
