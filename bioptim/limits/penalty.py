@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, MX
+from casadi import horzcat, vertcat, SX, Function
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -482,10 +482,15 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            linear_momentum_cx = (
-                BiorbdInterface.mx_to_cx("com_velocity", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"])
-                * nlp.model.mass().to_mx()
+            com_velocity = BiorbdInterface.mx_to_cx(
+                "com_velocity", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"]
             )
+            if isinstance(com_velocity, SX):
+                mass = Function("mass", [], [nlp.model.mass().to_mx()]).expand()
+                mass = mass()["o0"]
+            else:
+                mass = nlp.model.mass().to_mx()
+            linear_momentum_cx = com_velocity * mass
             return linear_momentum_cx
 
         @staticmethod
