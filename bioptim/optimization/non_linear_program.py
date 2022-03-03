@@ -140,6 +140,7 @@ class NonLinearProgram:
         self.x_init = InitialGuess()
         self.X = None
         self.states = OptimizationVariableList()
+        self.states_dot = OptimizationVariableList()
 
     def initialize(self, cx: Callable = None):
         """

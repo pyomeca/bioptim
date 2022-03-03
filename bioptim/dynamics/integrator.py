@@ -73,7 +73,7 @@ class Integrator:
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
-        self.fun_inv_dyn = ode["inv_dyn"]
+        self.implicit_fun = ode["implicit_ode"]
         self.control_type = ode_opt["control_type"]
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
@@ -258,7 +258,7 @@ class RK(Integrator):
                     x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
                 )
                 quaternion /= norm_fro(quaternion)
-                x[quat_idx[j][0]: quat_idx[j][2] + 1, i] = quaternion[1:4]
+                x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
                 x[quat_idx[j][3], i] = quaternion[0]
 
         return x[:, -1], x
@@ -615,10 +615,12 @@ class COLLOCATION(Integrator):
                 xp_j += self._c[r, j] * states[r]
 
             # Append collocation equations
-            f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
-            defects.append(h * f_j - xp_j)
+            # f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
+            # defects.append(h * f_j - xp_j)
             #
-            # tau_j = self.fun_inv_dyn(states[j][:4], states[j][4:], xp_j[4:]/h)
+            defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params, xp_j / h))
+
+            # tau_j = self.implicit_fun(states[j][:4], states[j][4:], xp_j[4:]/h)
             # defects.append(self.get_u(controls, self.step_time[j]) - tau_j)
             # defects.append(states[j][4:] - xp_j[:4]/h)
 
@@ -696,7 +698,7 @@ class IRK(COLLOCATION):
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
         x_irk_points = ifcn(self.cx(), states[0], controls, params)
-        x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx: r * nx] for r in range(self.degree + 1)]
+        x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
         xf = self.cx.zeros(nx, self.degree + 1)  # 0 #

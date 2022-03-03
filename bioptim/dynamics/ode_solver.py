@@ -129,6 +129,7 @@ class RK(OdeSolverBase):
             if nlp.control_type == ControlType.CONSTANT
             else horzcat(nlp.controls.cx, nlp.controls.cx_end),
             "ode": nlp.dynamics_func,
+            "implicit_ode": nlp.implicit_dynamics_func,
         }
 
         if nlp.external_forces:
@@ -276,7 +277,7 @@ class OdeSolver:
                 "x": [nlp.states.cx] + nlp.states.cx_intermediates_list,
                 "p": nlp.controls.cx,
                 "ode": nlp.dynamics_func,
-                "inv_dyn": nlp.inverse_dynamics_func,
+                "implicit_ode": nlp.implicit_dynamics_func,
             }
             ode_opt = {
                 "t0": 0,
@@ -384,6 +385,7 @@ class OdeSolver:
                 "x": nlp.states.cx,
                 "p": nlp.controls.cx,
                 "ode": nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx),
+                "implicit_ode": nlp.implicit_dynamics_func,
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
 

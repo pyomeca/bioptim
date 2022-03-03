@@ -77,7 +77,7 @@ class DynamicsFunctions:
         with_contact: bool,
         implicit_dynamics: bool,
         fatigue: FatigueList,
-    ) -> MX:
+    ) -> list[MX, MX]:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -102,6 +102,8 @@ class DynamicsFunctions:
         ----------
         MX.sym
             The derivative of the states
+        MX.sym
+            defects of the dynamics for implicit transcription
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
@@ -124,7 +126,17 @@ class DynamicsFunctions:
         if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
-        return dxdt
+        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
+        qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
+        defects = MX(nlp.states.shape, qddot.shape[1])
+        defects[nlp.states_dot["qdot"].index, :] = qdot - DynamicsFunctions.get(
+            nlp.states_dot["qdot"], nlp.states_dot.mx_reduced
+        )
+        defects[nlp.states_dot["qddot"].index, :] = tau - DynamicsFunctions.inverse_dynamics(
+            nlp, q, qdot, qddot, with_contact
+        )
+
+        return dxdt, defects
 
     @staticmethod
     def __get_fatigable_tau(nlp: NonLinearProgram, states: MX, controls: MX, fatigue: FatigueList) -> MX:
@@ -513,6 +525,30 @@ class DynamicsFunctions:
         return q_nlp.mapping.to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
 
     @staticmethod
+    def compute_qddot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], qddot: Union[MX, SX]):
+        """
+        Easy accessor to 2nd derivative of q
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: Union[MX, SX]
+            The value of q from "get"
+        qdot: Union[MX, SX]
+            The value of qdot from "get"
+        qddot: Union[MX, SX]
+            The value of qddot from "get"
+
+        Returns
+        -------
+        The 2nd derivative of q
+        """
+
+        q_nlp = nlp.states["q"] if "q" in nlp.states else nlp.controls["q"]
+        return q_nlp.mapping.to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
+
+    @staticmethod
     def forward_dynamics(
         nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], tau: Union[MX, SX], with_contact: bool
     ):
@@ -553,6 +589,41 @@ class DynamicsFunctions:
             else:
                 qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
             return qdot_var.mapping.to_first.map(qddot)
+
+    @staticmethod
+    def inverse_dynamics(
+        nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], qddot: Union[MX, SX], with_contact: bool
+    ):
+        """
+        Easy accessor to torques from inverse dynamics
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: Union[MX, SX]
+            The value of q from "get"
+        qdot: Union[MX, SX]
+            The value of qdot from "get"
+        qddot: Union[MX, SX]
+            The value of qddot from "get"
+        with_contact: bool
+            If the dynamics with contact should be used
+
+        Returns
+        -------
+        Torques in tau
+        """
+
+        tau_var = nlp.states["tau"] if "tau" in nlp.states else nlp.controls["tau"]
+
+        if nlp.external_forces or with_contact:
+            raise NotImplementedError(
+                "Inverse dynamics, implicit dynamic function is not implemented yet with external forces and contacts"
+            )
+        else:
+            tau = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
+            return tau_var.mapping.to_first.map(tau)  # is it fine ?
 
     @staticmethod
     def compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: Union[MX, SX]):
