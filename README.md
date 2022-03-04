@@ -1413,6 +1413,11 @@ The type of integrator used to integrate the solution of the optimal control pro
 - SCIPY_BDF: The scipy integrator BDF
 - SCIPY_LSODA: The scipy integrator LSODA
 
+### Enum: Transcription
+The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
+- EXPLICIT: dynamics is handled explicitly
+- SEMI-EXPLICIT: for rigidbody dynamics an extra control *qddot* is added and is ensured to respect forward dynamics on nodes 
+- IMPLICIT: for rigidbody dynamics an extra control *qddot* is added and is ensured to respect inverse dynamics on nodes
 
 # Examples
 In this section, you will find the description of all the examples implemented with bioptim. They are ordered in 
