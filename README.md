@@ -1140,11 +1140,15 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 Minimizes the center of mass velocity towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
 
-#### MINIMIZE_ANGULAR_MOMENTUM
+#### MINIMIZE_COM_ACCELERATION (Lagrange and Mayer)
+Minimizes the center of mass acceleration towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the acceleration of the center of mass
+
+#### MINIMIZE_ANGULAR_MOMENTUM (Lagrange and Mayer)
 Minimizes the angular momentum in the global reference frame towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
 
-#### MINIMIZE_LINEAR_MOMENTUM
+#### MINIMIZE_LINEAR_MOMENTUM (Lagrange and Mayer)
 Minimizes the linear momentum towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
 
@@ -1230,6 +1234,7 @@ This function is expected to return the cost of the phase transition computed fr
 Please note that MX type is a CasADi type.
 Anyone who wants to define phase transitions should be at least familiar with this type beforehand.
 The `phase_pre_idx` is the index of the phase before the transition.
+If the `phase_pre_idx` is set to the index of the last phase then this is equivalent to set `PhaseTransitionFcn.CYCLIC`.  
 
 ### Class: PhaseTransitionFcn
 The `PhaseTransitionFcn` class is the already available phase transitions in `bioptim`. 
