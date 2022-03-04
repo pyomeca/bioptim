@@ -325,7 +325,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            return transition.custom_function(transition, nlp_pre.states, nlp_post.states, **extra_params)
+            return transition.custom_function(transition, nlp_pre, nlp_post, **extra_params)
 
 
 class PhaseTransitionFcn(Enum):

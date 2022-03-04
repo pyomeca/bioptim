@@ -800,7 +800,7 @@ class OptimalControlProgram:
 
     def solve(
         self,
-        solver: Solver.Generic = None,
+        solver: Union[Solver, Solver.Generic] = None,
         warm_start: Solution = None,
     ) -> Solution:
         """
