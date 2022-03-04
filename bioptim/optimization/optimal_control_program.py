@@ -689,8 +689,11 @@ class OptimalControlProgram:
 
             out = []
             if penalty.transition:
-                # raise NotImplementedError("add_plot_penalty with phase transition is not implemented yet")
-                print("add_plot_penalty with phase transition is not implemented yet")
+                out.append(
+                    penalty.weighted_function_non_threaded(
+                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
+                    )
+                )
             elif penalty.derivative or penalty.explicit_derivative:
                 out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
             else:
@@ -797,7 +800,7 @@ class OptimalControlProgram:
 
     def solve(
         self,
-        solver: Solver.Generic = None,
+        solver: Union[Solver, Solver.Generic] = None,
         warm_start: Solution = None,
     ) -> Solution:
         """
