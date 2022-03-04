@@ -24,6 +24,7 @@ from bioptim import (
     BoundsList,
     ObjectiveList,
     Transcription,
+    Solution,
 )
 import matplotlib.pyplot as plt
 import numpy as np
@@ -121,7 +122,7 @@ def prepare_ocp(
 
 def solve_ocp(
     rigidbody_dynamics: Transcription, max_iter: int = 10000, model_path: str = "models/pendulum.bioMod"
-) -> OptimalControlProgram:
+) -> Solution:
     """
     The initialization of ocp with implicit_dynamics as the only argument
 
