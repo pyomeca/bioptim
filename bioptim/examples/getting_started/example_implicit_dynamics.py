@@ -119,7 +119,9 @@ def prepare_ocp(
     )
 
 
-def solve_ocp(rigidbody_dynamics: Transcription) -> OptimalControlProgram:
+def solve_ocp(
+    rigidbody_dynamics: Transcription, max_iter: int = 10000, model_path: str = "models/pendulum.bioMod"
+) -> OptimalControlProgram:
     """
     The initialization of ocp with implicit_dynamics as the only argument
 
@@ -127,11 +129,14 @@ def solve_ocp(rigidbody_dynamics: Transcription) -> OptimalControlProgram:
     ----------
     rigidbody_dynamics: Transcription
         transcription of rigidbody dynamics (explicit, implicit or semi-explicit)
+    max_iter: int
+        maximum iterations of the solver
+    model_path: str
+        The path to the biorbd model
     Returns
     -------
     The OptimalControlProgram ready to be solved
     """
-    model_path = "models/pendulum.bioMod"
     n_shooting = 200  # The higher it is, the closer implicit and explicit solutions are.
     ode_solver = OdeSolver.RK2(n_integration_steps=1)
     time = 1
@@ -150,6 +155,7 @@ def solve_ocp(rigidbody_dynamics: Transcription) -> OptimalControlProgram:
 
     # --- Solve the ocp --- #
     sol_opt = Solver.IPOPT(show_online_optim=False)
+    sol_opt.set_maximum_iterations(max_iter)
     sol = ocp.solve(sol_opt)
 
     return sol

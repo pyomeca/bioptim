@@ -9,7 +9,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver
+from bioptim import OdeSolver, Transcription, Solver
 
 from .utils import TestUtils
 
@@ -171,3 +171,44 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
+
+
+@pytest.mark.parametrize("transcription", [Transcription.EXPLICIT, Transcription.SEMI_EXPLICIT, Transcription.IMPLICIT])
+def test_maximize_predicted_height_CoM_with_actuators(transcription):
+    from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ode_solver = OdeSolver.RK4()
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        phase_time=0.5,
+        n_shooting=20,
+        use_actuators=False,
+        ode_solver=ode_solver,
+        transcription=transcription,
+    )
+    sol_opt = Solver.IPOPT(show_online_optim=False)
+    sol_opt.set_maximum_iterations(1)
+    sol = ocp.solve(sol_opt)
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+
+    if transcription == Transcription.EXPLICIT:
+        np.testing.assert_almost_equal(f[0, 0], 0.8032447451950947)
+    elif transcription == Transcription.SEMI_EXPLICIT:
+        np.testing.assert_almost_equal(f[0, 0], 0.9695327421106931)
+    elif transcription == Transcription.IMPLICIT:
+        np.testing.assert_almost_equal(f[0, 0], 1.6940665057034097)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    if transcription == Transcription.EXPLICIT:
+        np.testing.assert_equal(g.shape, (160, 1))
+    elif transcription == Transcription.SEMI_EXPLICIT:
+        np.testing.assert_equal(g.shape, (240, 1))
+    elif transcription == Transcription.IMPLICIT:
+        np.testing.assert_equal(g.shape, (300, 1))
