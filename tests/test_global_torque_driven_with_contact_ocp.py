@@ -174,7 +174,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
 
 
 @pytest.mark.parametrize("transcription", [Transcription.EXPLICIT, Transcription.SEMI_EXPLICIT, Transcription.IMPLICIT])
-def test_maximize_predicted_height_CoM_with_actuators(transcription):
+def test_maximize_predicted_height_CoM_transcriptions(transcription):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
