@@ -1348,6 +1348,7 @@ The accepted values are:
 - RK4: Runge-Kutta of the 4th order
 - RK8: Runge-Kutta of the 8th order
 - IRK: Implicit runge-Kutta
+- COLLOCATION: Orthogonal Collocation
 - CVODES: cvodes solver
 
 ### Enum: Solver
