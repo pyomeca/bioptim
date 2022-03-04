@@ -28,14 +28,14 @@ from bioptim import (
 
 
 def prepare_ocp(
-        biorbd_model_path: str,
-        phase_time: float,
-        n_shooting: int,
-        use_actuators: bool = False,
-        ode_solver: OdeSolver = OdeSolver.RK4(),
-        objective_name: str = "MINIMIZE_PREDICTED_COM_HEIGHT",
-        com_constraints: bool = False,
-        transcription: Transcription = Transcription.EXPLICIT,
+    biorbd_model_path: str,
+    phase_time: float,
+    n_shooting: int,
+    use_actuators: bool = False,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
+    objective_name: str = "MINIMIZE_PREDICTED_COM_HEIGHT",
+    com_constraints: bool = False,
+    transcription: Transcription = Transcription.EXPLICIT,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -131,8 +131,9 @@ def prepare_ocp(
 
     u_bounds = BoundsList()
 
-    u_bounds.add([tau_min] * (len(dof_mapping["tau"].to_first) + nu_sup),
-                 [tau_max] * (len(dof_mapping["tau"].to_first) + nu_sup))
+    u_bounds.add(
+        [tau_min] * (len(dof_mapping["tau"].to_first) + nu_sup), [tau_max] * (len(dof_mapping["tau"].to_first) + nu_sup)
+    )
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * (len(dof_mapping["tau"].to_first) + nu_sup))
