@@ -1000,7 +1000,27 @@ class Solution:
 
         return val, val_weighted
 
-    def print(self, cost_type: CostType = CostType.ALL, to_console=True):
+    def detailed_cost_values_to_sol(self):
+        """
+        Adds the detailed objective functions and/or constraints values to sol
+
+        Parameters
+        ----------
+        cost_type: CostType
+            The type of cost to console print
+        """
+
+        for nlp in self.ocp.nlp:
+            for penalty in nlp.J_internal + nlp.J:
+                if not penalty:
+                    continue
+                val, val_weighted = self._get_penalty_cost(nlp, penalty)
+                self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
+        return
+
+
+
+    def print_cost(self, cost_type: CostType = CostType.ALL):
         """
         Print the objective functions and/or constraints to the console
 
@@ -1010,7 +1030,7 @@ class Solution:
             The type of cost to console print
         """
 
-        def print_penalty_list(nlp, penalties, print_only_weighted, to_console):
+        def print_penalty_list(nlp, penalties, print_only_weighted):
             running_total = 0
 
             for penalty in penalties:
@@ -1020,39 +1040,33 @@ class Solution:
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
                 self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
-                if to_console:
-                    if print_only_weighted:
-                        print(f"{penalty.name}: {val_weighted}")
-                    else:
-                        print(f"{penalty.name}: {val: .2f} (weighted {val_weighted})")
+                if print_only_weighted:
+                    print(f"{penalty.name}: {val_weighted}")
+                else:
+                    print(f"{penalty.name}: {val: .2f} (weighted {val_weighted})")
 
             return running_total
 
-        def print_objective_functions(ocp, to_console):
+        def print_objective_functions(ocp):
             """
             Print the values of each objective function to the console
             """
-            if to_console:
-                print(f"\n---- COST FUNCTION VALUES ----")
-            running_total = print_penalty_list(None, ocp.J_internal, False, to_console)
-            running_total += print_penalty_list(None, ocp.J, False, to_console)
-            if to_console:
-                if running_total:
-                    print("")
+            print(f"\n---- COST FUNCTION VALUES ----")
+            running_total = print_penalty_list(None, ocp.J_internal, False)
+            running_total += print_penalty_list(None, ocp.J, False)
+            if running_total:
+                print("")
 
             for nlp in ocp.nlp:
-                if to_console:
-                    print(f"PHASE {nlp.phase_idx}")
-                running_total += print_penalty_list(nlp, nlp.J_internal, False, to_console)
-                running_total += print_penalty_list(nlp, nlp.J, False, to_console)
-                if to_console:
-                    print("")
+                print(f"PHASE {nlp.phase_idx}")
+                running_total += print_penalty_list(nlp, nlp.J_internal, False)
+                running_total += print_penalty_list(nlp, nlp.J, False)
+                print("")
 
-            if to_console:
-                print(f"Sum cost functions: {running_total}")
-                print(f"------------------------------")
+            print(f"Sum cost functions: {running_total}")
+            print(f"------------------------------")
 
-        def print_constraints(ocp, sol, to_console):
+        def print_constraints(ocp, sol):
             """
             Print the values of each constraints with its lagrange multiplier to the console
             """
@@ -1061,38 +1075,32 @@ class Solution:
                 return
 
             # Todo, min/mean/max
-            if to_console:
-                print(f"\n--------- CONSTRAINTS ---------")
+            print(f"\n--------- CONSTRAINTS ---------")
             if (
-                print_penalty_list(None, ocp.g_internal, True, to_console)
-                + print_penalty_list(None, ocp.g_implicit, True, to_console)
-                + print_penalty_list(None, ocp.g, True, to_console)
+                print_penalty_list(None, ocp.g_internal, True)
+                + print_penalty_list(None, ocp.g_implicit, True)
+                + print_penalty_list(None, ocp.g, True)
             ):
-                if to_console:
-                    print("")
+                print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
-                if to_console:
-                    print(f"PHASE {idx_phase}")
-                print_penalty_list(nlp, nlp.g_internal, True, to_console)
-                print_penalty_list(nlp, nlp.g_implicit, True, to_console)
-                print_penalty_list(nlp, nlp.g, True, to_console)
-                if to_console:
-                    print("")
-            if to_console:
-                print(f"------------------------------")
+                print(f"PHASE {idx_phase}")
+                print_penalty_list(nlp, nlp.g_internal, True)
+                print_penalty_list(nlp, nlp.g_implicit, True)
+                print_penalty_list(nlp, nlp.g, True)
+                print("")
+            print(f"------------------------------")
 
         if cost_type == CostType.OBJECTIVES:
-            print_objective_functions(self.ocp, to_console)
+            print_objective_functions(self.ocp)
         elif cost_type == CostType.CONSTRAINTS:
-            print_constraints(self.ocp, self, to_console)
+            print_constraints(self.ocp, self)
         elif cost_type == CostType.ALL:
-            if to_console:
-                print(
-                    f"Solver reported time: {self.solver_time_to_optimize} sec\n"
-                    f"Real time: {self.real_time_to_optimize} sec"
-                )
-            self.print(CostType.OBJECTIVES, to_console)
-            self.print(CostType.CONSTRAINTS, to_console)
+            print(
+                f"Solver reported time: {self.solver_time_to_optimize} sec\n"
+                f"Real time: {self.real_time_to_optimize} sec"
+            )
+            self.print_cost(CostType.OBJECTIVES)
+            self.print_cost(CostType.CONSTRAINTS)
         else:
             raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")
