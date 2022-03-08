@@ -24,7 +24,7 @@ from bioptim.optimization.optimization_variable import OptimizationVariableList
 from .utils import TestUtils
 
 
-def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False, implicit=False):
+def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False, implicit=False, use_sx=True):
     bioptim_folder = TestUtils.bioptim_folder()
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
@@ -57,14 +57,13 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     x_init = InitialGuess(np.zeros((nx, 1)))
-    if implicit:
-        mod = 2
-    else:
-        mod = 1
+
+    mod = 2 if implicit else 1
+
     u_init = InitialGuess(np.zeros((nu * mod, 1)))
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
     u_bounds = Bounds(np.zeros((nu * mod, 1)), np.zeros((nu * mod, 1)))
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=True)
+    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=use_sx)
     ocp.nlp[0].J = [[]]
     ocp.nlp[0].g = [[]]
     return ocp
@@ -501,8 +500,9 @@ def test_penalty_minimize_angular_momentum(value, penalty_origin):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_linear_momentum(value, penalty_origin):
-    ocp = prepare_test_ocp()
+@pytest.mark.parametrize("use_sx", [True, False])
+def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx):
+    ocp = prepare_test_ocp(use_sx=use_sx)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
