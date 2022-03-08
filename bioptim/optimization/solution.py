@@ -1018,8 +1018,6 @@ class Solution:
                 self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
         return
 
-
-
     def print_cost(self, cost_type: CostType = CostType.ALL):
         """
         Print the objective functions and/or constraints to the console
