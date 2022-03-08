@@ -142,11 +142,10 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
-    # sol.animate()
-    sol.graphs()
+    sol.animate()
 
 
 if __name__ == "__main__":
