@@ -101,7 +101,6 @@ class MultinodeConstraint(Constraint):
         self.node = [self.first_node, self.second_node]
         self.dt = 1
         self.node_idx = [0]
-        self.multinode_constraint = True
         self.constraint_type = ConstraintType.INTERNAL
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):

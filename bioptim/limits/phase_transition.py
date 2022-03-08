@@ -5,7 +5,7 @@ from enum import Enum
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
-from .constraints import Constraint
+# from .constraints import Constraint
 from .multinode_constraint import MultinodeConstraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
@@ -70,23 +70,27 @@ class PhaseTransition(MultinodeConstraint):
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
-        super(MultinodeConstraint, self).__init__(
+        super(PhaseTransition, self).__init__(
             min_bound=min_bound,
             max_bound=max_bound,
-            bounds=Bounds(interpolation=InterpolationType.CONSTANT),
+            # bounds=Bounds(interpolation=InterpolationType.CONSTANT),
             weight=weight,
-            phase_pre_idx=phase_pre_idx,
-            penalty=transition,
-            custom_function=custom_function,
+            # phase_pre_idx=phase_pre_idx,
+            # multinode_constraint=None,
+            # custom_function=custom_function,
+            first_node=Node.END,
+            second_node=Node.START,
             **params,
         )
 
         self.phase_second_idx = None
-        self.phase_pre_idx = None
+        self.phase_pre_idx = phase_pre_idx
         self.phase_post_idx = None
         self.node = Node.TRANSITION
         self.transition = True
-        self.multinode_constraint = False
+        self.multinode_constraint = None
+        self.type = transition
+        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         ocp = all_pn[0].ocp
