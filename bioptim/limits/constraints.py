@@ -446,7 +446,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
 
     @staticmethod
-    def inter_node_continuity(ocp):
+    def node_equalities(ocp):
         """
         Add multi node constraints between chosen phases.
 
@@ -457,16 +457,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         for i, mnc in enumerate(ocp.multinode_constraints):
             # Equality constraint between nodes
-            if isinstance(mnc.first_node, int):
-                first_node_name = f"idx {str(mnc.first_node)}"
-            else:
-                first_node_name = mnc.first_node.name
-            if isinstance(mnc.second_node, int):
-                second_node_name = f"idx {str(mnc.second_node)}"
-            else:
-                second_node_name = mnc.second_node.name
+            first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
+            second_node_name = (
+                f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
+            )
             mnc.name = (
-                f"MULTINODE "
+                f"NODE_EQUALITY "
                 f"Phase {mnc.phase_first_idx} Node {first_node_name}"
                 f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
             )
@@ -564,4 +560,4 @@ class ContinuityFunctions:
         ConstraintFunction.inter_phase_continuity(ocp)
 
         if ocp.multinode_constraints:
-            ConstraintFunction.inter_node_continuity(ocp)
+            ConstraintFunction.node_equalities(ocp)

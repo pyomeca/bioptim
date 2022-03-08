@@ -407,6 +407,14 @@ class OptimalControlProgram:
         # Define the actual NLP problem
         self.v.define_ocp_shooting_points()
 
+        self.isdef_x_init = False
+        self.isdef_u_init = False
+        self.isdef_x_bounds = False
+        self.isdef_u_bounds = False
+
+        self.update_bounds(x_bounds, u_bounds)
+        self.update_initial_guess(x_init, u_init)
+
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
@@ -416,14 +424,6 @@ class OptimalControlProgram:
         if not skip_continuity:
             # Inner- and inter-phase continuity
             ContinuityFunctions.continuity(self)
-
-        self.isdef_x_init = False
-        self.isdef_u_init = False
-        self.isdef_x_bounds = False
-        self.isdef_u_bounds = False
-
-        self.update_bounds(x_bounds, u_bounds)
-        self.update_initial_guess(x_init, u_init)
 
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)

@@ -969,7 +969,8 @@ class Solution:
             if "time" in self.parameters
             else penalty.dt
         )
-        if penalty.multinode_constraint and len(penalty.node_idx) == 2:
+
+        if penalty.multinode_constraint:
             penalty.node_idx = [penalty.node_idx]
 
         for idx in penalty.node_idx:
@@ -992,16 +993,12 @@ class Solution:
                         )
                     )
                     # Make an exception to the fact that U is not available for the last node
-                    mod0 = 0
-                    mod1 = 0
-                    if penalty.first_node == Node.END:
-                        mod0 = 1
-                    if penalty.second_node == Node.END:
-                        mod1 = 1
+                    mod_u0 = 1 if penalty.first_node == Node.END else 0
+                    mod_u1 = 1 if penalty.second_node == Node.END else 0
                     u = np.concatenate(
                         (
-                            self._controls[penalty.phase_first_idx]["all"][:, idx[0] - mod0],
-                            self._controls[penalty.phase_second_idx]["all"][:, idx[1] - mod0],
+                            self._controls[penalty.phase_first_idx]["all"][:, idx[0] - mod_u0],
+                            self._controls[penalty.phase_second_idx]["all"][:, idx[1] - mod_u1],
                         )
                     )
 

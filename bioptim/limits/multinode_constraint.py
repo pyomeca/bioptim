@@ -213,7 +213,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(multinode_constraint, all_pn):
+        def equality(multinode_constraint, all_pn):
             """
             The most common continuity function, that is state before equals state after
 
@@ -243,80 +243,6 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return states_pre - states_post
 
         @staticmethod
-        def cyclic(multinode_constraint, all_pn) -> MX:
-            """
-            The continuity function applied to the last to first node
-
-            Parameters
-            ----------
-            multinode_constraint : MultinodeConstraint
-                A reference to the phase transition
-            all_pn: PenaltyNodeList
-                    The penalty node elements
-
-            Returns
-            -------
-            The difference between the last and first node
-            """
-            return MultinodeConstraintFunctions.Functions.continuous(multinode_constraint, all_pn)
-
-        @staticmethod
-        def impact(multinode_constraint, all_pn):
-            """
-            A discontinuous function that simulates an inelastic impact of a new contact point
-
-            Parameters
-            ----------
-            multinode_constraint : MultinodeConstraint
-                A reference to the phase transition
-            all_pn: PenaltyNodeList
-                    The penalty node elements
-
-            Returns
-            -------
-            The difference between the last and first node after applying the impulse equations
-            """
-
-            ocp = all_pn[0].ocp
-            if (
-                ocp.nlp[multinode_constraint.phase_pre_idx].states.shape
-                != ocp.nlp[multinode_constraint.phase_post_idx].states.shape
-            ):
-                raise RuntimeError(
-                    "Impact transition without same nx is not possible, please provide a custom phase transition"
-                )
-
-            # Aliases
-            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-
-            # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
-            # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
-            # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
-            model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
-
-            if nlp_post.model.nbContacts() == 0:
-                warn("The chosen model does not have any contact")
-            q_pre = nlp_pre.states["q"].mx
-            qdot_pre = nlp_pre.states["qdot"].mx
-            qdot_impact = model.ComputeConstraintImpulsesDirect(q_pre, qdot_pre).to_mx()
-
-            val = []
-            cx_end = []
-            cx = []
-            for key in nlp_pre.states:
-                cx_end = vertcat(cx_end, nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end))
-                cx = vertcat(cx, nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx))
-                post_mx = nlp_post.states[key].mx
-                continuity = nlp_post.states["qdot"].mapping.to_first.map(
-                    qdot_impact - post_mx if key == "qdot" else nlp_pre.states[key].mx - post_mx
-                )
-                val = vertcat(val, continuity)
-
-            name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = biorbd.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
-            return func
-
-        @staticmethod
         def custom(multinode_constraint, all_pn, **extra_params):
             """
             Calls the custom transition function provided by the user
@@ -334,9 +260,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            return multinode_constraint.custom_function(
-                multinode_constraint, nlp_pre, nlp_post, **extra_params
-            )
+            return multinode_constraint.custom_function(multinode_constraint, nlp_pre, nlp_post, **extra_params)
 
 
 class MultinodeConstraintFcn(Enum):
@@ -344,9 +268,7 @@ class MultinodeConstraintFcn(Enum):
     Selection of valid phase transition functions
     """
 
-    CONTINUOUS = (MultinodeConstraintFunctions.Functions.continuous,)
-    IMPACT = (MultinodeConstraintFunctions.Functions.impact,)
-    CYCLIC = (MultinodeConstraintFunctions.Functions.cyclic,)
+    EQUALITY = (MultinodeConstraintFunctions.Functions.equality,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
 
     @staticmethod

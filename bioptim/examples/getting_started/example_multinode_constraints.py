@@ -1,9 +1,11 @@
 """
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement and
 a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
-Finally, an objective for the transition continuity on the control is added. Please note that the "last" control
-of the previous phase is the last shooting node (and not the node arrival).
-It is designed to show how one can define a multiphase optimal control program
+Please note that the "last" control. Extra constraints are defined: the states of the first_node of the phase 0
+are equal to the states of the first_node of the phase 2. Extra objective are defined: the states of the second node
+of the phase 0 are equal to the states of the mid node of the phase 2, the states of the middle node of the phase 0
+are equal to the states of the end node of the phase 1.
+It is designed to show how one can define a multinode constraints and objectives in a multiphase optimal control program
 """
 
 
@@ -25,8 +27,6 @@ from bioptim import (
     Solver,
     MultinodeConstraintList,
     MultinodeConstraintFcn,
-    PhaseTransitionList,
-    PhaseTransitionFcn,
 )
 
 
@@ -69,14 +69,6 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
-    # objective_functions.add(
-    #     minimize_difference,
-    #     custom_type=ObjectiveFcn.Mayer,
-    #     node=Node.TRANSITION,
-    #     weight=100,
-    #     phase=1,
-    #     quadratic=True,
-    # )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -92,32 +84,28 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1", phase=1)
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2)
 
-    pt = PhaseTransitionList()
-    # pt.add(PhaseTransitionFcn.CYCLIC)
-    # pt.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0)
-
     # Constraints
     multinode_constraints = MultinodeConstraintList()
     # hard constraint
     multinode_constraints.add(
-        MultinodeConstraintFcn.CONTINUOUS,
+        MultinodeConstraintFcn.EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=Node.START,
         second_node=Node.START,
     )
-    # Objectives with the weight argument
+    # Objectives with the weight as an argument
     multinode_constraints.add(
-        MultinodeConstraintFcn.CONTINUOUS,
+        MultinodeConstraintFcn.EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=2,
         second_node=Node.MID,
         weight=2,
     )
-    # Objectives with the weight argument
+    # Objectives with the weight as an argument
     multinode_constraints.add(
-        MultinodeConstraintFcn.CONTINUOUS,
+        MultinodeConstraintFcn.EQUALITY,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.MID,
@@ -165,7 +153,6 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
-        phase_transitions=pt,
         multinode_constraints=multinode_constraints,
         ode_solver=ode_solver,
     )
