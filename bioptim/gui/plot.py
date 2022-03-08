@@ -630,10 +630,9 @@ class PlotOcp:
                 if not self.plot_func[key][i]:
                     continue
                 if self.plot_func[key][i].label:
-                    if len(self.plot_func[key][i].label) > 15:
-                        if self.plot_func[key][i].label[:16] == "PHASE_TRANSITION":
-                            self.ydata.append(np.zeros(np.shape(state)[0]))
-                            continue
+                    if self.plot_func[key][i].label[:16] == "PHASE_TRANSITION":
+                        self.ydata.append(np.zeros(np.shape(state)[0]))
+                        continue
                 x_mod = 1 if self.plot_func[key][i].compute_derivative else 0
                 u_mod = (
                     1
