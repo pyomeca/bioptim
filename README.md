@@ -1499,8 +1499,8 @@ The type of integration used to integrate the cost function terms of Lagrange:
 ### Enum: Transcription
 The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
 - EXPLICIT: dynamics is handled explicitly
-- SEMI-EXPLICIT: for rigidbody dynamics an extra control *qddot* is added and is ensured to respect forward dynamics on nodes 
-- IMPLICIT: for rigidbody dynamics an extra control *qddot* is added and is ensured to respect inverse dynamics on nodes
+- SEMI-EXPLICIT: for rigidbody dynamics an extra control *qddot* is added and is ensured to respect forward dynamics on nodes (only for rigidbody_dynamics)
+- IMPLICIT: for rigidbody dynamics an extra control *qddot* is added and is ensured to respect inverse dynamics on nodes, for soft_contact_dynamics an extra control *fext* is added and it ensures to respect soft contact_ ynamics on nodes.
 
 
 # Examples
