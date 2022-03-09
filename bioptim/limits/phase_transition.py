@@ -77,7 +77,7 @@ class PhaseTransition(MultinodeConstraint):
             weight=weight,
             # phase_pre_idx=phase_pre_idx,
             # multinode_constraint=None,
-            # custom_function=custom_function,
+            custom_function=custom_function,
             first_node=Node.END,
             second_node=Node.START,
             **params,
@@ -91,34 +91,7 @@ class PhaseTransition(MultinodeConstraint):
         self.multinode_constraint = None
         self.type = transition
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-
-    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
-        ocp = all_pn[0].ocp
-        nlp = all_pn[0].nlp
-        if self.weight == 0:
-            pool = nlp.g_internal if nlp else ocp.g_internal
-        else:
-            pool = nlp.J_internal if nlp else ocp.J_internal
-        pool[self.list_index] = self
-
-    def clear_penalty(self, ocp, nlp):
-        if self.weight == 0:
-            g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        else:
-            g_to_add_to = nlp.J_internal if nlp else ocp.J_internal
-
-        if self.list_index < 0:
-            for i, j in enumerate(g_to_add_to):
-                if not j:
-                    self.list_index = i
-                    return
-            else:
-                g_to_add_to.append([])
-                self.list_index = len(g_to_add_to) - 1
-        else:
-            while self.list_index >= len(g_to_add_to):
-                g_to_add_to.append([])
-            g_to_add_to[self.list_index] = []
+        self.custom_function = custom_function
 
 
 class PhaseTransitionList(UniquePerPhaseOptionList):
