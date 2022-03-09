@@ -61,24 +61,20 @@ class PhaseTransition(MultinodeConstraint):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
+            phase_first_idx=phase_pre_idx,
+            phase_second_idx=phase_pre_idx + 1,
+            first_node=Node.END,
+            second_node=Node.START,
+            multinode_constraint=transition,
+            custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
             weight=weight,
-            custom_function=custom_function,
-            first_node=Node.END,
-            second_node=Node.START,
             **params,
         )
 
-        self.phase_second_idx = None
-        self.phase_pre_idx = phase_pre_idx
-        self.phase_post_idx = None
         self.node = Node.TRANSITION
         self.transition = True
-        self.multinode_constraint = None
-        self.type = transition
-        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        self.custom_function = custom_function
 
 
 class PhaseTransitionList(UniquePerPhaseOptionList):

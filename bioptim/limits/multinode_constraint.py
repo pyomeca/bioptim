@@ -51,15 +51,15 @@ class MultinodeConstraint(Constraint):
 
     def __init__(
         self,
-        phase_first_idx: int = None,
-        phase_second_idx: int = None,
-        first_node: Union[Node, int] = None,
-        second_node: Union[Node, int] = None,
+        phase_first_idx: int,
+        phase_second_idx: int,
+        first_node: Union[Node, int],
+        second_node: Union[Node, int],
         multinode_constraint: Union[Callable, Any] = None,
-        weight: float = 0,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
+        weight: float = 0,
         **params: Any,
     ):
         """
@@ -98,7 +98,7 @@ class MultinodeConstraint(Constraint):
         self.phase_post_idx = phase_second_idx
         self.first_node = first_node
         self.second_node = second_node
-        self.node = [self.first_node, self.second_node]
+        self.node = self.first_node, self.second_node
         self.dt = 1
         self.node_idx = [0]
         self.constraint_type = ConstraintType.INTERNAL
