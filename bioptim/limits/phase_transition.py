@@ -58,14 +58,6 @@ class PhaseTransition(MultinodeConstraint):
         max_bound: float = 0,
         **params: Any,
     ):
-        """
-        Parameters
-        ----------
-        phase_pre_idx: int
-            The index of the phase right before the transition
-        params:
-            Generic parameters for options
-        """
 
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
@@ -73,10 +65,7 @@ class PhaseTransition(MultinodeConstraint):
         super(PhaseTransition, self).__init__(
             min_bound=min_bound,
             max_bound=max_bound,
-            # bounds=Bounds(interpolation=InterpolationType.CONSTANT),
             weight=weight,
-            # phase_pre_idx=phase_pre_idx,
-            # multinode_constraint=None,
             custom_function=custom_function,
             first_node=Node.END,
             second_node=Node.START,
