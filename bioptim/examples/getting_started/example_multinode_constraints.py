@@ -1,10 +1,7 @@
 """
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement and
 a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
-Please note that the "last" control. Extra constraints are defined: the states of the first_node of the phase 0
-are equal to the states of the first_node of the phase 2. Extra objective are defined: the states of the second node
-of the phase 0 are equal to the states of the mid node of the phase 2, the states of the middle node of the phase 0
-are equal to the states of the end node of the phase 1.
+Extra constraints are defined between specific nodes of phases.
 It is designed to show how one can define a multinode constraints and objectives in a multiphase optimal control program
 """
 
@@ -35,7 +32,7 @@ def minimize_difference(all_pn: PenaltyNode):
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4(), long_optim: bool = False
+    biorbd_model_path: str = "models/cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -46,8 +43,6 @@ def prepare_ocp(
         The path to the bioMod
     ode_solver: OdeSolver
         The ode solve to use
-    long_optim: bool
-        If the solver should solve the precise optimization (500 shooting points) or the approximate (50 points)
 
     Returns
     -------
@@ -57,10 +52,7 @@ def prepare_ocp(
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
 
     # Problem parameters
-    if long_optim:
-        n_shooting = (100, 300, 100)
-    else:
-        n_shooting = (20, 30, 20)
+    n_shooting = (100, 300, 100)
     final_time = (2, 5, 4)
     tau_min, tau_max, tau_init = -100, 100, 0
 
