@@ -641,10 +641,9 @@ class DynamicsFunctions:
             tau = MX(len(tau_var.mapping.to_first), nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 tau[:, i] = nlp.model.InverseDynamics(q, qdot, qddot, f_ext).to_mx()
-            return tau_var.mapping.to_first.map(tau)  # is it fine ?
         else:
             tau = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
-            return tau_var.mapping.to_first.map(tau)  # is it fine ?
+        return tau_var.mapping.to_first.map(tau)
 
     @staticmethod
     def compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: Union[MX, SX]):

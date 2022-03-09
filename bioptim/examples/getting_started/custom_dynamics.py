@@ -9,7 +9,7 @@ More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE
 
 from typing import Union
 
-from casadi import MX, SX, vertcat
+from casadi import MX, SX
 import biorbd_casadi as biorbd
 from bioptim import (
     Node,

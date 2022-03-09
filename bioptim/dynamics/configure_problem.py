@@ -697,7 +697,7 @@ class ConfigureProblem:
             nlp.states_dot.append(name, cx, mx_states_dot, nlp.variable_mappings[name])
 
     @staticmethod
-    def configure_q(nlp, as_states: bool, as_controls: bool):
+    def configure_q(nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
         """
         Configure the generalized coordinates
 
@@ -709,10 +709,12 @@ class ConfigureProblem:
             If the generalized coordinates should be a state
         as_controls: bool
             If the generalized coordinates should be a control
+        as_states_dot: bool
+            If the generalized velocities should be a state_dot
         """
 
         name_q = [name.to_string() for name in nlp.model.nameDof()]
-        ConfigureProblem.configure_new_variable("q", name_q, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable("q", name_q, nlp, as_states, as_controls, as_states_dot)
 
     @staticmethod
     def configure_qdot(nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
