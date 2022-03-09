@@ -27,11 +27,12 @@ from bioptim import (
     PhaseTransition,
     BiMapping,
     Solver,
+    NonLinearProgram,
 )
 
 
 def custom_phase_transition(
-    transition: PhaseTransition, state_pre: OptimizationVariableList, state_post: OptimizationVariableList, coef: float
+    transition: PhaseTransition, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
@@ -42,9 +43,9 @@ def custom_phase_transition(
 
     Parameters
     ----------
-    state_pre: MX
+    nlp_pre: NonLinearProgram
         The states at the end of a phase
-    state_post: MX
+    nlp_post: NonLinearProgram
         The state at the beginning of the next phase
     coef: float
         The coefficient of the phase transition (makes no physical sens)
@@ -56,8 +57,9 @@ def custom_phase_transition(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = transition.states_mapping.to_second.map(state_pre.cx_end)
-    states_post = transition.states_mapping.to_first.map(state_post.cx)
+
+    states_pre = transition.states_mapping.to_second.map(nlp_pre.states.cx_end)
+    states_post = transition.states_mapping.to_first.map(nlp_post.states.cx)
 
     return states_pre * coef - states_post
 
@@ -189,6 +191,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
+    sol.print()
     sol.animate()
 
 

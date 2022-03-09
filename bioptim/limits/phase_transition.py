@@ -6,7 +6,7 @@ import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
 # from .constraints import Constraint
-from .multinode_constraint import MultinodeConstraint
+from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
@@ -44,8 +44,6 @@ class PhaseTransition(MultinodeConstraint):
         The nature of the cost function is transition
     constraint_type: ConstraintType
         If the penalty is from the user or from bioptim (implicit or internal)
-
-
     """
 
     def __init__(
@@ -192,18 +190,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = transition.states_mapping.to_second.map(nlp_pre.states.cx_end)
-            states_post = transition.states_mapping.to_first.map(nlp_post.states.cx)
-
-            if states_pre.shape != states_post.shape:
-                raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
-                    f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
-                    f"transition or supply states_mapping"
-                )
-
-            return states_pre - states_post
+            return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:
@@ -221,7 +208,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             -------
             The difference between the last and first node
             """
-            return PhaseTransitionFunctions.Functions.continuous(transition, all_pn)
+
+            return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
 
         @staticmethod
         def impact(transition, all_pn):
@@ -276,26 +264,6 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             func = biorbd.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
             return func
 
-        @staticmethod
-        def custom(transition, all_pn, **extra_params):
-            """
-            Calls the custom transition function provided by the user
-
-            Parameters
-            ----------
-            transition: PhaseTransition
-                A reference to the phase transition
-            all_pn: PenaltyNodeList
-                    The penalty node elements
-
-            Returns
-            -------
-            The expected difference between the last and first node provided by the user
-            """
-
-            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            return transition.custom_function(transition, nlp_pre.states, nlp_post.states, **extra_params)
-
 
 class PhaseTransitionFcn(Enum):
     """
@@ -305,7 +273,7 @@ class PhaseTransitionFcn(Enum):
     CONTINUOUS = (PhaseTransitionFunctions.Functions.continuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
-    CUSTOM = (PhaseTransitionFunctions.Functions.custom,)
+    CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
 
     @staticmethod
     def get_type():
