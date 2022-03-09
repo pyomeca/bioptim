@@ -62,7 +62,7 @@ class PhaseTransition(MultinodeConstraint):
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
             phase_first_idx=phase_pre_idx,
-            phase_second_idx=phase_pre_idx + 1,
+            phase_second_idx=None,
             first_node=Node.END,
             second_node=Node.START,
             multinode_constraint=transition,
@@ -70,6 +70,7 @@ class PhaseTransition(MultinodeConstraint):
             min_bound=min_bound,
             max_bound=max_bound,
             weight=weight,
+            force_multinode=True,
             **params,
         )
 

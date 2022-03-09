@@ -284,19 +284,7 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-        if self.transition:
-            ocp = all_pn[0].ocp
-            nlp = all_pn[0].nlp
-            nlp_post = all_pn[1].nlp
-            name = self.name.replace("->", "_").replace(" ", "_")
-            states_pre = nlp.states.cx_end
-            states_post = nlp_post.states.cx
-            controls_pre = nlp.controls.cx_end
-            controls_post = nlp_post.controls.cx
-            state_cx = vertcat(states_pre, states_post)
-            control_cx = vertcat(controls_pre, controls_post)
-
-        elif self.multinode_constraint:
+        if self.multinode_constraint or self.transition:
             ocp = all_pn[0].ocp
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
@@ -471,7 +459,7 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, all_pn[1])
             self.clear_penalty(ocp, all_pn[0].nlp)
 
-        elif isinstance(self.node, list) and self.multinode_constraint is not None:
+        elif isinstance(self.node, tuple) and self.multinode_constraint is not None:
             all_pn = []
             self.node_list = self.node
             # Make sure the penalty behave like a MultinodeConstraint, even though it may be an Objective or Constraint

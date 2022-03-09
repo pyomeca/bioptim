@@ -45,8 +45,6 @@ class MultinodeConstraint(Constraint):
         The nature of the cost function is the multi node constraint
     constraint_type: ConstraintType
         If the penalty is from the user or from bioptim (implicit or internal)
-
-
     """
 
     def __init__(
@@ -71,7 +69,14 @@ class MultinodeConstraint(Constraint):
             Generic parameters for options
         """
 
-        if not isinstance(multinode_constraint, MultinodeConstraintFcn):
+        force_multinode = False
+        if "force_multinode" in params:
+            # This is a hack to circumvent the apparatus that moves the functions to a custom function
+            # It is necessary for PhaseTransition
+            force_multinode = True
+            del params["force_multinode"]
+
+        if not isinstance(multinode_constraint, MultinodeConstraintFcn) and not force_multinode:
             custom_function = multinode_constraint
             multinode_constraint = MultinodeConstraintFcn.CUSTOM
         super(Constraint, self).__init__(penalty=multinode_constraint, custom_function=custom_function, **params)
@@ -90,6 +95,7 @@ class MultinodeConstraint(Constraint):
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
+        self.multinode_constraint = True
         self.weight = weight
         self.quadratic = True
         self.phase_first_idx = phase_first_idx
