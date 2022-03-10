@@ -959,6 +959,14 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 Constraints the center of mass velocity towards a target.
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
 
+#### TRACK_ANGULAR_MOMENTUM
+Constraints the angular momentum in the global reference frame towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
+
+#### TRACK_LINEAR_MOMENTUM
+Constraints the linear momentum towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
+
 #### CONTACT_FORCE
 Adds a constraint to the non-acceleration point reaction forces.
 It is usually used in conjunction with changing the bounds, so it creates an inequality constraint on this contact force.
@@ -1132,6 +1140,18 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 Minimizes the center of mass velocity towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
 
+#### MINIMIZE_COM_ACCELERATION (Lagrange and Mayer)
+Minimizes the center of mass acceleration towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the acceleration of the center of mass
+
+#### MINIMIZE_ANGULAR_MOMENTUM (Lagrange and Mayer)
+Minimizes the angular momentum in the global reference frame towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
+
+#### MINIMIZE_LINEAR_MOMENTUM (Lagrange and Mayer)
+Minimizes the linear momentum towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
+
 #### MINIMIZE_PREDICTED_COM_HEIGHT (Mayer)
 Minimizes the prediction of the center of mass maximal height from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2].
 To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
@@ -1214,6 +1234,7 @@ This function is expected to return the cost of the phase transition computed fr
 Please note that MX type is a CasADi type.
 Anyone who wants to define phase transitions should be at least familiar with this type beforehand.
 The `phase_pre_idx` is the index of the phase before the transition.
+If the `phase_pre_idx` is set to the index of the last phase then this is equivalent to set `PhaseTransitionFcn.CYCLIC`.  
 
 ### Class: PhaseTransitionFcn
 The `PhaseTransitionFcn` class is the already available phase transitions in `bioptim`. 

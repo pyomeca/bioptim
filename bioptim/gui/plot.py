@@ -629,6 +629,10 @@ class PlotOcp:
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
                     continue
+                if self.plot_func[key][i].label:
+                    if self.plot_func[key][i].label[:16] == "PHASE_TRANSITION":
+                        self.ydata.append(np.zeros(np.shape(state)[0]))
+                        continue
                 x_mod = 1 if self.plot_func[key][i].compute_derivative else 0
                 u_mod = (
                     1
@@ -673,13 +677,30 @@ class PlotOcp:
                         y.fill(np.nan)
                         mod = 1 if self.plot_func[key][i].compute_derivative else 0
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
-                            val = self.plot_func[key][i].function(
-                                node_idx,
-                                state[:, node_idx * step_size : (node_idx + 1) * step_size + mod : step_size],
-                                control[:, node_idx : node_idx + 1 + mod],
-                                data_params_in_dyn,
-                                **self.plot_func[key][i].parameters,
-                            )
+
+                            if self.plot_func[key][i].parameters["penalty"].transition:
+                                val = self.plot_func[key][i].function(
+                                    node_idx,
+                                    np.hstack(
+                                        (data_states[node_idx]["all"][:, -1], data_states[node_idx + 1]["all"][:, 0])
+                                    ),
+                                    np.hstack(
+                                        (
+                                            data_controls[node_idx]["all"][:, -1],
+                                            data_controls[node_idx + 1]["all"][:, 0],
+                                        )
+                                    ),
+                                    data_params_in_dyn,
+                                    **self.plot_func[key][i].parameters,
+                                )
+                            else:
+                                val = self.plot_func[key][i].function(
+                                    node_idx,
+                                    state[:, node_idx * step_size : (node_idx + 1) * step_size + mod : step_size],
+                                    control[:, node_idx : node_idx + 1 + mod],
+                                    data_params_in_dyn,
+                                    **self.plot_func[key][i].parameters,
+                                )
                             y[i_node] = val[i_var]
                         self.ydata.append(y)
 

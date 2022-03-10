@@ -23,6 +23,7 @@ from bioptim import (
     OdeSolver,
     Node,
     Solver,
+    CostType,
 )
 
 
@@ -137,7 +138,8 @@ def main():
     Defines a multiphase ocp and animate the results
     """
 
-    ocp = prepare_ocp(long_optim=True)
+    ocp = prepare_ocp(long_optim=False)
+    ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))

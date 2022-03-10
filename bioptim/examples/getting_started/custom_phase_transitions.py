@@ -43,11 +43,11 @@ def custom_phase_transition(
     Parameters
     ----------
     transition: PhaseTransition
-        A reference to the phase transition
+        The placeholder for the transition
     nlp_pre: NonLinearProgram
-        The states at the end of a phase
+        The nonlinear program of the pre phase
     nlp_post: NonLinearProgram
-        The state at the beginning of the next phase
+        The nonlinear program of the post phase
     coef: float
         The coefficient of the phase transition (makes no physical sens)
 
@@ -55,7 +55,8 @@ def custom_phase_transition(
     -------
     The constraint such that: c(x) = 0
     """
-
+    state_pre = nlp_pre.states
+    state_post = nlp_post.states
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
     states_pre = transition.states_mapping.to_second.map(nlp_pre.states.cx_end)
