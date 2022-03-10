@@ -459,7 +459,7 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, all_pn[1])
             self.clear_penalty(ocp, all_pn[0].nlp)
 
-        elif isinstance(self.node, tuple) and self.multinode_constraint is not None:
+        elif isinstance(self.node, tuple) and self.multinode_constraint:
             all_pn = []
             self.node_list = self.node
             # Make sure the penalty behave like a MultinodeConstraint, even though it may be an Objective or Constraint

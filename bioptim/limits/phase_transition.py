@@ -5,7 +5,6 @@ from enum import Enum
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
-# from .constraints import Constraint
 from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
