@@ -360,27 +360,27 @@ class ConfigureProblem:
 
         nlp.parameters = ocp.v.parameters_in_list
 
-        dynamics, defects = dyn_func(
-            nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params
-        )
-        if isinstance(dynamics, (list, tuple)):
-            dynamics = vertcat(*dynamics)
+        dynamics_eval = dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)
+        dynamics_dxdt = dynamics_eval.dxdt
+        if isinstance(dynamics_dxdt, (list, tuple)):
+            dynamics_dxdt = vertcat(*dynamics_dxdt)
 
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
-            [dynamics],
+            [dynamics_dxdt],
             ["x", "u", "p"],
             ["xdot"],
         ).expand()
 
-        nlp.implicit_dynamics_func = Function(
-            "DynamicsDefects",
-            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp.states_dot.mx_reduced],
-            [defects],
-            ["x", "u", "p", "xdot"],
-            ["defects"],
-        ).expand()
+        if dynamics_eval.defects is not None:
+            nlp.implicit_dynamics_func = Function(
+                "DynamicsDefects",
+                [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp.states_dot.mx_reduced],
+                [dynamics_eval.defects],
+                ["x", "u", "p", "xdot"],
+                ["defects"],
+            ).expand()
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -661,8 +661,10 @@ class ConfigureProblem:
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
             mx_states.append(MX.sym(var_name, 1, 1))
             mx_controls.append(MX.sym(var_name, 1, 1))
+            mx_states_dot.append(MX.sym(var_name, 1, 1))
         mx_states = vertcat(*mx_states)
         mx_controls = vertcat(*mx_controls)
+        mx_states_dot = vertcat(*mx_states_dot)
 
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2

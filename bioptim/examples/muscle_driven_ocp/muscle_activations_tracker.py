@@ -92,7 +92,19 @@ def generate_data(
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
 
     dynamics_func = biorbd.to_casadi_func(
-        "ForwardDyn", dyn_func, symbolic_states, symbolic_controls, symbolic_parameters, nlp, False
+        "ForwardDyn",
+        dyn_func(
+            symbolic_states,
+            symbolic_controls,
+            symbolic_parameters,
+            nlp,
+            False,
+        ).dxdt,
+        symbolic_states,
+        symbolic_controls,
+        symbolic_parameters,
+        nlp,
+        False,
     )
 
     def dyn_interface(t, x, u):

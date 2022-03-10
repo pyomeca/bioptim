@@ -4,7 +4,7 @@ pulling downward and afterward to let it go so it gains velocity. It is designed
 forces to interact with the body.
 """
 
-from casadi import MX
+from casadi import MX, vertcat
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -19,10 +19,11 @@ from bioptim import (
     InitialGuess,
     NonLinearProgram,
     Solver,
+    DynamicsEvaluation
 )
 
 
-def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram) -> tuple:
+def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram) -> DynamicsEvaluation:
     """
     The dynamics of the system using an external force (see custom_dynamics for more explanation)
 
@@ -53,7 +54,7 @@ def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgr
     f_ext.append(biorbd.SpatialVector(force_vector))
     qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
 
-    return qdot, qddot
+    return DynamicsEvaluation(vertcat(qdot, qddot), None)
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):

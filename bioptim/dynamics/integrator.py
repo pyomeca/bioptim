@@ -614,7 +614,7 @@ class COLLOCATION(Integrator):
             for r in range(self.degree + 1):
                 xp_j += self._c[r, j] * states[r]
 
-            if self.implicit_fun()["defects"][0] == 0:  # todo: remove the flag
+            if self.implicit_fun is None:
                 f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
                 defects.append(h * f_j - xp_j)
             else:

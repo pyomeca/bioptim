@@ -62,6 +62,8 @@ DynamicsFcn
     Selection of valid dynamics functions
 DynamicsFunctions
     Implementation of all the dynamic functions
+DynamicsEvaluation
+    A placeholder for the dynamics evaluation in explicit dxdt or in implicit defects
 
 
 # --- Managing the constraints --- #
@@ -152,6 +154,7 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 from .misc.__version__ import __version__
 from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
+from .dynamics.dynamics_evaluation import DynamicsEvaluation
 from .dynamics.fatigue.fatigue_dynamics import FatigueList
 from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueStabilized
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue

@@ -9,7 +9,7 @@ More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE
 
 from typing import Union
 
-from casadi import MX, SX
+from casadi import MX, SX, vertcat
 import biorbd_casadi as biorbd
 from bioptim import (
     Node,
@@ -28,6 +28,7 @@ from bioptim import (
     OdeSolver,
     NonLinearProgram,
     Solver,
+    DynamicsEvaluation,
 )
 
 
@@ -37,7 +38,7 @@ def custom_dynamic(
     parameters: Union[MX, SX],
     nlp: NonLinearProgram,
     my_additional_factor=1,
-) -> tuple:
+) -> DynamicsEvaluation:
     """
     The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
 
@@ -68,8 +69,11 @@ def custom_dynamic(
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
     ddq = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
-    defects = MX.zeros(1)
-    return (dq, ddq), defects
+    # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
+    # as the first argument of DynamicsEvaluation or
+    # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
+    # which may be useful for IRK or COLLOCATION integrators
+    return DynamicsEvaluation(vertcat(dq, ddq), None)
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1):
