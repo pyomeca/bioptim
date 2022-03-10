@@ -13,6 +13,7 @@ from bioptim import (
     QAndQDotBounds,
 )
 import biorbd_casadi as biorbd
+from .utils import TestUtils
 
 
 def prepare_ocp(biorbd_model_path, phase_1, phase_2) -> OptimalControlProgram:
@@ -125,7 +126,7 @@ def test_multinode_fail_second_node(node):
 @pytest.mark.parametrize("phase_1", [-1, 0, 4])
 @pytest.mark.parametrize("phase_2", [-1, 0, 4])
 def test_multinode_wrong_phase(phase_1, phase_2):
-    model = "../bioptim/examples/getting_started/models/cube.bioMod"
+    model = TestUtils.bioptim_folder() + "/examples/getting_started/models/cube.bioMod"
     if phase_1 == 4 or (phase_1 == 0 and phase_2 == 4) or (phase_1 == -1 and phase_2 == 4):
         with pytest.raises(
             RuntimeError,
