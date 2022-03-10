@@ -197,6 +197,8 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
             idx_phase = mnc.phase_first_idx
             if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
                 raise RuntimeError("Phase index of the multinode_constraint is higher than the number of phases")
+            if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
+                raise RuntimeError("Phase index of the multinode_constraint need to be positive")
             existing_phases.append(idx_phase)
 
             if mnc.weight:

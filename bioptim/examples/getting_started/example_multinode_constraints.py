@@ -5,7 +5,7 @@ Extra constraints are defined between specific nodes of phases.
 It is designed to show how one can define a multinode constraints and objectives in a multiphase optimal control program
 """
 
-
+from casadi import MX
 import biorbd_casadi as biorbd
 from bioptim import (
     PenaltyNode,
@@ -24,11 +24,9 @@ from bioptim import (
     Solver,
     MultinodeConstraintList,
     MultinodeConstraintFcn,
+    MultinodeConstraint,
+    NonLinearProgram,
 )
-
-
-def minimize_difference(all_pn: PenaltyNode):
-    return all_pn[0].nlp.controls.cx_end - all_pn[1].nlp.controls.cx
 
 
 def prepare_ocp(
@@ -104,6 +102,16 @@ def prepare_ocp(
         second_node=Node.END,
         weight=0.1,
     )
+    # Objectives with the weight as an argument
+    multinode_constraints.add(
+        custom_multinode_constraint,
+        phase_first_idx=0,
+        phase_second_idx=1,
+        first_node=Node.MID,
+        second_node=Node.PENULTIMATE,
+        weight=0.1,
+        coef=2,
+    )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -150,12 +158,46 @@ def prepare_ocp(
     )
 
 
+def custom_multinode_constraint(
+    multinode_constraint: MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
+) -> MX:
+    """
+    The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
+    determine the transition. If coef=1, then this function mimics the PhaseTransitionFcn.CONTINUOUS
+
+    coef is a user defined extra variables and can be anything. It is to show how to pass variables from the
+    PhaseTransitionList to that function
+
+    Parameters
+    ----------
+    multinode_constraint: MultinodeConstraint
+        The placeholder for the multinode_constraint
+    nlp_pre: NonLinearProgram
+        The nonlinear program of the pre phase
+    nlp_post: NonLinearProgram
+        The nonlinear program of the post phase
+    coef: float
+        The coefficient of the phase transition (makes no physical sens)
+
+    Returns
+    -------
+    The constraint such that: c(x) = 0
+    """
+
+    # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
+    # mapping stuff (it is merely for the sake of example how to use the mappings)
+    states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+    states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+
+    return states_pre * coef - states_post
+
+
 def main():
     """
     Defines a multiphase ocp and animate the results
     """
 
-    ocp = prepare_ocp(long_optim=True)
+    ocp = prepare_ocp()
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
