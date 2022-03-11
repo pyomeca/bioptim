@@ -72,6 +72,9 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [ObjectiveFcn](#class-objectivefcn)
 - [The parameters](#the-parameters)
   - [ParameterList](#class-parameterlist)
+- [The multinode constraints](#the-multinode-constraints)
+  - [MultinodeConstraintList](#class-multinodeconstraintlist)
+  - [MultinodeConstraintFcn](#class-multinodeconstraintfcn)
 - [The phase transitions](#the-phase-transitions)
   - [PhaseTransitionList](#class-phasetransitionlist)
   - [PhaseTransitionFcn](#class-phasetransitionfcn)
@@ -1208,6 +1211,45 @@ The `penalty_list` is the index in the list the penalty is.
 If one adds multiple parameters, the list is automatically incremented. 
 It is useful however to define this value by hand if one wants to declare the parameters out of order or to override a previously declared parameter using `update_parameters`.
 
+## The multinode constraints
+`Bioptim` can declare multiphase optimisation programs. The goal of a multiphase ocp is usually to handle changing dynamics. 
+The user must understand that each phase is therefore a full ocp by itself, with constraints that links the end of which with the beginning of the following.
+
+### Class: MultinodeConstraintList
+The MultinodeConstraintList provide a class that prepares the multinode constraints.
+When constructing an `OptimalControlProgram()`, MultinodeConstraintList is the expected class for the `multinode_constraints` parameter. 
+
+The MultinodeConstraintList class is the main class to define parameters.
+Please note that unlike other lists, `MultinodeConstraint` is not accessible since multinode constraint don't make sense for single phase ocp.
+Therefore, one should not call the PhaseTransition constructor directly. 
+
+Here is the full signature of the `add()` method of the `MultinodeConstraintList`:
+```python
+MultinodeConstraintList.add(MultinodeConstraintFcn, phase_first_idx, phase_second_idx, first_node, second_node, **extra_parameters)
+```
+The `MultinodeConstraintFcn` is multinode constraints function to use.
+The default is EQUALITY.
+If one wants to declare a custom transition phase, then MultinodeConstraintFcn is the function handler to the custom function.
+The signature of the custom function is: `custom_function(multinode_constraint:MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
+where `nlp_pre` is the non linear program of the considered phase, `nlp_post` is the non linear program of the second considered phase, and the `**extra_parameters` are those sent to the add() method.
+This function is expected to return the cost of the multinode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
+Anyone who wants to define multinode constraints should be at least familiar with this type beforehand.
+The `phase_first_idx` is the index of the first phase. 
+The `phase_second_idx` is the index of the second phase. 
+The `first_node` is the first node considered. 
+The `second_node` is the second node considered. 
+
+### Class: MultinodeConstraintFcn
+The `MultinodeConstraintFcn` class is the already available multinode constraints in `bioptim`. 
+Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabailities of your IDE. 
+
+#### EQUALITY
+The states are equals.
+
+#### CUSTOM
+CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
+You can have a look at the MultinodeConstraintList section for more information about how to define custom transition function.
+
 ## The phase transitions
 `Bioptim` can declare multiphase optimisation programs. 
 The goal of a multiphase ocp is usually to handle changing dynamics. 
@@ -1229,7 +1271,8 @@ PhaseTransitionList.add(PhaseTransitionFcn, phase_pre_idx, **extra_parameters)
 The `PhaseTransitionFcn` is transition phase function to use.
 The default is CONTINUOUS.
 If one wants to declare a custom transition phase, then PhaseTransitionFcn is the function handler to the custom function.
-The signature of the custom function is: `custom_function(state_pre: MX, state_post: MX, **extra_parameters)`, where `state_pre` is the states variable at the end of the phase before the transition, `state_post` is those at the beginning of the phase after the transition, and the `**extra_parameters` are those sent to the add() method.
+The signature of the custom function is: `custom_function(transition: PhaseTransition nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
+where `nlp_pre` is the non linear program at the end of the phase before the transition, `nlp_post` is the non linear program  at the beginning of the phase after the transition, and the `**extra_parameters` are those sent to the add() method.
 This function is expected to return the cost of the phase transition computed from the states pre and post in the form of an MX.
 Please note that MX type is a CasADi type.
 Anyone who wants to define phase transitions should be at least familiar with this type beforehand.
