@@ -51,14 +51,14 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, ode_solver=OdeSolver.
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True, weight=1)
     # Effort/Snap (minimize_jerks, derivative=True)
     # Geodesic/hand trajectory (minimize_marker, derivative=True, mayer)
-    # objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, node=Node.ALL_SHOOTING, derivative=True, weight=1)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, node=Node.ALL_SHOOTING, derivative=True, weight=1)
     # Energy (norm(qdot*tau))
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6)
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.START, marker_index="marker_4", target=np.array([-0.0005*3, 0.0688*3, -0.9542*3]))
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index="marker_4", target=np.array([0, 0, 0]))
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.START, marker_index="marker_6", target=np.array([-0.0005*5, 0.0688*5, -0.9542*5]))
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index="marker_6", target=np.array([0, 0, 0]))
     # constraints.add(ConstraintFcn.TIME_CONSTRAINT, min_bound=0.5, max_bound=3)
 
     # Dynamics

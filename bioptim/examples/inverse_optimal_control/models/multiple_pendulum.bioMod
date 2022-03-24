@@ -1,9 +1,8 @@
 version 4
 
 segment Seg1
-    rotations	zy
+    rotations	x
     ranges
-        -2*pi 2*pi
         -2*pi 2*pi
     mass 1
     inertia
@@ -29,9 +28,8 @@ endsegment
 
     segment Seg2
     parent Seg1
-    rotations	zy
+    rotations	x
     ranges
-        -2*pi 2*pi
         -2*pi 2*pi
     mass 1
     rtinmatrix 0
@@ -53,9 +51,8 @@ endsegment
 
     segment Seg3
     parent Seg2
-    rotations	zy
+    rotations	x
     ranges
-        -2*pi 2*pi
         -2*pi 2*pi
     mass 1
     rtinmatrix 0
@@ -74,12 +71,11 @@ endsegment
         position -0.0005 0.0688 -0.9542
     endmarker
 
-/*
+
     segment Seg4
     parent Seg3
-    rotations	xy
+    rotations	x
     ranges
-        -2*pi 2*pi
         -2*pi 2*pi
     mass 1
     rtinmatrix 0
@@ -101,9 +97,8 @@ endsegment
 
     segment Seg5
     parent Seg4
-    rotations	xy
+    rotations	x
     ranges
-        -2*pi 2*pi
         -2*pi 2*pi
     mass 1
     rtinmatrix 0
@@ -122,4 +117,3 @@ endsegment
         position -0.0005 0.0688 -0.9542
     endmarker
 
-*/
