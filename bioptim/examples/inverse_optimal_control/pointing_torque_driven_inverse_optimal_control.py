@@ -110,12 +110,13 @@ def prepare_ocp(weights, coefficients):
 
 
 def prepare_iocp(weights, coefficients, solver, q_to_track, qdot_to_track, tau_to_track):
+    global i_inverse
     i_inverse += 1
     ocp = prepare_ocp(weights, coefficients)
     # ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve(solver)
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    print(f"Optimized the {i_inverse}th ocp in the inverse algo")
+    print(f"+++++++++++++++++++++++++++ Optimized the {i_inverse}th ocp in the inverse algo +++++++++++++++++++++++++++")
     return [np.sum((q_to_track - q) ** 2), np.sum((qdot_to_track - qdot) ** 2), np.sum((tau_to_track - tau) ** 2)]
 
 
@@ -130,7 +131,7 @@ def main():
     solver.set_print_level(0)
     sol_to_track = ocp_to_track.solve(solver)
     q_to_track, qdot_to_track, tau_to_track = sol_to_track.states["q"], sol_to_track.states["qdot"], sol_to_track.controls["tau"]
-    print("weights_to_track generated")
+    print("+++++++++++++++++++++++++++ weights_to_track generated +++++++++++++++++++++++++++")
     # sol_to_track.animate()
 
     # Find coefficients of the objective using Pareto
@@ -143,7 +144,7 @@ def main():
         sol_pareto.print()
         # sol_pareto.animate()
         coefficients.append(sol_pareto.cost)
-    print("coefficients generated")
+    print("+++++++++++++++++++++++++++ coefficients generated +++++++++++++++++++++++++++")
 
     # Retrieving weights using IOCP
     global i_inverse
@@ -155,6 +156,7 @@ def main():
     algorithm.run(1000)
     weights_optimized = algorithm.result
 
+    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     print("The weight difference is : ", weights_optimized - weights_to_track)
 
 if __name__ == "__main__":
