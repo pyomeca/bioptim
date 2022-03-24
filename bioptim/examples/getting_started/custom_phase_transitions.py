@@ -23,7 +23,6 @@ from bioptim import (
     PhaseTransitionFcn,
     PhaseTransitionList,
     OdeSolver,
-    OptimizationVariableList,
     PhaseTransition,
     BiMapping,
     Solver,
@@ -60,8 +59,8 @@ def custom_phase_transition(
     state_post = nlp_post.states
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = transition.states_mapping.to_second.map(state_pre.cx_end)
-    states_post = transition.states_mapping.to_first.map(state_post.cx)
+    states_pre = transition.states_mapping.to_second.map(nlp_pre.states.cx_end)
+    states_post = transition.states_mapping.to_first.map(nlp_post.states.cx)
 
     return states_pre * coef - states_post
 
@@ -193,6 +192,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
+    sol.print()
     sol.animate()
 
 

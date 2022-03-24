@@ -9,7 +9,7 @@ from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator
+from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -970,6 +970,10 @@ class Solution:
             if "time" in self.parameters
             else penalty.dt
         )
+
+        if penalty.multinode_constraint:
+            penalty.node_idx = [penalty.node_idx]
+
         for idx in penalty.node_idx:
             x = []
             u = []
@@ -981,6 +985,24 @@ class Solution:
                     u = np.concatenate(
                         (self._controls[phase_idx]["all"][:, -1], self._controls[phase_post]["all"][:, 0])
                     )
+                elif penalty.multinode_constraint:
+
+                    x = np.concatenate(
+                        (
+                            self._states[penalty.phase_first_idx]["all"][:, idx[0]],
+                            self._states[penalty.phase_second_idx]["all"][:, idx[1]],
+                        )
+                    )
+                    # Make an exception to the fact that U is not available for the last node
+                    mod_u0 = 1 if penalty.first_node == Node.END else 0
+                    mod_u1 = 1 if penalty.second_node == Node.END else 0
+                    u = np.concatenate(
+                        (
+                            self._controls[penalty.phase_first_idx]["all"][:, idx[0] - mod_u0],
+                            self._controls[penalty.phase_second_idx]["all"][:, idx[1] - mod_u1],
+                        )
+                    )
+
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
