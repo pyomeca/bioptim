@@ -353,10 +353,10 @@ sol.graphs()
 ```
 
 If you are interested in the results of individual objective functions and constraints, you can print them using the 
-`print_cost()` or access them using the `detailed_cost_values_to_sol()`:
+`print_cost()` or access them using the `detailed_cost_values()`:
 ```python
 sol.print_cost()  # For printing their values in the console
-sol.detailed_cost_values_to_sol()  # For adding the objectives details to sol for later manipulations
+sol.detailed_cost_values()  # For adding the objectives details to sol for later manipulations
 ```
 
 And that is all! 
