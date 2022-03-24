@@ -1022,7 +1022,7 @@ class Solution:
 
         return val, val_weighted
 
-    def detailed_cost_values(self):
+    def detailed_cost_values_to_sol(self):
         """
         Adds the detailed objective functions and/or constraints values to sol
 
