@@ -5,9 +5,7 @@ Please note that this example is dependant on the external library Platypus whic
 conda install -c conda-forge platypus-opt
 """
 
-
-import importlib.util
-from pathlib import Path
+from platypus import NSGAII, Problem, Real
 
 import numpy as np
 import biorbd_casadi as biorbd
@@ -36,10 +34,14 @@ from bioptim import (
 # spec.loader.exec_module(data_to_track)
 
 
-def prepare_ocp(biorbd_model_path, phase_time, n_shooting, ode_solver=OdeSolver.RK4()):
-    # Model path
+def prepare_ocp(weights, coefficients):
+
+    # Parameters of the problem
+    biorbd_model_path = "models/multiple_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
-    tau_min, tau_max, tau_init = -50, 50, 0
+    phase_time = 1.5
+    n_shooting = 30
+    tau_min, tau_max, tau_init = -25, 25, 0
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -48,18 +50,20 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, ode_solver=OdeSolver.
     # angle jerk (minimize_states_acceleration, derivative=True)
     # angle acceleration (minimize_states_velocity, derivative=True)
     # Torque change (minimize_torques, derivative=True)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True, weight=1)
+    if coefficients[0] * weights[0] != 0:
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True, weight=coefficients[0]*weights[0])
     # Effort/Snap (minimize_jerks, derivative=True)
     # Geodesic/hand trajectory (minimize_marker, derivative=True, mayer)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, node=Node.ALL_SHOOTING, derivative=True, weight=1)
+    if coefficients[1] * weights[1] != 0:
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, node=Node.ALL_SHOOTING, derivative=True, weight=coefficients[1]*weights[1])
     # Energy (norm(qdot*tau))
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6)
+    if coefficients[2] * weights[2] != 0:
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, min_bound=0.5, max_bound=5, weight=coefficients[2]*weights[2])
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.START, marker_index="marker_6", target=np.array([-0.0005*5, 0.0688*5, -0.9542*5]))
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index="marker_6", target=np.array([0, 0, 0]))
-    # constraints.add(ConstraintFcn.TIME_CONSTRAINT, min_bound=0.5, max_bound=3)
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index="marker_6", target=np.array([-0.0005*5, 0.0688*5, 0]))
 
     # Dynamics
     dynamics = DynamicsList()
@@ -100,40 +104,58 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, ode_solver=OdeSolver.
         u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
+        ode_solver=OdeSolver.RK4(),
         n_threads=4,
     )
 
 
+def prepare_iocp(weights, coefficients, solver, q_to_track, qdot_to_track, tau_to_track):
+    i_inverse += 1
+    ocp = prepare_ocp(weights, coefficients)
+    # ocp.add_plot_penalty(CostType.ALL)
+    sol = ocp.solve(solver)
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    print(f"Optimized the {i_inverse}th ocp in the inverse algo")
+    return [np.sum((q_to_track - q) ** 2), np.sum((qdot_to_track - qdot) ** 2), np.sum((tau_to_track - tau) ** 2)]
+
+
 def main():
-    # Define the problem
-    model_path = "models/multiple_pendulum.bioMod"
-    phase_time = 1.5
-    n_shooting = 30
 
     # Generate data using OCP
-    ocp_to_track = prepare_ocp(biorbd_model_path=model_path, phase_time=phase_time, n_shooting=n_shooting)
+    weights_to_track = [1, 1, 1e-6]
+    ocp_to_track = prepare_ocp(weights=weights_to_track, coefficients=[1, 1, 1])
     ocp_to_track.add_plot_penalty(CostType.ALL)
+    solver = Solver.IPOPT()
+    solver.set_linear_solver("ma57")
+    solver.set_print_level(0)
+    sol_to_track = ocp_to_track.solve(solver)
+    q_to_track, qdot_to_track, tau_to_track = sol_to_track.states["q"], sol_to_track.states["qdot"], sol_to_track.controls["tau"]
+    print("weights_to_track generated")
+    # sol_to_track.animate()
 
-    sol = ocp_to_track.solve(Solver.IPOPT(show_online_optim=True))
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    x = np.concatenate((q, qdot))
+    # Find coefficients of the objective using Pareto
+    coefficients = []
+    for i in range(len(weights_to_track)):
+        weights_pareto = [0, 0, 0]
+        weights_pareto[i] = 1
+        ocp_pareto = prepare_ocp(weights=weights_pareto, coefficients=[1, 1, 1])
+        sol_pareto = ocp_pareto.solve(solver)
+        sol_pareto.print()
+        # sol_pareto.animate()
+        coefficients.append(sol_pareto.cost)
+    print("coefficients generated")
 
-    sol.animate()
+    # Retrieving weights using IOCP
+    global i_inverse
+    i_inverse = 0
+    iocp = Problem(3, 3) # number of decision variables = 3, number of objectives = 3
+    iocp.types[:] = [Real(0, 1), Real(0, 1), Real(0, 1)]
+    iocp.function = lambda weights: prepare_iocp(weights, coefficients, solver, q_to_track, qdot_to_track, tau_to_track)
+    algorithm = NSGAII(iocp)
+    algorithm.run(1000)
+    weights_optimized = algorithm.result
 
-    # trying to retrieve the weightings from the previous OCP with IOCP
-    ocp = prepare_iocp(
-        biorbd_model_path=model_path,
-        phase_time=final_time,
-        n_shooting=ns,
-    )
-
-    # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
-
-    # --- Show results --- #
-    sol.animate()
-
+    print("The weight difference is : ", weights_optimized - weights_to_track)
 
 if __name__ == "__main__":
     main()
