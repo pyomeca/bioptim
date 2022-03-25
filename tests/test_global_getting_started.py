@@ -71,32 +71,32 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         np.testing.assert_almost_equal(f[0, 0], 41.57063948309302)
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 41.57063948309302)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.57063948309302)
     elif isinstance(ode_solver, OdeSolver.IRK):
         np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'],  65.8236055171619)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 65.8236055171619)
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(f[0, 0], 46.667345680854794)
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 46.667345680854794)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 46.667345680854794)
     elif isinstance(ode_solver, OdeSolver.RK1):
         np.testing.assert_almost_equal(f[0, 0], 47.360621044913245)
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 47.360621044913245)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 47.360621044913245)
     elif isinstance(ode_solver, OdeSolver.RK2):
         np.testing.assert_almost_equal(f[0, 0], 76.24887695462857)
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 76.24887695462857)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 76.24887695462857)
     else:
         np.testing.assert_almost_equal(f[0, 0], 41.58259426)
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 41.58259426)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.58259426)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -300,7 +300,7 @@ def test_custom_constraint_track_markers(ode_solver):
 
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 19767.533125695227)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
     else:
         # Check objective function value
         f = np.array(sol.cost)
@@ -312,7 +312,8 @@ def test_custom_constraint_track_markers(ode_solver):
 
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 19767.533125695227)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
+
 
 @pytest.mark.parametrize("interpolation", InterpolationType)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -368,7 +369,8 @@ def test_initial_guesses(interpolation, ode_solver):
 
     # detailed cost values
     sol.detailed_cost_values()
-    np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 13954.735000000004)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13954.735000000004)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_cyclic_objective(ode_solver):
@@ -419,7 +421,8 @@ def test_cyclic_objective(ode_solver):
 
     # detailed cost values
     sol.detailed_cost_values()
-    np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 13224.252515047212)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13224.252515047212)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_cyclic_constraint(ode_solver):
@@ -470,7 +473,8 @@ def test_cyclic_constraint(ode_solver):
 
     # detailed cost values
     sol.detailed_cost_values()
-    np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 78921.61000000013)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 78921.61000000013)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_phase_transitions(ode_solver):
@@ -529,10 +533,11 @@ def test_phase_transitions(ode_solver):
 
     # detailed cost values
     sol.detailed_cost_values()
-    np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 14769.760808687663)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]['cost_value_weighted'], 38218.35341602849)
-    np.testing.assert_almost_equal(sol.detailed_cost[2]['cost_value_weighted'], 34514.48724963841)
-    np.testing.assert_almost_equal(sol.detailed_cost[3]['cost_value_weighted'], 21941.02244926652)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 14769.760808687663)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 38218.35341602849)
+    np.testing.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 34514.48724963841)
+    np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 21941.02244926652)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_parameter_optimization(ode_solver):
@@ -588,7 +593,7 @@ def test_parameter_optimization(ode_solver):
 
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 357.32088196158827)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 357.32088196158827)
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
@@ -605,7 +610,7 @@ def test_parameter_optimization(ode_solver):
 
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 357.32088196158827)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 357.32088196158827)
 
     else:
         # Check objective function value
@@ -622,7 +627,7 @@ def test_parameter_optimization(ode_solver):
 
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 357.32088196158827)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 357.32088196158827)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -677,7 +682,8 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
 
     # detailed cost values
     sol.detailed_cost_values()
-    np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 19767.533125695227)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_example_external_forces(ode_solver):
@@ -724,7 +730,7 @@ def test_example_external_forces(ode_solver):
 
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 9875.887687469118)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 9875.887687469118)
     else:
 
         # initial and final position
@@ -737,13 +743,14 @@ def test_example_external_forces(ode_solver):
 
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 9875.887687469118)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 9875.887687469118)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
     TestUtils.simulate(sol)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_example_multiphase(ode_solver):
@@ -809,10 +816,11 @@ def test_example_multiphase(ode_solver):
 
     # detailed cost values
     sol.detailed_cost_values()
-    np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 19397.605252449728)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]['cost_value_weighted'], 48129.27750487157)
-    np.testing.assert_almost_equal(sol.detailed_cost[2]['cost_value_weighted'], 0.0)
-    np.testing.assert_almost_equal(sol.detailed_cost[3]['cost_value_weighted'], 38560.82580432337)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19397.605252449728)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 48129.27750487157)
+    np.testing.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 0.0)
+    np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 38560.82580432337)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_contact_forces_inequality_greater_than_constraint(ode_solver):
@@ -866,7 +874,8 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
 
     # detailed cost values
     sol.detailed_cost_values()
-    np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 0.19216241950659244)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.19216241950659244)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
@@ -920,7 +929,8 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 
     # detailed cost values
     sol.detailed_cost_values()
-    np.testing.assert_almost_equal(sol.detailed_cost[0]['cost_value_weighted'], 0.2005516965424669)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.2005516965424669)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_multinode_constraints(ode_solver):
