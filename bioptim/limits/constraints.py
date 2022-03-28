@@ -173,6 +173,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         Add continuity constraints between each nodes of a phase.
     inter_phase_continuity(ocp)
         Add phase transition constraints between two phases.
+    inter_node_continuity(ocp)
+        Add phase multi node constraints between specified nodes and phases.
     clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Constraint)
         Resets a penalty. A negative penalty index creates a new empty penalty.
     penalty_nature() -> str
@@ -225,7 +227,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             elif not isinstance(normal_component_idx, (tuple, list)):
                 raise RuntimeError("normal_component_idx must be a unique integer or a list of integer")
 
-            mu_squared = static_friction_coefficient ** 2
+            mu_squared = static_friction_coefficient**2
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
 
@@ -444,6 +446,30 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
 
     @staticmethod
+    def node_equalities(ocp):
+        """
+        Add multi node constraints between chosen phases.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+        for i, mnc in enumerate(ocp.multinode_constraints):
+            # Equality constraint between nodes
+            first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
+            second_node_name = (
+                f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
+            )
+            mnc.name = (
+                f"NODE_EQUALITY "
+                f"Phase {mnc.phase_first_idx} Node {first_node_name}"
+                f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
+            )
+            mnc.list_index = -1
+            mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
+
+    @staticmethod
     def get_dt(_):
         return 1
 
@@ -475,6 +501,8 @@ class ConstraintFcn(Enum):
     TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
     TRACK_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
     TRACK_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
+    TRACK_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
+    TRACK_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
@@ -532,3 +560,6 @@ class ContinuityFunctions:
 
         # Dynamics must be respected between phases
         ConstraintFunction.inter_phase_continuity(ocp)
+
+        if ocp.multinode_constraints:
+            ConstraintFunction.node_equalities(ocp)

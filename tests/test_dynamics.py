@@ -97,6 +97,8 @@ def test_torque_driven_implicit(with_contact, cx):
     nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
+    nlp.phase_idx = 0
+
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -145,6 +147,8 @@ def test_torque_driven_implicit_soft_contacts(with_contact, cx, implicit_contact
     nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
+    nlp.phase_idx = 0
+
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -193,6 +197,8 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
+    nlp.phase_idx = 0
+
     NonLinearProgram.add(
         ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact), False
     )
@@ -301,7 +307,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
-
+    nlp.phase_idx = 0
     nlp.x_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 2))
     ocp = OptimalControlProgram(nlp)

@@ -1,5 +1,5 @@
 import pytest
-
+import re
 from casadi import DM, MX
 import numpy as np
 import biorbd_casadi as biorbd
@@ -24,10 +24,12 @@ from bioptim.optimization.optimization_variable import OptimizationVariableList
 from .utils import TestUtils
 
 
-def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False):
+def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False, implicit=False, use_sx=True):
     bioptim_folder = TestUtils.bioptim_folder()
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
+    if with_muscles and implicit or implicit and with_actuator:
+        raise RuntimeError("With muscles and implicit and with_actuator together is not defined")
     elif with_muscles:
         biorbd_model = biorbd.Model(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
@@ -39,7 +41,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
         )
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, implicit_dynamics=implicit)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     elif with_actuator:
@@ -55,10 +57,13 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     x_init = InitialGuess(np.zeros((nx, 1)))
-    u_init = InitialGuess(np.zeros((nu, 1)))
+
+    mod = 2 if implicit else 1
+
+    u_init = InitialGuess(np.zeros((nu * mod, 1)))
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
-    u_bounds = Bounds(np.zeros((nu, 1)), np.zeros((nu, 1)))
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=True)
+    u_bounds = Bounds(np.zeros((nu * mod, 1)), np.zeros((nu * mod, 1)))
+    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=use_sx)
     ocp.nlp[0].J = [[]]
     ocp.nlp[0].g = [[]]
     return ocp
@@ -468,6 +473,85 @@ def test_penalty_minimize_com_position(value, penalty_origin):
         expected = np.array([[-5], [0.05], [-5]])
 
     np.testing.assert_almost_equal(res, expected)
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_angular_momentum(value, penalty_origin):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+
+    penalty_type = penalty_origin.MINIMIZE_ANGULAR_MOMENTUM
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty = Objective(penalty_type)
+    else:
+        penalty = Constraint(penalty_type)
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    expected = np.array([[-0.005], [0.2], [0.005]])
+    if value == -10:
+        expected = np.array([[0.5], [-20], [-0.5]])
+
+    np.testing.assert_almost_equal(res, expected)
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+@pytest.mark.parametrize("value", [0.1, -10])
+@pytest.mark.parametrize("use_sx", [True, False])
+def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx):
+    ocp = prepare_test_ocp(use_sx=use_sx)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+
+    penalty_type = penalty_origin.MINIMIZE_LINEAR_MOMENTUM
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty = Objective(penalty_type)
+    else:
+        penalty = Constraint(penalty_type)
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    expected = np.array([[0.1], [0], [0.1]])
+    if value == -10:
+        expected = np.array([[-10], [0], [-10]])
+
+    np.testing.assert_almost_equal(res, expected)
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+@pytest.mark.parametrize("value", [0.1, -10])
+@pytest.mark.parametrize("implicit", [True, False])
+def test_penalty_minimize_comddot(value, penalty_origin, implicit):
+    ocp = prepare_test_ocp(with_contact=True, implicit=implicit)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+
+    penalty_type = penalty_origin.MINIMIZE_COM_ACCELERATION
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty = Objective(penalty_type)
+    else:
+        penalty = Constraint(penalty_type)
+
+    if not implicit:
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("MINIMIZE_COM_ACCELERATION is only working if qddot is defined as a state or a control."),
+        ):
+            res = get_penalty_value(ocp, penalty, t, x, u, [])
+    else:
+        res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+        expected = np.array([[0], [-0.0008324], [0.002668]])
+        if value == -10:
+            expected = np.array([[0], [-17.5050533], [-18.2891901]])
+
+        np.testing.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
