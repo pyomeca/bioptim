@@ -1,5 +1,5 @@
 from typing import Any, Union
-from copy import deepcopy
+from copy import deepcopy, copy
 
 import biorbd_casadi as biorbd
 import numpy as np
@@ -559,6 +559,43 @@ class Solution:
 
         return out
 
+    def generate_time_vector(self, time_phase, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator):
+        """
+        Generate time integration vector, at which the points from intagrate are evaluated
+
+        """
+
+        t_integrated = []
+        last_t = 0
+        for phase_idx, nlp in enumerate(self.ocp.nlp):
+            n_int_steps = (
+                nlp.ode_solver.steps_scipy if integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
+            )
+            dt_ns = time_phase[phase_idx+1] / nlp.ns
+            time_phase_integrated = []
+            last_t_int = copy(last_t)
+            for _ in range(nlp.ns):
+                if nlp.ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT:
+                    time_phase_integrated += (np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int).tolist()
+                else:
+                    time_interval = np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1)
+                    if continuous and _ != nlp.ns-1:
+                        time_interval = time_interval[:-1]
+                    if not keep_intermediate_points:
+                        if _ == nlp.ns-1:
+                            time_interval = time_interval[[0, -1]]
+                        else:
+                            time_interval = np.array([time_interval[0]])
+                    time_phase_integrated += time_interval.tolist()
+
+                if not continuous and _ == nlp.ns-1:
+                    time_phase_integrated += [time_phase_integrated[-1]]
+
+                last_t_int += dt_ns
+            t_integrated += time_phase_integrated
+            last_t += time_phase[phase_idx+1]
+        return t_integrated
+
     def __perform_integration(
         self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator
     ):
@@ -580,11 +617,11 @@ class Solution:
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
         out._states = []
-        # out._time_vector = []
-        out.time_vector = []
+        out.time_vector = self.generate_time_vector(out.phase_time, keep_intermediate_points, continuous, integrator)
         for _ in range(len(self._states)):
             out._states.append({})
 
+        sum_states_len = 0
         params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
         for p, nlp in enumerate(self.ocp.nlp):
@@ -645,52 +682,26 @@ class Solution:
                         (s + 1) * (nlp.ode_solver.steps + 1) if nlp.ode_solver.is_direct_collocation else s + 1
                     )
                     cols_in_out = [s * n_steps, (s + 1) * n_steps] if keep_intermediate_points else [s, s + 2]
-                    if keep_intermediate_points:
-                        # Collocations cannot be continuous
-                        out.time_vector += t_eval.tolist()
-                    else:
-                        # Collocations cannot be continuous
-                        out.time_vector += [t_eval]
                 else:
                     if nlp.ode_solver.is_direct_collocation:
                         if keep_intermediate_points:
                             integrated = x0  # That is only for continuous=False
                             cols_in_out = [s * n_steps, (s + 1) * n_steps]
-                            if continuous and s != self.ns[p]-1:
-                                out.time_vector += t_eval.tolist()[:-1]
-                            else:
-                                out.time_vector += t_eval.tolist()
                         else:
                             integrated = x0[:, [0, -1]]
                             cols_in_out = [s, s + 2]
-                            if continuous:
-                                if t_eval[0] == 0:
-                                    out.time_vector += [0]
-                                out.time_vector += [t_eval[1]]
-                            else:
-                                out.time_vector += [t_eval[0], t_eval[1]]
                         next_state_col = slice((s + 1) * n_steps, (s + 2) * n_steps)
 
                     else:
                         if keep_intermediate_points:
                             integrated = np.array(nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xall"])
                             cols_in_out = [s * n_steps, (s + 1) * n_steps]
-                            if continuous and s != self.ns[p]-1:
-                                out.time_vector += t_eval.tolist()[:-1]
-                            else:
-                                out.time_vector += t_eval.tolist()
                         else:
                             integrated = np.concatenate(
                                 (x0[:, np.newaxis], nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xf"]),
                                 axis=1,
                             )
                             cols_in_out = [s, s + 2]
-                            if continuous:
-                                if t_eval[0] == 0:
-                                    out.time_vector += [t_eval[0]]
-                                out.time_vector += [t_eval[-1]]
-                            else:
-                                out.time_vector += [t_eval]
                         next_state_col = s + 1
 
                 cols_in_out = slice(
@@ -710,12 +721,12 @@ class Solution:
             for key in nlp.states:
                 out._states[p][key] = out._states[p]["all"][nlp.states[key].index, :]
 
-            if not nlp.ode_solver.is_direct_collocation:
-                if out._states[p]['all'].shape[1] != len(out.time_vector):
-                    raise ValueError(
-                        "The number of output states is different from the time vector for integration.There is a bug introduced "
-                        "by @EveCharbie, please report it"
-                    )
+            sum_states_len += out._states[p]['all'].shape[1]
+        if sum_states_len != len(out.time_vector):
+            raise ValueError(
+                "The number of output states is different from the time vector for integration.There is a bug introduced "
+                "by @EveCharbie, please report it"
+            )
 
         return out
 
