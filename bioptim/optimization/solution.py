@@ -559,7 +559,9 @@ class Solution:
 
         return out
 
-    def generate_time_vector(self, time_phase, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator):
+    def generate_time_vector(
+        self, time_phase, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator
+    ):
         """
         Generate time integration vector, at which the points from intagrate are evaluated
 
@@ -571,7 +573,7 @@ class Solution:
             n_int_steps = (
                 nlp.ode_solver.steps_scipy if integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
             )
-            dt_ns = time_phase[phase_idx+1] / nlp.ns
+            dt_ns = time_phase[phase_idx + 1] / nlp.ns
             time_phase_integrated = []
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
@@ -579,21 +581,21 @@ class Solution:
                     time_phase_integrated += (np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int).tolist()
                 else:
                     time_interval = np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1)
-                    if continuous and _ != nlp.ns-1:
+                    if continuous and _ != nlp.ns - 1:
                         time_interval = time_interval[:-1]
                     if not keep_intermediate_points:
-                        if _ == nlp.ns-1:
+                        if _ == nlp.ns - 1:
                             time_interval = time_interval[[0, -1]]
                         else:
                             time_interval = np.array([time_interval[0]])
                     time_phase_integrated += time_interval.tolist()
 
-                if not continuous and _ == nlp.ns-1:
+                if not continuous and _ == nlp.ns - 1:
                     time_phase_integrated += [time_phase_integrated[-1]]
 
                 last_t_int += dt_ns
             t_integrated += time_phase_integrated
-            last_t += time_phase[phase_idx+1]
+            last_t += time_phase[phase_idx + 1]
         return t_integrated
 
     def __perform_integration(
@@ -665,7 +667,7 @@ class Solution:
                     raise NotImplementedError(f"ControlType {nlp.control_type} " f"not yet implemented in integrating")
 
                 t_init = sum(out.phase_time[:p]) + t_interval * s
-                t_end = sum(out.phase_time[:p]) + t_interval * (s+1)
+                t_end = sum(out.phase_time[:p]) + t_interval * (s + 1)
                 n_points = n_steps + 1 if continuous else n_steps
                 t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
 
@@ -721,7 +723,7 @@ class Solution:
             for key in nlp.states:
                 out._states[p][key] = out._states[p]["all"][nlp.states[key].index, :]
 
-            sum_states_len += out._states[p]['all'].shape[1]
+            sum_states_len += out._states[p]["all"].shape[1]
         if sum_states_len != len(out.time_vector):
             raise ValueError(
                 "The number of output states is different from the time vector for integration.There is a bug introduced "
