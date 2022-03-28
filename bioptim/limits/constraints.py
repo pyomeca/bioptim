@@ -379,6 +379,48 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - tau, *var)
 
         @staticmethod
+        def tau_from_muscle_equal_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+            """
+            Compute the difference between symbolic joint torques from muscle and inverse dynamic results
+            It does not include any inversion of mass matrix
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            **unused_param: dict
+                Since the function does nothing, we can safely ignore any argument
+            """
+
+            nlp = all_pn.nlp
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            muscle_activations = nlp.controls["muscles"].mx
+            muscles_states = nlp.model.stateSet()
+            for k in range(len(nlp.controls["muscles"])):
+                muscles_states[k].setActivation(muscle_activations[k])
+            muscle_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+
+            if nlp.external_forces:
+                raise NotImplementedError(
+                    "This implicit constraint tau_from_muscle_equal_inverse_dynamics is not implemented yet with external forces"
+                )
+                # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
+                # fext need to be a mx
+
+            tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
+
+            var = []
+            var.extend([nlp.states[key] for key in nlp.states])
+            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([param for param in nlp.parameters])
+
+            return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - muscle_tau, *var)
+
+        @staticmethod
         def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
             """
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
@@ -530,6 +572,7 @@ class ImplicitConstraintFcn(Enum):
     QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
     TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
+    TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
 
     @staticmethod
     def get_type():
