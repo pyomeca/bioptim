@@ -168,6 +168,14 @@ def test__getting_started__example_multiphase():
     ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=True)
 
 
+def test__getting_started__example_multinode_constraints():
+    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod")
+
+
 def test__getting_started__example_optimal_time():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
 

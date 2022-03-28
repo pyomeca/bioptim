@@ -170,6 +170,7 @@ class PenaltyOption(OptionGeneric):
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
         self.transition = False
+        self.multinode_constraint = False
         self.phase_pre_idx = None
         self.phase_post_idx = None
         if self.derivative and self.explicit_derivative:
@@ -283,11 +284,11 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-        if self.transition:
+        if self.multinode_constraint or self.transition:
             ocp = all_pn[0].ocp
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
-            name = self.name.replace("->", "_").replace(" ", "_")
+            name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
             states_pre = nlp.states.cx_end
             states_post = nlp_post.states.cx
             controls_pre = nlp.controls.cx_end
@@ -458,6 +459,37 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, all_pn[1])
             self.clear_penalty(ocp, all_pn[0].nlp)
 
+        elif isinstance(self.node, tuple) and self.multinode_constraint:
+            all_pn = []
+            self.node_list = self.node
+            # Make sure the penalty behave like a MultinodeConstraint, even though it may be an Objective or Constraint
+            # self.transition = True
+            self.dt = 1
+            # self.phase_pre_idx
+            # self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
+            if not self.states_mapping:
+                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
+            self.node = self.node_list[0]
+            nlp = ocp.nlp[self.phase_first_idx]
+            all_pn.append(self._get_penalty_node_list(ocp, nlp))
+            if self.node == Node.END:
+                all_pn[0].u = [nlp.U[-1]]
+                # Make an exception to the fact that U is not available for the last node
+
+            self.node = self.node_list[1]
+            nlp = ocp.nlp[self.phase_second_idx]
+            all_pn.append(self._get_penalty_node_list(ocp, nlp))
+            if self.node == Node.END:
+                all_pn[1].u = [nlp.U[-1]]
+                # Make an exception to the fact that U is not available for the last node
+
+            # reset the node list
+            self.node = self.node_list
+
+            penalty_type.validate_penalty_time_index(self, all_pn[0])
+            penalty_type.validate_penalty_time_index(self, all_pn[1])
+            self.node_idx = [all_pn[0].t[0], all_pn[1].t[0]]
+            self.clear_penalty(ocp, all_pn[0].nlp)
         else:
             all_pn = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, all_pn)
