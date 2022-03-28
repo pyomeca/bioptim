@@ -580,6 +580,8 @@ class Solution:
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
         out._states = []
+        # out._time_vector = []
+        out.time_vector = []
         for _ in range(len(self._states)):
             out._states.append({})
 
@@ -616,6 +618,7 @@ class Solution:
                 )
                 x0 = self._states[p]["all"][:, col]
 
+            t_interval = sum(out.phase_time[: (p + 2)]) / nlp.ns
             for s in range(self.ns[p]):
                 if nlp.control_type == ControlType.CONSTANT:
                     u = self._controls[p]["all"][:, s]
@@ -624,11 +627,12 @@ class Solution:
                 else:
                     raise NotImplementedError(f"ControlType {nlp.control_type} " f"not yet implemented in integrating")
 
+                t_init = sum(out.phase_time[:p]) + t_interval * s
+                t_end = sum(out.phase_time[:p]) + t_interval * (s+1)
+                n_points = n_steps + 1 if continuous else n_steps
+                t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
+
                 if integrator != SolutionIntegrator.DEFAULT:
-                    t_init = sum(out.phase_time[:p]) / nlp.ns
-                    t_end = sum(out.phase_time[: (p + 2)]) / nlp.ns
-                    n_points = n_steps + 1 if continuous else n_steps
-                    t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
                     integrated = solve_ivp(
                         lambda t, x: np.array(nlp.dynamics_func(x, u, params))[:, 0],
                         [t_init, t_end],
@@ -641,27 +645,52 @@ class Solution:
                         (s + 1) * (nlp.ode_solver.steps + 1) if nlp.ode_solver.is_direct_collocation else s + 1
                     )
                     cols_in_out = [s * n_steps, (s + 1) * n_steps] if keep_intermediate_points else [s, s + 2]
-
+                    if keep_intermediate_points:
+                        # Collocations cannot be continuous
+                        out.time_vector += t_eval.tolist()
+                    else:
+                        # Collocations cannot be continuous
+                        out.time_vector += [t_eval]
                 else:
                     if nlp.ode_solver.is_direct_collocation:
                         if keep_intermediate_points:
                             integrated = x0  # That is only for continuous=False
                             cols_in_out = [s * n_steps, (s + 1) * n_steps]
+                            if continuous and s != self.ns[p]-1:
+                                out.time_vector += t_eval.tolist()[:-1]
+                            else:
+                                out.time_vector += t_eval.tolist()
                         else:
                             integrated = x0[:, [0, -1]]
                             cols_in_out = [s, s + 2]
+                            if continuous:
+                                if t_eval[0] == 0:
+                                    out.time_vector += [0]
+                                out.time_vector += [t_eval[1]]
+                            else:
+                                out.time_vector += [t_eval[0], t_eval[1]]
                         next_state_col = slice((s + 1) * n_steps, (s + 2) * n_steps)
 
                     else:
                         if keep_intermediate_points:
                             integrated = np.array(nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xall"])
                             cols_in_out = [s * n_steps, (s + 1) * n_steps]
+                            if continuous and s != self.ns[p]-1:
+                                out.time_vector += t_eval.tolist()[:-1]
+                            else:
+                                out.time_vector += t_eval.tolist()
                         else:
                             integrated = np.concatenate(
                                 (x0[:, np.newaxis], nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xf"]),
                                 axis=1,
                             )
                             cols_in_out = [s, s + 2]
+                            if continuous:
+                                if t_eval[0] == 0:
+                                    out.time_vector += [t_eval[0]]
+                                out.time_vector += [t_eval[-1]]
+                            else:
+                                out.time_vector += [t_eval]
                         next_state_col = s + 1
 
                 cols_in_out = slice(
@@ -680,6 +709,13 @@ class Solution:
             # Dispatch the integrated values to all the keys
             for key in nlp.states:
                 out._states[p][key] = out._states[p]["all"][nlp.states[key].index, :]
+
+            if not nlp.ode_solver.is_direct_collocation:
+                if out._states[p]['all'].shape[1] != len(out.time_vector):
+                    raise ValueError(
+                        "The number of output states is different from the time vector for integration.There is a bug introduced "
+                        "by @EveCharbie, please report it"
+                    )
 
         return out
 
