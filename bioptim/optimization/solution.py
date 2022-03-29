@@ -657,7 +657,6 @@ class Solution:
                 )
                 x0 = self._states[p]["all"][:, col]
 
-            t_interval = sum(out.phase_time[: (p + 2)]) / nlp.ns
             for s in range(self.ns[p]):
                 if nlp.control_type == ControlType.CONSTANT:
                     u = self._controls[p]["all"][:, s]
@@ -666,12 +665,11 @@ class Solution:
                 else:
                     raise NotImplementedError(f"ControlType {nlp.control_type} " f"not yet implemented in integrating")
 
-                t_init = sum(out.phase_time[:p]) + t_interval * s
-                t_end = sum(out.phase_time[:p]) + t_interval * (s + 1)
-                n_points = n_steps + 1 if continuous else n_steps
-                t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
-
                 if integrator != SolutionIntegrator.DEFAULT:
+                    t_init = sum(out.phase_time[:p]) / nlp.ns
+                    t_end = sum(out.phase_time[: (p + 2)]) / nlp.ns
+                    n_points = n_steps + 1 if continuous else n_steps
+                    t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
                     integrated = solve_ivp(
                         lambda t, x: np.array(nlp.dynamics_func(x, u, params))[:, 0],
                         [t_init, t_end],
