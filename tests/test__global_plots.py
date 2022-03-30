@@ -187,7 +187,7 @@ def test_console_objective_functions():
 
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
-    sol.print()
+    sol.print_cost()
     expected_output = (
         "Solver reported time: 1.2345 sec\n"
         "Real time: 5.4321 sec\n"
