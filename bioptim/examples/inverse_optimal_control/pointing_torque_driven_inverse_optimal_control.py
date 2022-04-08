@@ -5,7 +5,9 @@ Please note that this example is dependant on the external library Platypus whic
 conda install -c conda-forge platypus-opt
 """
 
-from platypus import NSGAII, Problem, Real
+# from platypus import NSGAII, Problem, Real
+import pygmo as pg
+from IPython import embed
 
 import numpy as np
 import biorbd_casadi as biorbd
@@ -46,8 +48,8 @@ def prepare_ocp(weights, coefficients):
     # Add objective functions
     objective_functions = ObjectiveList()
     # Objective functions from https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002183
-    # hand jerk (minimize_marker_position_acceleration derivative=True)
-    # angle jerk (minimize_states_acceleration, derivative=True)
+    # hand jerk (minimize_marker_position_acceleration derivative=True) marker_acc biorbd (sinon velocity)
+    # angle jerk (minimize_states_acceleration, derivative=True) dynamique inverse
     # angle acceleration (minimize_states_velocity, derivative=True)
     # Torque change (minimize_torques, derivative=True)
     if coefficients[0] * weights[0] != 0:
@@ -109,21 +111,46 @@ def prepare_ocp(weights, coefficients):
     )
 
 
-def prepare_iocp(weights, coefficients, solver, q_to_track, qdot_to_track, tau_to_track):
-    global i_inverse
-    i_inverse += 1
-    ocp = prepare_ocp(weights, coefficients)
-    # ocp.add_plot_penalty(CostType.ALL)
-    sol = ocp.solve(solver)
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    print(f"+++++++++++++++++++++++++++ Optimized the {i_inverse}th ocp in the inverse algo +++++++++++++++++++++++++++")
-    return [np.sum((q_to_track - q) ** 2), np.sum((qdot_to_track - qdot) ** 2), np.sum((tau_to_track - tau) ** 2)]
+# def prepare_iocp(weights, coefficients, solver, q_to_track, qdot_to_track, tau_to_track):
+#     global i_inverse
+#     i_inverse += 1
+#     ocp = prepare_ocp(weights, coefficients)
+#     # ocp.add_plot_penalty(CostType.ALL)
+#     sol = ocp.solve(solver)
+#     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+#     print(f"+++++++++++++++++++++++++++ Optimized the {i_inverse}th ocp in the inverse algo +++++++++++++++++++++++++++")
+#     return [np.sum((q_to_track - q) ** 2), np.sum((qdot_to_track - qdot) ** 2), np.sum((tau_to_track - tau) ** 2)]
+
+class prepare_iocp:
+    def __init__(self, coefficients, solver, q_to_track, qdot_to_track, tau_to_track):
+        self.coefficients = coefficients
+        self.solver = solver
+        self.q_to_track = q_to_track
+        self.qdot_to_track = qdot_to_track
+        self.tau_to_track = tau_to_track
+
+    def fitness(self, weights):
+        global i_inverse
+        i_inverse += 1
+        ocp = prepare_ocp(weights, self.coefficients)
+        # ocp.add_plot_penalty(CostType.ALL)
+        sol = ocp.solve(self.solver)
+        q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+        print(f"+++++++++++++++++++++++++++ Optimized the {i_inverse}th ocp in the inverse algo +++++++++++++++++++++++++++")
+        # [np.sum((self.q_to_track - q) ** 2), np.sum((self.qdot_to_track - qdot) ** 2), np.sum((self.tau_to_track - tau) ** 2)]
+        return [np.sum((self.q_to_track - q) ** 2) + np.sum((self.qdot_to_track - qdot) ** 2) + np.sum((self.tau_to_track[:, :-1] - tau[:, :-1]) ** 2)]
+
+    def get_nobj(self):
+        return 1
+
+    def get_bounds(self):
+        return ([0, 0, 0], [1, 1, 1])
 
 
 def main():
 
-    # Generate data using OCP
-    weights_to_track = [1, 1, 1e-6]
+    # # Generate data using OCP
+    weights_to_track = [0.6, 0.3, 0.1]
     ocp_to_track = prepare_ocp(weights=weights_to_track, coefficients=[1, 1, 1])
     ocp_to_track.add_plot_penalty(CostType.ALL)
     solver = Solver.IPOPT()
@@ -133,31 +160,46 @@ def main():
     q_to_track, qdot_to_track, tau_to_track = sol_to_track.states["q"], sol_to_track.states["qdot"], sol_to_track.controls["tau"]
     print("+++++++++++++++++++++++++++ weights_to_track generated +++++++++++++++++++++++++++")
     # sol_to_track.animate()
-
-    # Find coefficients of the objective using Pareto
-    coefficients = []
-    for i in range(len(weights_to_track)):
-        weights_pareto = [0, 0, 0]
-        weights_pareto[i] = 1
-        ocp_pareto = prepare_ocp(weights=weights_pareto, coefficients=[1, 1, 1])
-        sol_pareto = ocp_pareto.solve(solver)
-        sol_pareto.print()
-        # sol_pareto.animate()
-        coefficients.append(sol_pareto.cost)
-    print("+++++++++++++++++++++++++++ coefficients generated +++++++++++++++++++++++++++")
+    #
+    # # Find coefficients of the objective using Pareto
+    # coefficients = []
+    # for i in range(len(weights_to_track)):
+    #     weights_pareto = [0, 0, 0]
+    #     weights_pareto[i] = 1
+    #     ocp_pareto = prepare_ocp(weights=weights_pareto, coefficients=[1, 1, 1])
+    #     sol_pareto = ocp_pareto.solve(solver)
+    #     sol_pareto.print()
+    #     # sol_pareto.animate()
+    #     coefficients.append(sol_pareto.cost)
+    # print("+++++++++++++++++++++++++++ coefficients generated +++++++++++++++++++++++++++")
 
     # Retrieving weights using IOCP
     global i_inverse
     i_inverse = 0
-    iocp = Problem(3, 3) # number of decision variables = 3, number of objectives = 3
-    iocp.types[:] = [Real(0, 1), Real(0, 1), Real(0, 1)]
-    iocp.function = lambda weights: prepare_iocp(weights, coefficients, solver, q_to_track, qdot_to_track, tau_to_track)
-    algorithm = NSGAII(iocp)
-    algorithm.run(1000)
-    weights_optimized = algorithm.result
+    # iocp = Problem(3, 3) # number of decision variables = 3, number of objectives = 3
+    # iocp.types[:] = [Real(0, 1), Real(0, 1), Real(0, 1)]
+    # iocp.function = lambda weights: prepare_iocp(weights, coefficients, solver, q_to_track, qdot_to_track, tau_to_track)
+    # algorithm = NSGAII(iocp)
+    # algorithm.run(1000)
+    # result = algorithm.result
+    # weights_optimized = result[-1].variables
+    coefficients = [0.1, 0.4, 0.5]
+    iocp = pg.problem(prepare_iocp(coefficients, solver, q_to_track, qdot_to_track, tau_to_track))
+    algo = pg.algorithm(pg.simulated_annealing())
+    pop = pg.population(iocp, size=50)
+
+    epsilon = 1e-6
+    diff = 1000
+    while i_inverse < 1000 and diff > epsilon:
+        olf_pop_f = np.min(pop.get_f())
+        pop = algo.evolve(pop)
+        diff = olf_pop_f - np.min(pop.get_f())
+        pop_weights = pop.get_x()[np.argmin(pop.get_f())]
 
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    print("The weight difference is : ", weights_optimized - weights_to_track)
+    print("The weight difference is : ", pop_weights[0] * coefficients[0] - weights_to_track[0] * coefficients[0], ' / ',
+                                         pop_weights[1] * coefficients[1] - weights_to_track[1] * coefficients[1], ' / ',
+                                         pop_weights[2] * coefficients[2] - weights_to_track[2] * coefficients[2], ' / ')
 
 if __name__ == "__main__":
     main()
