@@ -459,6 +459,9 @@ class Solution:
         new.phase_time = deepcopy(self.phase_time)
         new.ns = deepcopy(self.ns)
 
+        if hasattr(self, 'time_vector'):
+            new.time_vector = deepcopy(self.time_vector)
+
         if skip_data:
             new._states, new._controls, new.parameters = [], [], {}
         else:
@@ -547,7 +550,7 @@ class Solution:
                 "Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction"
             )
 
-        out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, integrator)
+        out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, merge_phases, integrator)
 
         if merge_phases:
             if continuous:
@@ -559,8 +562,8 @@ class Solution:
 
         return out
 
-    def generate_time_vector(
-        self, time_phase, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator
+    def _generate_time_vector(
+        self, time_phase, keep_intermediate_points: bool, continuous: bool, merge_phases: bool, integrator: SolutionIntegrator
     ):
         """
         Generate time integration vector, at which the points from intagrate are evaluated
@@ -594,12 +597,15 @@ class Solution:
                     time_phase_integrated += [time_phase_integrated[-1]]
 
                 last_t_int += dt_ns
-            t_integrated += time_phase_integrated
+            if continuous and merge_phases and phase_idx != len(self.ocp.nlp) - 1:
+                t_integrated += time_phase_integrated[:-1]
+            else:
+                t_integrated += time_phase_integrated
             last_t += time_phase[phase_idx + 1]
         return t_integrated
 
     def __perform_integration(
-        self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator
+        self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, merge_phases: bool, integrator: SolutionIntegrator
     ):
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
 
@@ -619,7 +625,7 @@ class Solution:
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
         out._states = []
-        out.time_vector = self.generate_time_vector(out.phase_time, keep_intermediate_points, continuous, integrator)
+        out.time_vector = self._generate_time_vector(out.phase_time, keep_intermediate_points, continuous, merge_phases, integrator)
         for _ in range(len(self._states)):
             out._states.append({})
 
@@ -722,11 +728,6 @@ class Solution:
                 out._states[p][key] = out._states[p]["all"][nlp.states[key].index, :]
 
             sum_states_len += out._states[p]["all"].shape[1]
-        if sum_states_len != len(out.time_vector):
-            raise ValueError(
-                "The number of output states is different from the time vector for integration.There is a bug introduced "
-                "by @EveCharbie, please report it"
-            )
 
         return out
 
