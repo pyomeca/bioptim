@@ -459,7 +459,7 @@ class Solution:
         new.phase_time = deepcopy(self.phase_time)
         new.ns = deepcopy(self.ns)
 
-        if hasattr(self, 'time_vector'):
+        if hasattr(self, "time_vector"):
             new.time_vector = deepcopy(self.time_vector)
 
         if skip_data:
@@ -563,7 +563,12 @@ class Solution:
         return out
 
     def _generate_time_vector(
-        self, time_phase, keep_intermediate_points: bool, continuous: bool, merge_phases: bool, integrator: SolutionIntegrator
+        self,
+        time_phase,
+        keep_intermediate_points: bool,
+        continuous: bool,
+        merge_phases: bool,
+        integrator: SolutionIntegrator,
     ):
         """
         Generate time integration vector, at which the points from intagrate are evaluated
@@ -605,7 +610,12 @@ class Solution:
         return t_integrated
 
     def __perform_integration(
-        self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, merge_phases: bool, integrator: SolutionIntegrator
+        self,
+        shooting_type: Shooting,
+        keep_intermediate_points: bool,
+        continuous: bool,
+        merge_phases: bool,
+        integrator: SolutionIntegrator,
     ):
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
 
@@ -625,7 +635,9 @@ class Solution:
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
         out._states = []
-        out.time_vector = self._generate_time_vector(out.phase_time, keep_intermediate_points, continuous, merge_phases, integrator)
+        out.time_vector = self._generate_time_vector(
+            out.phase_time, keep_intermediate_points, continuous, merge_phases, integrator
+        )
         for _ in range(len(self._states)):
             out._states.append({})
 
