@@ -102,13 +102,7 @@ def main():
     biorbd_model_path = "models/2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
-    ocp = prepare_ocp(
-        biorbd_model_path=biorbd_model_path,
-        phase_time=t,
-        n_shooting=ns,
-        min_bound=50,
-        max_bound=np.inf,
-    )
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, phase_time=t, n_shooting=ns, min_bound=50, max_bound=np.inf)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))

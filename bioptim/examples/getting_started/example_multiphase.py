@@ -67,12 +67,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
     objective_functions.add(
-        minimize_difference,
-        custom_type=ObjectiveFcn.Mayer,
-        node=Node.TRANSITION,
-        weight=100,
-        phase=1,
-        quadratic=True,
+        minimize_difference, custom_type=ObjectiveFcn.Mayer, node=Node.TRANSITION, weight=100, phase=1, quadratic=True
     )
 
     # Dynamics

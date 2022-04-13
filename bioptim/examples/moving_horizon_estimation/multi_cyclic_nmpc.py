@@ -49,16 +49,8 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n
     x_bound.max[0, :] = 0
     u_bound = Bounds([-max_torque] * model.nbQ(), [max_torque] * model.nbQ())
 
-    x_init = InitialGuess(
-        np.zeros(
-            model.nbQ() * 2,
-        )
-    )
-    u_init = InitialGuess(
-        np.zeros(
-            model.nbQ(),
-        )
-    )
+    x_init = InitialGuess(np.zeros(model.nbQ() * 2))
+    u_init = InitialGuess(np.zeros(model.nbQ()))
 
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q")
 
@@ -116,9 +108,7 @@ def main():
 
     # Solve the program
     sol = nmpc.solve(
-        update_functions,
-        solver=Solver.IPOPT(show_online_optim=True),
-        n_cycles_simultaneous=n_cycles_simultaneous,
+        update_functions, solver=Solver.IPOPT(show_online_optim=True), n_cycles_simultaneous=n_cycles_simultaneous
     )
     sol.print()
     sol.graphs()

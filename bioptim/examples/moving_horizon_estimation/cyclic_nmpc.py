@@ -39,16 +39,8 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque):
     x_bound = QAndQDotBounds(model)
     u_bound = Bounds([-max_torque] * model.nbQ(), [max_torque] * model.nbQ())
 
-    x_init = InitialGuess(
-        np.zeros(
-            model.nbQ() * 2,
-        )
-    )
-    u_init = InitialGuess(
-        np.zeros(
-            model.nbQ(),
-        )
-    )
+    x_init = InitialGuess(np.zeros(model.nbQ() * 2))
+    u_init = InitialGuess(np.zeros(model.nbQ()))
 
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q")
 

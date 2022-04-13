@@ -190,12 +190,7 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(
-                _: Objective,
-                all_pn: PenaltyNodeList,
-                min_bound: float = None,
-                max_bound: float = None,
-            ):
+            def minimize_time(_: Objective, all_pn: PenaltyNodeList, min_bound: float = None, max_bound: float = None):
                 """
                 Minimizes the duration of the phase
 
