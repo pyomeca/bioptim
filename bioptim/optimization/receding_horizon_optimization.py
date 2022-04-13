@@ -133,7 +133,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             update_function(self, self.total_optimization_run, sol, **update_function_extra_params)
             and consecutive_failing < max_consecutive_failing
         ):
-            sol = super(RecedingHorizonOptimization, self).solve(solver=solver_current, warm_start=warm_start)
+            sol = super(RecedingHorizonOptimization, self).solve(
+                solver=solver_current,
+                warm_start=warm_start,
+            )
             consecutive_failing = 0 if sol.status == 0 else consecutive_failing + 1
 
             # Set the option for the next iteration

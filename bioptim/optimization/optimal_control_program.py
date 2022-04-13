@@ -842,7 +842,11 @@ class OptimalControlProgram:
             integrator=integrator,
         )
 
-    def solve(self, solver: Union[Solver, Solver.Generic] = None, warm_start: Solution = None) -> Solution:
+    def solve(
+        self,
+        solver: Union[Solver, Solver.Generic] = None,
+        warm_start: Solution = None,
+    ) -> Solution:
         """
         Call the solver to actually solve the ocp
 
@@ -998,7 +1002,11 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
-    def print(self, to_console: bool = True, to_graph: bool = True):
+    def print(
+        self,
+        to_console: bool = True,
+        to_graph: bool = True,
+    ):
 
         if to_console:
             display_console = OcpToConsole(self)

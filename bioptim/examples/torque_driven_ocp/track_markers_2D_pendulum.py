@@ -172,7 +172,11 @@ def main():
     tau_ref = tau[:, :-1]
 
     ocp = prepare_ocp(
-        biorbd_model, final_time=final_time, n_shooting=n_shooting, markers_ref=markers_ref, tau_ref=tau_ref
+        biorbd_model,
+        final_time=final_time,
+        n_shooting=n_shooting,
+        markers_ref=markers_ref,
+        tau_ref=tau_ref,
     )
 
     # --- plot markers position --- #

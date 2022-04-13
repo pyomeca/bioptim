@@ -581,7 +581,11 @@ class QAndQDotBounds(Bounds):
     Specialized Bounds that reads a model to automatically extract q and qdot bounds
     """
 
-    def __init__(self, biorbd_model, dof_mappings: Union[BiMapping, BiMappingList] = None):
+    def __init__(
+        self,
+        biorbd_model,
+        dof_mappings: Union[BiMapping, BiMappingList] = None,
+    ):
         """
         Parameters
         ----------
@@ -706,7 +710,10 @@ class InitialGuess(OptionGeneric):
             The InitialGuess to concatenate with
         """
 
-        self.init = PathCondition(np.concatenate((self.init, other.init)), interpolation=self.init.type)
+        self.init = PathCondition(
+            np.concatenate((self.init, other.init)),
+            interpolation=self.init.type,
+        )
 
     def scale(self, scaling: float):
         """

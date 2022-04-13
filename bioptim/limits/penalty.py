@@ -248,7 +248,12 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def proportional_states(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str, first_dof: int, second_dof: int, coef: float
+            penalty: PenaltyOption,
+            all_pn: PenaltyNodeList,
+            key: str,
+            first_dof: int,
+            second_dof: int,
+            coef: float,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
@@ -277,7 +282,12 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def proportional_controls(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str, first_dof: int, second_dof: int, coef: float
+            penalty: PenaltyOption,
+            all_pn: PenaltyNodeList,
+            key: str,
+            first_dof: int,
+            second_dof: int,
+            coef: float,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)

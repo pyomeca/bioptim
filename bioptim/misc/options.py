@@ -97,7 +97,9 @@ class OptionList:
 
     def __init__(self):
         """ """
-        self.options = [[]]
+        self.options = [
+            [],
+        ]
 
     def __len__(self):
         """

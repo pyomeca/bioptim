@@ -113,7 +113,14 @@ def main():
     t = 0.3
     ns = 10
     mu = 0.2
-    ocp = prepare_ocp(biorbd_model_path=model_path, phase_time=t, n_shooting=ns, min_bound=50, max_bound=np.inf, mu=mu)
+    ocp = prepare_ocp(
+        biorbd_model_path=model_path,
+        phase_time=t,
+        n_shooting=ns,
+        min_bound=50,
+        max_bound=np.inf,
+        mu=mu,
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
