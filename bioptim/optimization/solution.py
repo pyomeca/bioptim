@@ -276,6 +276,7 @@ class Solution:
         self.real_time_to_optimize = None
         self.iterations = None
         self.status = None
+        self.time_vector = None
 
         # Extract the data now for further use
         self._states, self._controls, self.parameters = {}, {}, {}
@@ -450,8 +451,7 @@ class Solution:
         new.phase_time = deepcopy(self.phase_time)
         new.ns = deepcopy(self.ns)
 
-        if hasattr(self, "time_vector"):
-            new.time_vector = deepcopy(self.time_vector)
+        new.time_vector = deepcopy(self.time_vector)
 
         if skip_data:
             new._states, new._controls, new.parameters = [], [], {}
