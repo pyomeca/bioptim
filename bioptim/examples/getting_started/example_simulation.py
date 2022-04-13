@@ -16,7 +16,11 @@ import pendulum
 
 def main():
     # --- Load pendulum --- #
-    ocp = pendulum.prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=10)
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path="models/pendulum.bioMod",
+        final_time=2,
+        n_shooting=10,
+    )
 
     # Simulation the Initial Guess
     # Interpolation: Constant

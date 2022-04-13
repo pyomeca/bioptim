@@ -816,7 +816,13 @@ class PlotOcp:
                                 y_max = max(y_max, np.nanmax(p.get_ydata()))
                         y_range, data_range = self.__compute_ylim(y_min, y_max, 1.25)
                         ax.set_ylim(y_range)
-                        ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4))
+                        ax.set_yticks(
+                            np.arange(
+                                y_range[0],
+                                y_range[1],
+                                step=data_range / 4,
+                            )
+                        )
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))

@@ -95,7 +95,12 @@ def main():
     # --- Solve the program using IPOPT --- #
     x_warm = sol_acados["qqdot"] if warm_start_ipopt_from_acados_solution else None
     ocp_ipopt = prepare_ocp(
-        biorbd_model_path="models/arm26.bioMod", final_time=2, x_warm=x_warm, n_shooting=51, use_sx=False, n_threads=6
+        biorbd_model_path="models/arm26.bioMod",
+        final_time=2,
+        x_warm=x_warm,
+        n_shooting=51,
+        use_sx=False,
+        n_threads=6,
     )
 
     solver_ipopt = Solver.IPOPT()

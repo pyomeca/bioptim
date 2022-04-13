@@ -37,7 +37,10 @@ class GraphAbstract:
         Determine node index
     """
 
-    def __init__(self, ocp):
+    def __init__(
+        self,
+        ocp,
+    ):
         """
         Parameters
         ----------

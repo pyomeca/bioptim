@@ -100,7 +100,11 @@ def main():
 
     # Generate data using another optimization that will be feedback in as tracking data
     ocp_to_track = data_to_track.prepare_ocp(
-        biorbd_model_path=model_path, phase_time=final_time, n_shooting=ns, min_bound=50, max_bound=np.inf
+        biorbd_model_path=model_path,
+        phase_time=final_time,
+        n_shooting=ns,
+        min_bound=50,
+        max_bound=np.inf,
     )
     sol = ocp_to_track.solve()
     q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
