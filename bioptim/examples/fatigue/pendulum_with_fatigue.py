@@ -83,7 +83,7 @@ def prepare_ocp(
                     XiaFatigue(LD=100, LR=100, F=5, R=10, scaling=tau_max),
                     state_only=False,
                     split_controls=split_controls,
-                ),
+                )
             )
         elif fatigue_type == "xia_stabilized":
             fatigue_dynamics.add(
@@ -92,7 +92,7 @@ def prepare_ocp(
                     XiaFatigueStabilized(LD=100, LR=100, F=5, R=10, stabilization_factor=10, scaling=tau_max),
                     state_only=False,
                     split_controls=split_controls,
-                ),
+                )
             )
         elif fatigue_type == "michaud":
             fatigue_dynamics.add(
@@ -119,7 +119,7 @@ def prepare_ocp(
                     ),
                     state_only=False,
                     split_controls=split_controls,
-                ),
+                )
             )
         elif fatigue_type == "effort":
             fatigue_dynamics.add(

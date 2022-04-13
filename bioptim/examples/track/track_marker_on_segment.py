@@ -131,10 +131,7 @@ def main():
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="models/cube_and_line.bioMod",
-        n_shooting=30,
-        final_time=2,
-        initialize_near_solution=True,
+        biorbd_model_path="models/cube_and_line.bioMod", n_shooting=30, final_time=2, initialize_near_solution=True
     )
 
     # --- Solve the program --- #

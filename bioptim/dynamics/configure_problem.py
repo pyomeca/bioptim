@@ -177,11 +177,7 @@ class ConfigureProblem:
 
     @staticmethod
     def torque_derivative_driven(
-        ocp,
-        nlp,
-        with_contact=False,
-        implicit_dynamics: bool = False,
-        implicit_soft_contacts: bool = True,
+        ocp, nlp, with_contact=False, implicit_dynamics: bool = False, implicit_soft_contacts: bool = True
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -476,12 +472,7 @@ class ConfigureProblem:
 
     @staticmethod
     def _manage_fatigue_to_new_variable(
-        name: str,
-        name_elements: list,
-        nlp,
-        as_states: bool,
-        as_controls: bool,
-        fatigue: FatigueList = None,
+        name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None
     ):
         if fatigue is None or name not in fatigue:
             return False
@@ -862,13 +853,7 @@ class ConfigureProblem:
 
         muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
         ConfigureProblem.configure_new_variable(
-            "muscles",
-            muscle_names,
-            nlp,
-            as_states,
-            as_controls,
-            combine_state_control_plot=True,
-            fatigue=fatigue,
+            "muscles", muscle_names, nlp, as_states, as_controls, combine_state_control_plot=True, fatigue=fatigue
         )
 
     @staticmethod
@@ -934,12 +919,7 @@ class Dynamics(OptionGeneric):
 
     """
 
-    def __init__(
-        self,
-        dynamics_type: Union[Callable, DynamicsFcn],
-        expand: bool = False,
-        **params: Any,
-    ):
+    def __init__(self, dynamics_type: Union[Callable, DynamicsFcn], expand: bool = False, **params: Any):
         """
         Parameters
         ----------

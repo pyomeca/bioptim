@@ -5,16 +5,7 @@ plots and how to expand pre-existing one with new information
 
 from casadi import MX
 import biorbd_casadi as biorbd
-from bioptim import (
-    OptimalControlProgram,
-    Dynamics,
-    DynamicsFcn,
-    Bounds,
-    QAndQDotBounds,
-    InitialGuess,
-    PlotType,
-    Solver,
-)
+from bioptim import OptimalControlProgram, Dynamics, DynamicsFcn, Bounds, QAndQDotBounds, InitialGuess, PlotType, Solver
 
 
 def custom_plot_callback(x: MX, q_to_plot: list) -> MX:
@@ -73,16 +64,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
 
     u_init = InitialGuess([torque_init] * n_tau)
 
-    return OptimalControlProgram(
-        biorbd_model,
-        dynamics,
-        n_shooting,
-        final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-    )
+    return OptimalControlProgram(biorbd_model, dynamics, n_shooting, final_time, x_init, u_init, x_bounds, u_bounds)
 
 
 def main():

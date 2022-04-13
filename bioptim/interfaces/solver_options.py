@@ -619,9 +619,4 @@ class Solver:
 
         @staticmethod
         def get_tolerance_keys():
-            return [
-                "_nlp_solver_tol_comp",
-                "_nlp_solver_tol_eq",
-                "_nlp_solver_tol_ineq",
-                "_nlp_solver_tol_stat",
-            ]
+            return ["_nlp_solver_tol_comp", "_nlp_solver_tol_eq", "_nlp_solver_tol_ineq", "_nlp_solver_tol_stat"]

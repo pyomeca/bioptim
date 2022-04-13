@@ -101,11 +101,7 @@ def main():
     Prepares, solves and animates the program
     """
 
-    ocp = prepare_ocp(
-        biorbd_model_path="models/cube_and_line.bioMod",
-        n_shooting=30,
-        final_time=1,
-    )
+    ocp = prepare_ocp(biorbd_model_path="models/cube_and_line.bioMod", n_shooting=30, final_time=1)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
