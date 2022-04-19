@@ -1408,12 +1408,15 @@ IRK is supposed to be a bit more robust, but may be slower too.
 CVODES is the one with the least options, since it is not in-house implemented.
 
 The accepted values are:
-- RK1: Runge-Kutta of the 1st order also known as Forward Euler
-- RK2: Runge-Kutta of the 2nd order also known as Midpoint Euler
-- RK4: Runge-Kutta of the 4th order
-- RK8: Runge-Kutta of the 8th order
-- IRK: Implicit runge-Kutta
-- CVODES: cvodes solver
+- For Direct multiple shooting:
+	- RK1: Runge-Kutta of the 1st order also known as Forward Euler
+	- RK2: Runge-Kutta of the 2nd order also known as Midpoint Euler
+	- RK4: Runge-Kutta of the 4th order
+	- RK8: Runge-Kutta of the 8th order
+	- IRK: Implicit runge-Kutta (Legendre and Radau, from 0th to 9th order)
+	- CVODES: cvodes solver
+- For Direct collocation:
+	- COLLOCATION: Legendre and Radau, from 0th to 9th order
 
 ### Enum: Solver
 The nonlinear solver to solve the whole ocp. 
