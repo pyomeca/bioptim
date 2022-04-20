@@ -636,7 +636,8 @@ class PlotOcp:
                 x_mod = 1 if self.plot_func[key][i].compute_derivative else 0
                 u_mod = (
                     1
-                    if nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative
+                    if (nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative)
+                    and not ("OBJECTIVES" in key or "CONSTRAINTS" in key or "PHASE_TRANSITION" in key)
                     else 0
                 )
 

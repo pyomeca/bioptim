@@ -265,6 +265,7 @@ class Solution:
         self.vector = None
         self._cost = None
         self.constraints = None
+        self.detailed_cost = []
 
         self.lam_g = None
         self.lam_p = None
@@ -1021,7 +1022,25 @@ class Solution:
 
         return val, val_weighted
 
-    def print(self, cost_type: CostType = CostType.ALL):
+    def detailed_cost_values(self):
+        """
+        Adds the detailed objective functions and/or constraints values to sol
+
+        Parameters
+        ----------
+        cost_type: CostType
+            The type of cost to console print
+        """
+
+        for nlp in self.ocp.nlp:
+            for penalty in nlp.J_internal + nlp.J:
+                if not penalty:
+                    continue
+                val, val_weighted = self._get_penalty_cost(nlp, penalty)
+                self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
+        return
+
+    def print_cost(self, cost_type: CostType = CostType.ALL):
         """
         Print the objective functions and/or constraints to the console
 
@@ -1040,6 +1059,7 @@ class Solution:
 
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
+                self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
                 if print_only_weighted:
                     print(f"{penalty.name}: {val_weighted}")
                 else:
@@ -1100,7 +1120,7 @@ class Solution:
                 f"Solver reported time: {self.solver_time_to_optimize} sec\n"
                 f"Real time: {self.real_time_to_optimize} sec"
             )
-            self.print(CostType.OBJECTIVES)
-            self.print(CostType.CONSTRAINTS)
+            self.print_cost(CostType.OBJECTIVES)
+            self.print_cost(CostType.CONSTRAINTS)
         else:
             raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")

@@ -352,9 +352,11 @@ If you did not fancy the online graphs, but would enjoy them anyway, you can cal
 sol.graphs()
 ```
 
-If you are interested in the results of individual objective functions and constraints, you can print them using the `print()`:
+If you are interested in the results of individual objective functions and constraints, you can print them using the 
+`print_cost()` or access them using the `detailed_cost_values()`:
 ```python
-sol.print()
+sol.print_cost()  # For printing their values in the console
+sol.detailed_cost_values()  # For adding the objectives details to sol for later manipulations
 ```
 
 And that is all! 
@@ -401,7 +403,7 @@ ocp = OptimalControlProgram(
     )
     
 sol = ocp.solve(show_online_optim=True)
-sol.print()
+sol.print_cost()
 sol.animate()
 ```
 ### The pendulum.bioMod file
@@ -1357,7 +1359,7 @@ To do so, we strongly suggest saving the data and load them in an environment wh
 If `n_frames` is set, an interpolation is performed, otherwise, the phases are merged if possible, so a single animation is shown. 
 To prevent from the phase merging, one can set `n_frames=-1`.
 
-In order to print the values of the objective functions and constraints, one can use the `sol.print()` method.
+In order to print the values of the objective functions and constraints, one can use the `sol.print_cost()` method.
 If the parameter `cost_type=CostType.OBJECTIVE` is passed, only the values of each objective functions are printed.
 The same is true for the constraints with `CostType.CONSTRAINTS`.
 Please note that for readability purposes, this method prints the sum by phases for the constraints. 
@@ -1406,12 +1408,15 @@ IRK is supposed to be a bit more robust, but may be slower too.
 CVODES is the one with the least options, since it is not in-house implemented.
 
 The accepted values are:
-- RK1: Runge-Kutta of the 1st order also known as Forward Euler
-- RK2: Runge-Kutta of the 2nd order also known as Midpoint Euler
-- RK4: Runge-Kutta of the 4th order
-- RK8: Runge-Kutta of the 8th order
-- IRK: Implicit runge-Kutta
-- CVODES: cvodes solver
+- For Direct multiple shooting:
+	- RK1: Runge-Kutta of the 1st order also known as Forward Euler
+	- RK2: Runge-Kutta of the 2nd order also known as Midpoint Euler
+	- RK4: Runge-Kutta of the 4th order
+	- RK8: Runge-Kutta of the 8th order
+	- IRK: Implicit runge-Kutta (Legendre and Radau, from 0th to 9th order)
+	- CVODES: cvodes solver
+- For Direct collocation:
+	- COLLOCATION: Legendre and Radau, from 0th to 9th order
 
 ### Enum: Solver
 The nonlinear solver to solve the whole ocp. 
