@@ -181,6 +181,7 @@ from .misc.enums import (
     Shooting,
     VariableType,
     SolutionIntegrator,
+    IntegralApproximation,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram

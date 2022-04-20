@@ -126,3 +126,13 @@ class ConstraintType(Enum):
     USER = "user"
     INTERNAL = "internal"
     IMPLICIT = "implicit"
+
+
+class IntegralApproximation(Enum):
+    """
+    Selection of integral approximation
+    """
+
+    NONE = None
+    RECTANGLE = "rectangle"
+    TRAPEZOIDAL = "trapezoidal"

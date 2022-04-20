@@ -22,6 +22,7 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
+    IntegralApproximation,
 )
 
 
@@ -59,7 +60,11 @@ def prepare_ocp(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot",
+                                    integration_rule=IntegralApproximation.RECTANGLE)
+    # objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot",
+    #                                 integration_rule=IntegralApproximation.TRAPEZOIDAL)
+    # objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -104,22 +109,22 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=15)
 
     # Custom plots
-    ocp.add_plot_penalty(CostType.ALL)
+    ocp.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
-    # sol.graphs()
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # --- Show the results in a bioviz animation --- #
     sol.detailed_cost_values()
     sol.print_cost()
-    sol.animate(n_frames=100)
+    sol.graphs()
+    # sol.animate(n_frames=100)
 
 
 if __name__ == "__main__":

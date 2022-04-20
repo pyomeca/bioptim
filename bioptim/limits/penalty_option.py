@@ -5,7 +5,7 @@ from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node, PlotType, ControlType, ConstraintType
+from ..misc.enums import Node, PlotType, ControlType, ConstraintType, IntegralApproximation
 from ..misc.mapping import Mapping, BiMapping
 from ..misc.options import OptionGeneric
 
@@ -85,25 +85,26 @@ class PenaltyOption(OptionGeneric):
     """
 
     def __init__(
-        self,
-        penalty: Any,
-        phase: int = 0,
-        node: Union[Node, list, tuple] = Node.DEFAULT,
-        target: np.ndarray = None,
-        quadratic: bool = None,
-        weight: float = 1,
-        derivative: bool = False,
-        explicit_derivative: bool = False,
-        integrate: bool = False,
-        index: list = None,
-        rows: Union[list, tuple, range, np.ndarray] = None,
-        cols: Union[list, tuple, range, np.ndarray] = None,
-        states_mapping: BiMapping = None,
-        custom_function: Callable = None,
-        constraint_type: ConstraintType = ConstraintType.USER,
-        multi_thread: bool = None,
-        expand: bool = False,
-        **params: Any,
+            self,
+            penalty: Any,
+            phase: int = 0,
+            node: Union[Node, list, tuple] = Node.DEFAULT,
+            target: np.ndarray = None,
+            quadratic: bool = None,
+            weight: float = 1,
+            derivative: bool = False,
+            explicit_derivative: bool = False,
+            integrate: bool = False,
+            integration_rule: IntegralApproximation = IntegralApproximation.RECTANGLE,
+            index: list = None,
+            rows: Union[list, tuple, range, np.ndarray] = None,
+            cols: Union[list, tuple, range, np.ndarray] = None,
+            states_mapping: BiMapping = None,
+            custom_function: Callable = None,
+            constraint_type: ConstraintType = ConstraintType.USER,
+            multi_thread: bool = None,
+            expand: bool = False,
+            **params: Any,
     ):
         """
         Parameters
@@ -124,6 +125,10 @@ class PenaltyOption(OptionGeneric):
             If the function should be evaluated at X and X+1
         explicit_derivative: bool
             If the function should be evaluated at [X, X+1]
+        integrate: bool
+            If the function should be integrated
+        integration_rule: IntegralApproximation
+            The rule to use for the integration
         index: int
             The component index the penalty is acting on
         custom_function: Callable
@@ -169,6 +174,7 @@ class PenaltyOption(OptionGeneric):
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
+        self.integration_rule = integration_rule
         self.transition = False
         self.multinode_constraint = False
         self.phase_pre_idx = None
@@ -256,9 +262,9 @@ class PenaltyOption(OptionGeneric):
         # If the target is on controls and control is constant, there will be one value missing
         if all_pn is not None:
             if (
-                all_pn.nlp.control_type == ControlType.CONSTANT
-                and all_pn.nlp.ns in all_pn.t
-                and self.target.shape[-1] == all_pn.nlp.ns
+                    all_pn.nlp.control_type == ControlType.CONSTANT
+                    and all_pn.nlp.ns in all_pn.t
+                    and self.target.shape[-1] == all_pn.nlp.ns
             ):
                 if all_pn.t[-1] != all_pn.nlp.ns:
                     raise NotImplementedError("Modifying target for END not being last is not implemented yet")
@@ -332,7 +338,20 @@ class PenaltyOption(OptionGeneric):
                 param_cx,
             )
 
-        modified_fcn = self.function(state_cx, control_cx, param_cx)
+        if self.integration_rule == IntegralApproximation.RECTANGLE:
+            modified_fcn = self.function(state_cx, control_cx, param_cx)
+        elif self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+            state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
+            control_cx = horzcat(all_pn.nlp.controls.cx_end, all_pn.nlp.controls.cx)
+            self.modified_function = biorbd.to_casadi_func(
+                f"{name}",
+                (self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx)
+                 + self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx)) / 2,
+                state_cx,
+                control_cx,
+                param_cx,
+            )
+            modified_fcn = self.modified_function(state_cx, control_cx, param_cx)
 
         dt_cx = nlp.cx.sym("dt", 1, 1)
         weight_cx = nlp.cx.sym("weight", 1, 1)
@@ -340,7 +359,7 @@ class PenaltyOption(OptionGeneric):
         modified_fcn = modified_fcn - target_cx
 
         if self.weight:
-            modified_fcn = modified_fcn**2 if self.quadratic else modified_fcn
+            modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
             modified_fcn = weight_cx * modified_fcn * dt_cx
         else:
             modified_fcn = modified_fcn * dt_cx

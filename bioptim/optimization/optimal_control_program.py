@@ -733,6 +733,7 @@ class OptimalControlProgram:
                     "color": color[penalty.name],
                     "label": penalty.name,
                     "compute_derivative": penalty.derivative or penalty.explicit_derivative or penalty.integrate,
+                    "integration_rule": penalty.integration_rule,
                 }
                 if (
                     isinstance(penalty.type, ObjectiveFcn.Mayer)
