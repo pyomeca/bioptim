@@ -9,7 +9,16 @@ from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node, IntegralApproximation
+from ..misc.enums import (
+    ControlType,
+    CostType,
+    Shooting,
+    InterpolationType,
+    SolverType,
+    SolutionIntegrator,
+    Node,
+    IntegralApproximation,
+)
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -1006,7 +1015,11 @@ class Solution:
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
-                    if penalty.derivative or penalty.explicit_derivative or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+                    if (
+                        penalty.derivative
+                        or penalty.explicit_derivative
+                        or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                    ):
                         col_x_idx.append((idx + 1) * steps)
                         col_u_idx.append((idx + 1))
 

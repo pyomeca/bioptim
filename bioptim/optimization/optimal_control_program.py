@@ -29,7 +29,15 @@ from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
-from ..misc.enums import ControlType, SolverType, Shooting, PlotType, CostType, SolutionIntegrator, IntegralApproximation
+from ..misc.enums import (
+    ControlType,
+    SolverType,
+    Shooting,
+    PlotType,
+    CostType,
+    SolutionIntegrator,
+    IntegralApproximation,
+)
 from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
@@ -728,9 +736,17 @@ class OptimalControlProgram:
             elif penalty.derivative or penalty.explicit_derivative:
                 out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
             elif penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
-                out = [penalty.weighted_function_non_threaded(x[:, [i, i+1]], u[:, [i, i+1]], p, penalty.weight, _target, dt)
-                       for i in range(x.shape[1]-1)]
-                out.append(penalty.weighted_function_non_threaded(x[:, [-1, -1]], u[:, [-1, -1]], p, penalty.weight, _target, dt))
+                out = [
+                    penalty.weighted_function_non_threaded(
+                        x[:, [i, i + 1]], u[:, [i, i + 1]], p, penalty.weight, _target, dt
+                    )
+                    for i in range(x.shape[1] - 1)
+                ]
+                out.append(
+                    penalty.weighted_function_non_threaded(
+                        x[:, [-1, -1]], u[:, [-1, -1]], p, penalty.weight, _target, dt
+                    )
+                )
             else:
                 out.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, _target, dt))
             return sum1(horzcat(*out))

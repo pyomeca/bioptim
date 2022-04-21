@@ -46,21 +46,21 @@ class CustomPlot:
     """
 
     def __init__(
-            self,
-            update_function: Callable,
-            plot_type: PlotType = PlotType.PLOT,
-            axes_idx: Union[Mapping, tuple, list] = None,
-            legend: Union[tuple, list] = None,
-            combine_to: str = None,
-            color: str = None,
-            linestyle: str = None,
-            ylim: Union[tuple, list] = None,
-            bounds: Bounds = None,
-            node_idx: list = None,
-            label: list = None,
-            compute_derivative: bool = False,
-            integration_rule: IntegralApproximation = IntegralApproximation.RECTANGLE,
-            **parameters: Any,
+        self,
+        update_function: Callable,
+        plot_type: PlotType = PlotType.PLOT,
+        axes_idx: Union[Mapping, tuple, list] = None,
+        legend: Union[tuple, list] = None,
+        combine_to: str = None,
+        color: str = None,
+        linestyle: str = None,
+        ylim: Union[tuple, list] = None,
+        bounds: Bounds = None,
+        node_idx: list = None,
+        label: list = None,
+        compute_derivative: bool = False,
+        integration_rule: IntegralApproximation = IntegralApproximation.RECTANGLE,
+        **parameters: Any,
     ):
         """
         Parameters
@@ -194,12 +194,12 @@ class PlotOcp:
     """
 
     def __init__(
-            self,
-            ocp,
-            automatically_organize: bool = True,
-            show_bounds: bool = False,
-            shooting_type: Shooting = Shooting.MULTIPLE,
-            integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        self,
+        ocp,
+        automatically_organize: bool = True,
+        show_bounds: bool = False,
+        shooting_type: Shooting = Shooting.MULTIPLE,
+        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
     ):
         """
         Prepares the figures during the simulation
@@ -339,14 +339,14 @@ class PlotOcp:
                     if nlp.plot[key].phase_mappings is None:
                         size = (
                             nlp.plot[key]
-                                .function(
+                            .function(
                                 np.nan,
                                 np.zeros((nlp.states.shape, 2)),
                                 np.zeros((nlp.controls.shape, 2)),
                                 np.zeros((len(nlp.parameters), 2)),
                                 **nlp.plot[key].parameters,
                             )
-                                .shape[0]
+                            .shape[0]
                         )
                         nlp.plot[key].phase_mappings = Mapping(range(size))
                     else:
@@ -639,8 +639,8 @@ class PlotOcp:
                 u_mod = (
                     1
                     if (nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative)
-                       and not ("OBJECTIVES" in key or "CONSTRAINTS" in key or "PHASE_TRANSITION" in key)
-                       or self.plot_func[key][i].integration_rule == IntegralApproximation.TRAPEZOIDAL
+                    and not ("OBJECTIVES" in key or "CONSTRAINTS" in key or "PHASE_TRANSITION" in key)
+                    or self.plot_func[key][i].integration_rule == IntegralApproximation.TRAPEZOIDAL
                     else 0
                 )
 
@@ -652,8 +652,8 @@ class PlotOcp:
 
                         val = self.plot_func[key][i].function(
                             idx,
-                            state[:, step_size * idx: step_size * (idx + 1) + x_mod],
-                            control[:, idx: idx + u_mod + 1],
+                            state[:, step_size * idx : step_size * (idx + 1) + x_mod],
+                            control[:, idx : idx + u_mod + 1],
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
@@ -700,8 +700,8 @@ class PlotOcp:
                             else:
                                 val = self.plot_func[key][i].function(
                                     node_idx,
-                                    state[:, node_idx * step_size: (node_idx + 1) * step_size + mod: step_size],
-                                    control[:, node_idx: node_idx + 1 + mod],
+                                    state[:, node_idx * step_size : (node_idx + 1) * step_size + mod : step_size],
+                                    control[:, node_idx : node_idx + 1 + mod],
                                     data_params_in_dyn,
                                     **self.plot_func[key][i].parameters,
                                 )
@@ -715,8 +715,8 @@ class PlotOcp:
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                             val = self.plot_func[key][i].function(
                                 node_idx,
-                                state[:, node_idx * step_size: (node_idx + 1) * step_size + 1: step_size],
-                                control[:, node_idx: node_idx + 1 + 1],
+                                state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
+                                control[:, node_idx : node_idx + 1 + 1],
                                 data_params_in_dyn,
                                 **self.plot_func[key][i].parameters,
                             )

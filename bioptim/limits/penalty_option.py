@@ -85,26 +85,26 @@ class PenaltyOption(OptionGeneric):
     """
 
     def __init__(
-            self,
-            penalty: Any,
-            phase: int = 0,
-            node: Union[Node, list, tuple] = Node.DEFAULT,
-            target: np.ndarray = None,
-            quadratic: bool = None,
-            weight: float = 1,
-            derivative: bool = False,
-            explicit_derivative: bool = False,
-            integrate: bool = False,
-            integration_rule: IntegralApproximation = IntegralApproximation.RECTANGLE,
-            index: list = None,
-            rows: Union[list, tuple, range, np.ndarray] = None,
-            cols: Union[list, tuple, range, np.ndarray] = None,
-            states_mapping: BiMapping = None,
-            custom_function: Callable = None,
-            constraint_type: ConstraintType = ConstraintType.USER,
-            multi_thread: bool = None,
-            expand: bool = False,
-            **params: Any,
+        self,
+        penalty: Any,
+        phase: int = 0,
+        node: Union[Node, list, tuple] = Node.DEFAULT,
+        target: np.ndarray = None,
+        quadratic: bool = None,
+        weight: float = 1,
+        derivative: bool = False,
+        explicit_derivative: bool = False,
+        integrate: bool = False,
+        integration_rule: IntegralApproximation = IntegralApproximation.RECTANGLE,
+        index: list = None,
+        rows: Union[list, tuple, range, np.ndarray] = None,
+        cols: Union[list, tuple, range, np.ndarray] = None,
+        states_mapping: BiMapping = None,
+        custom_function: Callable = None,
+        constraint_type: ConstraintType = ConstraintType.USER,
+        multi_thread: bool = None,
+        expand: bool = False,
+        **params: Any,
     ):
         """
         Parameters
@@ -262,9 +262,9 @@ class PenaltyOption(OptionGeneric):
         # If the target is on controls and control is constant, there will be one value missing
         if all_pn is not None:
             if (
-                    all_pn.nlp.control_type == ControlType.CONSTANT
-                    and all_pn.nlp.ns in all_pn.t
-                    and self.target.shape[-1] == all_pn.nlp.ns
+                all_pn.nlp.control_type == ControlType.CONSTANT
+                and all_pn.nlp.ns in all_pn.t
+                and self.target.shape[-1] == all_pn.nlp.ns
             ):
                 if all_pn.t[-1] != all_pn.nlp.ns:
                     raise NotImplementedError("Modifying target for END not being last is not implemented yet")
@@ -345,8 +345,11 @@ class PenaltyOption(OptionGeneric):
             control_cx = horzcat(all_pn.nlp.controls.cx_end, all_pn.nlp.controls.cx)
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
-                (self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx)
-                 + self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx)) / 2,
+                (
+                    self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx)
+                    + self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx)
+                )
+                / 2,
                 state_cx,
                 control_cx,
                 param_cx,
@@ -361,7 +364,7 @@ class PenaltyOption(OptionGeneric):
         #  otherwise had the target value for both starting and ending points
 
         if self.weight:
-            modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
+            modified_fcn = modified_fcn**2 if self.quadratic else modified_fcn
             modified_fcn = weight_cx * modified_fcn * dt_cx
         else:
             modified_fcn = modified_fcn * dt_cx

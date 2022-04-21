@@ -9,7 +9,7 @@ from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
 from ..interfaces.solver_options import Solver
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType, Node, SolverType
+from ..misc.enums import InterpolationType, ControlType, Node, SolverType, IntegralApproximation
 from ..optimization.solution import Solution
 
 
@@ -247,7 +247,11 @@ class IpoptInterface(SolverInterface):
                 _x = nlp.X[_idx][:, 0]
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
 
-            if _penalty.derivative or _penalty.explicit_derivative:
+            if (
+                _penalty.derivative
+                or _penalty.explicit_derivative
+                or _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+            ):
                 _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
                 _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
             return _x, _u
