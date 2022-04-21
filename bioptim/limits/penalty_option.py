@@ -357,6 +357,8 @@ class PenaltyOption(OptionGeneric):
         weight_cx = nlp.cx.sym("weight", 1, 1)
         target_cx = nlp.cx.sym("target", modified_fcn.shape)
         modified_fcn = modified_fcn - target_cx
+        # todo: target has to be done only in rectangle ?
+        #  otherwise had the target value for both starting and ending points
 
         if self.weight:
             modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
