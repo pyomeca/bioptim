@@ -1454,6 +1454,7 @@ The accepted values are:
 PLOT: Normal plot that links the points.
 INTEGRATED: Plot that links the points within an interval, but is discrete between the end of an interval and the beginning of the next one.
 STEP: Step plot, constant over an interval
+POINT: Point plot
 
 ### Enum: InterpolationType
 How a time dependent variable is interpolated.
