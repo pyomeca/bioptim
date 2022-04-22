@@ -411,6 +411,43 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return BiorbdInterface.mx_to_cx("ForwardDynamics", nlp.controls["fext"].mx - soft_contact_force, *var)
 
+        @staticmethod
+        def implicit_root_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+            """
+            Compute the difference between symbolic joint torques and inverse dynamic results
+            It does not include any inversion of mass matrix
+
+            Parameters
+            ----------
+            _: Constraint,
+                The actual constraint to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            **unused_param: dict
+                Since the function does nothing, we can safely ignore any argument
+            """
+
+            nlp = all_pn.nlp
+            nb_root = nlp.model.nbRoot()
+
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+
+            if nlp.external_forces:
+                raise NotImplementedError(
+                    "This implicit constraint implicit_root_dynamics is not implemented yet with external forces"
+                )
+
+            floating_base_constraint = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()[:nb_root]
+
+            var = []
+            var.extend([nlp.states[key] for key in nlp.states])
+            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([param for param in nlp.parameters])
+
+            return BiorbdInterface.mx_to_cx("FloatingBaseConstraint", floating_base_constraint, *var)
+
     @staticmethod
     def inner_phase_continuity(ocp):
         """
@@ -530,6 +567,7 @@ class ImplicitConstraintFcn(Enum):
     QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
     TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
+    QDDOT_ROOT_EQUALS_ROOT_DYNAMICS = (ConstraintFunction.Functions.implicit_root_dynamics,)
 
     @staticmethod
     def get_type():
