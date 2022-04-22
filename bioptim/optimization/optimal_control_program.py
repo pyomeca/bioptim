@@ -954,8 +954,9 @@ class OptimalControlProgram:
             data = pickle.load(file)
             ocp = OptimalControlProgram(**data["ocp_initializer"])
             for key in data["versions"].keys():
+                key_module = "biorbd_casadi" if key == "biorbd" else key
                 try:
-                    check_version(sys.modules[key], data["versions"][key], ocp.version[key], exclude_max=False)
+                    check_version(sys.modules[key_module], data["versions"][key], ocp.version[key], exclude_max=False)
                 except ImportError:
                     raise ImportError(
                         f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
