@@ -679,7 +679,10 @@ class PlotOcp:
                         mod = 1 if self.plot_func[key][i].compute_derivative else 0
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
 
-                            if self.plot_func[key][i].parameters["penalty"].transition:
+                            if (
+                                "penalty" in self.plot_func[key][i].parameters.keys()
+                                and self.plot_func[key][i].parameters["penalty"].transition
+                            ):
                                 val = self.plot_func[key][i].function(
                                     node_idx,
                                     np.hstack(
