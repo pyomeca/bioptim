@@ -778,15 +778,10 @@ class OptimalControlProgram:
                     "compute_derivative": penalty.derivative or penalty.explicit_derivative or penalty.integrate,
                     "integration_rule": penalty.integration_rule,
                 }
-                if (
-                    isinstance(penalty.type, ObjectiveFcn.Mayer)
-                    or isinstance(penalty.type, ConstraintFcn)
-                    or penalty.transition
-                ):
-                    plot_params["plot_type"] = PlotType.POINT
-                    plot_params["node_idx"] = penalty.node_idx
-                else:
-                    plot_params["plot_type"] = PlotType.STEP
+
+                plot_params["plot_type"] = PlotType.POINT
+                plot_params["node_idx"] = penalty.node_idx
+
                 self.add_plot(**plot_params)
 
             return
