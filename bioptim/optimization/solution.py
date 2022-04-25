@@ -1021,7 +1021,10 @@ class Solution:
                         or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                     ):
                         col_x_idx.append((idx + 1) * steps)
-                        if penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL:
+                        if (
+                            penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
+                            or nlp.control_type == ControlType.LINEAR_CONTINUOUS
+                        ):
                             col_u_idx.append((idx + 1))
 
                     x = self._states[phase_idx]["all"][:, col_x_idx]

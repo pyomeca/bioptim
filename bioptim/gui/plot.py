@@ -645,6 +645,10 @@ class PlotOcp:
                     1
                     if (nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative)
                     and not ("OBJECTIVES" in key or "CONSTRAINTS" in key or "PHASE_TRANSITION" in key)
+                    or (
+                        self.plot_func[key][i].integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        and nlp.control_type == ControlType.LINEAR_CONTINUOUS
+                    )
                     else 0
                 )
 

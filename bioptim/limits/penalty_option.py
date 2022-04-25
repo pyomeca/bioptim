@@ -375,8 +375,12 @@ class PenaltyOption(OptionGeneric):
             state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
-            control_cx = horzcat(all_pn.nlp.controls.cx)
-            controls_cx_end = get_u(nlp, all_pn.nlp.controls.cx, dt_cx)
+            control_cx = (
+                horzcat(all_pn.nlp.controls.cx)
+                if nlp.control_type == ControlType.CONSTANT
+                else horzcat(all_pn.nlp.controls.cx, all_pn.nlp.controls.cx_end)
+            )
+            controls_cx_end = get_u(nlp, control_cx, dt_cx)
 
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",

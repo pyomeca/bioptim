@@ -253,7 +253,8 @@ class IpoptInterface(SolverInterface):
 
             if _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
                 _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
-
+                if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
             return _x, _u
 
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
