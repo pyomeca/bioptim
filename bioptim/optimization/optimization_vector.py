@@ -264,7 +264,8 @@ class OptimizationVector:
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
                     u.append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1))
-
+                # todo : ,2 for piecewise linear and trapezoidal integration
+                # todo : how to add this new controls to optimal control problem
             nlp.X = x
             self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x])
             self.n_phase_x[nlp.phase_idx] = self.x[nlp.phase_idx].size()[0]

@@ -247,13 +247,13 @@ class IpoptInterface(SolverInterface):
                 _x = nlp.X[_idx][:, 0]
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
 
-            if (
-                _penalty.derivative
-                or _penalty.explicit_derivative
-                or _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
-            ):
+            if _penalty.derivative or _penalty.explicit_derivative:
                 _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
                 _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+
+            if _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+                _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
+
             return _x, _u
 
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)

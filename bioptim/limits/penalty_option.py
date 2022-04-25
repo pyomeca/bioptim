@@ -290,6 +290,33 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
+        def get_u(nlp, u: Union[MX, SX], dt: Union[MX, SX]):
+            """
+            Get the control at a given time
+
+            Parameters
+            ----------
+            nlp: NonlinearProgram
+                The nonlinear program
+            u: Union[MX, SX]
+                The control matrix
+            dt: Union[MX, SX]
+                The time a which control should be computed
+
+            Returns
+            -------
+            The control at a given time
+            """
+
+            if nlp.control_type == ControlType.CONSTANT:
+                return u
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
+            else:
+                raise RuntimeError(f"{nlp.control_type} ControlType not implemented yet")
+
+            return u
+
         if self.multinode_constraint or self.transition:
             ocp = all_pn[0].ocp
             nlp = all_pn[0].nlp
@@ -338,25 +365,33 @@ class PenaltyOption(OptionGeneric):
                 param_cx,
             )
 
+        dt_cx = nlp.cx.sym("dt", 1, 1)
+
         if self.integration_rule == IntegralApproximation.RECTANGLE:
             modified_fcn = self.function(state_cx, control_cx, param_cx)
         elif self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+            # Hypothesis: the function is continuous on states
+            # it neglects the discontinuities at the beginning of the optimization
             state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
-            control_cx = horzcat(all_pn.nlp.controls.cx_end, all_pn.nlp.controls.cx)
+            # to handle piecewise constant in controls we have to compute the value for the end of the interval
+            # which only relies on the value of the control at the beginning of the interval
+            control_cx = horzcat(all_pn.nlp.controls.cx)
+            controls_cx_end = get_u(nlp, all_pn.nlp.controls.cx, dt_cx)
+
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
                 (
-                    self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx)
+                    self.function(all_pn.nlp.states.cx_end, controls_cx_end, param_cx)
                     + self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx)
                 )
                 / 2,
                 state_cx,
                 control_cx,
                 param_cx,
+                dt_cx,
             )
-            modified_fcn = self.modified_function(state_cx, control_cx, param_cx)
+            modified_fcn = self.modified_function(state_cx, control_cx, param_cx, dt_cx)
 
-        dt_cx = nlp.cx.sym("dt", 1, 1)
         weight_cx = nlp.cx.sym("weight", 1, 1)
         target_cx = nlp.cx.sym("target", modified_fcn.shape)
         modified_fcn = modified_fcn - target_cx

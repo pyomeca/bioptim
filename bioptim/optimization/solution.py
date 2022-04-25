@@ -1021,7 +1021,8 @@ class Solution:
                         or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                     ):
                         col_x_idx.append((idx + 1) * steps)
-                        col_u_idx.append((idx + 1))
+                        if penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL:
+                            col_u_idx.append((idx + 1))
 
                     x = self._states[phase_idx]["all"][:, col_x_idx]
                     u = self._controls[phase_idx]["all"][:, col_u_idx]

@@ -103,7 +103,7 @@ def prepare_ocp(
     "objective",
     [
         "torque",
-        # "qdot",
+        "qdot",
     ],
 )
 @pytest.mark.parametrize(
@@ -143,9 +143,9 @@ def test_pendulum(control_type, integration_rule, objective):
     if integration_rule == IntegralApproximation.RECTANGLE:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 695.8827067300126)
+                np.testing.assert_almost_equal(f[0, 0], 91.8356223868222)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 33.240173228232464)
+                np.testing.assert_almost_equal(f[0, 0], 37.12671126566315)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 215.60226886088248)
@@ -154,9 +154,9 @@ def test_pendulum(control_type, integration_rule, objective):
     elif integration_rule == IntegralApproximation.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 695.8827067300126)
+                np.testing.assert_almost_equal(f[0, 0], 91.8356223868222)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 33.240173228232464)
+                np.testing.assert_almost_equal(f[0, 0], 21.370228208397783)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 215.60226886088248)
