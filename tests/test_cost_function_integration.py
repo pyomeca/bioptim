@@ -125,10 +125,7 @@ def sum_cost_function_output(sol):
 )
 @pytest.mark.parametrize(
     "control_type",
-    [
-        ControlType.CONSTANT,
-        ControlType.LINEAR_CONTINUOUS
-    ],
+    [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS],
 )
 @pytest.mark.parametrize(
     "integration_rule",
@@ -186,4 +183,3 @@ def test_pendulum(control_type, integration_rule, objective):
             else:
                 np.testing.assert_almost_equal(f[0, 0], 12.665615210734394)
                 np.testing.assert_almost_equal(j_printed, 12.665615210734394)
-
