@@ -287,7 +287,10 @@ class IpoptInterface(SolverInterface):
             else:
                 p = self.ocp.cx()
                 for idx in penalty.node_idx:
-                    target = format_target(penalty.target)
+                    if penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+                        target = np.vstack((format_target(penalty.target[0:1]), format_target(penalty.target[1:]))).T
+                    else:
+                        target = format_target(penalty.target)
 
                     if np.isnan(np.sum(target)):
                         continue

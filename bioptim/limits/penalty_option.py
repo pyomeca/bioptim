@@ -166,15 +166,11 @@ class PenaltyOption(OptionGeneric):
                     self.target[-1] = self.target[-1][:, np.newaxis]
             if len(self.target) == 1 and self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
                 if self.node == Node.ALL or self.node == Node.DEFAULT:
-                    for i, t in enumerate(self.target):
-                        self.target[i] = [
-                            np.hstack((t[:, i : i + 1], t[:, i + 1 : i + 2])) for i in range(t.shape[1] - 1)
-                        ]
+                    self.target = [self.target[0][:, :-1], self.target[0][:, 1:]]
                 else:
                     raise NotImplementedError(
                         f"target with IntegralApproximation.TRAPEZOIDAL doesn't work with {self.node}, "
-                        "it only works if node is Node.NODE_ALL or"
-                        "if you provide the target for previous and next nodes when setting a single node"
+                        "it only works if node is Node.NODE_ALL and Node.NODE_DEFAULT"
                     )
 
         self.target_plot_name = None
@@ -297,25 +293,40 @@ class PenaltyOption(OptionGeneric):
                     self.target[0] = np.concatenate(
                         (self.target[0], np.nan * np.zeros((self.target[0].shape[0], 1))), axis=1
                     )
-        if self.target.shape[-1] == 1:
-            self.target = np.repeat(self.target, n_time_expected, axis=-1)
+        elif self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
 
-        shape = (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
-        if self.target.shape != shape:
-            raise RuntimeError(
-                f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
+            for i in range(2):
+                n_dim = len(self.target[i].shape)
+                if n_dim != 2 and n_dim != 3:
+                    raise RuntimeError(
+                        f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
+                    )
+                if self.target[i].shape[-1] == 1:
+                    self.target = np.repeat(self.target, n_time_expected, axis=-1)
+
+            shape = (
+                (len(self.rows), n_time_expected - 1)
+                if n_dim == 2
+                else (len(self.rows), len(self.cols), n_time_expected - 1)
             )
 
-        # If the target is on controls and control is constant, there will be one value missing
-        if all_pn is not None:
-            if (
-                all_pn.nlp.control_type == ControlType.CONSTANT
-                and all_pn.nlp.ns in all_pn.t
-                and self.target.shape[-1] == all_pn.nlp.ns
-            ):
-                if all_pn.t[-1] != all_pn.nlp.ns:
-                    raise NotImplementedError("Modifying target for END not being last is not implemented yet")
-                self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
+            for i in range(2):
+                if self.target[i].shape != shape:
+                    raise RuntimeError(
+                        f"target {self.target[i].shape} does not correspond to expected size {shape} for penalty {self.name}"
+                    )
+
+            # If the target is on controls and control is constant, there will be one value missing
+            if all_pn is not None:
+                if (
+                    all_pn.nlp.control_type == ControlType.CONSTANT
+                    and all_pn.nlp.ns in all_pn.t
+                    and self.target[0].shape[-1] == all_pn.nlp.ns - 1
+                    and self.target[1].shape[-1] == all_pn.nlp.ns - 1
+                ):
+                    if all_pn.t[-1] != all_pn.nlp.ns:
+                        raise NotImplementedError("Modifying target for END not being last is not implemented yet")
+                    self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
     def _set_penalty_function(self, all_pn: Union[PenaltyNodeList, list, tuple], fcn: Union[MX, SX]):
         """
@@ -395,9 +406,8 @@ class PenaltyOption(OptionGeneric):
         param_cx = nlp.cx(nlp.parameters.cx)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
-        self.function = biorbd.to_casadi_func(
-            name, fcn[self.rows, self.cols], state_cx, control_cx, param_cx, expand=self.expand
-        )
+        sub_fcn = fcn[self.rows, self.cols]
+        self.function = biorbd.to_casadi_func(name, sub_fcn, state_cx, control_cx, param_cx, expand=self.expand)
         self.function_non_threaded = self.function
 
         if self.derivative:
@@ -413,10 +423,13 @@ class PenaltyOption(OptionGeneric):
             )
 
         dt_cx = nlp.cx.sym("dt", 1, 1)
+        target_shape = list(sub_fcn.shape)
+        target_shape[1] += 1 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL else 0
+        target_cx = nlp.cx.sym("target", tuple(target_shape))
+        weight_cx = nlp.cx.sym("weight", 1, 1)
+        n = 2 if self.quadratic and self.weight else 1
 
-        if self.integration_rule == IntegralApproximation.RECTANGLE:
-            modified_fcn = self.function(state_cx, control_cx, param_cx)
-        elif self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+        if self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
             # Hypothesis: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
             state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
@@ -432,28 +445,21 @@ class PenaltyOption(OptionGeneric):
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
                 (
-                    self.function(all_pn.nlp.states.cx_end, controls_cx_end, param_cx)
-                    + self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx)
+                    (self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx[:, 0]) ** n
+                    + (self.function(all_pn.nlp.states.cx_end, controls_cx_end, param_cx) - target_cx[:, 1]) ** n
                 )
                 / 2,
                 state_cx,
                 control_cx,
                 param_cx,
+                target_cx,
                 dt_cx,
             )
-            modified_fcn = self.modified_function(state_cx, control_cx, param_cx, dt_cx)
-
-        weight_cx = nlp.cx.sym("weight", 1, 1)
-        target_cx = nlp.cx.sym("target", modified_fcn.shape)
-        modified_fcn = modified_fcn - target_cx
-        # todo: target has to be done only in rectangle ?
-        #  otherwise had the target value for both starting and ending points
-
-        if self.weight:
-            modified_fcn = modified_fcn**2 if self.quadratic else modified_fcn
-            modified_fcn = weight_cx * modified_fcn * dt_cx
+            modified_fcn = self.modified_function(state_cx, control_cx, param_cx, target_cx, dt_cx)
         else:
-            modified_fcn = modified_fcn * dt_cx
+            modified_fcn = (self.function(state_cx, control_cx, param_cx) - target_cx) ** n
+
+        modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
 
         # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function = Function(
@@ -608,7 +614,7 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, all_pn)
             self.clear_penalty(all_pn.ocp, all_pn.nlp)
             self.dt = penalty_type.get_dt(all_pn.nlp)
-            self.node_idx = all_pn.t
+            self.node_idx = all_pn.t[:-1] if self.integration_rule == IntegralApproximation.TRAPEZOIDAL else all_pn.t
 
         penalty_function = self.type.value[0](self, all_pn, **self.params)
         self.set_penalty(penalty_function, all_pn)
