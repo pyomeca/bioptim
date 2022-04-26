@@ -28,6 +28,7 @@ def prepare_ocp(
     integration_rule: IntegralApproximation,
     control_type: ControlType,
     objective: str,
+    target: float = None,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -44,6 +45,8 @@ def prepare_ocp(
         The type of control to use (constant or linear)
     objective: str
         The objective to minimize (torque or power)
+    target: float
+        The target value to reach
 
     Returns
     -------
@@ -51,16 +54,15 @@ def prepare_ocp(
     """
 
     biorbd_model = biorbd.Model(biorbd_model_path)
-    for ii in range(10):
-        print(integration_rule)
+
     # Add objective functions
     if objective == "torque":
         objective_functions = Objective(
-            ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", integration_rule=integration_rule
+            ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", integration_rule=integration_rule, target=target
         )
     if objective == "qdot":
         objective_functions = Objective(
-            ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", integration_rule=integration_rule
+            ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", integration_rule=integration_rule, target=target
         )
 
     # Dynamics
@@ -141,7 +143,7 @@ def test_pendulum(control_type, integration_rule, objective):
 
     ocp = prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        n_shooting=20,
+        n_shooting=15,
         integration_rule=integration_rule,
         objective=objective,
         control_type=control_type,
@@ -156,30 +158,30 @@ def test_pendulum(control_type, integration_rule, objective):
     if integration_rule == IntegralApproximation.RECTANGLE:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 91.8356223868222)
-                np.testing.assert_almost_equal(j_printed, 91.8356223868222)
+                np.testing.assert_almost_equal(f[0, 0], 84.49740183326932)
+                np.testing.assert_almost_equal(j_printed, 84.49740183326932)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 37.12671126566315)
-                np.testing.assert_almost_equal(j_printed, 37.12671126566315)
+                np.testing.assert_almost_equal(f[0, 0], 30.74653667406686)
+                np.testing.assert_almost_equal(j_printed, 30.74653667406686)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 86.42760198207846)
-                np.testing.assert_almost_equal(j_printed, 86.42760198207846)
+                np.testing.assert_almost_equal(f[0, 0], 55.84321417560313)
+                np.testing.assert_almost_equal(j_printed, 55.84321417560313)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 14.757169956971257)
-                np.testing.assert_almost_equal(j_printed, 14.757169956971257)
+                np.testing.assert_almost_equal(f[0, 0], 23.371290063644963)
+                np.testing.assert_almost_equal(j_printed, 23.371290063644963)
     elif integration_rule == IntegralApproximation.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 91.8356223868222)
-                np.testing.assert_almost_equal(j_printed, 91.8356223868222)
+                np.testing.assert_almost_equal(f[0, 0], 84.49740183326932)
+                np.testing.assert_almost_equal(j_printed, 84.49740183326932)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 21.370228208397783)
-                np.testing.assert_almost_equal(j_printed, 21.370228208397783)
+                np.testing.assert_almost_equal(f[0, 0], 32.386868834009924)
+                np.testing.assert_almost_equal(j_printed, 32.386868834009924)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 61.42546826564574)
-                np.testing.assert_almost_equal(j_printed, 61.42546826564574)
+                np.testing.assert_almost_equal(f[0, 0], 50.47034448982324)
+                np.testing.assert_almost_equal(j_printed, 50.47034448982324)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 12.665615210734394)
-                np.testing.assert_almost_equal(j_printed, 12.665615210734394)
+                np.testing.assert_almost_equal(f[0, 0], 23.371290063644935)
+                np.testing.assert_almost_equal(j_printed, 23.371290063644935)

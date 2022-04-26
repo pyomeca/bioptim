@@ -288,7 +288,12 @@ class IpoptInterface(SolverInterface):
                 p = self.ocp.cx()
                 for idx in penalty.node_idx:
                     if penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
-                        target = np.vstack((format_target(penalty.target[0:1]), format_target(penalty.target[1:]))).T
+                        if penalty.target is not None:
+                            target0 = format_target(penalty.target[0:1])
+                            target1 = format_target(penalty.target[1:])
+                            target = np.vstack((target0, target1)).T
+                        else:
+                            target = []
                     else:
                         target = format_target(penalty.target)
 

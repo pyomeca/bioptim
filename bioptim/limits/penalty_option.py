@@ -440,13 +440,13 @@ class PenaltyOption(OptionGeneric):
                 if nlp.control_type == ControlType.CONSTANT
                 else horzcat(all_pn.nlp.controls.cx, all_pn.nlp.controls.cx_end)
             )
-            controls_cx_end = get_u(nlp, control_cx, dt_cx)
+            control_cx_end = get_u(nlp, control_cx, dt_cx)
 
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
                 (
                     (self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx[:, 0]) ** n
-                    + (self.function(all_pn.nlp.states.cx_end, controls_cx_end, param_cx) - target_cx[:, 1]) ** n
+                    + (self.function(all_pn.nlp.states.cx_end, control_cx_end, param_cx) - target_cx[:, 1]) ** n
                 )
                 / 2,
                 state_cx,
@@ -464,7 +464,7 @@ class PenaltyOption(OptionGeneric):
         # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function = Function(
             name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
-        )
+        ).expand()
         self.weighted_function_non_threaded = self.weighted_function
 
         if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
@@ -614,7 +614,11 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, all_pn)
             self.clear_penalty(all_pn.ocp, all_pn.nlp)
             self.dt = penalty_type.get_dt(all_pn.nlp)
-            self.node_idx = all_pn.t[:-1] if self.integration_rule == IntegralApproximation.TRAPEZOIDAL else all_pn.t
+            self.node_idx = (
+                all_pn.t[:-1]
+                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL and self.target is not None
+                else all_pn.t
+            )
 
         penalty_function = self.type.value[0](self, all_pn, **self.params)
         self.set_penalty(penalty_function, all_pn)
