@@ -211,9 +211,10 @@ class IpoptInterface(SolverInterface):
         return all_objectives
 
     def __get_all_penalties(self, nlp, penalties):
-        def format_target(target_in):
+        def format_target(target_in: list) -> np.array:
             target_out = []
             if target_in is not None:
+                target_in = target_in[0]
                 if len(target_in.shape) == 2:
                     target_out = target_in[:, penalty.node_idx.index(idx)]
                 elif len(target_in.shape) == 3:
@@ -264,7 +265,7 @@ class IpoptInterface(SolverInterface):
                 continue
 
             if penalty.multi_thread:
-                if penalty.target is not None and len(penalty.target.shape) != 2:
+                if penalty.target is not None and len(penalty.target[0].shape) != 2:
                     raise NotImplementedError(
                         "multi_thread penalty with target shape != [n x m] is not implemented yet"
                     )

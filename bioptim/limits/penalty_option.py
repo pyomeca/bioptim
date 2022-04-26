@@ -48,6 +48,8 @@ class PenaltyOption(OptionGeneric):
         If the minimization is applied on the numerical derivative of the state [f(t+1) - f(t)]
     explicit_derivative: bool
         If the minimization is applied to derivative of the penalty [f(t, t+1)]
+    integration_rule: IntegralApproximation
+        The integration rule to use for the penalty
     transition: bool
         If the penalty is a transition
     phase_pre_idx: int
@@ -89,7 +91,7 @@ class PenaltyOption(OptionGeneric):
         penalty: Any,
         phase: int = 0,
         node: Union[Node, list, tuple] = Node.DEFAULT,
-        target: np.ndarray = None,
+        target: Union[int, float, np.array, list[int], list[float], list[np.array]] = None,
         quadratic: bool = None,
         weight: float = 1,
         derivative: bool = False,
@@ -115,7 +117,7 @@ class PenaltyOption(OptionGeneric):
             The phase the penalty is acting on
         node: Union[Node, list, tuple]
             The node within a phase on which the penalty is acting on
-        target: np.ndarray
+        target: Union[int, float, np.array, list[int], list[float], list[np.array]]
             A target to track for the penalty
         quadratic: bool
             If the penalty is quadratic
@@ -142,6 +144,7 @@ class PenaltyOption(OptionGeneric):
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
         self.node: Union[Node, list, tuple] = node
         self.quadratic = quadratic
+        self.integration_rule = integration_rule
 
         if index is not None and rows is not None:
             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
@@ -151,14 +154,33 @@ class PenaltyOption(OptionGeneric):
 
         self.target = None
         if target is not None:
-            self.target = np.array(target)
-            if len(self.target.shape) == 0:
-                self.target = self.target[np.newaxis]
-            if len(self.target.shape) == 1:
-                self.target = self.target[:, np.newaxis]
+            target = np.array(target)
+            if isinstance(target, int) or isinstance(target, float) or isinstance(target, np.ndarray):
+                target = [target]
+            self.target = []
+            for t in target:
+                self.target.append(np.array(t))
+                if len(self.target[-1].shape) == 0:
+                    self.target[-1] = self.target[-1][np.newaxis]
+                if len(self.target[-1].shape) == 1:
+                    self.target[-1] = self.target[-1][:, np.newaxis]
+            if len(self.target) == 1 and self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+                if self.node == Node.ALL or self.node == Node.DEFAULT:
+                    for i, t in enumerate(self.target):
+                        self.target[i] = [
+                            np.hstack((t[:, i : i + 1], t[:, i + 1 : i + 2])) for i in range(t.shape[1] - 1)
+                        ]
+                else:
+                    raise NotImplementedError(
+                        f"target with IntegralApproximation.TRAPEZOIDAL doesn't work with {self.node}, "
+                        "it only works if node is Node.NODE_ALL or"
+                        "if you provide the target for previous and next nodes when setting a single node"
+                    )
+
         self.target_plot_name = None
         self.target_to_plot = None
-        self.plot_target = True
+        # not implemented yet for trapezoidal integration
+        self.plot_target = False if self.integration_rule == IntegralApproximation.TRAPEZOIDAL else True
 
         self.states_mapping = states_mapping
 
@@ -174,7 +196,6 @@ class PenaltyOption(OptionGeneric):
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
-        self.integration_rule = integration_rule
         self.transition = False
         self.multinode_constraint = False
         self.phase_pre_idx = None
@@ -247,9 +268,35 @@ class PenaltyOption(OptionGeneric):
             The expected shape (n_rows, ns) of the data to track
         """
 
-        n_dim = len(self.target.shape)
-        if n_dim != 2 and n_dim != 3:
-            raise RuntimeError(f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)")
+        if self.integration_rule == IntegralApproximation.RECTANGLE:
+            n_dim = len(self.target[0].shape)
+            if n_dim != 2 and n_dim != 3:
+                raise RuntimeError(
+                    f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
+                )
+            if self.target[0].shape[-1] == 1:
+                self.target = np.repeat(self.target, n_time_expected, axis=-1)
+
+            shape = (
+                (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
+            )
+            if self.target[0].shape != shape:
+                raise RuntimeError(
+                    f"target {self.target[0].shape} does not correspond to expected size {shape} for penalty {self.name}"
+                )
+
+            # If the target is on controls and control is constant, there will be one value missing
+            if all_pn is not None:
+                if (
+                    all_pn.nlp.control_type == ControlType.CONSTANT
+                    and all_pn.nlp.ns in all_pn.t
+                    and self.target[0].shape[-1] == all_pn.nlp.ns
+                ):
+                    if all_pn.t[-1] != all_pn.nlp.ns:
+                        raise NotImplementedError("Modifying target for END not being last is not implemented yet")
+                    self.target[0] = np.concatenate(
+                        (self.target[0], np.nan * np.zeros((self.target[0].shape[0], 1))), axis=1
+                    )
         if self.target.shape[-1] == 1:
             self.target = np.repeat(self.target, n_time_expected, axis=-1)
 
@@ -440,10 +487,13 @@ class PenaltyOption(OptionGeneric):
             return
 
         self.target_plot_name = combine_to
-        if self.target.shape[1] == all_pn.nlp.ns:
-            self.target_to_plot = np.concatenate((self.target, np.nan * np.ndarray((self.target.shape[0], 1))), axis=1)
+        # if the target is n x ns, we need to add a dimension (n x ns + 1) to make it compatible with the plot
+        if self.target[0].shape[1] == all_pn.nlp.ns:
+            self.target_to_plot = np.concatenate(
+                (self.target[0], np.nan * np.ndarray((self.target[0].shape[0], 1))), axis=1
+            )
         else:
-            self.target_to_plot = self.target
+            self.target_to_plot = self.target[0]
 
     def _finish_add_target_to_plot(self, all_pn: PenaltyNodeList):
         """
