@@ -15,6 +15,7 @@ from bioptim import (
     ConstraintFcn,
     Constraint,
     Node,
+    Transcription,
 )
 from bioptim.limits.penalty_node import PenaltyNodeList
 from bioptim.limits.penalty import PenaltyOption
@@ -41,7 +42,8 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
         )
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, implicit_dynamics=implicit)
+        rigidbody_dynamics = Transcription.IMPLICIT if implicit else Transcription.EXPLICIT
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, rigidbody_dynamics=rigidbody_dynamics)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     elif with_actuator:
