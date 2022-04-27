@@ -230,6 +230,7 @@ class IpoptInterface(SolverInterface):
         -------
 
         """
+
         def format_target(target_in: np.array) -> np.array:
             """
             Format the target of a penalty to a numpy array

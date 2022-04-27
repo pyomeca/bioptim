@@ -1029,7 +1029,17 @@ class Solution:
 
                     x = self._states[phase_idx]["all"][:, col_x_idx]
                     u = self._controls[phase_idx]["all"][:, col_u_idx]
-                target = penalty.target[:, penalty.node_idx.index(idx)] if penalty.target is not None else []
+                    if penalty.target is None:
+                        target = []
+                    elif penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+                        target = np.vstack(
+                            (
+                                penalty.target[0][:, penalty.node_idx.index(idx)],
+                                penalty.target[1][:, penalty.node_idx.index(idx)],
+                            )
+                        ).T
+                    else:
+                        target = penalty.target[0][:, penalty.node_idx.index(idx)]
 
             val.append(penalty.function_non_threaded(x, u, p))
             val_weighted.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, target, dt))

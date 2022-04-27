@@ -28,7 +28,7 @@ def prepare_ocp(
     integration_rule: IntegralApproximation,
     control_type: ControlType,
     objective: str,
-    target: float = None,
+    target: np.array = None,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -45,7 +45,7 @@ def prepare_ocp(
         The type of control to use (constant or linear)
     objective: str
         The objective to minimize (torque or power)
-    target: float
+    target: np.array
         The target value to reach
 
     Returns
@@ -185,3 +185,136 @@ def test_pendulum(control_type, integration_rule, objective):
             else:
                 np.testing.assert_almost_equal(f[0, 0], 23.371290063644935)
                 np.testing.assert_almost_equal(j_printed, 23.371290063644935)
+
+
+@pytest.mark.parametrize(
+    "objective",
+    [
+        "torque",
+        "qdot",
+    ],
+)
+@pytest.mark.parametrize(
+    "control_type",
+    [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS],
+)
+@pytest.mark.parametrize(
+    "integration_rule",
+    [
+        IntegralApproximation.RECTANGLE,
+        IntegralApproximation.TRAPEZOIDAL,
+    ],
+)
+def test_pendulum_target(control_type, integration_rule, objective):
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    if objective == "qdot":
+        target = np.array(
+            [
+                [
+                    0.0,
+                    6.51208486,
+                    3.27752055,
+                    1.86135695,
+                    0.96701456,
+                    0.18193208,
+                    -0.83287956,
+                    -2.9622631,
+                    -23.7302095,
+                    -6.06721842,
+                    -2.65133032,
+                    -0.72913491,
+                    0.68722248,
+                    2.74211658,
+                    8.90941496,
+                ],
+                [
+                    0.0,
+                    -6.49835123,
+                    -3.24407569,
+                    -1.71133185,
+                    -0.6099655,
+                    0.407523,
+                    1.59240089,
+                    3.68457442,
+                    23.79597936,
+                    7.50801022,
+                    5.38743813,
+                    4.5751776,
+                    4.26241442,
+                    4.73597801,
+                    9.15226233,
+                ],
+            ]
+        )
+    else:
+        target = np.array(
+            [
+                [
+                    7.69288937,
+                    2.15792818,
+                    -0.30564323,
+                    -1.12922158,
+                    -1.64495223,
+                    -2.42867254,
+                    -4.39543379,
+                    -17.60401641,
+                    -6.637938,
+                    3.8367779,
+                    4.64704813,
+                    4.29142416,
+                    11.04939719,
+                    18.56698167,
+                    -17.28621612,
+                ],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            ]
+        )
+
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_shooting=15,
+        integration_rule=integration_rule,
+        objective=objective,
+        control_type=control_type,
+        target=target,
+    )
+
+    sol = ocp.solve()
+    j_printed = sum_cost_function_output(sol)
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    if integration_rule == IntegralApproximation.RECTANGLE:
+        if control_type == ControlType.CONSTANT:
+            if objective == "torque":
+                np.testing.assert_almost_equal(f[0, 0], 36.839829039151184)
+                np.testing.assert_almost_equal(j_printed, 36.839829039151184)
+            else:
+                np.testing.assert_almost_equal(f[0, 0], 6.313081884718639e-07)
+                np.testing.assert_almost_equal(j_printed, 6.313081884718639e-07)
+        elif control_type == ControlType.LINEAR_CONTINUOUS:
+            if objective == "torque":
+                np.testing.assert_almost_equal(f[0, 0], 264.0066555609535)
+                np.testing.assert_almost_equal(j_printed, 264.0066555609535)
+            else:
+                np.testing.assert_almost_equal(f[0, 0], 71.44276846089537)
+                np.testing.assert_almost_equal(j_printed, 71.44276846089537)
+    elif integration_rule == IntegralApproximation.TRAPEZOIDAL:
+        if control_type == ControlType.CONSTANT:
+            if objective == "torque":
+                np.testing.assert_almost_equal(f[0, 0], 379.0813647567205)
+                np.testing.assert_almost_equal(j_printed, 379.0813647567205)
+            else:
+                np.testing.assert_almost_equal(f[0, 0], 43.015543997237025)
+                np.testing.assert_almost_equal(j_printed, 43.015543997237025)
+        elif control_type == ControlType.LINEAR_CONTINUOUS:
+            if objective == "torque":
+                np.testing.assert_almost_equal(f[0, 0], 538.8013374888595)
+                np.testing.assert_almost_equal(j_printed, 538.8013374888595)
+            else:
+                np.testing.assert_almost_equal(f[0, 0], 66.07715305531984)
+                np.testing.assert_almost_equal(j_printed, 66.07715305531984)
