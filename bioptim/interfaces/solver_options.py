@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-
+from typing import Union
 from ..misc.enums import SolverType
 
 
@@ -459,7 +459,7 @@ class Solver:
             self._qp_solver = val
             self.set_only_first_options_has_changed(True)
 
-        def set_option(self, val, name):
+        def set_option(self, val: Union[float, int, str], name: str):
             if f"_{name}" not in self.__annotations__.keys():
                 self.__annotations__[f"_{name}"] = val
                 self.__setattr__(f"_{name}", val)
@@ -566,7 +566,7 @@ class Solver:
             self._nlp_solver_tol_stat = val
             self.set_has_tolerance_changed(True)
 
-        def set_convergence_tolerance(self, val):
+        def set_convergence_tolerance(self, val: Union[float, int, list, tuple]):
             if isinstance(val, (float, int)):
                 val = [val] * 4
             self.set_nlp_solver_tol_eq(val[0])
@@ -598,7 +598,7 @@ class Solver:
         def nlp_solver_max_iter(self):
             return self._nlp_solver_max_iter
 
-        def set_maximum_iterations(self, num):
+        def set_maximum_iterations(self, num: int):
             self._nlp_solver_max_iter = num
             self.set_only_first_options_has_changed(True)
 
