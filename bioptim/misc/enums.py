@@ -133,6 +133,5 @@ class IntegralApproximation(Enum):
     Selection of integral approximation
     """
 
-    NONE = None
     RECTANGLE = "rectangle"
     TRAPEZOIDAL = "trapezoidal"

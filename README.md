@@ -326,7 +326,7 @@ ocp = OptimalControlProgram(
 It is now time to see `Ipopt` in action! 
 To solve the ocp, you simply have to call the `solve()` method of the `ocp` class
 ```python
-solver=Solver.IPOPT(show_online_optim=True)
+solver = Solver.IPOPT(show_online_optim=True)
 sol = ocp.solve(solver)
 ```
 If you feel fancy, you can even activate the online optimization graphs!

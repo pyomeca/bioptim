@@ -58,7 +58,9 @@ class PenaltyFunctionAbstract:
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-            penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_states")
+            if penalty.integration_rule == IntegralApproximation.RECTANGLE:
+                # todo: for trapezoidal integration
+                penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_states")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
             return all_pn.nlp.states[key].cx
@@ -82,6 +84,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             if penalty.integration_rule == IntegralApproximation.RECTANGLE:
+                # todo: for trapezoidal integration
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 

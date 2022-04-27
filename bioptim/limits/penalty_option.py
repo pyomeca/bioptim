@@ -169,13 +169,14 @@ class PenaltyOption(OptionGeneric):
                     self.target = [self.target[0][:, :-1], self.target[0][:, 1:]]
                 else:
                     raise NotImplementedError(
-                        f"target with IntegralApproximation.TRAPEZOIDAL doesn't work with {self.node}, "
-                        "it only works if node is Node.NODE_ALL and Node.NODE_DEFAULT"
+                        f"A list of 2 elements is required with {self.node} and IntegralApproximation.TRAPEZOIDAL"
+                        f"except for Node.NODE_ALL and Node.NODE_DEFAULT"
+                        "which can be automatically generated"
                     )
 
         self.target_plot_name = None
         self.target_to_plot = None
-        # not implemented yet for trapezoidal integration
+        # todo: not implemented yet for trapezoidal integration
         self.plot_target = False if self.integration_rule == IntegralApproximation.TRAPEZOIDAL else True
 
         self.states_mapping = states_mapping
@@ -295,7 +296,11 @@ class PenaltyOption(OptionGeneric):
                     )
         elif self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
 
-            for i in range(2):
+            target_dim = len(self.target)
+            if target_dim != 2:
+                raise RuntimeError(f"targets with trapezoidal integration rule need to get a list of two elements.")
+
+            for i in range(len(self.target)):
                 n_dim = len(self.target[i].shape)
                 if n_dim != 2 and n_dim != 3:
                     raise RuntimeError(
@@ -310,7 +315,7 @@ class PenaltyOption(OptionGeneric):
                 else (len(self.rows), len(self.cols), n_time_expected - 1)
             )
 
-            for i in range(2):
+            for i in range(len(self.target)):
                 if self.target[i].shape != shape:
                     raise RuntimeError(
                         f"target {self.target[i].shape} does not correspond to expected size {shape} for penalty {self.name}"
@@ -423,11 +428,15 @@ class PenaltyOption(OptionGeneric):
             )
 
         dt_cx = nlp.cx.sym("dt", 1, 1)
-        target_shape = list(sub_fcn.shape)
-        target_shape[1] += 1 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL else 0
-        target_cx = nlp.cx.sym("target", tuple(target_shape))
+        target_shape = tuple(
+            [
+                len(self.rows),
+                len(self.cols) + 1 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL else len(self.cols),
+            ]
+        )
+        target_cx = nlp.cx.sym("target", target_shape)
         weight_cx = nlp.cx.sym("weight", 1, 1)
-        n = 2 if self.quadratic and self.weight else 1
+        exponent = 2 if self.quadratic and self.weight else 1
 
         if self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
             # Hypothesis: the function is continuous on states
@@ -445,8 +454,9 @@ class PenaltyOption(OptionGeneric):
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
                 (
-                    (self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx[:, 0]) ** n
-                    + (self.function(all_pn.nlp.states.cx_end, control_cx_end, param_cx) - target_cx[:, 1]) ** n
+                    (self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx[:, 0])
+                    ** exponent
+                    + (self.function(all_pn.nlp.states.cx_end, control_cx_end, param_cx) - target_cx[:, 1]) ** exponent
                 )
                 / 2,
                 state_cx,
@@ -457,7 +467,7 @@ class PenaltyOption(OptionGeneric):
             )
             modified_fcn = self.modified_function(state_cx, control_cx, param_cx, target_cx, dt_cx)
         else:
-            modified_fcn = (self.function(state_cx, control_cx, param_cx) - target_cx) ** n
+            modified_fcn = (self.function(state_cx, control_cx, param_cx) - target_cx) ** exponent
 
         modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
 
@@ -465,11 +475,7 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function = Function(
             name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
-        self.weighted_function_non_threaded = (
-            self.weighted_function.expand()
-            if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-            else self.weighted_function
-        )
+        self.weighted_function_non_threaded = self.weighted_function
 
         if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
             self.function = self.function.map(len(self.node_idx), "thread", ocp.n_threads)
