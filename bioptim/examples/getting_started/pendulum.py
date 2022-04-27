@@ -117,7 +117,8 @@ def main():
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol.print()
+    sol.detailed_cost_values()
+    sol.print_cost()
     sol.animate(n_frames=100)
 
 

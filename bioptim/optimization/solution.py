@@ -9,7 +9,7 @@ from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator
+from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -265,6 +265,7 @@ class Solution:
         self.vector = None
         self._cost = None
         self.constraints = None
+        self.detailed_cost = []
 
         self.lam_g = None
         self.lam_p = None
@@ -969,6 +970,10 @@ class Solution:
             if "time" in self.parameters
             else penalty.dt
         )
+
+        if penalty.multinode_constraint:
+            penalty.node_idx = [penalty.node_idx]
+
         for idx in penalty.node_idx:
             x = []
             u = []
@@ -980,6 +985,24 @@ class Solution:
                     u = np.concatenate(
                         (self._controls[phase_idx]["all"][:, -1], self._controls[phase_post]["all"][:, 0])
                     )
+                elif penalty.multinode_constraint:
+
+                    x = np.concatenate(
+                        (
+                            self._states[penalty.phase_first_idx]["all"][:, idx[0]],
+                            self._states[penalty.phase_second_idx]["all"][:, idx[1]],
+                        )
+                    )
+                    # Make an exception to the fact that U is not available for the last node
+                    mod_u0 = 1 if penalty.first_node == Node.END else 0
+                    mod_u1 = 1 if penalty.second_node == Node.END else 0
+                    u = np.concatenate(
+                        (
+                            self._controls[penalty.phase_first_idx]["all"][:, idx[0] - mod_u0],
+                            self._controls[penalty.phase_second_idx]["all"][:, idx[1] - mod_u1],
+                        )
+                    )
+
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
@@ -999,7 +1022,25 @@ class Solution:
 
         return val, val_weighted
 
-    def print(self, cost_type: CostType = CostType.ALL):
+    def detailed_cost_values(self):
+        """
+        Adds the detailed objective functions and/or constraints values to sol
+
+        Parameters
+        ----------
+        cost_type: CostType
+            The type of cost to console print
+        """
+
+        for nlp in self.ocp.nlp:
+            for penalty in nlp.J_internal + nlp.J:
+                if not penalty:
+                    continue
+                val, val_weighted = self._get_penalty_cost(nlp, penalty)
+                self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
+        return
+
+    def print_cost(self, cost_type: CostType = CostType.ALL):
         """
         Print the objective functions and/or constraints to the console
 
@@ -1018,6 +1059,7 @@ class Solution:
 
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
+                self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
                 if print_only_weighted:
                     print(f"{penalty.name}: {val_weighted}")
                 else:
@@ -1078,7 +1120,7 @@ class Solution:
                 f"Solver reported time: {self.solver_time_to_optimize} sec\n"
                 f"Real time: {self.real_time_to_optimize} sec"
             )
-            self.print(CostType.OBJECTIVES)
-            self.print(CostType.CONSTRAINTS)
+            self.print_cost(CostType.OBJECTIVES)
+            self.print_cost(CostType.CONSTRAINTS)
         else:
             raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")

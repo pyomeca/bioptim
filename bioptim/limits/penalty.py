@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, MX
+from casadi import horzcat, vertcat, SX, Function
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -403,6 +403,95 @@ class PenaltyFunctionAbstract:
             nlp = all_pn.nlp
             com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"])
             return com_dot_cx
+
+        @staticmethod
+        def minimize_com_acceleration(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+            """
+            Adds the objective that the velocity of the center of mass of the model should be minimized.
+            If no axis is specified, the squared-norm of the CoM's velocity is minimized.
+            Otherwise, the projection of the CoM's velocity on the specified axis is minimized.
+            By default this function is not quadratic, meaning that it minimizes towards infinity.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
+            """
+
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = all_pn.nlp
+            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+                raise NotImplementedError(
+                    "MINIMIZE_COM_ACCELERATION is only working if qddot is defined as a state or a control."
+                )
+            qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
+
+            com_ddot_cx = BiorbdInterface.mx_to_cx(
+                "com_ddot", nlp.model.CoMddot, nlp.states["q"], nlp.states["qdot"], qddot
+            )
+            return com_ddot_cx
+
+        @staticmethod
+        def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+            """
+            Adds the objective that the angular momentum of the model in the global reference frame should be minimized.
+            If no axis is specified, the three components of the angular momentum are minimized.
+            Otherwise, the projection of the angular momentum on the specified axis is minimized.
+            By default this function is quadratic, meaning that it minimizes towards zero.
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
+            """
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            nlp = all_pn.nlp
+            angular_momentum_cx = BiorbdInterface.mx_to_cx(
+                "angular_momentum", nlp.model.angularMomentum, nlp.states["q"], nlp.states["qdot"]
+            )
+            return angular_momentum_cx
+
+        @staticmethod
+        def minimize_linear_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+            """
+            Adds the objective that the linear momentum of the model in the global reference frame should be minimized.
+            If no axis is specified, the three components of the linear momentum are minimized.
+            Otherwise, the projection of the linear momentum on the specified axis is minimized.
+            By default this function is quadratic, meaning that it minimizes towards zero.
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
+            """
+
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = all_pn.nlp
+            com_velocity = BiorbdInterface.mx_to_cx(
+                "com_velocity", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"]
+            )
+            if isinstance(com_velocity, SX):
+                mass = Function("mass", [], [nlp.model.mass().to_mx()]).expand()
+                mass = mass()["o0"]
+            else:
+                mass = nlp.model.mass().to_mx()
+            linear_momentum_cx = com_velocity * mass
+            return linear_momentum_cx
 
         @staticmethod
         def minimize_contact_forces(

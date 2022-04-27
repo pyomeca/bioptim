@@ -1,12 +1,11 @@
 """
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement and
 a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
-Finally, an objective for the transition continuity on the control is added. Please note that the "last" control
-of the previous phase is the last shooting node (and not the node arrival).
-It is designed to show how one can define a multiphase optimal control program
+Extra constraints are defined between specific nodes of phases.
+It is designed to show how one can define a multinode constraints and objectives in a multiphase optimal control program
 """
 
-
+from casadi import MX
 import biorbd_casadi as biorbd
 from bioptim import (
     PenaltyNode,
@@ -23,16 +22,15 @@ from bioptim import (
     OdeSolver,
     Node,
     Solver,
-    CostType,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
+    MultinodeConstraint,
+    NonLinearProgram,
 )
 
 
-def minimize_difference(all_pn: PenaltyNode):
-    return all_pn[0].nlp.controls.cx_end - all_pn[1].nlp.controls.cx
-
-
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4(), long_optim: bool = False
+    biorbd_model_path: str = "models/cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -43,8 +41,6 @@ def prepare_ocp(
         The path to the bioMod
     ode_solver: OdeSolver
         The ode solve to use
-    long_optim: bool
-        If the solver should solve the precise optimization (500 shooting points) or the approximate (50 points)
 
     Returns
     -------
@@ -54,10 +50,7 @@ def prepare_ocp(
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
 
     # Problem parameters
-    if long_optim:
-        n_shooting = (100, 300, 100)
-    else:
-        n_shooting = (20, 30, 20)
+    n_shooting = (100, 300, 100)
     final_time = (2, 5, 4)
     tau_min, tau_max, tau_init = -100, 100, 0
 
@@ -66,14 +59,6 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
-    objective_functions.add(
-        minimize_difference,
-        custom_type=ObjectiveFcn.Mayer,
-        node=Node.TRANSITION,
-        weight=100,
-        phase=1,
-        quadratic=True,
-    )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -88,6 +73,45 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=0)
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1", phase=1)
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2)
+
+    # Constraints
+    multinode_constraints = MultinodeConstraintList()
+    # hard constraint
+    multinode_constraints.add(
+        MultinodeConstraintFcn.EQUALITY,
+        phase_first_idx=0,
+        phase_second_idx=2,
+        first_node=Node.START,
+        second_node=Node.START,
+    )
+    # Objectives with the weight as an argument
+    multinode_constraints.add(
+        MultinodeConstraintFcn.EQUALITY,
+        phase_first_idx=0,
+        phase_second_idx=2,
+        first_node=2,
+        second_node=Node.MID,
+        weight=2,
+    )
+    # Objectives with the weight as an argument
+    multinode_constraints.add(
+        MultinodeConstraintFcn.EQUALITY,
+        phase_first_idx=0,
+        phase_second_idx=1,
+        first_node=Node.MID,
+        second_node=Node.END,
+        weight=0.1,
+    )
+    # Objectives with the weight as an argument
+    multinode_constraints.add(
+        custom_multinode_constraint,
+        phase_first_idx=0,
+        phase_second_idx=1,
+        first_node=Node.MID,
+        second_node=Node.PENULTIMATE,
+        weight=0.1,
+        coef=2,
+    )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -129,8 +153,43 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
+        multinode_constraints=multinode_constraints,
         ode_solver=ode_solver,
     )
+
+
+def custom_multinode_constraint(
+    multinode_constraint: MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
+) -> MX:
+    """
+    The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
+    determine the transition. If coef=1, then this function mimics the PhaseTransitionFcn.CONTINUOUS
+
+    coef is a user defined extra variables and can be anything. It is to show how to pass variables from the
+    PhaseTransitionList to that function
+
+    Parameters
+    ----------
+    multinode_constraint: MultinodeConstraint
+        The placeholder for the multinode_constraint
+    nlp_pre: NonLinearProgram
+        The nonlinear program of the pre phase
+    nlp_post: NonLinearProgram
+        The nonlinear program of the post phase
+    coef: float
+        The coefficient of the phase transition (makes no physical sens)
+
+    Returns
+    -------
+    The constraint such that: c(x) = 0
+    """
+
+    # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
+    # mapping stuff (it is merely for the sake of example how to use the mappings)
+    states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+    states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+
+    return states_pre * coef - states_post
 
 
 def main():
@@ -138,12 +197,12 @@ def main():
     Defines a multiphase ocp and animate the results
     """
 
-    ocp = prepare_ocp(long_optim=False)
-    ocp.add_plot_penalty(CostType.ALL)
+    ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
-
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol.print()
+    sol.graphs()
     # --- Show results --- #
     sol.animate()
 
