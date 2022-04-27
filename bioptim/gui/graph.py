@@ -4,7 +4,7 @@ import numpy as np
 
 from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
-from ..limits.path_conditions import PathCondition
+from ..limits.path_conditions import PathCondition, Bounds
 from ..optimization.parameters import Parameter
 from ..misc.enums import Node
 from bioptim import InterpolationType
@@ -309,9 +309,9 @@ class OcpToConsole(GraphAbstract):
     -------
     print(self)
         Print ocp structure in the console
-    print_bounds(self)
+    print_bounds(self, phase_idx: int, bounds: Bounds, col_name: list[str])
         Print ocp bounds in the console
-    print_bounds_row(bounds, states_names, len_max_str, min_bounds, max_bounds, gap):
+    print_bounds_table(bounds: Bounds, col_name: list[str], title: list[str]):
         Print bounds row
 
     """
@@ -325,10 +325,14 @@ class OcpToConsole(GraphAbstract):
             print(f"**********")
             print(f"BOUNDS:")
             print(f"STATES: InterpolationType.{self.ocp.nlp[phase_idx].x_bounds.type.name}")
-            self.print_bounds(phase_idx, self.ocp.nlp[phase_idx].x_bounds)
+            self.print_bounds(phase_idx, self.ocp.nlp[phase_idx].x_bounds,
+                              [self.ocp.nlp[phase_idx].states.cx[i].name()
+                               for i in range(self.ocp.nlp[phase_idx].states.cx.shape[0])])
             print(f"**********")
             print(f"CONTROLS: InterpolationType.{self.ocp.nlp[phase_idx].u_bounds.type.name}")
-            self.print_bounds(phase_idx, self.ocp.nlp[phase_idx].u_bounds)
+            self.print_bounds(phase_idx, self.ocp.nlp[phase_idx].u_bounds,
+                              [self.ocp.nlp[phase_idx].controls.cx[i].name()
+                               for i in range(self.ocp.nlp[phase_idx].controls.cx.shape[0])])
             print(f"**********")
             print(f"PARAMETERS: ")
             print("")
@@ -381,8 +385,7 @@ class OcpToConsole(GraphAbstract):
                         print(f"*** Implicit Constraint: {constraint.name}")
                 print("")
 
-    def print_bounds(self, phase_idx, bounds):
-        # todo: add docstrings and hints on types of arguments
+    def print_bounds(self, phase_idx: int, bounds: Bounds, col_name: list[str]):
         """
         Print ocp bounds in the console
 
@@ -390,37 +393,33 @@ class OcpToConsole(GraphAbstract):
         ----------
         phase_idx: int
             The phase index
-        bounds: bioptim.Bounds
+        bounds: Bounds
             The controls or states bounds
+        col_name: list[str]
+            The list of controls or states name
         """
         nlp = self.ocp.nlp[phase_idx]
 
-        states_names = [nlp.states.cx[i].name() for i in range(nlp.states.cx.shape[0])]
-
         if bounds.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             title = ["", "Beginning", "Middle", "End"]
-            self.print_bounds_table(bounds, states_names, title)
-
         elif bounds.type == InterpolationType.CONSTANT:
             title = ["", "Bounds"]
-            self.print_bounds_table(bounds, states_names, title)
-
         elif bounds.type == InterpolationType.LINEAR:
             title = ["", "Beginning", "End"]
-            self.print_bounds_table(bounds, states_names, title)
+        self.print_bounds_table(bounds, col_name, title)
 
     @staticmethod
-    def print_bounds_table(bounds, states_names, title):
+    def print_bounds_table(bounds: Bounds, col_name: list[str], title: list[str]):
         """
         Print bounds table
 
         Parameters
         ----------
-        bounds: bioptim.Bounds
+        bounds: Bounds
             The controls or states bounds
-        states_names: list
+        col_name: list[str]
             The list of states names
-        title: list
+        title: list[str]
             The list of column's title
         """
         gap = 20  # length of a column printed in the console
@@ -428,14 +427,14 @@ class OcpToConsole(GraphAbstract):
         max_bounds = np.round(np.array(bounds.max.tolist()), 3)
         min_bounds = np.round(np.array(bounds.min.tolist()), 3)
 
-        first_col_length = len(max(states_names, key=len))
+        first_col_length = len(max(col_name, key=len))
 
         title_row = f"{title[0]}" + (first_col_length - len(title[0]) + 2) * " "
         for n in range(len(title) - 1):
             title_row += f"{title[n + 1]}" + (gap - len(title[n + 1])) * " "
         print(title_row)
         for h in range(bounds.shape[0]):
-            table_row = states_names[h] + (first_col_length - len(states_names[h]) + 2) * " "
+            table_row = col_name[h] + (first_col_length - len(col_name[h]) + 2) * " "
             for j in range(len(min_bounds[h])):
                 row_element = f"[{min_bounds[h][j]}, {max_bounds[h][j]}]"
                 row_element += (gap - row_element.__len__()) * " "
