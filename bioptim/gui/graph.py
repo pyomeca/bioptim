@@ -7,6 +7,7 @@ from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import PathCondition
 from ..optimization.parameters import Parameter
 from ..misc.enums import Node
+from bioptim import InterpolationType
 
 
 class GraphAbstract:
@@ -308,15 +309,26 @@ class OcpToConsole(GraphAbstract):
     -------
     print(self)
         Print ocp structure in the console
+    print_bounds(self)
+        Print ocp bounds in the console
+    print_bounds_row(bounds, states_names, len_max_str, min_bounds, max_bounds, gap):
+        Print bounds row
+
     """
 
     def print(self):
         """
         Print ocp structure in the console
         """
-
         for phase_idx in range(self.ocp.n_phases):
-            print(f"PHASE {phase_idx}")
+            print(f"PHASE: {phase_idx}")
+            print(f"**********")
+            print(f"BOUNDS:")
+            print(f"STATES: InterpolationType.{self.ocp.nlp[phase_idx].x_bounds.type.name}")
+            self.print_bounds(phase_idx, self.ocp.nlp[phase_idx].x_bounds)
+            print(f"**********")
+            print(f"CONTROLS: InterpolationType.{self.ocp.nlp[phase_idx].u_bounds.type.name}")
+            self.print_bounds(phase_idx, self.ocp.nlp[phase_idx].u_bounds)
             print(f"**********")
             print(f"PARAMETERS: ")
             print("")
@@ -369,9 +381,69 @@ class OcpToConsole(GraphAbstract):
                         print(f"*** Implicit Constraint: {constraint.name}")
                 print("")
 
+    def print_bounds(self, phase_idx, bounds):
+        # todo: add docstrings and hints on types of arguments
+        """
+        Print ocp bounds in the console
+
+        Parameters
+        ----------
+        phase_idx: int
+            The phase index
+        bounds: bioptim.Bounds
+            The controls or states bounds
+        """
+        nlp = self.ocp.nlp[phase_idx]
+
+        states_names = [nlp.states.cx[i].name() for i in range(nlp.states.cx.shape[0])]
+
+        if bounds.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+            title = ["", "Beginning", "Middle", "End"]
+            self.print_bounds_table(bounds, states_names, title)
+
+        elif bounds.type == InterpolationType.CONSTANT:
+            title = ["", "Bounds"]
+            self.print_bounds_table(bounds, states_names, title)
+
+        elif bounds.type == InterpolationType.LINEAR:
+            title = ["", "Beginning", "End"]
+            self.print_bounds_table(bounds, states_names, title)
+
+    @staticmethod
+    def print_bounds_table(bounds, states_names, title):
+        """
+        Print bounds table
+
+        Parameters
+        ----------
+        bounds: bioptim.Bounds
+            The controls or states bounds
+        states_names: list
+            The list of states names
+        title: list
+            The list of column's title
+        """
+        gap = 20  # length of a column printed in the console
+
+        max_bounds = np.round(np.array(bounds.max.tolist()), 3)
+        min_bounds = np.round(np.array(bounds.min.tolist()), 3)
+
+        first_col_length = len(max(states_names, key=len))
+
+        title_row = f"{title[0]}" + (first_col_length - len(title[0]) + 2) * " "
+        for n in range(len(title) - 1):
+            title_row += f"{title[n + 1]}" + (gap - len(title[n + 1])) * " "
+        print(title_row)
+        for h in range(bounds.shape[0]):
+            table_row = states_names[h] + (first_col_length - len(states_names[h]) + 2) * " "
+            for j in range(len(min_bounds[h])):
+                row_element = f"[{min_bounds[h][j]}, {max_bounds[h][j]}]"
+                row_element += (gap - row_element.__len__()) * " "
+                table_row += row_element
+            print(table_row)
+
 
 class OcpToGraph(GraphAbstract):
-
     _return_line = "<br/>"
     _squared = "<sup>2</sup>"
     """
