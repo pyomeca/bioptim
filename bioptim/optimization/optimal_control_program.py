@@ -1,5 +1,6 @@
 from typing import Union, Callable, Any
 import os
+import sys
 import pickle
 from copy import deepcopy
 from math import inf
@@ -21,6 +22,7 @@ from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
+from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -141,6 +143,7 @@ class OptimalControlProgram:
         variable_mappings: BiMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
+        multinode_constraints: MultinodeConstraintList = None,
         n_threads: int = 1,
         use_sx: bool = False,
         skip_continuity: bool = False,
@@ -228,6 +231,7 @@ class OptimalControlProgram:
             "variable_mappings": variable_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
+            "multinode_constraints": multinode_constraints,
             "n_threads": n_threads,
             "use_sx": use_sx,
         }
@@ -317,6 +321,11 @@ class OptimalControlProgram:
         elif not isinstance(phase_transitions, PhaseTransitionList):
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
+        if multinode_constraints is None:
+            multinode_constraints = MultinodeConstraintList()
+        elif not isinstance(multinode_constraints, MultinodeConstraintList):
+            raise RuntimeError("multinode_constraints should be built from an MultinodeConstraintList")
+
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
         elif not isinstance(ode_solver, OdeSolverBase):
@@ -403,7 +412,7 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
-
+        self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
             # Inner- and inter-phase continuity
@@ -689,7 +698,11 @@ class OptimalControlProgram:
 
             out = []
             if penalty.transition:
-                raise NotImplementedError("add_plot_penalty with phase transition is not implemented yet")
+                out.append(
+                    penalty.weighted_function_non_threaded(
+                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
+                    )
+                )
             elif penalty.derivative or penalty.explicit_derivative:
                 out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
             else:
@@ -941,8 +954,11 @@ class OptimalControlProgram:
             data = pickle.load(file)
             ocp = OptimalControlProgram(**data["ocp_initializer"])
             for key in data["versions"].keys():
-                if data["versions"][key] != ocp.version[key]:
-                    raise RuntimeError(
+                key_module = "biorbd_casadi" if key == "biorbd" else key
+                try:
+                    check_version(sys.modules[key_module], data["versions"][key], ocp.version[key], exclude_max=False)
+                except ImportError:
+                    raise ImportError(
                         f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
                         f"installed version ({ocp.version[key]})"
                     )

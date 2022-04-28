@@ -72,6 +72,9 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [ObjectiveFcn](#class-objectivefcn)
 - [The parameters](#the-parameters)
   - [ParameterList](#class-parameterlist)
+- [The multinode constraints](#the-multinode-constraints)
+  - [MultinodeConstraintList](#class-multinodeconstraintlist)
+  - [MultinodeConstraintFcn](#class-multinodeconstraintfcn)
 - [The phase transitions](#the-phase-transitions)
   - [PhaseTransitionList](#class-phasetransitionlist)
   - [PhaseTransitionFcn](#class-phasetransitionfcn)
@@ -349,9 +352,11 @@ If you did not fancy the online graphs, but would enjoy them anyway, you can cal
 sol.graphs()
 ```
 
-If you are interested in the results of individual objective functions and constraints, you can print them using the `print()`:
+If you are interested in the results of individual objective functions and constraints, you can print them using the 
+`print_cost()` or access them using the `detailed_cost_values()`:
 ```python
-sol.print()
+sol.print_cost()  # For printing their values in the console
+sol.detailed_cost_values()  # For adding the objectives details to sol for later manipulations
 ```
 
 And that is all! 
@@ -398,7 +403,7 @@ ocp = OptimalControlProgram(
     )
     
 sol = ocp.solve(show_online_optim=True)
-sol.print()
+sol.print_cost()
 sol.animate()
 ```
 ### The pendulum.bioMod file
@@ -959,6 +964,14 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 Constraints the center of mass velocity towards a target.
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
 
+#### TRACK_ANGULAR_MOMENTUM
+Constraints the angular momentum in the global reference frame towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
+
+#### TRACK_LINEAR_MOMENTUM
+Constraints the linear momentum towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
+
 #### CONTACT_FORCE
 Adds a constraint to the non-acceleration point reaction forces.
 It is usually used in conjunction with changing the bounds, so it creates an inequality constraint on this contact force.
@@ -1132,6 +1145,18 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 Minimizes the center of mass velocity towards zero (or a target).
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
 
+#### MINIMIZE_COM_ACCELERATION (Lagrange and Mayer)
+Minimizes the center of mass acceleration towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the acceleration of the center of mass
+
+#### MINIMIZE_ANGULAR_MOMENTUM (Lagrange and Mayer)
+Minimizes the angular momentum in the global reference frame towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
+
+#### MINIMIZE_LINEAR_MOMENTUM (Lagrange and Mayer)
+Minimizes the linear momentum towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
+
 #### MINIMIZE_PREDICTED_COM_HEIGHT (Mayer)
 Minimizes the prediction of the center of mass maximal height from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2].
 To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
@@ -1188,6 +1213,45 @@ The `penalty_list` is the index in the list the penalty is.
 If one adds multiple parameters, the list is automatically incremented. 
 It is useful however to define this value by hand if one wants to declare the parameters out of order or to override a previously declared parameter using `update_parameters`.
 
+## The multinode constraints
+`Bioptim` can declare multiphase optimisation programs. The goal of a multiphase ocp is usually to handle changing dynamics. 
+The user must understand that each phase is therefore a full ocp by itself, with constraints that links the end of which with the beginning of the following.
+
+### Class: MultinodeConstraintList
+The MultinodeConstraintList provide a class that prepares the multinode constraints.
+When constructing an `OptimalControlProgram()`, MultinodeConstraintList is the expected class for the `multinode_constraints` parameter. 
+
+The MultinodeConstraintList class is the main class to define parameters.
+Please note that unlike other lists, `MultinodeConstraint` is not accessible since multinode constraint don't make sense for single phase ocp.
+Therefore, one should not call the PhaseTransition constructor directly. 
+
+Here is the full signature of the `add()` method of the `MultinodeConstraintList`:
+```python
+MultinodeConstraintList.add(MultinodeConstraintFcn, phase_first_idx, phase_second_idx, first_node, second_node, **extra_parameters)
+```
+The `MultinodeConstraintFcn` is multinode constraints function to use.
+The default is EQUALITY.
+If one wants to declare a custom transition phase, then MultinodeConstraintFcn is the function handler to the custom function.
+The signature of the custom function is: `custom_function(multinode_constraint:MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
+where `nlp_pre` is the non linear program of the considered phase, `nlp_post` is the non linear program of the second considered phase, and the `**extra_parameters` are those sent to the add() method.
+This function is expected to return the cost of the multinode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
+Anyone who wants to define multinode constraints should be at least familiar with this type beforehand.
+The `phase_first_idx` is the index of the first phase. 
+The `phase_second_idx` is the index of the second phase. 
+The `first_node` is the first node considered. 
+The `second_node` is the second node considered. 
+
+### Class: MultinodeConstraintFcn
+The `MultinodeConstraintFcn` class is the already available multinode constraints in `bioptim`. 
+Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabailities of your IDE. 
+
+#### EQUALITY
+The states are equals.
+
+#### CUSTOM
+CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
+You can have a look at the MultinodeConstraintList section for more information about how to define custom transition function.
+
 ## The phase transitions
 `Bioptim` can declare multiphase optimisation programs. 
 The goal of a multiphase ocp is usually to handle changing dynamics. 
@@ -1209,7 +1273,8 @@ PhaseTransitionList.add(PhaseTransitionFcn, phase_pre_idx, **extra_parameters)
 The `PhaseTransitionFcn` is transition phase function to use.
 The default is CONTINUOUS.
 If one wants to declare a custom transition phase, then PhaseTransitionFcn is the function handler to the custom function.
-The signature of the custom function is: `custom_function(state_pre: MX, state_post: MX, **extra_parameters)`, where `state_pre` is the states variable at the end of the phase before the transition, `state_post` is those at the beginning of the phase after the transition, and the `**extra_parameters` are those sent to the add() method.
+The signature of the custom function is: `custom_function(transition: PhaseTransition nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
+where `nlp_pre` is the non linear program at the end of the phase before the transition, `nlp_post` is the non linear program  at the beginning of the phase after the transition, and the `**extra_parameters` are those sent to the add() method.
 This function is expected to return the cost of the phase transition computed from the states pre and post in the form of an MX.
 Please note that MX type is a CasADi type.
 Anyone who wants to define phase transitions should be at least familiar with this type beforehand.
@@ -1294,7 +1359,7 @@ To do so, we strongly suggest saving the data and load them in an environment wh
 If `n_frames` is set, an interpolation is performed, otherwise, the phases are merged if possible, so a single animation is shown. 
 To prevent from the phase merging, one can set `n_frames=-1`.
 
-In order to print the values of the objective functions and constraints, one can use the `sol.print()` method.
+In order to print the values of the objective functions and constraints, one can use the `sol.print_cost()` method.
 If the parameter `cost_type=CostType.OBJECTIVE` is passed, only the values of each objective functions are printed.
 The same is true for the constraints with `CostType.CONSTRAINTS`.
 Please note that for readability purposes, this method prints the sum by phases for the constraints. 
@@ -1343,13 +1408,15 @@ IRK is supposed to be a bit more robust, but may be slower too.
 CVODES is the one with the least options, since it is not in-house implemented.
 
 The accepted values are:
-- RK1: Runge-Kutta of the 1st order also known as Forward Euler
-- RK2: Runge-Kutta of the 2nd order also known as Midpoint Euler
-- RK4: Runge-Kutta of the 4th order
-- RK8: Runge-Kutta of the 8th order
-- IRK: Implicit runge-Kutta
-- COLLOCATION: Orthogonal Collocation
-- CVODES: cvodes solver
+- For Direct multiple shooting:
+	- RK1: Runge-Kutta of the 1st order also known as Forward Euler
+	- RK2: Runge-Kutta of the 2nd order also known as Midpoint Euler
+	- RK4: Runge-Kutta of the 4th order
+	- RK8: Runge-Kutta of the 8th order
+	- IRK: Implicit runge-Kutta (Legendre and Radau, from 0th to 9th order)
+	- CVODES: cvodes solver
+- For Direct collocation:
+	- COLLOCATION: Legendre and Radau, from 0th to 9th order
 
 ### Enum: Solver
 The nonlinear solver to solve the whole ocp. 

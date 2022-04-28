@@ -344,7 +344,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -356,6 +356,8 @@ class ConfigureProblem:
             A reference to the phase
         dyn_func: Callable[states, controls, param]
             The function to get the derivative of the states
+        expand: bool
+            If the dynamics should be expanded with casadi
         """
 
         nlp.parameters = ocp.v.parameters_in_list
@@ -371,7 +373,9 @@ class ConfigureProblem:
             [dynamics_dxdt],
             ["x", "u", "p"],
             ["xdot"],
-        ).expand()
+        )
+        if expand:
+            nlp.dynamics_func = nlp.dynamics_func.expand()
 
         if dynamics_eval.defects is not None:
             nlp.implicit_dynamics_func = Function(
