@@ -153,8 +153,7 @@ def test_pendulum(control_type, integration_rule, objective):
     solver.set_maximum_iterations(5)
     sol = ocp.solve(solver)
     j_printed = sum_cost_function_output(sol)
-    print(sol.states["qdot"])
-    print(sol.controls["tau"])
+
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
