@@ -1023,15 +1023,20 @@ class Solution:
                         col_x_idx.append((idx + 1) * steps)
                         if (
                             penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
-                            or nlp.control_type == ControlType.LINEAR_CONTINUOUS
-                        ):
+                        ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                            col_u_idx.append((idx + 1))
+                    elif penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
+                        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                             col_u_idx.append((idx + 1))
 
                     x = self._states[phase_idx]["all"][:, col_x_idx]
                     u = self._controls[phase_idx]["all"][:, col_u_idx]
                     if penalty.target is None:
                         target = []
-                    elif penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+                    elif (
+                        penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    ):
                         target = np.vstack(
                             (
                                 penalty.target[0][:, penalty.node_idx.index(idx)],

@@ -135,3 +135,4 @@ class IntegralApproximation(Enum):
 
     RECTANGLE = "rectangle"
     TRAPEZOIDAL = "trapezoidal"
+    TRUE_TRAPEZOIDAL = "true_trapezoidal"

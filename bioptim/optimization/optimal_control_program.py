@@ -736,7 +736,10 @@ class OptimalControlProgram:
                 )
             elif penalty.derivative or penalty.explicit_derivative:
                 out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
-            elif penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+            elif (
+                penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+            ):
                 out = [
                     penalty.weighted_function_non_threaded(x[:, [i, i + 1]], u[:, i], p, penalty.weight, _target, dt)
                     for i in range(x.shape[1] - 1)

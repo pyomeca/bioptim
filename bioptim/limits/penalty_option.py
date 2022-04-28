@@ -164,12 +164,15 @@ class PenaltyOption(OptionGeneric):
                     self.target[-1] = self.target[-1][np.newaxis]
                 if len(self.target[-1].shape) == 1:
                     self.target[-1] = self.target[-1][:, np.newaxis]
-            if len(self.target) == 1 and self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+            if len(self.target) == 1 and (
+                self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+            ):
                 if self.node == Node.ALL or self.node == Node.DEFAULT:
                     self.target = [self.target[0][:, :-1], self.target[0][:, 1:]]
                 else:
                     raise NotImplementedError(
-                        f"A list of 2 elements is required with {self.node} and IntegralApproximation.TRAPEZOIDAL"
+                        f"A list of 2 elements is required with {self.node} and TRAPEZOIDAL Integration"
                         f"except for Node.NODE_ALL and Node.NODE_DEFAULT"
                         "which can be automatically generated"
                     )
@@ -177,7 +180,14 @@ class PenaltyOption(OptionGeneric):
         self.target_plot_name = None
         self.target_to_plot = None
         # todo: not implemented yet for trapezoidal integration
-        self.plot_target = False if self.integration_rule == IntegralApproximation.TRAPEZOIDAL else True
+        self.plot_target = (
+            False
+            if (
+                self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+            )
+            else True
+        )
 
         self.states_mapping = states_mapping
 
@@ -294,7 +304,10 @@ class PenaltyOption(OptionGeneric):
                     self.target[0] = np.concatenate(
                         (self.target[0], np.nan * np.zeros((self.target[0].shape[0], 1))), axis=1
                     )
-        elif self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+        elif (
+            self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+            or self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+        ):
 
             target_dim = len(self.target)
             if target_dim != 2:
@@ -431,17 +444,29 @@ class PenaltyOption(OptionGeneric):
         target_shape = tuple(
             [
                 len(self.rows),
-                len(self.cols) + 1 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL else len(self.cols),
+                len(self.cols) + 1
+                if (
+                    self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                    or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                )
+                else len(self.cols),
             ]
         )
         target_cx = nlp.cx.sym("target", target_shape)
         weight_cx = nlp.cx.sym("weight", 1, 1)
         exponent = 2 if self.quadratic and self.weight else 1
 
-        if self.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+        if (
+            self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+            or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+        ):
             # Hypothesis: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
-            state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
+            state_cx = (
+                horzcat(all_pn.nlp.states.cx, all_pn.nlp.states.cx_end)
+                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                else all_pn.nlp.states.cx
+            )
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx = (
@@ -450,13 +475,17 @@ class PenaltyOption(OptionGeneric):
                 else horzcat(all_pn.nlp.controls.cx, all_pn.nlp.controls.cx_end)
             )
             control_cx_end = get_u(nlp, control_cx, dt_cx)
-
+            state_cx_end = (
+                all_pn.nlp.states.cx_end
+                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                else nlp.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp.parameters.cx)["xf"]
+            )
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
                 (
                     (self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx[:, 0])
                     ** exponent
-                    + (self.function(all_pn.nlp.states.cx_end, control_cx_end, param_cx) - target_cx[:, 1]) ** exponent
+                    + (self.function(state_cx_end, control_cx_end, param_cx) - target_cx[:, 1]) ** exponent
                 )
                 / 2,
                 state_cx,
@@ -626,7 +655,11 @@ class PenaltyOption(OptionGeneric):
             self.dt = penalty_type.get_dt(all_pn.nlp)
             self.node_idx = (
                 all_pn.t[:-1]
-                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL and self.target is not None
+                if (
+                    self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                    or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                )
+                and self.target is not None
                 else all_pn.t
             )
 

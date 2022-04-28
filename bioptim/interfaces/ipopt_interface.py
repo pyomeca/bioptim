@@ -285,6 +285,10 @@ class IpoptInterface(SolverInterface):
                 _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
                 if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+
+            if _penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
+                if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
             return _x, _u
 
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
@@ -318,7 +322,10 @@ class IpoptInterface(SolverInterface):
                 for idx in penalty.node_idx:
                     if penalty.target is None:
                         target = []
-                    elif penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+                    elif (
+                        penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    ):
                         target0 = format_target(penalty.target[0])
                         target1 = format_target(penalty.target[1])
                         target = np.vstack((target0, target1)).T
