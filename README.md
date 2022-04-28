@@ -92,6 +92,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [Shooting](#enum-shooting)
   - [CostType](#enum-costtype)
   - [SolutionIntegrator](#enum-solutionintegrator)
+  - [IntegralApproximation](#enum-integralapproximation)
         
 [Examples](#examples)
 - [Run examples](#run-examples)
@@ -1489,6 +1490,12 @@ The type of integrator used to integrate the solution of the optimal control pro
 - SCIPY_DOP853: The scipy integrator DOP853
 - SCIPY_BDF: The scipy integrator BDF
 - SCIPY_LSODA: The scipy integrator LSODA
+
+### Enum: IntegralApproximation
+The type of integration used to integrate the cost function terms of Lagrange:
+- RECTANGLE: The integral is approximated by a rectangle rule (Left Riemann sum)
+- TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the begin of the next interval
+- TRUE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval
 
 
 # Examples
