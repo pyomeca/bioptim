@@ -378,7 +378,7 @@ def test_pendulum_target(control_type, integration_rule, objective):
     )
 
     solver = Solver.IPOPT()
-    solver.set_maximum_iterations(1)
+    solver.set_maximum_iterations(5)
     sol = ocp.solve(solver)
     j_printed = sum_cost_function_output(sol)
 
@@ -388,45 +388,45 @@ def test_pendulum_target(control_type, integration_rule, objective):
     if integration_rule == IntegralApproximation.RECTANGLE:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 41.796208488695875)
-                np.testing.assert_almost_equal(j_printed, 41.796208488695875)
+                np.testing.assert_almost_equal(f[0, 0], 47.409664872029175)
+                np.testing.assert_almost_equal(j_printed, 47.409664872029175)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 38.699592723535424)
-                np.testing.assert_almost_equal(j_printed, 38.699592723535424)
+                np.testing.assert_almost_equal(f[0, 0], 69.3969483839429)
+                np.testing.assert_almost_equal(j_printed, 69.3969483839429)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 42.201076898764754)
-                np.testing.assert_almost_equal(j_printed, 42.201076898764754)
+                np.testing.assert_almost_equal(f[0, 0], 47.18288247657242)
+                np.testing.assert_almost_equal(j_printed, 47.18288247657242)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 39.267706241166394)
-                np.testing.assert_almost_equal(j_printed, 39.267706241166394)
+                np.testing.assert_almost_equal(f[0, 0], 49.52081908930845)
+                np.testing.assert_almost_equal(j_printed, 49.52081908930845)
     elif integration_rule == IntegralApproximation.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 42.78909833573173)
-                np.testing.assert_almost_equal(j_printed, 42.78909833573173)
+                np.testing.assert_almost_equal(f[0, 0], 47.20218950613529)
+                np.testing.assert_almost_equal(j_printed, 47.20218950613529)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 35.85287727502566)
-                np.testing.assert_almost_equal(j_printed, 35.85287727502566)
+                np.testing.assert_almost_equal(f[0, 0], 79.20445223944195)
+                np.testing.assert_almost_equal(j_printed, 79.20445223944195)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 42.72259724612719)
-                np.testing.assert_almost_equal(j_printed, 42.72259724612719)
+                np.testing.assert_almost_equal(f[0, 0], 48.842983152427955)
+                np.testing.assert_almost_equal(j_printed, 48.842983152427955)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 36.385662902674945)
-                np.testing.assert_almost_equal(j_printed, 36.385662902674945)
+                np.testing.assert_almost_equal(f[0, 0], 47.038431660223246)
+                np.testing.assert_almost_equal(j_printed, 47.038431660223246)
     elif integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 42.78909833573173)
-                np.testing.assert_almost_equal(j_printed, 42.78909833573173)
+                np.testing.assert_almost_equal(f[0, 0], 47.20218950613529)
+                np.testing.assert_almost_equal(j_printed, 47.20218950613529)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 37.52381884691468)
-                np.testing.assert_almost_equal(j_printed, 37.52381884691468)
+                np.testing.assert_almost_equal(f[0, 0], 33.46130228108698)
+                np.testing.assert_almost_equal(j_printed, 33.46130228108698)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 42.72259724612719)
-                np.testing.assert_almost_equal(j_printed, 42.72259724612719)
+                np.testing.assert_almost_equal(f[0, 0], 48.842983152427955)
+                np.testing.assert_almost_equal(j_printed, 48.842983152427955)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 39.336826459657516)
-                np.testing.assert_almost_equal(j_printed, 39.336826459657516)
+                np.testing.assert_almost_equal(f[0, 0], 55.5377703306112)
+                np.testing.assert_almost_equal(j_printed, 55.5377703306112)

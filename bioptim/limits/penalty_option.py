@@ -313,14 +313,14 @@ class PenaltyOption(OptionGeneric):
             if target_dim != 2:
                 raise RuntimeError(f"targets with trapezoidal integration rule need to get a list of two elements.")
 
-            for i in range(len(self.target)):
-                n_dim = len(self.target[i].shape)
+            for t in self.target:
+                n_dim = len(t.shape)
                 if n_dim != 2 and n_dim != 3:
                     raise RuntimeError(
                         f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
                     )
-                if self.target[i].shape[-1] == 1:
-                    self.target = np.repeat(self.target, n_time_expected, axis=-1)
+                if t.shape[-1] == 1:
+                    t = np.repeat(t, n_time_expected, axis=-1)
 
             shape = (
                 (len(self.rows), n_time_expected - 1)
@@ -328,10 +328,10 @@ class PenaltyOption(OptionGeneric):
                 else (len(self.rows), len(self.cols), n_time_expected - 1)
             )
 
-            for i in range(len(self.target)):
-                if self.target[i].shape != shape:
+            for t in self.target:
+                if t.shape != shape:
                     raise RuntimeError(
-                        f"target {self.target[i].shape} does not correspond to expected size {shape} for penalty {self.name}"
+                        f"target {t.shape} does not correspond to expected size {shape} for penalty {self.name}"
                     )
 
             # If the target is on controls and control is constant, there will be one value missing
@@ -441,14 +441,12 @@ class PenaltyOption(OptionGeneric):
             )
 
         dt_cx = nlp.cx.sym("dt", 1, 1)
+        is_trapezoidal = self.integration_rule == IntegralApproximation.TRAPEZOIDAL or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
         target_shape = tuple(
             [
                 len(self.rows),
                 len(self.cols) + 1
-                if (
-                    self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                    or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
-                )
+                if is_trapezoidal
                 else len(self.cols),
             ]
         )
@@ -456,10 +454,7 @@ class PenaltyOption(OptionGeneric):
         weight_cx = nlp.cx.sym("weight", 1, 1)
         exponent = 2 if self.quadratic and self.weight else 1
 
-        if (
-            self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-            or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
-        ):
+        if is_trapezoidal:
             # Hypothesis: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
             state_cx = (
