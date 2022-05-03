@@ -97,7 +97,7 @@ class PenaltyOption(OptionGeneric):
         derivative: bool = False,
         explicit_derivative: bool = False,
         integrate: bool = False,
-        integration_rule: IntegralApproximation = IntegralApproximation.RECTANGLE,
+        integration_rule: IntegralApproximation = IntegralApproximation.DEFAULT,
         index: list = None,
         rows: Union[list, tuple, range, np.ndarray] = None,
         cols: Union[list, tuple, range, np.ndarray] = None,
@@ -441,13 +441,14 @@ class PenaltyOption(OptionGeneric):
             )
 
         dt_cx = nlp.cx.sym("dt", 1, 1)
-        is_trapezoidal = self.integration_rule == IntegralApproximation.TRAPEZOIDAL or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+        is_trapezoidal = (
+            self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+            or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+        )
         target_shape = tuple(
             [
                 len(self.rows),
-                len(self.cols) + 1
-                if is_trapezoidal
-                else len(self.cols),
+                len(self.cols) + 1 if is_trapezoidal else len(self.cols),
             ]
         )
         target_cx = nlp.cx.sym("target", target_shape)

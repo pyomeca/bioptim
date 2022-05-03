@@ -3,7 +3,7 @@ from enum import Enum
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node
+from ..misc.enums import Node, IntegralApproximation
 from ..misc.options import OptionList
 
 
@@ -47,6 +47,19 @@ class Objective(PenaltyOption):
                     "Custom objective function detected, but custom_function is invalid. "
                     "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
                 )
+
+        # sanity check on the integration method
+        if isinstance(objective, ObjectiveFcn.Lagrange):
+            if "integration_rule" not in params.keys() or params["integration_rule"] == IntegralApproximation.DEFAULT:
+                params["integration_rule"] = IntegralApproximation.RECTANGLE
+        elif isinstance(objective, ObjectiveFcn.Mayer):
+            if "integration_rule" in params.keys() and params["integration_rule"] != IntegralApproximation.DEFAULT:
+                raise ValueError(
+                    "Mayer objective functions cannot be integrated, "
+                    "remove the argument ""integration_rule"" or use Lagrange objective function"
+                )
+        elif isinstance(objective, ObjectiveFcn.Parameter):
+            pass
 
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
