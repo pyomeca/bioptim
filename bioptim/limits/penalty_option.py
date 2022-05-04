@@ -313,14 +313,14 @@ class PenaltyOption(OptionGeneric):
             if target_dim != 2:
                 raise RuntimeError(f"targets with trapezoidal integration rule need to get a list of two elements.")
 
-            for t in self.target:
-                n_dim = len(t.shape)
+            for target in self.target:
+                n_dim = len(target.shape)
                 if n_dim != 2 and n_dim != 3:
                     raise RuntimeError(
                         f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
                     )
-                if t.shape[-1] == 1:
-                    t = np.repeat(t, n_time_expected, axis=-1)
+                if target.shape[-1] == 1:
+                    target = np.repeat(target, n_time_expected, axis=-1)
 
             shape = (
                 (len(self.rows), n_time_expected - 1)
@@ -328,10 +328,10 @@ class PenaltyOption(OptionGeneric):
                 else (len(self.rows), len(self.cols), n_time_expected - 1)
             )
 
-            for t in self.target:
-                if t.shape != shape:
+            for target in self.target:
+                if target.shape != shape:
                     raise RuntimeError(
-                        f"target {t.shape} does not correspond to expected size {shape} for penalty {self.name}"
+                        f"target {target.shape} does not correspond to expected size {shape} for penalty {self.name}"
                     )
 
             # If the target is on controls and control is constant, there will be one value missing
