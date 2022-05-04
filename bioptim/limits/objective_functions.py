@@ -56,7 +56,9 @@ class Objective(PenaltyOption):
             if "integration_rule" in params.keys() and params["integration_rule"] != IntegralApproximation.DEFAULT:
                 raise ValueError(
                     "Mayer objective functions cannot be integrated, "
-                    "remove the argument ""integration_rule"" or use Lagrange objective function"
+                    "remove the argument "
+                    "integration_rule"
+                    " or use a Lagrange objective function"
                 )
         elif isinstance(objective, ObjectiveFcn.Parameter):
             pass
