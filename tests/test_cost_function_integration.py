@@ -65,6 +65,10 @@ def prepare_ocp(
         objective_functions = Objective(
             ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", integration_rule=integration_rule, target=target
         )
+    if objective == "mayer":
+        objective_functions = Objective(
+            ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", integration_rule=integration_rule, target=target
+        )
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -430,3 +434,31 @@ def test_pendulum_target(control_type, integration_rule, objective):
             else:
                 np.testing.assert_almost_equal(f[0, 0], 55.5377703306112)
                 np.testing.assert_almost_equal(j_printed, 55.5377703306112)
+
+
+@pytest.mark.parametrize(
+    "integration_rule",
+    [
+        IntegralApproximation.RECTANGLE,
+        IntegralApproximation.TRAPEZOIDAL,
+        IntegralApproximation.TRUE_TRAPEZOIDAL,
+    ],
+)
+def test_error_mayer_trapz(integration_rule):
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    with pytest.raises(
+        ValueError,
+        match="Mayer objective functions cannot be integrated, "
+        "remove the argument integration_rule or use a Lagrange objective function",
+    ):
+
+        ocp = prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+            n_shooting=30,
+            integration_rule=integration_rule,
+            objective="mayer",
+            control_type=ControlType.LINEAR_CONTINUOUS,
+        )
