@@ -395,7 +395,7 @@ def test_pendulum_target(control_type, integration_rule, objective):
                 np.testing.assert_almost_equal(f[0, 0], 47.409664872029175)
                 np.testing.assert_almost_equal(j_printed, 47.409664872029175)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 69.3969483839429, decimal=4) # for windows
+                np.testing.assert_almost_equal(f[0, 0], 69.3969483839429, decimal=4)  # for windows
                 np.testing.assert_almost_equal(j_printed, 69.3969483839429, decimal=4)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
