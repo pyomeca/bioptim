@@ -1,5 +1,5 @@
 from typing import Any, Union
-from copy import deepcopy
+from copy import deepcopy, copy
 
 import biorbd_casadi as biorbd
 import numpy as np
@@ -9,7 +9,16 @@ from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
+from ..misc.enums import (
+    ControlType,
+    CostType,
+    Shooting,
+    InterpolationType,
+    SolverType,
+    SolutionIntegrator,
+    Node,
+    IntegralApproximation,
+)
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -276,6 +285,7 @@ class Solution:
         self.real_time_to_optimize = None
         self.iterations = None
         self.status = None
+        self.time_vector = None
 
         # Extract the data now for further use
         self._states, self._controls, self.parameters = {}, {}, {}
@@ -450,6 +460,8 @@ class Solution:
         new.phase_time = deepcopy(self.phase_time)
         new.ns = deepcopy(self.ns)
 
+        new.time_vector = deepcopy(self.time_vector)
+
         if skip_data:
             new._states, new._controls, new.parameters = [], [], {}
         else:
@@ -538,7 +550,7 @@ class Solution:
                 "Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction"
             )
 
-        out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, integrator)
+        out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, merge_phases, integrator)
 
         if merge_phases:
             if continuous:
@@ -550,8 +562,60 @@ class Solution:
 
         return out
 
+    def _generate_time_vector(
+        self,
+        time_phase,
+        keep_intermediate_points: bool,
+        continuous: bool,
+        merge_phases: bool,
+        integrator: SolutionIntegrator,
+    ):
+        """
+        Generate time integration vector, at which the points from intagrate are evaluated
+
+        """
+
+        t_integrated = []
+        last_t = 0
+        for phase_idx, nlp in enumerate(self.ocp.nlp):
+            n_int_steps = (
+                nlp.ode_solver.steps_scipy if integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
+            )
+            dt_ns = time_phase[phase_idx + 1] / nlp.ns
+            time_phase_integrated = []
+            last_t_int = copy(last_t)
+            for _ in range(nlp.ns):
+                if nlp.ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT:
+                    time_phase_integrated += (np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int).tolist()
+                else:
+                    time_interval = np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1)
+                    if continuous and _ != nlp.ns - 1:
+                        time_interval = time_interval[:-1]
+                    if not keep_intermediate_points:
+                        if _ == nlp.ns - 1:
+                            time_interval = time_interval[[0, -1]]
+                        else:
+                            time_interval = np.array([time_interval[0]])
+                    time_phase_integrated += time_interval.tolist()
+
+                if not continuous and _ == nlp.ns - 1:
+                    time_phase_integrated += [time_phase_integrated[-1]]
+
+                last_t_int += dt_ns
+            if continuous and merge_phases and phase_idx != len(self.ocp.nlp) - 1:
+                t_integrated += time_phase_integrated[:-1]
+            else:
+                t_integrated += time_phase_integrated
+            last_t += time_phase[phase_idx + 1]
+        return t_integrated
+
     def __perform_integration(
-        self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, integrator: SolutionIntegrator
+        self,
+        shooting_type: Shooting,
+        keep_intermediate_points: bool,
+        continuous: bool,
+        merge_phases: bool,
+        integrator: SolutionIntegrator,
     ):
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
 
@@ -571,9 +635,13 @@ class Solution:
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
         out._states = []
+        out.time_vector = self._generate_time_vector(
+            out.phase_time, keep_intermediate_points, continuous, merge_phases, integrator
+        )
         for _ in range(len(self._states)):
             out._states.append({})
 
+        sum_states_len = 0
         params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
         for p, nlp in enumerate(self.ocp.nlp):
@@ -632,7 +700,6 @@ class Solution:
                         (s + 1) * (nlp.ode_solver.steps + 1) if nlp.ode_solver.is_direct_collocation else s + 1
                     )
                     cols_in_out = [s * n_steps, (s + 1) * n_steps] if keep_intermediate_points else [s, s + 2]
-
                 else:
                     if nlp.ode_solver.is_direct_collocation:
                         if keep_intermediate_points:
@@ -671,6 +738,8 @@ class Solution:
             # Dispatch the integrated values to all the keys
             for key in nlp.states:
                 out._states[p][key] = out._states[p]["all"][nlp.states[key].index, :]
+
+            sum_states_len += out._states[p]["all"].shape[1]
 
         return out
 
@@ -1006,13 +1075,36 @@ class Solution:
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
-                    if penalty.derivative or penalty.explicit_derivative:
+                    if (
+                        penalty.derivative
+                        or penalty.explicit_derivative
+                        or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                    ):
                         col_x_idx.append((idx + 1) * steps)
-                        col_u_idx.append((idx + 1))
+                        if (
+                            penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
+                        ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                            col_u_idx.append((idx + 1))
+                    elif penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
+                        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                            col_u_idx.append((idx + 1))
 
                     x = self._states[phase_idx]["all"][:, col_x_idx]
                     u = self._controls[phase_idx]["all"][:, col_u_idx]
-                target = penalty.target[:, penalty.node_idx.index(idx)] if penalty.target is not None else []
+                    if penalty.target is None:
+                        target = []
+                    elif (
+                        penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    ):
+                        target = np.vstack(
+                            (
+                                penalty.target[0][:, penalty.node_idx.index(idx)],
+                                penalty.target[1][:, penalty.node_idx.index(idx)],
+                            )
+                        ).T
+                    else:
+                        target = penalty.target[0][:, penalty.node_idx.index(idx)]
 
             val.append(penalty.function_non_threaded(x, u, p))
             val_weighted.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, target, dt))
