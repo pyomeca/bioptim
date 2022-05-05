@@ -9,7 +9,16 @@ from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
+from ..misc.enums import (
+    ControlType,
+    CostType,
+    Shooting,
+    InterpolationType,
+    SolverType,
+    SolutionIntegrator,
+    Node,
+    IntegralApproximation,
+)
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -1066,13 +1075,36 @@ class Solution:
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
-                    if penalty.derivative or penalty.explicit_derivative:
+                    if (
+                        penalty.derivative
+                        or penalty.explicit_derivative
+                        or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                    ):
                         col_x_idx.append((idx + 1) * steps)
-                        col_u_idx.append((idx + 1))
+                        if (
+                            penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
+                        ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                            col_u_idx.append((idx + 1))
+                    elif penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
+                        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                            col_u_idx.append((idx + 1))
 
                     x = self._states[phase_idx]["all"][:, col_x_idx]
                     u = self._controls[phase_idx]["all"][:, col_u_idx]
-                target = penalty.target[:, penalty.node_idx.index(idx)] if penalty.target is not None else []
+                    if penalty.target is None:
+                        target = []
+                    elif (
+                        penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    ):
+                        target = np.vstack(
+                            (
+                                penalty.target[0][:, penalty.node_idx.index(idx)],
+                                penalty.target[1][:, penalty.node_idx.index(idx)],
+                            )
+                        ).T
+                    else:
+                        target = penalty.target[0][:, penalty.node_idx.index(idx)]
 
             val.append(penalty.function_non_threaded(x, u, p))
             val_weighted.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, target, dt))
