@@ -201,7 +201,7 @@ def test_integrate(integrator, ode_solver):
 
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
-    assert np.shape(sol_integrated.states['all'])[1] == np.shape(sol_integrated.time_vector)[0]
+    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time_vector)[0]
 
     decimal = 5 if integrator != SolutionIntegrator.DEFAULT else 8
     for i, key in enumerate(sol.states):
@@ -250,7 +250,7 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
 
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
-    assert np.shape(sol_integrated.states['all'])[1] == np.shape(sol_integrated.time_vector)[0]
+    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time_vector)[0]
 
     decimal = 1
     for i, key in enumerate(sol.states):
@@ -302,7 +302,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
 
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
-    assert np.shape(sol_integrated.states['all'])[1] == np.shape(sol_integrated.time_vector)[0]
+    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time_vector)[0]
 
     decimal = 1
 
@@ -494,7 +494,7 @@ def test_integrate_non_continuous(shooting, merge, integrator, ode_solver):
 
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
-    assert np.shape(sol_integrated.states['all'])[1] == np.shape(sol_integrated.time_vector)[0]
+    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time_vector)[0]
 
     decimal = 1 if integrator != SolutionIntegrator.DEFAULT or ode_solver == OdeSolver.COLLOCATION else 8
     for i, key in enumerate(sol.states):
@@ -582,7 +582,7 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
     shapes = (6, 3, 3)
     states_shape_sum = 0
     for i in range(len(sol_integrated.states)):
-        states_shape_sum += np.shape(sol_integrated.states[i]['all'])[1]
+        states_shape_sum += np.shape(sol_integrated.states[i]["all"])[1]
     assert states_shape_sum == np.shape(sol_integrated.time_vector)[0]
 
     decimal = 1 if integrator != SolutionIntegrator.DEFAULT else 8
@@ -675,7 +675,7 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
     n_shooting = [20, 30, 20]
     sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
-    assert np.shape(sol_integrated.states['all'])[1] == np.shape(sol_integrated.time_vector)[0]
+    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time_vector)[0]
 
     decimal = 0 if integrator != SolutionIntegrator.DEFAULT else 8
     for k, key in enumerate(sol.states[0]):
@@ -751,7 +751,7 @@ def test_integrate_multiphase_non_continuous(shooting, integrator, ode_solver):
     shapes = (6, 3, 3)
     states_shape_sum = 0
     for i in range(len(sol_integrated.states)):
-        states_shape_sum += np.shape(sol_integrated.states[i]['all'])[1]
+        states_shape_sum += np.shape(sol_integrated.states[i]["all"])[1]
     assert states_shape_sum == np.shape(sol_integrated.time_vector)[0]
 
     decimal = 1 if integrator != SolutionIntegrator.DEFAULT or ode_solver == OdeSolver.COLLOCATION else 8
@@ -832,7 +832,7 @@ def test_integrate_multiphase_merged_non_continuous(shooting, integrator, ode_so
     n_shooting = [20, 30, 20]
     sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
-    assert np.shape(sol_integrated.states['all'])[1] == np.shape(sol_integrated.time_vector)[0]
+    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time_vector)[0]
 
     decimal = 0 if integrator != SolutionIntegrator.DEFAULT or ode_solver == OdeSolver.COLLOCATION else 8
     steps = 4 if integrator == SolutionIntegrator.DEFAULT and ode_solver == OdeSolver.COLLOCATION else 5
