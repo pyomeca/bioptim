@@ -198,12 +198,12 @@ class GraphAbstract:
                     if obj.target is not None:
                         if obj.quadratic:
                             mayer_str += (
-                                f"({obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])})"
+                                f"({obj.name} - {self._vector_layout(obj.target[0][:, obj.node_idx.index(i)])})"
                                 f"{self._squared}{self._return_line}"
                             )
                         else:
                             mayer_str += (
-                                f"{obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}"
+                                f"{obj.name} - {self._vector_layout(obj.target[0][:, obj.node_idx.index(i)])}"
                                 f"{self._return_line}"
                             )
                     else:

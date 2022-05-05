@@ -15,6 +15,7 @@ from bioptim import (
     ConstraintFcn,
     Constraint,
     Node,
+    Transcription,
 )
 from bioptim.limits.penalty_node import PenaltyNodeList
 from bioptim.limits.penalty import PenaltyOption
@@ -41,7 +42,8 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
         )
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, implicit_dynamics=implicit)
+        rigidbody_dynamics = Transcription.IMPLICIT if implicit else Transcription.EXPLICIT
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, rigidbody_dynamics=rigidbody_dynamics)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     elif with_actuator:
@@ -82,13 +84,13 @@ def get_penalty_value(ocp, penalty, t, x, u, p):
 
 def test_penalty_targets_shapes():
     p = ObjectiveFcn.Parameter
-    np.testing.assert_equal(Objective([], custom_type=p, target=1).target.shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target.shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target.shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target.shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target.shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target.shape, (1, 2))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target.shape, (1, 2))
+    np.testing.assert_equal(Objective([], custom_type=p, target=1).target[0].shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target[0].shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target[0].shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target[0].shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target[0].shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target[0].shape, (1, 2))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target[0].shape, (1, 2))
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])

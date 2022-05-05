@@ -2,6 +2,7 @@ from typing import Union
 
 from casadi import horzcat, vertcat, MX, SX
 
+from ..misc.enums import Transcription
 from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
 from ..optimization.non_linear_program import NonLinearProgram
@@ -75,7 +76,7 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
-        implicit_dynamics: bool,
+        rigidbody_dynamics: Transcription,
         fatigue: FatigueList,
     ) -> MX:
         """
@@ -93,8 +94,8 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
-        implicit_dynamics: bool
-            If the implicit dynamic should be used
+        rigidbody_dynamics: Transcription
+            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
         fatigue : FatigueList
             A list of fatigue elements
 
@@ -110,7 +111,7 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        if implicit_dynamics:
+        if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq
             dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
@@ -214,7 +215,12 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_derivative_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool, with_contact: bool
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        rigidbody_dynamics: Transcription,
+        with_contact: bool,
     ) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -229,8 +235,8 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
-        implicit_dynamics: bool
-            If the implicit dynamics should be used
+        rigidbody_dynamics: Transcription
+            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
         with_contact: bool
             If the dynamic with contact should be used
 
@@ -248,7 +254,7 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        if implicit_dynamics:
+        if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
             ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
             dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 
