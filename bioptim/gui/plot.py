@@ -10,7 +10,7 @@ from matplotlib.ticker import StrMethodFormatter
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
-from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator
+from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, IntegralApproximation
 from ..misc.mapping import Mapping
 from ..optimization.solution import Solution
 
@@ -59,6 +59,7 @@ class CustomPlot:
         node_idx: list = None,
         label: list = None,
         compute_derivative: bool = False,
+        integration_rule: IntegralApproximation = IntegralApproximation.RECTANGLE,
         **parameters: Any,
     ):
         """
@@ -109,6 +110,7 @@ class CustomPlot:
         self.node_idx = node_idx
         self.label = label
         self.compute_derivative = compute_derivative
+        self.integration_rule = integration_rule
         self.parameters = parameters
 
 
@@ -633,11 +635,24 @@ class PlotOcp:
                     if self.plot_func[key][i].label[:16] == "PHASE_TRANSITION":
                         self.ydata.append(np.zeros(np.shape(state)[0]))
                         continue
-                x_mod = 1 if self.plot_func[key][i].compute_derivative else 0
+                x_mod = (
+                    1
+                    if self.plot_func[key][i].compute_derivative
+                    or self.plot_func[key][i].integration_rule == IntegralApproximation.TRAPEZOIDAL
+                    or self.plot_func[key][i].integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    else 0
+                )
                 u_mod = (
                     1
                     if (nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative)
                     and not ("OBJECTIVES" in key or "CONSTRAINTS" in key or "PHASE_TRANSITION" in key)
+                    or (
+                        (
+                            self.plot_func[key][i].integration_rule == IntegralApproximation.TRAPEZOIDAL
+                            or self.plot_func[key][i].integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                        )
+                        and nlp.control_type == ControlType.LINEAR_CONTINUOUS
+                    )
                     else 0
                 )
 
@@ -676,7 +691,6 @@ class PlotOcp:
                     for i_var in range(self.variable_sizes[i][key]):
                         y = np.empty((len(self.plot_func[key][i].node_idx),))
                         y.fill(np.nan)
-                        mod = 1 if self.plot_func[key][i].compute_derivative else 0
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
 
                             if self.plot_func[key][i].parameters["penalty"].transition:
@@ -697,8 +711,8 @@ class PlotOcp:
                             else:
                                 val = self.plot_func[key][i].function(
                                     node_idx,
-                                    state[:, node_idx * step_size : (node_idx + 1) * step_size + mod : step_size],
-                                    control[:, node_idx : node_idx + 1 + mod],
+                                    state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size],
+                                    control[:, node_idx : node_idx + 1 + u_mod],
                                     data_params_in_dyn,
                                     **self.plot_func[key][i].parameters,
                                 )
