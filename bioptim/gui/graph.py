@@ -325,14 +325,24 @@ class OcpToConsole(GraphAbstract):
             print(f"**********")
             print(f"BOUNDS:")
             print(f"STATES: InterpolationType.{self.ocp.nlp[phase_idx].x_bounds.type.name}")
-            self.print_bounds(phase_idx, self.ocp.nlp[phase_idx].x_bounds,
-                              [self.ocp.nlp[phase_idx].states.cx[i].name()
-                               for i in range(self.ocp.nlp[phase_idx].states.cx.shape[0])])
+            self.print_bounds(
+                phase_idx,
+                self.ocp.nlp[phase_idx].x_bounds,
+                [
+                    self.ocp.nlp[phase_idx].states.cx[i].name()
+                    for i in range(self.ocp.nlp[phase_idx].states.cx.shape[0])
+                ],
+            )
             print(f"**********")
             print(f"CONTROLS: InterpolationType.{self.ocp.nlp[phase_idx].u_bounds.type.name}")
-            self.print_bounds(phase_idx, self.ocp.nlp[phase_idx].u_bounds,
-                              [self.ocp.nlp[phase_idx].controls.cx[i].name()
-                               for i in range(self.ocp.nlp[phase_idx].controls.cx.shape[0])])
+            self.print_bounds(
+                phase_idx,
+                self.ocp.nlp[phase_idx].u_bounds,
+                [
+                    self.ocp.nlp[phase_idx].controls.cx[i].name()
+                    for i in range(self.ocp.nlp[phase_idx].controls.cx.shape[0])
+                ],
+            )
             print(f"**********")
             print(f"PARAMETERS: ")
             print("")
