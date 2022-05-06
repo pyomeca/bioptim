@@ -163,12 +163,6 @@ class ConfigureProblem:
                         constraint_type=ConstraintType.IMPLICIT,
                         phase=nlp.phase_idx,
                     )
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
-                with_contact=with_contact,
-            )
 
         if rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
             ConfigureProblem.configure_qddot(nlp, False, True)
