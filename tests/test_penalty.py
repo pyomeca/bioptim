@@ -60,11 +60,12 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         nu = biorbd_model.nbGeneralizedTorque()
     x_init = InitialGuess(np.zeros((nx, 1)))
 
-    mod = 2 if implicit else 1
+    nu = nu * 2 if implicit else nu
+    nu = nu + 3 if implicit and with_contact else nu
 
-    u_init = InitialGuess(np.zeros((nu * mod, 1)))
+    u_init = InitialGuess(np.zeros((nu, 1)))
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
-    u_bounds = Bounds(np.zeros((nu * mod, 1)), np.zeros((nu * mod, 1)))
+    u_bounds = Bounds(np.zeros((nu, 1)), np.zeros((nu, 1)))
     ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=use_sx)
     ocp.nlp[0].J = [[]]
     ocp.nlp[0].g = [[]]
