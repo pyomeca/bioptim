@@ -148,7 +148,9 @@ def test_implicit_example():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     sol_implicit = ocp_module.solve_ocp(
-        rigidbody_dynamics=Transcription.CONSTRAINT_ID, max_iter=1, model_path=bioptim_folder + "/models/pendulum.bioMod"
+        rigidbody_dynamics=Transcription.CONSTRAINT_ID,
+        max_iter=1,
+        model_path=bioptim_folder + "/models/pendulum.bioMod",
     )
     sol_semi_explicit = ocp_module.solve_ocp(
         rigidbody_dynamics=Transcription.CONSTRAINT_FD,
