@@ -111,7 +111,7 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
+        if rigidbody_dynamics == Transcription.CONSTRAINT_ID or rigidbody_dynamics == Transcription.CONSTRAINT_FD:
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq
             dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
@@ -254,7 +254,7 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
+        if rigidbody_dynamics == Transcription.CONSTRAINT_ID or rigidbody_dynamics == Transcription.CONSTRAINT_FD:
             ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
             dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 

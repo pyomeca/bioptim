@@ -37,7 +37,7 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK1(n_integration_steps=1),
     use_sx: bool = False,
     n_threads: int = 1,
-    rigidbody_dynamics: Transcription = Transcription.EXPLICIT,
+    rigidbody_dynamics: Transcription = Transcription.ODE,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -75,7 +75,7 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
-    if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
+    if rigidbody_dynamics == Transcription.CONSTRAINT_ID or rigidbody_dynamics == Transcription.CONSTRAINT_FD:
         qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     x_bounds = BoundsList()
@@ -92,14 +92,14 @@ def prepare_ocp(
 
     # Define control path constraint
     # There are extra controls in implicit dynamics which are joint acceleration qddot.
-    if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
+    if rigidbody_dynamics == Transcription.CONSTRAINT_ID or rigidbody_dynamics == Transcription.CONSTRAINT_FD:
         u_bounds = Bounds([tau_min] * n_tau + [qddot_min] * n_qddot, [tau_max] * n_tau + [qddot_max] * n_qddot)
     else:
         u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
 
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    if rigidbody_dynamics == Transcription.IMPLICIT or rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
+    if rigidbody_dynamics == Transcription.CONSTRAINT_ID or rigidbody_dynamics == Transcription.CONSTRAINT_FD:
         u_init = InitialGuess([0] * (n_tau + n_qddot))
     else:
         u_init = InitialGuess([0] * n_tau)
@@ -201,9 +201,9 @@ def main():
     """
 
     # --- Prepare the ocp with implicit and explicit dynamics --- #
-    sol_implicit = solve_ocp(rigidbody_dynamics=Transcription.IMPLICIT)
-    sol_semi_explicit = solve_ocp(rigidbody_dynamics=Transcription.SEMI_EXPLICIT)
-    sol_explicit = solve_ocp(rigidbody_dynamics=Transcription.EXPLICIT)
+    sol_implicit = solve_ocp(rigidbody_dynamics=Transcription.CONSTRAINT_ID)
+    sol_semi_explicit = solve_ocp(rigidbody_dynamics=Transcription.CONSTRAINT_FD)
+    sol_explicit = solve_ocp(rigidbody_dynamics=Transcription.ODE)
 
     # --- Show the results in a bioviz animation --- #
     sol_implicit.print()

@@ -51,7 +51,7 @@ def prepare_single_shooting(
 
     # Dynamics
     dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.EXPLICIT, soft_contacts_dynamics=False
+        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.ODE, soft_contacts_dynamics=False
     )
 
     # Initial guess
@@ -145,7 +145,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.EXPLICIT, soft_contacts_dynamics=False
+        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.ODE, soft_contacts_dynamics=False
     )
 
     # Constraints

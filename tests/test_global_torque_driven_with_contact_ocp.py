@@ -173,7 +173,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     TestUtils.simulate(sol, decimal_value=5)
 
 
-@pytest.mark.parametrize("transcription", [Transcription.EXPLICIT, Transcription.SEMI_EXPLICIT, Transcription.IMPLICIT])
+@pytest.mark.parametrize("transcription", [Transcription.ODE, Transcription.CONSTRAINT_FD, Transcription.CONSTRAINT_ID])
 def test_maximize_predicted_height_CoM_transcriptions(transcription):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
@@ -197,18 +197,18 @@ def test_maximize_predicted_height_CoM_transcriptions(transcription):
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
 
-    if transcription == Transcription.EXPLICIT:
+    if transcription == Transcription.ODE:
         np.testing.assert_almost_equal(f[0, 0], 0.8032447451950947)
-    elif transcription == Transcription.SEMI_EXPLICIT:
+    elif transcription == Transcription.CONSTRAINT_FD:
         np.testing.assert_almost_equal(f[0, 0], 0.9695327421106931)
-    elif transcription == Transcription.IMPLICIT:
+    elif transcription == Transcription.CONSTRAINT_ID:
         np.testing.assert_almost_equal(f[0, 0], 1.6940665057034097)
 
     # Check constraints
     g = np.array(sol.constraints)
-    if transcription == Transcription.EXPLICIT:
+    if transcription == Transcription.ODE:
         np.testing.assert_equal(g.shape, (160, 1))
-    elif transcription == Transcription.SEMI_EXPLICIT:
+    elif transcription == Transcription.CONSTRAINT_FD:
         np.testing.assert_equal(g.shape, (240, 1))
-    elif transcription == Transcription.IMPLICIT:
+    elif transcription == Transcription.CONSTRAINT_ID:
         np.testing.assert_equal(g.shape, (300, 1))

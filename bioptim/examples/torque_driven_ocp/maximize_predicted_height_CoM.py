@@ -35,7 +35,7 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK4(),
     objective_name: str = "MINIMIZE_PREDICTED_COM_HEIGHT",
     com_constraints: bool = False,
-    transcription: Transcription = Transcription.EXPLICIT,
+    transcription: Transcription = Transcription.ODE,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -122,9 +122,9 @@ def prepare_ocp(
     x_init.add(pose_at_first_node + [0] * n_qdot)
 
     # Define control path constraint
-    if transcription == Transcription.SEMI_EXPLICIT:
+    if transcription == Transcription.CONSTRAINT_FD:
         nu_sup = biorbd_model.nbQddot()
-    elif transcription == Transcription.IMPLICIT:
+    elif transcription == Transcription.CONSTRAINT_ID:
         nu_sup = biorbd_model.nbQddot() + biorbd_model.nbContacts()
     else:
         nu_sup = 0

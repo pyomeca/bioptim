@@ -105,7 +105,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact: bool = False,
-        rigidbody_dynamics: Transcription = Transcription.EXPLICIT,
+        rigidbody_dynamics: Transcription = Transcription.ODE,
         soft_contacts_dynamics: Transcription = None,
         fatigue: FatigueList = None,
     ):
@@ -128,22 +128,22 @@ class ConfigureProblem:
             A list of fatigue elements
         """
         if soft_contacts_dynamics is None and nlp.model.nbSoftContacts() != 0:
-            soft_contacts_dynamics = Transcription.EXPLICIT
-        elif soft_contacts_dynamics == Transcription.SEMI_EXPLICIT:
-            raise ValueError("soft_contacts_dynamics cannot be used with Transcription.SEMI_EXPLICIT")
+            soft_contacts_dynamics = Transcription.ODE
+        elif soft_contacts_dynamics == Transcription.CONSTRAINT_FD:
+            raise ValueError("soft_contacts_dynamics cannot be used with Transcription.CONSTRAINT_FD")
 
-        if rigidbody_dynamics == Transcription.IMPLICIT:
-            if soft_contacts_dynamics == Transcription.EXPLICIT:
+        if rigidbody_dynamics == Transcription.CONSTRAINT_ID:
+            if soft_contacts_dynamics == Transcription.ODE:
                 raise ValueError(
                     "Soft contacts dynamics should not be EXPLICIT when rigidbody dynamics is IMPLICIT. "
-                    "Please set soft_contacts_dynamics=Transcription.IMPLICIT"
+                    "Please set soft_contacts_dynamics=Transcription.CONSTRAINT_ID"
                 )
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
 
-        if rigidbody_dynamics == Transcription.IMPLICIT:
+        if rigidbody_dynamics == Transcription.CONSTRAINT_ID:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
@@ -164,7 +164,7 @@ class ConfigureProblem:
                         phase=nlp.phase_idx,
                     )
 
-        if rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
+        if rigidbody_dynamics == Transcription.CONSTRAINT_FD:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
@@ -174,7 +174,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
             )
 
-        if soft_contacts_dynamics == Transcription.IMPLICIT:
+        if soft_contacts_dynamics == Transcription.CONSTRAINT_ID:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
@@ -193,7 +193,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if soft_contacts_dynamics == Transcription.IMPLICIT:
+        if soft_contacts_dynamics == Transcription.CONSTRAINT_ID:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -206,7 +206,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact=False,
-        rigidbody_dynamics: Transcription = Transcription.EXPLICIT,
+        rigidbody_dynamics: Transcription = Transcription.ODE,
         soft_contacts_dynamics: Transcription = None,
     ):
         """
@@ -225,18 +225,18 @@ class ConfigureProblem:
         soft_contacts_dynamics: Transcription
             which soft contact dynamic should be used (EXPLICIT or IMPLICIT)
         """
-        if rigidbody_dynamics == Transcription.SEMI_EXPLICIT:
-            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with Transcription.SEMI_EXPLICIT")
+        if rigidbody_dynamics == Transcription.CONSTRAINT_FD:
+            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with Transcription.CONSTRAINT_FD")
         if soft_contacts_dynamics is None and nlp.model.nbSoftContacts() != 0:
-            soft_contacts_dynamics = Transcription.EXPLICIT
-        elif soft_contacts_dynamics == Transcription.SEMI_EXPLICIT:
-            raise ValueError("soft_contacts_dynamics cannot be used with Transcription.SEMI_EXPLICIT")
+            soft_contacts_dynamics = Transcription.ODE
+        elif soft_contacts_dynamics == Transcription.CONSTRAINT_FD:
+            raise ValueError("soft_contacts_dynamics cannot be used with Transcription.CONSTRAINT_FD")
 
-        if rigidbody_dynamics == Transcription.IMPLICIT:
-            if soft_contacts_dynamics == Transcription.EXPLICIT:
+        if rigidbody_dynamics == Transcription.CONSTRAINT_ID:
+            if soft_contacts_dynamics == Transcription.ODE:
                 raise ValueError(
                     "Soft contacts dynamics should not be EXPLICIT when rigidbody dynamics is IMPLICIT. "
-                    "Please set soft_contacts_dynamics=Transcription.IMPLICIT"
+                    "Please set soft_contacts_dynamics=Transcription.CONSTRAINT_ID"
                 )
 
         ConfigureProblem.configure_q(nlp, True, False)
@@ -244,7 +244,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(nlp, True, False)
         ConfigureProblem.configure_taudot(nlp, False, True)
 
-        if rigidbody_dynamics == Transcription.IMPLICIT:
+        if rigidbody_dynamics == Transcription.CONSTRAINT_ID:
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
             ocp.implicit_constraints.add(
@@ -253,7 +253,7 @@ class ConfigureProblem:
                 constraint_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
-        if soft_contacts_dynamics == Transcription.IMPLICIT:
+        if soft_contacts_dynamics == Transcription.CONSTRAINT_ID:
             ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
@@ -271,7 +271,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if soft_contacts_dynamics == Transcription.IMPLICIT:
+        if soft_contacts_dynamics == Transcription.CONSTRAINT_ID:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,

@@ -140,6 +140,6 @@ class IntegralApproximation(Enum):
 
 
 class Transcription(Enum):
-    EXPLICIT = "explicit"
-    IMPLICIT = "implicit"
-    SEMI_EXPLICIT = "semi_explicit"
+    ODE = "ode"
+    CONSTRAINT_ID = "constraint_id"
+    CONSTRAINT_FD = "constraint_fd"
