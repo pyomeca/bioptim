@@ -332,7 +332,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states.keys() and "qddot" in nlp.controls.keys():
+            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
                 return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
             elif "qddot" in nlp.states.keys():
                 return nlp.states["qddot"].cx
