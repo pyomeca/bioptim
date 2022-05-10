@@ -141,5 +141,8 @@ class IntegralApproximation(Enum):
 
 class Transcription(Enum):
     ODE = "ode"
+    CONSTRAINT = "constraint"
     CONSTRAINT_ID = "constraint_id"
     CONSTRAINT_FD = "constraint_fd"
+    CONSTRAINT_ID_QDDDOT = "constraint_id_qdddot"
+    CONSTRAINT_FD_QDDDOT = "constraint_fd_qdddot"
