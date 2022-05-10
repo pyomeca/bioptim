@@ -721,11 +721,14 @@ class OptimalControlProgram:
                 if dt.shape[0] > 1:
                     dt = dt[penalty.phase]
 
-            _target = (
-                penalty.target[..., penalty.node_idx.index(t)]
-                if penalty.target is not None and isinstance(t, int)
-                else []
-            )
+            if penalty.target is not None and isinstance(t, int):
+                _target = (
+                    penalty.target[..., penalty.node_idx.index(t)]
+                    if len(penalty.target) > 1
+                    else penalty.target[penalty.node_idx.index(t)]
+                )
+            else:
+                _target = []
 
             out = []
             if penalty.transition:
