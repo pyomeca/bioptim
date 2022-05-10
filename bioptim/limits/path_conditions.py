@@ -633,6 +633,75 @@ class QAndQDotBounds(Bounds):
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
 
+class QAndQDotAndQDDotBounds(Bounds):
+    """
+    Specialized Bounds that reads a model to automatically extract q, qdot and qddot bounds
+    """
+
+    def __init__(
+        self,
+        biorbd_model,
+        dof_mappings: Union[BiMapping, BiMappingList] = None,
+    ):
+        """
+        Parameters
+        ----------
+        biorbd_model: biorbd.Model
+            A reference to the model
+        dof_mappings: BiMappingList
+            The mapping of q and qdot (if only q, then qdot = q)
+        """
+        if dof_mappings is None:
+            dof_mappings = {}
+
+        if biorbd_model.nbQuat() > 0:
+            if "q" in dof_mappings and "qdot" not in dof_mappings:
+                raise RuntimeError(
+                    "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
+                )
+            elif "q" not in dof_mappings and "qdot" in dof_mappings:
+                raise RuntimeError(
+                    "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
+                )
+
+        if "q" not in dof_mappings:
+            dof_mappings["q"] = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+
+        if "qdot" not in dof_mappings:
+            if biorbd_model.nbQuat() > 0:
+                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+            else:
+                dof_mappings["qdot"] = dof_mappings["q"]
+
+        if "qddot" not in dof_mappings:
+            if biorbd_model.nbQuat() > 0:
+                dof_mappings["qddot"] = BiMapping(range(biorbd_model.nbQddot()), range(biorbd_model.nbQddot()))
+            else:
+                dof_mappings["qddot"] = dof_mappings["qdot"]
+
+        q_ranges = []
+        qdot_ranges = []
+        qddot_ranges = []
+        for i in range(biorbd_model.nbSegment()):
+            segment = biorbd_model.segment(i)
+            q_ranges += [q_range for q_range in segment.QRanges()]
+            qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+            qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
+
+        x_min = (
+            [q_ranges[i].min() for i in dof_mappings["q"].to_first.map_idx]
+            + [qdot_ranges[i].min() for i in dof_mappings["qdot"].to_first.map_idx]
+            + [qddot_ranges[i].min() for i in dof_mappings["qddot"].to_first.map_idx]
+        )
+        x_max = (
+            [q_ranges[i].max() for i in dof_mappings["q"].to_first.map_idx]
+            + [qdot_ranges[i].max() for i in dof_mappings["qdot"].to_first.map_idx]
+            + [qddot_ranges[i].max() for i in dof_mappings["qddot"].to_first.map_idx]
+        )
+
+        super(QAndQDotAndQDDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
+
+
 class InitialGuess(OptionGeneric):
     """
     A placeholder for the initial guess
