@@ -155,7 +155,7 @@ class ConfigureProblem:
             or rigidbody_dynamics == Transcription.CONSTRAINT_ID_QDDDOT
         ):
             ConfigureProblem.configure_qddot(nlp, True, False)
-            ConfigureProblem.configure_qddot(nlp, False, True)
+            ConfigureProblem.configure_qdddot(nlp, False, True)
 
         # Algebraic constraints of rigidbody dynamics if needed
         if (
