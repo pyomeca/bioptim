@@ -59,6 +59,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [Bounds](#class-bounds)
   - [BoundsList](#class-boundslist)
   - [QAndQDotBounds](#class-qandqdotbounds)
+  - [QAndQDotAndQDDotBounds](#class-qandqdotandqddotbounds)
 - [The initial conditions](#the-initial-conditions)
   - [InitialGuess](#class-initialguess)
   - [InitialGuessList](#class-initialguesslist)
@@ -824,6 +825,9 @@ The QAndQDotBounds is a Bounds that uses a biorbd_model to define the minimal an
 It is particularly useful when declaring the states bounds for *q* and *qdot*. 
 Anything that was presented for Bounds, also applies to QAndQDotBounds
 
+### Class: QAndQDotAndQDDotBounds 
+The QAndQDotAndQDDotBounds is almost the same as the previous class.
+Except that it also defines the bounds for the generalized accelerations *qddot* in addition to *q* and *qdot*.  
 
 ## The initial conditions
 The initial conditions the solver should start from, i.e., initial values of the states (x) and the controls (u).
