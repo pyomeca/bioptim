@@ -115,6 +115,12 @@ class DynamicsFunctions:
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq
             dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+        elif rigidbody_dynamics == Transcription.CONSTRAINT_ID_QDDDOT or rigidbody_dynamics == Transcription.CONSTRAINT_FD_QDDDOT:
+            dxdt = MX(nlp.states.shape, 1)
+            dxdt[nlp.states["q"].index, :] = dq
+            qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
+            dxdt[nlp.states["qdot"].index, :] = qddot
+            dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
         else:
             tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)

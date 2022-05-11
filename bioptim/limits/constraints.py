@@ -334,7 +334,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
 
-            qddot = nlp.controls["qddot"].mx
+            qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls.keys() else nlp.states["qddot"].mx
             if with_contact:
                 model = biorbd.Model(
                     nlp.model.path().absolutePath().to_string()
@@ -380,7 +380,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
                 # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
             if with_contact:
-                f_contact = nlp.controls["fext"].mx
+                f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls.keys() else nlp.states["fext"].mx
                 count = 0
                 f_contact_vec = biorbd.VecBiorbdVector()
                 for ii in range(nlp.model.nbRigidContacts()):

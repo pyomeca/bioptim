@@ -173,7 +173,7 @@ class ConfigureProblem:
                 # qddot is continuous with Transcription.CONSTRAINT_ID_QDDDOT
                 # so the consistency constraint of the marker acceleration can only be set to zero
                 # at the first shooting node
-                node = Node.ALL_SHOOTING if rigidbody_dynamics == Transcription.CONSTRAINT_ID else Node.START
+                node = Node.ALL_SHOOTING if rigidbody_dynamics == Transcription.CONSTRAINT_ID else Node.ALL
                 ConfigureProblem.configure_contact_forces(nlp, False, True)
                 for ii in range(nlp.model.nbContacts()):
                     ocp.implicit_constraints.add(
