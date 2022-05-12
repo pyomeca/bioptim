@@ -6,8 +6,7 @@ from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import PathCondition, Bounds
 from ..optimization.parameters import Parameter
-from ..misc.enums import Node
-from bioptim import InterpolationType
+from ..misc.enums import Node, InterpolationType
 
 
 class GraphAbstract:
@@ -416,6 +415,8 @@ class OcpToConsole(GraphAbstract):
             title = ["", "Bounds"]
         elif bounds.type == InterpolationType.LINEAR:
             title = ["", "Beginning", "End"]
+        else:
+            return
         self.print_bounds_table(bounds, col_name, title)
 
     @staticmethod
