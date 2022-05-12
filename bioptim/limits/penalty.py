@@ -332,9 +332,12 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True
 
             nlp = all_pn.nlp
-            return all_pn.nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[
-                all_pn.nlp.states["qdot"].index, :
-            ]
+            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+                return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
+            elif "qddot" in nlp.states.keys():
+                return nlp.states["qddot"].cx
+            elif "qddot" in nlp.controls.keys():
+                return nlp.controls["qddot"].cx
 
         @staticmethod
         def minimize_predicted_com_height(_: PenaltyOption, all_pn: PenaltyNodeList):
