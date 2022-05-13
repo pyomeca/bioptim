@@ -722,7 +722,7 @@ class OptimalControlProgram:
                     dt = dt[penalty.phase]
 
             _target = (
-                penalty.target[..., penalty.node_idx.index(t)]
+                np.hstack([p[..., penalty.node_idx.index(t)] for p in penalty.target])
                 if penalty.target is not None and isinstance(t, int)
                 else []
             )
