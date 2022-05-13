@@ -416,7 +416,9 @@ class OcpToConsole(GraphAbstract):
         elif bounds.type == InterpolationType.LINEAR:
             title = ["", "Beginning", "End"]
         else:
-            return
+            raise NotImplementedError("Print bounds function has been implemented only with the following enums"
+                                      ": InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, "
+                                      "InterpolationType.CONSTANT and InterpolationType.LINEAR.")
         self.print_bounds_table(bounds, col_name, title)
 
     @staticmethod
