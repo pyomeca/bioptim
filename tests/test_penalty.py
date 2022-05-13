@@ -60,8 +60,10 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         nu = biorbd_model.nbGeneralizedTorque()
     x_init = InitialGuess(np.zeros((nx, 1)))
 
-    nu = nu * 2 if implicit else nu
-    nu = nu + 3 if implicit and with_contact else nu
+    if implicit:
+        nu *= 2
+        if with_contact:
+            nu += 3
 
     u_init = InitialGuess(np.zeros((nu, 1)))
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
