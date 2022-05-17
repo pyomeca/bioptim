@@ -703,9 +703,7 @@ class PlotOcp:
                             u_phase_2 = data_controls[phase_2]["all"][:, node_idx_2]
                             val = self.plot_func[key][i].function(
                                 self.plot_func[key][i].node_idx[0],
-                                np.hstack(
-                                    (x_phase_1, x_phase_2)
-                                ),
+                                np.hstack((x_phase_1, x_phase_2)),
                                 np.hstack(
                                     (
                                         u_phase_1,
@@ -725,7 +723,10 @@ class PlotOcp:
                                     val = self.plot_func[key][i].function(
                                         node_idx,
                                         np.hstack(
-                                            (data_states[node_idx]["all"][:, -1], data_states[node_idx + 1]["all"][:, 0])
+                                            (
+                                                data_states[node_idx]["all"][:, -1],
+                                                data_states[node_idx + 1]["all"][:, 0],
+                                            )
                                         ),
                                         np.hstack(
                                             (
