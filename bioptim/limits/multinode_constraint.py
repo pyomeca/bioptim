@@ -250,6 +250,49 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return states_pre - states_post
 
         @staticmethod
+        def com_equality(multinode_constraint, all_pn):
+            """
+            The most common continuity function, that is state before equals state after
+
+            Parameters
+            ----------
+            multinode_constraint : MultinodeConstraint
+                A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the state after and before
+            """
+
+            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
+            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+
+            if states_pre.shape != states_post.shape:
+                raise RuntimeError(
+                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
+                    f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
+                    f"transition or supply states_mapping"
+                )
+
+            pre_com = nlp_pre.model.CoM(states_pre["q"]).to_mx()
+            post_com = nlp_post.model.CoM(states_post["q"]).to_mx()
+
+            pre_states_cx = nlp_pre.states.cx
+            post_states_cx = nlp_post.states.cx
+
+            func = biorbd.to_casadi_func(
+                "angular_momentum_transition",
+                pre_com - post_com,
+                states_pre["q"].mx,
+                states_post["q"].mx,
+            )(pre_states_cx, post_states_cx)
+
+            return func
+
+        @staticmethod
         def custom(multinode_constraint, all_pn, **extra_params):
             """
             Calls the custom transition function provided by the user
@@ -277,6 +320,7 @@ class MultinodeConstraintFcn(Enum):
 
     EQUALITY = (MultinodeConstraintFunctions.Functions.equality,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
+    COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
 
     @staticmethod
     def get_type():
