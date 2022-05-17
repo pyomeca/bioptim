@@ -689,34 +689,63 @@ class PlotOcp:
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
                     for i_var in range(self.variable_sizes[i][key]):
-                        y = np.empty((len(self.plot_func[key][i].node_idx),))
-                        y.fill(np.nan)
-                        for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
 
-                            if self.plot_func[key][i].parameters["penalty"].transition:
-                                val = self.plot_func[key][i].function(
-                                    node_idx,
-                                    np.hstack(
-                                        (data_states[node_idx]["all"][:, -1], data_states[node_idx + 1]["all"][:, 0])
-                                    ),
-                                    np.hstack(
-                                        (
-                                            data_controls[node_idx]["all"][:, -1],
-                                            data_controls[node_idx + 1]["all"][:, 0],
-                                        )
-                                    ),
-                                    data_params_in_dyn,
-                                    **self.plot_func[key][i].parameters,
-                                )
-                            else:
-                                val = self.plot_func[key][i].function(
-                                    node_idx,
-                                    state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size],
-                                    control[:, node_idx : node_idx + 1 + u_mod],
-                                    data_params_in_dyn,
-                                    **self.plot_func[key][i].parameters,
-                                )
-                            y[i_node] = val[i_var]
+                        if self.plot_func[key][i].parameters["penalty"].multinode_constraint:
+                            y = np.array([np.nan])
+
+                            phase_1 = self.plot_func[key][i].parameters["penalty"].phase_second_idx
+                            phase_2 = self.plot_func[key][i].parameters["penalty"].phase_first_idx
+                            node_idx_1 = self.plot_func[key][i].node_idx[0]
+                            node_idx_2 = self.plot_func[key][i].node_idx[1]
+                            x_phase_1 = data_states[phase_1]["all"][:, node_idx_1 * step_size]
+                            x_phase_2 = data_states[phase_2]["all"][:, node_idx_2 * step_size]
+                            u_phase_1 = data_controls[phase_1]["all"][:, node_idx_1]
+                            u_phase_2 = data_controls[phase_2]["all"][:, node_idx_2]
+                            val = self.plot_func[key][i].function(
+                                self.plot_func[key][i].node_idx[0],
+                                np.hstack(
+                                    (x_phase_1, x_phase_2)
+                                ),
+                                np.hstack(
+                                    (
+                                        u_phase_1,
+                                        u_phase_2,
+                                    )
+                                ),
+                                data_params_in_dyn,
+                                **self.plot_func[key][i].parameters,
+                            )
+                            y[0] = val[i_var]
+                        else:
+                            y = np.empty((len(self.plot_func[key][i].node_idx),))
+                            y.fill(np.nan)
+                            for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
+
+                                if self.plot_func[key][i].parameters["penalty"].transition:
+                                    val = self.plot_func[key][i].function(
+                                        node_idx,
+                                        np.hstack(
+                                            (data_states[node_idx]["all"][:, -1], data_states[node_idx + 1]["all"][:, 0])
+                                        ),
+                                        np.hstack(
+                                            (
+                                                data_controls[node_idx]["all"][:, -1],
+                                                data_controls[node_idx + 1]["all"][:, 0],
+                                            )
+                                        ),
+                                        data_params_in_dyn,
+                                        **self.plot_func[key][i].parameters,
+                                    )
+                                else:
+                                    print(key)
+                                    val = self.plot_func[key][i].function(
+                                        node_idx,
+                                        state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size],
+                                        control[:, node_idx : node_idx + 1 + u_mod],
+                                        data_params_in_dyn,
+                                        **self.plot_func[key][i].parameters,
+                                    )
+                                y[i_node] = val[i_var]
                         self.ydata.append(y)
 
                 else:
@@ -724,6 +753,7 @@ class PlotOcp:
                     y.fill(np.nan)
                     if self.plot_func[key][i].compute_derivative:
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
+
                             val = self.plot_func[key][i].function(
                                 node_idx,
                                 state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
