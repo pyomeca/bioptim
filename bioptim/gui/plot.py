@@ -738,7 +738,6 @@ class PlotOcp:
                                         **self.plot_func[key][i].parameters,
                                     )
                                 else:
-                                    print(key)
                                     val = self.plot_func[key][i].function(
                                         node_idx,
                                         state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size],
