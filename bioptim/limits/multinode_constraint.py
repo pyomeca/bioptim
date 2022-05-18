@@ -270,6 +270,9 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
             states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states.keys()]
+            states_post_sym = vertcat(*states_post_sym_list)
+
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
                     f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
@@ -277,8 +280,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com = nlp_pre.model.CoM(states_pre["q"]).to_mx()
-            post_com = nlp_post.model.CoM(states_post["q"]).to_mx()
+            pre_com = nlp_pre.model.CoM(states_pre[nlp_pre.states["q"].index, :]).to_mx()
+            post_com = nlp_post.model.CoM(states_post_sym_list[0]).to_mx()
 
             pre_states_cx = nlp_pre.states.cx
             post_states_cx = nlp_post.states.cx
@@ -286,8 +289,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return biorbd.to_casadi_func(
                 "com_equality",
                 pre_com - post_com,
-                states_pre["q"].mx,
-                states_post["q"].mx,
+                states_pre,
+                states_post_sym,
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
@@ -311,9 +314,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
             states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
-            q_post = MX.sym('q', *nlp_post.states["q"].mx.shape)
-            qdot_post = MX.sym('qdot', *nlp_post.states["qdot"].mx.shape)
-            x_post = vertcat(q_post, qdot_post)
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states.keys()]
+            states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -323,7 +325,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             pre_com_dot = nlp_pre.model.CoMdot(states_pre[nlp_pre.states["q"].index, :], states_pre[nlp_pre.states["qdot"].index, :]).to_mx()
-            post_com_dot = nlp_post.model.CoMdot(q_post, qdot_post).to_mx()
+            post_com_dot = nlp_post.model.CoMdot(states_post_sym_list[0], states_post_sym_list[1]).to_mx()
 
             pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
@@ -332,7 +334,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                 "com_dot_equality",
                 pre_com_dot - post_com_dot,
                 states_pre,
-                x_post,
+                states_post_sym,
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
