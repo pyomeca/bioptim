@@ -144,5 +144,5 @@ class Transcription(Enum):
     CONSTRAINT = "constraint"
     CONSTRAINT_ID = "constraint_id"
     CONSTRAINT_FD = "constraint_fd"
-    CONSTRAINT_ID_QDDDOT = "constraint_id_qdddot"
-    CONSTRAINT_FD_QDDDOT = "constraint_fd_qdddot"
+    CONSTRAINT_ID_JERK = "constraint_id_jerk"
+    CONSTRAINT_FD_JERK = "constraint_fd_jerk"

@@ -151,17 +151,14 @@ class ConfigureProblem:
         if rigidbody_dynamics == Transcription.CONSTRAINT_FD or rigidbody_dynamics == Transcription.CONSTRAINT_ID:
             ConfigureProblem.configure_qddot(nlp, False, True)
         if (
-            rigidbody_dynamics == Transcription.CONSTRAINT_FD_QDDDOT
-            or rigidbody_dynamics == Transcription.CONSTRAINT_ID_QDDDOT
+            rigidbody_dynamics == Transcription.CONSTRAINT_FD_JERK
+            or rigidbody_dynamics == Transcription.CONSTRAINT_ID_JERK
         ):
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
 
         # Algebraic constraints of rigidbody dynamics if needed
-        if (
-            rigidbody_dynamics == Transcription.CONSTRAINT_ID
-            or rigidbody_dynamics == Transcription.CONSTRAINT_ID_QDDDOT
-        ):
+        if rigidbody_dynamics == Transcription.CONSTRAINT_ID or rigidbody_dynamics == Transcription.CONSTRAINT_ID_JERK:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -170,7 +167,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
             )
             if with_contact:
-                # qddot is continuous with Transcription.CONSTRAINT_ID_QDDDOT
+                # qddot is continuous with Transcription.CONSTRAINT_ID_JERK
                 # so the consistency constraint of the marker acceleration can only be set to zero
                 # at the first shooting node
                 node = Node.ALL_SHOOTING if rigidbody_dynamics == Transcription.CONSTRAINT_ID else Node.ALL
@@ -184,10 +181,7 @@ class ConfigureProblem:
                         constraint_type=ConstraintType.IMPLICIT,
                         phase=nlp.phase_idx,
                     )
-        if (
-            rigidbody_dynamics == Transcription.CONSTRAINT_FD
-            or rigidbody_dynamics == Transcription.CONSTRAINT_FD_QDDDOT
-        ):
+        if rigidbody_dynamics == Transcription.CONSTRAINT_FD or rigidbody_dynamics == Transcription.CONSTRAINT_FD_JERK:
             # contacts forces are directly handled with this constraint
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
@@ -254,8 +248,8 @@ class ConfigureProblem:
         """
         if (
             rigidbody_dynamics == Transcription.CONSTRAINT_FD
-            or rigidbody_dynamics == Transcription.CONSTRAINT_FD_QDDDOT
-            or rigidbody_dynamics == Transcription.CONSTRAINT_ID_QDDDOT
+            or rigidbody_dynamics == Transcription.CONSTRAINT_FD_JERK
+            or rigidbody_dynamics == Transcription.CONSTRAINT_ID_JERK
         ):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this Transcription yet")
 

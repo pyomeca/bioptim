@@ -116,8 +116,8 @@ class DynamicsFunctions:
             dxdt[nlp.states["q"].index, :] = dq
             dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
         elif (
-            rigidbody_dynamics == Transcription.CONSTRAINT_ID_QDDDOT
-            or rigidbody_dynamics == Transcription.CONSTRAINT_FD_QDDDOT
+            rigidbody_dynamics == Transcription.CONSTRAINT_ID_JERK
+            or rigidbody_dynamics == Transcription.CONSTRAINT_FD_JERK
         ):
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq
