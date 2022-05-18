@@ -1260,6 +1260,12 @@ Since this is an Enum, it is possible to use tab key on the keyboard to dynamica
 #### EQUALITY
 The states are equals.
 
+#### COM_EQUALITY
+The positions of centers of mass are equals.
+
+#### COM_VELOCITY_EQUALITY
+The velocities of centers of mass are equals.
+
 #### CUSTOM
 CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
 You can have a look at the MultinodeConstraintList section for more information about how to define custom transition function.
