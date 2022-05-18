@@ -343,7 +343,7 @@ class PlotOcp:
                                 np.nan,
                                 np.zeros((nlp.states.shape, 2)),
                                 np.zeros((nlp.controls.shape, 2)),
-                                np.zeros((len(nlp.parameters), 2)),
+                                np.zeros((nlp.parameters.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )
                             .shape[0]
