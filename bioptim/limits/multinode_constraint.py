@@ -252,7 +252,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
         @staticmethod
         def com_equality(multinode_constraint, all_pn):
             """
-            The most common continuity function, that is state before equals state after
+            The centers of mass are equals for the specified phases and the specified nodes
 
             Parameters
             ----------
@@ -296,7 +296,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
         @staticmethod
         def com_velocity_equality(multinode_constraint, all_pn):
             """
-            The most common continuity function, that is state before equals state after
+            The centers of mass velocity are equals for the specified phases and the specified nodes
 
             Parameters
             ----------
@@ -362,7 +362,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
 
 class MultinodeConstraintFcn(Enum):
     """
-    Selection of valid phase transition functions
+    Selection of valid multinode constraint functions
     """
 
     EQUALITY = (MultinodeConstraintFunctions.Functions.equality,)
