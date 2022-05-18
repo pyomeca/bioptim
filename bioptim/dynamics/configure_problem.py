@@ -269,7 +269,7 @@ class ConfigureProblem:
             )
 
         if rigidbody_dynamics == Transcription.CONSTRAINT_ID:
-            if soft_contacts_dynamics == Transcription.ODE:
+            if soft_contacts_dynamics == Transcription.ODE and nlp.model.nbSoftContacts() != 0:
                 raise ValueError(
                     "Soft contacts dynamics should not be used with Transcription.ODE "
                     "when rigidbody dynamics is not Transcription.ODE . "
