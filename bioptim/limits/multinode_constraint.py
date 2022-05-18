@@ -324,7 +324,9 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com_dot = nlp_pre.model.CoMdot(states_pre[nlp_pre.states["q"].index, :], states_pre[nlp_pre.states["qdot"].index, :]).to_mx()
+            pre_com_dot = nlp_pre.model.CoMdot(
+                states_pre[nlp_pre.states["q"].index, :], states_pre[nlp_pre.states["qdot"].index, :]
+            ).to_mx()
             post_com_dot = nlp_post.model.CoMdot(states_post_sym_list[0], states_post_sym_list[1]).to_mx()
 
             pre_states_cx = nlp_pre.states.cx_end
