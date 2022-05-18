@@ -283,14 +283,57 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             pre_states_cx = nlp_pre.states.cx
             post_states_cx = nlp_post.states.cx
 
-            func = biorbd.to_casadi_func(
-                "angular_momentum_transition",
+            return biorbd.to_casadi_func(
+                "com_equality",
                 pre_com - post_com,
                 states_pre["q"].mx,
                 states_post["q"].mx,
             )(pre_states_cx, post_states_cx)
 
-            return func
+        @staticmethod
+        def com_velocity_equality(multinode_constraint, all_pn):
+            """
+            The most common continuity function, that is state before equals state after
+
+            Parameters
+            ----------
+            multinode_constraint : MultinodeConstraint
+                A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the state after and before
+            """
+
+            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
+            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+
+            q_post = MX.sym('q', *nlp_post.states["q"].mx.shape)
+            qdot_post = MX.sym('qdot', *nlp_post.states["qdot"].mx.shape)
+            x_post = vertcat(q_post, qdot_post)
+
+            if states_pre.shape != states_post.shape:
+                raise RuntimeError(
+                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
+                    f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
+                    f"transition or supply states_mapping"
+                )
+
+            pre_com_dot = nlp_pre.model.CoMdot(states_pre[nlp_pre.states["q"].index, :], states_pre[nlp_pre.states["qdot"].index, :]).to_mx()
+            post_com_dot = nlp_post.model.CoMdot(q_post, qdot_post).to_mx()
+
+            pre_states_cx = nlp_pre.states.cx_end
+            post_states_cx = nlp_post.states.cx
+
+            return biorbd.to_casadi_func(
+                "com_dot_equality",
+                pre_com_dot - post_com_dot,
+                states_pre,
+                x_post,
+            )(pre_states_cx, post_states_cx)
 
         @staticmethod
         def custom(multinode_constraint, all_pn, **extra_params):
@@ -321,6 +364,7 @@ class MultinodeConstraintFcn(Enum):
     EQUALITY = (MultinodeConstraintFunctions.Functions.equality,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
     COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
+    COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
 
     @staticmethod
     def get_type():
