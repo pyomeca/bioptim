@@ -10,7 +10,15 @@ from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
-from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType, RigidBodyDynamics, SoftContactDynamics
+from ..misc.enums import (
+    PlotType,
+    ControlType,
+    VariableType,
+    Node,
+    ConstraintType,
+    RigidBodyDynamics,
+    SoftContactDynamics,
+)
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
@@ -149,7 +157,10 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+        ):
             ConfigureProblem.configure_qddot(nlp, False, True)
         elif (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
@@ -159,7 +170,10 @@ class ConfigureProblem:
             ConfigureProblem.configure_qdddot(nlp, False, True)
 
         # Algebraic constraints of rigidbody dynamics if needed
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK:
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+        ):
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -182,7 +196,10 @@ class ConfigureProblem:
                         constraint_type=ConstraintType.IMPLICIT,
                         phase=nlp.phase_idx,
                     )
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK:
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
+        ):
             # contacts forces are directly handled with this constraint
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
@@ -256,8 +273,8 @@ class ConfigureProblem:
 
         if nlp.model.nbSoftContacts() != 0:
             if (
-                    soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
-                    and soft_contacts_dynamics != SoftContactDynamics.ODE
+                soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
+                and soft_contacts_dynamics != SoftContactDynamics.ODE
             ):
                 raise ValueError(
                     "soft_contacts_dynamics can be used only with RigidBodyDynamics.ODE or SoftContactDynamics.CONSTRAINT"

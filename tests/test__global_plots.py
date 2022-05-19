@@ -124,7 +124,10 @@ def test_add_new_plot():
     os.remove(save_name)
 
 
-@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
+@pytest.mark.parametrize(
+    "rigidbody_dynamics",
+    [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
+)
 def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics):
     from bioptim.examples.getting_started import example_implicit_dynamics as ocp_module
 

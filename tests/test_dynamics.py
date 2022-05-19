@@ -26,7 +26,10 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
+@pytest.mark.parametrize(
+    "rigidbody_dynamics",
+    [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
+)
 def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
@@ -171,7 +174,11 @@ def test_torque_driven_implicit(with_contact, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS),
+        Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=with_contact,
+            rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
+        ),
         False,
     )
 

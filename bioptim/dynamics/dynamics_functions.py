@@ -111,7 +111,10 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+        ):
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq
             dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
@@ -263,7 +266,10 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+        ):
             ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
             dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 

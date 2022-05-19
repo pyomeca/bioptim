@@ -173,7 +173,10 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     TestUtils.simulate(sol, decimal_value=5)
 
 
-@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
+@pytest.mark.parametrize(
+    "rigidbody_dynamics",
+    [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
+)
 def test_maximize_predicted_height_CoM_rigidbody_dynamics(rigidbody_dynamics):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 

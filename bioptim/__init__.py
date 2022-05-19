@@ -192,7 +192,7 @@ from .misc.enums import (
     SolutionIntegrator,
     IntegralApproximation,
     RigidBodyDynamics,
-    SoftContactDynamics
+    SoftContactDynamics,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram

@@ -75,7 +75,10 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+    if (
+        rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+        or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+    ):
         qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     x_bounds = BoundsList()
@@ -92,14 +95,20 @@ def prepare_ocp(
 
     # Define control path constraint
     # There are extra controls in implicit dynamics which are joint acceleration qddot.
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+    if (
+        rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+        or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+    ):
         u_bounds = Bounds([tau_min] * n_tau + [qddot_min] * n_qddot, [tau_max] * n_tau + [qddot_max] * n_qddot)
     else:
         u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
 
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+    if (
+        rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+        or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+    ):
         u_init = InitialGuess([0] * (n_tau + n_qddot))
     else:
         u_init = InitialGuess([0] * n_tau)
