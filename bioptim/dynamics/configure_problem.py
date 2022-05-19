@@ -127,22 +127,23 @@ class ConfigureProblem:
         fatigue: FatigueList
             A list of fatigue elements
         """
-        if (
-            soft_contacts_dynamics != Transcription.CONSTRAINT
-            and soft_contacts_dynamics != Transcription.ODE
-            and nlp.model.nbSoftContacts() != 0
-        ):
-            raise ValueError(
-                "soft_contacts_dynamics can be used only with Transcription.ODE or Transcription.CONSTRAINT"
-            )
 
-        if rigidbody_dynamics == Transcription.CONSTRAINT_ID:
-            if soft_contacts_dynamics == Transcription.ODE and nlp.model.nbSoftContacts() != 0:
+        if nlp.model.nbSoftContacts() != 0:
+            if (
+                soft_contacts_dynamics != Transcription.CONSTRAINT
+                and soft_contacts_dynamics != Transcription.ODE
+            ):
                 raise ValueError(
-                    "Soft contacts dynamics should not be used with Transcription.ODE "
-                    "when rigidbody dynamics is not Transcription.ODE . "
-                    "Please set soft_contacts_dynamics=Transcription.CONSTRAINT"
+                    "soft_contacts_dynamics can be used only with Transcription.ODE or Transcription.CONSTRAINT"
                 )
+
+            if rigidbody_dynamics == Transcription.CONSTRAINT_ID:
+                if soft_contacts_dynamics == Transcription.ODE:
+                    raise ValueError(
+                        "Soft contacts dynamics should not be used with Transcription.ODE "
+                        "when rigidbody dynamics is not Transcription.ODE . "
+                        "Please set soft_contacts_dynamics=Transcription.CONSTRAINT"
+                    )
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(nlp, True, False)
@@ -150,7 +151,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
         if rigidbody_dynamics == Transcription.CONSTRAINT_FD or rigidbody_dynamics == Transcription.CONSTRAINT_ID:
             ConfigureProblem.configure_qddot(nlp, False, True)
-        if (
+        elif (
             rigidbody_dynamics == Transcription.CONSTRAINT_FD_JERK
             or rigidbody_dynamics == Transcription.CONSTRAINT_ID_JERK
         ):
@@ -253,22 +254,22 @@ class ConfigureProblem:
         ):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this Transcription yet")
 
-        if (
-            soft_contacts_dynamics != Transcription.CONSTRAINT
-            and soft_contacts_dynamics != Transcription.ODE
-            and nlp.model.nbSoftContacts() != 0
-        ):
-            raise ValueError(
-                "soft_contacts_dynamics can be used only with Transcription.ODE or Transcription.CONSTRAINT"
-            )
-
-        if rigidbody_dynamics == Transcription.CONSTRAINT_ID:
-            if soft_contacts_dynamics == Transcription.ODE and nlp.model.nbSoftContacts() != 0:
+        if nlp.model.nbSoftContacts() != 0:
+            if (
+                    soft_contacts_dynamics != Transcription.CONSTRAINT
+                    and soft_contacts_dynamics != Transcription.ODE
+            ):
                 raise ValueError(
-                    "Soft contacts dynamics should not be used with Transcription.ODE "
-                    "when rigidbody dynamics is not Transcription.ODE . "
-                    "Please set soft_contacts_dynamics=Transcription.CONSTRAINT"
+                    "soft_contacts_dynamics can be used only with Transcription.ODE or Transcription.CONSTRAINT"
                 )
+
+            if rigidbody_dynamics == Transcription.CONSTRAINT_ID:
+                if soft_contacts_dynamics == Transcription.ODE:
+                    raise ValueError(
+                        "Soft contacts dynamics should not be used with Transcription.ODE "
+                        "when rigidbody dynamics is not Transcription.ODE . "
+                        "Please set soft_contacts_dynamics=Transcription.CONSTRAINT"
+                    )
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
