@@ -7,7 +7,7 @@ import biorbd_casadi as biorbd
 from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
 from bioptim.interfaces.biorbd_interface import BiorbdInterface
-from bioptim.misc.enums import ControlType, Transcription
+from bioptim.misc.enums import ControlType, RigidBodyDynamics, SoftContactDynamics
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector
 from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
@@ -26,8 +26,8 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-@pytest.mark.parametrize("transcription", [Transcription.ODE, Transcription.CONSTRAINT_FD, Transcription.CONSTRAINT_ID])
-def test_torque_driven(with_contact, with_external_force, cx, transcription):
+@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
+def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -44,7 +44,7 @@ def test_torque_driven(with_contact, with_external_force, cx, transcription):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=transcription),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=rigidbody_dynamics),
         False,
     )
 
@@ -61,7 +61,7 @@ def test_torque_driven(with_contact, with_external_force, cx, transcription):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
-    if transcription == Transcription.ODE:
+    if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_contact:
             contact_out = np.array(nlp.contact_forces_func(states, controls, params))
             if with_external_force:
@@ -97,7 +97,7 @@ def test_torque_driven(with_contact, with_external_force, cx, transcription):
                         35.80238642,
                     ],
                 )
-    elif transcription == Transcription.CONSTRAINT_FD:
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         if with_contact:
             contact_out = np.array(nlp.contact_forces_func(states, controls, params))
             if with_external_force:
@@ -123,7 +123,7 @@ def test_torque_driven(with_contact, with_external_force, cx, transcription):
                     x_out[:, 0],
                     [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
                 )
-    elif transcription == Transcription.CONSTRAINT_ID:
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_contact:
             contact_out = np.array(nlp.contact_forces_func(states, controls, params))
             if with_external_force:
@@ -171,7 +171,7 @@ def test_torque_driven_implicit(with_contact, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=Transcription.CONSTRAINT_ID),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS),
         False,
     )
 
@@ -387,7 +387,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
         Dynamics(
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
             with_contact=with_contact,
-            rigidbody_dynamics=Transcription.CONSTRAINT_ID,
+            rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
         ),
         False,
     )
@@ -577,7 +577,7 @@ def test_implicit_dynamics_errors(dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, rigidbody_dynamics=Transcription.CONSTRAINT_ID),
+        Dynamics(dynamics, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS),
         False,
     )
 

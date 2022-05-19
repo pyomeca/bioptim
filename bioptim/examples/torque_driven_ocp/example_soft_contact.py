@@ -27,7 +27,8 @@ from bioptim import (
     InitialGuess,
     CostType,
     InterpolationType,
-    Transcription,
+    SoftContactDynamics,
+    RigidBodyDynamics
 )
 
 
@@ -51,7 +52,7 @@ def prepare_single_shooting(
 
     # Dynamics
     dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.ODE, soft_contacts_dynamics=Transcription.ODE
+        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=RigidBodyDynamics.ODE, soft_contacts_dynamics=SoftContactDynamics.ODE
     )
 
     # Initial guess
@@ -145,7 +146,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=Transcription.ODE, soft_contacts_dynamics=Transcription.ODE
+        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=RigidBodyDynamics.ODE, soft_contacts_dynamics=SoftContactDynamics.ODE
     )
 
     # Constraints

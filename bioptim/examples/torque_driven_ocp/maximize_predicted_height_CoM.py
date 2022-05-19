@@ -23,7 +23,7 @@ from bioptim import (
     ConstraintFcn,
     Node,
     Solver,
-    Transcription,
+    RigidBodyDynamics,
 )
 
 
@@ -35,7 +35,7 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK4(),
     objective_name: str = "MINIMIZE_PREDICTED_COM_HEIGHT",
     com_constraints: bool = False,
-    transcription: Transcription = Transcription.ODE,
+    rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -57,7 +57,7 @@ def prepare_ocp(
         'MINIMIZE_COM_POSITION' or 'MINIMIZE_COM_VELOCITY')
     com_constraints: bool
         If a constraint on the COM should be applied
-    transcription: Transcription
+    rigidbody_dynamics: RigidBodyDynamics
         which transcription of rigidbody dynamics is chosen
     Returns
     -------
@@ -89,7 +89,7 @@ def prepare_ocp(
     if use_actuators:
         dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, rigidbody_dynamics=transcription)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, rigidbody_dynamics=rigidbody_dynamics)
 
     # Constraints
     constraints = ConstraintList()
@@ -122,9 +122,9 @@ def prepare_ocp(
     x_init.add(pose_at_first_node + [0] * n_qdot)
 
     # Define control path constraint
-    if transcription == Transcription.CONSTRAINT_FD:
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         nu_sup = biorbd_model.nbQddot()
-    elif transcription == Transcription.CONSTRAINT_ID:
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         nu_sup = biorbd_model.nbQddot() + biorbd_model.nbContacts()
     else:
         nu_sup = 0

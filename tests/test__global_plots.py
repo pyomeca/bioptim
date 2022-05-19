@@ -9,7 +9,7 @@ import pytest
 from casadi import Function, MX
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, Transcription
+from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, RigidBodyDynamics
 from bioptim.limits.penalty import PenaltyOption
 
 import matplotlib
@@ -124,8 +124,8 @@ def test_add_new_plot():
     os.remove(save_name)
 
 
-@pytest.mark.parametrize("transcription", [Transcription.ODE, Transcription.CONSTRAINT_FD, Transcription.CONSTRAINT_ID])
-def test_plot_graphs_for_implicit_constraints(transcription):
+@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
+def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics):
     from bioptim.examples.getting_started import example_implicit_dynamics as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -134,7 +134,7 @@ def test_plot_graphs_for_implicit_constraints(transcription):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         n_shooting=5,
         final_time=1,
-        rigidbody_dynamics=transcription,
+        rigidbody_dynamics=rigidbody_dynamics,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
@@ -148,17 +148,17 @@ def test_implicit_example():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     sol_implicit = ocp_module.solve_ocp(
-        rigidbody_dynamics=Transcription.CONSTRAINT_ID,
+        rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
         max_iter=1,
         model_path=bioptim_folder + "/models/pendulum.bioMod",
     )
     sol_semi_explicit = ocp_module.solve_ocp(
-        rigidbody_dynamics=Transcription.CONSTRAINT_FD,
+        rigidbody_dynamics=RigidBodyDynamics.DAE_FORWARD_DYNAMICS,
         max_iter=1,
         model_path=bioptim_folder + "/models/pendulum.bioMod",
     )
     sol_explicit = ocp_module.solve_ocp(
-        rigidbody_dynamics=Transcription.ODE, max_iter=1, model_path=bioptim_folder + "/models/pendulum.bioMod"
+        rigidbody_dynamics=RigidBodyDynamics.ODE, max_iter=1, model_path=bioptim_folder + "/models/pendulum.bioMod"
     )
     ocp_module.prepare_plots(sol_implicit, sol_semi_explicit, sol_explicit)
 

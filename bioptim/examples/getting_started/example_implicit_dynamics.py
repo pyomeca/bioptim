@@ -23,7 +23,7 @@ from bioptim import (
     Solver,
     BoundsList,
     ObjectiveList,
-    Transcription,
+    RigidBodyDynamics,
     Solution,
 )
 import matplotlib.pyplot as plt
@@ -37,7 +37,7 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK1(n_integration_steps=1),
     use_sx: bool = False,
     n_threads: int = 1,
-    rigidbody_dynamics: Transcription = Transcription.ODE,
+    rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -56,8 +56,8 @@ def prepare_ocp(
         If the SX variable should be used instead of MX (can be extensive on RAM)
     n_threads: int
         The number of threads to use in the paralleling (1 = no parallel computing)
-    rigidbody_dynamics: Transcription
-        transcription of rigidbody dynamics (explicit, implicit or semi-explicit)
+    rigidbody_dynamics: RigidBodyDynamics
+        rigidbody dynamics ODE or DAE
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -75,7 +75,7 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
-    if rigidbody_dynamics == Transcription.CONSTRAINT_ID or rigidbody_dynamics == Transcription.CONSTRAINT_FD:
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     x_bounds = BoundsList()
@@ -92,14 +92,14 @@ def prepare_ocp(
 
     # Define control path constraint
     # There are extra controls in implicit dynamics which are joint acceleration qddot.
-    if rigidbody_dynamics == Transcription.CONSTRAINT_ID or rigidbody_dynamics == Transcription.CONSTRAINT_FD:
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         u_bounds = Bounds([tau_min] * n_tau + [qddot_min] * n_qddot, [tau_max] * n_tau + [qddot_max] * n_qddot)
     else:
         u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
 
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    if rigidbody_dynamics == Transcription.CONSTRAINT_ID or rigidbody_dynamics == Transcription.CONSTRAINT_FD:
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         u_init = InitialGuess([0] * (n_tau + n_qddot))
     else:
         u_init = InitialGuess([0] * n_tau)
@@ -121,15 +121,15 @@ def prepare_ocp(
 
 
 def solve_ocp(
-    rigidbody_dynamics: Transcription, max_iter: int = 10000, model_path: str = "models/pendulum.bioMod"
+    rigidbody_dynamics: RigidBodyDynamics, max_iter: int = 10000, model_path: str = "models/pendulum.bioMod"
 ) -> Solution:
     """
     The initialization of ocp with implicit_dynamics as the only argument
 
     Parameters
     ----------
-    rigidbody_dynamics: Transcription
-        transcription of rigidbody dynamics (explicit, implicit or semi-explicit)
+    rigidbody_dynamics: RigidBodyDynamics
+        rigidbody dynamics DAE or ODE
     max_iter: int
         maximum iterations of the solver
     model_path: str
@@ -201,9 +201,9 @@ def main():
     """
 
     # --- Prepare the ocp with implicit and explicit dynamics --- #
-    sol_implicit = solve_ocp(rigidbody_dynamics=Transcription.CONSTRAINT_ID)
-    sol_semi_explicit = solve_ocp(rigidbody_dynamics=Transcription.CONSTRAINT_FD)
-    sol_explicit = solve_ocp(rigidbody_dynamics=Transcription.ODE)
+    sol_implicit = solve_ocp(rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS)
+    sol_semi_explicit = solve_ocp(rigidbody_dynamics=RigidBodyDynamics.DAE_FORWARD_DYNAMICS)
+    sol_explicit = solve_ocp(rigidbody_dynamics=RigidBodyDynamics.ODE)
 
     # --- Show the results in a bioviz animation --- #
     sol_implicit.print()

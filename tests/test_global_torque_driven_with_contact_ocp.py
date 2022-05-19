@@ -9,7 +9,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver, Transcription, Solver
+from bioptim import OdeSolver, RigidBodyDynamics, Solver
 
 from .utils import TestUtils
 
@@ -173,8 +173,8 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     TestUtils.simulate(sol, decimal_value=5)
 
 
-@pytest.mark.parametrize("transcription", [Transcription.ODE, Transcription.CONSTRAINT_FD, Transcription.CONSTRAINT_ID])
-def test_maximize_predicted_height_CoM_transcriptions(transcription):
+@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
+def test_maximize_predicted_height_CoM_rigidbody_dynamics(rigidbody_dynamics):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -187,7 +187,7 @@ def test_maximize_predicted_height_CoM_transcriptions(transcription):
         n_shooting=20,
         use_actuators=False,
         ode_solver=ode_solver,
-        transcription=transcription,
+        rigidbody_dynamics=rigidbody_dynamics,
     )
     sol_opt = Solver.IPOPT(show_online_optim=False)
     sol_opt.set_maximum_iterations(1)
@@ -197,18 +197,18 @@ def test_maximize_predicted_height_CoM_transcriptions(transcription):
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
 
-    if transcription == Transcription.ODE:
+    if rigidbody_dynamics == RigidBodyDynamics.ODE:
         np.testing.assert_almost_equal(f[0, 0], 0.8032447451950947)
-    elif transcription == Transcription.CONSTRAINT_FD:
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         np.testing.assert_almost_equal(f[0, 0], 0.9695327421106931)
-    elif transcription == Transcription.CONSTRAINT_ID:
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         np.testing.assert_almost_equal(f[0, 0], 1.6940665057034097)
 
     # Check constraints
     g = np.array(sol.constraints)
-    if transcription == Transcription.ODE:
+    if rigidbody_dynamics == RigidBodyDynamics.ODE:
         np.testing.assert_equal(g.shape, (160, 1))
-    elif transcription == Transcription.CONSTRAINT_FD:
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         np.testing.assert_equal(g.shape, (240, 1))
-    elif transcription == Transcription.CONSTRAINT_ID:
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         np.testing.assert_equal(g.shape, (300, 1))
