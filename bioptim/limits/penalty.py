@@ -434,15 +434,21 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
-                raise NotImplementedError(
-                    "MINIMIZE_COM_ACCELERATION is only working if qddot is defined as a state or a control."
+                com_ddot = nlp.model.CoMddot(
+                    nlp.states["q"].mx,
+                    nlp.states["qdot"].mx,
+                    nlp.dynamics_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)[nlp.states["qdot"].index, :],
+                ).to_mx()
+                var = []
+                var.extend([nlp.states[key] for key in nlp.states])
+                var.extend([nlp.controls[key] for key in nlp.controls])
+                var.extend([nlp.parameters[key] for key in nlp.parameters])
+                return BiorbdInterface.mx_to_cx("com_ddot", com_ddot, *var)
+            else:
+                qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
+                return BiorbdInterface.mx_to_cx(
+                    "com_ddot", nlp.model.CoMddot, nlp.states["q"], nlp.states["qdot"], qddot
                 )
-            qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
-
-            com_ddot_cx = BiorbdInterface.mx_to_cx(
-                "com_ddot", nlp.model.CoMddot, nlp.states["q"], nlp.states["qdot"], qddot
-            )
-            return com_ddot_cx
 
         @staticmethod
         def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
