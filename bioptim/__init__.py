@@ -191,7 +191,8 @@ from .misc.enums import (
     VariableType,
     SolutionIntegrator,
     IntegralApproximation,
-    Transcription,
+    RigidBodyDynamics,
+    SoftContactDynamics,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram

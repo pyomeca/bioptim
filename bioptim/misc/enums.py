@@ -139,7 +139,14 @@ class IntegralApproximation(Enum):
     TRUE_TRAPEZOIDAL = "true_trapezoidal"
 
 
-class Transcription(Enum):
-    EXPLICIT = "explicit"
-    IMPLICIT = "implicit"
-    SEMI_EXPLICIT = "semi_explicit"
+class SoftContactDynamics(Enum):
+    ODE = "ode"
+    CONSTRAINT = "constraint"
+
+
+class RigidBodyDynamics(Enum):
+    ODE = "ode"
+    DAE_INVERSE_DYNAMICS = "dae_inverse_dynamics"
+    DAE_FORWARD_DYNAMICS = "dae_forward_dynamics"
+    DAE_INVERSE_DYNAMICS_JERK = "dae_inverse_dynamics_jerk"
+    DAE_FORWARD_DYNAMICS_JERK = "dae_forward_dynamics_jerk"
