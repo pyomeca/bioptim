@@ -539,11 +539,13 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit):
         penalty = Constraint(penalty_type)
 
     if not implicit:
-        with pytest.raises(
-            NotImplementedError,
-            match=re.escape("MINIMIZE_COM_ACCELERATION is only working if qddot is defined as a state or a control."),
-        ):
-            res = get_penalty_value(ocp, penalty, t, x, u, [])
+        res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+        expected = np.array([[0.0], [-0.7168803], [-0.0740871]])
+        if value == -10:
+            expected = np.array([[0.0], [1.455063], [16.3741091]])
+
+        np.testing.assert_almost_equal(res, expected)
     else:
         res = get_penalty_value(ocp, penalty, t, x, u, [])
 
