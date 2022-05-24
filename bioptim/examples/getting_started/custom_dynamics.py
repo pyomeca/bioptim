@@ -73,7 +73,7 @@ def custom_dynamic(
     # as the first argument of DynamicsEvaluation or
     # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
     # which may be useful for IRK or COLLOCATION integrators
-    return DynamicsEvaluation(vertcat(dq, ddq), None)
+    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1):

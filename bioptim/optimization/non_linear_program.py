@@ -116,7 +116,7 @@ class NonLinearProgram:
         self.cx = None
         self.dt = None
         self.dynamics = []
-        self.dynamics_sym = DynamicsEvaluation()
+        self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func = None
         self.implicit_dynamics_func = None
         self.dynamics_type = None

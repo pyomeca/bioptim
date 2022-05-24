@@ -100,6 +100,11 @@ class DynamicsFunctions:
             which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
         fatigue : FatigueList
             A list of fatigue elements
+
+        Returns
+        ----------
+        DynamicsEvaluation
+            The derivative of the states and the defects of the implicit dynamics
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
@@ -221,6 +226,11 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
+
+        Returns
+        ----------
+        DynamicsEvaluation
+            The derivative of the states and the defects of the implicit dynamics
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
@@ -234,7 +244,7 @@ class DynamicsFunctions:
 
         dq = horzcat(*[dq for _ in range(ddq.shape[1])])
 
-        return DynamicsEvaluation(vertcat(dq, ddq), None)
+        return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
     @staticmethod
     def torque_derivative_driven(
@@ -244,7 +254,7 @@ class DynamicsFunctions:
         nlp,
         rigidbody_dynamics: RigidBodyDynamics,
         with_contact: bool,
-    ) -> MX:
+    ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -262,6 +272,11 @@ class DynamicsFunctions:
             which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
         with_contact: bool
             If the dynamic with contact should be used
+
+        Returns
+        ----------
+        DynamicsEvaluation
+            The derivative of the states and the defects of the implicit dynamics
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
@@ -291,7 +306,7 @@ class DynamicsFunctions:
             dxdt[nlp.states["qdot"].index, :] = ddq
             dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
 
-        return DynamicsEvaluation(dxdt, None)
+        return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
     def forces_from_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
@@ -370,7 +385,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_torque: bool = False,
         fatigue=None,
-    ):
+    ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by muscle.
 
@@ -390,6 +405,11 @@ class DynamicsFunctions:
             To define fatigue elements
         with_torque: bool
             If the dynamic should be added with residual torques
+
+        Returns
+        ----------
+        DynamicsEvaluation
+            The derivative of the states and the defects of the implicit dynamics
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
@@ -437,7 +457,7 @@ class DynamicsFunctions:
         if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
-        return DynamicsEvaluation(dxdt, None)
+        return DynamicsEvaluation(dxdt=dxdt, defect=None)
 
     @staticmethod
     def forces_from_muscle_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
