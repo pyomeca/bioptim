@@ -290,7 +290,7 @@ class ConfigureProblem:
         fatigue: FatigueList = None,
         with_torque: bool = False,
         with_contact: bool = False,
-        implicit_dynamics: bool = False
+        implicit_dynamics: bool = False,
     ):
         """
         Configure the dynamics for a muscle driven program.
