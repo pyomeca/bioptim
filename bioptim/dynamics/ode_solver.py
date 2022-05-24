@@ -122,6 +122,7 @@ class RK(OdeSolverBase):
             "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
+            "defects_type": None
         }
         ode = {
             "x": nlp.states.cx,
@@ -233,7 +234,7 @@ class OdeSolver:
             The interface of the OdeSolver to the corresponding integrator
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre"):
+        def __init__(self, polynomial_degree: int = 4, method: str = "legendre", defects_type: str = "explicit"):
             """
             Parameters
             ----------
@@ -245,6 +246,7 @@ class OdeSolver:
             self.polynomial_degree = polynomial_degree
             self.rk_integrator = COLLOCATION
             self.method = method
+            self.defects_type = defects_type
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
@@ -289,6 +291,7 @@ class OdeSolver:
                 "control_type": nlp.control_type,
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
                 "method": self.method,
+                "defects_type": self.defects_type,
             }
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
@@ -310,7 +313,7 @@ class OdeSolver:
             The interface of the OdeSolver to the corresponding integrator
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre"):
+        def __init__(self, polynomial_degree: int = 4, method: str = "legendre", defects_type: str = "explicit"):
             """
             Parameters
             ----------
@@ -318,7 +321,7 @@ class OdeSolver:
                 The degree of the implicit RK
             """
 
-            super(OdeSolver.IRK, self).__init__(polynomial_degree=polynomial_degree, method=method)
+            super(OdeSolver.IRK, self).__init__(polynomial_degree=polynomial_degree, method=method, defects_type=defects_type)
             self.rk_integrator = IRK
             self.is_direct_collocation = False
             self.is_direct_shooting = True

@@ -74,6 +74,7 @@ class Integrator:
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
+        self.defects_type = ode_opt["defects_type"]
         self.control_type = ode_opt["control_type"]
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
@@ -614,11 +615,13 @@ class COLLOCATION(Integrator):
             for r in range(self.degree + 1):
                 xp_j += self._c[r, j] * states[r]
 
-            if self.implicit_fun is None:
+            if self.defects_type == "explicit":
                 f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
                 defects.append(h * f_j - xp_j)
-            else:
+            elif self.defects_type == "implicit":
                 defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params, xp_j / h))
+            else:
+                raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
             # Add contribution to the end state
             states_end += self._d[j] * states[j]

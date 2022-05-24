@@ -112,6 +112,7 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -130,7 +131,6 @@ class DynamicsFunctions:
             dxdt[nlp.states["qdot"].index, :] = qddot
             dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
         else:
-
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
             dxdt = MX(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -140,6 +140,7 @@ class DynamicsFunctions:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
+        # todo: contacts and fatigue to be handled with implicit dynamics
         if not with_contact and fatigue is None:
             qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
             tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
@@ -457,7 +458,7 @@ class DynamicsFunctions:
         if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
-        return DynamicsEvaluation(dxdt=dxdt, defect=None)
+        return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
     def forces_from_muscle_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
