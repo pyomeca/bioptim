@@ -2,6 +2,7 @@ from typing import Union
 
 from casadi import horzcat, vertcat, MX, SX
 
+from ..misc.enums import RigidBodyDynamics
 from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
 from ..optimization.non_linear_program import NonLinearProgram
@@ -77,7 +78,7 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
-        implicit_dynamics: bool,
+        rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
     ) -> DynamicsEvaluation:
         """
@@ -95,8 +96,8 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
-        implicit_dynamics: bool
-            If the implicit dynamic should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
         fatigue : FatigueList
             A list of fatigue elements
         """
@@ -107,11 +108,22 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-        if implicit_dynamics:
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+        ):
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq
             dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+        elif (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
+        ):
+            dxdt = MX(nlp.states.shape, 1)
+            dxdt[nlp.states["q"].index, :] = dq
+            qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
+            dxdt[nlp.states["qdot"].index, :] = qddot
+            dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
         else:
 
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
@@ -226,8 +238,13 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_derivative_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool, with_contact: bool
-    ):
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        rigidbody_dynamics: RigidBodyDynamics,
+        with_contact: bool,
+    ) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -241,8 +258,8 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
-        implicit_dynamics: bool
-            If the implicit dynamics should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
         with_contact: bool
             If the dynamic with contact should be used
         """
@@ -255,7 +272,10 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        if implicit_dynamics:
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+        ):
             ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
             dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 

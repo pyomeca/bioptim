@@ -126,3 +126,27 @@ class ConstraintType(Enum):
     USER = "user"
     INTERNAL = "internal"
     IMPLICIT = "implicit"
+
+
+class IntegralApproximation(Enum):
+    """
+    Selection of integral approximation
+    """
+
+    DEFAULT = "default"
+    RECTANGLE = "rectangle"
+    TRAPEZOIDAL = "trapezoidal"
+    TRUE_TRAPEZOIDAL = "true_trapezoidal"
+
+
+class SoftContactDynamics(Enum):
+    ODE = "ode"
+    CONSTRAINT = "constraint"
+
+
+class RigidBodyDynamics(Enum):
+    ODE = "ode"
+    DAE_INVERSE_DYNAMICS = "dae_inverse_dynamics"
+    DAE_FORWARD_DYNAMICS = "dae_forward_dynamics"
+    DAE_INVERSE_DYNAMICS_JERK = "dae_inverse_dynamics_jerk"
+    DAE_FORWARD_DYNAMICS_JERK = "dae_forward_dynamics_jerk"

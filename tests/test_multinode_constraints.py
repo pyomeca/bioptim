@@ -42,6 +42,20 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2) -> OptimalControlProgram:
         first_node=Node.START,
         second_node=Node.START,
     )
+    multinode_constraints.add(
+        MultinodeConstraintFcn.COM_EQUALITY,
+        phase_first_idx=phase_1,
+        phase_second_idx=phase_2,
+        first_node=Node.START,
+        second_node=Node.START,
+    )
+    multinode_constraints.add(
+        MultinodeConstraintFcn.COM_VELOCITY_EQUALITY,
+        phase_first_idx=phase_1,
+        phase_second_idx=phase_2,
+        first_node=Node.START,
+        second_node=Node.START,
+    )
 
     # Path constraint
     x_bounds = BoundsList()

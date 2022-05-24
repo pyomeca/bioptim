@@ -59,6 +59,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [Bounds](#class-bounds)
   - [BoundsList](#class-boundslist)
   - [QAndQDotBounds](#class-qandqdotbounds)
+  - [QAndQDotAndQDDotBounds](#class-qandqdotandqddotbounds)
 - [The initial conditions](#the-initial-conditions)
   - [InitialGuess](#class-initialguess)
   - [InitialGuessList](#class-initialguesslist)
@@ -92,6 +93,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [Shooting](#enum-shooting)
   - [CostType](#enum-costtype)
   - [SolutionIntegrator](#enum-solutionintegrator)
+  - [IntegralApproximation](#enum-integralapproximation)
         
 [Examples](#examples)
 - [Run examples](#run-examples)
@@ -203,7 +205,9 @@ Once you obtain the HSL dynamic library (precompiled `libhsl.so` for Linux, to b
 You are now able to use all the options of `bioptim`, including the HSL linear solvers with `Ipopt`.
 We recommend that you use `ma57` as a default linear solver by calling as such:
 ```python
-ocp.solve(solver_options={"linear_solver": "ma57"})
+solver = Solver.IPOPT()
+solver.set_linear_solver("ma57")
+ocp.solve(solver)
 ```
 ## Installation complete
 Once you have downloaded `bioptim`, navigate to the root folder and (assuming your conda environment is loaded if needed), you can type the following command:
@@ -324,7 +328,8 @@ ocp = OptimalControlProgram(
 It is now time to see `Ipopt` in action! 
 To solve the ocp, you simply have to call the `solve()` method of the `ocp` class
 ```python
-sol = ocp.solve(show_online_optim=True)
+solver = Solver.IPOPT(show_online_optim=True)
+sol = ocp.solve(solver)
 ```
 If you feel fancy, you can even activate the online optimization graphs!
 However, for such an easy problem, `Ipopt` won't leave you the time to appreciate the realtime updates of the graph...
@@ -571,11 +576,15 @@ It is particularly useful when solving the ocp for a first time, and then adjust
 
 Moreover, the method 
 ```python
-solution = ocp.solve(Solver, solver_options:{})
+solution = ocp.solve(Solver)
 ```
 is called to actually solve the ocp (the solution structure is discussed later). 
-The `Solver` parameter can be used to select the nonlinear solver to solve the ocp, ̀`Ipopt` being the default choice.
-Note that options can be passed to the solver via the `solver_options` parameter.
+The `Solver` class can be used to select the nonlinear solver to solve the ocp:
+
+- IPOPT
+- ACADOS
+
+Note that options can be passed to the solver parameter.
 One can refer to the documentation of their respective chosen solver to know which options exist.
 The `show_online_optim` parameter can be set to `True` so the graphs nicely update during the optimization.
 It is expected to slow down the optimization a bit though.
@@ -816,6 +825,9 @@ The QAndQDotBounds is a Bounds that uses a biorbd_model to define the minimal an
 It is particularly useful when declaring the states bounds for *q* and *qdot*. 
 Anything that was presented for Bounds, also applies to QAndQDotBounds
 
+### Class: QAndQDotAndQDDotBounds 
+The QAndQDotAndQDDotBounds is almost the same as the previous class.
+Except that it also defines the bounds for the generalized accelerations *qddot* in addition to *q* and *qdot*.  
 
 ## The initial conditions
 The initial conditions the solver should start from, i.e., initial values of the states (x) and the controls (u).
@@ -1248,6 +1260,12 @@ Since this is an Enum, it is possible to use tab key on the keyboard to dynamica
 #### EQUALITY
 The states are equals.
 
+#### COM_EQUALITY
+The positions of centers of mass are equals.
+
+#### COM_VELOCITY_EQUALITY
+The velocities of centers of mass are equals.
+
 #### CUSTOM
 CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
 You can have a look at the MultinodeConstraintList section for more information about how to define custom transition function.
@@ -1447,6 +1465,7 @@ The accepted values are:
 PLOT: Normal plot that links the points.
 INTEGRATED: Plot that links the points within an interval, but is discrete between the end of an interval and the beginning of the next one.
 STEP: Step plot, constant over an interval
+POINT: Point plot
 
 ### Enum: InterpolationType
 How a time dependent variable is interpolated.
@@ -1482,6 +1501,24 @@ The type of integrator used to integrate the solution of the optimal control pro
 - SCIPY_BDF: The scipy integrator BDF
 - SCIPY_LSODA: The scipy integrator LSODA
 
+### Enum: IntegralApproximation
+The type of integration used to integrate the cost function terms of Lagrange:
+- RECTANGLE: The integral is approximated by a rectangle rule (Left Riemann sum)
+- TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the begin of the next interval
+- TRUE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval
+- 
+### Enum: RigidBodyDynamics
+The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
+- ODE: dynamics is handled explicitly in the continuity constraint of the ordinary differential equation of the Direct Multiple Shooting approach
+- DAE_INVERSE_DYNAMICS: it adds an extra control *qddot* to respect inverse dynamics on nodes, this is a DAE-constrained OCP
+- DAE_FORWARD_DYNAMICS: it adds an extra control *qddot* to respect forward dynamics on nodes, this is a DAE-constrained OCP
+- DAE_INVERSE_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect inverse dynamics on nodes, this is a DAE-constrained OCP
+- DAE_FORWARD_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect forward dynamics on nodes, this is a DAE-constrained OCP
+
+### Enum: SoftContactDynamics
+The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
+- ODE: soft contacts dynamics is handled explicitly
+- CONSTRAINT: an extra control *fext* is added and it ensures to respect soft contact_dynamics on nodes through a constraint.
 
 # Examples
 In this section, you will find the description of all the examples implemented with bioptim. They are ordered in 

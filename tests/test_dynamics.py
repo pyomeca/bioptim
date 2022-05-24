@@ -7,7 +7,7 @@ import biorbd_casadi as biorbd
 from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
 from bioptim.interfaces.biorbd_interface import BiorbdInterface
-from bioptim.misc.enums import ControlType
+from bioptim.misc.enums import ControlType, RigidBodyDynamics, SoftContactDynamics
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector
 from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
@@ -27,7 +27,11 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_driven(with_contact, with_external_force, cx):
+@pytest.mark.parametrize(
+    "rigidbody_dynamics",
+    [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
+)
+def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -35,12 +39,18 @@ def test_torque_driven(with_contact, with_external_force, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.phase_idx = 0
 
     nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    NonLinearProgram.add(ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact), False)
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=rigidbody_dynamics),
+        False,
+    )
 
     np.random.seed(42)
     if with_external_force:
@@ -55,32 +65,94 @@ def test_torque_driven(with_contact, with_external_force, cx):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
+    if rigidbody_dynamics == RigidBodyDynamics.ODE:
+        if with_contact:
+            contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, -7.7700092, -7.5782306, 21.7073786, -16.3059315],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
-    if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(states, controls, params))
-        if with_external_force:
-            np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.8631034, 0.3251833, 0.1195942, 0.4937956, -7.7700092, -7.5782306, 21.7073786, -16.3059315],
-            )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
         else:
-            np.testing.assert_almost_equal(
-                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
-            )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.86310343, 0.32518332, 0.11959425, 0.4937956, 0.30731739, -9.97912778, 1.15263778, 36.02430956],
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [
+                        0.61185289,
+                        0.78517596,
+                        0.60754485,
+                        0.80839735,
+                        -0.30241366,
+                        -10.38503791,
+                        1.60445173,
+                        35.80238642,
+                    ],
+                )
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+        if with_contact:
+            contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
-    else:
-        if with_external_force:
-            np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.86310343, 0.32518332, 0.11959425, 0.4937956, 0.30731739, -9.97912778, 1.15263778, 36.02430956],
-            )
         else:
-            np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
-            )
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                )
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        if with_contact:
+            contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+
+        else:
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                )
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
@@ -103,7 +175,11 @@ def test_torque_driven_implicit(with_contact, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, implicit_dynamics=True),
+        Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=with_contact,
+            rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
+        ),
         False,
     )
 
@@ -135,7 +211,7 @@ def test_torque_driven_implicit(with_contact, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_driven_implicit_soft_contacts(with_contact, cx, implicit_contact):
+def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -153,7 +229,7 @@ def test_torque_driven_implicit_soft_contacts(with_contact, cx, implicit_contact
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, implicit_soft_contacts=implicit_contact),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact),
         False,
     )
 
@@ -316,7 +392,11 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, implicit_dynamics=True),
+        Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+            with_contact=with_contact,
+            rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
+        ),
         False,
     )
 
@@ -381,7 +461,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_derivative_driven_implicit_soft_contacts(with_contact, cx, implicit_contact):
+def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -398,7 +478,7 @@ def test_torque_derivative_driven_implicit_soft_contacts(with_contact, cx, impli
         ocp,
         "dynamics_type",
         Dynamics(
-            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, implicit_soft_contacts=implicit_contact
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact
         ),
         False,
     )
@@ -459,7 +539,7 @@ def test_torque_derivative_driven_implicit_soft_contacts(with_contact, cx, impli
     "dynamics",
     [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
 )
-def test_implicit_soft_contacts_errors(dynamics):
+def test_soft_contacts_dynamics_errors(dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -474,14 +554,14 @@ def test_implicit_soft_contacts_errors(dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, implicit_soft_contacts=True),
+        Dynamics(dynamics, soft_contacts_dynamics=True),
         False,
     )
 
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_soft_contacts'"),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'soft_contacts_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 
@@ -505,14 +585,14 @@ def test_implicit_dynamics_errors(dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, implicit_dynamics=True),
+        Dynamics(dynamics, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS),
         False,
     )
 
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_dynamics'"),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'rigidbody_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 

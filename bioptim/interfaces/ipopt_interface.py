@@ -9,8 +9,9 @@ from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
 from ..interfaces.solver_options import Solver
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType, Node, SolverType
+from ..misc.enums import InterpolationType, ControlType, Node, SolverType, IntegralApproximation
 from ..optimization.solution import Solution
+from ..optimization.non_linear_program import NonLinearProgram
 
 
 class IpoptInterface(SolverInterface):
@@ -198,6 +199,11 @@ class IpoptInterface(SolverInterface):
     def __dispatch_obj_func(self):
         """
         Parse the objective functions of the full ocp to a Ipopt-friendly one
+
+        Returns
+        -------
+        Union[SX, MX]
+            The objective function
         """
 
         all_objectives = self.ocp.cx()
@@ -210,16 +216,40 @@ class IpoptInterface(SolverInterface):
 
         return all_objectives
 
-    def __get_all_penalties(self, nlp, penalties):
-        def format_target(target_in):
-            target_out = []
-            if target_in is not None:
-                if len(target_in.shape) == 2:
-                    target_out = target_in[:, penalty.node_idx.index(idx)]
-                elif len(target_in.shape) == 3:
-                    target_out = target_in[:, :, penalty.node_idx.index(idx)]
-                else:
-                    raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
+    def __get_all_penalties(self, nlp: NonLinearProgram, penalties):
+        """
+        Parse the penalties of the full ocp to a Ipopt-friendly one
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The nonlinear program to parse the penalties from
+        penalties:
+            The penalties to parse
+        Returns
+        -------
+
+        """
+
+        def format_target(target_in: np.array) -> np.array:
+            """
+            Format the target of a penalty to a numpy array
+
+            Parameters
+            ----------
+            target_in: np.array
+                The target of the penalty
+            Returns
+            -------
+                np.array
+                    The target of the penalty formatted to a numpy array
+            """
+            if len(target_in.shape) == 2:
+                target_out = target_in[:, penalty.node_idx.index(idx)]
+            elif len(target_in.shape) == 3:
+                target_out = target_in[:, :, penalty.node_idx.index(idx)]
+            else:
+                raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
             return target_out
 
         def get_x_and_u_at_idx(_penalty, _idx):
@@ -250,6 +280,15 @@ class IpoptInterface(SolverInterface):
             if _penalty.derivative or _penalty.explicit_derivative:
                 _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
                 _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+
+            if _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+                _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
+                if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+
+            if _penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
+                if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
             return _x, _u
 
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
@@ -259,7 +298,7 @@ class IpoptInterface(SolverInterface):
                 continue
 
             if penalty.multi_thread:
-                if penalty.target is not None and len(penalty.target.shape) != 2:
+                if penalty.target is not None and len(penalty.target[0].shape) != 2:
                     raise NotImplementedError(
                         "multi_thread penalty with target shape != [n x m] is not implemented yet"
                     )
@@ -281,7 +320,17 @@ class IpoptInterface(SolverInterface):
             else:
                 p = self.ocp.cx()
                 for idx in penalty.node_idx:
-                    target = format_target(penalty.target)
+                    if penalty.target is None:
+                        target = []
+                    elif (
+                        penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    ):
+                        target0 = format_target(penalty.target[0])
+                        target1 = format_target(penalty.target[1])
+                        target = np.vstack((target0, target1)).T
+                    else:
+                        target = format_target(penalty.target[0])
 
                     if np.isnan(np.sum(target)):
                         continue

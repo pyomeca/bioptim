@@ -5,7 +5,7 @@ from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node, PlotType, ControlType, ConstraintType
+from ..misc.enums import Node, PlotType, ControlType, ConstraintType, IntegralApproximation
 from ..misc.mapping import Mapping, BiMapping
 from ..misc.options import OptionGeneric
 
@@ -48,6 +48,8 @@ class PenaltyOption(OptionGeneric):
         If the minimization is applied on the numerical derivative of the state [f(t+1) - f(t)]
     explicit_derivative: bool
         If the minimization is applied to derivative of the penalty [f(t, t+1)]
+    integration_rule: IntegralApproximation
+        The integration rule to use for the penalty
     transition: bool
         If the penalty is a transition
     phase_pre_idx: int
@@ -89,12 +91,13 @@ class PenaltyOption(OptionGeneric):
         penalty: Any,
         phase: int = 0,
         node: Union[Node, list, tuple] = Node.DEFAULT,
-        target: np.ndarray = None,
+        target: Union[int, float, np.array, list[int], list[float], list[np.array]] = None,
         quadratic: bool = None,
         weight: float = 1,
         derivative: bool = False,
         explicit_derivative: bool = False,
         integrate: bool = False,
+        integration_rule: IntegralApproximation = IntegralApproximation.DEFAULT,
         index: list = None,
         rows: Union[list, tuple, range, np.ndarray] = None,
         cols: Union[list, tuple, range, np.ndarray] = None,
@@ -114,7 +117,7 @@ class PenaltyOption(OptionGeneric):
             The phase the penalty is acting on
         node: Union[Node, list, tuple]
             The node within a phase on which the penalty is acting on
-        target: np.ndarray
+        target: Union[int, float, np.array, list[int], list[float], list[np.array]]
             A target to track for the penalty
         quadratic: bool
             If the penalty is quadratic
@@ -124,6 +127,10 @@ class PenaltyOption(OptionGeneric):
             If the function should be evaluated at X and X+1
         explicit_derivative: bool
             If the function should be evaluated at [X, X+1]
+        integrate: bool
+            If the function should be integrated
+        integration_rule: IntegralApproximation
+            The rule to use for the integration
         index: int
             The component index the penalty is acting on
         custom_function: Callable
@@ -137,6 +144,7 @@ class PenaltyOption(OptionGeneric):
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
         self.node: Union[Node, list, tuple] = node
         self.quadratic = quadratic
+        self.integration_rule = integration_rule
 
         if index is not None and rows is not None:
             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
@@ -146,14 +154,40 @@ class PenaltyOption(OptionGeneric):
 
         self.target = None
         if target is not None:
-            self.target = np.array(target)
-            if len(self.target.shape) == 0:
-                self.target = self.target[np.newaxis]
-            if len(self.target.shape) == 1:
-                self.target = self.target[:, np.newaxis]
+            target = np.array(target)
+            if isinstance(target, int) or isinstance(target, float) or isinstance(target, np.ndarray):
+                target = [target]
+            self.target = []
+            for t in target:
+                self.target.append(np.array(t))
+                if len(self.target[-1].shape) == 0:
+                    self.target[-1] = self.target[-1][np.newaxis]
+                if len(self.target[-1].shape) == 1:
+                    self.target[-1] = self.target[-1][:, np.newaxis]
+            if len(self.target) == 1 and (
+                self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+            ):
+                if self.node == Node.ALL or self.node == Node.DEFAULT:
+                    self.target = [self.target[0][:, :-1], self.target[0][:, 1:]]
+                else:
+                    raise NotImplementedError(
+                        f"A list of 2 elements is required with {self.node} and TRAPEZOIDAL Integration"
+                        f"except for Node.NODE_ALL and Node.NODE_DEFAULT"
+                        "which can be automatically generated"
+                    )
+
         self.target_plot_name = None
         self.target_to_plot = None
-        self.plot_target = True
+        # todo: not implemented yet for trapezoidal integration
+        self.plot_target = (
+            False
+            if (
+                self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+            )
+            else True
+        )
 
         self.states_mapping = states_mapping
 
@@ -241,28 +275,76 @@ class PenaltyOption(OptionGeneric):
             The expected shape (n_rows, ns) of the data to track
         """
 
-        n_dim = len(self.target.shape)
-        if n_dim != 2 and n_dim != 3:
-            raise RuntimeError(f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)")
-        if self.target.shape[-1] == 1:
-            self.target = np.repeat(self.target, n_time_expected, axis=-1)
+        if self.integration_rule == IntegralApproximation.RECTANGLE:
+            n_dim = len(self.target[0].shape)
+            if n_dim != 2 and n_dim != 3:
+                raise RuntimeError(
+                    f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
+                )
+            if self.target[0].shape[-1] == 1:
+                self.target = np.repeat(self.target, n_time_expected, axis=-1)
 
-        shape = (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
-        if self.target.shape != shape:
-            raise RuntimeError(
-                f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
+            shape = (
+                (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
+            )
+            if self.target[0].shape != shape:
+                raise RuntimeError(
+                    f"target {self.target[0].shape} does not correspond to expected size {shape} for penalty {self.name}"
+                )
+
+            # If the target is on controls and control is constant, there will be one value missing
+            if all_pn is not None:
+                if (
+                    all_pn.nlp.control_type == ControlType.CONSTANT
+                    and all_pn.nlp.ns in all_pn.t
+                    and self.target[0].shape[-1] == all_pn.nlp.ns
+                ):
+                    if all_pn.t[-1] != all_pn.nlp.ns:
+                        raise NotImplementedError("Modifying target for END not being last is not implemented yet")
+                    self.target[0] = np.concatenate(
+                        (self.target[0], np.nan * np.zeros((self.target[0].shape[0], 1))), axis=1
+                    )
+        elif (
+            self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+            or self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+        ):
+
+            target_dim = len(self.target)
+            if target_dim != 2:
+                raise RuntimeError(f"targets with trapezoidal integration rule need to get a list of two elements.")
+
+            for target in self.target:
+                n_dim = len(target.shape)
+                if n_dim != 2 and n_dim != 3:
+                    raise RuntimeError(
+                        f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
+                    )
+                if target.shape[-1] == 1:
+                    target = np.repeat(target, n_time_expected, axis=-1)
+
+            shape = (
+                (len(self.rows), n_time_expected - 1)
+                if n_dim == 2
+                else (len(self.rows), len(self.cols), n_time_expected - 1)
             )
 
-        # If the target is on controls and control is constant, there will be one value missing
-        if all_pn is not None:
-            if (
-                all_pn.nlp.control_type == ControlType.CONSTANT
-                and all_pn.nlp.ns in all_pn.t
-                and self.target.shape[-1] == all_pn.nlp.ns
-            ):
-                if all_pn.t[-1] != all_pn.nlp.ns:
-                    raise NotImplementedError("Modifying target for END not being last is not implemented yet")
-                self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
+            for target in self.target:
+                if target.shape != shape:
+                    raise RuntimeError(
+                        f"target {target.shape} does not correspond to expected size {shape} for penalty {self.name}"
+                    )
+
+            # If the target is on controls and control is constant, there will be one value missing
+            if all_pn is not None:
+                if (
+                    all_pn.nlp.control_type == ControlType.CONSTANT
+                    and all_pn.nlp.ns in all_pn.t
+                    and self.target[0].shape[-1] == all_pn.nlp.ns - 1
+                    and self.target[1].shape[-1] == all_pn.nlp.ns - 1
+                ):
+                    if all_pn.t[-1] != all_pn.nlp.ns:
+                        raise NotImplementedError("Modifying target for END not being last is not implemented yet")
+                    self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
     def _set_penalty_function(self, all_pn: Union[PenaltyNodeList, list, tuple], fcn: Union[MX, SX]):
         """
@@ -283,6 +365,33 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("transition and derivative cannot be true simultaneously")
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
+
+        def get_u(nlp, u: Union[MX, SX], dt: Union[MX, SX]):
+            """
+            Get the control at a given time
+
+            Parameters
+            ----------
+            nlp: NonlinearProgram
+                The nonlinear program
+            u: Union[MX, SX]
+                The control matrix
+            dt: Union[MX, SX]
+                The time a which control should be computed
+
+            Returns
+            -------
+            The control at a given time
+            """
+
+            if nlp.control_type == ControlType.CONSTANT:
+                return u
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
+            else:
+                raise RuntimeError(f"{nlp.control_type} ControlType not implemented yet")
+
+            return u
 
         if self.multinode_constraint or self.transition:
             ocp = all_pn[0].ocp
@@ -315,9 +424,8 @@ class PenaltyOption(OptionGeneric):
         param_cx = nlp.cx(nlp.parameters.cx)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
-        self.function = biorbd.to_casadi_func(
-            name, fcn[self.rows, self.cols], state_cx, control_cx, param_cx, expand=self.expand
-        )
+        sub_fcn = fcn[self.rows, self.cols]
+        self.function = biorbd.to_casadi_func(name, sub_fcn, state_cx, control_cx, param_cx, expand=self.expand)
         self.function_non_threaded = self.function
 
         if self.derivative:
@@ -332,18 +440,61 @@ class PenaltyOption(OptionGeneric):
                 param_cx,
             )
 
-        modified_fcn = self.function(state_cx, control_cx, param_cx)
-
         dt_cx = nlp.cx.sym("dt", 1, 1)
+        is_trapezoidal = (
+            self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+            or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+        )
+        target_shape = tuple(
+            [
+                len(self.rows),
+                len(self.cols) + 1 if is_trapezoidal else len(self.cols),
+            ]
+        )
+        target_cx = nlp.cx.sym("target", target_shape)
         weight_cx = nlp.cx.sym("weight", 1, 1)
-        target_cx = nlp.cx.sym("target", modified_fcn.shape)
-        modified_fcn = modified_fcn - target_cx
+        exponent = 2 if self.quadratic and self.weight else 1
 
-        if self.weight:
-            modified_fcn = modified_fcn**2 if self.quadratic else modified_fcn
-            modified_fcn = weight_cx * modified_fcn * dt_cx
+        if is_trapezoidal:
+            # Hypothesis: the function is continuous on states
+            # it neglects the discontinuities at the beginning of the optimization
+            state_cx = (
+                horzcat(all_pn.nlp.states.cx, all_pn.nlp.states.cx_end)
+                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                else all_pn.nlp.states.cx
+            )
+            # to handle piecewise constant in controls we have to compute the value for the end of the interval
+            # which only relies on the value of the control at the beginning of the interval
+            control_cx = (
+                horzcat(all_pn.nlp.controls.cx)
+                if nlp.control_type == ControlType.CONSTANT
+                else horzcat(all_pn.nlp.controls.cx, all_pn.nlp.controls.cx_end)
+            )
+            control_cx_end = get_u(nlp, control_cx, dt_cx)
+            state_cx_end = (
+                all_pn.nlp.states.cx_end
+                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                else nlp.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp.parameters.cx)["xf"]
+            )
+            self.modified_function = biorbd.to_casadi_func(
+                f"{name}",
+                (
+                    (self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx[:, 0])
+                    ** exponent
+                    + (self.function(state_cx_end, control_cx_end, param_cx) - target_cx[:, 1]) ** exponent
+                )
+                / 2,
+                state_cx,
+                control_cx,
+                param_cx,
+                target_cx,
+                dt_cx,
+            )
+            modified_fcn = self.modified_function(state_cx, control_cx, param_cx, target_cx, dt_cx)
         else:
-            modified_fcn = modified_fcn * dt_cx
+            modified_fcn = (self.function(state_cx, control_cx, param_cx) - target_cx) ** exponent
+
+        modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
 
         # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function = Function(
@@ -377,10 +528,13 @@ class PenaltyOption(OptionGeneric):
             return
 
         self.target_plot_name = combine_to
-        if self.target.shape[1] == all_pn.nlp.ns:
-            self.target_to_plot = np.concatenate((self.target, np.nan * np.ndarray((self.target.shape[0], 1))), axis=1)
+        # if the target is n x ns, we need to add a dimension (n x ns + 1) to make it compatible with the plot
+        if self.target[0].shape[1] == all_pn.nlp.ns:
+            self.target_to_plot = np.concatenate(
+                (self.target[0], np.nan * np.ndarray((self.target[0].shape[0], 1))), axis=1
+            )
         else:
-            self.target_to_plot = self.target
+            self.target_to_plot = self.target[0]
 
     def _finish_add_target_to_plot(self, all_pn: PenaltyNodeList):
         """
@@ -495,7 +649,15 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, all_pn)
             self.clear_penalty(all_pn.ocp, all_pn.nlp)
             self.dt = penalty_type.get_dt(all_pn.nlp)
-            self.node_idx = all_pn.t
+            self.node_idx = (
+                all_pn.t[:-1]
+                if (
+                    self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                    or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                )
+                and self.target is not None
+                else all_pn.t
+            )
 
         penalty_function = self.type.value[0](self, all_pn, **self.params)
         self.set_penalty(penalty_function, all_pn)

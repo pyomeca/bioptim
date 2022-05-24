@@ -96,6 +96,8 @@ BoundsList
     A list of Bounds if more than one is required
 QAndQDotBounds
     Specialized Bounds that reads a model to automatically extract q and qdot bounds
+QAndQDotAndQDDotBounds
+    Specialized Bounds that reads a model to automatically extract q, qdot and qddot bounds
 
 
 # --- Managing the initial guesses of the variables --- #
@@ -171,7 +173,14 @@ from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
-from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
+from .limits.path_conditions import (
+    BoundsList,
+    Bounds,
+    InitialGuessList,
+    InitialGuess,
+    QAndQDotBounds,
+    QAndQDotAndQDDotBounds,
+)
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_node import PenaltyNode, PenaltyNodeList
 from .misc.enums import (
@@ -184,6 +193,9 @@ from .misc.enums import (
     Shooting,
     VariableType,
     SolutionIntegrator,
+    IntegralApproximation,
+    RigidBodyDynamics,
+    SoftContactDynamics,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram

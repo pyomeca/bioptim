@@ -15,6 +15,7 @@ from bioptim import (
     ConstraintFcn,
     Constraint,
     Node,
+    RigidBodyDynamics,
 )
 from bioptim.limits.penalty_node import PenaltyNodeList
 from bioptim.limits.penalty import PenaltyOption
@@ -41,7 +42,8 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
         )
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, implicit_dynamics=implicit)
+        rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, rigidbody_dynamics=rigidbody_dynamics)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     elif with_actuator:
@@ -58,11 +60,14 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         nu = biorbd_model.nbGeneralizedTorque()
     x_init = InitialGuess(np.zeros((nx, 1)))
 
-    mod = 2 if implicit else 1
+    if implicit:
+        nu *= 2
+        if with_contact:
+            nu += 3
 
-    u_init = InitialGuess(np.zeros((nu * mod, 1)))
+    u_init = InitialGuess(np.zeros((nu, 1)))
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
-    u_bounds = Bounds(np.zeros((nu * mod, 1)), np.zeros((nu * mod, 1)))
+    u_bounds = Bounds(np.zeros((nu, 1)), np.zeros((nu, 1)))
     ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=use_sx)
     ocp.nlp[0].J = [[]]
     ocp.nlp[0].g = [[]]
@@ -82,13 +87,13 @@ def get_penalty_value(ocp, penalty, t, x, u, p):
 
 def test_penalty_targets_shapes():
     p = ObjectiveFcn.Parameter
-    np.testing.assert_equal(Objective([], custom_type=p, target=1).target.shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target.shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target.shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target.shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target.shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target.shape, (1, 2))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target.shape, (1, 2))
+    np.testing.assert_equal(Objective([], custom_type=p, target=1).target[0].shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target[0].shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target[0].shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target[0].shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target[0].shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target[0].shape, (1, 2))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target[0].shape, (1, 2))
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
@@ -539,11 +544,13 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit):
         penalty = Constraint(penalty_type)
 
     if not implicit:
-        with pytest.raises(
-            NotImplementedError,
-            match=re.escape("MINIMIZE_COM_ACCELERATION is only working if qddot is defined as a state or a control."),
-        ):
-            res = get_penalty_value(ocp, penalty, t, x, u, [])
+        res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+        expected = np.array([[0.0], [-0.7168803], [-0.0740871]])
+        if value == -10:
+            expected = np.array([[0.0], [1.455063], [16.3741091]])
+
+        np.testing.assert_almost_equal(res, expected)
     else:
         res = get_penalty_value(ocp, penalty, t, x, u, [])
 
