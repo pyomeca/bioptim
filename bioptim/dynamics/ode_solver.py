@@ -122,7 +122,7 @@ class RK(OdeSolverBase):
             "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
-            "defects_type": None
+            "defects_type": None,
         }
         ode = {
             "x": nlp.states.cx,
@@ -321,7 +321,9 @@ class OdeSolver:
                 The degree of the implicit RK
             """
 
-            super(OdeSolver.IRK, self).__init__(polynomial_degree=polynomial_degree, method=method, defects_type=defects_type)
+            super(OdeSolver.IRK, self).__init__(
+                polynomial_degree=polynomial_degree, method=method, defects_type=defects_type
+            )
             self.rk_integrator = IRK
             self.is_direct_collocation = False
             self.is_direct_shooting = True

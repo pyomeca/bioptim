@@ -19,7 +19,7 @@ from bioptim import (
     InitialGuess,
     NonLinearProgram,
     Solver,
-    DynamicsEvaluation
+    DynamicsEvaluation,
 )
 
 
