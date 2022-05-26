@@ -30,7 +30,15 @@ from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
-from ..misc.enums import ControlType, SolverType, Shooting, PlotType, CostType, SolutionIntegrator
+from ..misc.enums import (
+    ControlType,
+    SolverType,
+    Shooting,
+    PlotType,
+    CostType,
+    SolutionIntegrator,
+    IntegralApproximation,
+)
 from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
@@ -679,25 +687,48 @@ class OptimalControlProgram:
             return color
 
         def compute_penalty_values(t, x, u, p, penalty, dt):
+            """
+            Compute the penalty value for the given time, state, control, parameters, penalty and time step
+
+            Parameters
+            ----------
+            t: int
+                Time index
+            x: ndarray
+                State vector with intermediate states
+            u: ndarray
+                Control vector with starting control (and sometimes final control)
+            p: ndarray
+                Parameters vector
+            penalty: Penalty
+                The penalty object containing details on how to compute it
+            dt: float
+                Time step for the whole interval
+
+            Returns
+            -------
+            Values computed for the given time, state, control, parameters, penalty and time step
+            """
             if len(x.shape) < 2:
                 x = x.reshape((-1, 1))
 
+            # if time is parameter of the ocp, we need to evaluate with current parameters
             if isinstance(dt, Function):
-                # The division is to account for the steps in the integration. The else is for Mayer term
                 dt = dt(p)
+            # The division is to account for the steps in the integration. The else is for Mayer term
             dt = dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
             if not isinstance(penalty.dt, (float, int)):
                 if dt.shape[0] > 1:
                     dt = dt[penalty.phase]
 
             _target = (
-                penalty.target[..., penalty.node_idx.index(t)]
+                np.hstack([p[..., penalty.node_idx.index(t)] for p in penalty.target])
                 if penalty.target is not None and isinstance(t, int)
                 else []
             )
 
             out = []
-            if penalty.transition:
+            if penalty.transition or penalty.multinode_constraint:
                 out.append(
                     penalty.weighted_function_non_threaded(
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
@@ -705,6 +736,14 @@ class OptimalControlProgram:
                 )
             elif penalty.derivative or penalty.explicit_derivative:
                 out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
+            elif (
+                penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+            ):
+                out = [
+                    penalty.weighted_function_non_threaded(x[:, [i, i + 1]], u[:, i], p, penalty.weight, _target, dt)
+                    for i in range(x.shape[1] - 1)
+                ]
             else:
                 out.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
@@ -734,16 +773,12 @@ class OptimalControlProgram:
                     "color": color[penalty.name],
                     "label": penalty.name,
                     "compute_derivative": penalty.derivative or penalty.explicit_derivative or penalty.integrate,
+                    "integration_rule": penalty.integration_rule,
                 }
-                if (
-                    isinstance(penalty.type, ObjectiveFcn.Mayer)
-                    or isinstance(penalty.type, ConstraintFcn)
-                    or penalty.transition
-                ):
-                    plot_params["plot_type"] = PlotType.POINT
-                    plot_params["node_idx"] = penalty.node_idx
-                else:
-                    plot_params["plot_type"] = PlotType.INTEGRATED
+
+                plot_params["plot_type"] = PlotType.POINT
+                plot_params["node_idx"] = penalty.node_idx
+
                 self.add_plot(**plot_params)
 
             return
