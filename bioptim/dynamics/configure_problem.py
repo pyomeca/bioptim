@@ -313,6 +313,9 @@ class ConfigureProblem:
             If the dynamic should be added with residual torques
         with_contact: bool
             If the dynamic with contact should be used
+        implicit_dynamics: bool
+            If the implicit dynamic should be used
+
         """
 
         if fatigue is not None and "tau" in fatigue and not with_torque:
