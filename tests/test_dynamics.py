@@ -487,7 +487,7 @@ def test_implicit_soft_contacts_errors(dynamics):
 
 @pytest.mark.parametrize(
     "dynamics",
-    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
+    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN],
 )
 def test_implicit_dynamics_errors(dynamics):
     # Prepare the program
