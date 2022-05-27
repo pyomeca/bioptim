@@ -3,7 +3,7 @@ from typing import Union
 from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tangent, rootfinder, MX, SX
 import numpy as np
 
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, DefectType
 
 
 class Integrator:
@@ -615,10 +615,10 @@ class COLLOCATION(Integrator):
             for r in range(self.degree + 1):
                 xp_j += self._c[r, j] * states[r]
 
-            if self.defects_type == "explicit":
+            if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
                 defects.append(h * f_j - xp_j)
-            elif self.defects_type == "implicit":
+            elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params, xp_j / h))
             else:
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")

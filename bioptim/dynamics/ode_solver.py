@@ -3,7 +3,7 @@ from typing import Union, Callable
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
 from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, DefectType
 
 
 class OdeSolverBase:
@@ -122,7 +122,7 @@ class RK(OdeSolverBase):
             "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
-            "defects_type": None,
+            "defects_type": DefectType.NOT_APPLICABLE,
         }
         ode = {
             "x": nlp.states.cx,
@@ -234,7 +234,9 @@ class OdeSolver:
             The interface of the OdeSolver to the corresponding integrator
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre", defects_type: str = "explicit"):
+        def __init__(
+            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+        ):
             """
             Parameters
             ----------
@@ -313,7 +315,9 @@ class OdeSolver:
             The interface of the OdeSolver to the corresponding integrator
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre", defects_type: str = "explicit"):
+        def __init__(
+            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+        ):
             """
             Parameters
             ----------

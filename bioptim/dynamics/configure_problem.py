@@ -157,7 +157,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False, True)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
-        ConfigureProblem.configure_qddot(nlp, False, False, True)
+
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -169,6 +169,8 @@ class ConfigureProblem:
         ):
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
+        else:
+            ConfigureProblem.configure_qddot(nlp, False, False, True)
 
         # Algebraic constraints of rigidbody dynamics if needed
         if (
