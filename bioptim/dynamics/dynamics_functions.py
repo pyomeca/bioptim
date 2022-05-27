@@ -46,7 +46,7 @@ class DynamicsFunctions:
     """
 
     @staticmethod
-    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp):
+    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> DynamicsEvaluation:
         """
         Interface to custom dynamic function provided by the user.
 
@@ -550,30 +550,6 @@ class DynamicsFunctions:
         Returns
         -------
         The derivative of q
-        """
-
-        q_nlp = nlp.states["q"] if "q" in nlp.states else nlp.controls["q"]
-        return q_nlp.mapping.to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
-
-    @staticmethod
-    def compute_qddot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], qddot: Union[MX, SX]):
-        """
-        Easy accessor to 2nd derivative of q
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            The phase of the program
-        q: Union[MX, SX]
-            The value of q from "get"
-        qdot: Union[MX, SX]
-            The value of qdot from "get"
-        qddot: Union[MX, SX]
-            The value of qddot from "get"
-
-        Returns
-        -------
-        The 2nd derivative of q
         """
 
         q_nlp = nlp.states["q"] if "q" in nlp.states else nlp.controls["q"]
