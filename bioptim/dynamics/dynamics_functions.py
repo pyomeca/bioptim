@@ -452,6 +452,36 @@ class DynamicsFunctions:
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 
     @staticmethod
+    def free_floating_base_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+        """
+        Forward dynamics driven by joints accelerations of a free floating body.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of states
+        """
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        qddot_joints = DynamicsFunctions.get(nlp.states["qddot_joints"], controls)
+
+        qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)
+
+        return qdot, vertcat(qddot_root, qddot_joints)
+
+    @staticmethod
     def get(var: OptimizationVariable, cx: Union[MX, SX]):
         """
         Main accessor to a variable in states or controls (cx)
