@@ -728,7 +728,7 @@ class OptimalControlProgram:
             )
 
             out = []
-            if penalty.transition:
+            if penalty.transition or penalty.multinode_constraint:
                 out.append(
                     penalty.weighted_function_non_threaded(
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
