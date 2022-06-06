@@ -274,6 +274,64 @@ class ObjectiveFunction:
 
         ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, Union[list, tuple]) else new_target
 
+    @staticmethod
+    def inner_phase_continuity(ocp):
+        """
+        Add continuity objectives between each nodes of a phase.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
+        # Dynamics must be sound within phases
+        for i, nlp in enumerate(ocp.nlp):
+            penalty = Objective(
+                ObjectiveFcn.CONTINUITY, node=Node.ALL_SHOOTING, objective_type=ObjectiveType.INTERNAL  # TODO: objective type
+            )
+            penalty.add_or_replace_to_penalty_pool(ocp, nlp)
+
+    @staticmethod
+    def inter_phase_continuity(ocp):
+        """
+        Add phase transition objectives between two phases.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+        for i, pt in enumerate(ocp.phase_transitions):
+            # Dynamics must be respected between phases
+            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
+
+    @staticmethod
+    def node_equalities(ocp):
+        """
+        Add multi node objectives between chosen phases.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+        for i, mnc in enumerate(ocp.multinode_constraints):
+            # Equality constraint between nodes
+            first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
+            second_node_name = (
+                f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
+            )
+            mnc.name = (
+                f"NODE_EQUALITY "
+                f"Phase {mnc.phase_first_idx} Node {first_node_name}"
+                f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
+            )
+            mnc.list_index = -1
+            mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
+
 
 class ObjectiveFcn:
     """
@@ -290,6 +348,7 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
+        CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
         MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
@@ -379,3 +438,28 @@ class ObjectiveFcn:
             Returns the type of the penalty
             """
             return ObjectiveFunction.ParameterFunction
+
+
+class ObjectiveContinuityFunctions:
+    """
+    Interface between continuity and objective
+    """
+
+    @staticmethod
+    def continuity(ocp):
+        """
+        The declaration of inner- and inter-phase continuity objectives
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
+        ObjectiveFunction.inner_phase_continuity(ocp)
+
+        # Dynamics must be respected between phases
+        ObjectiveFunction.inter_phase_continuity(ocp)
+
+        if ocp.multinode_constraints:  # TODO: change for objective
+            ObjectiveFunction.node_equalities(ocp)

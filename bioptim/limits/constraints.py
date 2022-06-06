@@ -540,7 +540,7 @@ class ImplicitConstraintFcn(Enum):
         return ConstraintFunction
 
 
-class ContinuityFunctions:
+class ConstraintContinuityFunctions:
     """
     Interface between continuity and constraint
     """

@@ -20,10 +20,10 @@ from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.solver_options import Solver
-from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
+from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ConstraintContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import MultinodeConstraintList
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectiveContinuityFunctions
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
@@ -154,6 +154,7 @@ class OptimalControlProgram:
         multinode_constraints: MultinodeConstraintList = None,
         n_threads: int = 1,
         use_sx: bool = False,
+        continuity_as_objective = False,  # TODO: documentation
         skip_continuity: bool = False,
     ):
         """
@@ -422,9 +423,13 @@ class OptimalControlProgram:
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
         self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
+        if not skip_continuity and continuity_as_objective:
+            # Inner- and inter-phase continuity
+            ObjectiveContinuityFunctions.continuity(self)
         if not skip_continuity:
             # Inner- and inter-phase continuity
-            ContinuityFunctions.continuity(self)
+            ConstraintContinuityFunctions.continuity(self)
+
 
         self.isdef_x_init = False
         self.isdef_u_init = False
