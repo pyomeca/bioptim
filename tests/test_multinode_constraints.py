@@ -1,7 +1,7 @@
 import pytest
 from bioptim import (
-    MultinodeConstraintList,
-    MultinodeConstraintFcn,
+    MultinodePenaltyList,
+    MultinodePenaltyFcn,
     Node,
     OdeSolver,
     OptimalControlProgram,
@@ -33,24 +33,24 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2) -> OptimalControlProgram:
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
-    multinode_constraints = MultinodeConstraintList()
+    multinode_constraints = MultinodePenaltyList()
     # hard constraint
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodePenaltyFcn.EQUALITY,
         phase_first_idx=phase_1,
         phase_second_idx=phase_2,
         first_node=Node.START,
         second_node=Node.START,
     )
     multinode_constraints.add(
-        MultinodeConstraintFcn.COM_EQUALITY,
+        MultinodePenaltyFcn.COM_EQUALITY,
         phase_first_idx=phase_1,
         phase_second_idx=phase_2,
         first_node=Node.START,
         second_node=Node.START,
     )
     multinode_constraints.add(
-        MultinodeConstraintFcn.COM_VELOCITY_EQUALITY,
+        MultinodePenaltyFcn.COM_VELOCITY_EQUALITY,
         phase_first_idx=phase_1,
         phase_second_idx=phase_2,
         first_node=Node.START,
@@ -104,14 +104,14 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2) -> OptimalControlProgram:
 @pytest.mark.parametrize("node", [Node.ALL, Node.INTERMEDIATES, Node.ALL_SHOOTING])
 def test_multinode_fail_first_node(node):
     # Constraints
-    multinode_constraints = MultinodeConstraintList()
+    multinode_constraints = MultinodePenaltyList()
     # hard constraint
     with pytest.raises(
         NotImplementedError,
         match="Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
     ):
         multinode_constraints.add(
-            MultinodeConstraintFcn.EQUALITY,
+            MultinodePenaltyFcn.EQUALITY,
             phase_first_idx=0,
             phase_second_idx=2,
             first_node=node,
@@ -122,14 +122,14 @@ def test_multinode_fail_first_node(node):
 @pytest.mark.parametrize("node", [Node.ALL, Node.INTERMEDIATES, Node.ALL_SHOOTING])
 def test_multinode_fail_second_node(node):
     # Constraints
-    multinode_constraints = MultinodeConstraintList()
+    multinode_constraints = MultinodePenaltyList()
     # hard constraint
     with pytest.raises(
         NotImplementedError,
         match="Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
     ):
         multinode_constraints.add(
-            MultinodeConstraintFcn.EQUALITY,
+            MultinodePenaltyFcn.EQUALITY,
             phase_first_idx=0,
             phase_second_idx=2,
             first_node=Node.START,
@@ -144,13 +144,13 @@ def test_multinode_wrong_phase(phase_1, phase_2):
     if phase_1 == 4 or (phase_1 == 0 and phase_2 == 4) or (phase_1 == -1 and phase_2 == 4):
         with pytest.raises(
             RuntimeError,
-            match="Phase index of the multinode_constraint is higher than the number of phases",
+            match="Phase index of the multinode_penalty is higher than the number of phases",
         ):
             prepare_ocp(model, phase_1, phase_2)
     elif phase_1 == -1 or (phase_1 == 0 and phase_2 == -1):
         with pytest.raises(
             RuntimeError,
-            match="Phase index of the multinode_constraint need to be positive",
+            match="Phase index of the multinode_penalty need to be positive",
         ):
             prepare_ocp(model, phase_1, phase_2)
     else:

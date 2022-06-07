@@ -1040,7 +1040,7 @@ class Solution:
             else penalty.dt
         )
 
-        if penalty.multinode_constraint:
+        if penalty.multinode_penalty:
             penalty.node_idx = [penalty.node_idx]
 
         for idx in penalty.node_idx:
@@ -1054,7 +1054,7 @@ class Solution:
                     u = np.concatenate(
                         (self._controls[phase_idx]["all"][:, -1], self._controls[phase_post]["all"][:, 0])
                     )
-                elif penalty.multinode_constraint:
+                elif penalty.multinode_penalty:
 
                     x = np.concatenate(
                         (

@@ -22,7 +22,7 @@ from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ConstraintContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
-from ..limits.multinode_constraint import MultinodeConstraintList
+from ..limits.multinode_penalty import MultinodePenaltyList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectiveContinuityFunctions
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -151,7 +151,7 @@ class OptimalControlProgram:
         variable_mappings: BiMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
-        multinode_constraints: MultinodeConstraintList = None,
+        multinode_constraints: MultinodePenaltyList = None,
         n_threads: int = 1,
         use_sx: bool = False,
         continuity_as_objective = False,  # TODO: documentation
@@ -331,9 +331,9 @@ class OptimalControlProgram:
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
         if multinode_constraints is None:
-            multinode_constraints = MultinodeConstraintList()
-        elif not isinstance(multinode_constraints, MultinodeConstraintList):
-            raise RuntimeError("multinode_constraints should be built from an MultinodeConstraintList")
+            multinode_constraints = MultinodePenaltyList()
+        elif not isinstance(multinode_constraints, MultinodePenaltyList):
+            raise RuntimeError("multinode_constraints should be built from an MultinodePenaltyList")
 
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
@@ -421,7 +421,7 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
-        self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
+        self.multinode_constraints = multinode_constraints.prepare_multinode_penalties(self)
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity and continuity_as_objective:
             # Inner- and inter-phase continuity
@@ -733,7 +733,7 @@ class OptimalControlProgram:
             )
 
             out = []
-            if penalty.transition or penalty.multinode_constraint:
+            if penalty.transition or penalty.multinode_penalty:
                 out.append(
                     penalty.weighted_function_non_threaded(
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt

@@ -302,7 +302,7 @@ class ObjectiveFunction:
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, pt in enumerate(ocp.phase_transitions):
+        for i, pt in enumerate(ocp.phase_transitions):  # TODO: is it constraint?
             # Dynamics must be respected between phases
             pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
             pt.list_index = -1
@@ -318,7 +318,7 @@ class ObjectiveFunction:
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, mnc in enumerate(ocp.multinode_constraints):
+        for i, mnc in enumerate(ocp.multinode_constraints):  # TODO: change to constraint
             # Equality constraint between nodes
             first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
             second_node_name = (

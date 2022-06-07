@@ -204,7 +204,7 @@ class PenaltyOption(OptionGeneric):
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
         self.transition = False
-        self.multinode_constraint = False
+        self.multinode_penalty = False
         self.phase_pre_idx = None
         self.phase_post_idx = None
         if self.derivative and self.explicit_derivative:
@@ -393,7 +393,7 @@ class PenaltyOption(OptionGeneric):
 
             return u
 
-        if self.multinode_constraint or self.transition:
+        if self.multinode_penalty or self.transition:
             ocp = all_pn[0].ocp
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
@@ -613,10 +613,10 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, all_pn[1])
             self.clear_penalty(ocp, all_pn[0].nlp)
 
-        elif isinstance(self.node, tuple) and self.multinode_constraint:
+        elif isinstance(self.node, tuple) and self.multinode_penalty:
             all_pn = []
             self.node_list = self.node
-            # Make sure the penalty behave like a MultinodeConstraint, even though it may be an Objective or Constraint
+            # Make sure the penalty behave like a MultinodePenalty, even though it may be an Objective or Constraint
             # self.transition = True
             self.dt = 1
             # self.phase_pre_idx

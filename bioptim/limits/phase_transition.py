@@ -5,7 +5,7 @@ from enum import Enum
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
-from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
+from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
@@ -13,7 +13,7 @@ from ..misc.enums import Node, InterpolationType, ConstraintType
 from ..misc.options import UniquePerPhaseOptionList
 
 
-class PhaseTransition(MultinodeConstraint):
+class PhaseTransition(MultinodePenalty):
     """
     A placeholder for a transition of state
 
@@ -64,7 +64,7 @@ class PhaseTransition(MultinodeConstraint):
             phase_second_idx=None,
             first_node=Node.END,
             second_node=Node.START,
-            multinode_constraint=transition,
+            multinode_penalty=transition,
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
@@ -186,7 +186,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
+            return MultinodePenaltyFunctions.Functions.equality(transition, all_pn)
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:
@@ -205,7 +205,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
+            return MultinodePenaltyFunctions.Functions.equality(transition, all_pn)
 
         @staticmethod
         def impact(transition, all_pn):
@@ -269,7 +269,7 @@ class PhaseTransitionFcn(Enum):
     CONTINUOUS = (PhaseTransitionFunctions.Functions.continuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
-    CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
+    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
     @staticmethod
     def get_type():

@@ -22,9 +22,9 @@ from bioptim import (
     OdeSolver,
     Node,
     Solver,
-    MultinodeConstraintList,
-    MultinodeConstraintFcn,
-    MultinodeConstraint,
+    MultinodePenaltyList,
+    MultinodePenaltyFcn,
+    MultinodePenalty,
     NonLinearProgram,
 )
 
@@ -75,10 +75,10 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2)
 
     # Constraints
-    multinode_constraints = MultinodeConstraintList()
+    multinode_constraints = MultinodePenaltyList()
     # hard constraint
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodePenaltyFcn.EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=Node.START,
@@ -86,7 +86,7 @@ def prepare_ocp(
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodePenaltyFcn.EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=2,
@@ -95,7 +95,7 @@ def prepare_ocp(
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodePenaltyFcn.EQUALITY,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.MID,
@@ -159,7 +159,7 @@ def prepare_ocp(
 
 
 def custom_multinode_constraint(
-    multinode_constraint: MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
+    multinode_constraint: MultinodePenalty, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
@@ -170,8 +170,8 @@ def custom_multinode_constraint(
 
     Parameters
     ----------
-    multinode_constraint: MultinodeConstraint
-        The placeholder for the multinode_constraint
+    multinode_constraint: MultinodePenalty
+        The placeholder for the multinode_penalty
     nlp_pre: NonLinearProgram
         The nonlinear program of the pre phase
     nlp_post: NonLinearProgram
