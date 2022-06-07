@@ -9,7 +9,7 @@ from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -41,7 +41,7 @@ class PhaseTransition(MultinodePenalty):
         The index of the node in nlp pre
     transition: bool
         The nature of the cost function is transition
-    constraint_type: ConstraintType
+    penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
     """
 

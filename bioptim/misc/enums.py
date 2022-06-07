@@ -118,7 +118,7 @@ class SolutionIntegrator(Enum):
     SCIPY_LSODA = "LSODA"
 
 
-class ConstraintType(Enum):
+class PenaltyType(Enum):
     """
     Selection of constraint types
     """

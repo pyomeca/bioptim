@@ -9,7 +9,7 @@ from .penalty import PenaltyOption
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -43,7 +43,7 @@ class MultinodePenalty(PenaltyOption):
         The index of the node in nlp pre
     multinode_penalty: Union[Callable, Any]
         The nature of the cost function is the multi node penalty
-    constraint_type: ConstraintType
+    penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
     """
 
@@ -107,7 +107,7 @@ class MultinodePenalty(PenaltyOption):
         self.node = self.first_node, self.second_node
         self.dt = 1
         self.node_idx = [0]
-        self.constraint_type = ConstraintType.INTERNAL
+        self.penalty_type = PenaltyType.INTERNAL
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         ocp = all_pn[0].ocp
