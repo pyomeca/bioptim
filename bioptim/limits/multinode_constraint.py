@@ -3,11 +3,11 @@ from typing import Callable, Union, Any
 from .constraints import Constraint
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFcn
 
+
 class MultinodeConstraint(MultinodePenalty, Constraint):
     """
     TODO: docstring
     """
-    pass
 
 
 class MultinodeConstraintList(MultinodePenaltyList):
@@ -42,3 +42,6 @@ class MultinodeConstraintList(MultinodePenaltyList):
         super(MultinodeConstraintList, self)._add(
             option_type=MultinodeConstraint, multinode_penalty=multinode_constraint, phase=-1, **extra_arguments
         )
+
+
+MultinodeConstraintFcn = MultinodePenaltyFcn

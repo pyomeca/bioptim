@@ -112,10 +112,16 @@ PhaseTransitionFcn
     Selection of valid phase transition functions
 
 # --- Managing the multinode constraint for multiphase programs at specified nodes--- #
-MultinodePenaltyList
-    A list of MultinodePenalty
+MultinodeConstraintList
+    A list of MultinodeConstraint
 MultinodeConstraintListFcn
-    Selection of valid phase MultinodePenalty functions
+    Selection of valid phase MultinodeConstraint functions
+
+# --- Managing the multinode objective for multiphase programs at specified nodes--- #
+MultinodeObjectiveList
+    A list of MultinodeObjective
+MultinodeObjectiveListFcn
+    Selection of valid phase MultinodeObjective functions
 
 # --- Mapping indices between vector --- #
 Mapping
@@ -168,7 +174,8 @@ from .interfaces.biorbd_interface import BiorbdInterface
 from .interfaces.solver_options import Solver
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
-from .limits.multinode_penalty import MultinodePenaltyFcn, MultinodePenaltyList, MultinodePenalty
+from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
+from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import (
     BoundsList,

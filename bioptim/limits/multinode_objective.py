@@ -42,3 +42,6 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         super(MultinodeObjectiveList, self)._add(
             option_type=MultinodeObjective, multinode_penalty=multinode_objective, phase=-1, **extra_arguments
         )
+
+
+MultinodeObjectiveFcn = MultinodePenaltyFcn
