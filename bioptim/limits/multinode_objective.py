@@ -3,6 +3,7 @@ from typing import Callable, Union, Any
 from .objective_functions import Objective
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFcn
 
+# TODO: mirror multinode_constraint.py in here but for objectives
 class MultinodeObjective(MultinodePenalty, Objective):
     """
     TODO: docstring
@@ -26,7 +27,7 @@ class MultinodeObjectiveList(MultinodePenaltyList):
 
     def add(self, multinode_objective: Any, **extra_arguments: Any):
         """
-        Add a new MultinodePenalty to the list
+        Add a new MultinodeObjective to the list
 
         Parameters
         ----------
