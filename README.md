@@ -94,6 +94,9 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [CostType](#enum-costtype)
   - [SolutionIntegrator](#enum-solutionintegrator)
   - [IntegralApproximation](#enum-integralapproximation)
+  - [RigidBodyDynamics](#enum-rigidbodydynamics)
+  - [SoftContactDynamics](#enum-softcontactdynamics)
+  - [DefectType](#enum-defecttype)
         
 [Examples](#examples)
 - [Run examples](#run-examples)
@@ -1519,6 +1522,11 @@ The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_conta
 The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
 - ODE: soft contacts dynamics is handled explicitly
 - CONSTRAINT: an extra control *fext* is added and it ensures to respect soft contact_dynamics on nodes through a constraint.
+
+### Enum: DefectType
+- EXPLICIT: The defect comes from explicit formulation
+- IMPLICIT: The defect comes from implicit formulation
+- NOT_APPLICABLE: The defect is not applicable
 
 # Examples
 In this section, you will find the description of all the examples implemented with bioptim. They are ordered in 

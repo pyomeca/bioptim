@@ -2,7 +2,7 @@ import pytest
 import re
 
 import numpy as np
-from casadi import MX, SX
+from casadi import MX, SX, vertcat
 import biorbd_casadi as biorbd
 from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
@@ -11,6 +11,7 @@ from bioptim.misc.enums import ControlType, RigidBodyDynamics, SoftContactDynami
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector
 from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
+from bioptim.dynamics.dynamics_evaluation import DynamicsEvaluation
 from bioptim.limits.constraints import ConstraintList
 from .utils import TestUtils
 
@@ -938,7 +939,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact):
-    def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> tuple:
+    def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> DynamicsEvaluation:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -947,7 +948,7 @@ def test_custom_dynamics(with_contact):
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        return dq, ddq
+        return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
     def configure(ocp, nlp, with_contact=None):
         ConfigureProblem.configure_q(nlp, True, False)
