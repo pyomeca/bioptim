@@ -424,9 +424,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         # Dynamics must be sound within phases
         for i, nlp in enumerate(ocp.nlp):
-            penalty = Constraint(
-                ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
-            )
+            penalty = Constraint(ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod

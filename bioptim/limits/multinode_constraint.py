@@ -7,37 +7,37 @@ from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, Multinode
 
 class MultinodeConstraint(MultinodePenalty, Constraint):  # call MultinodePenalty methods first
     """
-        A placeholder for a multi node constraints
+    A placeholder for a multi node constraints
 
-        Attributes
-        ----------
-        min_bound: list
-            The minimal bound of the multi node constraints
-        max_bound: list
-            The maximal bound of the multi node constraints
-        bounds: Bounds
-            The bounds (will be filled with min_bound/max_bound)
-        weight: float
-            The weight of the cost function
-        quadratic: bool
-            If the objective function is quadratic
-        phase_first_idx: int
-            The first index of the phase of concern
-        phase_second_idx: int
-            The second index of the phase of concern
-        first_node: Node
-            The kind of the first node
-        second_node: Node
-            The kind of the second node
-        dt: float
-            The delta time
-        node_idx: int
-            The index of the node in nlp pre
-        multinode_constraint: Union[Callable, Any]
-            The nature of the cost function is the multi node constraint
-        penalty_type: PenaltyType
-            If the penalty is from the user or from bioptim (implicit or internal)
-        """
+    Attributes
+    ----------
+    min_bound: list
+        The minimal bound of the multi node constraints
+    max_bound: list
+        The maximal bound of the multi node constraints
+    bounds: Bounds
+        The bounds (will be filled with min_bound/max_bound)
+    weight: float
+        The weight of the cost function
+    quadratic: bool
+        If the objective function is quadratic
+    phase_first_idx: int
+        The first index of the phase of concern
+    phase_second_idx: int
+        The second index of the phase of concern
+    first_node: Node
+        The kind of the first node
+    second_node: Node
+        The kind of the second node
+    dt: float
+        The delta time
+    node_idx: int
+        The index of the node in nlp pre
+    multinode_constraint: Union[Callable, Any]
+        The nature of the cost function is the multi node constraint
+    penalty_type: PenaltyType
+        If the penalty is from the user or from bioptim (implicit or internal)
+    """
 
     def __init__(
         self,
@@ -60,17 +60,19 @@ class MultinodeConstraint(MultinodePenalty, Constraint):  # call MultinodePenalt
         params:
             Generic parameters for options
         """
-        super(MultinodeConstraint, self).__init__(phase_first_idx=phase_first_idx,
-                                                  phase_second_idx=phase_second_idx,
-                                                  first_node=first_node,
-                                                  second_node=second_node,
-                                                  multinode_penalty=multinode_constraint,
-                                                  constraint=multinode_constraint,
-                                                  custom_function=custom_function,
-                                                  min_bound=min_bound,
-                                                  max_bound=max_bound,
-                                                  weight=weight,
-                                                  **params)
+        super(MultinodeConstraint, self).__init__(
+            phase_first_idx=phase_first_idx,
+            phase_second_idx=phase_second_idx,
+            first_node=first_node,
+            second_node=second_node,
+            multinode_penalty=multinode_constraint,
+            constraint=multinode_constraint,
+            custom_function=custom_function,
+            min_bound=min_bound,
+            max_bound=max_bound,
+            weight=weight,
+            **params,
+        )
 
 
 class MultinodeConstraintList(MultinodePenaltyList):

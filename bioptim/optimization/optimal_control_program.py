@@ -20,7 +20,13 @@ from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.solver_options import Solver
-from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ConstraintContinuityFunctions
+from ..limits.constraints import (
+    ConstraintFunction,
+    ConstraintFcn,
+    ConstraintList,
+    Constraint,
+    ConstraintContinuityFunctions,
+)
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectiveContinuityFunctions
@@ -154,7 +160,7 @@ class OptimalControlProgram:
         multinode_constraints: MultinodeConstraintList = None,
         n_threads: int = 1,
         use_sx: bool = False,
-        continuity_as_objective = False,  # TODO: documentation
+        continuity_as_objective=False,  # TODO: documentation
         skip_continuity: bool = False,
     ):
         """
@@ -429,7 +435,6 @@ class OptimalControlProgram:
         if not skip_continuity:
             # Inner- and inter-phase continuity
             ConstraintContinuityFunctions.continuity(self)
-
 
         self.isdef_x_init = False
         self.isdef_u_init = False

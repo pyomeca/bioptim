@@ -8,6 +8,7 @@ class MultinodeObjective(MultinodePenalty, Objective):
     """
     TODO: docstring
     """
+
     pass
 
 
