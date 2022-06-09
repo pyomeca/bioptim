@@ -202,7 +202,7 @@ def main():
     solver = Solver.IPOPT(show_online_optim=True)
     solver.set_hessian_approximation("exact")
     sol = ocp.solve(solver)
-    sol.print()
+    sol.print_cost()
 
     # --- Show results --- #
     sol.animate(show_meshes=True)

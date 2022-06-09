@@ -117,7 +117,7 @@ def main():
     print("\n\n")
     print("Results using ACADOS")
     print(f"Final objective: {np.nansum(sol_acados.cost)}")
-    sol_acados.print()
+    sol_acados.print_cost()
     print(f"Time to solve: {sol_acados.real_time_to_optimize}sec")
     print(f"")
 
@@ -126,7 +126,7 @@ def main():
         f"warm started from ACADOS solution"
     )
     print(f"Final objective : {np.nansum(sol_ipopt.cost)}")
-    sol_ipopt.print()
+    sol_ipopt.print_cost()
     print(f"Time to solve: {sol_ipopt.real_time_to_optimize}sec")
     print(f"")
 
