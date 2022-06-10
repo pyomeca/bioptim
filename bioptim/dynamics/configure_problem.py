@@ -655,12 +655,29 @@ class ConfigureProblem:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
             cx = define_cx(n_col=n_cx)
 
+            if f"{name}_states" in nlp.plot_mapping:
+                phase_mappings = nlp.plot_mapping[f"{name}_states"]
+            else:
+                dof_names = []
+                dof_mapping_all_phases = [[] for _ in range(len(ocp.nlp))]
+                for i, nlp_ in enumerate(ocp.nlp):
+                    for j in range(nlp_.model.nbQ()):
+                        legend = nlp_.model.nameDof()[j].to_string()
+                        if legend in dof_names:
+                            dof_mapping_all_phases[i] += [dof_names.index(legend)]
+                        else:
+                            dof_names += [legend]
+                            dof_mapping_all_phases[i] += [len(dof_names) - 1]
+
+                phase_mappings = Mapping(dof_mapping_all_phases[nlp.phase_idx])
+
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             if not skip_plot:
                 nlp.plot[f"{name}_states"] = CustomPlot(
                     lambda t, x, u, p: x[nlp.states[name].index, :],
                     plot_type=PlotType.INTEGRATED,
-                    legend=legend,
+                    axes_idx=phase_mappings,
+                    legend=dof_names,
                     combine_to=combine_name,
                 )
 
@@ -668,12 +685,33 @@ class ConfigureProblem:
             cx = define_cx(n_col=2)
 
             nlp.controls.append(name, cx, mx_controls, nlp.variable_mappings[name])
+
+            if f"{name}_states" in nlp.plot_mapping:
+                phase_mappings = nlp.plot_mapping[f"{name}_states"]
+            else:
+                dof_names = []
+                dof_mapping_all_phases = [[] for _ in range(len(ocp.nlp))]
+                for i, nlp_ in enumerate(ocp.nlp):
+                    for j in range(nlp_.model.nbQ()):
+                        legend = nlp_.model.nameDof()[j].to_string()
+                        if legend in dof_names:
+                            dof_mapping_all_phases[i] += [dof_names.index(legend)]
+                        else:
+                            dof_names += [legend]
+                            dof_mapping_all_phases[i] += [len(dof_names) - 1]
+
+                double_mapping = nlp.variable_mappings[name].to_first.map(dof_mapping_all_phases[nlp.phase_idx])
+                double_mapping = double_mapping.tolist()[0]
+                double_mapping = [int(i) for i in double_mapping]
+                phase_mappings = Mapping(double_mapping)
+
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             if not skip_plot:
                 nlp.plot[f"{name}_controls"] = CustomPlot(
                     lambda t, x, u, p: u[nlp.controls[name].index, :],
                     plot_type=plot_type,
-                    legend=legend,
+                    axes_idx=phase_mappings,
+                    legend=dof_names,
                     combine_to=f"{name}_states" if as_states and combine_state_control_plot else combine_name,
                 )
 
