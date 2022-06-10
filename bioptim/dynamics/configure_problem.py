@@ -708,7 +708,18 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name_qdot = [str(i) for i in range(nlp.model.nbQdot())]
+        if nlp.model.nbQuat() == 0:
+            name_qdot = [name.to_string() for name in nlp.model.nameDof()]
+        else:
+            name_qdot = []
+            for i in range(nlp.model.nbQ()):
+                if nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot" or nlp.model.nameDof()[i].to_string()[-6:-1] == "Trans":
+                    name_qdot += [nlp.model.nameDof()[i].to_string()]
+                else:
+                    if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
+                        name_qdot += [nlp.model.nameDof()[i].to_string()[:-5] + "omega" + nlp.model.nameDof()[i].to_string()[-1]]
+
+
         ConfigureProblem._adjust_mapping("qdot", ["q", "qdot", "taudot"], nlp)
         ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
 
@@ -727,7 +738,18 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name_qddot = [str(i) for i in range(nlp.model.nbQdot())]
+        if nlp.model.nbQuat() == 0:
+            name_qddot = [name.to_string() for name in nlp.model.nameDof()]
+        else:
+            name_qddot = []
+            for i in range(nlp.model.nbQ()):
+                if nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot" or nlp.model.nameDof()[i].to_string()[-6:-1] == "Trans":
+                    name_qddot += [nlp.model.nameDof()[i].to_string()]
+                else:
+                    if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
+                        name_qddot += [nlp.model.nameDof()[i].to_string()[:-5] + "omegadot" + nlp.model.nameDof()[i].to_string()[-1]]
+
+
         ConfigureProblem._adjust_mapping("qddot", ["q", "qdot"], nlp)
         ConfigureProblem.configure_new_variable("qddot", name_qddot, nlp, as_states, as_controls)
 
@@ -745,6 +767,18 @@ class ConfigureProblem:
         as_controls: bool
             If the generalized velocities should be a control
         """
+
+        if nlp.model.nbQuat() == 0:
+            name_qdddot = [name.to_string() for name in nlp.model.nameDof()]
+        else:
+            name_qdddot = []
+            for i in range(nlp.model.nbQ()):
+                if nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot" or nlp.model.nameDof()[i].to_string()[-6:-1] == "Trans":
+                    name_qdddot += [nlp.model.nameDof()[i].to_string()]
+                else:
+                    if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
+                        name_qdddot += [nlp.model.nameDof()[i].to_string()[:-5] + "omegadotdot" + nlp.model.nameDof()[i].to_string()[-1]]
+
 
         name_qdddot = [str(i) for i in range(nlp.model.nbQdot())]
         ConfigureProblem._adjust_mapping("qdddot", ["q", "qdot", "qddot"], nlp)
@@ -767,7 +801,16 @@ class ConfigureProblem:
             If the dynamics with fatigue should be declared
         """
 
-        name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
+        if nlp.model.nbQuat() == 0:
+            name_tau = [name.to_string() for name in nlp.model.nameDof()]
+        else:
+            name_tau = []
+            for i in range(nlp.model.nbQ()):
+                if nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot":
+                    name_tau += [nlp.model.nameDof()[i].to_string()]
+                else:
+                    if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
+                        name_tau += [nlp.model.nameDof()[i].to_string()]
 
         ConfigureProblem._adjust_mapping("tau", ["qdot", "taudot"], nlp)
         ConfigureProblem.configure_new_variable("tau", name_tau, nlp, as_states, as_controls, fatigue=fatigue)
@@ -811,6 +854,17 @@ class ConfigureProblem:
         as_controls: bool
             If the generalized force derivatives should be a control
         """
+
+        if nlp.model.nbQuat() == 0:
+            name_taudot = [name.to_string() for name in nlp.model.nameDof()]
+        else:
+            name_taudot = []
+            for i in range(nlp.model.nbQ()):
+                if nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot":
+                    name_taudot += [nlp.model.nameDof()[i].to_string()]
+                else:
+                    if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
+                        name_taudot += [nlp.model.nameDof()[i].to_string()]
 
         name_taudot = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
         ConfigureProblem._adjust_mapping("taudot", ["qdot", "tau"], nlp)
