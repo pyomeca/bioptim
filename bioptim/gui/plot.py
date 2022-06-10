@@ -218,10 +218,6 @@ class PlotOcp:
              Use the ode defined by OCP or use a separate integrator provided by scipy
 
         """
-        for i in range(1, ocp.n_phases):
-            if len(ocp.nlp[0].states["q"]) != len(ocp.nlp[i].states["q"]):
-                raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
-
         self.ocp = ocp
         self.plot_options = {
             "general_options": {"use_tight_layout": False},
