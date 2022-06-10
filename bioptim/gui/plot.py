@@ -477,6 +477,7 @@ class PlotOcp:
 
                     legend_without_duplicate_labels(ax)
 
+                mapping_idx = 0
                 for j, ax in enumerate(axes):
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
@@ -488,18 +489,20 @@ class PlotOcp:
                         else:
                             ns = nlp.ns
                         nlp.plot[variable].bounds.check_and_adjust_dimensions(n_elements=len(mapping), n_shooting=ns)
-                        bounds_min = np.array([nlp.plot[variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)])
-                        bounds_max = np.array([nlp.plot[variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)])
-                        if bounds_min.shape[0] == nlp.ns:
-                            bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
-                            bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
+                        if j in mapping:
+                            bounds_min = np.array([nlp.plot[variable].bounds.min.evaluate_at(k)[mapping_idx] for k in range(ns + 1)])
+                            bounds_max = np.array([nlp.plot[variable].bounds.max.evaluate_at(k)[mapping_idx] for k in range(ns + 1)])
+                            if bounds_min.shape[0] == nlp.ns:
+                                bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
+                                bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
 
-                        self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
-                        )
-                        self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
-                        )
+                            self.plots_bounds.append(
+                                [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
+                            )
+                            self.plots_bounds.append(
+                                [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
+                            )
+                            mapping_idx += 1
 
     def __add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
         """
