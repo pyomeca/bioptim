@@ -80,6 +80,10 @@ class Solution:
     states(self) -> Union[list, dict]
         Returns the state in list if more than one phases, otherwise it returns the only dict
     @property
+    states_no_intermediate(self) -> Union[list, dict]
+        Returns the state in list if more than one phases, otherwise it returns the only dict
+        and removes the intermediate states if Collocation solver is used
+    @property
     controls(self) -> Union[list, dict]
         Returns the controls in list if more than one phases, otherwise it returns the only dict
     integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keep_intermediate_points: bool = True,
