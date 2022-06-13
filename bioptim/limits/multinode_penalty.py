@@ -222,7 +222,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def equality(multinode_penalty, all_pn, **ignore):
+        def equality(multinode_penalty, all_pn):
             """
             The most common continuity function, that is state before equals state after
 
@@ -252,7 +252,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return states_pre - states_post
 
         @staticmethod
-        def com_equality(multinode_penalty, all_pn, **ignore):
+        def com_equality(multinode_penalty, all_pn):
             """
             The centers of mass are equals for the specified phases and the specified nodes
 
@@ -296,7 +296,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
-        def com_velocity_equality(multinode_penalty, all_pn, **ignore):
+        def com_velocity_equality(multinode_penalty, all_pn):
             """
             The centers of mass velocity are equals for the specified phases and the specified nodes
 

@@ -57,7 +57,7 @@ class PhaseTransition(MultinodeConstraint):
         **params: Any,
     ):
 
-        if not isinstance(transition, PhaseTransitionFcn):
+        if not isinstance(transition, PhaseTransitionFcn):  # TODO: remove because user sets them (proposed)
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
@@ -172,7 +172,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
 
         @staticmethod
         def continuous(
-            transition, all_pn, **ignore
+            transition, all_pn
         ):  # complains about having unexpected keyword argument 'phase_first_idx' otherwise
             """
             The most common continuity function, that is state before equals state after
@@ -192,7 +192,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return MultinodePenaltyFunctions.Functions.equality(transition, all_pn)
 
         @staticmethod
-        def cyclic(transition, all_pn, **ignore) -> MX:
+        def cyclic(transition, all_pn) -> MX:
             """
             The continuity function applied to the last to first node
 
@@ -211,7 +211,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return MultinodePenaltyFunctions.Functions.equality(transition, all_pn)
 
         @staticmethod
-        def impact(transition, all_pn, **ignore):
+        def impact(transition, all_pn):
             """
             A discontinuous function that simulates an inelastic impact of a new contact point
 
