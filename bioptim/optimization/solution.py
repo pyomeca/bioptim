@@ -500,7 +500,7 @@ class Solution:
         """
         states_no_intermediate = []
         for i, nlp in enumerate(self.ocp.nlp):
-            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and not isinstance(nlp.ode_solver, OdeSolver.IRK):
                 states_no_intermediate.append(dict())
                 for key in self._states[i].keys():
                     # keep one value each five values
