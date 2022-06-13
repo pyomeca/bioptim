@@ -202,7 +202,7 @@ def main():
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
-    sol.print()
+    sol.print_cost()
     sol.graphs()
     # --- Show results --- #
     sol.animate()

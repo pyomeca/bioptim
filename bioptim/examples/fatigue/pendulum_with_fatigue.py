@@ -195,7 +195,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show the results in a bioviz animation --- #
-    sol.print()
+    sol.print_cost()
     sol.animate(n_frames=100)
 
 

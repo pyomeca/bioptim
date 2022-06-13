@@ -133,7 +133,7 @@ def main():
 
     # --- Print objective cost  --- #
     print(f"Final objective value : {np.nansum(sol.cost)} \n")
-    sol.print()
+    sol.print_cost()
 
     # --- Save the optimal control program and the solution with stand_alone = False --- #
     ocp.save(sol, "pendulum.bo")  # you don't have to specify the extension ".bo"
