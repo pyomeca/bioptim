@@ -3,7 +3,7 @@ from enum import Enum
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node, IntegralApproximation
+from ..misc.enums import Node, IntegralApproximation, PenaltyType
 from ..misc.options import OptionList
 
 
@@ -290,7 +290,7 @@ class ObjectiveFunction:
             penalty = Objective(
                 ObjectiveFcn.CONTINUITY,
                 node=Node.ALL_SHOOTING,
-                objective_type=ObjectiveType.INTERNAL,  # TODO: objective type
+                objective_type=PenaltyType.INTERNAL,  # TODO: objective type
             )
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
