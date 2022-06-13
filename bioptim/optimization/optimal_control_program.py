@@ -191,6 +191,8 @@ class OptimalControlProgram:
             The mapping to apply on variables
         plot_mappings: Mapping
             The mapping to apply on the plots
+        phase_mappings: Mapping
+            The mapping to apply on the phases
         phase_transitions: PhaseTransitionList
             The transition types between the phases
         n_threads: int
@@ -386,6 +388,23 @@ class OptimalControlProgram:
             for key in plot_mappings:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
         NLP.add(self, "plot_mapping", reshaped_plot_mappings, False, name="plot_mapping")
+
+        dof_names_all_phases = []
+        phase_mappings = [[] for _ in range(len(self.nlp))]
+        dof_names = [[] for _ in range(len(self.nlp))]
+        for i, nlp_ in enumerate(self.nlp):
+            current_dof_mapping = []
+            for j in range(nlp_.model.nbQ()):
+                legend = nlp_.model.nameDof()[j].to_string()
+                if legend in dof_names_all_phases:
+                    current_dof_mapping += [dof_names_all_phases.index(legend)]
+                else:
+                    dof_names_all_phases += [legend]
+                    current_dof_mapping += [len(dof_names_all_phases) - 1]
+            phase_mappings[i] = Mapping(current_dof_mapping)
+            dof_names[i] = [dof_names_all_phases[i] for i in phase_mappings[i].map_idx]
+        NLP.add(self, "phase_mapping", phase_mappings, True)
+        NLP.add(self, "dof_names", dof_names, True)
 
         # Prepare the parameters to optimize
         self.phase_transitions = []
