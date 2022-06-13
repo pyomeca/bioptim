@@ -94,7 +94,7 @@ def main():
     # Solve the program
     sol = nmpc.solve(update_functions, solver=Solver.IPOPT(show_online_optim=True))
     sol.graphs()
-    sol.print()
+    sol.print_cost()
     sol.animate(n_frames=100)
 
 

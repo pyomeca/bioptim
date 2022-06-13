@@ -120,7 +120,7 @@ def main():
         solver=Solver.IPOPT(show_online_optim=True),
         n_cycles_simultaneous=n_cycles_simultaneous,
     )
-    sol.print()
+    sol.print_cost()
     sol.graphs()
     sol.animate(n_frames=100)
 
