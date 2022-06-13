@@ -369,8 +369,7 @@ class PlotOcp:
                 else:
                     nb = max(
                         [
-                            max(nlp.plot[variable].phase_mappings.map_idx) + 1 if variable in nlp.plot else 0
-                            for nlp in self.ocp.nlp
+                            len(nlp.plot[variable].phase_mappings.map_idx) if variable in nlp.plot else 0 for nlp in self.ocp.nlp
                         ]
                     )
                     n_cols, n_rows = PlotOcp._generate_windows_size(nb)
@@ -387,11 +386,12 @@ class PlotOcp:
 
                 if not self.plot_func[variable][i]:
                     continue
-                mapping = self.plot_func[variable][i].phase_mappings.map_idx
+
+                mapping = nlp.plot[variable].phase_mappings.map_idx
                 for ctr, k in enumerate(mapping):
-                    ax = axes[k]
-                    if k < len(self.plot_func[variable][i].legend):
-                        axes[k].set_title(self.plot_func[variable][i].legend[k])
+                    ax = axes[ctr]
+                    if ctr < len(nlp.plot[variable].legend):
+                        axes[ctr].set_title(nlp.plot[variable].legend[ctr])
                     ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp.plot[variable].ylim:
@@ -402,8 +402,8 @@ class PlotOcp:
                             y_max = nlp.plot[variable].bounds.max[ctr, :].max()
                         else:
                             nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping), nlp.ns)
-                            y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[k] for j in range(nlp.ns)])
-                            y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[k] for j in range(nlp.ns)])
+                            y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[ctr] for j in range(nlp.ns)])
+                            y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[ctr] for j in range(nlp.ns)])
                         if y_min.__array__()[0] < y_min_all[var_idx][ctr]:
                             y_min_all[var_idx][ctr] = y_min
                         if y_max.__array__()[0] > y_max_all[var_idx][ctr]:
