@@ -283,7 +283,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             pre_com = nlp_pre.model.CoM(states_pre[nlp_pre.states["q"].index, :]).to_mx()
             post_com = nlp_post.model.CoM(states_post_sym_list[0]).to_mx()
 
-            pre_states_cx = nlp_pre.states.cx
+            pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
 
             return biorbd.to_casadi_func(
