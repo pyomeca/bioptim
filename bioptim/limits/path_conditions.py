@@ -4,6 +4,7 @@ import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, SX, vertcat
 from scipy.interpolate import interp1d
+from numpy import array, ndarray
 
 from ..misc.enums import InterpolationType
 from ..misc.mapping import BiMapping, BiMappingList
@@ -156,6 +157,9 @@ class PathCondition(np.ndarray):
         self.t = getattr(obj, "t", None)
         self.extra_params = getattr(obj, "extra_params", None)
         self.slice_list = getattr(obj, "slice_list", None)
+
+    def __array__(self) -> ndarray:
+        return array([self])
 
     def __reduce__(self) -> tuple:
         """

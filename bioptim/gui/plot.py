@@ -356,9 +356,11 @@ class PlotOcp:
             # No graph was setup in problem_type
             return
 
+        y_min_all = [None for _ in self.variable_sizes[0]]
+        y_max_all = [None for _ in self.variable_sizes[0]]
         self.plot_func = {}
         for i, nlp in enumerate(self.ocp.nlp):
-            for variable in self.variable_sizes[i]:
+            for var_idx, variable in enumerate(self.variable_sizes[i]):
                 if nlp.plot[variable].combine_to:
                     self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
                     axes = self.axes[variable][1]
@@ -374,6 +376,9 @@ class PlotOcp:
                     n_cols, n_rows = PlotOcp._generate_windows_size(nb)
                     axes = self.__add_new_axis(variable, nb, n_rows, n_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
+                    if not y_min_all[var_idx]:
+                        y_min_all[var_idx] = [np.inf] * nb
+                        y_max_all[var_idx] = [-np.inf] * nb
 
                 if variable not in self.plot_func:
                     self.plot_func[variable] = [
@@ -399,8 +404,10 @@ class PlotOcp:
                             nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping), nlp.ns)
                             y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[k] for j in range(nlp.ns)])
                             y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[k] for j in range(nlp.ns)])
-                        y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
-                        ax.set_ylim(y_range)
+                        if y_min.__array__()[0] < y_min_all[var_idx][ctr]:
+                            y_min_all[var_idx][ctr] = y_min
+                        if y_max.__array__()[0] > y_max_all[var_idx][ctr]:
+                            y_max_all[var_idx][ctr] = y_max
                     plot_type = self.plot_func[variable][i].type
 
                     t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
@@ -503,6 +510,11 @@ class PlotOcp:
                                 [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
                             )
                             mapping_idx += 1
+
+        for var_idx, variable in enumerate(self.variable_sizes[0]):
+            for j, ax in enumerate(axes):
+                y_range, _ = self.__compute_ylim(y_min_all[var_idx][j], y_max_all[var_idx][j], 1.25)
+                ax.set_ylim(y_range)
 
     def __add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
         """
