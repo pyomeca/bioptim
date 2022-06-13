@@ -191,12 +191,12 @@ def main():
     sol_explicit = solve_ocp(implicit_dynamics=False)
 
     # --- Show the results in a bioviz animation --- #
-    sol_implicit.print()
+    sol_implicit.print_cost()
     # sol_implicit.animate(n_frames=100)
     # sol_implicit.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol_explicit.print()
+    sol_explicit.print_cost()
     # sol_explicit.animate(n_frames=100)
     # sol_explicit.graphs()
 
