@@ -511,10 +511,11 @@ class PlotOcp:
                             )
                             mapping_idx += 1
 
-        for var_idx, variable in enumerate(self.variable_sizes[0]):
-            for j, ax in enumerate(axes):
-                y_range, _ = self.__compute_ylim(y_min_all[var_idx][j], y_max_all[var_idx][j], 1.25)
-                ax.set_ylim(y_range)
+        if self.show_bounds and nlp.plot[variable].bounds:
+            for var_idx, variable in enumerate(self.variable_sizes[0]):
+                for j, ax in enumerate(axes):
+                    y_range, _ = self.__compute_ylim(y_min_all[var_idx][j], y_max_all[var_idx][j], 1.25)
+                    ax.set_ylim(y_range)
 
     def __add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
         """
