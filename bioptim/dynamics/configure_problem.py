@@ -74,10 +74,10 @@ class ConfigureProblem:
     def _modifying_variable_names(nlp, type):
 
         if nlp.model.nbQuat() == 0:
-            new_name = [name.to_string() for name in nlp.model.nameDof()]
+            new_name = [nlp.model.nameDof()[i].to_string() for i in nlp.phase_mapping.map_idx]
         else:
             new_name = []
-            for i in range(nlp.model.nbQ()):
+            for i in nlp.phase_mapping.map_idx:
                 if nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot" or nlp.model.nameDof()[i].to_string()[-6:-1] == "Trans":
                     new_name += [nlp.model.nameDof()[i].to_string()]
                 else:
@@ -661,9 +661,6 @@ class ConfigureProblem:
 
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
-        legend = [
-            f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx if idx is not None
-        ]
 
         mx_states = []
         mx_controls = []
@@ -674,25 +671,16 @@ class ConfigureProblem:
         mx_states = vertcat(*mx_states)
         mx_controls = vertcat(*mx_controls)
 
+        double_mapping = [nlp.phase_mapping.map_idx.index(nlp.variable_mappings[name].to_first.map_idx[i]) for i in range(len(nlp.variable_mappings[name].to_first.map_idx))]
+        phase_mappings = Mapping(double_mapping)
+
+        legend = [
+            f"{name}_{name_elements[idx]}" for idx in range(len(name_elements)) if idx is not None
+        ]
+
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
             cx = define_cx(n_col=n_cx)
-
-            if f"{name}_states" in nlp.plot_mapping:
-                phase_mappings = nlp.plot_mapping[f"{name}_states"]
-            else:
-                dof_names = []
-                dof_mapping_all_phases = [[] for _ in range(len(ocp.nlp))]
-                for i, nlp_ in enumerate(ocp.nlp):
-                    for j in range(nlp_.model.nbQ()):
-                        legend = nlp_.model.nameDof()[j].to_string()
-                        if legend in dof_names:
-                            dof_mapping_all_phases[i] += [dof_names.index(legend)]
-                        else:
-                            dof_names += [legend]
-                            dof_mapping_all_phases[i] += [len(dof_names) - 1]
-
-                phase_mappings = Mapping(dof_mapping_all_phases[nlp.phase_idx])
 
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             if not skip_plot:
@@ -700,7 +688,7 @@ class ConfigureProblem:
                     lambda t, x, u, p: x[nlp.states[name].index, :],
                     plot_type=PlotType.INTEGRATED,
                     axes_idx=phase_mappings,
-                    legend=dof_names,
+                    legend=legend,
                     combine_to=combine_name,
                 )
 
@@ -709,32 +697,13 @@ class ConfigureProblem:
 
             nlp.controls.append(name, cx, mx_controls, nlp.variable_mappings[name])
 
-            if f"{name}_states" in nlp.plot_mapping:
-                phase_mappings = nlp.plot_mapping[f"{name}_states"]
-            else:
-                dof_names = []
-                dof_mapping_all_phases = [[] for _ in range(len(ocp.nlp))]
-                for i, nlp_ in enumerate(ocp.nlp):
-                    for j in range(nlp_.model.nbQ()):
-                        legend = nlp_.model.nameDof()[j].to_string()
-                        if legend in dof_names:
-                            dof_mapping_all_phases[i] += [dof_names.index(legend)]
-                        else:
-                            dof_names += [legend]
-                            dof_mapping_all_phases[i] += [len(dof_names) - 1]
-
-                double_mapping = nlp.variable_mappings[name].to_first.map(dof_mapping_all_phases[nlp.phase_idx])
-                double_mapping = double_mapping.tolist()[0]
-                double_mapping = [int(i) for i in double_mapping]
-                phase_mappings = Mapping(double_mapping)
-
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             if not skip_plot:
                 nlp.plot[f"{name}_controls"] = CustomPlot(
                     lambda t, x, u, p: u[nlp.controls[name].index, :],
                     plot_type=plot_type,
                     axes_idx=phase_mappings,
-                    legend=dof_names,
+                    legend=legend,
                     combine_to=f"{name}_states" if as_states and combine_state_control_plot else combine_name,
                 )
 
