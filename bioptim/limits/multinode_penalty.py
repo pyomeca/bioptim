@@ -13,7 +13,7 @@ from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.options import UniquePerPhaseOptionList
 
 
-class MultinodePenalty(PenaltyOption):
+class MultinodePenalty:
     """
     A placeholder for a multi node penalties
 
@@ -57,7 +57,6 @@ class MultinodePenalty(PenaltyOption):
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
-        weight: float = 0,
         **params: Any,
     ):
         """
@@ -79,7 +78,7 @@ class MultinodePenalty(PenaltyOption):
         if not isinstance(multinode_penalty, MultinodePenaltyFcn) and not force_multinode:
             custom_function = multinode_penalty
             multinode_penalty = MultinodePenaltyFcn.CUSTOM
-        super(PenaltyOption, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **params)
+        # super(PenaltyOption, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **params)
 
         if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
             if not isinstance(first_node, int):
@@ -96,7 +95,6 @@ class MultinodePenalty(PenaltyOption):
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
         self.multinode_penalty = True
-        self.weight = weight
         self.quadratic = True
         self.phase_first_idx = phase_first_idx
         self.phase_second_idx = phase_second_idx
@@ -109,10 +107,14 @@ class MultinodePenalty(PenaltyOption):
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL
 
+    # they are almost copy pasted directly in Multinode(Constraint|Objective), are they still really relevent?
+    # I don't see how to generalize them without reference to child classes, more so if I remove self.weight.
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
-        if self.weight == 0:
+        if (
+            self.weight == 0
+        ):  # what if a user wants to test a different objective function and sets a particular objective to 0?
             pool = nlp.g_internal if nlp else ocp.g_internal
         else:
             pool = nlp.J_internal if nlp else ocp.J_internal
@@ -220,7 +222,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def equality(multinode_penalty, all_pn):
+        def equality(multinode_penalty, all_pn, **ignore):
             """
             The most common continuity function, that is state before equals state after
 
@@ -250,7 +252,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return states_pre - states_post
 
         @staticmethod
-        def com_equality(multinode_penalty, all_pn):
+        def com_equality(multinode_penalty, all_pn, **ignore):
             """
             The centers of mass are equals for the specified phases and the specified nodes
 
@@ -294,7 +296,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
-        def com_velocity_equality(multinode_penalty, all_pn):
+        def com_velocity_equality(multinode_penalty, all_pn, **ignore):
             """
             The centers of mass velocity are equals for the specified phases and the specified nodes
 

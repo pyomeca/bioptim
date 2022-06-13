@@ -104,7 +104,8 @@ def prepare_ocp(
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
-        custom_multinode_constraint,
+        multinode_constraint=MultinodeConstraintFcn.CUSTOM,
+        custom_function=custom_multinode_constraint,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.MID,

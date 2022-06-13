@@ -6,6 +6,7 @@ import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
+from .multinode_constraint import MultinodeConstraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
@@ -13,7 +14,7 @@ from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.options import UniquePerPhaseOptionList
 
 
-class PhaseTransition(MultinodePenalty):
+class PhaseTransition(MultinodeConstraint):
     """
     A placeholder for a transition of state
 
@@ -64,7 +65,7 @@ class PhaseTransition(MultinodePenalty):
             phase_second_idx=None,
             first_node=Node.END,
             second_node=Node.START,
-            multinode_penalty=transition,
+            multinode_constraint=transition,
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
@@ -170,7 +171,9 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(transition, all_pn):
+        def continuous(
+            transition, all_pn, **ignore
+        ):  # complains about having unexpected keyword argument 'phase_first_idx' otherwise
             """
             The most common continuity function, that is state before equals state after
 
@@ -189,7 +192,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return MultinodePenaltyFunctions.Functions.equality(transition, all_pn)
 
         @staticmethod
-        def cyclic(transition, all_pn) -> MX:
+        def cyclic(transition, all_pn, **ignore) -> MX:
             """
             The continuity function applied to the last to first node
 
@@ -208,7 +211,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return MultinodePenaltyFunctions.Functions.equality(transition, all_pn)
 
         @staticmethod
-        def impact(transition, all_pn):
+        def impact(transition, all_pn, **ignore):
             """
             A discontinuous function that simulates an inelastic impact of a new contact point
 

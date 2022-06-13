@@ -2,10 +2,11 @@ from typing import Callable, Union, Any
 
 from .constraints import Constraint
 from ..misc.enums import Node
+from .penalty_node import PenaltyNodeList
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFcn
 
 
-class MultinodeConstraint(MultinodePenalty, Constraint):  # call MultinodePenalty methods first
+class MultinodeConstraint(Constraint, MultinodePenalty):
     """
     A placeholder for a multi node constraints
 
@@ -49,7 +50,6 @@ class MultinodeConstraint(MultinodePenalty, Constraint):  # call MultinodePenalt
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
-        weight: float = 0,
         **params: Any,
     ):
         """
@@ -70,9 +70,44 @@ class MultinodeConstraint(MultinodePenalty, Constraint):  # call MultinodePenalt
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
-            weight=weight,
             **params,
         )
+        MultinodePenalty.__init__(
+            self,
+            phase_first_idx=phase_first_idx,
+            phase_second_idx=phase_second_idx,
+            first_node=first_node,
+            second_node=second_node,
+            multinode_penalty=multinode_constraint,
+            constraint=multinode_constraint,
+            custom_function=custom_function,
+            min_bound=min_bound,
+            max_bound=max_bound,
+            **params,
+        )
+
+    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
+        ocp = all_pn[0].ocp
+        nlp = all_pn[0].nlp
+
+        pool = nlp.g_internal if nlp else ocp.g_internal
+        pool[self.list_index] = self
+
+    def clear_penalty(self, ocp, nlp):
+        g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
+
+        if self.list_index < 0:
+            for i, j in enumerate(g_to_add_to):
+                if not j:
+                    self.list_index = i
+                    return
+            else:
+                g_to_add_to.append([])
+                self.list_index = len(g_to_add_to) - 1
+        else:
+            while self.list_index >= len(g_to_add_to):
+                g_to_add_to.append([])
+            g_to_add_to[self.list_index] = []
 
 
 class MultinodeConstraintList(MultinodePenaltyList):
@@ -105,7 +140,7 @@ class MultinodeConstraintList(MultinodePenaltyList):
             extra_arguments["custom_function"] = multinode_constraint
             multinode_constraint = MultinodeConstraintFcn.CUSTOM
         super(MultinodeConstraintList, self)._add(
-            option_type=MultinodeConstraint, multinode_penalty=multinode_constraint, phase=-1, **extra_arguments
+            option_type=MultinodeConstraint, multinode_constraint=multinode_constraint, phase=-1, **extra_arguments
         )
 
 

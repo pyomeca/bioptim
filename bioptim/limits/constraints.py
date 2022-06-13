@@ -6,6 +6,7 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
+from .multinode_penalty import MultinodePenaltyFcn
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.options import OptionList
@@ -30,6 +31,7 @@ class Constraint(PenaltyOption):
         max_bound: Union[np.ndarray, float] = None,
         quadratic: bool = False,
         phase: int = -1,
+        custom_function: Callable = None,
         **params: Any,
     ):
         """
@@ -48,10 +50,10 @@ class Constraint(PenaltyOption):
         params:
             Generic parameters for options
         """
-        custom_function = None
-        if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn)):
-            custom_function = constraint
-            constraint = ConstraintFcn.CUSTOM
+        # custom_function = None
+        # if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn, MultinodePenaltyFcn)):
+        #     custom_function = constraint
+        #     constraint = ConstraintFcn.CUSTOM
 
         super(Constraint, self).__init__(
             penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params
