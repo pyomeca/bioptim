@@ -114,7 +114,7 @@ def main():
 
     sol = ocp.solve()
 
-    sol.print()
+    sol.print_cost()
     sol.animate()
 
 
