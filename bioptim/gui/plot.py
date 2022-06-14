@@ -369,7 +369,8 @@ class PlotOcp:
                 else:
                     nb = max(
                         [
-                            len(nlp.plot[variable].phase_mappings.map_idx) if variable in nlp.plot else 0 for nlp in self.ocp.nlp
+                            len(nlp.plot[variable].phase_mappings.map_idx) if variable in nlp.plot else 0
+                            for nlp in self.ocp.nlp
                         ]
                     )
                     n_cols, n_rows = PlotOcp._generate_windows_size(nb)
@@ -497,8 +498,12 @@ class PlotOcp:
                             ns = nlp.ns
                         nlp.plot[variable].bounds.check_and_adjust_dimensions(n_elements=len(mapping), n_shooting=ns)
                         if j in mapping:
-                            bounds_min = np.array([nlp.plot[variable].bounds.min.evaluate_at(k)[mapping_idx] for k in range(ns + 1)])
-                            bounds_max = np.array([nlp.plot[variable].bounds.max.evaluate_at(k)[mapping_idx] for k in range(ns + 1)])
+                            bounds_min = np.array(
+                                [nlp.plot[variable].bounds.min.evaluate_at(k)[mapping_idx] for k in range(ns + 1)]
+                            )
+                            bounds_max = np.array(
+                                [nlp.plot[variable].bounds.max.evaluate_at(k)[mapping_idx] for k in range(ns + 1)]
+                            )
                             if bounds_min.shape[0] == nlp.ns:
                                 bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
                                 bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))

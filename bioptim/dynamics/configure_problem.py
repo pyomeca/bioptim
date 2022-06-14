@@ -78,16 +78,31 @@ class ConfigureProblem:
         else:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
-                if nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot" or nlp.model.nameDof()[i].to_string()[-6:-1] == "Trans":
+                if (
+                    nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot"
+                    or nlp.model.nameDof()[i].to_string()[-6:-1] == "Trans"
+                ):
                     new_name += [nlp.model.nameDof()[i].to_string()]
                 else:
                     if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
                         if type == "qdot":
-                            new_name += [nlp.model.nameDof()[i].to_string()[:-5] + "omega" + nlp.model.nameDof()[i].to_string()[-1]]
+                            new_name += [
+                                nlp.model.nameDof()[i].to_string()[:-5]
+                                + "omega"
+                                + nlp.model.nameDof()[i].to_string()[-1]
+                            ]
                         elif type == "qddot":
-                            new_name += [nlp.model.nameDof()[i].to_string()[:-5] + "omegadot" + nlp.model.nameDof()[i].to_string()[-1]]
+                            new_name += [
+                                nlp.model.nameDof()[i].to_string()[:-5]
+                                + "omegadot"
+                                + nlp.model.nameDof()[i].to_string()[-1]
+                            ]
                         elif type == "qdddot":
-                            new_name += [nlp.model.nameDof()[i].to_string()[:-5] + "omegaddot" + nlp.model.nameDof()[i].to_string()[-1]]
+                            new_name += [
+                                nlp.model.nameDof()[i].to_string()[:-5]
+                                + "omegaddot"
+                                + nlp.model.nameDof()[i].to_string()[-1]
+                            ]
                         elif type == "tau" or type == "taudot":
                             new_name += [nlp.model.nameDof()[i].to_string()]
 
@@ -674,9 +689,7 @@ class ConfigureProblem:
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
 
-        legend = [
-            f"{name}_{name_elements[idx]}" for idx in range(len(name_elements)) if idx is not None
-        ]
+        legend = [f"{name}_{name_elements[idx]}" for idx in range(len(name_elements)) if idx is not None]
 
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
@@ -811,7 +824,9 @@ class ConfigureProblem:
         name_tau = ConfigureProblem._modifying_variable_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_tau, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_tau, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
+        )
 
     @staticmethod
     def append_faked_optim_var(name, optim_var, keys: list):
@@ -958,6 +973,7 @@ class ConfigureProblem:
             double_mapping = nlp.phase_mapping.map_idx
         axes_idx = Mapping(double_mapping)
         return axes_idx
+
 
 class DynamicsFcn(Enum):
     """
