@@ -614,6 +614,7 @@ class ConfigureProblem:
         combine_name: str = None,
         combine_state_control_plot: bool = False,
         skip_plot: bool = False,
+        axes_idx: Mapping = None,
     ):
         """
         Add a new variable to the states/controls pool
@@ -670,8 +671,8 @@ class ConfigureProblem:
         mx_states = vertcat(*mx_states)
         mx_controls = vertcat(*mx_controls)
 
-        double_mapping = [nlp.phase_mapping.map_idx.index(nlp.variable_mappings[name].to_first.map_idx[i]) for i in range(len(nlp.variable_mappings[name].to_first.map_idx))]
-        phase_mappings = Mapping(double_mapping)
+        if not axes_idx:
+            axes_idx = Mapping(range(len(name_elements)))
 
         legend = [
             f"{name}_{name_elements[idx]}" for idx in range(len(name_elements)) if idx is not None
@@ -686,7 +687,7 @@ class ConfigureProblem:
                 nlp.plot[f"{name}_states"] = CustomPlot(
                     lambda t, x, u, p: x[nlp.states[name].index, :],
                     plot_type=PlotType.INTEGRATED,
-                    axes_idx=phase_mappings,
+                    axes_idx=axes_idx,
                     legend=legend,
                     combine_to=combine_name,
                 )
@@ -701,7 +702,7 @@ class ConfigureProblem:
                 nlp.plot[f"{name}_controls"] = CustomPlot(
                     lambda t, x, u, p: u[nlp.controls[name].index, :],
                     plot_type=plot_type,
-                    axes_idx=phase_mappings,
+                    axes_idx=axes_idx,
                     legend=legend,
                     combine_to=f"{name}_states" if as_states and combine_state_control_plot else combine_name,
                 )
@@ -721,8 +722,10 @@ class ConfigureProblem:
             If the generalized coordinates should be a control
         """
 
+        name = "q"
         name_q = [name.to_string() for name in nlp.model.nameDof()]
-        ConfigureProblem.configure_new_variable("q", name_q, nlp, as_states, as_controls)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_q, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qdot(nlp, as_states: bool, as_controls: bool):
@@ -739,9 +742,11 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name_qdot = ConfigureProblem._modifying_variable_names(nlp, "qdot")
-        ConfigureProblem._adjust_mapping("qdot", ["q", "qdot", "taudot"], nlp)
-        ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
+        name = "qdot"
+        name_qdot = ConfigureProblem._modifying_variable_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "taudot"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_qdot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qddot(nlp, as_states: bool, as_controls: bool):
@@ -758,9 +763,11 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name_qddot = ConfigureProblem._modifying_variable_names(nlp, "qddot")
-        ConfigureProblem._adjust_mapping("qddot", ["q", "qdot"], nlp)
-        ConfigureProblem.configure_new_variable("qddot", name_qddot, nlp, as_states, as_controls)
+        name = "qddot"
+        name_qddot = ConfigureProblem._modifying_variable_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["q", "qdot"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_qddot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qdddot(nlp, as_states: bool, as_controls: bool):
@@ -777,9 +784,11 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name_qdddot = ConfigureProblem._modifying_variable_names(nlp, "qdddot")
-        ConfigureProblem._adjust_mapping("qdddot", ["q", "qdot", "qddot"], nlp)
-        ConfigureProblem.configure_new_variable("qdddot", name_qdddot, nlp, as_states, as_controls)
+        name = "qdddot"
+        name_qdddot = ConfigureProblem._modifying_variable_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "qddot"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_qdddot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_tau(nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
@@ -798,9 +807,11 @@ class ConfigureProblem:
             If the dynamics with fatigue should be declared
         """
 
-        name_tau = ConfigureProblem._modifying_variable_names(nlp, "tau")
-        ConfigureProblem._adjust_mapping("tau", ["qdot", "taudot"], nlp)
-        ConfigureProblem.configure_new_variable("tau", name_tau, nlp, as_states, as_controls, fatigue=fatigue)
+        name = "tau"
+        name_tau = ConfigureProblem._modifying_variable_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_tau, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx)
 
     @staticmethod
     def append_faked_optim_var(name, optim_var, keys: list):
@@ -842,9 +853,11 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_taudot = ConfigureProblem._modifying_variable_names(nlp, "taudot")
-        ConfigureProblem._adjust_mapping("taudot", ["qdot", "tau"], nlp)
-        ConfigureProblem.configure_new_variable("taudot", name_taudot, nlp, as_states, as_controls)
+        name = "taudot"
+        name_taudot = ConfigureProblem._modifying_variable_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["qdot", "tau"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_taudot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
@@ -935,6 +948,16 @@ class ConfigureProblem:
                     return
             raise RuntimeError("Could not adjust mapping with the reference_keys provided")
 
+    @staticmethod
+    def _apply_phase_mapping(nlp, name):
+        if name in nlp.variable_mappings.keys():
+            double_mapping = nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.map_idx).T.tolist()[0]
+            double_mapping = [int(double_mapping[i]) for i in range(len(double_mapping))]
+            # double_mapping = [nlp.phase_mapping.map_idx.index(nlp.variable_mappings[name].to_first.map_idx[i]) for i in range(len(nlp.variable_mappings[name].to_first.map_idx))]
+        else:
+            double_mapping = nlp.phase_mapping.map_idx
+        axes_idx = Mapping(double_mapping)
+        return axes_idx
 
 class DynamicsFcn(Enum):
     """

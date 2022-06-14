@@ -389,20 +389,7 @@ class OptimalControlProgram:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
         NLP.add(self, "plot_mapping", reshaped_plot_mappings, False, name="plot_mapping")
 
-        dof_names_all_phases = []
-        phase_mappings = [[] for _ in range(len(self.nlp))]
-        dof_names = [[] for _ in range(len(self.nlp))]
-        for i, nlp_ in enumerate(self.nlp):
-            current_dof_mapping = []
-            for j in range(nlp_.model.nbQ()):
-                legend = nlp_.model.nameDof()[j].to_string()
-                if legend in dof_names_all_phases:
-                    current_dof_mapping += [dof_names_all_phases.index(legend)]
-                else:
-                    dof_names_all_phases += [legend]
-                    current_dof_mapping += [len(dof_names_all_phases) - 1]
-            phase_mappings[i] = Mapping(current_dof_mapping)
-            dof_names[i] = [dof_names_all_phases[i] for i in phase_mappings[i].map_idx]
+        phase_mappings, dof_names = self._set_kinematic_phase_mapping()
         NLP.add(self, "phase_mapping", phase_mappings, True)
         NLP.add(self, "dof_names", dof_names, True)
 
@@ -459,6 +446,23 @@ class OptimalControlProgram:
 
         # Prepare objectives
         self.update_objectives(objective_functions)
+
+    def _set_kinematic_phase_mapping(self):
+        dof_names_all_phases = []
+        phase_mappings = []  # [[] for _ in range(len(self.nlp))]
+        dof_names = []  # [[] for _ in range(len(self.nlp))]
+        for i, nlp_ in enumerate(self.nlp):
+            current_dof_mapping = []
+            for j in range(nlp_.model.nbQ()):
+                legend = nlp_.model.nameDof()[j].to_string()
+                if legend in dof_names_all_phases:
+                    current_dof_mapping += [dof_names_all_phases.index(legend)]
+                else:
+                    dof_names_all_phases += [legend]
+                    current_dof_mapping += [len(dof_names_all_phases) - 1]
+            phase_mappings.append(Mapping(current_dof_mapping))
+            dof_names.append([dof_names_all_phases[i] for i in phase_mappings[i].map_idx])
+        return phase_mappings, dof_names
 
     def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
         """
