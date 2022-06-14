@@ -54,9 +54,6 @@ class MultinodePenalty:
         first_node: Union[Node, int],
         second_node: Union[Node, int],
         multinode_penalty: Union[Callable, Any] = None,
-        custom_function: Callable = None,
-        min_bound: float = 0,
-        max_bound: float = 0,
         **params: Any,
     ):
         """
@@ -90,12 +87,7 @@ class MultinodePenalty:
                 raise NotImplementedError(
                     "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
                 )
-        self.min_bound = min_bound
-        self.max_bound = max_bound
-        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
-        self.multinode_penalty = True
-        self.quadratic = True
         self.phase_first_idx = phase_first_idx
         self.phase_second_idx = phase_second_idx
         self.phase_pre_idx = phase_first_idx
@@ -103,7 +95,6 @@ class MultinodePenalty:
         self.first_node = first_node
         self.second_node = second_node
         self.node = self.first_node, self.second_node
-        self.dt = 1
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL
 
