@@ -73,8 +73,12 @@ class ConfigureProblem:
     @staticmethod
     def _modifying_variable_names(nlp, type):
 
+        if hasattr(nlp, "phase_mapping"):
+            idx = nlp.phase_mapping.map_idx
+        else:
+            idx = range(nlp.model.nbQ())
         if nlp.model.nbQuat() == 0:
-            new_name = [nlp.model.nameDof()[i].to_string() for i in nlp.phase_mapping.map_idx]
+            new_name = [nlp.model.nameDof()[i].to_string() for i in idx]
         else:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
@@ -965,13 +969,16 @@ class ConfigureProblem:
 
     @staticmethod
     def _apply_phase_mapping(nlp, name):
-        if name in nlp.variable_mappings.keys():
-            double_mapping = nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.map_idx).T.tolist()[0]
-            double_mapping = [int(double_mapping[i]) for i in range(len(double_mapping))]
-            # double_mapping = [nlp.phase_mapping.map_idx.index(nlp.variable_mappings[name].to_first.map_idx[i]) for i in range(len(nlp.variable_mappings[name].to_first.map_idx))]
+        if hasattr(nlp, "phase_mapping"):
+            if name in nlp.variable_mappings.keys():
+                double_mapping = nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.map_idx).T.tolist()[0]
+                double_mapping = [int(double_mapping[i]) for i in range(len(double_mapping))]
+                # double_mapping = [nlp.phase_mapping.map_idx.index(nlp.variable_mappings[name].to_first.map_idx[i]) for i in range(len(nlp.variable_mappings[name].to_first.map_idx))]
+            else:
+                double_mapping = nlp.phase_mapping.map_idx
+            axes_idx = Mapping(double_mapping)
         else:
-            double_mapping = nlp.phase_mapping.map_idx
-        axes_idx = Mapping(double_mapping)
+            axes_idx = None
         return axes_idx
 
 
