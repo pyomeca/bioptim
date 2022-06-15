@@ -156,6 +156,7 @@ def prepare_ocp(
         constraints,
         multinode_constraints=multinode_constraints,
         ode_solver=ode_solver,
+        continuity_as_objective=True,
     )
 
 
