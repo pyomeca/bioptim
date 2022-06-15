@@ -648,7 +648,6 @@ class PenaltyOption(OptionGeneric):
             all_pn = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, all_pn)
             self.clear_penalty(all_pn.ocp, all_pn.nlp)
-            print(penalty_type)
             self.dt = penalty_type.get_dt(all_pn.nlp)
             self.node_idx = (
                 all_pn.t[:-1]
