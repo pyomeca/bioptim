@@ -170,9 +170,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(
-            transition, all_pn
-        ):  # complains about having unexpected keyword argument 'phase_first_idx' otherwise
+        def continuous(transition, all_pn):
             """
             The most common continuity function, that is state before equals state after
 
