@@ -442,7 +442,7 @@ class ObjectiveFcn:
             return ObjectiveFunction.ParameterFunction
 
 
-class ObjectiveContinuityFunctions:
+class ContinuityObjectiveFunctions:
     """
     Interface between continuity and objective
     """

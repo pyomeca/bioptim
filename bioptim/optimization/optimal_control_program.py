@@ -25,11 +25,11 @@ from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
     Constraint,
-    ConstraintContinuityFunctions,
+    ContinuityConstraintFunctions,
 )
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import MultinodeConstraintList
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectiveContinuityFunctions
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
@@ -431,10 +431,10 @@ class OptimalControlProgram:
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity and continuity_as_objective:
             # Inner- and inter-phase continuity
-            ObjectiveContinuityFunctions.continuity(self)
+            ContinuityObjectiveFunctions.continuity(self)
         if not skip_continuity:
             # Inner- and inter-phase continuity
-            ConstraintContinuityFunctions.continuity(self)
+            ContinuityConstraintFunctions.continuity(self)
 
         self.isdef_x_init = False
         self.isdef_u_init = False
