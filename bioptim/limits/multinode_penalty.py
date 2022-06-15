@@ -89,7 +89,9 @@ class MultinodePenalty:
                     "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
                 )
 
-        self.multinode_penalty = multinode_penalty  # yet another reason to have user pass CUSTOM and custom_function himself
+        # yet another reason to have user pass CUSTOM and custom_function himself, was broken when inheritence
+        # of PenaltyOption was removed
+        self.multinode_penalty = multinode_penalty
         self.phase_first_idx = phase_first_idx
         self.phase_second_idx = phase_second_idx
         self.phase_pre_idx = phase_first_idx
