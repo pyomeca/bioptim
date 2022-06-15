@@ -19,8 +19,6 @@ class MultinodeObjective(Objective, MultinodePenalty):
         second_node: Union[Node, int],
         multinode_objective: Union[Callable, Any] = None,
         custom_function: Callable = None,
-        min_bound: float = 0,
-        max_bound: float = 0,
         weight: float = 0,
         **params: Any,
     ):
@@ -33,16 +31,19 @@ class MultinodeObjective(Objective, MultinodePenalty):
             Generic parameters for options
         """
         super(MultinodeObjective, self).__init__(
+            multinode_penalty=multinode_objective,
+            objective=multinode_objective,
+            custom_function=custom_function,
+            weight=weight,
+            **params,
+        )
+        MultinodePenalty.__init__(
+            self,
             phase_first_idx=phase_first_idx,
             phase_second_idx=phase_second_idx,
             first_node=first_node,
             second_node=second_node,
             multinode_penalty=multinode_objective,
-            objective=multinode_objective,
-            custom_function=custom_function,
-            min_bound=min_bound,
-            max_bound=max_bound,
-            weight=weight,
             **params,
         )
 
@@ -96,9 +97,9 @@ class MultinodeObjectiveList(MultinodePenaltyList):
             Any parameters to pass to Penalty
         """
 
-        if not isinstance(multinode_objective, MultinodePenaltyFcn):
-            extra_arguments["custom_function"] = multinode_objective
-            multinode_objective = MultinodePenaltyFcn.CUSTOM
+        # if not isinstance(multinode_objective, MultinodePenaltyFcn):  # could be removed
+        #     extra_arguments["custom_function"] = multinode_objective
+        #     multinode_objective = MultinodePenaltyFcn.CUSTOM
         super(MultinodeObjectiveList, self)._add(
             option_type=MultinodeObjective, multinode_objective=multinode_objective, phase=-1, **extra_arguments
         )

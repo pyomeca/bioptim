@@ -288,9 +288,9 @@ class ObjectiveFunction:
         # Dynamics must be sound within phases
         for i, nlp in enumerate(ocp.nlp):
             penalty = Objective(
-                ObjectiveFcn.CONTINUITY,
+                ObjectiveFcn.Lagrange.CONTINUITY,
                 node=Node.ALL_SHOOTING,
-                objective_type=PenaltyType.INTERNAL,  # TODO: objective type
+                penalty_type=PenaltyType.INTERNAL,
             )
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
