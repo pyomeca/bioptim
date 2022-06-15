@@ -155,7 +155,7 @@ class PenaltyOption(OptionGeneric):
         self.target = None
         if target is not None:
             target = np.array(target)
-            if isinstance(target, int) or isinstance(target, float) or isinstance(target, np.ndarray):
+            if isinstance(target, int) or isinstance(target, float) or isinstance(target, np.ndarray):  # won't it always be true?
                 target = [target]
             self.target = []
             for t in target:
@@ -648,6 +648,7 @@ class PenaltyOption(OptionGeneric):
             all_pn = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, all_pn)
             self.clear_penalty(all_pn.ocp, all_pn.nlp)
+            print(penalty_type)
             self.dt = penalty_type.get_dt(all_pn.nlp)
             self.node_idx = (
                 all_pn.t[:-1]

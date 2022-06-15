@@ -65,16 +65,17 @@ class MultinodePenalty:
             Generic parameters for options
         """
 
-        force_multinode = False
-        if "force_multinode" in params:
-            # This is a hack to circumvent the apparatus that moves the functions to a custom function
-            # It is necessary for PhaseTransition
-            force_multinode = True
-            del params["force_multinode"]
+        # force_multinode = False
+        # if "force_multinode" in params:
+        #     # This is a hack to circumvent the apparatus that moves the functions to a custom function
+        #     # It is necessary for PhaseTransition
+        #     # TODO: and what if force_multinode=False was passed... yet another argument to change the interface.
+        #     force_multinode = True
+        #     del params["force_multinode"]
 
-        if not isinstance(multinode_penalty, MultinodePenaltyFcn) and not force_multinode:
-            custom_function = multinode_penalty
-            multinode_penalty = MultinodePenaltyFcn.CUSTOM
+        # if not isinstance(multinode_penalty, MultinodePenaltyFcn):# and not force_multinode:
+        #     custom_function = multinode_penalty
+        #     multinode_penalty = MultinodePenaltyFcn.CUSTOM
         # super(PenaltyOption, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **params)
 
         if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
@@ -88,6 +89,7 @@ class MultinodePenalty:
                     "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
                 )
 
+        self.multinode_penalty = multinode_penalty  # yet another reason to have user pass CUSTOM and custom_function himself
         self.phase_first_idx = phase_first_idx
         self.phase_second_idx = phase_second_idx
         self.phase_pre_idx = phase_first_idx
@@ -100,6 +102,7 @@ class MultinodePenalty:
 
     # they are almost copy pasted directly in Multinode(Constraint|Objective), are they still really relevent?
     # I don't see how to generalize them without reference to child classes, more so if I remove self.weight.
+    # this one should never be called
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
@@ -351,6 +354,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
             return multinode_penalty.custom_function(multinode_penalty, nlp_pre, nlp_post, **extra_params)
+
+    @staticmethod
+    def get_dt(_):
+        return 1
 
 
 class MultinodePenaltyFcn(Enum):
