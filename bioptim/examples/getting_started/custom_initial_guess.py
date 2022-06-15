@@ -14,6 +14,7 @@ InterpolationType.SPLINE: The values are interpolated from the first to last nod
 InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
+from typing import Union
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -30,6 +31,7 @@ from bioptim import (
     InitialGuess,
     InterpolationType,
     OdeSolver,
+    # Noise,
 )
 
 
@@ -55,11 +57,68 @@ def custom_init_func(current_shooting_point: int, my_values: np.ndarray, n_shoot
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / n_shooting
 
+def generate_random_initial_guess(bounds: Bounds,
+                                  scaling: Union[int, list],
+                                  n_element: int,
+                                  n_shooting: int,
+                                  unnoised_initial_guess: np.ndarray=None):
+    """
+    Generate a normally distributed random initial guess of amplitude scaling and centered in the middle of the range
+    defined in bounds of on the user provided initial guess (unnoised_initial_guess)
+
+    Parameters
+    ----------
+    bounds: Bounds
+        The bounds between which the initial guess must stay
+    scaling: int or list
+        The amplitude of the gaussian noise generated
+    n_elements: int
+        Number of elements to be intialized
+    n_shooting: int
+        Number of points to be initalized per element
+    unnoised_initial_guess: np.ndarray
+        The user provided initial guess on which the noise will be centered
+    """
+
+    def bounds_evaluate_at(bounds, n_element, n_shooting):
+        bounds_min_matrix = np.zeros((n_element, n_shooting))
+        bounds_max_matrix = np.zeros((n_element, n_shooting))
+        for i in range(n_shooting):
+            if bounds.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+                if i == 0:
+                    bounds_min_matrix[:, i] = bounds.min[:, 0]
+                    bounds_max_matrix[:, i] = bounds.max[:, 0]
+                elif i == n_element:
+                    bounds_min_matrix[:, i] = bounds.min[:, 1]
+                    bounds_max_matrix[:, i] = bounds.max[:, 1]
+                else:
+                    bounds_min_matrix[:, i] = bounds.min[:, 2]
+                    bounds_max_matrix[:, i] = bounds.max[:, 2]
+        return bounds_min_matrix, bounds_max_matrix
+
+    bound_push = 0.1
+
+    if bounds.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+        bounds_min_matrix, bounds_max_matrix = bounds_evaluate_at(bounds, n_element, n_shooting)
+
+    if not unnoised_initial_guess:
+        unnoised_initial_guess = (bounds_min_matrix + bounds_max_matrix) / 2
+
+    noised_initial_guess = unnoised_initial_guess + np.random.random((n_element, n_shooting)) * scaling
+    for i in range(n_shooting):
+        too_small_index = np.where(noised_initial_guess[:, i] < bounds_min_matrix[:, i] + bound_push)
+        too_big_index = np.where(noised_initial_guess[:, i] > bounds_max_matrix[:, i] - bound_push)
+        noised_initial_guess[too_small_index, i] = bounds_min_matrix[too_small_index, i] + bound_push
+        noised_initial_guess[too_big_index, i] = bounds_max_matrix[too_big_index, i] - bound_push
+
+    return noised_initial_guess
+
 
 def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int,
     final_time: float,
+    automatic_random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
     ode_solver=OdeSolver.RK4(),
 ) -> OptimalControlProgram:
@@ -124,8 +183,12 @@ def prepare_ocp(
         x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
         u = np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T
     elif initial_guess == InterpolationType.EACH_FRAME:
-        x = np.random.random((nq + nqdot, n_shooting + 1))
-        u = np.random.random((ntau, n_shooting))
+        if automatic_random_init:
+            x = generate_random_initial_guess(x_bounds, 1, nq + nqdot, n_shooting+1)
+            u = generate_random_initial_guess(u_bounds, 1, ntau, n_shooting)
+        else:
+            x = np.random.random((nq + nqdot, n_shooting + 1))
+            u = np.random.random((ntau, n_shooting))
     elif initial_guess == InterpolationType.SPLINE:
         # Bound spline assume the first and last point are 0 and final respectively
         t = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
@@ -139,9 +202,10 @@ def prepare_ocp(
         extra_params_u = {"my_values": np.random.random((ntau, 2)), "n_shooting": n_shooting}
     else:
         raise RuntimeError("Initial guess not implemented yet")
-    x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
 
+    x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
     u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
+
     # ------------- #
 
     return OptimalControlProgram(
@@ -167,7 +231,7 @@ def main():
     sol = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
-        ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, initial_guess=initial_guess)
+        ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, automatic_random_init=True, initial_guess=initial_guess)
 
         sol = ocp.solve()
         print("\n")
