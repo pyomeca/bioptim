@@ -520,7 +520,6 @@ class ConfigureProblem:
     def _manage_fatigue_to_new_variable(
         name: str,
         name_elements: list,
-        ocp,
         nlp,
         as_states: bool,
         as_controls: bool,
