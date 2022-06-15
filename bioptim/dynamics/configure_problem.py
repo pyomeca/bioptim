@@ -283,6 +283,35 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
+    def joints_acceleration_driven(ocp, nlp):
+        """
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
+        TODO: proper doc
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        with_contact: bool
+            If the dynamic with contact should be used
+        implicit_dynamics: bool
+            If the implicit dynamic should be used
+        implicit_soft_contacts: bool
+            If the implicit soft contact dynamic should be used
+        """
+        ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
+        # Configure qddot joint
+        nb_root = nlp.model.nbRoot()
+        name_qddot_joint = [str(i + nb_root) for i in range(nlp.model.nbQddot() - nb_root)]
+        ConfigureProblem.configure_new_variable("qddot_joint", name_qddot_joint, nlp, as_states=False, as_controls=True)
+        ConfigureProblem.configure_dynamics_function(
+            ocp, nlp, DynamicsFunctions.joints_acceleration_driven, expand=False
+        )
+
+    @staticmethod
     def muscle_driven(
         ocp,
         nlp,
@@ -914,6 +943,7 @@ class DynamicsFcn(Enum):
     TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
     TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
+    JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)
     MUSCLE_DRIVEN = (ConfigureProblem.muscle_driven,)
     CUSTOM = (ConfigureProblem.custom,)
 

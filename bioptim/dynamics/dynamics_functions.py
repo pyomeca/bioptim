@@ -452,7 +452,7 @@ class DynamicsFunctions:
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 
     @staticmethod
-    def free_floating_base_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+    def joints_acceleration_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
         """
         Forward dynamics driven by joints accelerations of a free floating body.
 
