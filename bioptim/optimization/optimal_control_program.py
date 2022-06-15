@@ -448,6 +448,9 @@ class OptimalControlProgram:
         self.update_objectives(objective_functions)
 
     def _set_kinematic_phase_mapping(self):
+        """
+        To add phase_mapping for different kinematic number of states in the ocp
+        """
         dof_names_all_phases = []
         phase_mappings = []  # [[] for _ in range(len(self.nlp))]
         dof_names = []  # [[] for _ in range(len(self.nlp))]

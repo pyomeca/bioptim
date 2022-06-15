@@ -72,6 +72,9 @@ class ConfigureProblem:
 
     @staticmethod
     def _modifying_variable_names(nlp, type):
+        """
+        To modify the names of the variables added to the plots if there is quaternions
+        """
 
         if hasattr(nlp, "phase_mapping"):
             idx = nlp.phase_mapping.map_idx
