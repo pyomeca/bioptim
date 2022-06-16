@@ -25,6 +25,9 @@ from bioptim import (
     MultinodeConstraintList,
     MultinodeConstraintFcn,
     MultinodeConstraint,
+    MultinodeObjectiveList,
+    MultinodeObjectiveFcn,
+    MultinodeObjective,
     NonLinearProgram,
 )
 
@@ -84,9 +87,11 @@ def prepare_ocp(
         first_node=Node.START,
         second_node=Node.START,
     )
+
+    multinode_objectives = MultinodeObjectiveList()
     # Objectives with the weight as an argument
-    multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+    multinode_objectives.add(
+        MultinodeObjectiveFcn.EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=2,
@@ -94,8 +99,8 @@ def prepare_ocp(
         weight=2,
     )
     # Objectives with the weight as an argument
-    multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+    multinode_objectives.add(
+        MultinodeObjectiveFcn.EQUALITY,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.MID,
@@ -103,8 +108,8 @@ def prepare_ocp(
         weight=0.1,
     )
     # Objectives with the weight as an argument
-    multinode_constraints.add(
-        multinode_constraint=MultinodeConstraintFcn.CUSTOM,
+    multinode_objectives.add(
+        multinode_objective=MultinodeObjectiveFcn.CUSTOM,
         custom_function=custom_multinode_constraint,
         phase_first_idx=0,
         phase_second_idx=1,
@@ -155,6 +160,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         multinode_constraints=multinode_constraints,
+        multinode_objectives=multinode_objectives,
         ode_solver=ode_solver,
     )
 
