@@ -283,10 +283,10 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def joints_acceleration_driven(ocp, nlp):
+    def joints_acceleration_driven(ocp, nlp, implicit_dynamics: bool = False):
         """
-        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-        TODO: proper doc
+        Configure the dynamics for a joints acceleration driven program
+        (states are q and qdot, controls are qddot_joints)
 
         Parameters
         ----------
@@ -294,13 +294,12 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
         implicit_dynamics: bool
             If the implicit dynamic should be used
-        implicit_soft_contacts: bool
-            If the implicit soft contact dynamic should be used
         """
+        if implicit_dynamics:
+            raise NotImplementedError("Implicit dynamics not implemented yet.")
+
         ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
         # Configure qddot joint

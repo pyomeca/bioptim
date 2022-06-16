@@ -461,7 +461,9 @@ class DynamicsFunctions:
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 
     @staticmethod
-    def joints_acceleration_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+    def joints_acceleration_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool = False
+    ) -> MX:
         """
         Forward dynamics driven by joints accelerations of a free floating body.
 
@@ -475,12 +477,17 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
+        implicit_dynamics: bool
+            If implicit dynamics should be used
 
         Returns
         ----------
         MX.sym
             The derivative of states
         """
+        if implicit_dynamics:
+            raise NotImplementedError("Implicit dynamics not implemented yet.")
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
