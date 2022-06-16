@@ -343,6 +343,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_torque: bool = False,
         fatigue=None,
+        implicit_dynamics: bool = False,
     ) -> MX:
         """
         Forward dynamics driven by muscle.
@@ -363,6 +364,8 @@ class DynamicsFunctions:
             To define fatigue elements
         with_torque: bool
             If the dynamic should be added with residual torques
+        implicit_dynamics: bool
+            If the implicit dynamics should be used
 
         Returns
         ----------
@@ -400,11 +403,17 @@ class DynamicsFunctions:
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        dxdt = MX(nlp.states.shape, ddq.shape[1])
-        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-        dxdt[nlp.states["qdot"].index, :] = ddq
+        if implicit_dynamics:
+            ddq = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+            dxdt = MX(nlp.states.shape, 1)
+            dxdt[nlp.states["q"].index, :] = dq
+            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+        else:
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+            dxdt = MX(nlp.states.shape, ddq.shape[1])
+            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+            dxdt[nlp.states["qdot"].index, :] = ddq
 
         has_excitation = True if "muscles" in nlp.states else False
         if has_excitation:

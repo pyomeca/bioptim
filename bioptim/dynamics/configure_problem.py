@@ -319,6 +319,7 @@ class ConfigureProblem:
         fatigue: FatigueList = None,
         with_torque: bool = False,
         with_contact: bool = False,
+        implicit_dynamics: bool = False,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -341,6 +342,9 @@ class ConfigureProblem:
             If the dynamic should be added with residual torques
         with_contact: bool
             If the dynamic with contact should be used
+        implicit_dynamics: bool
+            If the implicit dynamic should be used
+
         """
 
         if fatigue is not None and "tau" in fatigue and not with_torque:
@@ -352,6 +356,15 @@ class ConfigureProblem:
             ConfigureProblem.configure_tau(nlp, False, True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(nlp, with_excitations, True, fatigue=fatigue)
 
+        if implicit_dynamics:
+            ConfigureProblem.configure_qddot(nlp, False, True)
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+            )
+
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -362,6 +375,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 fatigue=fatigue,
                 with_torque=with_torque,
+                implicit_dynamics=implicit_dynamics,
             )
 
         if with_contact:
