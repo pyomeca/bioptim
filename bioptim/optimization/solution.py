@@ -1178,7 +1178,14 @@ class Solution:
 
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
-                self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
+                self.detailed_cost += [
+                    {
+                        "name": penalty.name,
+                        "cost_value_weighted": val_weighted,
+                        "cost_value": val,
+                        "params": penalty.params,
+                    }
+                ]
                 if print_only_weighted:
                     print(f"{penalty.name}: {val_weighted}")
                 else:
