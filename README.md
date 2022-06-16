@@ -732,6 +732,14 @@ Please note, this dynamics is expected to be very slow to converge, if it ever d
 One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
 This has been shown to be more efficient and allows defining minimum torque.
 
+#### JOINTS_ACCELERATION_DRIVEN
+The joints acceleration defines the states (x) as *q* and *qdot* and the controls (u) as *qddot_joints*. The derivative of *q* is trivially *qdot*.
+The joints' acceleration *qddot_joints* is the acceleration of the actual joints of the `biorbs_model` without its root's joints.
+The model's root's joints acceleration *qddot_root* are computed by the `biorbd` function: `qddot_root = boirbd_model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)`.
+The derivative of *qdot* is the vertical stack of *qddot_root* and *qddot_joints*.
+
+This dynamic is suitable for bodies in free fall.
+
 #### MUSCLE_ACTIVATIONS_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the muscle activations. 
 The derivative of *q* is trivially *qdot*.
