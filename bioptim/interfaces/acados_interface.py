@@ -661,6 +661,7 @@ class AcadosInterface(SolverInterface):
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
             self.opts.set_only_first_options_has_changed(False)
             self.opts.set_has_tolerance_changed(False)
+
         else:
             if self.opts.only_first_options_has_changed:
                 raise RuntimeError(
