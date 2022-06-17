@@ -22,6 +22,7 @@ from ..misc.enums import (
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
+from ..dynamics.ode_solver import OdeSolver
 
 
 class Solution:
@@ -78,6 +79,10 @@ class Solution:
     @property
     states(self) -> Union[list, dict]
         Returns the state in list if more than one phases, otherwise it returns the only dict
+    @property
+    states_no_intermediate(self) -> Union[list, dict]
+        Returns the state in list if more than one phases, otherwise it returns the only dict
+        and removes the intermediate states if Collocation solver is used
     @property
     controls(self) -> Union[list, dict]
         Returns the controls in list if more than one phases, otherwise it returns the only dict
@@ -482,6 +487,28 @@ class Solution:
         """
 
         return self._states[0] if len(self._states) == 1 else self._states
+
+    @property
+    def states_no_intermediate(self) -> Union[list, dict]:
+        """
+        Returns the state in list if more than one phases, otherwise it returns the only dict
+        it removes the intermediate states in the case COLLOCATION Solver is used
+
+        Returns
+        -------
+        The states data without intermediate states in the case of collocation
+        """
+        states_no_intermediate = []
+        for i, nlp in enumerate(self.ocp.nlp):
+            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and not isinstance(nlp.ode_solver, OdeSolver.IRK):
+                states_no_intermediate.append(dict())
+                for key in self._states[i].keys():
+                    # keep one value each five values
+                    states_no_intermediate[i][key] = self._states[i][key][:, :: nlp.ode_solver.polynomial_degree + 1]
+            else:
+                states_no_intermediate.append(self._states[i])
+
+        return states_no_intermediate[0] if len(states_no_intermediate) == 1 else states_no_intermediate
 
     @property
     def controls(self) -> Union[list, dict]:
