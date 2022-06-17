@@ -72,7 +72,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.57063948309302)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.5010317,  0.6824593])
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.5010317, 0.6824593])
 
     elif isinstance(ode_solver, OdeSolver.IRK):
         np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
@@ -86,7 +86,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 46.667345680854794)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.1780507,  0.3254202])
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.1780507, 0.3254202])
 
     elif isinstance(ode_solver, OdeSolver.RK1):
         np.testing.assert_almost_equal(f[0, 0], 47.360621044913245)
@@ -107,7 +107,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.58259426)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.4961208,  0.6764171])
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.4961208, 0.6764171])
 
     # Check constraints
     g = np.array(sol.constraints)
