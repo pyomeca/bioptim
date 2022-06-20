@@ -71,7 +71,7 @@ class ConfigureProblem:
     """
 
     @staticmethod
-    def _modifying_variable_names(nlp, type):
+    def _get_kinematics_based_names(nlp, type):
         """
         To modify the names of the variables added to the plots if there is quaternions
         """
@@ -762,7 +762,7 @@ class ConfigureProblem:
         """
 
         name = "qdot"
-        name_qdot = ConfigureProblem._modifying_variable_names(nlp, name)
+        name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["q", "qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qdot, nlp, as_states, as_controls, axes_idx=axes_idx)
@@ -783,7 +783,7 @@ class ConfigureProblem:
         """
 
         name = "qddot"
-        name_qddot = ConfigureProblem._modifying_variable_names(nlp, name)
+        name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["q", "qdot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qddot, nlp, as_states, as_controls, axes_idx=axes_idx)
@@ -804,7 +804,7 @@ class ConfigureProblem:
         """
 
         name = "qdddot"
-        name_qdddot = ConfigureProblem._modifying_variable_names(nlp, name)
+        name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["q", "qdot", "qddot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qdddot, nlp, as_states, as_controls, axes_idx=axes_idx)
@@ -827,7 +827,7 @@ class ConfigureProblem:
         """
 
         name = "tau"
-        name_tau = ConfigureProblem._modifying_variable_names(nlp, name)
+        name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
@@ -875,7 +875,7 @@ class ConfigureProblem:
         """
 
         name = "taudot"
-        name_taudot = ConfigureProblem._modifying_variable_names(nlp, name)
+        name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["qdot", "tau"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(name, name_taudot, nlp, as_states, as_controls, axes_idx=axes_idx)
