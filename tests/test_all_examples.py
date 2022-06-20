@@ -331,8 +331,8 @@ def test__torque_driven_ocp__maximize_predicted_height_CoM():
     )
 
 
-def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds():
-    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_bounds as ocp_module
+def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping():
+    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -342,8 +342,8 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds()
     )
 
 
-def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping():
-    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
+def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds():
+    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_bounds as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
