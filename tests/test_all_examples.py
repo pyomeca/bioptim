@@ -341,6 +341,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds()
         biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
     )
 
+
 def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping():
     from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
 
@@ -349,6 +350,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
     ocp_module.prepare_ocp(
         biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
     )
+
 
 def test__torque_driven_ocp__spring_load():
     from bioptim.examples.torque_driven_ocp import spring_load as ocp_module

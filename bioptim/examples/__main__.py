@@ -112,8 +112,14 @@ examples_ = OrderedDict(
             OrderedDict(
                 [
                     ("Maximize predicted height CoM", "maximize_predicted_height_CoM.py"),
-                    ("phase transition uneven variable number by bounds", "phase_transition_uneven_variable_number_by_bounds.py"),
-                    ("phase transition uneven variable number by mapping", "phase_transition_uneven_variable_number_by_mapping.py"),
+                    (
+                        "phase transition uneven variable number by bounds",
+                        "phase_transition_uneven_variable_number_by_bounds.py",
+                    ),
+                    (
+                        "phase transition uneven variable number by mapping",
+                        "phase_transition_uneven_variable_number_by_mapping.py",
+                    ),
                     ("spring load", "spring_load.py"),
                     ("Track markers 2D pendulum", "track_markers_2D_pendulum.py"),
                     ("Track markers with torque actuators", "track_markers_with_torque_actuators.py"),
