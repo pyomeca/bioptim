@@ -389,7 +389,7 @@ class PlotOcp:
                     continue
 
                 mapping = nlp.plot[variable].phase_mappings.map_idx
-                for ctr, k in enumerate(mapping):
+                for ctr, _ in enumerate(mapping):
                     ax = axes[ctr]
                     if ctr < len(nlp.plot[variable].legend):
                         axes[ctr].set_title(nlp.plot[variable].legend[ctr])

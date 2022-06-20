@@ -76,7 +76,7 @@ class ConfigureProblem:
         To modify the names of the variables added to the plots if there is quaternions
         """
 
-        if hasattr(nlp, "phase_mapping"):
+        if nlp.phase_mapping:
             idx = nlp.phase_mapping.map_idx
         else:
             idx = range(nlp.model.nbQ())
@@ -971,11 +971,10 @@ class ConfigureProblem:
 
     @staticmethod
     def _apply_phase_mapping(nlp, name):
-        if hasattr(nlp, "phase_mapping"):
+        if nlp.phase_mapping:
             if name in nlp.variable_mappings.keys():
                 double_mapping = nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.map_idx).T.tolist()[0]
                 double_mapping = [int(double_mapping[i]) for i in range(len(double_mapping))]
-                # double_mapping = [nlp.phase_mapping.map_idx.index(nlp.variable_mappings[name].to_first.map_idx[i]) for i in range(len(nlp.variable_mappings[name].to_first.map_idx))]
             else:
                 double_mapping = nlp.phase_mapping.map_idx
             axes_idx = Mapping(double_mapping)
