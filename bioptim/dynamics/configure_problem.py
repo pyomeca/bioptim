@@ -302,10 +302,12 @@ class ConfigureProblem:
 
         ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
-        # Configure qddot joint
+        # Configure qddot joints
         nb_root = nlp.model.nbRoot()
-        name_qddot_joint = [str(i + nb_root) for i in range(nlp.model.nbQddot() - nb_root)]
-        ConfigureProblem.configure_new_variable("qddot_joint", name_qddot_joint, nlp, as_states=False, as_controls=True)
+        name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nbQddot() - nb_root)]
+        ConfigureProblem.configure_new_variable(
+            "qddot_joints", name_qddot_joints, nlp, as_states=False, as_controls=True
+        )
         ConfigureProblem.configure_dynamics_function(
             ocp, nlp, DynamicsFunctions.joints_acceleration_driven, expand=False
         )

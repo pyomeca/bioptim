@@ -491,9 +491,9 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        qddot_joints = DynamicsFunctions.get(nlp.states["qddot_joints"], controls)
+        qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
 
-        qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)
+        qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
 
         return qdot, vertcat(qddot_root, qddot_joints)
 
