@@ -838,6 +838,7 @@ class NoisedInitialGuess(InitialGuess):
         n_elements: int = None,
         n_shooting: int = None,
         bound_push: Union[list, int, float] = 0.1,
+        seed: int = None,
         **parameters: Any,
     ):
         """
@@ -889,6 +890,7 @@ class NoisedInitialGuess(InitialGuess):
         self.bounds.check_and_adjust_dimensions(n_elements, n_shooting)
 
         self.scaling = scaling
+        self.seed = seed
 
         self.bound_push = bound_push
 
@@ -917,6 +919,8 @@ class NoisedInitialGuess(InitialGuess):
                 initial_guess_matrix[:, shooting_point] = self.initial_guess.evaluate_at(shooting_point)
             self.initial_guess = InitialGuess(initial_guess_matrix, interpolation=InterpolationType.EACH_FRAME)
 
+        if self.seed:
+            np.random.seed(self.seed)
         self.noised_initial_guess = (
             self.initial_guess.init + np.random.random((self.n_elements, self.n_shooting)) * self.scaling
         )
