@@ -1119,9 +1119,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 def test_joints_acceleration_driven(cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod"
-    )
+    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
     nlp.ns = 5
     nlp.cx = cx
 
@@ -1142,10 +1140,7 @@ def test_joints_acceleration_driven(cx):
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
-    np.testing.assert_almost_equal(
-        x_out[:, 0],
-        [0.02058449, 0.18340451, -2.95556261, 0.61185289]
-    )
+    np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
 
 
 @pytest.mark.parametrize("with_contact", [False, True])
