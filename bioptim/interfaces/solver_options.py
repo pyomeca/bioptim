@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-
+from typing import Union
 from ..misc.enums import SolverType
 
 
@@ -365,6 +365,10 @@ class Solver:
             self._bound_push = val
             self._bound_frac = val
 
+        def set_option(self, val, name):
+            if f"_{name}" not in self.__dict__.keys():
+                self.__dict__[f"_{name}"] = val
+
         def as_dict(self, solver):
             solver_options = self.__dict__
             options = {}
@@ -454,6 +458,12 @@ class Solver:
         def set_qp_solver(self, val: str):
             self._qp_solver = val
             self.set_only_first_options_has_changed(True)
+
+        def set_option(self, val: Union[float, int, str], name: str):
+            if f"_{name}" not in self.__annotations__.keys():
+                self.__annotations__[f"_{name}"] = val
+                self.__setattr__(f"_{name}", val)
+                self.set_only_first_options_has_changed(True)
 
         @property
         def hessian_approx(self):
@@ -556,11 +566,13 @@ class Solver:
             self._nlp_solver_tol_stat = val
             self.set_has_tolerance_changed(True)
 
-        def set_convergence_tolerance(self, val: float):
-            self.set_nlp_solver_tol_eq(val)
-            self.set_nlp_solver_tol_ineq(val)
-            self.set_nlp_solver_tol_comp(val)
-            self.set_nlp_solver_tol_stat(val)
+        def set_convergence_tolerance(self, val: Union[float, int, list, tuple]):
+            if isinstance(val, (float, int)):
+                val = [val] * 4
+            self.set_nlp_solver_tol_eq(val[0])
+            self.set_nlp_solver_tol_ineq(val[1])
+            self.set_nlp_solver_tol_comp(val[2])
+            self.set_nlp_solver_tol_stat(val[3])
             self.set_has_tolerance_changed(True)
 
         def set_constraint_tolerance(self, val: float):
@@ -586,7 +598,7 @@ class Solver:
         def nlp_solver_max_iter(self):
             return self._nlp_solver_max_iter
 
-        def set_maximum_iterations(self, num):
+        def set_maximum_iterations(self, num: int):
             self._nlp_solver_max_iter = num
             self.set_only_first_options_has_changed(True)
 
@@ -606,7 +618,6 @@ class Solver:
                     options[key[1:]] = self.__getattribute__(key)
                 else:
                     options[key] = self.__getattribute__(key)
-
             return options
 
         @property
