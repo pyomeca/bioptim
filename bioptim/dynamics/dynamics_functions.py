@@ -463,7 +463,7 @@ class DynamicsFunctions:
     @staticmethod
     def joints_acceleration_driven(
         states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool = False
-    ) -> MX:
+    ) -> tuple[MX, MX]:
         """
         Forward dynamics driven by joints accelerations of a free floating body.
 
@@ -482,7 +482,7 @@ class DynamicsFunctions:
 
         Returns
         ----------
-        MX.sym
+        tuple[MX, MX]
             The derivative of states
         """
         if implicit_dynamics:
