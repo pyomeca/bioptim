@@ -814,8 +814,8 @@ class InitialGuess(OptionGeneric):
 
         self.init[_slice] = value
 
-class NoisedInitialGuess(InitialGuess):
 
+class NoisedInitialGuess(InitialGuess):
     def __init__(
         self,
         initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition] = None,
@@ -871,19 +871,31 @@ class NoisedInitialGuess(InitialGuess):
             bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
 
         if self.initial_guess == ():
-            self.initial_guess = InitialGuess((bounds_min_matrix + bounds_max_matrix) / 2, interpolation=InterpolationType.EACH_FRAME)
+            self.initial_guess = InitialGuess(
+                (bounds_min_matrix + bounds_max_matrix) / 2, interpolation=InterpolationType.EACH_FRAME
+            )
         else:
             initial_guess_matrix = np.zeros((self.n_elements, self.n_shooting))
             for shooting_point in range(self.n_shooting):
                 initial_guess_matrix[:, shooting_point] = self.initial_guess.evaluate_at(shooting_point)
             self.initial_guess = InitialGuess(initial_guess_matrix, interpolation=InterpolationType.EACH_FRAME)
 
-        self.noised_initial_guess = self.initial_guess.init + np.random.random((self.n_elements, self.n_shooting)) * self.scaling
+        self.noised_initial_guess = (
+            self.initial_guess.init + np.random.random((self.n_elements, self.n_shooting)) * self.scaling
+        )
         for shooting_point in range(self.n_shooting):
-            too_small_index = np.where(self.noised_initial_guess[:, shooting_point] < bounds_min_matrix[:, shooting_point] + self.bound_push)
-            too_big_index = np.where(self.noised_initial_guess[:, shooting_point] > bounds_max_matrix[:, shooting_point] - self.bound_push)
-            self.noised_initial_guess[too_small_index, shooting_point] = bounds_min_matrix[too_small_index, shooting_point] + self.bound_push
-            self.noised_initial_guess[too_big_index, shooting_point] = bounds_max_matrix[too_big_index, shooting_point] - self.bound_push
+            too_small_index = np.where(
+                self.noised_initial_guess[:, shooting_point] < bounds_min_matrix[:, shooting_point] + self.bound_push
+            )
+            too_big_index = np.where(
+                self.noised_initial_guess[:, shooting_point] > bounds_max_matrix[:, shooting_point] - self.bound_push
+            )
+            self.noised_initial_guess[too_small_index, shooting_point] = (
+                bounds_min_matrix[too_small_index, shooting_point] + self.bound_push
+            )
+            self.noised_initial_guess[too_big_index, shooting_point] = (
+                bounds_max_matrix[too_big_index, shooting_point] - self.bound_push
+            )
 
 
 class InitialGuessList(UniquePerPhaseOptionList):

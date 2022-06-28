@@ -35,7 +35,9 @@ from bioptim import (
 )
 
 
-def custom_init_func(current_shooting_point: int, my_values: np.ndarray, n_shooting_custom: int, **extra_params) -> np.ndarray:
+def custom_init_func(
+    current_shooting_point: int, my_values: np.ndarray, n_shooting_custom: int, **extra_params
+) -> np.ndarray:
     """
     The custom function for the x and u initial guesses (this particular one mimics linear interpolation)
 
@@ -144,13 +146,29 @@ def prepare_ocp(
         raise RuntimeError("Initial guess not implemented yet")
 
     if automatic_random_init:
-        x_init = NoisedInitialGuess(x, t=t, init_interpolation=initial_guess,
-                                    bounds=x_bounds, bound_t=None,
-                                    scaling=1, n_elements=nq+nqdot, n_shooting=n_shooting, bound_push=0.1,
-                                    **extra_params_x)
-        u_init = NoisedInitialGuess(u, t=t, init_interpolation=initial_guess,
-                                    bounds=u_bounds, bound_t=None, n_elements=ntau,
-                                    n_shooting=n_shooting-1, bound_push=0.1, **extra_params_u)
+        x_init = NoisedInitialGuess(
+            x,
+            t=t,
+            init_interpolation=initial_guess,
+            bounds=x_bounds,
+            bound_t=None,
+            scaling=1,
+            n_elements=nq + nqdot,
+            n_shooting=n_shooting,
+            bound_push=0.1,
+            **extra_params_x,
+        )
+        u_init = NoisedInitialGuess(
+            u,
+            t=t,
+            init_interpolation=initial_guess,
+            bounds=u_bounds,
+            bound_t=None,
+            n_elements=ntau,
+            n_shooting=n_shooting - 1,
+            bound_push=0.1,
+            **extra_params_u,
+        )
     else:
         x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
         u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
@@ -180,7 +198,9 @@ def main():
     sol = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
-        ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, automatic_random_init=True, initial_guess=initial_guess)
+        ocp = prepare_ocp(
+            "models/cube.bioMod", n_shooting=30, final_time=2, automatic_random_init=True, initial_guess=initial_guess
+        )
 
         sol = ocp.solve()
         print("\n")
