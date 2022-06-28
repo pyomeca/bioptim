@@ -1777,8 +1777,11 @@ The main goal of this kind of simulation, especially in single shooting (that is
 is to validate the dynamics of multiple shooting. If they both are equal, it usually means that a great confidence
 can be held in the solution. Another goal would be to reload fast a previously saved optimized solution.
 
+### The example_joints_acceleration_driven.py file
+This example shows how to use the joints acceleration dynamic to achieve the same goal as the simple pendulum, but with a double pendulum for which only the angular acceleration of the second pendulum is controled.
+
 ### The pendulum.py file
-This is another way to present the pendulum example of the 'Getting started' section. 
+This is another way to present the pendulum example of the 'Getting started' section.
 
 ## Muscle driven OCP
 In this file, you will find four examples about muscle driven optimal control programs. The two first refer to traking 
