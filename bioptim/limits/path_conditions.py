@@ -816,6 +816,19 @@ class InitialGuess(OptionGeneric):
 
 
 class NoisedInitialGuess(InitialGuess):
+    """
+    A placeholder for the noised initial guess
+
+    Attributes
+    ----------
+    init: InitialGuess
+        The noised initial guess
+
+    Methods
+    -------
+    create_noise_matrix(self)
+        Create the matrix of the initial guess + noise evaluated at each node
+    """
     def __init__(
         self,
         initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition] = None,
@@ -827,6 +840,28 @@ class NoisedInitialGuess(InitialGuess):
         bound_push: Union[list, int, float] = 0.1,
         **parameters: Any,
     ):
+        """
+        Parameters
+        ----------
+        initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition]
+            The initial guess
+        init_interpolation: InterpolationType
+            The type of interpolation of the initial guess
+        bounds: Union[Bounds, BoundsList, QAndQDotBounds]
+            The bounds
+        scaling: Union[list, int, float]
+            The scaling of the noised that must be applied between 0 and 1 (0 = no noise, 1 = gaussian noise with a
+            standard deviation of the size of the range defined between the bounds
+        n_elements: int
+            Number of elements (first dim)
+        n_shooting: int
+            Number of nodes (second dim)
+        bound_push: Union[list, int, float]
+            The absolute minimal distance between the bound and the noised initial guess (if the originally generated
+            initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push)
+        parameters: dict
+            Any extra parameters that is associated to the path condition
+        """
 
         super(NoisedInitialGuess, self).__init__(**parameters)
 
@@ -863,7 +898,9 @@ class NoisedInitialGuess(InitialGuess):
         self.type = InterpolationType.EACH_FRAME
 
     def create_noise_matrix(self):
-
+        """
+        Create the matrix of the initial guess + noise evaluated at each node
+        """
         bounds_min_matrix = np.zeros((self.n_elements, self.n_shooting))
         bounds_max_matrix = np.zeros((self.n_elements, self.n_shooting))
         for shooting_point in range(self.n_shooting):
