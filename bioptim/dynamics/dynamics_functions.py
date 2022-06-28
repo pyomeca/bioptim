@@ -463,7 +463,7 @@ class DynamicsFunctions:
     @staticmethod
     def joints_acceleration_driven(
         states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool = False
-    ) -> tuple[MX, MX]:
+    ) -> MX:
         """
         Forward dynamics driven by joints accelerations of a free floating body.
 
@@ -482,7 +482,7 @@ class DynamicsFunctions:
 
         Returns
         ----------
-        tuple[MX, MX]
+        MX.sym
             The derivative of states
         """
         if implicit_dynamics:
@@ -496,7 +496,7 @@ class DynamicsFunctions:
         qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
         qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
 
-        return qdot, vertcat(qddot_root_func(q, qdot, qddot_joints), qddot_joints)
+        return vertcat(qdot, vertcat(qddot_root_func(q, qdot, qddot_joints), qddot_joints))
 
     @staticmethod
     def get(var: OptimizationVariable, cx: Union[MX, SX]):
