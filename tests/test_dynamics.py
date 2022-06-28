@@ -1120,7 +1120,7 @@ def test_joints_acceleration_driven(cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
-        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/double_pendulum_with_translations.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -1144,8 +1144,7 @@ def test_joints_acceleration_driven(cx):
 
     np.testing.assert_almost_equal(
         x_out[:, 0],
-        [6.11852895e-01, 7.85175961e-01, 6.07544852e-01, 8.08397348e-01,
-         2.27932883e-01, - 1.11086129e+01, - 1.85958555e-03, 1.22038235e-01]
+        [0.02058449, 0.18340451, -2.95556261, 0.61185289]
     )
 
 
