@@ -814,6 +814,71 @@ class InitialGuess(OptionGeneric):
 
         self.init[_slice] = value
 
+class NoisedInitialGuess(InitialGuess):
+
+    def __init__(
+        self,
+        initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition] = None,
+        interpolation: InterpolationType = InterpolationType.CONSTANT,
+        bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
+        scaling: Union[list, int, float] = 1,
+        n_elements: int = None,
+        n_shooting: int = None,
+        bound_push: Union[list, int, float] = 0.1,
+        **parameters: Any,
+    ):
+
+        super(NoisedInitialGuess, self).__init__(**parameters)
+
+        initial_guess = initial_guess if initial_guess is not None else ()
+
+        if isinstance(initial_guess, PathCondition):
+            self.initial_guess = initial_guess
+        else:
+            self.initial_guess = PathCondition(initial_guess, interpolation=interpolation, **parameters)
+
+        self.type = interpolation
+        if bounds is None:
+            raise RuntimeError("bounds must be specified to generate noised initial guess")
+
+        self.bounds = bounds
+        self.bounds.check_and_adjust_dimensions(n_elements, n_shooting)
+
+        self.scaling = scaling
+
+        if n_elements is None:
+            raise RuntimeError("n_elements must be specified to generate noised initial guess")
+        self.n_elements = n_elements
+
+        if n_shooting is None:
+            raise RuntimeError("n_shooting must be specified to generate noised initial guess")
+        self.n_shooting = n_shooting
+
+        self.bound_push = bound_push
+
+        self.create_noise_matrix()
+        self.init = InitialGuess(self.noised_initial_guess, interpolation=InterpolationType.EACH_FRAME).init
+
+        self.type = InterpolationType.EACH_FRAME
+
+    def create_noise_matrix(self):
+
+        bounds_min_matrix = np.zeros((self.n_elements, self.n_shooting))
+        bounds_max_matrix = np.zeros((self.n_elements, self.n_shooting))
+        for shooting_point in range(self.n_shooting):
+            bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
+            bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
+
+        if self.initial_guess == ():
+            self.initial_guess = InitialGuess((bounds_min_matrix + bounds_max_matrix) / 2, interpolation=InterpolationType.EACH_FRAME)
+
+        self.noised_initial_guess = self.initial_guess + np.random.random((self.n_elements, self.n_shooting)) * self.scaling
+        for shooting_point in range(self.n_shooting):
+            too_small_index = np.where(self.noised_initial_guess[:, shooting_point] < bounds_min_matrix[:, shooting_point] + self.bound_push)
+            too_big_index = np.where(self.noised_initial_guess[:, shooting_point] > bounds_max_matrix[:, shooting_point] - self.bound_push)
+            self.noised_initial_guess[too_small_index, shooting_point] = bounds_min_matrix[too_small_index, shooting_point] + self.bound_push
+            self.noised_initial_guess[too_big_index, shooting_point] = bounds_max_matrix[too_big_index, shooting_point] - self.bound_push
+
 
 class InitialGuessList(UniquePerPhaseOptionList):
     """
