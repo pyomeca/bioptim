@@ -819,7 +819,7 @@ class NoisedInitialGuess(InitialGuess):
     def __init__(
         self,
         initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition] = None,
-        interpolation: InterpolationType = InterpolationType.CONSTANT,
+        init_interpolation: InterpolationType = InterpolationType.CONSTANT,
         bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
         scaling: Union[list, int, float] = 1,
         n_elements: int = None,
@@ -830,29 +830,30 @@ class NoisedInitialGuess(InitialGuess):
 
         super(NoisedInitialGuess, self).__init__(**parameters)
 
+        if n_elements is None:
+            raise RuntimeError("n_elements must be specified to generate noised initial guess")
+        self.n_elements = n_elements
+
+        self.type = init_interpolation
+
         initial_guess = initial_guess if initial_guess is not None else ()
 
         if isinstance(initial_guess, PathCondition):
             self.initial_guess = initial_guess
         else:
-            self.initial_guess = PathCondition(initial_guess, interpolation=interpolation, **parameters)
+            self.initial_guess = PathCondition(initial_guess, interpolation=init_interpolation, **parameters)
+        self.initial_guess.check_and_adjust_dimensions(n_elements, n_shooting, "InitialGuess")
 
-        self.type = interpolation
+        if n_shooting is None:
+            raise RuntimeError("n_shooting must be specified to generate noised initial guess")
+        self.n_shooting = n_shooting + 1
+
         if bounds is None:
             raise RuntimeError("bounds must be specified to generate noised initial guess")
-
         self.bounds = bounds
         self.bounds.check_and_adjust_dimensions(n_elements, n_shooting)
 
         self.scaling = scaling
-
-        if n_elements is None:
-            raise RuntimeError("n_elements must be specified to generate noised initial guess")
-        self.n_elements = n_elements
-
-        if n_shooting is None:
-            raise RuntimeError("n_shooting must be specified to generate noised initial guess")
-        self.n_shooting = n_shooting
 
         self.bound_push = bound_push
 
@@ -871,8 +872,13 @@ class NoisedInitialGuess(InitialGuess):
 
         if self.initial_guess == ():
             self.initial_guess = InitialGuess((bounds_min_matrix + bounds_max_matrix) / 2, interpolation=InterpolationType.EACH_FRAME)
+        else:
+            initial_guess_matrix = np.zeros((self.n_elements, self.n_shooting))
+            for shooting_point in range(self.n_shooting):
+                initial_guess_matrix[:, shooting_point] = self.initial_guess.evaluate_at(shooting_point)
+            self.initial_guess = InitialGuess(initial_guess_matrix, interpolation=InterpolationType.EACH_FRAME)
 
-        self.noised_initial_guess = self.initial_guess + np.random.random((self.n_elements, self.n_shooting)) * self.scaling
+        self.noised_initial_guess = self.initial_guess.init + np.random.random((self.n_elements, self.n_shooting)) * self.scaling
         for shooting_point in range(self.n_shooting):
             too_small_index = np.where(self.noised_initial_guess[:, shooting_point] < bounds_min_matrix[:, shooting_point] + self.bound_push)
             too_big_index = np.where(self.noised_initial_guess[:, shooting_point] > bounds_max_matrix[:, shooting_point] - self.bound_push)
