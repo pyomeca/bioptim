@@ -1,6 +1,6 @@
 from typing import Union
 
-from casadi import horzcat, vertcat, MX, SX
+from casadi import horzcat, vertcat, MX, SX, Function
 
 from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
@@ -494,8 +494,9 @@ class DynamicsFunctions:
         qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
 
         qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
+        qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
 
-        return qdot, vertcat(qddot_root, qddot_joints)
+        return qdot, vertcat(qddot_root_func(q, qdot, qddot_joints), qddot_joints)
 
     @staticmethod
     def get(var: OptimizationVariable, cx: Union[MX, SX]):
