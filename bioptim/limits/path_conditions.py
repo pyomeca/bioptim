@@ -826,7 +826,7 @@ class NoisedInitialGuess(InitialGuess):
 
     Methods
     -------
-    create_noise_matrix(self)
+    -create_noise_matrix(self)
         Create the matrix of the initial guess + noise evaluated at each node
     """
     def __init__(
@@ -834,7 +834,7 @@ class NoisedInitialGuess(InitialGuess):
         initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition] = None,
         init_interpolation: InterpolationType = InterpolationType.CONSTANT,
         bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
-        scaling: Union[list, int, float] = 1,
+        noise_magnitude: Union[list, int, float] = 1,
         n_elements: int = None,
         n_shooting: int = None,
         bound_push: Union[list, int, float] = 0.1,
@@ -850,8 +850,8 @@ class NoisedInitialGuess(InitialGuess):
             The type of interpolation of the initial guess
         bounds: Union[Bounds, BoundsList, QAndQDotBounds]
             The bounds
-        scaling: Union[list, int, float]
-            The scaling of the noised that must be applied between 0 and 1 (0 = no noise, 1 = gaussian noise with a
+        noise_magnitude: Union[list, int, float]
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = gaussian noise with a
             standard deviation of the size of the range defined between the bounds
         n_elements: int
             Number of elements (first dim)
@@ -889,17 +889,17 @@ class NoisedInitialGuess(InitialGuess):
         self.bounds = bounds
         self.bounds.check_and_adjust_dimensions(n_elements, n_shooting)
 
-        self.scaling = scaling
+        self.noise_magnitude = noise_magnitude
         self.seed = seed
 
         self.bound_push = bound_push
 
-        self.create_noise_matrix()
+        self._create_noise_matrix()
         self.init = InitialGuess(self.noised_initial_guess, interpolation=InterpolationType.EACH_FRAME).init
 
         self.type = InterpolationType.EACH_FRAME
 
-    def create_noise_matrix(self):
+    def _create_noise_matrix(self):
         """
         Create the matrix of the initial guess + noise evaluated at each node
         """
@@ -922,7 +922,7 @@ class NoisedInitialGuess(InitialGuess):
         if self.seed:
             np.random.seed(self.seed)
         self.noised_initial_guess = (
-            self.initial_guess.init + np.random.random((self.n_elements, self.n_shooting)) * self.scaling
+            self.initial_guess.init + np.random.random((self.n_elements, self.n_shooting)) * self.noise_magnitude
         )
         for shooting_point in range(self.n_shooting):
             too_small_index = np.where(

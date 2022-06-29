@@ -64,7 +64,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int,
     final_time: float,
-    automatic_random_init: bool = False,
+    random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
     ode_solver=OdeSolver.RK4(),
 ) -> OptimalControlProgram:
@@ -145,14 +145,14 @@ def prepare_ocp(
     else:
         raise RuntimeError("Initial guess not implemented yet")
 
-    if automatic_random_init:
+    if random_init:
         x_init = NoisedInitialGuess(
             x,
             t=t,
             init_interpolation=initial_guess,
             bounds=x_bounds,
             bound_t=None,
-            scaling=1,
+            noise_magnitude=1,
             n_elements=nq + nqdot,
             n_shooting=n_shooting,
             bound_push=0.1,
@@ -199,7 +199,7 @@ def main():
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
         ocp = prepare_ocp(
-            "models/cube.bioMod", n_shooting=30, final_time=2, automatic_random_init=True, initial_guess=initial_guess
+            "models/cube.bioMod", n_shooting=30, final_time=2, random_init=True, initial_guess=initial_guess
         )
 
         sol = ocp.solve()

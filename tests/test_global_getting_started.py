@@ -326,7 +326,7 @@ def test_custom_constraint_track_markers(ode_solver):
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
 
 
-@pytest.mark.parametrize("automatic_random_init", [True, False])
+@pytest.mark.parametrize("random_init", [True, False])
 @pytest.mark.parametrize("interpolation", InterpolationType)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_initial_guesses(automatic_random_init, interpolation, ode_solver):
@@ -341,7 +341,7 @@ def test_initial_guesses(automatic_random_init, interpolation, ode_solver):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         final_time=1,
         n_shooting=5,
-        automatic_random_init=automatic_random_init,
+        random_init=random_init,
         initial_guess=interpolation,
         ode_solver=ode_solver,
     )
