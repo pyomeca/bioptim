@@ -1,7 +1,7 @@
 """
-A very simple yet meaningful optimal control program consisting of a double pendulum starting downward and ending upward
-while requiring the minimum of generalized forces. The solver is only allowed to move accelerate the joint linking the
-pendula together.
+A simple optimal control program consisting of a double pendulum starting downward and ending upward while requiring the
+ minimum of generalized forces. The solver is only allowed to apply an angular acceleration the joint linking the second
+ pendulum to the first one.
 
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
@@ -74,11 +74,11 @@ def prepare_ocp(
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_qddot = biorbd_model.nbQddot() - biorbd_model.nbRoot()  # 2 - 1 = 1 in this example
-    tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * n_qddot, [tau_max] * n_qddot)
+    n_qddot_joints = biorbd_model.nbQddot() - biorbd_model.nbRoot()  # 2 - 1 = 1 in this example
+    qddot_joints_min, qddot_joints_max, qddot_joints_init = -100, 100, 0
+    u_bounds = Bounds([qddot_joints_min] * n_qddot_joints, [qddot_joints_max] * n_qddot_joints)
 
-    u_init = InitialGuess([tau_init] * n_qddot)
+    u_init = InitialGuess([qddot_joints_init] * n_qddot_joints)
 
     return OptimalControlProgram(
         biorbd_model,
