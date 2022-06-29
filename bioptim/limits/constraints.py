@@ -8,7 +8,7 @@ from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from .multinode_penalty import MultinodePenaltyFcn
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..misc.enums import Node, InterpolationType, PenaltyType
+from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.options import OptionList
 
 
@@ -95,7 +95,7 @@ class Constraint(PenaltyOption):
     def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
-        elif self.penalty_type == PenaltyType.IMPLICIT:
+        elif self.penalty_type == ConstraintType.IMPLICIT:
             pool = all_pn.nlp.g_implicit if all_pn is not None and all_pn.nlp else all_pn.ocp.g_implicit
         elif self.penalty_type == PenaltyType.USER:
             pool = all_pn.nlp.g if all_pn is not None and all_pn.nlp else all_pn.ocp.g
@@ -106,7 +106,7 @@ class Constraint(PenaltyOption):
     def clear_penalty(self, ocp, nlp):
         if self.penalty_type == PenaltyType.INTERNAL:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        elif self.penalty_type == PenaltyType.IMPLICIT:
+        elif self.penalty_type == ConstraintType.IMPLICIT:
             g_to_add_to = nlp.g_implicit if nlp else ocp.g_implicit
         elif self.penalty_type == PenaltyType.USER:
             g_to_add_to = nlp.g if nlp else ocp.g

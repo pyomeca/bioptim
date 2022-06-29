@@ -10,7 +10,7 @@ from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
-from ..misc.enums import PlotType, ControlType, VariableType, Node, PenaltyType
+from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
@@ -145,7 +145,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                penalty_type=PenaltyType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
         if implicit_soft_contacts:
@@ -171,7 +171,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                penalty_type=PenaltyType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
 
@@ -219,7 +219,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                penalty_type=PenaltyType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
         if implicit_soft_contacts:
@@ -244,7 +244,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                penalty_type=PenaltyType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
 

@@ -120,11 +120,18 @@ class SolutionIntegrator(Enum):
 
 class PenaltyType(Enum):
     """
-    Selection of constraint types
+    Selection of penalty types
     """
 
     USER = "user"
     INTERNAL = "internal"
+
+
+class ConstraintType(Enum):
+    """
+    Selection of constraint types
+    """
+
     IMPLICIT = "implicit"
 
 
