@@ -568,7 +568,7 @@ def test_soft_contacts_dynamics_errors(dynamics):
 
 @pytest.mark.parametrize(
     "dynamics",
-    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
+    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN],
 )
 def test_implicit_dynamics_errors(dynamics):
     # Prepare the program
@@ -685,7 +685,8 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("with_torque", [False, True])
 @pytest.mark.parametrize("with_excitations", [False, True])
-def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, cx):
+@pytest.mark.parametrize("implicit", [False, True])
+def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, implicit, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -696,6 +697,8 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
     nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2 + nlp.model.nbMuscles(), 1))
     nlp.u_bounds = np.zeros((nlp.model.nbMuscles(), 1))
+    nlp.phase_idx = 0
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -706,6 +709,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             with_torque=with_torque,
             with_excitations=with_excitations,
             with_contact=with_contact,
+            implicit_dynamics=implicit,
         ),
         False,
     )
@@ -716,6 +720,8 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
+    if implicit:
+        pass
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -725,216 +731,469 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
-        if with_torque:
-            if with_excitations:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            0.6158501,
-                            0.50313626,
-                            0.64241928,
-                            1.46421499,
-                            -45.27535002,
-                            73.61890834,
-                            46.87928022,
-                            -1.80189035,
-                            53.3914525,
-                            48.30056919,
-                            63.69373374,
-                            -28.15700995,
-                        ],
-                    )
+        if implicit:
+            if with_torque:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                0.7009691,
+                                0.0848377,
+                                0.9472486,
+                                46.8792802,
+                                -1.8018903,
+                                53.3914525,
+                                48.3005692,
+                                63.6937337,
+                                -28.1570099,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.183405,
+                                0.611853,
+                                0.785176,
+                                0.249292,
+                                0.289751,
+                                0.871461,
+                                8.606308,
+                                3.194336,
+                                29.740561,
+                                -20.275423,
+                                -23.246778,
+                                -41.913501,
+                            ],
+                            decimal=6,
+                        )
                 else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            1.83404510e-01,
-                            6.11852895e-01,
-                            7.85175961e-01,
-                            -9.06144782e00,
-                            2.93915658e02,
-                            -9.24229516e02,
-                            8.60630831e00,
-                            3.19433638e00,
-                            2.97405608e01,
-                            -2.02754226e01,
-                            -2.32467778e01,
-                            -4.19135012e01,
-                        ],
-                        decimal=6,
-                    )
-            else:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [6.15850098e-01, 5.03136259e-01, 6.42419278e-01, -7.67236491e00, 2.30765930e02, -7.34713354e02],
-                        decimal=6,
-                    )
-                else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -3.57374110e00, 1.13519647e02, -4.07165959e02],
-                        decimal=6,
-                    )
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.61585, 0.503136, 0.642419, 0.895523, 0.319314, 0.448446],
+                            decimal=6,
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.183405, 0.611853, 0.785176, 0.729007, 0.863103, 0.325183],
+                            decimal=6,
+                        )
 
+            else:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                0.791579,
+                                0.5495289,
+                                0.1429917,
+                                55.6555782,
+                                50.4705269,
+                                0.3602559,
+                                58.9237749,
+                                29.7009419,
+                                -15.1353494,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                1.19594246e-01,
+                                4.93795596e-01,
+                                3.14291857e-02,
+                                -7.72228930e00,
+                                -1.13759732e01,
+                                9.51906209e01,
+                                4.45077128e00,
+                                -5.20261014e00,
+                                -2.80864106e01,
+                            ],
+                            decimal=6,
+                        )
+                else:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.6158501, 0.5031363, 0.6424193, 0.9905051, 0.9307573, 0.1031239],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
+                            decimal=6,
+                        )
         else:
-            if with_excitations:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            0.6158501,
-                            0.50313626,
-                            0.64241928,
-                            1.31194581,
-                            -50.56193318,
-                            82.71912199,
-                            55.65557816,
-                            50.47052688,
-                            0.36025589,
-                            58.92377491,
-                            29.70094194,
-                            -15.13534937,
-                        ],
-                    )
+            if with_torque:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.50313626,
+                                0.64241928,
+                                1.46421499,
+                                -45.27535002,
+                                73.61890834,
+                                46.87928022,
+                                -1.80189035,
+                                53.3914525,
+                                48.30056919,
+                                63.69373374,
+                                -28.15700995,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -9.06144782e00,
+                                2.93915658e02,
+                                -9.24229516e02,
+                                8.60630831e00,
+                                3.19433638e00,
+                                2.97405608e01,
+                                -2.02754226e01,
+                                -2.32467778e01,
+                                -4.19135012e01,
+                            ],
+                            decimal=6,
+                        )
                 else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            1.83404510e-01,
-                            6.11852895e-01,
-                            7.85175961e-01,
-                            -9.49194254e00,
-                            3.03909766e02,
-                            -9.56600268e02,
-                            -7.72228930e00,
-                            -1.13759732e01,
-                            9.51906209e01,
-                            4.45077128e00,
-                            -5.20261014e00,
-                            -2.80864106e01,
-                        ],
-                        decimal=6,
-                    )
-            else:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [0.6158501, 0.50313626, 0.64241928, 1.31194581, -50.56193318, 82.71912199],
-                    )
-                else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -9.49194254e00, 3.03909766e02, -9.56600268e02],
-                        decimal=6,
-                    )
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                6.15850098e-01,
+                                5.03136259e-01,
+                                6.42419278e-01,
+                                -7.67236491e00,
+                                2.30765930e02,
+                                -7.34713354e02,
+                            ],
+                            decimal=6,
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -3.57374110e00,
+                                1.13519647e02,
+                                -4.07165959e02,
+                            ],
+                            decimal=6,
+                        )
 
+            else:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.50313626,
+                                0.64241928,
+                                1.31194581,
+                                -50.56193318,
+                                82.71912199,
+                                55.65557816,
+                                50.47052688,
+                                0.36025589,
+                                58.92377491,
+                                29.70094194,
+                                -15.13534937,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -9.49194254e00,
+                                3.03909766e02,
+                                -9.56600268e02,
+                                -7.72228930e00,
+                                -1.13759732e01,
+                                9.51906209e01,
+                                4.45077128e00,
+                                -5.20261014e00,
+                                -2.80864106e01,
+                            ],
+                            decimal=6,
+                        )
+                else:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.6158501, 0.50313626, 0.64241928, 1.31194581, -50.56193318, 82.71912199],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -9.49194254e00,
+                                3.03909766e02,
+                                -9.56600268e02,
+                            ],
+                            decimal=6,
+                        )
     else:
-        if with_torque:
-            if with_excitations:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            0.6158501,
-                            0.50313626,
-                            0.64241928,
-                            1.46421499,
-                            -45.27535002,
-                            73.61890834,
-                            46.87928022,
-                            -1.80189035,
-                            53.3914525,
-                            48.30056919,
-                            63.69373374,
-                            -28.15700995,
-                        ],
-                    )
+        if implicit:
+            if with_torque:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                0.7009691,
+                                0.0848377,
+                                0.9472486,
+                                46.8792802,
+                                -1.8018903,
+                                53.3914525,
+                                48.3005692,
+                                63.6937337,
+                                -28.1570099,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.183405,
+                                0.611853,
+                                0.785176,
+                                0.249292,
+                                0.289751,
+                                0.871461,
+                                8.606308,
+                                3.194336,
+                                29.740561,
+                                -20.275423,
+                                -23.246778,
+                                -41.913501,
+                            ],
+                            decimal=6,
+                        )
                 else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            1.83404510e-01,
-                            6.11852895e-01,
-                            7.85175961e-01,
-                            -9.06144782e00,
-                            2.93915658e02,
-                            -9.24229516e02,
-                            8.60630831e00,
-                            3.19433638e00,
-                            2.97405608e01,
-                            -2.02754226e01,
-                            -2.32467778e01,
-                            -4.19135012e01,
-                        ],
-                        decimal=6,
-                    )
-            else:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [6.15850098e-01, 5.03136259e-01, 6.42419278e-01, -7.67236491e00, 2.30765930e02, -7.34713354e02],
-                        decimal=6,
-                    )
-                else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -3.57374110e00, 1.13519647e02, -4.07165959e02],
-                        decimal=6,
-                    )
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.61585, 0.503136, 0.642419, 0.895523, 0.319314, 0.448446],
+                            decimal=6,
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.183405, 0.611853, 0.785176, 0.729007, 0.863103, 0.325183],
+                            decimal=6,
+                        )
 
-        else:
-            if with_excitations:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            0.6158501,
-                            0.50313626,
-                            0.64241928,
-                            1.31194581,
-                            -50.56193318,
-                            82.71912199,
-                            55.65557816,
-                            50.47052688,
-                            0.36025589,
-                            58.92377491,
-                            29.70094194,
-                            -15.13534937,
-                        ],
-                    )
-                else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            1.83404510e-01,
-                            6.11852895e-01,
-                            7.85175961e-01,
-                            -9.49194254e00,
-                            3.03909766e02,
-                            -9.56600268e02,
-                            -7.72228930e00,
-                            -1.13759732e01,
-                            9.51906209e01,
-                            4.45077128e00,
-                            -5.20261014e00,
-                            -2.80864106e01,
-                        ],
-                        decimal=6,
-                    )
             else:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [0.6158501, 0.50313626, 0.64241928, 1.31194581, -50.56193318, 82.71912199],
-                    )
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.50313626,
+                                0.64241928,
+                                0.79157904,
+                                0.54952888,
+                                0.14299168,
+                                55.65557816,
+                                50.47052688,
+                                0.36025589,
+                                58.92377491,
+                                29.70094194,
+                                -15.13534937,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                1.19594246e-01,
+                                4.93795596e-01,
+                                3.14291857e-02,
+                                -7.72228930e00,
+                                -1.13759732e01,
+                                9.51906209e01,
+                                4.45077128e00,
+                                -5.20261014e00,
+                                -2.80864106e01,
+                            ],
+                            decimal=6,
+                        )
                 else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -9.49194254e00, 3.03909766e02, -9.56600268e02],
-                        decimal=6,
-                    )
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.6158501, 0.5031363, 0.6424193, 0.9905051, 0.9307573, 0.1031239],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
+                            decimal=6,
+                        )
+        else:
+            if with_torque:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.50313626,
+                                0.64241928,
+                                1.46421499,
+                                -45.27535002,
+                                73.61890834,
+                                46.87928022,
+                                -1.80189035,
+                                53.3914525,
+                                48.30056919,
+                                63.69373374,
+                                -28.15700995,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -9.06144782e00,
+                                2.93915658e02,
+                                -9.24229516e02,
+                                8.60630831e00,
+                                3.19433638e00,
+                                2.97405608e01,
+                                -2.02754226e01,
+                                -2.32467778e01,
+                                -4.19135012e01,
+                            ],
+                            decimal=6,
+                        )
+                else:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                6.15850098e-01,
+                                5.03136259e-01,
+                                6.42419278e-01,
+                                -7.67236491e00,
+                                2.30765930e02,
+                                -7.34713354e02,
+                            ],
+                            decimal=6,
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -3.57374110e00,
+                                1.13519647e02,
+                                -4.07165959e02,
+                            ],
+                            decimal=6,
+                        )
+
+            else:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.50313626,
+                                0.64241928,
+                                1.31194581,
+                                -50.56193318,
+                                82.71912199,
+                                55.65557816,
+                                50.47052688,
+                                0.36025589,
+                                58.92377491,
+                                29.70094194,
+                                -15.13534937,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -9.49194254e00,
+                                3.03909766e02,
+                                -9.56600268e02,
+                                -7.72228930e00,
+                                -1.13759732e01,
+                                9.51906209e01,
+                                4.45077128e00,
+                                -5.20261014e00,
+                                -2.80864106e01,
+                            ],
+                            decimal=6,
+                        )
+                else:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.6158501, 0.50313626, 0.64241928, 1.31194581, -50.56193318, 82.71912199],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -9.49194254e00,
+                                3.03909766e02,
+                                -9.56600268e02,
+                            ],
+                            decimal=6,
+                        )
 
 
 @pytest.mark.parametrize("with_contact", [False, True])

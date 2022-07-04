@@ -113,7 +113,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
-    sol.print()
+    sol.print_cost()
     sol.animate()
 
 
