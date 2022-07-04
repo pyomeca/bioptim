@@ -272,7 +272,7 @@ class ConfigureProblem:
             or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
             or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
         ):
-            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with the enum RigidBodyDynamics yet")
+            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         if nlp.model.nbSoftContacts() != 0:
             if (
@@ -373,7 +373,7 @@ class ConfigureProblem:
         fatigue: FatigueList = None,
         with_torque: bool = False,
         with_contact: bool = False,
-        implicit_dynamics: bool = False,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -396,13 +396,20 @@ class ConfigureProblem:
             If the dynamic should be added with residual torques
         with_contact: bool
             If the dynamic with contact should be used
-        implicit_dynamics: bool
-            If the implicit dynamic should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
 
         """
 
         if fatigue is not None and "tau" in fatigue and not with_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
+
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+        ):
+            raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
@@ -410,7 +417,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_tau(nlp, False, True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(nlp, with_excitations, True, fatigue=fatigue)
 
-        if implicit_dynamics:
+        if RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS,
@@ -429,7 +436,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 fatigue=fatigue,
                 with_torque=with_torque,
-                implicit_dynamics=implicit_dynamics,
+                rigidbody_dynamics=rigidbody_dynamics,
             )
 
         if with_contact:

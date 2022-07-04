@@ -384,9 +384,9 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
+        rigidbody_dynamics: RigidBodyDynamics,
         with_torque: bool = False,
         fatigue=None,
-        implicit_dynamics: bool = False,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by muscle.
@@ -403,12 +403,12 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
         fatigue: FatigueDynamicsList
             To define fatigue elements
         with_torque: bool
             If the dynamic should be added with residual torques
-        implicit_dynamics: bool
-            If the implicit dynamics should be used
 
         Returns
         ----------
@@ -447,7 +447,7 @@ class DynamicsFunctions:
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        if implicit_dynamics:
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
             ddq = DynamicsFunctions.get(nlp.controls["qddot"], controls)
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq

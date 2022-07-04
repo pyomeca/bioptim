@@ -685,8 +685,8 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("with_torque", [False, True])
 @pytest.mark.parametrize("with_excitations", [False, True])
-@pytest.mark.parametrize("implicit", [False, True])
-def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, implicit, cx):
+@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
+def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, rigidbody_dynamics, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(
@@ -709,7 +709,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             with_torque=with_torque,
             with_excitations=with_excitations,
             with_contact=with_contact,
-            implicit_dynamics=implicit,
+            rigidbody_dynamics=rigidbody_dynamics,
         ),
         False,
     )
@@ -720,7 +720,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
-    if implicit:
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         pass
     ConfigureProblem.initialize(ocp, nlp)
 
@@ -731,7 +731,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
-        if implicit:
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
             if with_torque:
                 if with_excitations:
                     if with_external_force:
@@ -963,7 +963,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             decimal=6,
                         )
     else:
-        if implicit:
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
             if with_torque:
                 if with_excitations:
                     if with_external_force:
