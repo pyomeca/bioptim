@@ -417,7 +417,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_tau(nlp, False, True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(nlp, with_excitations, True, fatigue=fatigue)
 
-        if RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS,

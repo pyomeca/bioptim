@@ -28,6 +28,7 @@ from bioptim import (
     OdeSolver,
     Node,
     Solver,
+    RigidBodyDynamics,
 )
 
 
@@ -99,6 +100,7 @@ def generate_data(
             symbolic_parameters,
             nlp,
             False,
+            RigidBodyDynamics.ODE,
         ).dxdt,
         symbolic_states,
         symbolic_controls,
