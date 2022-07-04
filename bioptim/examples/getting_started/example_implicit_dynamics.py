@@ -220,7 +220,7 @@ def main():
     # sol_implicit.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol_semi_explicit.print()
+    sol_semi_explicit.print_cost()
     # sol_semi_explicit.animate(n_frames=100)
     # sol_semi_explicit.graphs()
 
