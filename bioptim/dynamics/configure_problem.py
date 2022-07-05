@@ -304,6 +304,9 @@ class ConfigureProblem:
         ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
         # Configure qddot joints
         nb_root = nlp.model.nbRoot()
+        if not nb_root > 0:
+            raise RuntimeError("Model must have at least one DoF on root.")
+
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nbQddot() - nb_root)]
         ConfigureProblem.configure_new_variable(
             "qddot_joints", name_qddot_joints, nlp, as_states=False, as_controls=True
