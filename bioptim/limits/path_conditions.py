@@ -864,7 +864,7 @@ class NoisedInitialGuess(InitialGuess):
             Any extra parameters that is associated to the path condition
         """
 
-        super(NoisedInitialGuess, self).__init__(interpolation=init_interpolation, **parameters)
+        super(NoisedInitialGuess, self).__init__(initial_guess=initial_guess, interpolation=init_interpolation, **parameters)
 
         if n_elements is None:
             raise RuntimeError("n_elements must be specified to generate noised initial guess")
