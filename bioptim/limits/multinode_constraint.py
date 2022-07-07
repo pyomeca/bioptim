@@ -65,7 +65,6 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
-            quadratic=True,  # how it was in MultinodeConstraint before
             **params,
         )
         MultinodePenalty.__init__(
