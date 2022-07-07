@@ -97,9 +97,9 @@ class MultinodeObjectiveList(MultinodePenaltyList):
             Any parameters to pass to Penalty
         """
 
-        # if not isinstance(multinode_objective, MultinodePenaltyFcn):  # could be removed
-        #     extra_arguments["custom_function"] = multinode_objective
-        #     multinode_objective = MultinodePenaltyFcn.CUSTOM
+        if not isinstance(multinode_objective, MultinodePenaltyFcn):  # TODO: might be removed
+            extra_arguments["custom_function"] = multinode_objective
+            multinode_objective = MultinodePenaltyFcn.CUSTOM
         super(MultinodeObjectiveList, self)._add(
             option_type=MultinodeObjective, multinode_objective=multinode_objective, phase=-1, **extra_arguments
         )

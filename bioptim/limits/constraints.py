@@ -50,10 +50,10 @@ class Constraint(PenaltyOption):
         params:
             Generic parameters for options
         """
-        # custom_function = None
-        # if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn, MultinodePenaltyFcn)):
-        #     custom_function = constraint
-        #     constraint = ConstraintFcn.CUSTOM
+        custom_function = None  # TODO: might remove
+        if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn, MultinodePenaltyFcn)):
+            custom_function = constraint
+            constraint = ConstraintFcn.CUSTOM
 
         super(Constraint, self).__init__(
             penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params

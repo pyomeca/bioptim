@@ -65,18 +65,18 @@ class MultinodePenalty:
             Generic parameters for options
         """
 
-        # force_multinode = False
-        # if "force_multinode" in params:
-        #     # This is a hack to circumvent the apparatus that moves the functions to a custom function
-        #     # It is necessary for PhaseTransition
-        #     # TODO: and what if force_multinode=False was passed... yet another argument to change the interface.
-        #     force_multinode = True
-        #     del params["force_multinode"]
+        force_multinode = False
+        if "force_multinode" in params:
+            # This is a hack to circumvent the apparatus that moves the functions to a custom function
+            # It is necessary for PhaseTransition
+            # TODO: and what if force_multinode=False was passed... yet another argument to change the interface.
+            force_multinode = True
+            del params["force_multinode"]
 
-        # if not isinstance(multinode_penalty, MultinodePenaltyFcn):# and not force_multinode:
-        #     custom_function = multinode_penalty
-        #     multinode_penalty = MultinodePenaltyFcn.CUSTOM
-        # super(PenaltyOption, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **params)
+        if not isinstance(multinode_penalty, MultinodePenaltyFcn):# and not force_multinode:
+            custom_function = multinode_penalty
+            multinode_penalty = MultinodePenaltyFcn.CUSTOM
+        super(PenaltyOption, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **params)
 
         if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
             if not isinstance(first_node, int):
