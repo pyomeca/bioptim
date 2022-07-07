@@ -288,7 +288,7 @@ class ObjectiveFunction:
         # Dynamics must be sound within phases
         for i, nlp in enumerate(ocp.nlp):
             penalty = Objective(
-                ObjectiveFcn.Lagrange.CONTINUITY,
+                ObjectiveFcn.Mayer.CONTINUITY,
                 node=Node.ALL_SHOOTING,
                 penalty_type=PenaltyType.INTERNAL,
             )
@@ -350,7 +350,6 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
         MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
@@ -395,6 +394,7 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
+        CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
