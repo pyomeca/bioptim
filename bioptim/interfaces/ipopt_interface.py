@@ -338,6 +338,7 @@ class IpoptInterface(SolverInterface):
                     if not nlp:
                         x = []
                         u = []
+                        param = []
                     else:
                         x, u = get_x_and_u_at_idx(penalty, idx)
                     p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
