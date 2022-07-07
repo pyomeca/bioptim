@@ -78,16 +78,14 @@ class MultinodePenalty:
             multinode_penalty = MultinodePenaltyFcn.CUSTOM
         super(PenaltyOption, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **params)
 
-        if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
-            if not isinstance(first_node, int):
-                raise NotImplementedError(
-                    "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
-                )
-        if second_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
-            if not isinstance(second_node, int):
-                raise NotImplementedError(
-                    "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
-                )
+        if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END) and not isinstance(first_node, int):
+            raise NotImplementedError(
+                "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
+            )
+        if second_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END) and not isinstance(second_node, int):
+            raise NotImplementedError(
+                "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
+            )
 
         # yet another reason to have user pass CUSTOM and custom_function himself, was broken when inheritence
         # of PenaltyOption was removed
