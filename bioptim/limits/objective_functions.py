@@ -32,7 +32,7 @@ class Objective(PenaltyOption):
 
             if custom_type is None:
                 raise RuntimeError(
-                    "Custom objective function detected, but custom_function is missing. "
+                    "Custom objective function detected, but custom_type is missing. "
                     "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
                 )
             objective = custom_type(custom_type.CUSTOM)
