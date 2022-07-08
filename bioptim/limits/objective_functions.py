@@ -2,6 +2,7 @@ from typing import Callable, Union, Any
 from enum import Enum
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
+from .multinode_penalty import MultinodePenaltyFcn  # this causes a circular import. maybe fixable by other means but it is getting messy
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, IntegralApproximation, PenaltyType
 from ..misc.options import OptionList
@@ -27,7 +28,7 @@ class Objective(PenaltyOption):
         """
 
         custom_function = None
-        if not isinstance(objective, ObjectiveFcn.Lagrange) and not isinstance(objective, ObjectiveFcn.Mayer):
+        if not isinstance(objective, ObjectiveFcn.Lagrange) and not isinstance(objective, ObjectiveFcn.Mayer) and not isinstance(objective, MultinodePenaltyFcn):  # there shouldn't be references to child in parent
             custom_function = objective
 
             if custom_type is None:
