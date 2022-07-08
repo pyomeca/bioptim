@@ -36,13 +36,11 @@ class Objective(PenaltyOption):
                     "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
                 )
             objective = custom_type(custom_type.CUSTOM)
-            if isinstance(objective, ObjectiveFcn.Lagrange):
-                pass
-            elif isinstance(objective, ObjectiveFcn.Mayer):
-                pass
-            elif isinstance(objective, ObjectiveFcn.Parameter):
-                pass
-            else:
+            if not (
+                isinstance(objective, ObjectiveFcn.Lagrange)
+                or isinstance(objective, ObjectiveFcn.Mayer)
+                or isinstance(objective, ObjectiveFcn.Parameter)
+            ):
                 raise RuntimeError(
                     "Custom objective function detected, but custom_function is invalid. "
                     "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
