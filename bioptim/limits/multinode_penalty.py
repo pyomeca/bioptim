@@ -53,7 +53,7 @@ class MultinodePenalty:
         phase_second_idx: int,
         first_node: Union[Node, int],
         second_node: Union[Node, int],
-        multinode_penalty: Union[Callable, Any] = None,
+        multinode_penalty: Union[Callable, Any],
         **params: Any,
     ):
         """
@@ -66,17 +66,16 @@ class MultinodePenalty:
         """
 
         force_multinode = False
-        if "force_multinode" in params:
+        if "force_multinode" in params and params["force_multinode"]:
             # This is a hack to circumvent the apparatus that moves the functions to a custom function
             # It is necessary for PhaseTransition
-            # TODO: and what if force_multinode=False was passed... yet another argument to change the interface.
+            # TODO: yet another argument to change the interface.
             force_multinode = True
             del params["force_multinode"]
 
-        if not isinstance(multinode_penalty, MultinodePenaltyFcn):# and not force_multinode:
+        if not isinstance(multinode_penalty, MultinodePenaltyFcn) and not force_multinode:
             custom_function = multinode_penalty
             multinode_penalty = MultinodePenaltyFcn.CUSTOM
-        super(PenaltyOption, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **params)
 
         if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END) and not isinstance(first_node, int):
             raise NotImplementedError(
@@ -102,17 +101,9 @@ class MultinodePenalty:
 
     # they are almost copy pasted directly in Multinode(Constraint|Objective), are they still really relevent?
     # I don't see how to generalize them without reference to child classes, more so if I remove self.weight.
-    # this one should never be called
+    # This one should never be called and for now isn't called ever.
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
-        ocp = all_pn[0].ocp
-        nlp = all_pn[0].nlp
-        if (
-            self.weight == 0
-        ):  # what if a user wants to test a different objective function and sets a particular objective to 0?
-            pool = nlp.g_internal if nlp else ocp.g_internal
-        else:
-            pool = nlp.J_internal if nlp else ocp.J_internal
-        pool[self.list_index] = self
+        raise NotImplementedError("Implement in child class.")  # decided to raise an error instead of risking undefined behavior
 
     def clear_penalty(self, ocp, nlp):
         if self.weight == 0:
@@ -160,7 +151,7 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
             Any parameters to pass to Penalty
         """
 
-        if not isinstance(multinode_penalty, MultinodePenaltyFcn):
+        if not isinstance(multinode_penalty, MultinodePenaltyFcn):  # TODO: might be removed
             extra_arguments["custom_function"] = multinode_penalty
             multinode_penalty = MultinodePenaltyFcn.CUSTOM
         super(MultinodePenaltyList, self)._add(
