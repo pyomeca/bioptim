@@ -5,7 +5,7 @@ import biorbd_casadi as biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
 from scipy.integrate import solve_ivp
-from casadi import vertcat, DM, Function
+from casadi import vertcat, DM, Function, MX
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -1061,8 +1061,9 @@ class Solution:
         val = []
         val_weighted = []
         p = self.parameters["all"]
+
         dt = (
-            Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
+            Function("time", [MX.sym("time", self.parameters["time"].shape[0])], [penalty.dt])(self.parameters["time"])
             if "time" in self.parameters
             else penalty.dt
         )
