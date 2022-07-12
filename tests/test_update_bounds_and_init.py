@@ -12,6 +12,8 @@ from bioptim import (
     InitialGuess,
     Objective,
     ObjectiveFcn,
+    QAndQDotBounds,
+    NoisedInitialGuess,
 )
 
 from .utils import TestUtils
@@ -181,3 +183,98 @@ def test_add_wrong_param():
             penalty_list=parameter_objective_functions,
             extra_value=1,
         )
+
+
+def test_update_noised_init():
+    bioptim_folder = TestUtils.bioptim_folder()
+    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = biorbd_model.nbQ()
+    nqdot = biorbd_model.nbQdot()
+    ntau = biorbd_model.nbGeneralizedTorque()
+    ns = 3
+
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    ocp = OptimalControlProgram(biorbd_model, dynamics, ns, 1.0)
+
+    # Path constraint and control path constraints
+    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
+
+    tau_min, tau_max, tau_init = -100, 100, 0
+    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
+
+    # Initial guesses
+    t = None
+    x = np.zeros((nq * 2, ns + 1))
+    u = np.zeros((ntau, ns))
+
+    np.random.seed(0)
+    x_init = NoisedInitialGuess(
+        x,
+        t=t,
+        init_interpolation=InterpolationType.EACH_FRAME,
+        bounds=x_bounds,
+        bound_t=None,
+        noise_magnitude=0.01,
+        n_elements=nq + nqdot,
+        n_shooting=ns,
+        bound_push=0.1,
+    )
+    u_init = NoisedInitialGuess(
+        u,
+        t=t,
+        init_interpolation=InterpolationType.EACH_FRAME,
+        bounds=u_bounds,
+        bound_t=None,
+        noise_magnitude=0.01,
+        n_elements=ntau,
+        n_shooting=ns - 1,
+        bound_push=0.1,
+    )
+
+    ocp.update_initial_guess(x_init, u_init)
+    print(ocp.v.init.init)
+    expected = np.array(
+        [
+            5.48813504e-03,
+            -1.00000000e-01,
+            -1.00000000e-01,
+            -1.00000000e-01,
+            -1.00000000e-01,
+            -1.00000000e-01,
+            7.15189366e-03,
+            6.45894113e-03,
+            3.83441519e-03,
+            9.25596638e-03,
+            8.32619846e-03,
+            7.99158564e-03,
+            6.02763376e-03,
+            4.37587211e-03,
+            7.91725038e-03,
+            7.10360582e-04,
+            7.78156751e-03,
+            4.61479362e-03,
+            5.44883183e-03,
+            -1.00000000e-01,
+            1.67000000e00,
+            -1.00000000e-01,
+            -1.00000000e-01,
+            -1.00000000e-01,
+            1.18274426e-03,
+            9.44668917e-03,
+            2.64555612e-03,
+            6.39921021e-03,
+            5.21848322e-03,
+            7.74233689e-03,
+            1.43353287e-03,
+            4.14661940e-03,
+            4.56150332e-03,
+        ]
+    )
+
+    np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
+
+    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
+        ocp.update_bounds(x_init, u_init)
