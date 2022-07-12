@@ -1,9 +1,10 @@
 from typing import Callable, Union, Any
+from enum import Enum
 
 from ..misc.enums import Node
 from .objective_functions import Objective, ObjectiveFcn
 from .penalty_node import PenaltyNodeList
-from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFcn
+from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 
 # TODO: mirror multinode_constraint.py in here but for objectives
 class MultinodeObjective(Objective, MultinodePenalty):
@@ -98,12 +99,28 @@ class MultinodeObjectiveList(MultinodePenaltyList):
             Any parameters to pass to Penalty
         """
 
-        if not isinstance(multinode_objective, MultinodePenaltyFcn):  # TODO: might be removed
+        if not isinstance(multinode_objective, MultinodeObjectiveFcn):  # TODO: might be removed
             extra_arguments["custom_function"] = multinode_objective
-            multinode_objective = MultinodePenaltyFcn.CUSTOM
+            multinode_objective = MultinodeObjectiveFcn.CUSTOM
         super(MultinodeObjectiveList, self)._add(
             option_type=MultinodeObjective, multinode_objective=multinode_objective, phase=-1, **extra_arguments
         )
 
 
-MultinodeObjectiveFcn = MultinodePenaltyFcn
+class MultinodeObjectiveFcn(Enum):
+    """
+    Selection of valid multinode penalty functions
+    """
+
+    EQUALITY = (MultinodePenaltyFunctions.Functions.equality,)
+    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
+    COM_EQUALITY = (MultinodePenaltyFunctions.Functions.com_equality,)
+    COM_VELOCITY_EQUALITY = (MultinodePenaltyFunctions.Functions.com_velocity_equality,)
+
+    @staticmethod
+    def get_type():
+        """
+        Returns the type of the penalty
+        """
+
+        return MultinodePenaltyFunctions

@@ -1,9 +1,10 @@
 from typing import Callable, Union, Any
+from enum import Enum
 
 from .constraints import Constraint
 from ..misc.enums import Node
 from .penalty_node import PenaltyNodeList
-from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFcn
+from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 
 
 class MultinodeConstraint(Constraint, MultinodePenalty):
@@ -135,4 +136,21 @@ class MultinodeConstraintList(MultinodePenaltyList):
         )
 
 
-MultinodeConstraintFcn = MultinodePenaltyFcn
+class MultinodeConstraintFcn(Enum):
+    """
+    Selection of valid multinode penalty functions
+    """
+
+    EQUALITY = (MultinodePenaltyFunctions.Functions.equality,)
+    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
+    COM_EQUALITY = (MultinodePenaltyFunctions.Functions.com_equality,)
+    COM_VELOCITY_EQUALITY = (MultinodePenaltyFunctions.Functions.com_velocity_equality,)
+
+    @staticmethod
+    def get_type():
+        """
+        Returns the type of the penalty
+        """
+
+        return MultinodePenaltyFunctions
+
