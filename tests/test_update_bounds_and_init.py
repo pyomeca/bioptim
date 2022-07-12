@@ -191,7 +191,7 @@ def test_update_noised_init():
     nq = biorbd_model.nbQ()
     nqdot = biorbd_model.nbQdot()
     ntau = biorbd_model.nbGeneralizedTorque()
-    ns = 5
+    ns = 3
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
@@ -210,6 +210,7 @@ def test_update_noised_init():
     x = np.zeros((nq * 2, ns + 1))
     u = np.zeros((ntau, ns))
 
+    np.random.seed(0)
     x_init = NoisedInitialGuess(
         x,
         t=t,
@@ -234,64 +235,46 @@ def test_update_noised_init():
     )
 
     ocp.update_initial_guess(x_init, u_init)
+    print(ocp.v.init.init)
     expected = np.array(
         [
-            7.89487745e-03,
+            5.48813504e-03,
             -1.00000000e-01,
             -1.00000000e-01,
             -1.00000000e-01,
             -1.00000000e-01,
             -1.00000000e-01,
-            8.27317537e-03,
-            8.47162999e-03,
-            8.99483266e-04,
-            7.66428469e-03,
-            7.75000815e-05,
-            2.87971956e-03,
-            5.51704339e-03,
-            9.93479466e-03,
-            6.51457413e-04,
-            1.07748305e-03,
-            5.18674803e-03,
-            7.67068670e-03,
-            3.20049998e-03,
-            4.07936811e-03,
-            7.89056852e-03,
-            3.88173868e-03,
-            7.65550071e-03,
-            8.62313189e-03,
-            4.20496097e-03,
-            9.86154743e-04,
-            3.71147283e-03,
-            9.87845348e-04,
-            3.34242983e-03,
-            5.04971658e-04,
-            2.40754713e-03,
+            7.15189366e-03,
+            6.45894113e-03,
+            3.83441519e-03,
+            9.25596638e-03,
+            8.32619846e-03,
+            7.99158564e-03,
+            6.02763376e-03,
+            4.37587211e-03,
+            7.91725038e-03,
+            7.10360582e-04,
+            7.78156751e-03,
+            4.61479362e-03,
+            5.44883183e-03,
             -1.00000000e-01,
             1.67000000e00,
             -1.00000000e-01,
             -1.00000000e-01,
             -1.00000000e-01,
-            8.69393251e-03,
-            5.73129867e-03,
-            9.04450191e-03,
-            4.47691306e-04,
-            6.76654927e-04,
-            4.37545616e-03,
-            5.99326365e-03,
-            2.32666812e-03,
-            5.21434475e-03,
-            6.22547668e-03,
-            1.16195380e-03,
-            6.81051511e-03,
-            5.68894783e-03,
-            4.51552787e-03,
-            2.00692106e-03,
+            1.18274426e-03,
+            9.44668917e-03,
+            2.64555612e-03,
+            6.39921021e-03,
+            5.21848322e-03,
+            7.74233689e-03,
+            1.43353287e-03,
+            4.14661940e-03,
+            4.56150332e-03,
         ]
     )
 
-    np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis], decimal=2)
-    assert ocp.v.init.init.shape == ((nq + nqdot) * (ns + 1) + ntau * ns, 1)
+    np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
 
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
         ocp.update_bounds(x_init, u_init)
