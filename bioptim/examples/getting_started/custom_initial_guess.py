@@ -79,6 +79,8 @@ def prepare_ocp(
         The number of shooting points
     final_time: float
         The time at the final node
+    random_init: bool
+        If True, the initial guess will be randomized
     initial_guess: InterpolationType
         The type of interpolation to use for the initial guesses
     ode_solver: OdeSolver
