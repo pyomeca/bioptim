@@ -329,7 +329,7 @@ def test_custom_constraint_track_markers(ode_solver):
 @pytest.mark.parametrize("random_init", [True, False])
 @pytest.mark.parametrize("interpolation", InterpolationType)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_initial_guesses(automatic_random_init, interpolation, ode_solver):
+def test_initial_guesses(random_init, interpolation, ode_solver):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -371,7 +371,7 @@ def test_initial_guesses(automatic_random_init, interpolation, ode_solver):
     np.testing.assert_almost_equal(tau[:, -2], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    if interpolation == InterpolationType.CUSTOM and automatic_random_init == False:
+    if interpolation == InterpolationType.CUSTOM and random_init == False:
         with pytest.raises(AttributeError, match="'PathCondition' object has no attribute 'custom_function'"):
             TestUtils.save_and_load(sol, ocp, True)
     else:
