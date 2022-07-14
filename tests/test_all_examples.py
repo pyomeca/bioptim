@@ -63,14 +63,19 @@ def test__getting_started__custom_dynamics():
     )
 
 
-@pytest.mark.parametrize("interpolation", [InterpolationType.CONSTANT,
-                                           InterpolationType.LINEAR,
-                                           InterpolationType.SPLINE,
-                                           InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-                                           InterpolationType.CUSTOM,
-                                           InterpolationType.EACH_FRAME])
+@pytest.mark.parametrize(
+    "interpolation",
+    [
+        InterpolationType.CONSTANT,
+        InterpolationType.LINEAR,
+        InterpolationType.SPLINE,
+        InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        InterpolationType.CUSTOM,
+        InterpolationType.EACH_FRAME,
+    ],
+)
 @pytest.mark.parametrize("random", [True, False])
-def test__getting_started__custom_initial_guess(interpolation,random):
+def test__getting_started__custom_initial_guess(interpolation, random):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -80,8 +85,9 @@ def test__getting_started__custom_initial_guess(interpolation,random):
         n_shooting=30,
         final_time=2,
         random_init=random,
-        initial_guess=interpolation
+        initial_guess=interpolation,
     )
+
 
 def test__getting_started__custom_objectives():
     from bioptim.examples.getting_started import custom_objectives as ocp_module
