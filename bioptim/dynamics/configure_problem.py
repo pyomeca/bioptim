@@ -129,9 +129,9 @@ class ConfigureProblem:
         with_contact: bool
             If the dynamic with contact should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
+            which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used (EXPLICIT or IMPLICIT)
+            which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
         """
@@ -263,9 +263,9 @@ class ConfigureProblem:
         with_contact: bool
             If the dynamic with contact should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
+            which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used (EXPLICIT or IMPLICIT)
+            which soft contact dynamic should be used
         """
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
@@ -397,7 +397,7 @@ class ConfigureProblem:
         with_contact: bool
             If the dynamic with contact should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
+            which rigidbody dynamics should be used
 
         """
 

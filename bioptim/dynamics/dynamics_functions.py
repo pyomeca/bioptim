@@ -97,7 +97,7 @@ class DynamicsFunctions:
         with_contact: bool
             If the dynamic with contact should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
+            which rigidbody dynamics should be used
         fatigue : FatigueList
             A list of fatigue elements
 
@@ -141,7 +141,7 @@ class DynamicsFunctions:
 
         defects = None
         # todo: contacts and fatigue to be handled with implicit dynamics
-        if not with_contact and fatigue is None:
+        if fatigue is None:
             qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
             tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
             defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
@@ -270,7 +270,7 @@ class DynamicsFunctions:
         nlp: NonLinearProgram
             The definition of the system
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
+            which rigidbody dynamics should be used
         with_contact: bool
             If the dynamic with contact should be used
 
@@ -404,7 +404,7 @@ class DynamicsFunctions:
         with_contact: bool
             If the dynamic with contact should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
+            which rigidbody dynamics should be used
         fatigue: FatigueDynamicsList
             To define fatigue elements
         with_torque: bool
