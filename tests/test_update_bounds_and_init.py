@@ -214,22 +214,18 @@ def test_update_noised_init():
     x_init = NoisedInitialGuess(
         x,
         t=t,
-        init_interpolation=InterpolationType.EACH_FRAME,
+        interpolation=InterpolationType.EACH_FRAME,
         bounds=x_bounds,
-        bound_t=None,
         noise_magnitude=0.01,
-        n_elements=nq + nqdot,
         n_shooting=ns,
         bound_push=0.1,
     )
     u_init = NoisedInitialGuess(
         u,
         t=t,
-        init_interpolation=InterpolationType.EACH_FRAME,
+        interpolation=InterpolationType.EACH_FRAME,
         bounds=u_bounds,
-        bound_t=None,
         noise_magnitude=0.01,
-        n_elements=ntau,
         n_shooting=ns - 1,
         bound_push=0.1,
     )
