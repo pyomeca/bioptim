@@ -472,7 +472,7 @@ def test_update_noised_init(interpolation):
     [
         InterpolationType.CONSTANT,
         InterpolationType.LINEAR,
-        InterpolationType.SPLINE,
+        # InterpolationType.SPLINE,
         InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         InterpolationType.EACH_FRAME,
     ],
