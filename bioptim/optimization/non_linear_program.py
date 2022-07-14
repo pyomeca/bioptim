@@ -126,6 +126,7 @@ class NonLinearProgram:
         self.parameters = []
         self.par_dynamics = None
         self.phase_idx = None
+        self.phase_mapping = None
         self.plot = {}
         self.plot_mapping = {}
         self.t0 = None
