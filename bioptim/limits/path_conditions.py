@@ -826,7 +826,7 @@ class NoisedInitialGuess(InitialGuess):
 
     Methods
     -------
-    -create_noise_matrix(self)
+    _create_noise_matrix(self)
         Create the matrix of the initial guess + noise evaluated at each node
     """
 
