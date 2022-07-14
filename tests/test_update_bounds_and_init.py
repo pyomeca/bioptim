@@ -233,18 +233,10 @@ def test_update_noised_init(interpolation):
         x = np.zeros((nq * 2, ns + 1))
         u = np.zeros((ntau, ns))
     elif interpolation == InterpolationType.SPLINE:
-        # Bound spline assume the first and last point are 0 and final respectively
+        # Bound , assume the first and last point are 0 and final respectively
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
         x = np.random.random((nq + nqdot, 5))
         u = np.random.random((ntau, 5))
-    elif interpolation == InterpolationType.CUSTOM:
-        # The custom function refers to the one at the beginning of the file. It emulates a Linear interpolation
-        from bioptim.examples.getting_started import custom_initial_guess as ocp_module
-
-        x = ocp_module.custom_init_func
-        u = ocp_module.custom_init_func
-        extra_params_x = {"my_values": np.random.random((nq + nqdot, 2)), "n_shooting_custom": ns}
-        extra_params_u = {"my_values": np.random.random((ntau, 2)), "n_shooting_custom": ns}
 
     np.random.seed(0)
     x_init = NoisedInitialGuess(
@@ -472,7 +464,7 @@ def test_update_noised_init(interpolation):
     [
         InterpolationType.CONSTANT,
         InterpolationType.LINEAR,
-        # InterpolationType.SPLINE,
+        InterpolationType.SPLINE,
         InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         InterpolationType.EACH_FRAME,
     ],
@@ -521,6 +513,7 @@ def test_update_noised_initial_guess(interpolation):
         u = InitialGuess(np.zeros((ntau, ns)), interpolation=interpolation)
     elif interpolation == InterpolationType.SPLINE:
         # Bound spline assume the first and last point are 0 and final respectively
+        np.random.seed(42)
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
         x = InitialGuess(np.random.random((nq + nqdot, 5)), interpolation=interpolation, t=t)
         u = InitialGuess(np.random.random((ntau, 5)), interpolation=interpolation, t=t)
@@ -587,39 +580,39 @@ def test_update_noised_initial_guess(interpolation):
     elif interpolation == InterpolationType.SPLINE:
         expected = np.array(
             [
-                0.70716515,
+                0.60240389,
                 -0.1,
                 -0.1,
                 -0.1,
                 -0.1,
                 -0.1,
-                0.27280629,
-                0.68827069,
-                0.49877703,
-                0.48777798,
-                0.36165296,
-                0.71752962,
-                0.07549563,
-                0.55912336,
-                0.52387268,
-                0.41863,
-                0.46839814,
-                0.85563485,
-                0.13823782,
+                0.31271007,
+                0.67406755,
+                0.1990521,
+                0.34014264,
+                0.43148827,
+                0.22938649,
+                0.16333011,
+                0.46735743,
+                0.1825852,
+                0.40558058,
+                0.57589973,
+                0.24630594,
+                0.15392063,
                 -0.1,
                 1.67,
                 -0.1,
                 -0.1,
                 -0.1,
-                0.86912259,
-                0.58175155,
-                0.13187976,
-                0.64817702,
-                0.77435203,
-                0.32653823,
-                0.54295814,
-                0.4387764,
-                0.43907385,
+                0.95263094,
+                0.69021961,
+                0.90990124,
+                0.97329673,
+                0.46856634,
+                0.33901399,
+                0.84445307,
+                0.18173586,
+                0.5947466,
             ]
         )
     elif interpolation == InterpolationType.LINEAR:
