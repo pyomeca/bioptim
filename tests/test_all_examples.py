@@ -331,13 +331,23 @@ def test__torque_driven_ocp__maximize_predicted_height_CoM():
     )
 
 
-def test__torque_driven_ocp__phase_transition_uneven_variable_number():
-    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number as ocp_module
+def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping():
+    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
+        biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
+    )
+
+
+def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds():
+    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_bounds as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
         biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
     )
 
