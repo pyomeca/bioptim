@@ -268,9 +268,8 @@ class ConfigureProblem:
             which soft contact dynamic should be used
         """
         if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+                not rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+                or not rigidbody_dynamics == RigidBodyDynamics.ODE
         ):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
@@ -405,9 +404,8 @@ class ConfigureProblem:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
         if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+                not rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+                or not rigidbody_dynamics == RigidBodyDynamics.ODE
         ):
             raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
