@@ -384,7 +384,7 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
-        rigidbody_dynamics: RigidBodyDynamics,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         with_torque: bool = False,
         fatigue=None,
     ) -> DynamicsEvaluation:
