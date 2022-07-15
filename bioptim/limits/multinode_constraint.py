@@ -1,6 +1,4 @@
 from typing import Callable, Union, Any
-from warnings import warn
-from enum import Enum
 
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
@@ -11,6 +9,7 @@ from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, InterpolationType, ConstraintType
 from ..misc.options import UniquePerPhaseOptionList
+from ..misc.fcn_enum import FcnEnum
 
 
 class MultinodeConstraint(Constraint):
@@ -360,15 +359,15 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return multinode_constraint.custom_function(multinode_constraint, nlp_pre, nlp_post, **extra_params)
 
 
-class MultinodeConstraintFcn(Enum):
+class MultinodeConstraintFcn(FcnEnum):
     """
     Selection of valid multinode constraint functions
     """
 
-    EQUALITY = (MultinodeConstraintFunctions.Functions.equality,)
-    CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
-    COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
-    COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
+    EQUALITY = MultinodeConstraintFunctions.Functions.equality
+    CUSTOM = MultinodeConstraintFunctions.Functions.custom
+    COM_EQUALITY = MultinodeConstraintFunctions.Functions.com_equality
+    COM_VELOCITY_EQUALITY = MultinodeConstraintFunctions.Functions.com_velocity_equality
 
     @staticmethod
     def get_type():

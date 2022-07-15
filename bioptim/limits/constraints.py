@@ -1,5 +1,4 @@
 from typing import Callable, Union, Any
-from enum import Enum
 
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
@@ -8,6 +7,7 @@ from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
 
@@ -520,7 +520,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         return "constraints"
 
 
-class ConstraintFcn(Enum):
+class ConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions
 
@@ -530,25 +530,25 @@ class ConstraintFcn(Enum):
         Returns the type of the penalty
     """
 
-    CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
-    TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
-    TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-    TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
-    TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
-    SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
-    PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
-    PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
-    TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
-    TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
-    TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
-    TRACK_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
-    TRACK_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
-    TRACK_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
-    TRACK_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
-    CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
-    NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
-    TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
-    TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
+    CONTINUITY = PenaltyFunctionAbstract.Functions.continuity
+    TRACK_CONTROL = PenaltyFunctionAbstract.Functions.minimize_controls
+    TRACK_STATE = PenaltyFunctionAbstract.Functions.minimize_states
+    TRACK_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
+    TRACK_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
+    SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
+    PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_states
+    PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_controls
+    TRACK_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
+    TRACK_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt
+    TRACK_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis
+    TRACK_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
+    TRACK_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
+    TRACK_ANGULAR_MOMENTUM = PenaltyFunctionAbstract.Functions.minimize_angular_momentum
+    TRACK_LINEAR_MOMENTUM = PenaltyFunctionAbstract.Functions.minimize_linear_momentum
+    CUSTOM = PenaltyFunctionAbstract.Functions.custom
+    NON_SLIPPING = ConstraintFunction.Functions.non_slipping
+    TORQUE_MAX_FROM_Q_AND_QDOT = ConstraintFunction.Functions.torque_max_from_q_and_qdot
+    TIME_CONSTRAINT = ConstraintFunction.Functions.time_constraint
 
     @staticmethod
     def get_type():
@@ -559,7 +559,7 @@ class ConstraintFcn(Enum):
         return ConstraintFunction
 
 
-class ImplicitConstraintFcn(Enum):
+class ImplicitConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions
 
