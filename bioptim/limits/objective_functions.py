@@ -35,7 +35,7 @@ class Objective(PenaltyOption):
                     "Custom objective function detected, but custom_function is missing. "
                     "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
                 )
-            objective = custom_type(custom_type.CUSTOM)
+            objective = custom_type.CUSTOM
             if isinstance(objective, ObjectiveFcn.Lagrange):
                 pass
             elif isinstance(objective, ObjectiveFcn.Mayer):
