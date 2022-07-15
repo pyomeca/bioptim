@@ -4,13 +4,12 @@ from warnings import warn
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
-from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
+from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions, MultinodeConstraintFcn
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, InterpolationType, ConstraintType
 from ..misc.options import UniquePerPhaseOptionList
-from ..misc.fcn_enum import FcnEnum
 
 
 class PhaseTransition(MultinodeConstraint):
@@ -261,7 +260,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return func
 
 
-class PhaseTransitionFcn(FcnEnum):
+class PhaseTransitionFcn(MultinodeConstraintFcn):
     """
     Selection of valid phase transition functions
     """
