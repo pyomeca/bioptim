@@ -1,16 +1,15 @@
 from typing import Callable, Union, Any
 from warnings import warn
-from enum import Enum
 
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
-from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
-from .multinode_constraint import MultinodeConstraint
+from .multinode_penalty import MultinodePenaltyFunctions
+from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFcn
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, PenaltyType
+from ..misc.enums import Node, PenaltyType
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -261,15 +260,15 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return func
 
 
-class PhaseTransitionFcn(Enum):
+class PhaseTransitionFcn(MultinodeConstraintFcn):
     """
     Selection of valid phase transition functions
     """
 
-    CONTINUOUS = (PhaseTransitionFunctions.Functions.continuous,)
-    IMPACT = (PhaseTransitionFunctions.Functions.impact,)
-    CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
-    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
+    CONTINUOUS = PhaseTransitionFunctions.Functions.continuous
+    IMPACT = PhaseTransitionFunctions.Functions.impact
+    CYCLIC = PhaseTransitionFunctions.Functions.cyclic
+    CUSTOM = MultinodePenaltyFunctions.Functions.custom
 
     @staticmethod
     def get_type():

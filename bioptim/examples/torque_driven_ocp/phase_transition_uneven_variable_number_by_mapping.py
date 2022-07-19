@@ -112,9 +112,10 @@ def main():
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 
+    # --- Solve the program --- #
     sol = ocp.solve()
 
-    sol.print_cost()
+    # --- Show results --- #
     sol.animate()
 
 

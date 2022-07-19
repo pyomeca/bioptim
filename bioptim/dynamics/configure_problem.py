@@ -1,5 +1,4 @@
 from typing import Callable, Any, Union
-from enum import Enum
 
 from casadi import MX, vertcat, Function
 import numpy as np
@@ -13,6 +12,7 @@ from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
+from ..misc.fcn_enum import FcnEnum
 from ..limits.constraints import ImplicitConstraintFcn
 
 
@@ -83,7 +83,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
+        nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.params)
 
     @staticmethod
     def custom(ocp, nlp, **extra_params):
@@ -920,16 +920,16 @@ class ConfigureProblem:
             raise RuntimeError("Could not adjust mapping with the reference_keys provided")
 
 
-class DynamicsFcn(Enum):
+class DynamicsFcn(FcnEnum):
     """
     Selection of valid dynamics functions
     """
 
-    TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
-    TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
-    TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
-    MUSCLE_DRIVEN = (ConfigureProblem.muscle_driven,)
-    CUSTOM = (ConfigureProblem.custom,)
+    TORQUE_DRIVEN = ConfigureProblem.torque_driven
+    TORQUE_DERIVATIVE_DRIVEN = ConfigureProblem.torque_derivative_driven
+    TORQUE_ACTIVATIONS_DRIVEN = ConfigureProblem.torque_activations_driven
+    MUSCLE_DRIVEN = ConfigureProblem.muscle_driven
+    CUSTOM = ConfigureProblem.custom
 
 
 class Dynamics(OptionGeneric):
