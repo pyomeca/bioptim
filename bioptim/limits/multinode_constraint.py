@@ -138,7 +138,7 @@ class MultinodeConstraintList(MultinodePenaltyList):
             self.copy(multinode_constraint)
         else:
             super(MultinodeConstraintList, self)._add(
-                option_type=MultinodeConstraint, multinode_objective=multinode_constraint, phase=-1, **extra_arguments
+                option_type=MultinodeConstraint, multinode_constraint=multinode_constraint, phase=-1, **extra_arguments
             )
 
 
