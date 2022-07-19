@@ -27,7 +27,8 @@ from ..limits.constraints import (
     Constraint,
     ContinuityConstraintFunctions,
 )
-from ..limits.phase_transition import PhaseTransitionList
+from ..limits.phase_transition_constraint import PhaseTransitionConstraintList
+from ..limits.phase_transition_objective import PhaseTransitionObjectiveList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
@@ -89,8 +90,10 @@ class OptimalControlProgram:
         The time vector as sent by the user
     original_values: dict
         A copy of the ocp as it is after defining everything
-    phase_transitions: list[PhaseTransition]
+    phase_transition_constraints: list[PhaseTransitionConstraints]
         The list of transition constraint between phases
+    phase_transition_objectives: list[PhaseTransitionObjectives]
+        The list of transition objectives between phases
     ocp_solver: SolverInterface
         A reference to the ocp solver
     v: OptimizationVector
@@ -157,7 +160,8 @@ class OptimalControlProgram:
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
         plot_mappings: Mapping = None,
-        phase_transitions: PhaseTransitionList = None,
+        phase_transition_constraints: PhaseTransitionConstraintList = None,
+        phase_transition_objectives: PhaseTransitionObjectiveList = None,
         multinode_constraints: MultinodeConstraintList = None,
         multinode_objectives: MultinodeObjectiveList = None,
         n_threads: int = 1,
@@ -202,8 +206,10 @@ class OptimalControlProgram:
             The mapping to apply on the plots
         phase_mappings: Mapping
             The mapping to apply on the phases
-        phase_transitions: PhaseTransitionList
-            The transition types between the phases
+        phase_transition_constraints: PhaseTransitionConstraintList
+            The transition constraints between the phases
+        phase_transition_objectives: PhaseTransitionObjectiveList
+            The transition objectives between the phases
         n_threads: int
             The number of thread to use while solving (multi-threading if > 1)
         use_sx: bool
@@ -249,7 +255,8 @@ class OptimalControlProgram:
             "control_type": control_type,
             "variable_mappings": variable_mappings,
             "plot_mappings": plot_mappings,
-            "phase_transitions": phase_transitions,
+            "phase_transition_constraints": phase_transition_constraints,
+            "phase_transition_objectives": phase_transition_objectives,
             "multinode_constraints": multinode_constraints,
             "multinode_objectives": multinode_objectives,
             "n_threads": n_threads,
@@ -344,10 +351,15 @@ class OptimalControlProgram:
         elif not isinstance(parameters, ParameterList):
             raise RuntimeError("parameters should be built from an ParameterList")
 
-        if phase_transitions is None:
-            phase_transitions = PhaseTransitionList()
-        elif not isinstance(phase_transitions, PhaseTransitionList):
-            raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
+        if phase_transition_constraints is None:
+            phase_transition_constraints = PhaseTransitionConstraintList()
+        elif not isinstance(phase_transition_constraints, PhaseTransitionConstraintList):
+            raise RuntimeError("phase_transition_constraints should be built from an PhaseTransitionConstraintList")
+
+        if phase_transition_objectives is None:
+            phase_transition_objectives = PhaseTransitionObjectiveList()
+        elif not isinstance(phase_transition_objectives, PhaseTransitionObjectiveList):
+            raise RuntimeError("phase_transition_objectives should be built from an PhaseTransitionObjectiveList")
 
         if multinode_constraints is None:
             multinode_constraints = MultinodeConstraintList()
@@ -417,7 +429,8 @@ class OptimalControlProgram:
         NLP.add(self, "dof_names", dof_names, True)
 
         # Prepare the parameters to optimize
-        self.phase_transitions = []
+        self.phase_transition_constraints = []
+        self.phase_transition_objectives = []
         if len(parameters) > 0:
             self.update_parameters(parameters)
 
@@ -447,8 +460,9 @@ class OptimalControlProgram:
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
-        # otherwise they will erase the phase_transitions)
-        self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
+        # otherwise they will erase the phase_transition_constraints)
+        self.phase_transition_constraints = phase_transition_constraints.prepare_phase_transitions(self)
+        self.phase_transition_objectives = phase_transition_objectives.prepare_phase_transitions(self)
         self.multinode_constraints = multinode_constraints.prepare_multinode_penalties(self)
         self.multinode_objectives = multinode_objectives.prepare_multinode_penalties(self)
         # Skipping creates a valid but unsolvable OCP class

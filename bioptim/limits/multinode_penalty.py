@@ -65,15 +65,7 @@ class MultinodePenalty:
             Generic parameters for options
         """
 
-        force_multinode = False
-        if "force_multinode" in params and params["force_multinode"]:
-            # This is a hack to circumvent the apparatus that moves the functions to a custom function
-            # It is necessary for PhaseTransition
-            # TODO: yet another argument to change the interface.
-            force_multinode = True
-            del params["force_multinode"]
-
-        if not isinstance(multinode_penalty, MultinodePenaltyFcn) and not force_multinode:
+        if not isinstance(multinode_penalty, MultinodePenaltyFcn):
             custom_function = multinode_penalty
             multinode_penalty = MultinodePenaltyFcn.CUSTOM
 
