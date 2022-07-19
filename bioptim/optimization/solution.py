@@ -1136,8 +1136,9 @@ class Solution:
                         elif len(penalty.target[0].shape) == 3:
                             target = penalty.target[0][:, :, penalty.node_idx.index(idx)]
                         else:
-                            raise NotImplementedError(f"target number of dimensions ({len(penalty.target[0].shape)}) "
-                                                      f"not implemented yet")
+                            raise NotImplementedError(
+                                f"target number of dimensions ({len(penalty.target[0].shape)}) " f"not implemented yet"
+                            )
 
             val.append(penalty.function_non_threaded(x, u, p))
             val_weighted.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, target, dt))
