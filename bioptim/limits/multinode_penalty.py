@@ -54,6 +54,7 @@ class MultinodePenalty:
         first_node: Union[Node, int],
         second_node: Union[Node, int],
         multinode_penalty: Union[Callable, Any],
+        penalty_type = PenaltyType.USER,
         **params: Any,
     ):
         """
@@ -65,10 +66,6 @@ class MultinodePenalty:
             Generic parameters for options
         """
 
-        if not isinstance(multinode_penalty, MultinodePenaltyFcn):
-            custom_function = multinode_penalty
-            multinode_penalty = MultinodePenaltyFcn.CUSTOM
-
         if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END) and not isinstance(first_node, int):
             raise NotImplementedError(
                 "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
@@ -78,7 +75,7 @@ class MultinodePenalty:
                 "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
             )
 
-        # yet another reason to have user pass CUSTOM and custom_function himself, was broken when inheritence
+        # TODO: yet another reason to have user pass CUSTOM and custom_function himself, was broken when inheritence
         # of PenaltyOption was removed
         self.multinode_penalty = multinode_penalty
         self.phase_first_idx = phase_first_idx
@@ -89,7 +86,7 @@ class MultinodePenalty:
         self.second_node = second_node
         self.node = self.first_node, self.second_node
         self.node_idx = [0]
-        self.penalty_type = PenaltyType.INTERNAL
+        self.penalty_type = penalty_type  # TODO: fix with proper multiple inheritence
 
     # they are almost copy pasted directly in Multinode(Constraint|Objective), are they still really relevent?
     # I don't see how to generalize them without reference to child classes, more so if I remove self.weight.
@@ -341,22 +338,3 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
     @staticmethod
     def get_dt(_):
         return 1
-
-
-class MultinodePenaltyFcn(Enum):
-    """
-    Selection of valid multinode penalty functions
-    """
-
-    EQUALITY = (MultinodePenaltyFunctions.Functions.equality,)
-    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
-    COM_EQUALITY = (MultinodePenaltyFunctions.Functions.com_equality,)
-    COM_VELOCITY_EQUALITY = (MultinodePenaltyFunctions.Functions.com_velocity_equality,)
-
-    @staticmethod
-    def get_type():
-        """
-        Returns the type of the penalty
-        """
-
-        return MultinodePenaltyFunctions
