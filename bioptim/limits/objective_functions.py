@@ -13,7 +13,7 @@ class Objective(PenaltyOption):
     """
 
     def __init__(
-        self, objective: Any, custom_type: Any = None, phase: int = -1, **params: Any
+        self, objective: Any, custom_function: Callable = None, custom_type: Any = None, phase: int = -1, **params: Any
     ):
         """
         Parameters
@@ -28,7 +28,6 @@ class Objective(PenaltyOption):
             Generic parameters for options
         """
 
-        custom_function = None
         if not isinstance(objective, ObjectiveFcn.Lagrange) and not isinstance(objective, ObjectiveFcn.Mayer):
             custom_function = objective
 

@@ -108,15 +108,15 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         )
 
 
-class MultinodeObjectiveFcn(Enum):
+class MultinodeObjectiveFcn(ObjectiveFcn.Mayer):
     """
     Selection of valid multinode penalty functions
     """
 
-    EQUALITY = (MultinodePenaltyFunctions.Functions.equality,)
-    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
-    COM_EQUALITY = (MultinodePenaltyFunctions.Functions.com_equality,)
-    COM_VELOCITY_EQUALITY = (MultinodePenaltyFunctions.Functions.com_velocity_equality,)
+    EQUALITY = MultinodePenaltyFunctions.Functions.equality
+    CUSTOM = MultinodePenaltyFunctions.Functions.custom
+    COM_EQUALITY = MultinodePenaltyFunctions.Functions.com_equality
+    COM_VELOCITY_EQUALITY = MultinodePenaltyFunctions.Functions.com_velocity_equality
 
     @staticmethod
     def get_type():
