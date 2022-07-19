@@ -5,7 +5,6 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
-from .multinode_penalty import MultinodePenaltyFcn
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
@@ -50,8 +49,8 @@ class Constraint(PenaltyOption):
         params:
             Generic parameters for options
         """
-        custom_function = None  # TODO: might remove
-        if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn, MultinodePenaltyFcn)):
+
+        if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn)):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
