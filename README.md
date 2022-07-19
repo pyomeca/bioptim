@@ -865,6 +865,10 @@ The main methods the user will be interested in is the `init` property that retu
 Unless it is a custom function, `init` is a numpy.ndarray and can be directly modified to change the initial guess. 
 Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be called to vertically concatenate multiple initial guesses.
 
+### Class NoisedInitialGuess
+The NoisedInitialGuess class is an alternative class to define initial guesses randomly noised (good for multi-start).
+The constructor can be called similarly to InitialGuess: `bounds = NoisedInitialGuess(init)`. 
+
 ### Class InitialGuessList
 A InitialGuessList is a list of InitialGuess. 
 The `add()` method can be called exactly as if one was calling the `InitialGuess` constructor. 

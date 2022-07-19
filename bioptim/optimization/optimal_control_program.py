@@ -25,7 +25,7 @@ from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
-from ..limits.path_conditions import InitialGuess, InitialGuessList
+from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
 from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
@@ -138,8 +138,8 @@ class OptimalControlProgram:
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
-        x_init: Union[InitialGuess, InitialGuessList] = None,
-        u_init: Union[InitialGuess, InitialGuessList] = None,
+        x_init: Union[InitialGuess, InitialGuessList, NoisedInitialGuess] = None,
+        u_init: Union[InitialGuess, InitialGuessList, NoisedInitialGuess] = None,
         x_bounds: Union[Bounds, BoundsList] = None,
         u_bounds: Union[Bounds, BoundsList] = None,
         objective_functions: Union[Objective, ObjectiveList] = None,
@@ -287,6 +287,10 @@ class OptimalControlProgram:
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init)
             x_init = x_init_tp
+        elif isinstance(x_init, NoisedInitialGuess):
+            x_init_tp = InitialGuessList()
+            x_init_tp.add(x_init.init)
+            x_init = x_init_tp
         elif not isinstance(x_init, InitialGuessList):
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
@@ -295,6 +299,10 @@ class OptimalControlProgram:
         elif isinstance(u_init, InitialGuess):
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init)
+            u_init = u_init_tp
+        elif isinstance(u_init, NoisedInitialGuess):
+            u_init_tp = InitialGuessList()
+            u_init_tp.add(u_init.init)
             u_init = u_init_tp
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
