@@ -88,7 +88,7 @@ class MetaFcnEnum(type):
     def _find_fcn_names(classname, classdict):
         return tuple( filter(lambda key: _is_valid_member(classname, key), classdict.keys()) )
 
-# TODO: isolate differentiate a method from a member.
+# TODO: isolate members of bases from child and differentiate a method from a member (with a decorator?).
 
 class FcnEnum(metaclass=MetaFcnEnum):
 
