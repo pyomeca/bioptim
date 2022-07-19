@@ -231,7 +231,7 @@ class Solution:
             Objective values that are not phase dependent (mostly parameters)
         nlp: NLP
             All the phases of the ocp
-        phase_transitions: list[PhaseTransition]
+        phase_transition_constraints: list[PhaseTransitionConstraint]  # TODO: add phase_transition_objective
             The list of transition constraint between phases
         prepare_plots: Callable
             The function to call to prepare the PlotOCP
@@ -254,7 +254,7 @@ class Solution:
             self.g = ocp.g
             self.g_internal = ocp.g_internal
             self.g_implicit = ocp.g_implicit
-            self.phase_transitions = ocp.phase_transitions
+            self.phase_transition_constraints = ocp.phase_transition_constraints  # TODO: add phase_transition_objective
             self.prepare_plots = ocp.prepare_plots
 
     def __init__(self, ocp, sol: Union[dict, list, tuple, np.ndarray, DM, None]):
@@ -686,7 +686,8 @@ class Solution:
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
                     u0 = self._controls[p - 1]["all"][:, -1]
-                    val = self.ocp.phase_transitions[p - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
+                    val = self.ocp.phase_transition_constraints[p - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
+                    # TODO: add phase_transition_objective
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
                             f"Phase transition must have the same number of states ({val.shape[0]}) "
