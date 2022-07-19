@@ -12,8 +12,8 @@ class Objective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(
-        self, objective: Any, custom_function: Callable = None, custom_type: Any = None, phase: int = -1, **params: Any
+    def __init__(  # custom_function last to not break past signatures
+        self, objective: Any, custom_type: Any = None, phase: int = -1, custom_function: Callable = None, **params: Any
     ):
         """
         Parameters
