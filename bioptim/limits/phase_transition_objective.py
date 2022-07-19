@@ -146,8 +146,8 @@ class PhaseTransitionObjectiveList(UniquePerPhaseOptionList):
                 raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
             existing_phases.append(idx_phase)
 
-            if pt.weight:
-                pt.base = ObjectiveFunction.MayerFunction
+            # TODO: weird stuff happening here
+            pt.base = ObjectiveFunction.MayerFunction
 
             if idx_phase == ocp.n_phases - 1:
                 # Add a cyclic constraint or objective
