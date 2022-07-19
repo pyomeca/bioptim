@@ -1041,6 +1041,9 @@ class Solution:
 
             all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path().absolutePath().to_string(), **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
+            for objective in self.ocp.nlp[idx_phase].J:
+                if objective.name == "MINIMIZE_MARKERS":
+                    all_bioviz[-1].load_experimental_markers(objective.target[0])
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)
