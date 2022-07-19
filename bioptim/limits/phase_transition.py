@@ -56,9 +56,13 @@ class PhaseTransition(MultinodeConstraint):
         **params: Any,
     ):
 
-        if not isinstance(transition, PhaseTransitionFcn):  # TODO: remove because user sets them (proposed)
+        if custom_function and not callable(custom_function):
+            raise RuntimeError("custom_function must be callable.")
+
+        if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
+
         super(PhaseTransition, self).__init__(
             phase_first_idx=phase_pre_idx,
             phase_second_idx=None,
