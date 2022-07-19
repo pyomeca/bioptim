@@ -31,6 +31,13 @@ class MultinodeObjective(Objective, MultinodePenalty):
         params:
             Generic parameters for options
         """
+        if custom_function and not callable(custom_function):
+            raise RuntimeError("custom_function must be callable.")
+
+        if not isinstance(multinode_objective, MultinodeObjectiveFcn):
+            custom_function = multinode_objective
+            multinode_objective = MultinodeObjectiveFcn.CUSTOM
+
         super(MultinodeObjective, self).__init__(
             multinode_penalty=multinode_objective,
             objective=multinode_objective,
@@ -46,7 +53,7 @@ class MultinodeObjective(Objective, MultinodePenalty):
             phase_second_idx=phase_second_idx,
             first_node=first_node,
             second_node=second_node,
-            multinode_penalty=multinode_objective,
+            multinode_penalty=multinode_objective,  # TODO: might not be necessary to store here.
             **params,
         )
 
@@ -100,12 +107,12 @@ class MultinodeObjectiveList(MultinodePenaltyList):
             Any parameters to pass to Penalty
         """
 
-        if not isinstance(multinode_objective, MultinodeObjectiveFcn):  # TODO: might be removed
-            extra_arguments["custom_function"] = multinode_objective
-            multinode_objective = MultinodeObjectiveFcn.CUSTOM
-        super(MultinodeObjectiveList, self)._add(
-            option_type=MultinodeObjective, multinode_objective=multinode_objective, phase=-1, **extra_arguments
-        )
+        if isinstance(multinode_objective, MultinodeObjective):
+            self.copy(multinode_objective)
+        else:
+            super(MultinodeObjectiveList, self)._add(
+                option_type=MultinodeObjective, multinode_objective=multinode_objective, phase=-1, **extra_arguments
+            )
 
 
 class MultinodeObjectiveFcn(ObjectiveFcn.Mayer):

@@ -49,6 +49,8 @@ class Constraint(PenaltyOption):
         params:
             Generic parameters for options
         """
+        if custom_function and not callable(custom_function):
+            raise RuntimeError("custom_function must be callable.")
 
         if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn)):
             custom_function = constraint
@@ -152,7 +154,6 @@ class ConstraintList(OptionList):
 
         if isinstance(constraint, Constraint):
             self.copy(constraint)
-
         else:
             super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, **extra_arguments)
 

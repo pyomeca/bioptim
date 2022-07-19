@@ -60,6 +60,13 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
         params:
             Generic parameters for options
         """
+        if custom_function and not callable(custom_function):
+            raise RuntimeError("custom_function must be callable.")
+
+        if not isinstance(multinode_constraint, MultinodeConstraintFcn):
+            custom_function = multinode_constraint
+            multinode_constraint = MultinodeConstraintFcn.CUSTOM
+
         super(MultinodeConstraint, self).__init__(
             constraint=multinode_constraint,
             custom_function=custom_function,
@@ -127,12 +134,12 @@ class MultinodeConstraintList(MultinodePenaltyList):
             Any parameters to pass to Penalty
         """
 
-        if not isinstance(multinode_constraint, MultinodeConstraintFcn):  # TODO: if we change interface to only accept CUSTOM with custom_function this can be removed
-            extra_arguments["custom_function"] = multinode_constraint     # it is already valid and would simplify the "add" methods
-            multinode_constraint = MultinodeConstraintFcn.CUSTOM
-        super(MultinodeConstraintList, self)._add(
-            option_type=MultinodeConstraint, multinode_constraint=multinode_constraint, phase=-1, **extra_arguments
-        )
+        if isinstance(multinode_constraint, MultinodeConstraint):
+            self.copy(multinode_constraint)
+        else:
+            super(MultinodeConstraintList, self)._add(
+                option_type=MultinodeConstraint, multinode_objective=multinode_constraint, phase=-1, **extra_arguments
+            )
 
 
 class MultinodeConstraintFcn(ConstraintFcn):
