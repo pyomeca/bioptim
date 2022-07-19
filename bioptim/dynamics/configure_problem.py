@@ -71,6 +71,51 @@ class ConfigureProblem:
     """
 
     @staticmethod
+    def _get_kinematics_based_names(nlp, type):
+        """
+        To modify the names of the variables added to the plots if there is quaternions
+        """
+
+        if nlp.phase_mapping:
+            idx = nlp.phase_mapping.map_idx
+        else:
+            idx = range(nlp.model.nbQ())
+        if nlp.model.nbQuat() == 0:
+            new_name = [nlp.model.nameDof()[i].to_string() for i in idx]
+        else:
+            new_name = []
+            for i in nlp.phase_mapping.map_idx:
+                if (
+                    nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot"
+                    or nlp.model.nameDof()[i].to_string()[-6:-1] == "Trans"
+                ):
+                    new_name += [nlp.model.nameDof()[i].to_string()]
+                else:
+                    if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
+                        if type == "qdot":
+                            new_name += [
+                                nlp.model.nameDof()[i].to_string()[:-5]
+                                + "omega"
+                                + nlp.model.nameDof()[i].to_string()[-1]
+                            ]
+                        elif type == "qddot":
+                            new_name += [
+                                nlp.model.nameDof()[i].to_string()[:-5]
+                                + "omegadot"
+                                + nlp.model.nameDof()[i].to_string()[-1]
+                            ]
+                        elif type == "qdddot":
+                            new_name += [
+                                nlp.model.nameDof()[i].to_string()[:-5]
+                                + "omegaddot"
+                                + nlp.model.nameDof()[i].to_string()[-1]
+                            ]
+                        elif type == "tau" or type == "taudot":
+                            new_name += [nlp.model.nameDof()[i].to_string()]
+
+        return new_name
+
+    @staticmethod
     def initialize(ocp, nlp):
         """
         Call the dynamics a first time
@@ -149,7 +194,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
             )
         if implicit_soft_contacts:
-            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -223,7 +268,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
             )
         if implicit_soft_contacts:
-            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -637,6 +682,7 @@ class ConfigureProblem:
         combine_name: str = None,
         combine_state_control_plot: bool = False,
         skip_plot: bool = False,
+        axes_idx: Mapping = None,
     ):
         """
         Add a new variable to the states/controls pool
@@ -683,9 +729,6 @@ class ConfigureProblem:
 
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
-        legend = [
-            f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx if idx is not None
-        ]
 
         mx_states = []
         mx_controls = []
@@ -696,6 +739,11 @@ class ConfigureProblem:
         mx_states = vertcat(*mx_states)
         mx_controls = vertcat(*mx_controls)
 
+        if not axes_idx:
+            axes_idx = Mapping(range(len(name_elements)))
+
+        legend = [f"{name}_{name_elements[idx]}" for idx in range(len(name_elements)) if idx is not None]
+
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
             cx = define_cx(n_col=n_cx)
@@ -705,6 +753,7 @@ class ConfigureProblem:
                 nlp.plot[f"{name}_states"] = CustomPlot(
                     lambda t, x, u, p: x[nlp.states[name].index, :],
                     plot_type=PlotType.INTEGRATED,
+                    axes_idx=axes_idx,
                     legend=legend,
                     combine_to=combine_name,
                 )
@@ -713,11 +762,13 @@ class ConfigureProblem:
             cx = define_cx(n_col=2)
 
             nlp.controls.append(name, cx, mx_controls, nlp.variable_mappings[name])
+
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             if not skip_plot:
                 nlp.plot[f"{name}_controls"] = CustomPlot(
                     lambda t, x, u, p: u[nlp.controls[name].index, :],
                     plot_type=plot_type,
+                    axes_idx=axes_idx,
                     legend=legend,
                     combine_to=f"{name}_states" if as_states and combine_state_control_plot else combine_name,
                 )
@@ -737,8 +788,10 @@ class ConfigureProblem:
             If the generalized coordinates should be a control
         """
 
+        name = "q"
         name_q = [name.to_string() for name in nlp.model.nameDof()]
-        ConfigureProblem.configure_new_variable("q", name_q, nlp, as_states, as_controls)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_q, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qdot(nlp, as_states: bool, as_controls: bool):
@@ -755,9 +808,11 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name_qdot = [str(i) for i in range(nlp.model.nbQdot())]
-        ConfigureProblem._adjust_mapping("qdot", ["q", "qdot", "taudot"], nlp)
-        ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
+        name = "qdot"
+        name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "taudot"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_qdot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qddot(nlp, as_states: bool, as_controls: bool):
@@ -774,9 +829,11 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name_qddot = [str(i) for i in range(nlp.model.nbQdot())]
-        ConfigureProblem._adjust_mapping("qddot", ["q", "qdot"], nlp)
-        ConfigureProblem.configure_new_variable("qddot", name_qddot, nlp, as_states, as_controls)
+        name = "qddot"
+        name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["q", "qdot"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_qddot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qdddot(nlp, as_states: bool, as_controls: bool):
@@ -793,9 +850,11 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name_qdddot = [str(i) for i in range(nlp.model.nbQdot())]
-        ConfigureProblem._adjust_mapping("qdddot", ["q", "qdot", "qddot"], nlp)
-        ConfigureProblem.configure_new_variable("qdddot", name_qdddot, nlp, as_states, as_controls)
+        name = "qdddot"
+        name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "qddot"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_qdddot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_tau(nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
@@ -814,10 +873,13 @@ class ConfigureProblem:
             If the dynamics with fatigue should be declared
         """
 
-        name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
-
-        ConfigureProblem._adjust_mapping("tau", ["qdot", "taudot"], nlp)
-        ConfigureProblem.configure_new_variable("tau", name_tau, nlp, as_states, as_controls, fatigue=fatigue)
+        name = "tau"
+        name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(
+            name, name_tau, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
+        )
 
     @staticmethod
     def append_faked_optim_var(name, optim_var, keys: list):
@@ -859,12 +921,14 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_taudot = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
-        ConfigureProblem._adjust_mapping("taudot", ["qdot", "tau"], nlp)
-        ConfigureProblem.configure_new_variable("taudot", name_taudot, nlp, as_states, as_controls)
+        name = "taudot"
+        name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        ConfigureProblem._adjust_mapping(name, ["qdot", "tau"], nlp)
+        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_taudot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_soft_contact_forces(nlp, as_states: bool, as_controls: bool):
+    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -951,6 +1015,19 @@ class ConfigureProblem:
                         nlp.variable_mappings[key_to_adjust] = nlp.variable_mappings[n]
                     return
             raise RuntimeError("Could not adjust mapping with the reference_keys provided")
+
+    @staticmethod
+    def _apply_phase_mapping(nlp, name):
+        if nlp.phase_mapping:
+            if name in nlp.variable_mappings.keys():
+                double_mapping = nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.map_idx).T.tolist()[0]
+                double_mapping = [int(double_mapping[i]) for i in range(len(double_mapping))]
+            else:
+                double_mapping = nlp.phase_mapping.map_idx
+            axes_idx = Mapping(double_mapping)
+        else:
+            axes_idx = None
+        return axes_idx
 
 
 class DynamicsFcn(Enum):
