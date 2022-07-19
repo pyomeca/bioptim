@@ -218,10 +218,6 @@ class PlotOcp:
              Use the ode defined by OCP or use a separate integrator provided by scipy
 
         """
-        for i in range(1, ocp.n_phases):
-            if len(ocp.nlp[0].states["q"]) != len(ocp.nlp[i].states["q"]):
-                raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
-
         self.ocp = ocp
         self.plot_options = {
             "general_options": {"use_tight_layout": False},
@@ -360,9 +356,11 @@ class PlotOcp:
             # No graph was setup in problem_type
             return
 
+        y_min_all = [None for _ in self.variable_sizes[0]]
+        y_max_all = [None for _ in self.variable_sizes[0]]
         self.plot_func = {}
         for i, nlp in enumerate(self.ocp.nlp):
-            for variable in self.variable_sizes[i]:
+            for var_idx, variable in enumerate(self.variable_sizes[i]):
                 if nlp.plot[variable].combine_to:
                     self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
                     axes = self.axes[variable][1]
@@ -371,13 +369,16 @@ class PlotOcp:
                 else:
                     nb = max(
                         [
-                            max(nlp.plot[variable].phase_mappings.map_idx) + 1 if variable in nlp.plot else 0
+                            len(nlp.plot[variable].phase_mappings.map_idx) if variable in nlp.plot else 0
                             for nlp in self.ocp.nlp
                         ]
                     )
                     n_cols, n_rows = PlotOcp._generate_windows_size(nb)
                     axes = self.__add_new_axis(variable, nb, n_rows, n_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
+                    if not y_min_all[var_idx]:
+                        y_min_all[var_idx] = [np.inf] * nb
+                        y_max_all[var_idx] = [-np.inf] * nb
 
                 if variable not in self.plot_func:
                     self.plot_func[variable] = [
@@ -386,11 +387,12 @@ class PlotOcp:
 
                 if not self.plot_func[variable][i]:
                     continue
-                mapping = self.plot_func[variable][i].phase_mappings.map_idx
-                for ctr, k in enumerate(mapping):
-                    ax = axes[k]
-                    if k < len(self.plot_func[variable][i].legend):
-                        axes[k].set_title(self.plot_func[variable][i].legend[k])
+
+                mapping = nlp.plot[variable].phase_mappings.map_idx
+                for ctr, _ in enumerate(mapping):
+                    ax = axes[ctr]
+                    if ctr < len(nlp.plot[variable].legend):
+                        axes[ctr].set_title(nlp.plot[variable].legend[ctr])
                     ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp.plot[variable].ylim:
@@ -401,10 +403,12 @@ class PlotOcp:
                             y_max = nlp.plot[variable].bounds.max[ctr, :].max()
                         else:
                             nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping), nlp.ns)
-                            y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[k] for j in range(nlp.ns)])
-                            y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[k] for j in range(nlp.ns)])
-                        y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
-                        ax.set_ylim(y_range)
+                            y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[ctr] for j in range(nlp.ns)])
+                            y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[ctr] for j in range(nlp.ns)])
+                        if y_min.__array__()[0] < y_min_all[var_idx][ctr]:
+                            y_min_all[var_idx][ctr] = y_min
+                        if y_max.__array__()[0] > y_max_all[var_idx][ctr]:
+                            y_max_all[var_idx][ctr] = y_max
                     plot_type = self.plot_func[variable][i].type
 
                     t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
@@ -481,6 +485,7 @@ class PlotOcp:
 
                     legend_without_duplicate_labels(ax)
 
+                mapping_idx = 0
                 for j, ax in enumerate(axes):
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
@@ -492,18 +497,30 @@ class PlotOcp:
                         else:
                             ns = nlp.ns
                         nlp.plot[variable].bounds.check_and_adjust_dimensions(n_elements=len(mapping), n_shooting=ns)
-                        bounds_min = np.array([nlp.plot[variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)])
-                        bounds_max = np.array([nlp.plot[variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)])
-                        if bounds_min.shape[0] == nlp.ns:
-                            bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
-                            bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
+                        if j in mapping:
+                            bounds_min = np.array(
+                                [nlp.plot[variable].bounds.min.evaluate_at(k)[mapping_idx] for k in range(ns + 1)]
+                            )
+                            bounds_max = np.array(
+                                [nlp.plot[variable].bounds.max.evaluate_at(k)[mapping_idx] for k in range(ns + 1)]
+                            )
+                            if bounds_min.shape[0] == nlp.ns:
+                                bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
+                                bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
 
-                        self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
-                        )
-                        self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
-                        )
+                            self.plots_bounds.append(
+                                [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
+                            )
+                            self.plots_bounds.append(
+                                [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
+                            )
+                            mapping_idx += 1
+
+        if self.show_bounds and nlp.plot[variable].bounds:
+            for var_idx, variable in enumerate(self.variable_sizes[0]):
+                for j, ax in enumerate(axes):
+                    y_range, _ = self.__compute_ylim(y_min_all[var_idx][j], y_max_all[var_idx][j], 1.25)
+                    ax.set_ylim(y_range)
 
     def __add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
         """

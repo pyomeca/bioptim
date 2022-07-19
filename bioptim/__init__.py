@@ -182,6 +182,7 @@ from .limits.path_conditions import (
     Bounds,
     InitialGuessList,
     InitialGuess,
+    NoisedInitialGuess,
     QAndQDotBounds,
     QAndQDotAndQDDotBounds,
 )

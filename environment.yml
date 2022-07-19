@@ -5,7 +5,7 @@ channels:
 - default
 dependencies:
 - python >=3.9
-- biorbd >=1.8.3
+- biorbd >=1.8.8
 - bioviz
 - scipy
 - numpy

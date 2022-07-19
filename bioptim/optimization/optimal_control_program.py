@@ -32,7 +32,7 @@ from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
 from ..limits.path_conditions import BoundsList, Bounds
-from ..limits.path_conditions import InitialGuess, InitialGuessList
+from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
 from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
@@ -145,8 +145,8 @@ class OptimalControlProgram:
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
-        x_init: Union[InitialGuess, InitialGuessList] = None,
-        u_init: Union[InitialGuess, InitialGuessList] = None,
+        x_init: Union[InitialGuess, InitialGuessList, NoisedInitialGuess] = None,
+        u_init: Union[InitialGuess, InitialGuessList, NoisedInitialGuess] = None,
         x_bounds: Union[Bounds, BoundsList] = None,
         u_bounds: Union[Bounds, BoundsList] = None,
         objective_functions: Union[Objective, ObjectiveList] = None,
@@ -200,6 +200,8 @@ class OptimalControlProgram:
             The mapping to apply on variables
         plot_mappings: Mapping
             The mapping to apply on the plots
+        phase_mappings: Mapping
+            The mapping to apply on the phases
         phase_transitions: PhaseTransitionList
             The transition types between the phases
         n_threads: int
@@ -297,6 +299,10 @@ class OptimalControlProgram:
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init)
             x_init = x_init_tp
+        elif isinstance(x_init, NoisedInitialGuess):
+            x_init_tp = InitialGuessList()
+            x_init_tp.add(x_init.init)
+            x_init = x_init_tp
         elif not isinstance(x_init, InitialGuessList):
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
@@ -305,6 +311,10 @@ class OptimalControlProgram:
         elif isinstance(u_init, InitialGuess):
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init)
+            u_init = u_init_tp
+        elif isinstance(u_init, NoisedInitialGuess):
+            u_init_tp = InitialGuessList()
+            u_init_tp.add(u_init.init)
             u_init = u_init_tp
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
@@ -402,6 +412,10 @@ class OptimalControlProgram:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
         NLP.add(self, "plot_mapping", reshaped_plot_mappings, False, name="plot_mapping")
 
+        phase_mapping, dof_names = self._set_kinematic_phase_mapping()
+        NLP.add(self, "phase_mapping", phase_mapping, True)
+        NLP.add(self, "dof_names", dof_names, True)
+
         # Prepare the parameters to optimize
         self.phase_transitions = []
         if len(parameters) > 0:
@@ -459,6 +473,26 @@ class OptimalControlProgram:
 
         # Prepare objectives
         self.update_objectives(objective_functions)
+
+    def _set_kinematic_phase_mapping(self):
+        """
+        To add phase_mapping for different kinematic number of states in the ocp
+        """
+        dof_names_all_phases = []
+        phase_mappings = []  # [[] for _ in range(len(self.nlp))]
+        dof_names = []  # [[] for _ in range(len(self.nlp))]
+        for i, nlp in enumerate(self.nlp):
+            current_dof_mapping = []
+            for j in range(nlp.model.nbQ()):
+                legend = nlp.model.nameDof()[j].to_string()
+                if legend in dof_names_all_phases:
+                    current_dof_mapping += [dof_names_all_phases.index(legend)]
+                else:
+                    dof_names_all_phases += [legend]
+                    current_dof_mapping += [len(dof_names_all_phases) - 1]
+            phase_mappings.append(Mapping(current_dof_mapping))
+            dof_names.append([dof_names_all_phases[i] for i in phase_mappings[i].map_idx])
+        return phase_mappings, dof_names
 
     def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
         """
