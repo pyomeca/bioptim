@@ -153,7 +153,7 @@ class PenaltyFunctionAbstract:
             markers = []
             for m in model.markers(q_mx):
                 markers_in_jcs = jcs_t.to_mx() @ vertcat(m.to_mx(), 1)
-                markers = vertcat(markers, markers_in_jcs[:3])
+                markers = horzcat(markers, markers_in_jcs[:3])
 
             markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["q"])
             return markers_objective
