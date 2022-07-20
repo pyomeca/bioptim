@@ -8,6 +8,7 @@ from scipy.integrate import solve_ivp
 from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
+from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import (
     ControlType,
@@ -1042,8 +1043,10 @@ class Solution:
             all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path().absolutePath().to_string(), **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
             for objective in self.ocp.nlp[idx_phase].J:
-                if objective.name == "MINIMIZE_MARKERS":
-                    all_bioviz[-1].load_experimental_markers(objective.target[0])
+                if objective.type in (ObjectiveFcn.Mayer.TRACK_MARKERS, ObjectiveFcn.Lagrange.TRACK_MARKERS):
+                    if objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
+                        if objective.target is not None:
+                            all_bioviz[-1].load_experimental_markers(objective.target[0])
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)
