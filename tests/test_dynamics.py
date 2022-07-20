@@ -1115,6 +1115,35 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
 
 
+@pytest.mark.parametrize("cx", [MX, SX])
+def test_joints_acceleration_driven(cx):
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
+    nlp.ns = 5
+    nlp.cx = cx
+
+    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(ocp, "dynamics_type", Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN), False)
+
+    np.random.seed(42)
+
+    # Prepare the dynamics
+    ConfigureProblem.initialize(ocp, nlp)
+
+    # Test the results
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    params = np.random.rand(nlp.parameters.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params))
+
+    # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
+    np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
+
+
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact):
     def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> tuple:

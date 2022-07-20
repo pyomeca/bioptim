@@ -14,6 +14,7 @@ InterpolationType.SPLINE: The values are interpolated from the first to last nod
 InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
+from typing import Union
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -28,23 +29,26 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
+    NoisedInitialGuess,
     InterpolationType,
     OdeSolver,
 )
 
 
-def custom_init_func(current_shooting_point: int, my_values: np.ndarray, n_shooting: int) -> np.ndarray:
+def custom_init_func(
+    current_shooting_point: int, my_values: np.ndarray, n_shooting_custom: int, **extra_params
+) -> np.ndarray:
     """
     The custom function for the x and u initial guesses (this particular one mimics linear interpolation)
 
     Parameters
     ----------
     current_shooting_point: int
-        The current point to return the value, it is defined between [0; n_shooting] for the states
-        and [0; n_shooting[ for the controls
+        The current point to return the value, it is defined between [0; n_shooting_custom] for the states
+        and [0; n_shooting_custom[ for the controls
     my_values: np.ndarray
         The values provided by the user
-    n_shooting: int
+    n_shooting_custom: int
         The number of shooting point
 
     Returns
@@ -53,13 +57,14 @@ def custom_init_func(current_shooting_point: int, my_values: np.ndarray, n_shoot
     """
 
     # Linear interpolation created with custom function
-    return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / n_shooting
+    return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / n_shooting_custom
 
 
 def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int,
     final_time: float,
+    random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
     ode_solver=OdeSolver.RK4(),
 ) -> OptimalControlProgram:
@@ -74,6 +79,8 @@ def prepare_ocp(
         The number of shooting points
     final_time: float
         The time at the final node
+    random_init: bool
+        If True, the initial guess will be randomized
     initial_guess: InterpolationType
         The type of interpolation to use for the initial guesses
     ode_solver: OdeSolver
@@ -135,13 +142,35 @@ def prepare_ocp(
         # The custom function refers to the one at the beginning of the file. It emulates a Linear interpolation
         x = custom_init_func
         u = custom_init_func
-        extra_params_x = {"my_values": np.random.random((nq + nqdot, 2)), "n_shooting": n_shooting}
-        extra_params_u = {"my_values": np.random.random((ntau, 2)), "n_shooting": n_shooting}
+        extra_params_x = {"my_values": np.random.random((nq + nqdot, 2)), "n_shooting_custom": n_shooting}
+        extra_params_u = {"my_values": np.random.random((ntau, 2)), "n_shooting_custom": n_shooting}
     else:
         raise RuntimeError("Initial guess not implemented yet")
-    x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
 
-    u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
+    if random_init:
+        x_init = NoisedInitialGuess(
+            x,
+            t=t,
+            interpolation=initial_guess,
+            bounds=x_bounds,
+            noise_magnitude=1,
+            n_shooting=n_shooting,
+            bound_push=0.1,
+            **extra_params_x,
+        )
+        u_init = NoisedInitialGuess(
+            u,
+            t=t,
+            interpolation=initial_guess,
+            bounds=u_bounds,
+            n_shooting=n_shooting - 1,
+            bound_push=0.1,
+            **extra_params_u,
+        )
+    else:
+        x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
+        u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
+
     # ------------- #
 
     return OptimalControlProgram(
@@ -167,7 +196,9 @@ def main():
     sol = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
-        ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, initial_guess=initial_guess)
+        ocp = prepare_ocp(
+            "models/cube.bioMod", n_shooting=30, final_time=2, random_init=True, initial_guess=initial_guess
+        )
 
         sol = ocp.solve()
         print("\n")
