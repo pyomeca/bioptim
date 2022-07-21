@@ -100,12 +100,9 @@ def test_acados_mayer_first_node(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE,
-                            node=Node.START,
-                            key="q",
-                            index=[0],
-                            target=np.array([[1.0]]).T
-                            )
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.START, key="q", index=[0], target=np.array([[1.0]]).T
+    )
     ocp.update_objectives(objective_functions)
 
     solver = Solver.ACADOS()
@@ -119,6 +116,7 @@ def test_acados_mayer_first_node(cost_type):
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
+
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_several_mayer(cost_type):

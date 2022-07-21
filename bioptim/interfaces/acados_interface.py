@@ -424,8 +424,10 @@ class AcadosInterface(SolverInterface):
                         y_ref_end[rows] = objectives.target[0][..., -1].T.reshape((-1, 1))
                     acados.y_ref_end.append(y_ref_end)
                 else:
-                    raise RuntimeError(f"Allowed node for Mayer function with Acados are only node.START or node.END,"
-                                       f"you have {objectives.node[0]}.")
+                    raise RuntimeError(
+                        f"Allowed node for Mayer function with Acados are only node.START or node.END,"
+                        f"you have {objectives.node[0]}."
+                    )
 
             if objectives.type in allowed_control_objectives:
                 add_objective(n_controls, False)
@@ -446,8 +448,9 @@ class AcadosInterface(SolverInterface):
 
         def add_nonlinear_ls_mayer(acados, objectives, x, u, p, node=None):
             if objectives.node[0] == Node.START or node == "start":
-                acados.W_0 = linalg.block_diag(acados.W_0,
-                                               np.diag([objectives.weight] * objectives.function.numel_out()))
+                acados.W_0 = linalg.block_diag(
+                    acados.W_0, np.diag([objectives.weight] * objectives.function.numel_out())
+                )
                 x = x if objectives.function.sparsity_in("i0").shape != (0, 0) else []
                 u = u if objectives.function.sparsity_in("i1").shape != (0, 0) else []
                 acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function(x, u, p).reshape((-1, 1)))
@@ -458,7 +461,9 @@ class AcadosInterface(SolverInterface):
                     acados.y_ref_start.append(np.zeros((objectives.function.numel_out(), 1)))
 
             elif objectives.node[0] == Node.END or node == "end":
-                acados.W_e = linalg.block_diag(acados.W_e, np.diag([objectives.weight] * objectives.function.numel_out()))
+                acados.W_e = linalg.block_diag(
+                    acados.W_e, np.diag([objectives.weight] * objectives.function.numel_out())
+                )
                 x = x if objectives.function.sparsity_in("i0").shape != (0, 0) else []
                 u = u if objectives.function.sparsity_in("i1").shape != (0, 0) else []
                 acados.mayer_costs_e = vertcat(acados.mayer_costs_e, objectives.function(x, u, p).reshape((-1, 1)))
@@ -468,8 +473,10 @@ class AcadosInterface(SolverInterface):
                 else:
                     acados.y_ref_end.append(np.zeros((objectives.function.numel_out(), 1)))
             else:
-                raise RuntimeError(f"Allowed node for Mayer function with Acados are only node.START or node.END,"
-                                   f"you have {objectives.node[0]}.")
+                raise RuntimeError(
+                    f"Allowed node for Mayer function with Acados are only node.START or node.END,"
+                    f"you have {objectives.node[0]}."
+                )
 
         if ocp.n_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
@@ -576,7 +583,7 @@ class AcadosInterface(SolverInterface):
             if self.nparams:
                 nlp = ocp.nlp[0]  # Assume 1 phase
                 for j, J in enumerate(ocp.J):
-                    add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, 'end')
+                    add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, "end")
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = (
@@ -634,7 +641,7 @@ class AcadosInterface(SolverInterface):
             # check following line
             # self.ocp_solver.cost_set(n, "W", self.W)
             if self.nparams:
-                    param_init = self.params_initial_guess.init.evaluate_at(n)
+                param_init = self.params_initial_guess.init.evaluate_at(n)
 
             self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
