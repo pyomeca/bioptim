@@ -96,6 +96,7 @@ class RK(OdeSolverBase):
         super(RK, self).__init__()
         self.steps = n_integration_steps
         self.is_direct_shooting = True
+        self.defects_type = DefectType.NOT_APPLICABLE
 
     def integrator(self, ocp, nlp) -> list:
         """
@@ -365,6 +366,7 @@ class OdeSolver:
             self.is_direct_collocation = False
             self.is_direct_shooting = True
             self.steps = 1
+            self.defects_type = DefectType.NOT_APPLICABLE
 
         def integrator(self, ocp, nlp) -> list:
             """
