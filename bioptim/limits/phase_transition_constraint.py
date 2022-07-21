@@ -101,7 +101,7 @@ class PhaseTransitionConstraintList(UniquePerPhaseOptionList):
             Any parameters to pass to Constraint
         """
 
-        if not isinstance(transition, PhaseTransitionConstraint):
+        if isinstance(transition, PhaseTransitionConstraint):
             self.copy(transition)
         else:
             super(PhaseTransitionConstraintList, self)._add(
