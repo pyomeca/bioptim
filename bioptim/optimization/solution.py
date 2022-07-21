@@ -1042,11 +1042,11 @@ class Solution:
 
             all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path().absolutePath().to_string(), **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
+            cond = (ObjectiveFcn.Mayer.TRACK_MARKERS, ObjectiveFcn.Lagrange.TRACK_MARKERS, Node.ALL, Node.ALL_SHOOTING)
             for objective in self.ocp.nlp[idx_phase].J:
-                if objective.type in (ObjectiveFcn.Mayer.TRACK_MARKERS, ObjectiveFcn.Lagrange.TRACK_MARKERS):
-                    if objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        if objective.target is not None:
-                            all_bioviz[-1].load_experimental_markers(objective.target[0])
+                if objective.target is not None:
+                    if objective.type in cond and objective.node[0] in cond:
+                        all_bioviz[-1].load_experimental_markers(objective.target[0])
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)
