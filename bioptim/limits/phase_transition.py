@@ -4,16 +4,17 @@ from warnings import warn
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
+from .penalty_option import PenaltyOption
 from .multinode_penalty import MultinodePenaltyFunctions
-from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFcn
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, PenaltyType
+from ..misc.enums import Node, PenaltyType, InterpolationType
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
-class PhaseTransition(MultinodeConstraint):
+class PhaseTransition(PenaltyOption):
     """
     A placeholder for a transition of state
 
@@ -49,10 +50,11 @@ class PhaseTransition(MultinodeConstraint):
         self,
         phase_pre_idx: int = None,
         transition: Union[Callable, Any] = None,
-        weight: float = 0,
+        weight: float = None,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
+        relaxed: bool = False,
         **params: Any,
     ):
 
@@ -63,21 +65,62 @@ class PhaseTransition(MultinodeConstraint):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
 
+        if not relaxed and weight is not None:
+            raise RuntimeError("if relaxed=False, weight must be None")
+
+        if relaxed and weight is None:
+            raise RuntimeError("if phase transition is relaxed, weight must be a float")
+
         super(PhaseTransition, self).__init__(
-            phase_first_idx=phase_pre_idx,
-            phase_second_idx=None,
-            first_node=Node.END,
-            second_node=Node.START,
-            multinode_constraint=transition,
+            penalty=transition,
             custom_function=custom_function,
-            min_bound=min_bound,
-            max_bound=max_bound,
-            weight=weight,
             **params,
         )
+        self.min_bound = min_bound
+        self.max_bound = max_bound
+        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
+        self.first_node = Node.END
+        self.second_node = Node.START
+        self.weight = weight
+        self.quadratic = True
+        self.phase_pre_idx = phase_pre_idx
+        self.phase_post_idx = None
         self.node = Node.TRANSITION
+        self.dt = 1
+        self.node_idx = [0]
         self.transition = True
+        self.relaxed = relaxed
+
+    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
+        ocp = all_pn[0].ocp
+        nlp = all_pn[0].nlp
+
+        if self.relaxed and isinstance(self.weight, (int, float)):
+            pool = nlp.J_internal if nlp else ocp.J_internal
+        else:
+            pool = nlp.g_internal if nlp else ocp.g_internal
+
+        pool[self.list_index] = self
+
+    def clear_penalty(self, ocp, nlp):
+        if self.relaxed and isinstance(self.weight, (int, float)):
+            pool = nlp.J_internal if nlp else ocp.J_internal
+        else:
+            pool = nlp.g_internal if nlp else ocp.g_internal
+
+        if self.list_index < 0:
+            for i, j in enumerate(pool):
+                if not j:
+                    self.list_index = i
+                    return
+            else:
+                pool.append([])
+                self.list_index = len(pool) - 1
+        else:
+            while self.list_index >= len(pool):
+                pool.append([])
+            pool[self.list_index] = []
 
 
 class PhaseTransitionList(UniquePerPhaseOptionList):
@@ -119,7 +162,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
-    def prepare_phase_transitions(self, ocp) -> list:
+    def prepare_phase_transitions(self, ocp, relax_continuity: bool, continuity_weight = None) -> list:
         """
         Configure all the phase transitions and put them in a list
 
@@ -135,12 +178,11 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         # By default it assume Continuous. It can be change later
         full_phase_transitions = [
-            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS) for i in range(ocp.n_phases - 1)
+            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, relaxed=relax_continuity, weight=continuity_weight) for i in range(ocp.n_phases - 1)
         ]
         for pt in full_phase_transitions:
             pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
-        existing_phases = []
         for pt in self:
             if pt.phase_pre_idx is None and pt.type == PhaseTransitionFcn.CYCLIC:
                 pt.phase_pre_idx = ocp.n_phases - 1
@@ -149,9 +191,8 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             idx_phase = pt.phase_pre_idx
             if idx_phase >= ocp.n_phases:
                 raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
-            existing_phases.append(idx_phase)
 
-            if pt.weight:
+            if pt.relaxed:
                 pt.base = ObjectiveFunction.MayerFunction
 
             if idx_phase == ocp.n_phases - 1:
@@ -264,7 +305,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return func
 
 
-class PhaseTransitionFcn(MultinodeConstraintFcn):
+class PhaseTransitionFcn(FcnEnum):
     """
     Selection of valid phase transition functions
     """

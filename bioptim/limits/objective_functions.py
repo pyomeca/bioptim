@@ -279,7 +279,7 @@ class ObjectiveFunction:
         ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, Union[list, tuple]) else new_target
 
     @staticmethod
-    def inner_phase_continuity(ocp):
+    def inner_phase_continuity(ocp, weight):
         """
         Add continuity objectives between each nodes of a phase.
 
@@ -293,6 +293,7 @@ class ObjectiveFunction:
         for i, nlp in enumerate(ocp.nlp):
             penalty = Objective(
                 ObjectiveFcn.Mayer.CONTINUITY,
+                weight=weight,
                 node=Node.ALL_SHOOTING,
                 penalty_type=PenaltyType.INTERNAL,
             )
@@ -308,7 +309,7 @@ class ObjectiveFunction:
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, pt in enumerate(ocp.phase_transition_objectives):  # TODO: change to PhaseTransitionObjective
+        for i, pt in enumerate(ocp.phase_transitions):  # TODO: change to PhaseTransitionObjective
             # Dynamics must be respected between phases
             pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
             pt.list_index = -1
