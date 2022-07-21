@@ -468,7 +468,7 @@ class OptimalControlProgram:
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity and continuity_as_objective:
             # Inner- and inter-phase continuity as an objective
-            self.phase_transition_objectives += PhaseTransitionObjectiveList.prepare_continuity(self)  # must be called now
+            self.phase_transition_objectives += PhaseTransitionObjectiveList.prepare_continuity(self)  # must call now
             ContinuityObjectiveFunctions.continuity(self)
         if not skip_continuity:
             # Inner- and inter-phase continuity as constraint
