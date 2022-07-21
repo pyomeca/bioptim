@@ -467,10 +467,12 @@ class OptimalControlProgram:
         self.multinode_objectives = multinode_objectives.prepare_multinode_penalties(self)
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity and continuity_as_objective:
-            # Inner- and inter-phase continuity
+            # Inner- and inter-phase continuity as an objective
+            self.phase_transition_objectives += PhaseTransitionObjectiveList.prepare_continuity(self)  # must be called now
             ContinuityObjectiveFunctions.continuity(self)
         if not skip_continuity:
-            # Inner- and inter-phase continuity
+            # Inner- and inter-phase continuity as constraint
+            self.phase_transition_constraints += PhaseTransitionConstraintList.prepare_continuity(self)  # same
             ContinuityConstraintFunctions.continuity(self)
 
         self.isdef_x_init = False

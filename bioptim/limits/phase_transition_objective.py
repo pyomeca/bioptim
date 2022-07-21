@@ -116,7 +116,7 @@ class PhaseTransitionObjectiveList(UniquePerPhaseOptionList):
 
     def prepare_phase_transitions(self, ocp) -> list:
         """
-        Configure all the phase transitions and put them in a list
+        Configure all the added phase transition objectives and put them in a list
 
         Parameters
         ----------
@@ -125,18 +125,12 @@ class PhaseTransitionObjectiveList(UniquePerPhaseOptionList):
 
         Returns
         -------
-        The list of all the transitions prepared
+        The list of the added transition objectives prepared
         """
 
-        # By default it assume Continuous. It can be change later
-        full_phase_transitions = [
-            PhaseTransitionObjective(phase_pre_idx=i, transition=PhaseTransitionObjectiveFcn.CONTINUOUS)
-            for i in range(ocp.n_phases - 1)
-        ]
-        for pt in full_phase_transitions:
-            pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
+        # By default it assume Continuous. It can be change later TODO: not sure it is a good idea or that even relevant anymore
 
-        existing_phases = []
+        phase_transitions = []
         for pt in self:
             if pt.phase_pre_idx is None and pt.type == PhaseTransitionObjectiveFcn.CYCLIC:
                 pt.phase_pre_idx = ocp.n_phases - 1
@@ -145,17 +139,39 @@ class PhaseTransitionObjectiveList(UniquePerPhaseOptionList):
             idx_phase = pt.phase_pre_idx
             if idx_phase >= ocp.n_phases:
                 raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
-            existing_phases.append(idx_phase)
 
-            # TODO: weird stuff happening here
+            # TODO: weird stuff was happening here with weight
             pt.base = ObjectiveFunction.MayerFunction
 
             if idx_phase == ocp.n_phases - 1:
                 # Add a cyclic constraint or objective
-                full_phase_transitions.append(pt)
+                phase_transitions.append(pt)
             else:
-                full_phase_transitions[idx_phase] = pt
-        return full_phase_transitions
+                phase_transitions[idx_phase] = pt
+        return phase_transitions
+
+    @staticmethod
+    def prepare_continuity(ocp) -> list:
+        """
+        Configure inter-phase transition continuity objectives and put them in a list
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+
+        Returns
+        -------
+        The list of the inter-phase transition continuity objectives prepared
+        """
+        phase_transitions_continuity = [
+            PhaseTransitionObjective(phase_pre_idx=i, transition=PhaseTransitionObjectiveFcn.CONTINUOUS)
+            for i in range(ocp.n_phases - 1)
+        ]
+        for pt in phase_transitions_continuity:
+            pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
+
+        return phase_transitions_continuity
 
 
 class PhaseTransitionObjectiveFcn(MultinodeObjectiveFcn):
