@@ -178,8 +178,16 @@ from .interfaces.biorbd_interface import BiorbdInterface
 from .interfaces.solver_options import Solver
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition  # TODO: remove
-from .limits.phase_transition_constraint import PhaseTransitionConstraintFcn, PhaseTransitionConstraintList, PhaseTransitionConstraint
-from .limits.phase_transition_objective import PhaseTransitionObjectiveFcn, PhaseTransitionObjectiveList, PhaseTransitionObjective
+from .limits.phase_transition_constraint import (
+    PhaseTransitionConstraintFcn,
+    PhaseTransitionConstraintList,
+    PhaseTransitionConstraint,
+)
+from .limits.phase_transition_objective import (
+    PhaseTransitionObjectiveFcn,
+    PhaseTransitionObjectiveList,
+    PhaseTransitionObjective,
+)
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective

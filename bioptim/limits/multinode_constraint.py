@@ -159,4 +159,3 @@ class MultinodeConstraintFcn(ConstraintFcn):
         """
 
         return MultinodePenaltyFunctions
-

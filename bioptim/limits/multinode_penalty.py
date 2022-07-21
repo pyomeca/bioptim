@@ -54,7 +54,7 @@ class MultinodePenalty:
         first_node: Union[Node, int],
         second_node: Union[Node, int],
         multinode_penalty: Union[Callable, Any],
-        penalty_type = PenaltyType.USER,
+        penalty_type=PenaltyType.USER,
         **params: Any,
     ):
         """
@@ -92,7 +92,9 @@ class MultinodePenalty:
     # I don't see how to generalize them without reference to child classes, more so if I remove self.weight.
     # This one should never be called and for now isn't called ever.
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
-        raise NotImplementedError("Implement in child class.")  # decided to raise an error instead of risking undefined behavior
+        raise NotImplementedError(
+            "Implement in child class."
+        )  # decided to raise an error instead of risking undefined behavior
 
     def clear_penalty(self, ocp, nlp):
         if self.weight == 0:

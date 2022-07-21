@@ -130,7 +130,8 @@ class PhaseTransitionConstraintList(UniquePerPhaseOptionList):
 
         # By default it assume Continuous. It can be change later
         full_phase_transitions = [
-            PhaseTransitionConstraint(phase_pre_idx=i, transition=PhaseTransitionConstraintFcn.CONTINUOUS) for i in range(ocp.n_phases - 1)
+            PhaseTransitionConstraint(phase_pre_idx=i, transition=PhaseTransitionConstraintFcn.CONTINUOUS)
+            for i in range(ocp.n_phases - 1)
         ]
         for pt in full_phase_transitions:
             pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases

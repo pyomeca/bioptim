@@ -686,7 +686,9 @@ class Solution:
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
                     u0 = self._controls[p - 1]["all"][:, -1]
-                    val = self.ocp.phase_transition_constraints[p - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
+                    val = self.ocp.phase_transition_constraints[p - 1].function(
+                        vertcat(x0, x0), vertcat(u0, u0), params
+                    )
                     # TODO: add phase_transition_objective
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
