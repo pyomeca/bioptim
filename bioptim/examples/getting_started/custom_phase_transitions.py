@@ -20,10 +20,10 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
-    PhaseTransitionFcn,
-    PhaseTransitionList,
+    PhaseTransitionConstraintFcn,
+    PhaseTransitionConstraintList,
     OdeSolver,
-    PhaseTransition,
+    PhaseTransitionConstraint,
     BiMapping,
     Solver,
     NonLinearProgram,
@@ -31,7 +31,7 @@ from bioptim import (
 
 
 def custom_phase_transition(
-    transition: PhaseTransition, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
+    transition: PhaseTransitionConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
@@ -163,11 +163,11 @@ def prepare_ocp(
     If for some reason, you don't want the phase transition to be hard constraint, you can specify a weight higher than
     zero. It will thereafter be treated as a Mayer objective function with the specified weight.
     """
-    phase_transitions = PhaseTransitionList()
-    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, states_mapping=BiMapping(range(3), range(3)))
-    phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=1)
+    phase_transitions = PhaseTransitionConstraintList()
+    phase_transitions.add(PhaseTransitionConstraintFcn.CONTINUOUS, phase_pre_idx=0, states_mapping=BiMapping(range(3), range(3)))
+    phase_transitions.add(PhaseTransitionConstraintFcn.IMPACT, phase_pre_idx=1)
     phase_transitions.add(custom_phase_transition, phase_pre_idx=2, coef=0.5)
-    phase_transitions.add(PhaseTransitionFcn.CYCLIC)
+    phase_transitions.add(PhaseTransitionConstraintFcn.CYCLIC)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -181,7 +181,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        phase_transitions=phase_transitions,
+        phase_transition_constraints=phase_transitions,
     )
 
 
