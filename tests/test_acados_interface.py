@@ -86,6 +86,41 @@ def test_acados_one_mayer(cost_type):
 
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
+def test_acados_mayer_first_node(cost_type):
+    if platform == "win32":
+        return
+
+    from bioptim.examples.acados import cube as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        n_shooting=10,
+        tf=2,
+    )
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE,
+                            node=Node.START,
+                            key="q",
+                            index=[0],
+                            target=np.array([[1.0]]).T
+                            )
+    ocp.update_objectives(objective_functions)
+
+    solver = Solver.ACADOS()
+    solver.set_cost_type(cost_type)
+    sol = ocp.solve(solver=solver)
+
+    # Check end state value
+    q = sol.states["q"]
+    np.testing.assert_almost_equal(q[0, 0], 0.999999948505021)
+
+    # Clean test folder
+    os.remove(f"./acados_ocp.json")
+    shutil.rmtree(f"./c_generated_code/")
+
+@pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_several_mayer(cost_type):
     if platform == "win32":
         print("Test for ACADOS on Windows is skipped")
