@@ -61,7 +61,8 @@ def prepare_ocp(
         ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=5000000, key="q", target=target[:nq, :], multi_thread=False
     )
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=500, key="qdot", target=target[nq:, :], multi_thread=False)
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=500, key="qdot", target=target[nq:, :], multi_thread=False
+    )
 
     # Dynamics
     dynamics = DynamicsList()
