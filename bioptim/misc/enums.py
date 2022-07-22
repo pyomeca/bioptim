@@ -47,8 +47,9 @@ class InterpolationType(Enum):
     CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT = 1  # All values are set, with the first and last defined to another one
     LINEAR = 2  # Linear interpolation between first and last
     EACH_FRAME = 3  # Each values are provided by the user
-    SPLINE = 4  # Cubic spline interpolation
-    CUSTOM = 5  # Interpolation via a used-defined custom function
+    ALL_POINTS = 4
+    SPLINE = 5  # Cubic spline interpolation
+    CUSTOM = 6  # Interpolation via a used-defined custom function
 
 
 class Shooting(Enum):

@@ -342,6 +342,7 @@ class OptimizationVector:
             ns = (
                 ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
                 if ocp.nlp[i].ode_solver.is_direct_collocation
+                and ocp.original_values["x_init"].type == InterpolationType.ALL_POINTS
                 else ocp.nlp[i].ns
             )
             ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
@@ -356,7 +357,10 @@ class OptimizationVector:
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             nx = nlp.states.shape
-            if nlp.ode_solver.is_direct_collocation:
+            if (
+                nlp.ode_solver.is_direct_collocation
+                and ocp.original_values["x_init"].type == InterpolationType.ALL_POINTS
+            ):
                 all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                 outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
                 repeat = nlp.ode_solver.polynomial_degree + 1
@@ -364,6 +368,7 @@ class OptimizationVector:
                 all_nx = nx * (nlp.ns + 1)
                 outer_offset = nx
                 repeat = 1
+
             x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
                 for p in range(repeat if k != nlp.ns else 1):
