@@ -97,7 +97,7 @@ def prepare_ocp(
         use_sx=use_sx,
         n_threads=n_threads,
         continuity_as_objective=True,
-        continuity_weight=100,  # the problem is so simple that even at 1 it converges, but the example still holds
+        continuity_weight=1,  # the problem is so simple that even at 1 it converges, but the example still holds
     )
 
 

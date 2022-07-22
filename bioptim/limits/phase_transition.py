@@ -105,22 +105,22 @@ class PhaseTransition(PenaltyOption):
 
     def clear_penalty(self, ocp, nlp):
         if self.relaxed and isinstance(self.weight, (int, float)):
-            pool = nlp.J_internal if nlp else ocp.J_internal
+            pool_to_add_to = nlp.J_internal if nlp else ocp.J_internal
         else:
-            pool = nlp.g_internal if nlp else ocp.g_internal
+            pool_to_add_to = nlp.g_internal if nlp else ocp.g_internal
 
         if self.list_index < 0:
-            for i, j in enumerate(pool):
+            for i, j in enumerate(pool_to_add_to):
                 if not j:
                     self.list_index = i
                     return
             else:
-                pool.append([])
-                self.list_index = len(pool) - 1
+                pool_to_add_to.append([])
+                self.list_index = len(pool_to_add_to) - 1
         else:
-            while self.list_index >= len(pool):
-                pool.append([])
-            pool[self.list_index] = []
+            while self.list_index >= len(pool_to_add_to):
+                pool_to_add_to.append([])
+            pool_to_add_to[self.list_index] = []
 
 
 class PhaseTransitionList(UniquePerPhaseOptionList):

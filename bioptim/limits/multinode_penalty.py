@@ -97,94 +97,9 @@ class MultinodePenalty:
         )  # decided to raise an error instead of risking undefined behavior
 
     def clear_penalty(self, ocp, nlp):
-        if self.weight == 0:
-            g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        else:
-            g_to_add_to = nlp.J_internal if nlp else ocp.J_internal
-
-        if self.list_index < 0:
-            for i, j in enumerate(g_to_add_to):
-                if not j:
-                    self.list_index = i
-                    return
-            else:
-                g_to_add_to.append([])
-                self.list_index = len(g_to_add_to) - 1
-        else:
-            while self.list_index >= len(g_to_add_to):
-                g_to_add_to.append([])
-            g_to_add_to[self.list_index] = []
-
-
-class MultinodePenaltyList(UniquePerPhaseOptionList):
-    """
-    A list of Multi Node Penalty
-
-    Methods
-    -------
-    add(self, transition: Union[Callable, PhaseTransitionFcn], phase: int = -1, **extra_arguments)
-        Add a new MultinodePenalty to the list
-    print(self)
-        Print the MultinodePenaltyList to the console
-    prepare_multinode_penalty(self, ocp) -> list
-        Configure all the multinode_penalty and put them in a list
-    """
-
-    def add(self, multinode_penalty: Any, **extra_arguments: Any):
-        """
-        Add a new MultinodePenalty to the list
-
-        Parameters
-        ----------
-        multinode_penalty: Union[Callable, MultinodePenaltyFcn]
-            The chosen phase transition
-        extra_arguments: dict
-            Any parameters to pass to Penalty
-        """
-
-        if not isinstance(multinode_penalty, MultinodePenaltyFcn):  # TODO: might be removed
-            extra_arguments["custom_function"] = multinode_penalty
-            multinode_penalty = MultinodePenaltyFcn.CUSTOM
-        super(MultinodePenaltyList, self)._add(
-            option_type=MultinodePenalty, multinode_penalty=multinode_penalty, phase=-1, **extra_arguments
-        )
-
-    def print(self):
-        """
-        Print the MultinodePenaltyList to the console
-        """
-        raise NotImplementedError("Printing of MultinodePenaltyList is not ready yet")
-
-    def prepare_multinode_penalties(self, ocp) -> list:
-        """
-        Configure all the phase transitions and put them in a list
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-
-        Returns
-        -------
-        The list of all the multi_node penalties prepared
-        """
-        full_phase_multinode_penalty = []
-        existing_phases = []
-        for mnc in self:
-
-            idx_phase = mnc.phase_first_idx
-            if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
-                raise RuntimeError("Phase index of the multinode_penalty is higher than the number of phases")
-            if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
-                raise RuntimeError("Phase index of the multinode_penalty need to be positive")
-            existing_phases.append(idx_phase)
-
-            if mnc.weight:
-                mnc.base = ObjectiveFunction.MayerFunction
-
-            full_phase_multinode_penalty.append(mnc)
-
-        return full_phase_multinode_penalty
+        raise NotImplementedError(
+            "Implement in child class."
+        )  # decided to raise an error instead of risking undefined behavior
 
 
 class MultinodePenaltyFunctions(PenaltyFunctionAbstract):

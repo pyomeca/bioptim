@@ -2,8 +2,9 @@ from typing import Callable, Union, Any
 
 from .constraints import Constraint, ConstraintFcn
 from ..misc.enums import Node
+from ..misc.options import UniquePerPhaseOptionList
 from .penalty_node import PenaltyNodeList
-from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
+from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
 
 
 class MultinodeConstraint(Constraint, MultinodePenalty):
@@ -92,23 +93,23 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
+        pool_to_add_to = nlp.g_internal if nlp else ocp.g_internal
 
         if self.list_index < 0:
-            for i, j in enumerate(g_to_add_to):
+            for i, j in enumerate(pool_to_add_to):
                 if not j:
                     self.list_index = i
                     return
             else:
-                g_to_add_to.append([])
-                self.list_index = len(g_to_add_to) - 1
+                pool_to_add_to.append([])
+                self.list_index = len(pool_to_add_to) - 1
         else:
-            while self.list_index >= len(g_to_add_to):
-                g_to_add_to.append([])
-            g_to_add_to[self.list_index] = []
+            while self.list_index >= len(pool_to_add_to):
+                pool_to_add_to.append([])
+            pool_to_add_to[self.list_index] = []
 
 
-class MultinodeConstraintList(MultinodePenaltyList):
+class MultinodeConstraintList(UniquePerPhaseOptionList):
     """
     A list of Multi Node Constraint
 
@@ -140,6 +141,34 @@ class MultinodeConstraintList(MultinodePenaltyList):
             super(MultinodeConstraintList, self)._add(
                 option_type=MultinodeConstraint, multinode_constraint=multinode_constraint, phase=-1, **extra_arguments
             )
+
+    def prepare_multinode_constraints(self, ocp) -> list:
+        """
+        Configure all the phase transitions and put them in a list
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+
+        Returns
+        -------
+        The list of all the multi_node constraints prepared
+        """
+        full_phase_multinode_penalty = []
+        existing_phases = []
+        for mnc in self:
+
+            idx_phase = mnc.phase_first_idx
+            if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
+                raise RuntimeError("Phase index of the multinode_penalty is higher than the number of phases")
+            if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
+                raise RuntimeError("Phase index of the multinode_penalty need to be positive")
+            existing_phases.append(idx_phase)
+
+            full_phase_multinode_penalty.append(mnc)
+
+        return full_phase_multinode_penalty
 
 
 class MultinodeConstraintFcn(ConstraintFcn):
