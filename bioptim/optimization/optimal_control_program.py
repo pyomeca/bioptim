@@ -459,7 +459,7 @@ class OptimalControlProgram:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
-        self.phase_transition = phase_transitions.prepare_phase_transitions(
+        self.phase_transitions = phase_transitions.prepare_phase_transitions(
             self, relax_continuity=continuity_as_objective, continuity_weight=continuity_weight
         )
         self.multinode_constraints = multinode_constraints.prepare_multinode_penalties(self)
