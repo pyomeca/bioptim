@@ -19,7 +19,6 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     Solver,
-    Node,
 )
 
 
@@ -55,13 +54,14 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100.0, multi_thread=False)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=10.0, multi_thread=False)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1.0, multi_thread=False)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=1.0, multi_thread=False)
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=5000000, key="q", target=target[:nq, :], multi_thread=False
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=50000, key="q", target=target[:nq, :], multi_thread=False
     )
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=500, key="qdot", target=target[nq:, :], multi_thread=False)
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=50000, key="qdot", target=target[nq:, :], multi_thread=False
+    )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -78,7 +78,7 @@ def prepare_ocp(
 
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()
-    torque_min, torque_max, torque_init = -300, 300, 0
+    torque_min, torque_max, torque_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([torque_min] * n_tau, [torque_max] * n_tau)
     u_bounds[0][n_tau - 1, :] = 0
@@ -110,9 +110,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=100)
 
     # --- Solve the program --- #
-    solver = Solver.ACADOS()
-    solver.set_maximum_iterations(500)
-    sol = ocp.solve(solver=solver)
+    sol = ocp.solve(solver=Solver.ACADOS())
 
     # --- Show results --- #
     sol.print_cost()
