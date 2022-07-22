@@ -2,8 +2,8 @@
 A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
 while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
 
-This simple example is a good place to start investigating bioptim as it describes the most common dynamics out there
-(the joint torque driven), it defines an objective function and some boundaries and initial guesses
+There is however a catch: there are no hard continuity constraint. The continuity is instead added to the objective
+function. The idea behind this is to allow the solver to better find the solution more easily without hitting walls.
 
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
@@ -22,7 +22,6 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
-    IntegralApproximation,
 )
 
 
@@ -97,7 +96,7 @@ def prepare_ocp(
         use_sx=use_sx,
         n_threads=n_threads,
         continuity_as_objective=True,
-        continuity_weight=1,  # the problem is so simple that even at 1 it converges, but the example still holds
+        continuity_weight=10000,  # change the weight to observe the impact on the continuity of the solution
     )
 
 
