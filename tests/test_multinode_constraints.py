@@ -108,7 +108,7 @@ def test_multinode_fail_first_node(node):
     # hard constraint
     with pytest.raises(
         NotImplementedError,
-        match="Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+        match="Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
     ):
         multinode_constraints.add(
             MultinodeConstraintFcn.EQUALITY,
@@ -126,7 +126,7 @@ def test_multinode_fail_second_node(node):
     # hard constraint
     with pytest.raises(
         NotImplementedError,
-        match="Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+        match="Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
     ):
         multinode_constraints.add(
             MultinodeConstraintFcn.EQUALITY,
