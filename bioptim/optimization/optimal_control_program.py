@@ -163,7 +163,7 @@ class OptimalControlProgram:
         n_threads: int = 1,
         use_sx: bool = False,
         continuity_as_objective=False,  # TODO: documentation
-        continuity_weight = None,  # TODO: documentation
+        continuity_weight=None,  # TODO: documentation
         skip_continuity: bool = False,
     ):
         """
@@ -459,7 +459,9 @@ class OptimalControlProgram:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
-        self.phase_transition = phase_transitions.prepare_phase_transitions(self, relax_continuity=continuity_as_objective, continuity_weight=continuity_weight)
+        self.phase_transition = phase_transitions.prepare_phase_transitions(
+            self, relax_continuity=continuity_as_objective, continuity_weight=continuity_weight
+        )
         self.multinode_constraints = multinode_constraints.prepare_multinode_penalties(self)
         self.multinode_objectives = multinode_objectives.prepare_multinode_penalties(self)
         # Skipping creates a valid but unsolvable OCP class
