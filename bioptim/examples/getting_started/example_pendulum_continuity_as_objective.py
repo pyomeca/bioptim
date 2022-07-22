@@ -97,7 +97,7 @@ def prepare_ocp(
         use_sx=use_sx,
         n_threads=n_threads,
         continuity_as_objective=True,
-        continuity_weight=100000,
+        continuity_weight=100,  # the problem is so simple that even at 1 it converges, but the example still holds
     )
 
 
@@ -116,7 +116,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True)))
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #

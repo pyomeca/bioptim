@@ -296,6 +296,7 @@ class ObjectiveFunction:
                 weight=weight,
                 node=Node.ALL_SHOOTING,
                 penalty_type=PenaltyType.INTERNAL,
+                quadratic=True,
             )
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
