@@ -453,7 +453,7 @@ class ContinuityObjectiveFunctions:
     """
 
     @staticmethod
-    def continuity(ocp):
+    def continuity(ocp, weight):
         """
         The declaration of inner- and inter-phase continuity objectives
 
@@ -463,7 +463,7 @@ class ContinuityObjectiveFunctions:
             A reference to the ocp
         """
 
-        ObjectiveFunction.inner_phase_continuity(ocp)
+        ObjectiveFunction.inner_phase_continuity(ocp, weight=weight)
 
         # Dynamics must be respected between phases
         ObjectiveFunction.inter_phase_continuity(ocp)
