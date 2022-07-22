@@ -254,7 +254,7 @@ class Solution:
             self.g = ocp.g
             self.g_internal = ocp.g_internal
             self.g_implicit = ocp.g_implicit
-            self.phase_transition_constraints = ocp.phase_transition_constraints  # TODO: add phase_transition_objective
+            self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
 
     def __init__(self, ocp, sol: Union[dict, list, tuple, np.ndarray, DM, None]):
