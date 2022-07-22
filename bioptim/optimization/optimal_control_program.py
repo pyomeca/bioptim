@@ -468,7 +468,7 @@ class OptimalControlProgram:
         if not skip_continuity and continuity_as_objective:
             # Inner- and inter-phase continuity as an objective
             ContinuityObjectiveFunctions.continuity(self, weight=continuity_weight)
-        if not skip_continuity:
+        elif not skip_continuity:
             # Inner- and inter-phase continuity as constraint
             ContinuityConstraintFunctions.continuity(self)
 
