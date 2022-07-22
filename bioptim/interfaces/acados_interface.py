@@ -406,7 +406,9 @@ class AcadosInterface(SolverInterface):
                 if objectives.node[0] == Node.START or node == "start":
                     if is_state:
                         acados.Vx0 = np.vstack((acados.Vx0, np.diag(v_var)))
+                        acados.Vu0 = np.vstack((acados.Vu, np.zeros((n_states, n_controls))))
                     else:
+                        acados.Vx = np.vstack((acados.Vx, np.zeros((n_controls, n_states))))
                         acados.Vu0 = np.vstack((acados.Vu0, np.diag(v_var)))
                     acados.W_0 = linalg.block_diag(acados.W_0, np.diag([objectives.weight] * n_variables))
                     y_ref_start = np.zeros((n_variables, 1))
