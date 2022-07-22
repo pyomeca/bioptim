@@ -128,22 +128,19 @@ class MultinodeObjectiveList(UniquePerPhaseOptionList):
         -------
         The list of all the multi_node objectives prepared
         """
-        full_phase_multinode_penalty = []
-        existing_phases = []
+        full_phase_multinode_objective = []
         for mnc in self:
 
-            idx_phase = mnc.phase_first_idx
             if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
-                raise RuntimeError("Phase index of the multinode_penalty is higher than the number of phases")
+                raise RuntimeError("Phase index of the multinode_objective is higher than the number of phases")
             if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
-                raise RuntimeError("Phase index of the multinode_penalty need to be positive")
-            existing_phases.append(idx_phase)
+                raise RuntimeError("Phase index of the multinode_objective need to be positive")
 
             mnc.base = ObjectiveFunction.MayerFunction
 
-            full_phase_multinode_penalty.append(mnc)
+            full_phase_multinode_objective.append(mnc)
 
-        return full_phase_multinode_penalty
+        return full_phase_multinode_objective
 
 
 class MultinodeObjectiveFcn(ObjectiveFcn.Mayer):
