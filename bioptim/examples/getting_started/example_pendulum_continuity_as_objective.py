@@ -97,7 +97,7 @@ def prepare_ocp(
         use_sx=use_sx,
         n_threads=n_threads,
         continuity_as_objective=True,
-        continuity_weight=100000
+        continuity_weight=100000,
     )
 
 
