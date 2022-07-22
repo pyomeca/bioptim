@@ -1,11 +1,11 @@
 from typing import Callable, Union, Any
-from enum import Enum
 
 from ..misc.enums import Node, Reach
 from ..misc.options import UniquePerPhaseOptionList
 from .objective_functions import Objective, ObjectiveFcn, ObjectiveFunction
 from .penalty_node import PenaltyNodeList
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
+
 
 # TODO: mirror multinode_constraint.py in here but for objectives
 class MultinodeObjective(Objective, MultinodePenalty):

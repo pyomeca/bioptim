@@ -5,12 +5,10 @@ from enum import Enum
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
-from .penalty import PenaltyOption
+
 from .path_conditions import Bounds
-from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, PenaltyType
-from ..misc.options import UniquePerPhaseOptionList
+from ..misc.enums import Node, PenaltyType
 
 
 class MultinodePenalty:
