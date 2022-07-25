@@ -134,10 +134,21 @@ class OptimizationVector:
         -------
         The vector of all init
         """
-
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
+        nlp = self.ocp.nlp[0]
         for x_init in self.x_init:
-            v_init.concatenate(x_init)
+            if nlp.ode_solver.is_direct_collocation and nlp.x_init.type == InterpolationType.EACH_FRAME:
+                index = 0
+                n_points = nlp.ode_solver.polynomial_degree + 1
+                x_init_vector = np.zeros(self.n_all_x)
+                init_values = self.ocp.original_values["x_init"].init
+                for state in init_values:
+                    for point in range(nlp.ns):
+                        x_init_vector[index: index + n_points] = np.linspace(state[point], state[point + 1], n_points)
+                        index += n_points
+                v_init.concatenate(InitialGuess(x_init_vector))
+            else:
+                v_init.concatenate(x_init)
         for u_init in self.u_init:
             v_init.concatenate(u_init)
         v_init.concatenate(self.parameters_in_list.initial_guess)
