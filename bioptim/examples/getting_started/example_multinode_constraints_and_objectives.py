@@ -1,7 +1,7 @@
 """
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement and
 a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
-Extra constraints are defined between specific nodes of phases.
+Extra constraints and objectives are defined between specific nodes of phases.
 It is designed to show how one can define a multinode constraints and objectives in a multiphase optimal control program
 """
 
