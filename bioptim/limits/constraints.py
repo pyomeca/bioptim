@@ -564,6 +564,9 @@ class ConstraintFcn(FcnEnum):
 
     @staticmethod
     def get_fcn_types():
+        """
+        Returns the types of the enum
+        """
         return (ConstraintFcn,)
 
 
@@ -592,6 +595,9 @@ class ImplicitConstraintFcn(FcnEnum):
 
     @staticmethod
     def get_fcn_types():
+        """
+        Returns the types of the enum
+        """
         return (ImplicitConstraintFcn,)
 
 

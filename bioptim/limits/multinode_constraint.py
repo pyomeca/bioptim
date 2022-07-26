@@ -191,8 +191,8 @@ class MultinodeConstraintFcn(FcnEnum):
         return MultinodePenaltyFunctions
 
     @staticmethod
-    def get_fcn_type():
+    def get_fcn_types():
         """
-        Returns the 'class' of fcn
+        Returns the types of the enum
         """
-        return (MultinodeConstraintFcn,) + ConstraintFcn.get_fcn_type()
+        return (MultinodeConstraintFcn,) + ConstraintFcn.get_fcn_types()

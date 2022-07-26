@@ -333,5 +333,8 @@ class PhaseTransitionFcn(FcnEnum):
         return PhaseTransitionFunctions
 
     @staticmethod
-    def get_fcn_type():
+    def get_fcn_types():
+        """
+        Returns the types of the enum
+        """
         return (PhaseTransitionFcn,)

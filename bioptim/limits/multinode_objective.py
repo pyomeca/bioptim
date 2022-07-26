@@ -167,6 +167,6 @@ class MultinodeObjectiveFcn(FcnEnum):
     @staticmethod
     def get_fcn_types():
         """
-        Returns the 'class' of fcn
+        Returns the types of the enum
         """
-        return (MultinodeObjectiveFcn,) + ObjectiveFcn.Mayer.get_fcn_type()
+        return (MultinodeObjectiveFcn,) + ObjectiveFcn.Mayer.get_fcn_types()
