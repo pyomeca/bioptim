@@ -4,7 +4,7 @@ from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, IntegralApproximation, PenaltyType
 from ..misc.options import OptionList
-from ..misc.fcn_enum import FcnEnum
+from ..misc.fcn_enum import FcnEnum, Fcn
 
 
 class Objective(PenaltyOption):
@@ -30,7 +30,13 @@ class Objective(PenaltyOption):
         if custom_function and not callable(custom_function):
             raise RuntimeError("custom_function must be callable")
 
-        if not isinstance(objective, ObjectiveFcn.Lagrange) and not isinstance(objective, ObjectiveFcn.Mayer):
+        if isinstance(objective, Fcn):
+            if not (
+                ObjectiveFcn.Lagrange in objective.get_fcn_types() or ObjectiveFcn.Mayer in objective.get_fcn_types()
+            ):
+                raise RuntimeError(f"objective of type '{type(objective)}' not allowed")
+
+        else:
             custom_function = objective
 
             if custom_type is None:
@@ -353,32 +359,32 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        MINIMIZE_STATE = PenaltyFunctionAbstract.Functions.minimize_states
-        TRACK_STATE = PenaltyFunctionAbstract.Functions.minimize_states
-        MINIMIZE_FATIGUE = PenaltyFunctionAbstract.Functions.minimize_fatigue
-        MINIMIZE_CONTROL = PenaltyFunctionAbstract.Functions.minimize_controls
-        TRACK_CONTROL = PenaltyFunctionAbstract.Functions.minimize_controls
-        SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
-        MINIMIZE_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
-        TRACK_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
-        MINIMIZE_TIME = ObjectiveFunction.LagrangeFunction.Functions.minimize_time
-        MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
-        TRACK_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
-        PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_states
-        PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_controls
-        MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot
-        MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
-        TRACK_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
-        MINIMIZE_SOFT_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces
-        TRACK_SOFT_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces
-        MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
-        MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
-        MINIMIZE_COM_ACCELERATION = PenaltyFunctionAbstract.Functions.minimize_com_acceleration
-        MINIMIZE_ANGULAR_MOMENTUM = PenaltyFunctionAbstract.Functions.minimize_angular_momentum
-        MINIMIZE_LINEAR_MOMENTUM = PenaltyFunctionAbstract.Functions.minimize_linear_momentum
-        TRACK_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt
-        TRACK_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis
-        CUSTOM = PenaltyFunctionAbstract.Functions.custom
+        MINIMIZE_STATE = Fcn(PenaltyFunctionAbstract.Functions.minimize_states)
+        TRACK_STATE = Fcn(PenaltyFunctionAbstract.Functions.minimize_states)
+        MINIMIZE_FATIGUE = Fcn(PenaltyFunctionAbstract.Functions.minimize_fatigue)
+        MINIMIZE_CONTROL = Fcn(PenaltyFunctionAbstract.Functions.minimize_controls)
+        TRACK_CONTROL = Fcn(PenaltyFunctionAbstract.Functions.minimize_controls)
+        SUPERIMPOSE_MARKERS = Fcn(PenaltyFunctionAbstract.Functions.superimpose_markers)
+        MINIMIZE_MARKERS = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers)
+        TRACK_MARKERS = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers)
+        MINIMIZE_TIME = Fcn(ObjectiveFunction.LagrangeFunction.Functions.minimize_time)
+        MINIMIZE_MARKERS_VELOCITY = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers_velocity)
+        TRACK_MARKERS_VELOCITY = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers_velocity)
+        PROPORTIONAL_STATE = Fcn(PenaltyFunctionAbstract.Functions.proportional_states)
+        PROPORTIONAL_CONTROL = Fcn(PenaltyFunctionAbstract.Functions.proportional_controls)
+        MINIMIZE_QDDOT = Fcn(PenaltyFunctionAbstract.Functions.minimize_qddot)
+        MINIMIZE_CONTACT_FORCES = Fcn(PenaltyFunctionAbstract.Functions.minimize_contact_forces)
+        TRACK_CONTACT_FORCES = Fcn(PenaltyFunctionAbstract.Functions.minimize_contact_forces)
+        MINIMIZE_SOFT_CONTACT_FORCES = Fcn(PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces)
+        TRACK_SOFT_CONTACT_FORCES = Fcn(PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces)
+        MINIMIZE_COM_POSITION = Fcn(PenaltyFunctionAbstract.Functions.minimize_com_position)
+        MINIMIZE_COM_VELOCITY = Fcn(PenaltyFunctionAbstract.Functions.minimize_com_velocity)
+        MINIMIZE_COM_ACCELERATION = Fcn(PenaltyFunctionAbstract.Functions.minimize_com_acceleration)
+        MINIMIZE_ANGULAR_MOMENTUM = Fcn(PenaltyFunctionAbstract.Functions.minimize_angular_momentum)
+        MINIMIZE_LINEAR_MOMENTUM = Fcn(PenaltyFunctionAbstract.Functions.minimize_linear_momentum)
+        TRACK_SEGMENT_WITH_CUSTOM_RT = Fcn(PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt)
+        TRACK_MARKER_WITH_SEGMENT_AXIS = Fcn(PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis)
+        CUSTOM = Fcn(PenaltyFunctionAbstract.Functions.custom)
 
         @staticmethod
         def get_type() -> Callable:
@@ -386,6 +392,13 @@ class ObjectiveFcn:
             Returns the type of the penalty
             """
             return ObjectiveFunction.LagrangeFunction
+
+        @staticmethod
+        def get_fcn_types():
+            """
+            Returns the types of the enum
+            """
+            return (ObjectiveFcn.Lagrange,)
 
     class Mayer(FcnEnum):
         """
@@ -397,26 +410,26 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        CONTINUITY = PenaltyFunctionAbstract.Functions.continuity
-        MINIMIZE_TIME = ObjectiveFunction.MayerFunction.Functions.minimize_time
-        MINIMIZE_STATE = PenaltyFunctionAbstract.Functions.minimize_states
-        TRACK_STATE = PenaltyFunctionAbstract.Functions.minimize_states
-        MINIMIZE_FATIGUE = PenaltyFunctionAbstract.Functions.minimize_fatigue
-        MINIMIZE_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
-        TRACK_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
-        MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
-        TRACK_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
-        SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
-        PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_states
-        MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
-        MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
-        MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
-        MINIMIZE_COM_ACCELERATION = PenaltyFunctionAbstract.Functions.minimize_com_acceleration
-        MINIMIZE_ANGULAR_MOMENTUM = PenaltyFunctionAbstract.Functions.minimize_angular_momentum
-        MINIMIZE_LINEAR_MOMENTUM = PenaltyFunctionAbstract.Functions.minimize_linear_momentum
-        TRACK_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt
-        TRACK_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis
-        CUSTOM = PenaltyFunctionAbstract.Functions.custom
+        CONTINUITY = Fcn(PenaltyFunctionAbstract.Functions.continuity)
+        MINIMIZE_TIME = Fcn(ObjectiveFunction.MayerFunction.Functions.minimize_time)
+        MINIMIZE_STATE = Fcn(PenaltyFunctionAbstract.Functions.minimize_states)
+        TRACK_STATE = Fcn(PenaltyFunctionAbstract.Functions.minimize_states)
+        MINIMIZE_FATIGUE = Fcn(PenaltyFunctionAbstract.Functions.minimize_fatigue)
+        MINIMIZE_MARKERS = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers)
+        TRACK_MARKERS = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers)
+        MINIMIZE_MARKERS_VELOCITY = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers_velocity)
+        TRACK_MARKERS_VELOCITY = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers_velocity)
+        SUPERIMPOSE_MARKERS = Fcn(PenaltyFunctionAbstract.Functions.superimpose_markers)
+        PROPORTIONAL_STATE = Fcn(PenaltyFunctionAbstract.Functions.proportional_states)
+        MINIMIZE_PREDICTED_COM_HEIGHT = Fcn(PenaltyFunctionAbstract.Functions.minimize_predicted_com_height)
+        MINIMIZE_COM_POSITION = Fcn(PenaltyFunctionAbstract.Functions.minimize_com_position)
+        MINIMIZE_COM_VELOCITY = Fcn(PenaltyFunctionAbstract.Functions.minimize_com_velocity)
+        MINIMIZE_COM_ACCELERATION = Fcn(PenaltyFunctionAbstract.Functions.minimize_com_acceleration)
+        MINIMIZE_ANGULAR_MOMENTUM = Fcn(PenaltyFunctionAbstract.Functions.minimize_angular_momentum)
+        MINIMIZE_LINEAR_MOMENTUM = Fcn(PenaltyFunctionAbstract.Functions.minimize_linear_momentum)
+        TRACK_SEGMENT_WITH_CUSTOM_RT = Fcn(PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt)
+        TRACK_MARKER_WITH_SEGMENT_AXIS = Fcn(PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis)
+        CUSTOM = Fcn(PenaltyFunctionAbstract.Functions.custom)
 
         @staticmethod
         def get_type() -> Callable:
@@ -424,6 +437,13 @@ class ObjectiveFcn:
             Returns the type of the penalty
             """
             return ObjectiveFunction.MayerFunction
+
+        @staticmethod
+        def get_fcn_types():
+            """
+            Returns the types of the enum
+            """
+            return (ObjectiveFcn.Mayer,)
 
     class Parameter(FcnEnum):
         """
@@ -435,7 +455,7 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        CUSTOM = PenaltyFunctionAbstract.Functions.custom
+        CUSTOM = Fcn(PenaltyFunctionAbstract.Functions.custom)
 
         @staticmethod
         def get_type() -> Callable:
