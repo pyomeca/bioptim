@@ -49,23 +49,23 @@ class Objective(PenaltyOption):
                     "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
                 )
 
-            # sanity check on the integration method
-            if isinstance(objective, ObjectiveFcn.Lagrange):
-                if (
-                    "integration_rule" not in params.keys()
-                    or params["integration_rule"] == IntegralApproximation.DEFAULT
-                ):
-                    params["integration_rule"] = IntegralApproximation.RECTANGLE
-            elif isinstance(objective, ObjectiveFcn.Mayer):
-                if "integration_rule" in params.keys() and params["integration_rule"] != IntegralApproximation.DEFAULT:
-                    raise ValueError(
-                        "Mayer objective functions cannot be integrated, "
-                        "remove the argument "
-                        "integration_rule"
-                        " or use a Lagrange objective function"
-                    )
-            elif isinstance(objective, ObjectiveFcn.Parameter):
-                pass
+        # sanity check on the integration method
+        if isinstance(objective, ObjectiveFcn.Lagrange):
+            if (
+                "integration_rule" not in params.keys()
+                or params["integration_rule"] == IntegralApproximation.DEFAULT
+            ):
+                params["integration_rule"] = IntegralApproximation.RECTANGLE
+        elif isinstance(objective, ObjectiveFcn.Mayer):
+            if "integration_rule" in params.keys() and params["integration_rule"] != IntegralApproximation.DEFAULT:
+                raise ValueError(
+                    "Mayer objective functions cannot be integrated, "
+                    "remove the argument "
+                    "integration_rule"
+                    " or use a Lagrange objective function"
+                )
+        elif isinstance(objective, ObjectiveFcn.Parameter):
+            pass
 
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
