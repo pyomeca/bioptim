@@ -12,7 +12,7 @@ from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..misc.fcn_enum import FcnEnum
+from ..misc.fcn_enum import FcnEnum, Fcn
 from ..limits.constraints import ImplicitConstraintFcn
 
 
@@ -1035,12 +1035,12 @@ class DynamicsFcn(FcnEnum):
     Selection of valid dynamics functions
     """
 
-    TORQUE_DRIVEN = ConfigureProblem.torque_driven
-    TORQUE_DERIVATIVE_DRIVEN = ConfigureProblem.torque_derivative_driven
-    TORQUE_ACTIVATIONS_DRIVEN = ConfigureProblem.torque_activations_driven
-    JOINTS_ACCELERATION_DRIVEN = ConfigureProblem.joints_acceleration_driven
-    MUSCLE_DRIVEN = ConfigureProblem.muscle_driven
-    CUSTOM = ConfigureProblem.custom
+    TORQUE_DRIVEN = Fcn(ConfigureProblem.torque_driven)
+    TORQUE_DERIVATIVE_DRIVEN = Fcn(ConfigureProblem.torque_derivative_driven)
+    TORQUE_ACTIVATIONS_DRIVEN = Fcn(ConfigureProblem.torque_activations_driven)
+    JOINTS_ACCELERATION_DRIVEN = Fcn(ConfigureProblem.joints_acceleration_driven)
+    MUSCLE_DRIVEN = Fcn(ConfigureProblem.muscle_driven)
+    CUSTOM = Fcn(ConfigureProblem.custom)
 
 
 class Dynamics(OptionGeneric):
@@ -1063,6 +1063,7 @@ class Dynamics(OptionGeneric):
         self,
         dynamics_type: Union[Callable, DynamicsFcn],
         expand: bool = False,
+        dynamic_function: Callable = None,
         **params: Any,
     ):
         """
@@ -1085,10 +1086,11 @@ class Dynamics(OptionGeneric):
                 configure = params["configure"]
                 del params["configure"]
 
-        dynamic_function = None
-        if "dynamic_function" in params:
-            dynamic_function = params["dynamic_function"]
-            del params["dynamic_function"]
+        if dynamic_function and not callable(dynamic_function):
+            raise RuntimeError("dynamic_function must be callable")
+
+        if dynamic_function and dynamics_type != DynamicsFcn.CUSTOM:
+            raise RuntimeError("custom dynamic function detected but no custom configure was provided")
 
         super(Dynamics, self).__init__(type=dynamics_type, **params)
         self.dynamic_function = dynamic_function

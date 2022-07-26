@@ -1,6 +1,7 @@
 from typing import Callable, Union, Any
 
 from .constraints import Constraint, ConstraintFcn
+from ..misc.fcn_enum import FcnEnum, Fcn
 from ..misc.enums import Node
 from ..misc.options import UniquePerPhaseOptionList
 from .penalty_node import PenaltyNodeList
@@ -62,9 +63,12 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
             Generic parameters for options
         """
         if custom_function and not callable(custom_function):
-            raise RuntimeError("custom_function must be callable.")
+            raise RuntimeError("custom_function must be callable")
 
-        if not isinstance(multinode_constraint, MultinodeConstraintFcn):
+        if isinstance(multinode_constraint, Fcn):
+            if MultinodeConstraint not in multinode_constraint.get_fcn_types():
+                raise RuntimeError(f"multinode_constraint of type '{type(multinode_constraint)}' not allowed")
+        else:
             custom_function = multinode_constraint
             multinode_constraint = MultinodeConstraintFcn.CUSTOM
 
@@ -168,15 +172,15 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
         return full_phase_multinode_constraint
 
 
-class MultinodeConstraintFcn(ConstraintFcn):
+class MultinodeConstraintFcn(FcnEnum):
     """
     Selection of valid multinode penalty functions
     """
 
-    EQUALITY = MultinodePenaltyFunctions.Functions.equality
-    CUSTOM = MultinodePenaltyFunctions.Functions.custom
-    COM_EQUALITY = MultinodePenaltyFunctions.Functions.com_equality
-    COM_VELOCITY_EQUALITY = MultinodePenaltyFunctions.Functions.com_velocity_equality
+    EQUALITY = Fcn(MultinodePenaltyFunctions.Functions.equality)
+    CUSTOM = Fcn(MultinodePenaltyFunctions.Functions.custom)
+    COM_EQUALITY = Fcn(MultinodePenaltyFunctions.Functions.com_equality)
+    COM_VELOCITY_EQUALITY = Fcn(MultinodePenaltyFunctions.Functions.com_velocity_equality)
 
     @staticmethod
     def get_type():
@@ -185,3 +189,10 @@ class MultinodeConstraintFcn(ConstraintFcn):
         """
 
         return MultinodePenaltyFunctions
+
+    @staticmethod
+    def get_fcn_type():
+        """
+        Returns the 'class' of fcn
+        """
+        return (MultinodeConstraintFcn,) + ConstraintFcn.get_fcn_type()
