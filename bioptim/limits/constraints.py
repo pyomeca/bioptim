@@ -533,26 +533,26 @@ class ConstraintFcn(FcnEnum):
         Returns the type of the penalty
     """
 
-    CONTINUITY = Fcn(PenaltyFunctionAbstract.Functions.continuity)
-    TRACK_CONTROL = Fcn(PenaltyFunctionAbstract.Functions.minimize_controls)
-    TRACK_STATE = Fcn(PenaltyFunctionAbstract.Functions.minimize_states)
-    TRACK_QDDOT = Fcn(PenaltyFunctionAbstract.Functions.minimize_qddot)
-    TRACK_MARKERS = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers)
-    TRACK_MARKERS_VELOCITY = Fcn(PenaltyFunctionAbstract.Functions.minimize_markers_velocity)
-    SUPERIMPOSE_MARKERS = Fcn(PenaltyFunctionAbstract.Functions.superimpose_markers)
-    PROPORTIONAL_STATE = Fcn(PenaltyFunctionAbstract.Functions.proportional_states)
-    PROPORTIONAL_CONTROL = Fcn(PenaltyFunctionAbstract.Functions.proportional_controls)
-    TRACK_CONTACT_FORCES = Fcn(PenaltyFunctionAbstract.Functions.minimize_contact_forces)
-    TRACK_SEGMENT_WITH_CUSTOM_RT = Fcn(PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt)
-    TRACK_MARKER_WITH_SEGMENT_AXIS = Fcn(PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis)
-    TRACK_COM_POSITION = Fcn(PenaltyFunctionAbstract.Functions.minimize_com_position)
-    TRACK_COM_VELOCITY = Fcn(PenaltyFunctionAbstract.Functions.minimize_com_velocity)
-    TRACK_ANGULAR_MOMENTUM = Fcn(PenaltyFunctionAbstract.Functions.minimize_angular_momentum)
-    TRACK_LINEAR_MOMENTUM = Fcn(PenaltyFunctionAbstract.Functions.minimize_linear_momentum)
-    CUSTOM = Fcn(PenaltyFunctionAbstract.Functions.custom)
-    NON_SLIPPING = Fcn(ConstraintFunction.Functions.non_slipping)
-    TORQUE_MAX_FROM_Q_AND_QDOT = Fcn(ConstraintFunction.Functions.torque_max_from_q_and_qdot)
-    TIME_CONSTRAINT = Fcn(ConstraintFunction.Functions.time_constraint)
+    CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
+    TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+    TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+    TRACK_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
+    TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+    TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+    SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
+    PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+    PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
+    TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+    TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
+    TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+    TRACK_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
+    TRACK_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
+    TRACK_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
+    TRACK_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
+    CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
+    NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
+    TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
+    TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
 
     @staticmethod
     def get_type():
@@ -580,10 +580,10 @@ class ImplicitConstraintFcn(FcnEnum):
         Returns the type of the penalty
     """
 
-    QDDOT_EQUALS_FORWARD_DYNAMICS = Fcn(ConstraintFunction.Functions.qddot_equals_forward_dynamics)
-    TAU_EQUALS_INVERSE_DYNAMICS = Fcn(ConstraintFunction.Functions.tau_equals_inverse_dynamics)
-    SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = Fcn(ConstraintFunction.Functions.implicit_soft_contact_forces)
-    TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = Fcn(ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics)
+    QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
+    TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
+    SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
+    TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
 
     @staticmethod
     def get_type():

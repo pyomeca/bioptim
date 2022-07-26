@@ -18,7 +18,7 @@ class Fcn:
         """
         self.func = func
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):  # makes enum members callable
         """
         Call the function.
 
@@ -29,17 +29,7 @@ class Fcn:
         return self.func(*args, **kwargs)
 
 
-class FcnEnum(Fcn, Enum):  # an enum of Fcn precisely
-    def __call__(self, *args, **kwargs):
-        """
-        Make enum's members callable.
-
-        Returns
-        -------
-        the function call
-        """
-        return self.value(*args, **kwargs)
-
+class FcnEnum(Fcn, Enum):  # an enum of Fcn precisely, helps with validation later
     @staticmethod
     def get_type():
         """

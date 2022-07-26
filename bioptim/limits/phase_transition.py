@@ -319,10 +319,10 @@ class PhaseTransitionFcn(FcnEnum):
     Selection of valid phase transition functions
     """
 
-    CONTINUOUS = Fcn(PhaseTransitionFunctions.Functions.continuous)
-    IMPACT = Fcn(PhaseTransitionFunctions.Functions.impact)
-    CYCLIC = Fcn(PhaseTransitionFunctions.Functions.cyclic)
-    CUSTOM = Fcn(MultinodePenaltyFunctions.Functions.custom)
+    CONTINUOUS = (PhaseTransitionFunctions.Functions.continuous,)
+    IMPACT = (PhaseTransitionFunctions.Functions.impact,)
+    CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
+    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
     @staticmethod
     def get_type():
