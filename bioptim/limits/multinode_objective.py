@@ -1,5 +1,6 @@
 from typing import Callable, Union, Any
 
+from ..misc.fcn_enum import FcnEnum, Fcn
 from ..misc.enums import Node
 from ..misc.options import UniquePerPhaseOptionList
 from .objective_functions import Objective, ObjectiveFcn, ObjectiveFunction
@@ -33,9 +34,12 @@ class MultinodeObjective(Objective, MultinodePenalty):
             Generic parameters for options
         """
         if custom_function and not callable(custom_function):
-            raise RuntimeError("custom_function must be callable.")
+            raise RuntimeError("custom_function must be callable")
 
-        if not isinstance(multinode_objective, MultinodeObjectiveFcn):
+        if isinstance(multinode_objective, Fcn):
+            if MultinodeObjective not in multinode_objective.get_fcn_types():
+                raise RuntimeError(f"multinode_objective of type '{type(multinode_objective)}' not allowed")
+        else:
             custom_function = multinode_objective
             multinode_objective = MultinodeObjectiveFcn.CUSTOM
 
@@ -142,15 +146,15 @@ class MultinodeObjectiveList(UniquePerPhaseOptionList):
         return full_phase_multinode_objective
 
 
-class MultinodeObjectiveFcn(ObjectiveFcn.Mayer):
+class MultinodeObjectiveFcn(FcnEnum):
     """
     Selection of valid multinode penalty functions
     """
 
-    EQUALITY = MultinodePenaltyFunctions.Functions.equality
-    CUSTOM = MultinodePenaltyFunctions.Functions.custom
-    COM_EQUALITY = MultinodePenaltyFunctions.Functions.com_equality
-    COM_VELOCITY_EQUALITY = MultinodePenaltyFunctions.Functions.com_velocity_equality
+    EQUALITY = Fcn(MultinodePenaltyFunctions.Functions.equality)
+    CUSTOM = Fcn(MultinodePenaltyFunctions.Functions.custom)
+    COM_EQUALITY = Fcn(MultinodePenaltyFunctions.Functions.com_equality)
+    COM_VELOCITY_EQUALITY = Fcn(MultinodePenaltyFunctions.Functions.com_velocity_equality)
 
     @staticmethod
     def get_type():
@@ -159,3 +163,10 @@ class MultinodeObjectiveFcn(ObjectiveFcn.Mayer):
         """
 
         return MultinodePenaltyFunctions
+
+    @staticmethod
+    def get_fcn_types():
+        """
+        Returns the 'class' of fcn
+        """
+        return (MultinodeObjectiveFcn,) + ObjectiveFcn.Mayer.get_fcn_type()

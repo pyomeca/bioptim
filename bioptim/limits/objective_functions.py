@@ -28,7 +28,7 @@ class Objective(PenaltyOption):
             Generic parameters for options
         """
         if custom_function and not callable(custom_function):
-            raise RuntimeError("custom_function must be callable.")
+            raise RuntimeError("custom_function must be callable")
 
         if not isinstance(objective, ObjectiveFcn.Lagrange) and not isinstance(objective, ObjectiveFcn.Mayer):
             custom_function = objective

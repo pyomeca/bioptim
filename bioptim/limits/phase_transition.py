@@ -10,7 +10,7 @@ from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, PenaltyType, InterpolationType
-from ..misc.fcn_enum import FcnEnum
+from ..misc.fcn_enum import FcnEnum, Fcn
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -59,9 +59,12 @@ class PhaseTransition(PenaltyOption):
     ):
 
         if custom_function and not callable(custom_function):
-            raise RuntimeError("custom_function must be callable.")
+            raise RuntimeError("custom_function must be callable")
 
-        if not isinstance(transition, PhaseTransitionFcn):
+        if isinstance(transition, Fcn):
+            if PhaseTransitionFcn not in transition.get_fcn_types():
+                raise RuntimeError(f"transition of type '{type(transition)}' not allowed")
+        else:
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
 
@@ -316,10 +319,10 @@ class PhaseTransitionFcn(FcnEnum):
     Selection of valid phase transition functions
     """
 
-    CONTINUOUS = PhaseTransitionFunctions.Functions.continuous
-    IMPACT = PhaseTransitionFunctions.Functions.impact
-    CYCLIC = PhaseTransitionFunctions.Functions.cyclic
-    CUSTOM = MultinodePenaltyFunctions.Functions.custom
+    CONTINUOUS = Fcn(PhaseTransitionFunctions.Functions.continuous)
+    IMPACT = Fcn(PhaseTransitionFunctions.Functions.impact)
+    CYCLIC = Fcn(PhaseTransitionFunctions.Functions.cyclic)
+    CUSTOM = Fcn(MultinodePenaltyFunctions.Functions.custom)
 
     @staticmethod
     def get_type():
@@ -328,3 +331,7 @@ class PhaseTransitionFcn(FcnEnum):
         """
 
         return PhaseTransitionFunctions
+
+    @staticmethod
+    def get_fcn_type():
+        return (PhaseTransitionFcn,)
