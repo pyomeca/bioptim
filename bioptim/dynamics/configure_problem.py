@@ -12,7 +12,7 @@ from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..misc.fcn_enum import FcnEnum, Fcn
+from ..misc.fcn_enum import FcnEnum
 from ..limits.constraints import ImplicitConstraintFcn
 
 
@@ -1035,12 +1035,12 @@ class DynamicsFcn(FcnEnum):
     Selection of valid dynamics functions
     """
 
-    TORQUE_DRIVEN = Fcn(ConfigureProblem.torque_driven)
-    TORQUE_DERIVATIVE_DRIVEN = Fcn(ConfigureProblem.torque_derivative_driven)
-    TORQUE_ACTIVATIONS_DRIVEN = Fcn(ConfigureProblem.torque_activations_driven)
-    JOINTS_ACCELERATION_DRIVEN = Fcn(ConfigureProblem.joints_acceleration_driven)
-    MUSCLE_DRIVEN = Fcn(ConfigureProblem.muscle_driven)
-    CUSTOM = Fcn(ConfigureProblem.custom)
+    TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
+    TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
+    TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
+    JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)
+    MUSCLE_DRIVEN = (ConfigureProblem.muscle_driven,)
+    CUSTOM = (ConfigureProblem.custom,)
 
 
 class Dynamics(OptionGeneric):

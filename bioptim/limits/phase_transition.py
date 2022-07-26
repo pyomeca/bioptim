@@ -10,7 +10,7 @@ from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, PenaltyType, InterpolationType
-from ..misc.fcn_enum import FcnEnum, Fcn
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -61,7 +61,7 @@ class PhaseTransition(PenaltyOption):
         if custom_function and not callable(custom_function):
             raise RuntimeError("custom_function must be callable")
 
-        if isinstance(transition, Fcn):
+        if isinstance(transition, FcnEnum):
             if PhaseTransitionFcn not in transition.get_fcn_types():
                 raise RuntimeError(f"transition of type '{type(transition)}' not allowed")
         else:

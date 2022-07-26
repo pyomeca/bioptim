@@ -1,6 +1,6 @@
 from typing import Callable, Union, Any
 
-from ..misc.fcn_enum import FcnEnum, Fcn
+from ..misc.fcn_enum import FcnEnum
 from ..misc.enums import Node
 from ..misc.options import UniquePerPhaseOptionList
 from .objective_functions import Objective, ObjectiveFcn, ObjectiveFunction
@@ -36,7 +36,7 @@ class MultinodeObjective(Objective, MultinodePenalty):
         if custom_function and not callable(custom_function):
             raise RuntimeError("custom_function must be callable")
 
-        if isinstance(multinode_objective, Fcn):
+        if isinstance(multinode_objective, FcnEnum):
             if MultinodeObjective not in multinode_objective.get_fcn_types():
                 raise RuntimeError(f"multinode_objective of type '{type(multinode_objective)}' not allowed")
         else:

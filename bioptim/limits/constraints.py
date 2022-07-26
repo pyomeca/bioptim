@@ -7,7 +7,7 @@ from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
-from ..misc.fcn_enum import FcnEnum, Fcn
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
 
@@ -52,7 +52,7 @@ class Constraint(PenaltyOption):
         if custom_function and not callable(custom_function):
             raise RuntimeError("custom_function must be callable")
 
-        if isinstance(constraint, Fcn):
+        if isinstance(constraint, FcnEnum):
             if not (ConstraintFcn in constraint.get_fcn_types() or ImplicitConstraintFcn in constraint.get_fcn_types()):
                 raise RuntimeError(f"constraint of type '{type(constraint)}' not allowed")
         else:

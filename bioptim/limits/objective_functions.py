@@ -4,7 +4,7 @@ from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, IntegralApproximation, PenaltyType
 from ..misc.options import OptionList
-from ..misc.fcn_enum import FcnEnum, Fcn
+from ..misc.fcn_enum import FcnEnum
 
 
 class Objective(PenaltyOption):
@@ -30,7 +30,7 @@ class Objective(PenaltyOption):
         if custom_function and not callable(custom_function):
             raise RuntimeError("custom_function must be callable")
 
-        if isinstance(objective, Fcn):
+        if isinstance(objective, FcnEnum):
             if not (
                 ObjectiveFcn.Lagrange in objective.get_fcn_types() or ObjectiveFcn.Mayer in objective.get_fcn_types()
             ):
@@ -455,7 +455,7 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        CUSTOM = Fcn(PenaltyFunctionAbstract.Functions.custom)
+        CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
         def get_type() -> Callable:

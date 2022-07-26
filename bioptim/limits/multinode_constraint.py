@@ -1,7 +1,7 @@
 from typing import Callable, Union, Any
 
 from .constraints import Constraint, ConstraintFcn
-from ..misc.fcn_enum import FcnEnum, Fcn
+from ..misc.fcn_enum import FcnEnum
 from ..misc.enums import Node
 from ..misc.options import UniquePerPhaseOptionList
 from .penalty_node import PenaltyNodeList
@@ -65,7 +65,7 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
         if custom_function and not callable(custom_function):
             raise RuntimeError("custom_function must be callable")
 
-        if isinstance(multinode_constraint, Fcn):
+        if isinstance(multinode_constraint, FcnEnum):
             if MultinodeConstraint not in multinode_constraint.get_fcn_types():
                 raise RuntimeError(f"multinode_constraint of type '{type(multinode_constraint)}' not allowed")
         else:
