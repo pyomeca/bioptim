@@ -349,11 +349,18 @@ class OptimizationVector:
         ocp = self.ocp
 
         # Sanity check
+
         for i in range(ocp.n_phases):
+            if hasattr(ocp.original_values["x_init"], "type"):
+                interpolation_type = ocp.original_values["x_init"].type
+            elif hasattr(ocp.original_values["x_init"], "options"):
+                interpolation_type = ocp.original_values["x_init"].options[i][0].type
+            else:
+                interpolation_type = None
             ns = (
                 ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
                 if ocp.nlp[i].ode_solver.is_direct_collocation
-                and ocp.original_values["x_init"].type == InterpolationType.ALL_POINTS
+                and interpolation_type != InterpolationType.EACH_FRAME
                 else ocp.nlp[i].ns
             )
             ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
@@ -370,7 +377,7 @@ class OptimizationVector:
             nx = nlp.states.shape
             if (
                 nlp.ode_solver.is_direct_collocation
-                and ocp.original_values["x_init"].type == InterpolationType.ALL_POINTS
+                and interpolation_type != InterpolationType.EACH_FRAME
             ):
                 all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                 outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
