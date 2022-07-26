@@ -51,10 +51,7 @@ class Objective(PenaltyOption):
 
         # sanity check on the integration method
         if isinstance(objective, ObjectiveFcn.Lagrange):
-            if (
-                "integration_rule" not in params.keys()
-                or params["integration_rule"] == IntegralApproximation.DEFAULT
-            ):
+            if "integration_rule" not in params.keys() or params["integration_rule"] == IntegralApproximation.DEFAULT:
                 params["integration_rule"] = IntegralApproximation.RECTANGLE
         elif isinstance(objective, ObjectiveFcn.Mayer):
             if "integration_rule" in params.keys() and params["integration_rule"] != IntegralApproximation.DEFAULT:
