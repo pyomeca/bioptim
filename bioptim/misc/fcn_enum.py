@@ -1,35 +1,13 @@
-from typing import Callable
 from enum import Enum
 
 
-class Fcn:
-    """
-    A function presented to the user.
-    """
-
-    def __init__(self, func: Callable):
+class FcnEnum(Enum):  # an enum of Fcn precisely, helps with validation later
+    def __call__(self, *args, **kwargs):
         """
-        Initialize an Fcn.
-
-        Parameters
-        ----------
-        func: Callable
-            the function to be presented
+        Call the member.
         """
-        self.func = func
+        return self.value[0](*args, **kwargs)
 
-    def __call__(self, *args, **kwargs):  # makes enum members callable
-        """
-        Call the function.
-
-        Returns
-        -------
-        the function call
-        """
-        return self.func(*args, **kwargs)
-
-
-class FcnEnum(Fcn, Enum):  # an enum of Fcn precisely, helps with validation later
     @staticmethod
     def get_type():
         """
