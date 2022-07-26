@@ -1,6 +1,6 @@
 from typing import Callable, Union, Any
 
-from ..misc.enums import Node, Reach
+from ..misc.enums import Node
 from ..misc.options import UniquePerPhaseOptionList
 from .objective_functions import Objective, ObjectiveFcn, ObjectiveFunction
 from .penalty_node import PenaltyNodeList
@@ -44,7 +44,6 @@ class MultinodeObjective(Objective, MultinodePenalty):
             objective=multinode_objective,
             custom_function=custom_function,
             custom_type=ObjectiveFcn.Mayer,
-            reach=Reach.MULTINODE,
             weight=weight,
             **params,
         )
