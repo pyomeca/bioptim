@@ -8,7 +8,6 @@ It is designed to show how one can define a multinode constraints and objectives
 from casadi import MX
 import biorbd_casadi as biorbd
 from bioptim import (
-    PenaltyNode,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -27,7 +26,6 @@ from bioptim import (
     MultinodeConstraint,
     MultinodeObjectiveList,
     MultinodeObjectiveFcn,
-    MultinodeObjective,
     NonLinearProgram,
 )
 

@@ -135,15 +135,6 @@ class ConstraintType(Enum):
     IMPLICIT = "implicit"
 
 
-class Reach(Enum):
-    """
-    Selection of penalty reaches
-    """
-
-    SINGLENODE = "singlenode"
-    MULTINODE = "multinode"
-
-
 class IntegralApproximation(Enum):
     """
     Selection of integral approximation
