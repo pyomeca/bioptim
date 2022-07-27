@@ -4,7 +4,7 @@ import numpy as np
 from casadi import vertcat, DM, MX, SX
 
 from .parameters import ParameterList, Parameter
-from ..limits.path_conditions import Bounds, InitialGuess
+from ..limits.path_conditions import Bounds, InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, InterpolationType
 
 
@@ -136,8 +136,12 @@ class OptimizationVector:
         """
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
         nlp = self.ocp.nlp[0]
-        for x_init in self.x_init:
-            if nlp.ode_solver.is_direct_collocation and nlp.x_init.type == InterpolationType.EACH_FRAME:
+        for phase, x_init in enumerate(self.x_init):
+            if type(self.ocp.original_values["x_init"]) == InitialGuess:
+                interpolation_type = nlp.x_init.type
+            elif type(self.ocp.original_values["x_init"]) == InitialGuessList:
+                interpolation_type = self.ocp.original_values["x_init"][phase].type
+            if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
                 index = 0
                 n_points = nlp.ode_solver.polynomial_degree + 1
                 x_init_vector = np.zeros(self.n_all_x)
