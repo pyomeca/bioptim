@@ -4,7 +4,7 @@ import numpy as np
 from casadi import vertcat, DM, MX, SX
 
 from .parameters import ParameterList, Parameter
-from ..limits.path_conditions import Bounds, InitialGuess, InitialGuessList
+from ..limits.path_conditions import Bounds, InitialGuess
 from ..misc.enums import ControlType, InterpolationType
 
 
@@ -134,25 +134,10 @@ class OptimizationVector:
         -------
         The vector of all init
         """
+
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
-        nlp = self.ocp.nlp[0]
-        for phase, x_init in enumerate(self.x_init):
-            if type(self.ocp.original_values["x_init"]) == InitialGuess:
-                interpolation_type = nlp.x_init.type
-            elif type(self.ocp.original_values["x_init"]) == InitialGuessList:
-                interpolation_type = self.ocp.original_values["x_init"][phase].type
-            if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
-                index = 0
-                n_points = nlp.ode_solver.polynomial_degree + 1
-                x_init_vector = np.zeros(self.n_all_x)
-                init_values = self.ocp.original_values["x_init"].init
-                for state in init_values:
-                    for point in range(nlp.ns):
-                        x_init_vector[index: index + n_points] = np.linspace(state[point], state[point + 1], n_points)
-                        index += n_points
-                v_init.concatenate(InitialGuess(x_init_vector))
-            else:
-                v_init.concatenate(x_init)
+        for x_init in self.x_init:
+            v_init.concatenate(x_init)
         for u_init in self.u_init:
             v_init.concatenate(u_init)
         v_init.concatenate(self.parameters_in_list.initial_guess)
@@ -353,18 +338,10 @@ class OptimizationVector:
         ocp = self.ocp
 
         # Sanity check
-
         for i in range(ocp.n_phases):
-            if hasattr(ocp.original_values["x_init"], "type"):
-                interpolation_type = ocp.original_values["x_init"].type
-            elif hasattr(ocp.original_values["x_init"], "options"):
-                interpolation_type = ocp.original_values["x_init"].options[i][0].type
-            else:
-                interpolation_type = None
             ns = (
                 ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
                 if ocp.nlp[i].ode_solver.is_direct_collocation
-                and interpolation_type != InterpolationType.EACH_FRAME
                 else ocp.nlp[i].ns
             )
             ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
@@ -379,10 +356,7 @@ class OptimizationVector:
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             nx = nlp.states.shape
-            if (
-                nlp.ode_solver.is_direct_collocation
-                and interpolation_type != InterpolationType.EACH_FRAME
-            ):
+            if nlp.ode_solver.is_direct_collocation:
                 all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                 outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
                 repeat = nlp.ode_solver.polynomial_degree + 1
@@ -390,7 +364,6 @@ class OptimizationVector:
                 all_nx = nx * (nlp.ns + 1)
                 outer_offset = nx
                 repeat = 1
-
             x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
                 for p in range(repeat if k != nlp.ns else 1):
