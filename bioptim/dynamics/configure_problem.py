@@ -1089,8 +1089,8 @@ class Dynamics(OptionGeneric):
         if dynamic_function and not callable(dynamic_function):
             raise RuntimeError("dynamic_function must be callable")
 
-        if dynamic_function and dynamics_type != DynamicsFcn.CUSTOM:
-            raise RuntimeError("custom dynamic function detected but no custom configure was provided")
+        # if dynamic_function and dynamics_type != DynamicsFcn.CUSTOM:
+        #     raise RuntimeError("custom dynamic function detected but no custom configure was provided")
 
         super(Dynamics, self).__init__(type=dynamics_type, **params)
         self.dynamic_function = dynamic_function
