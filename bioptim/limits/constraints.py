@@ -56,6 +56,8 @@ class Constraint(PenaltyOption):
             if not (ConstraintFcn in constraint.get_fcn_types() or ImplicitConstraintFcn in constraint.get_fcn_types()):
                 raise RuntimeError(f"constraint of type '{type(constraint)}' not allowed")
         else:
+            if not callable(constraint):
+                raise RuntimeError("constraint must be callable")
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
