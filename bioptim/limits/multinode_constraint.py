@@ -3,7 +3,7 @@ from typing import Callable, Union, Any
 from .constraints import Constraint, ConstraintFcn
 from ..misc.fcn_enum import FcnEnum
 from ..misc.enums import Node
-from ..misc.options import UniquePerPhaseOptionList
+from ..misc.options import OptionList
 from .penalty_node import PenaltyNodeList
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
 
@@ -69,6 +69,8 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
             if MultinodeConstraintFcn not in multinode_constraint.get_fcn_types():
                 raise RuntimeError(f"multinode_constraint of type '{type(multinode_constraint)}' not allowed")
         else:
+            if not callable(multinode_constraint):
+                raise RuntimeError("multinode_constraint must be callable")
             custom_function = multinode_constraint
             multinode_constraint = MultinodeConstraintFcn.CUSTOM
 
@@ -97,23 +99,23 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        pool_to_add_to = nlp.g_internal if nlp else ocp.g_internal
+        g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
 
         if self.list_index < 0:
-            for i, j in enumerate(pool_to_add_to):
+            for i, j in enumerate(g_to_add_to):
                 if not j:
                     self.list_index = i
                     return
             else:
-                pool_to_add_to.append([])
-                self.list_index = len(pool_to_add_to) - 1
+                g_to_add_to.append([])
+                self.list_index = len(g_to_add_to) - 1
         else:
-            while self.list_index >= len(pool_to_add_to):
-                pool_to_add_to.append([])
-            pool_to_add_to[self.list_index] = []
+            while self.list_index >= len(g_to_add_to):
+                g_to_add_to.append([])
+            g_to_add_to[self.list_index] = []
 
 
-class MultinodeConstraintList(UniquePerPhaseOptionList):
+class MultinodeConstraintList(OptionList):
     """
     A list of Multi Node Constraint
 
