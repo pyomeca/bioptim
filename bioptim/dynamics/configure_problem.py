@@ -267,7 +267,7 @@ class ConfigureProblem:
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
         """
-        if rigidbody_dynamics != RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics != RigidBodyDynamics.ODE:
+        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         if nlp.model.nbSoftContacts() != 0:
@@ -400,7 +400,7 @@ class ConfigureProblem:
         if fatigue is not None and "tau" in fatigue and not with_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
-        if rigidbody_dynamics != RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics != RigidBodyDynamics.ODE:
+        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         ConfigureProblem.configure_q(nlp, True, False)
