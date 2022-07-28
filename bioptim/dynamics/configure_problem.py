@@ -167,7 +167,7 @@ class ConfigureProblem:
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
             or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
         ):
-            ConfigureProblem.configure_qddot(nlp, True, False)
+            ConfigureProblem.configure_qddot(nlp, True, False, True)
             ConfigureProblem.configure_qdddot(nlp, False, True)
         else:
             ConfigureProblem.configure_qddot(nlp, False, False, True)
