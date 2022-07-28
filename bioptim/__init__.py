@@ -51,6 +51,7 @@ IPOPT
 ACADOS
     Selection of ACADOS options
 
+
 # --- Managing the dynamics --- #
 ConfigureProblem
     Dynamics configuration for the most common ocp
@@ -118,11 +119,13 @@ MultinodeConstraintList
 MultinodeConstraintListFcn
     Selection of valid phase MultinodeConstraint functions
 
+
 # --- Managing the multinode objective for multiphase programs at specified nodes--- #
 MultinodeObjectiveList
     A list of MultinodeObjective
 MultinodeObjectiveListFcn
     Selection of valid phase MultinodeObjective functions
+
 
 # --- Mapping indices between vector --- #
 Mapping
