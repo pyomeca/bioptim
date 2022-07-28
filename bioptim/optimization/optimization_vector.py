@@ -355,6 +355,9 @@ class OptimizationVector:
         # Sanity check
 
         for i in range(ocp.n_phases):
+            if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
+                if not ocp.nlp[i].ode_solver.is_direct_collocation:
+                    raise ValueError("InterpolationType.ALL_POINTS must only be used in direct collocation")
             if hasattr(ocp.original_values["x_init"], "type"):
                 interpolation_type = ocp.original_values["x_init"].type
             elif hasattr(ocp.original_values["x_init"], "options"):
