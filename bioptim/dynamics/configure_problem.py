@@ -1082,15 +1082,12 @@ class Dynamics(OptionGeneric):
             configure = dynamics_type
             dynamics_type = DynamicsFcn.CUSTOM
         else:
-            if "configure" in params:
+            if "configure" in params:  # TODO: maybe put as a keyword in function directly
                 configure = params["configure"]
                 del params["configure"]
 
         if dynamic_function and not callable(dynamic_function):
             raise RuntimeError("dynamic_function must be callable")
-
-        # if dynamic_function and dynamics_type != DynamicsFcn.CUSTOM:
-        #     raise RuntimeError("custom dynamic function detected but no custom configure was provided")
 
         super(Dynamics, self).__init__(type=dynamics_type, **params)
         self.dynamic_function = dynamic_function
