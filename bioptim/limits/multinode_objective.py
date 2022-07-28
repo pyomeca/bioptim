@@ -2,7 +2,7 @@ from typing import Callable, Union, Any
 
 from ..misc.fcn_enum import FcnEnum
 from ..misc.enums import Node
-from ..misc.options import UniquePerPhaseOptionList
+from ..misc.options import OptionList
 from .objective_functions import Objective, ObjectiveFcn, ObjectiveFunction
 from .penalty_node import PenaltyNodeList
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
@@ -40,6 +40,8 @@ class MultinodeObjective(Objective, MultinodePenalty):
             if MultinodeObjectiveFcn not in multinode_objective.get_fcn_types():
                 raise RuntimeError(f"multinode_objective of type '{type(multinode_objective)}' not allowed")
         else:
+            if not callable(multinode_objective):
+                raise RuntimeError("multinode_objective must be callable")
             custom_function = multinode_objective
             multinode_objective = MultinodeObjectiveFcn.CUSTOM
 
@@ -69,23 +71,23 @@ class MultinodeObjective(Objective, MultinodePenalty):
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        pool_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+        J_to_add_to = nlp.J_internal if nlp else ocp.J_internal
 
         if self.list_index < 0:
-            for i, j in enumerate(pool_to_add_to):
+            for i, j in enumerate(J_to_add_to):
                 if not j:
                     self.list_index = i
                     return
             else:
-                pool_to_add_to.append([])
-                self.list_index = len(pool_to_add_to) - 1
+                J_to_add_to.append([])
+                self.list_index = len(J_to_add_to) - 1
         else:
-            while self.list_index >= len(pool_to_add_to):
-                pool_to_add_to.append([])
-            pool_to_add_to[self.list_index] = []
+            while self.list_index >= len(J_to_add_to):
+                J_to_add_to.append([])
+            J_to_add_to[self.list_index] = []
 
 
-class MultinodeObjectiveList(UniquePerPhaseOptionList):
+class MultinodeObjectiveList(OptionList):
     """
     A list of Multi Node Constraint
 
