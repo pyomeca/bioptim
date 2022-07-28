@@ -1,6 +1,7 @@
 from typing import Callable, Union, Any
 from warnings import warn
 
+import numpy as np
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
@@ -85,7 +86,7 @@ class PhaseTransition(PenaltyOption):
 
         self.first_node = Node.END
         self.second_node = Node.START
-        self.weight = weight
+        self.weight = weight if weight is not None else 0  # see NOTE at bottom of interfaces/ipopt_interface.py
         self.quadratic = True
         self.phase_pre_idx = phase_pre_idx
         self.phase_post_idx = None
@@ -94,6 +95,28 @@ class PhaseTransition(PenaltyOption):
         self.node_idx = [0]
         self.transition = True
         self.relaxed = relaxed
+
+    def add_or_replace_to_penalty_pool(self, ocp, nlp):
+        super(PhaseTransition, self).add_or_replace_to_penalty_pool(ocp, nlp)
+
+        self.min_bound = np.array(self.min_bound) if isinstance(self.min_bound, (list, tuple)) else self.min_bound
+        self.max_bound = np.array(self.max_bound) if isinstance(self.max_bound, (list, tuple)) else self.max_bound
+
+        if self.bounds.shape[0] == 0:
+            for i in self.rows:
+                min_bound = (
+                    self.min_bound[i]
+                    if hasattr(self.min_bound, "__getitem__") and self.min_bound.shape[0] > 1
+                    else self.min_bound
+                )
+                max_bound = (
+                    self.max_bound[i]
+                    if hasattr(self.max_bound, "__getitem__") and self.max_bound.shape[0] > 1
+                    else self.max_bound
+                )
+                self.bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
+        elif self.bounds.shape[0] != len(self.rows):
+            raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         ocp = all_pn[0].ocp
@@ -152,12 +175,12 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             Any parameters to pass to Constraint
         """
 
-        if not isinstance(transition, PhaseTransitionFcn):
-            extra_arguments["custom_function"] = transition
-            transition = PhaseTransitionFcn.CUSTOM
-        super(PhaseTransitionList, self)._add(
-            option_type=PhaseTransition, transition=transition, phase=-1, **extra_arguments
-        )
+        if isinstance(transition, PhaseTransition):
+            self.copy(transition)
+        else:
+            super(PhaseTransitionList, self)._add(
+                option_type=PhaseTransition, transition=transition, phase=-1, **extra_arguments
+            )
 
     def print(self):
         """

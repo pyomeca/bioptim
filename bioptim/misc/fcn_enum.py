@@ -1,12 +1,19 @@
 from enum import Enum
 
 
-class FcnEnum(Enum):  # an enum of Fcn precisely, helps with validation later
+class FcnEnum(Enum):
     def __call__(self, *args, **kwargs):
         """
         Call the member.
         """
-        return self.value[0](*args, **kwargs)
+        if args and kwargs:
+            return self.value[0](*args, **kwargs)
+        elif args and not kwargs:
+            return self.value[0](*args)
+        elif not args and kwargs:
+            return self.value[0](**kwargs)
+        elif not args and not kwargs:
+            return self.value[0]()
 
     @staticmethod
     def get_type():

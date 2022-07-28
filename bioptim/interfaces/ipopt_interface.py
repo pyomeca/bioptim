@@ -332,7 +332,7 @@ class IpoptInterface(SolverInterface):
                     else:
                         target = format_target(penalty.target[0])
 
-                    if np.isnan(np.sum(target)):
+                    if np.isnan(np.sum(target)):  # why??? could be removed
                         continue
 
                     if not nlp:
@@ -340,6 +340,8 @@ class IpoptInterface(SolverInterface):
                         u = []
                     else:
                         x, u = get_x_and_u_at_idx(penalty, idx)
+
+                    # NOTE: here is why phase transition as a constraint must have weight = 0
                     p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
             out = vertcat(out, sum2(p))
         return out
