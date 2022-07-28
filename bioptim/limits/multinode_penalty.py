@@ -73,8 +73,6 @@ class MultinodePenalty:
                 "Multi Node Penalty only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
             )
 
-        # TODO: yet another reason to have user pass CUSTOM and custom_function himself, was broken when inheritence
-        # of PenaltyOption was removed
         self.multinode_penalty = multinode_penalty
         self.phase_first_idx = phase_first_idx
         self.phase_second_idx = phase_second_idx
@@ -85,19 +83,6 @@ class MultinodePenalty:
         self.node = self.first_node, self.second_node
         self.node_idx = [0]
         self.penalty_type = penalty_type  # TODO: fix with proper multiple inheritence
-
-    # they are almost copy pasted directly in Multinode(Constraint|Objective), are they still really relevent?
-    # I don't see how to generalize them without reference to child classes, more so if I remove self.weight.
-    # This one should never be called and for now isn't called ever.
-    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
-        raise NotImplementedError(
-            "Implement in child class."
-        )  # decided to raise an error instead of risking undefined behavior
-
-    def clear_penalty(self, ocp, nlp):
-        raise NotImplementedError(
-            "Implement in child class."
-        )  # decided to raise an error instead of risking undefined behavior
 
 
 class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
