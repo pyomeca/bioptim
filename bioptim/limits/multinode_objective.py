@@ -37,7 +37,7 @@ class MultinodeObjective(Objective, MultinodePenalty):
             raise RuntimeError("custom_function must be callable")
 
         if isinstance(multinode_objective, FcnEnum):
-            if MultinodeObjective not in multinode_objective.get_fcn_types():
+            if MultinodeObjectiveFcn not in multinode_objective.get_fcn_types():
                 raise RuntimeError(f"multinode_objective of type '{type(multinode_objective)}' not allowed")
         else:
             custom_function = multinode_objective

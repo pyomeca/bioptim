@@ -66,7 +66,7 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
             raise RuntimeError("custom_function must be callable")
 
         if isinstance(multinode_constraint, FcnEnum):
-            if MultinodeConstraint not in multinode_constraint.get_fcn_types():
+            if MultinodeConstraintFcn not in multinode_constraint.get_fcn_types():
                 raise RuntimeError(f"multinode_constraint of type '{type(multinode_constraint)}' not allowed")
         else:
             custom_function = multinode_constraint
