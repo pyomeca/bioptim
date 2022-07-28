@@ -1132,7 +1132,7 @@ class Solution:
                             )
                         ).T
                     else:
-                        target = penalty.target[0][:, penalty.node_idx.index(idx)]
+                        target = penalty.target[0][..., penalty.node_idx.index(idx)]
 
             val.append(penalty.function_non_threaded(x, u, p))
             val_weighted.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, target, dt))
