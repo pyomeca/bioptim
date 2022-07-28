@@ -12,7 +12,7 @@ class Objective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(  # custom_function last to not break past signatures
+    def __init__(
         self, objective: Any, custom_type: Any = None, phase: int = -1, custom_function: Callable = None, **params: Any
     ):
         """
@@ -37,6 +37,8 @@ class Objective(PenaltyOption):
                 raise RuntimeError(f"objective of type '{type(objective)}' not allowed")
 
         else:
+            if not callable(objective):
+                raise RuntimeError("objective must be callable")
             custom_function = objective
 
             if custom_type is None:
@@ -313,7 +315,7 @@ class ObjectiveFunction:
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, pt in enumerate(ocp.phase_transitions):  # TODO: change to PhaseTransitionObjective
+        for i, pt in enumerate(ocp.phase_transitions):
             # Dynamics must be respected between phases
             pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
             pt.list_index = -1
