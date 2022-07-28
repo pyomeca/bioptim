@@ -154,9 +154,8 @@ class PenaltyOption(OptionGeneric):
 
         self.target = None
         if target is not None:
-            target = np.array(target)
-            # won't it always be true?
-            if isinstance(target, int) or isinstance(target, float) or isinstance(target, np.ndarray):
+            if isinstance(target, int) or isinstance(target, float):
+                target = np.array(target)
                 target = [target]
             self.target = []
             for t in target:
