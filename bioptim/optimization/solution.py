@@ -231,7 +231,7 @@ class Solution:
             Objective values that are not phase dependent (mostly parameters)
         nlp: NLP
             All the phases of the ocp
-        phase_transition_constraints: list[PhaseTransitionConstraint]  # TODO: add phase_transition_objective
+        phase_transition_constraints: list[PhaseTransitionConstraint]
             The list of transition constraint between phases
         prepare_plots: Callable
             The function to call to prepare the PlotOCP
@@ -687,7 +687,6 @@ class Solution:
                 if p != 0:
                     u0 = self._controls[p - 1]["all"][:, -1]
                     val = self.ocp.phase_transitions[p - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
-                    # TODO: add phase_transition_objective
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
                             f"Phase transition must have the same number of states ({val.shape[0]}) "
