@@ -66,6 +66,8 @@ class PhaseTransition(PenaltyOption):
             if PhaseTransitionFcn not in transition.get_fcn_types():
                 raise RuntimeError(f"transition of type '{type(transition)}' not allowed")
         else:
+            if not callable(transition):
+                raise RuntimeError("transition must be callable")
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
 
@@ -122,7 +124,7 @@ class PhaseTransition(PenaltyOption):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
 
-        if self.relaxed and isinstance(self.weight, (int, float)):
+        if self.relaxed and isinstance(self.weight, (int, float)):  # here is decided if transition is an objective or a contraint
             pool = nlp.J_internal if nlp else ocp.J_internal
         else:
             pool = nlp.g_internal if nlp else ocp.g_internal
