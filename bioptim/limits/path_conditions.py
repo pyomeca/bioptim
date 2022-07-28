@@ -106,7 +106,7 @@ class PathCondition(np.ndarray):
                     f"Invalid number of column for InterpolationType.LINEAR_CONTINUOUS "
                     f"(ncols = {input_array.shape[1]}), the expected number of column is 2"
                 )
-        elif interpolation == InterpolationType.EACH_FRAME:
+        elif interpolation == InterpolationType.EACH_FRAME or interpolation == InterpolationType.ALL_POINTS:
             # This will be verified when the expected number of columns is set
             pass
         elif interpolation == InterpolationType.SPLINE:
@@ -215,7 +215,7 @@ class PathCondition(np.ndarray):
             or self.type == InterpolationType.CUSTOM
         ):
             self.n_shooting = n_shooting
-        elif self.type == InterpolationType.EACH_FRAME:
+        elif self.type == InterpolationType.EACH_FRAME or self.type == InterpolationType.ALL_POINTS:
             self.n_shooting = n_shooting + 1
         else:
             if self.n_shooting != n_shooting:
@@ -237,6 +237,12 @@ class PathCondition(np.ndarray):
             raise RuntimeError(f"Invalid number of {element_name} ({val_size}), the expected size is {n_elements}")
 
         if self.type == InterpolationType.EACH_FRAME:
+            if self.shape[1] != self.n_shooting:
+                raise RuntimeError(
+                    f"Invalid number of column for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
+                    f"the expected number of column is {self.n_shooting}"
+                )
+        elif self.type == InterpolationType.ALL_POINTS:
             if self.shape[1] != self.n_shooting:
                 raise RuntimeError(
                     f"Invalid number of column for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
@@ -274,6 +280,8 @@ class PathCondition(np.ndarray):
         elif self.type == InterpolationType.LINEAR:
             return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / self.n_shooting
         elif self.type == InterpolationType.EACH_FRAME:
+            return self[:, shooting_point]
+        elif self.type == InterpolationType.ALL_POINTS:  # TODO: 4
             return self[:, shooting_point]
         elif self.type == InterpolationType.SPLINE:
             spline = interp1d(self.t, self)
@@ -468,7 +476,6 @@ class Bounds(OptionGeneric):
                 "Therefore, it should look like [a:b] or [a:b:c] where a is the starting index, "
                 "b is the stopping index and c is the step for slicing."
             )
-
     def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
         """
         Allows to set from square brackets
