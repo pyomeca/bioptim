@@ -32,20 +32,23 @@ class Objective(PenaltyOption):
 
         if isinstance(objective, FcnEnum):
             if not (
-                ObjectiveFcn.Lagrange in objective.get_fcn_types() or ObjectiveFcn.Mayer in objective.get_fcn_types()
+                ObjectiveFcn.Lagrange in objective.get_fcn_types()
+                or ObjectiveFcn.Mayer in objective.get_fcn_types()
+                or ObjectiveFcn.Parameter in objective.get_fcn_types()
             ):
                 raise RuntimeError(f"objective of type '{type(objective)}' not allowed")
 
         else:
-            if not callable(objective):
-                raise RuntimeError("objective must be callable")
-            custom_function = objective
-
             if custom_type is None:
                 raise RuntimeError(
                     "Custom objective function detected, but custom_function is missing. "
                     "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
                 )
+
+            if not callable(objective) and custom_type != ObjectiveFcn.Parameter:
+                raise RuntimeError("objective must be callable")
+            custom_function = objective
+
             objective = custom_type.CUSTOM
             if not (
                 isinstance(objective, ObjectiveFcn.Lagrange)
@@ -465,6 +468,13 @@ class ObjectiveFcn:
             Returns the type of the penalty
             """
             return ObjectiveFunction.ParameterFunction
+
+        @staticmethod
+        def get_fcn_types():
+            """
+            Returns the types of the enum
+            """
+            return (ObjectiveFcn.Parameter,)
 
 
 class ContinuityObjectiveFunctions:
