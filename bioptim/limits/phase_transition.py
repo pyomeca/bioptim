@@ -124,7 +124,8 @@ class PhaseTransition(PenaltyOption):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
 
-        if self.relaxed and isinstance(self.weight, (int, float)):  # here is decided if transition is an objective or a contraint
+        # here is decided if transition is an objective or a contraint
+        if self.relaxed and isinstance(self.weight, (int, float)):
             pool = nlp.J_internal if nlp else ocp.J_internal
         else:
             pool = nlp.g_internal if nlp else ocp.g_internal

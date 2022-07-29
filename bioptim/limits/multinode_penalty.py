@@ -1,11 +1,10 @@
 from typing import Callable, Union, Any
-from warnings import warn
-from enum import Enum
 
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
 
+from ..misc.options import OptionList
 from .path_conditions import Bounds
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, PenaltyType
@@ -83,6 +82,34 @@ class MultinodePenalty:
         self.node = self.first_node, self.second_node
         self.node_idx = [0]
         self.penalty_type = penalty_type  # TODO: fix with proper multiple inheritence
+
+
+class MultinodePenaltyList(OptionList):
+    def prepare_multinode_penalties(self, ocp) -> list:
+        """
+        Configure all the multinode penalties and put them in a list
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+
+        Returns
+        -------
+        The list of all the multi_node penalties prepared
+        """
+        multinode_penalties = []
+        for multinode_penalties_in_phase in self:
+            for mnp in multinode_penalties_in_phase:
+
+                if mnp.phase_first_idx >= ocp.n_phases or mnp.phase_second_idx >= ocp.n_phases:
+                    raise RuntimeError("Phase index of the multinode_constraint is higher than the number of phases")
+                if mnp.phase_first_idx < 0 or mnp.phase_second_idx < 0:
+                    raise RuntimeError("Phase index of the multinode_constraint need to be positive")
+
+                multinode_penalties.append(mnp)
+
+        return multinode_penalties
 
 
 class MultinodePenaltyFunctions(PenaltyFunctionAbstract):

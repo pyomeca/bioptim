@@ -2,10 +2,9 @@ from typing import Callable, Union, Any
 
 from ..misc.fcn_enum import FcnEnum
 from ..misc.enums import Node
-from ..misc.options import OptionList
 from .objective_functions import Objective, ObjectiveFcn, ObjectiveFunction
 from .penalty_node import PenaltyNodeList
-from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
+from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 
 
 # TODO: mirror multinode_constraint.py in here but for objectives
@@ -62,6 +61,7 @@ class MultinodeObjective(Objective, MultinodePenalty):
             multinode_penalty=multinode_objective,  # TODO: might not be necessary to store here.
             **params,
         )
+        self.base = ObjectiveFunction.MayerFunction
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         ocp = all_pn[0].ocp
@@ -87,7 +87,7 @@ class MultinodeObjective(Objective, MultinodePenalty):
             J_to_add_to[self.list_index] = []
 
 
-class MultinodeObjectiveList(OptionList):
+class MultinodeObjectiveList(MultinodePenaltyList):
     """
     A list of Multi Node Constraint
 
@@ -97,7 +97,7 @@ class MultinodeObjectiveList(OptionList):
         Add a new MultinodePenalty to the list
     print(self)
         Print the MultinodePenaltyList to the console
-    prepare_multinode_penalty(self, ocp) -> list
+    prepare_multinode_penalties(self, ocp) -> list
         Configure all the multinode_objective and put them in a list
     """
 
@@ -120,32 +120,11 @@ class MultinodeObjectiveList(OptionList):
                 option_type=MultinodeObjective, multinode_objective=multinode_objective, phase=-1, **extra_arguments
             )
 
-    def prepare_multinode_objectives(self, ocp) -> list:
-        """
-        Configure all the phase transitions and put them in a list
 
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-
-        Returns
-        -------
-        The list of all the multi_node objectives prepared
-        """
-        full_phase_multinode_objective = []
-        for mnc in self:
-
-            if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
-                raise RuntimeError("Phase index of the multinode_objective is higher than the number of phases")
-            if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
-                raise RuntimeError("Phase index of the multinode_objective need to be positive")
-
-            mnc.base = ObjectiveFunction.MayerFunction
-
-            full_phase_multinode_objective.append(mnc)
-
-        return full_phase_multinode_objective
+class MultinodeObjectiveFunctions(MultinodePenaltyFunctions):
+    @staticmethod
+    def penalty_nature() -> str:
+        return "multinode_objectives"
 
 
 class MultinodeObjectiveFcn(FcnEnum):
@@ -153,10 +132,10 @@ class MultinodeObjectiveFcn(FcnEnum):
     Selection of valid multinode penalty functions
     """
 
-    EQUALITY = (MultinodePenaltyFunctions.Functions.equality,)
-    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
-    COM_EQUALITY = (MultinodePenaltyFunctions.Functions.com_equality,)
-    COM_VELOCITY_EQUALITY = (MultinodePenaltyFunctions.Functions.com_velocity_equality,)
+    EQUALITY = (MultinodeObjectiveFunctions.Functions.equality,)
+    CUSTOM = (MultinodeObjectiveFunctions.Functions.custom,)
+    COM_EQUALITY = (MultinodeObjectiveFunctions.Functions.com_equality,)
+    COM_VELOCITY_EQUALITY = (MultinodeObjectiveFunctions.Functions.com_velocity_equality,)
 
     @staticmethod
     def get_type():
@@ -164,7 +143,7 @@ class MultinodeObjectiveFcn(FcnEnum):
         Returns the type of the penalty
         """
 
-        return MultinodePenaltyFunctions
+        return MultinodeObjectiveFunctions
 
     @staticmethod
     def get_fcn_types():

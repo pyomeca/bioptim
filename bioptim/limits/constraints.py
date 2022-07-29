@@ -502,7 +502,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, mnc in enumerate(ocp.multinode_constraints):
+        for mnc in ocp.multinode_constraints:
             # Equality constraint between nodes
             first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
             second_node_name = (

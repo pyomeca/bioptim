@@ -331,19 +331,19 @@ class ObjectiveFunction:
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, mnc in enumerate(ocp.multinode_objectives):
-            # Equality constraint between nodes
-            first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
+        for mno in ocp.multinode_objectives:
+            # Equality objective between nodes
+            first_node_name = f"idx {str(mno.first_node)}" if isinstance(mno.first_node, int) else mno.first_node.name
             second_node_name = (
-                f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
+                f"idx {str(mno.second_node)}" if isinstance(mno.second_node, int) else mno.second_node.name
             )
-            mnc.name = (
+            mno.name = (
                 f"NODE_EQUALITY "
-                f"Phase {mnc.phase_first_idx} Node {first_node_name}"
-                f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
+                f"Phase {mno.phase_first_idx} Node {first_node_name}"
+                f"->Phase {mno.phase_second_idx} Node {second_node_name}"
             )
-            mnc.list_index = -1
-            mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
+            mno.list_index = -1
+            mno.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mno.phase_first_idx])
 
 
 class ObjectiveFcn:

@@ -3,9 +3,8 @@ from typing import Callable, Union, Any
 from .constraints import Constraint, ConstraintFcn
 from ..misc.fcn_enum import FcnEnum
 from ..misc.enums import Node
-from ..misc.options import OptionList
 from .penalty_node import PenaltyNodeList
-from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
+from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 
 
 class MultinodeConstraint(Constraint, MultinodePenalty):
@@ -115,7 +114,7 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
             g_to_add_to[self.list_index] = []
 
 
-class MultinodeConstraintList(OptionList):
+class MultinodeConstraintList(MultinodePenaltyList):
     """
     A list of Multi Node Constraint
 
@@ -125,7 +124,7 @@ class MultinodeConstraintList(OptionList):
         Add a new MultinodeConstraint to the list
     print(self)
         Print the MultinodeConstraintList to the console
-    prepare_multinode_penalty(self, ocp) -> list
+    prepare_multinode_penalties(self, ocp) -> list
         Configure all the multinode_constraint and put them in a list
     """
 
@@ -148,30 +147,11 @@ class MultinodeConstraintList(OptionList):
                 option_type=MultinodeConstraint, multinode_constraint=multinode_constraint, phase=-1, **extra_arguments
             )
 
-    def prepare_multinode_constraints(self, ocp) -> list:
-        """
-        Configure all the phase transitions and put them in a list
 
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-
-        Returns
-        -------
-        The list of all the multi_node constraints prepared
-        """
-        full_phase_multinode_constraint = []
-        for mnc in self:
-
-            if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
-                raise RuntimeError("Phase index of the multinode_constraint is higher than the number of phases")
-            if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
-                raise RuntimeError("Phase index of the multinode_constraint need to be positive")
-
-            full_phase_multinode_constraint.append(mnc)
-
-        return full_phase_multinode_constraint
+class MultinodeConstraintFunctions(MultinodePenaltyFunctions):
+    @staticmethod
+    def penalty_nature():
+        return "multinode_constraints"
 
 
 class MultinodeConstraintFcn(FcnEnum):
@@ -179,10 +159,10 @@ class MultinodeConstraintFcn(FcnEnum):
     Selection of valid multinode penalty functions
     """
 
-    EQUALITY = (MultinodePenaltyFunctions.Functions.equality,)
-    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
-    COM_EQUALITY = (MultinodePenaltyFunctions.Functions.com_equality,)
-    COM_VELOCITY_EQUALITY = (MultinodePenaltyFunctions.Functions.com_velocity_equality,)
+    EQUALITY = (MultinodeConstraintFunctions.Functions.equality,)
+    CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
+    COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
+    COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
 
     @staticmethod
     def get_type():
@@ -190,7 +170,7 @@ class MultinodeConstraintFcn(FcnEnum):
         Returns the type of the penalty
         """
 
-        return MultinodePenaltyFunctions
+        return MultinodeConstraintFunctions
 
     @staticmethod
     def get_fcn_types():
