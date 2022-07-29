@@ -458,6 +458,7 @@ class OptimalControlProgram:
         self.multinode_constraints = multinode_constraints.prepare_multinode_penalties(self)
         self.multinode_objectives = multinode_objectives.prepare_multinode_penalties(self)
         # Skipping creates a valid but unsolvable OCP class
+        # TODO: make adding multinode whatever like every other Penalty, now either mnc or mno are added
         if not skip_state_continuity:
             if state_continuity_weight:
                 # Inner- and inter-phase continuity as an objective
