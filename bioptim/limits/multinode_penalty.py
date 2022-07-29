@@ -103,9 +103,9 @@ class MultinodePenaltyList(OptionList):
             for mnp in multinode_penalties_in_phase:
 
                 if mnp.phase_first_idx >= ocp.n_phases or mnp.phase_second_idx >= ocp.n_phases:
-                    raise RuntimeError("Phase index of the multinode_constraint is higher than the number of phases")
+                    raise RuntimeError("Phase index of the multinode_penalty is higher than the number of phases")
                 if mnp.phase_first_idx < 0 or mnp.phase_second_idx < 0:
-                    raise RuntimeError("Phase index of the multinode_constraint need to be positive")
+                    raise RuntimeError("Phase index of the multinode_penalty need to be positive")
 
                 multinode_penalties.append(mnp)
 

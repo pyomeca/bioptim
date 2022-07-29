@@ -231,13 +231,13 @@ def test_multinode_constraint_wrong_phase(phase_1, phase_2):
     if phase_1 == 4 or (phase_1 == 0 and phase_2 == 4) or (phase_1 == -1 and phase_2 == 4):
         with pytest.raises(
             RuntimeError,
-            match="Phase index of the multinode_constraint is higher than the number of phases",
+            match="Phase index of the multinode_penalty is higher than the number of phases",
         ):
             prepare_ocp_multinode_constraint(model, phase_1, phase_2)
     elif phase_1 == -1 or (phase_1 == 0 and phase_2 == -1):
         with pytest.raises(
             RuntimeError,
-            match="Phase index of the multinode_constraint need to be positive",
+            match="Phase index of the multinode_penalty need to be positive",
         ):
             prepare_ocp_multinode_constraint(model, phase_1, phase_2)
     else:
@@ -287,13 +287,13 @@ def test_multinode_objective_wrong_phase(phase_1, phase_2):
     if phase_1 == 4 or (phase_1 == 0 and phase_2 == 4) or (phase_1 == -1 and phase_2 == 4):
         with pytest.raises(
             RuntimeError,
-            match="Phase index of the multinode_objective is higher than the number of phases",
+            match="Phase index of the multinode_penalty is higher than the number of phases",
         ):
             prepare_ocp_multinode_objective(model, phase_1, phase_2)
     elif phase_1 == -1 or (phase_1 == 0 and phase_2 == -1):
         with pytest.raises(
             RuntimeError,
-            match="Phase index of the multinode_objective need to be positive",
+            match="Phase index of the multinode_penalty need to be positive",
         ):
             prepare_ocp_multinode_objective(model, phase_1, phase_2)
     else:
