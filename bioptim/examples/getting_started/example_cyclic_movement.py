@@ -95,7 +95,7 @@ def prepare_ocp(
     if loop_from_constraint:
         phase_transitions.add(PhaseTransitionFcn.CYCLIC)
     else:
-        phase_transitions.add(PhaseTransitionFcn.CYCLIC, relaxed=True, weight=10000)
+        phase_transitions.add(PhaseTransitionFcn.CYCLIC, weight=10000)
 
     return OptimalControlProgram(
         biorbd_model,

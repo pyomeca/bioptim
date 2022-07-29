@@ -95,8 +95,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        continuity_as_objective=True,
-        continuity_weight=10000,  # change the weight to observe the impact on the continuity of the solution
+        state_continuity_weight=10000,  # change the weight to observe the impact on the continuity of the solution
     )
 
 

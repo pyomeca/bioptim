@@ -200,7 +200,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run - 1,
             phase_time=self.total_optimization_run * self.nlp[0].dt,
-            skip_continuity=True,
+            skip_state_continuity=True,
         )
         return Solution(solution_ocp, [_states, _controls])
 
@@ -366,7 +366,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run * self.nlp[0].ns - 1,
             phase_time=self.total_optimization_run * self.nlp[0].ns * self.nlp[0].dt,
-            skip_continuity=True,
+            skip_state_continuity=True,
         )
         return Solution(solution_ocp, [_states, _controls])
 
@@ -506,7 +506,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
             phase_time=self.cycle_len * self.total_optimization_run * self.nlp[0].dt,
-            skip_continuity=True,
+            skip_state_continuity=True,
         )
         return Solution(solution_ocp, [_states, _controls])
 

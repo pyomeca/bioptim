@@ -27,7 +27,7 @@ from ..limits.constraints import (
     Constraint,
     ContinuityConstraintFunctions,
 )
-from ..limits.phase_transition import PhaseTransitionList
+from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
@@ -162,9 +162,8 @@ class OptimalControlProgram:
         multinode_objectives: MultinodeObjectiveList = None,
         n_threads: int = 1,
         use_sx: bool = False,
-        continuity_as_objective=False,  # TODO: documentation
-        continuity_weight=None,  # TODO: documentation
-        skip_continuity: bool = False,
+        state_continuity_weight: float = None,  # TODO: documentation
+        skip_state_continuity: bool = False,
     ):
         """
         Parameters
@@ -209,7 +208,7 @@ class OptimalControlProgram:
             The number of thread to use while solving (multi-threading if > 1)
         use_sx: bool
             The nature of the casadi variables. MX are used if False.
-        skip_continuity: bool
+        skip_state_continuity: bool
             This is mainly for internal purposes when creating an OCP not destined to be solved
         """
 
@@ -253,8 +252,7 @@ class OptimalControlProgram:
             "phase_transitions": phase_transitions,
             "multinode_constraints": multinode_constraints,
             "multinode_objectives": multinode_objectives,
-            "continuity_as_objective": continuity_as_objective,
-            "continuity_weight": continuity_weight,
+            "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
         }
@@ -362,13 +360,8 @@ class OptimalControlProgram:
         elif not isinstance(multinode_objectives, MultinodeObjectiveList):
             raise RuntimeError("multinode_objectives should be built from an MultinodeObjectiveList")
 
-        if isinstance(continuity_as_objective, bool):
-            if continuity_as_objective and continuity_weight is None:
-                raise RuntimeError("continuity_weight must be a float to use continuity_as_objective")
-            if not continuity_as_objective and continuity_weight is not None:
-                raise RuntimeError("continuity_weight must be None if continuity_as_objective is False")
-        else:
-            raise RuntimeError("continuity_as_objective must be a bool")
+        if not (state_continuity_weight is None or isinstance(state_continuity_weight, (int, float))):
+            raise RuntimeError("state_continuity must be a float")
 
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
@@ -460,17 +453,25 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(
-            self, relax_continuity=continuity_as_objective, continuity_weight=continuity_weight
+            self, continuity_weight=state_continuity_weight
         )
         self.multinode_constraints = multinode_constraints.prepare_multinode_penalties(self)
         self.multinode_objectives = multinode_objectives.prepare_multinode_penalties(self)
         # Skipping creates a valid but unsolvable OCP class
-        if not skip_continuity and continuity_as_objective:
-            # Inner- and inter-phase continuity as an objective
-            ContinuityObjectiveFunctions.continuity(self, weight=continuity_weight)
-        elif not skip_continuity:
-            # Inner- and inter-phase continuity as constraint
-            ContinuityConstraintFunctions.continuity(self)
+        if not skip_state_continuity:
+            if state_continuity_weight:
+                # Inner- and inter-phase continuity as an objective
+                ContinuityObjectiveFunctions.continuity(self, weight=state_continuity_weight)
+            else:
+                # Inner- and inter-phase continuity as constraint
+                ContinuityConstraintFunctions.continuity(self)
+        else:
+            to_remove = []
+            for pt in self.phase_transitions:
+                if pt.transition == PhaseTransitionFcn.CONTINUOUS:
+                    to_remove.append(pt)
+            for pt in to_remove:
+                self.phase_transitions.remove(pt)
 
         self.isdef_x_init = False
         self.isdef_u_init = False

@@ -55,7 +55,6 @@ class PhaseTransition(PenaltyOption):
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
-        relaxed: bool = False,
         **params: Any,
     ):
 
@@ -71,12 +70,6 @@ class PhaseTransition(PenaltyOption):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
 
-        if not relaxed and weight is not None:
-            raise RuntimeError("if relaxed=False, weight must be None")
-
-        if relaxed and weight is None:
-            raise RuntimeError("if phase transition is relaxed, weight must be a float")
-
         super(PhaseTransition, self).__init__(
             penalty=transition,
             custom_function=custom_function,
@@ -88,7 +81,7 @@ class PhaseTransition(PenaltyOption):
 
         self.first_node = Node.END
         self.second_node = Node.START
-        self.weight = weight if weight is not None else 0  # see NOTE at bottom of interfaces/ipopt_interface.py
+        self.weight = 0 if not weight else weight  # see comment at bottom of interfaces/ipopt_interface.py
         self.quadratic = True
         self.phase_pre_idx = phase_pre_idx
         self.phase_post_idx = None
@@ -96,7 +89,6 @@ class PhaseTransition(PenaltyOption):
         self.dt = 1
         self.node_idx = [0]
         self.transition = True
-        self.relaxed = relaxed
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         super(PhaseTransition, self).add_or_replace_to_penalty_pool(ocp, nlp)
@@ -125,7 +117,7 @@ class PhaseTransition(PenaltyOption):
         nlp = all_pn[0].nlp
 
         # here is decided if transition is an objective or a contraint
-        if self.relaxed and isinstance(self.weight, (int, float)):
+        if self.weight:
             pool = nlp.J_internal if nlp else ocp.J_internal
         else:
             pool = nlp.g_internal if nlp else ocp.g_internal
@@ -133,7 +125,7 @@ class PhaseTransition(PenaltyOption):
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        if self.relaxed and isinstance(self.weight, (int, float)):
+        if self.weight:
             pool_to_add_to = nlp.J_internal if nlp else ocp.J_internal
         else:
             pool_to_add_to = nlp.g_internal if nlp else ocp.g_internal
@@ -191,7 +183,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
-    def prepare_phase_transitions(self, ocp, relax_continuity: bool, continuity_weight=None) -> list:
+    def prepare_phase_transitions(self, ocp, continuity_weight: float = None) -> list:
         """
         Configure all the phase transitions and put them in a list
 
@@ -210,7 +202,6 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             PhaseTransition(
                 phase_pre_idx=i,
                 transition=PhaseTransitionFcn.CONTINUOUS,
-                relaxed=relax_continuity,
                 weight=continuity_weight,
             )
             for i in range(ocp.n_phases - 1)
@@ -227,7 +218,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             if idx_phase >= ocp.n_phases:
                 raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
 
-            if pt.relaxed:
+            if pt.weight:
                 pt.base = ObjectiveFunction.MayerFunction
 
             if idx_phase == ocp.n_phases - 1:
