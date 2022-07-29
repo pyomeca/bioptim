@@ -298,7 +298,7 @@ class ObjectiveFunction:
         """
 
         # Dynamics must be sound within phases
-        for i, nlp in enumerate(ocp.nlp):
+        for nlp in ocp.nlp:
             penalty = Objective(
                 ObjectiveFcn.Mayer.CONTINUITY,
                 weight=weight,
@@ -318,7 +318,7 @@ class ObjectiveFunction:
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, pt in enumerate(ocp.phase_transitions):
+        for pt in ocp.phase_transitions:
             # Dynamics must be respected between phases
             pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
             pt.list_index = -1
