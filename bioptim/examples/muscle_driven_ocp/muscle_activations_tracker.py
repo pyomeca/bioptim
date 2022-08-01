@@ -28,6 +28,7 @@ from bioptim import (
     OdeSolver,
     Node,
     Solver,
+    RigidBodyDynamics,
 )
 
 
@@ -94,11 +95,12 @@ def generate_data(
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
         dyn_func(
-            symbolic_states,
-            symbolic_controls,
-            symbolic_parameters,
-            nlp,
-            False,
+            states=symbolic_states,
+            controls=symbolic_controls,
+            parameters=symbolic_parameters,
+            nlp=nlp,
+            with_contact=False,
+            rigidbody_dynamics=RigidBodyDynamics.ODE,
         ).dxdt,
         symbolic_states,
         symbolic_controls,

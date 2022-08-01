@@ -129,9 +129,9 @@ class ConfigureProblem:
         with_contact: bool
             If the dynamic with contact should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
+            which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used (EXPLICIT or IMPLICIT)
+            which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
         """
@@ -263,16 +263,12 @@ class ConfigureProblem:
         with_contact: bool
             If the dynamic with contact should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used (EXPLICIT, IMPLICIT, SEMI_EXPLICIT)
+            which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used (EXPLICIT or IMPLICIT)
+            which soft contact dynamic should be used
         """
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
-        ):
-            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with the enum RigidBodyDynamics yet")
+        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
+            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         if nlp.model.nbSoftContacts() != 0:
             if (
@@ -373,6 +369,7 @@ class ConfigureProblem:
         fatigue: FatigueList = None,
         with_torque: bool = False,
         with_contact: bool = False,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -395,16 +392,31 @@ class ConfigureProblem:
             If the dynamic should be added with residual torques
         with_contact: bool
             If the dynamic with contact should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used
+
         """
 
         if fatigue is not None and "tau" in fatigue and not with_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
+
+        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
+            raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
         if with_torque:
             ConfigureProblem.configure_tau(nlp, False, True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(nlp, with_excitations, True, fatigue=fatigue)
+
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+            ConfigureProblem.configure_qddot(nlp, False, True)
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+            )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -416,6 +428,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 fatigue=fatigue,
                 with_torque=with_torque,
+                rigidbody_dynamics=rigidbody_dynamics,
             )
 
         if with_contact:
