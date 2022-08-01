@@ -138,9 +138,11 @@ class OptimizationVector:
         nlp = self.ocp.nlp[0]
         for phase, x_init in enumerate(self.x_init):
             if type(self.ocp.original_values["x_init"]) == InitialGuess:
-                interpolation_type = nlp.x_init.type
+                interpolation_type = self.ocp.original_values["x_init"].type
             elif type(self.ocp.original_values["x_init"]) == InitialGuessList:
                 interpolation_type = self.ocp.original_values["x_init"][phase].type
+            else:
+                interpolation_type = None
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
                 index = 0
                 n_points = nlp.ode_solver.polynomial_degree + 1
@@ -353,15 +355,14 @@ class OptimizationVector:
         ocp = self.ocp
 
         # Sanity check
-
         for i in range(ocp.n_phases):
             if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
                 if not ocp.nlp[i].ode_solver.is_direct_collocation:
                     raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-            if hasattr(ocp.original_values["x_init"], "type"):
+            if type(self.ocp.original_values["x_init"]) == InitialGuess:
                 interpolation_type = ocp.original_values["x_init"].type
-            elif hasattr(ocp.original_values["x_init"], "options"):
-                interpolation_type = ocp.original_values["x_init"].options[i][0].type
+            elif type(self.ocp.original_values["x_init"]) == InitialGuessList:
+                interpolation_type = ocp.original_values["x_init"][i].type
             else:
                 interpolation_type = None
             ns = (
