@@ -281,7 +281,7 @@ class PathCondition(np.ndarray):
             return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / self.n_shooting
         elif self.type == InterpolationType.EACH_FRAME:
             return self[:, shooting_point]
-        elif self.type == InterpolationType.ALL_POINTS:  # TODO: 4
+        elif self.type == InterpolationType.ALL_POINTS:
             return self[:, shooting_point]
         elif self.type == InterpolationType.SPLINE:
             spline = interp1d(self.t, self)
@@ -892,7 +892,9 @@ class NoisedInitialGuess(InitialGuess):
         self._create_noise_matrix(initial_guess=initial_guess, interpolation=interpolation, **parameters)
 
         super(NoisedInitialGuess, self).__init__(
-            initial_guess=self.noised_initial_guess, interpolation=InterpolationType.EACH_FRAME, **parameters
+            initial_guess=self.noised_initial_guess,
+            interpolation=interpolation if interpolation == InterpolationType.ALL_POINTS else InterpolationType.EACH_FRAME,
+            **parameters
         )
 
     def _create_noise_matrix(
@@ -920,7 +922,7 @@ class NoisedInitialGuess(InitialGuess):
                 tp = initial_guess
             else:
                 tp = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
-            n_shooting = self.n_shooting - (1 if tp.type == InterpolationType.EACH_FRAME else 0)
+            n_shooting = self.n_shooting - (1 if tp.type in (InterpolationType.EACH_FRAME, InterpolationType.ALL_POINTS) else 0)
             tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
 
             initial_guess_matrix = np.zeros((self.n_elements, self.n_shooting))
