@@ -929,7 +929,7 @@ class NoisedInitialGuess(InitialGuess):
             np.random.random((self.n_elements, self.n_shooting))  # random noise
             * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
             * (bounds_max_matrix - bounds_min_matrix)  # scale the noise to the range of bounds
-            - (bounds_max_matrix - bounds_min_matrix) / 2  # shift the noise to the center of the range of bounds
+            + bounds_min_matrix + (1 - self.noise_magnitude) * (bounds_max_matrix - bounds_min_matrix) /2 # shift the noise to the center of the range of bounds
             + (bounds_min_matrix + bounds_max_matrix) / 2  # shift the noise to the center of bounds
         )
         # building the noised initial guess
