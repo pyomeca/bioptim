@@ -518,7 +518,7 @@ class AcadosInterface(SolverInterface):
                         add_linear_ls_lagrange(self, J)
 
                         # Deal with first and last node to match ipopt formulation
-                        if J.node[0] not in [Node.END, Node.INTERMEDIATES]:
+                        if J.node[0] not in [Node.END, Node.INTERMEDIATES, Node.PENULTIMATE]:
                             add_linear_ls_mayer(self, J, "start")
                         if J.node[0] == Node.ALL:
                             add_linear_ls_mayer(self, J, "end")
@@ -570,7 +570,7 @@ class AcadosInterface(SolverInterface):
                         add_nonlinear_ls_lagrange(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
                         # Deal with first and last node to match ipopt formulation
-                        if J.node[0] not in [Node.END, Node.INTERMEDIATES]:
+                        if J.node[0] not in [Node.END, Node.INTERMEDIATES, Node.PENULTIMATE]:
                             add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, "start")
                         if J.node[0] == Node.ALL:
                             add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, "end")
@@ -585,6 +585,7 @@ class AcadosInterface(SolverInterface):
             if self.nparams:
                 nlp = ocp.nlp[0]  # Assume 1 phase
                 for j, J in enumerate(ocp.J):
+                    J.node = [J.node]
                     add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, "end")
 
             # Set costs
