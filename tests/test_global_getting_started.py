@@ -328,7 +328,7 @@ def test_custom_constraint_track_markers(ode_solver):
 
 @pytest.mark.parametrize("random_init", [True, False])
 @pytest.mark.parametrize("interpolation", InterpolationType)
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_initial_guesses(random_init, interpolation, ode_solver):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 

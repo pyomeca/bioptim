@@ -922,7 +922,12 @@ class NoisedInitialGuess(InitialGuess):
                 tp = initial_guess
             else:
                 tp = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
-            n_shooting = self.n_shooting - (1 if tp.type in (InterpolationType.EACH_FRAME, InterpolationType.ALL_POINTS) else 0)
+            if tp.type==InterpolationType.EACH_FRAME:
+                n_shooting = self.n_shooting - 1
+            elif tp.type==InterpolationType.ALL_POINTS:
+                n_shooting = tp.shape[1] - 1
+            else:
+                n_shooting =  self.n_shooting
             tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
 
             initial_guess_matrix = np.zeros((self.n_elements, self.n_shooting))
