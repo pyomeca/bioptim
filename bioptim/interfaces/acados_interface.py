@@ -538,6 +538,7 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.Vu_0 = self.Vu0 if self.Vu0.shape[0] else np.zeros((0, 0))
             self.acados_ocp.cost.Vx_e = self.Vxe if self.Vxe.shape[0] else np.zeros((0, 0))
             self.acados_ocp.cost.Vx_0 = self.Vx0 if self.Vx0.shape[0] else np.zeros((0, 0))
+            self.acados_ocp.cost.Vz_0 = None
 
             # Set dimensions
             self.acados_ocp.dims.ny = sum([len(data[0]) for data in self.y_ref])
@@ -740,7 +741,7 @@ class AcadosInterface(SolverInterface):
         if self.ocp_solver is None:
             for key in options:
                 setattr(self.acados_ocp.solver_options, key, options[key])
-            self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
+            self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp_new.json")
             self.opts.set_only_first_options_has_changed(False)
             self.opts.set_has_tolerance_changed(False)
 
