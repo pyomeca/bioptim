@@ -149,9 +149,11 @@ class PenaltyFunctionAbstract:
             q_mx = nlp.states["q"].mx
             model = nlp.model
             jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
-            markers = horzcat(
-                *[m.to_mx() for m in model.markers(q_mx) if m.applyRT(jcs_t) is None]  # applyRT always returns None
-            )
+
+            markers = []
+            for m in model.markers(q_mx):
+                markers_in_jcs = jcs_t.to_mx() @ vertcat(m.to_mx(), 1)
+                markers = horzcat(markers, markers_in_jcs[:3])
 
             markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["q"])
             return markers_objective
