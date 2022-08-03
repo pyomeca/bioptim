@@ -406,9 +406,9 @@ class AcadosInterface(SolverInterface):
                 if objectives.node[0] == Node.START or node == "start":
                     if is_state:
                         acados.Vx0 = np.vstack((acados.Vx0, np.diag(v_var)))
-                        acados.Vu0 = np.vstack((acados.Vu, np.zeros((n_states, n_controls))))
+                        acados.Vu0 = np.vstack((acados.Vu0, np.zeros((n_states, n_controls))))
                     else:
-                        acados.Vx = np.vstack((acados.Vx, np.zeros((n_controls, n_states))))
+                        acados.Vx0 = np.vstack((acados.Vx0, np.zeros((n_controls, n_states))))
                         acados.Vu0 = np.vstack((acados.Vu0, np.diag(v_var)))
                     acados.W_0 = linalg.block_diag(acados.W_0, np.diag([objectives.weight] * n_variables))
                     y_ref_start = np.zeros((n_variables, 1))
@@ -518,7 +518,7 @@ class AcadosInterface(SolverInterface):
                         add_linear_ls_lagrange(self, J)
 
                         # Deal with first and last node to match ipopt formulation
-                        if J.node[0] == Node.ALL_SHOOTING or J.node[0] == Node.ALL:
+                        if J.node[0] not in [Node.END, Node.INTERMEDIATES]:
                             add_linear_ls_mayer(self, J, "start")
                         if J.node[0] == Node.ALL:
                             add_linear_ls_mayer(self, J, "end")
@@ -570,7 +570,7 @@ class AcadosInterface(SolverInterface):
                         add_nonlinear_ls_lagrange(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
                         # Deal with first and last node to match ipopt formulation
-                        if J.node[0] == Node.ALL_SHOOTING or J.node[0] == Node.ALL:
+                        if J.node[0] not in [Node.END, Node.INTERMEDIATES]:
                             add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, "start")
                         if J.node[0] == Node.ALL:
                             add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, "end")
@@ -757,8 +757,9 @@ class AcadosInterface(SolverInterface):
                 self.opts.set_has_tolerance_changed(False)
 
         self.__update_solver()
-
         self.status = self.ocp_solver.solve()
         self.real_time_to_optimize = perf_counter() - tic
-
+        self.ocp_solver.print_statistics()
+        print(self.ocp_solver.get_residuals())
+        print(self.ocp_solver.get_cost())
         return self.get_optimized_value()
