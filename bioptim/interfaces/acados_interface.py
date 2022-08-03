@@ -759,7 +759,4 @@ class AcadosInterface(SolverInterface):
         self.__update_solver()
         self.status = self.ocp_solver.solve()
         self.real_time_to_optimize = perf_counter() - tic
-        self.ocp_solver.print_statistics()
-        print(self.ocp_solver.get_residuals())
-        print(self.ocp_solver.get_cost())
         return self.get_optimized_value()
