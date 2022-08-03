@@ -235,7 +235,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
 
     # Check end state value
     q = sol.states["q"]
-    np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze())
+    np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze(), decimal=6)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
