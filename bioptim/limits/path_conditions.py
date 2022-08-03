@@ -476,6 +476,7 @@ class Bounds(OptionGeneric):
                 "Therefore, it should look like [a:b] or [a:b:c] where a is the starting index, "
                 "b is the stopping index and c is the step for slicing."
             )
+
     def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
         """
         Allows to set from square brackets
@@ -893,8 +894,10 @@ class NoisedInitialGuess(InitialGuess):
 
         super(NoisedInitialGuess, self).__init__(
             initial_guess=self.noised_initial_guess,
-            interpolation=interpolation if interpolation == InterpolationType.ALL_POINTS else InterpolationType.EACH_FRAME,
-            **parameters
+            interpolation=interpolation
+            if interpolation == InterpolationType.ALL_POINTS
+            else InterpolationType.EACH_FRAME,
+            **parameters,
         )
 
     def _create_noise_matrix(
@@ -922,12 +925,12 @@ class NoisedInitialGuess(InitialGuess):
                 tp = initial_guess
             else:
                 tp = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
-            if tp.type==InterpolationType.EACH_FRAME:
+            if tp.type == InterpolationType.EACH_FRAME:
                 n_shooting = self.n_shooting - 1
-            elif tp.type==InterpolationType.ALL_POINTS:
+            elif tp.type == InterpolationType.ALL_POINTS:
                 n_shooting = tp.shape[1] - 1
             else:
-                n_shooting =  self.n_shooting
+                n_shooting = self.n_shooting
             tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
 
             initial_guess_matrix = np.zeros((self.n_elements, self.n_shooting))

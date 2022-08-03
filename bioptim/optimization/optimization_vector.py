@@ -150,7 +150,7 @@ class OptimizationVector:
                 for index, state in enumerate(init_values):
                     for frame in range(nlp.ns):
                         point = (index * nlp.ns + frame) * n_points
-                        x_init_vector[point: point + n_points] = np.linspace(state[frame], state[frame + 1], n_points)
+                        x_init_vector[point : point + n_points] = np.linspace(state[frame], state[frame + 1], n_points)
                 v_init.concatenate(InitialGuess(x_init_vector))
             else:
                 v_init.concatenate(x_init)
@@ -383,10 +383,7 @@ class OptimizationVector:
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             nx = nlp.states.shape
-            if (
-                nlp.ode_solver.is_direct_collocation
-                and interpolation_type != InterpolationType.EACH_FRAME
-            ):
+            if nlp.ode_solver.is_direct_collocation and interpolation_type != InterpolationType.EACH_FRAME:
                 all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                 outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
                 repeat = nlp.ode_solver.polynomial_degree + 1
