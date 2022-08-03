@@ -4,7 +4,7 @@ import numpy as np
 from casadi import vertcat, DM, MX, SX
 
 from .parameters import ParameterList, Parameter
-from ..limits.path_conditions import Bounds, InitialGuess, InitialGuessList
+from ..limits.path_conditions import Bounds, InitialGuess, InitialGuessList, NoisedInitialGuess
 from ..misc.enums import ControlType, InterpolationType
 
 
@@ -369,6 +369,7 @@ class OptimizationVector:
                 ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
                 if ocp.nlp[i].ode_solver.is_direct_collocation
                 and interpolation_type != InterpolationType.EACH_FRAME
+                and type(ocp.nlp[i].x_init) != NoisedInitialGuess
                 else ocp.nlp[i].ns
             )
             ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
@@ -399,7 +400,7 @@ class OptimizationVector:
             for k in range(nlp.ns + 1):
                 for p in range(repeat if k != nlp.ns else 1):
                     span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
-                    if nlp.x_init.type == InterpolationType.EACH_FRAME:
+                    if nlp.x_init.type == InterpolationType.EACH_FRAME and type(nlp.x_init) != NoisedInitialGuess:
                         point = k * repeat + p
                     else:
                         point = k if k != 0 else 0 if p == 0 else 1

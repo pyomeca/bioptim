@@ -367,8 +367,12 @@ def test_initial_guesses(random_init, interpolation, ode_solver):
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (36, 1))
-        np.testing.assert_almost_equal(g, np.zeros((36, 1)))
+        if ode_solver.is_direct_collocation:
+            np.testing.assert_equal(g.shape, (156, 1))
+            np.testing.assert_almost_equal(g, np.zeros((156, 1)))
+        else:
+            np.testing.assert_equal(g.shape, (36, 1))
+            np.testing.assert_almost_equal(g, np.zeros((36, 1)))
 
         # Check some of the results
         q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
