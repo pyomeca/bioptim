@@ -396,14 +396,17 @@ class AcadosInterface(SolverInterface):
                     f"{objectives[0]['objective'].type.name} is an incompatible objective term with LINEAR_LS cost type"
                 )
 
-        def add_linear_ls_mayer(acados, objectives, node=None):
+        def add_linear_ls_mayer(acados, objectives):
             def add_objective(n_variables, is_state):
-                v_var = np.zeros(n_variables)
-                var_type = acados.ocp.nlp[0].states if is_state else acados.ocp.nlp[0].controls
-                rows = objectives.rows + var_type[objectives.params["key"]].index[0]
-                v_var[rows] = 1.0
+                def _adjust_dim():
+                    v_var = np.zeros(n_variables)
+                    var_type = acados.ocp.nlp[0].states if is_state else acados.ocp.nlp[0].controls
+                    rows = objectives.rows + var_type[objectives.params["key"]].index[0]
+                    v_var[rows] = 1.0
+                    return v_var, rows
 
-                if objectives.node[0] == Node.START or node == "start":
+                if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
+                    v_var, rows = _adjust_dim()
                     if is_state:
                         acados.Vx0 = np.vstack((acados.Vx0, np.diag(v_var)))
                         acados.Vu0 = np.vstack((acados.Vu0, np.zeros((n_states, n_controls))))
@@ -416,7 +419,8 @@ class AcadosInterface(SolverInterface):
                         y_ref_start[rows] = objectives.target[0][..., 0].T.reshape((-1, 1))
                     acados.y_ref_start.append(y_ref_start)
 
-                elif objectives.node[0] == Node.END or node == "end":
+                if objectives.node[0] in [Node.END, Node.ALL]:
+                    v_var, rows = _adjust_dim()
                     if not is_state:
                         raise RuntimeError("Mayer objective at final node for controls is not defined.")
                     acados.Vxe = np.vstack((acados.Vxe, np.diag(v_var)))
@@ -425,11 +429,6 @@ class AcadosInterface(SolverInterface):
                     if objectives.target is not None:
                         y_ref_end[rows] = objectives.target[0][..., -1].T.reshape((-1, 1))
                     acados.y_ref_end.append(y_ref_end)
-                else:
-                    raise RuntimeError(
-                        f"Allowed node for Mayer function with Acados are only node.START or node.END,"
-                        f"you have {objectives.node[0]}."
-                    )
 
             if objectives.type in allowed_control_objectives:
                 add_objective(n_controls, False)
@@ -449,7 +448,7 @@ class AcadosInterface(SolverInterface):
                 acados.y_ref.append([np.zeros((objectives.function.numel_out(), 1)) for _ in node_idx])
 
         def add_nonlinear_ls_mayer(acados, objectives, x, u, p, node=None):
-            if objectives.node[0] == Node.START or node == "start":
+            if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
                 acados.W_0 = linalg.block_diag(
                     acados.W_0, np.diag([objectives.weight] * objectives.function.numel_out())
                 )
@@ -462,7 +461,7 @@ class AcadosInterface(SolverInterface):
                 else:
                     acados.y_ref_start.append(np.zeros((objectives.function.numel_out(), 1)))
 
-            elif objectives.node[0] == Node.END or node == "end":
+            if objectives.node[0] in [Node.END, Node.ALL]:
                 acados.W_e = linalg.block_diag(
                     acados.W_e, np.diag([objectives.weight] * objectives.function.numel_out())
                 )
@@ -474,11 +473,6 @@ class AcadosInterface(SolverInterface):
                     acados.y_ref_end.append(objectives.target[0][..., -1].T.reshape((-1, 1)))
                 else:
                     acados.y_ref_end.append(np.zeros((objectives.function.numel_out(), 1)))
-            else:
-                raise RuntimeError(
-                    f"Allowed node for Mayer function with Acados are only node.START or node.END,"
-                    f"you have {objectives.node[0]}."
-                )
 
         if ocp.n_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
@@ -517,11 +511,8 @@ class AcadosInterface(SolverInterface):
                     if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
                         add_linear_ls_lagrange(self, J)
 
-                        # Deal with first and last node to match ipopt formulation
-                        if J.node[0] not in [Node.END, Node.INTERMEDIATES, Node.PENULTIMATE]:
-                            add_linear_ls_mayer(self, J, "start")
-                        if J.node[0] == Node.ALL:
-                            add_linear_ls_mayer(self, J, "end")
+                        # Deal with first and last node
+                        add_linear_ls_mayer(self, J)
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
                         add_linear_ls_mayer(self, J)
@@ -569,11 +560,8 @@ class AcadosInterface(SolverInterface):
                     if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
                         add_nonlinear_ls_lagrange(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
-                        # Deal with first and last node to match ipopt formulation
-                        if J.node[0] not in [Node.END, Node.INTERMEDIATES, Node.PENULTIMATE]:
-                            add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, "start")
-                        if J.node[0] == Node.ALL:
-                            add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, "end")
+                        # Deal with first and last node
+                        add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
                         add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
@@ -585,8 +573,8 @@ class AcadosInterface(SolverInterface):
             if self.nparams:
                 nlp = ocp.nlp[0]  # Assume 1 phase
                 for j, J in enumerate(ocp.J):
-                    J.node = [J.node]
-                    add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, "end")
+                    J.node = [Node.END]
+                    add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = (
