@@ -827,6 +827,16 @@ class NoisedInitialGuess(InitialGuess):
     ----------
     init: InitialGuess
         The noised initial guess
+    noise: np.array
+        The noise to add to the initial guess
+    noised_initial_guess: np.array
+        The noised initial guess
+    seed: int
+        The seed of the random generator
+    bound_push: float
+        The bound to push the noise away from the bounds
+    bounds: Bounds
+        The bounds of the decision variables
 
     Methods
     -------
@@ -881,6 +891,7 @@ class NoisedInitialGuess(InitialGuess):
 
         self.seed = seed
         self.noise_magnitude = noise_magnitude
+        self.noise = None
 
         self._create_noise_matrix(initial_guess=initial_guess, interpolation=interpolation, **parameters)
 
