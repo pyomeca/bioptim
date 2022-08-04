@@ -574,11 +574,11 @@ class Solver:
             self._nlp_solver_tol_stat = val
             self.set_has_tolerance_changed(True)
 
-        def set_convergence_tolerance(self, val: Union[list, tuple]):
-            self.set_nlp_solver_tol_eq(val[0])
-            self.set_nlp_solver_tol_ineq(val[1])
-            self.set_nlp_solver_tol_comp(val[2])
-            self.set_nlp_solver_tol_stat(val[3])
+        def set_convergence_tolerance(self, val: Union[float, int]):
+            self.set_nlp_solver_tol_eq(val)
+            self.set_nlp_solver_tol_ineq(val)
+            self.set_nlp_solver_tol_comp(val)
+            self.set_nlp_solver_tol_stat(val)
             self.set_has_tolerance_changed(True)
 
         def set_constraint_tolerance(self, val: float):
