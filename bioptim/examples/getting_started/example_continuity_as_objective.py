@@ -9,9 +9,11 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 
+from casadi import logic_and
 import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
+    Node,
     DynamicsFcn,
     Dynamics,
     Bounds,
@@ -19,10 +21,35 @@ from bioptim import (
     InitialGuess,
     ObjectiveFcn,
     Objective,
+    ObjectiveList,
+    ConstraintFcn,
+    ConstraintList,
     OdeSolver,
     CostType,
     Solver,
+    BiorbdInterface,
 )
+
+
+def out_of_rect(all_pn, y, z, length, height, **extra):
+    top = z
+    left = y
+    right = y + length
+    bottom = z - height
+
+    q = all_pn.nlp.states["q"].mx
+    marker_q = all_pn.nlp.model.markers(q)[1].to_mx()
+    y = marker_q[1]
+    z = marker_q[2]
+
+    lt_top = z < top
+    gt_left = y > left
+    lt_right = y < right
+    gt_bottom = z > bottom
+
+    in_rect = logic_and(lt_top, logic_and(gt_left, logic_and(lt_right, gt_bottom)))
+
+    return BiorbdInterface.mx_to_cx("out_of_rect", in_rect, all_pn.nlp.states["q"])
 
 
 def prepare_ocp(
@@ -60,14 +87,26 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    # objective_functions = ObjectiveList()  # BUG: causes continuity objectives to disappear
+    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    # objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, max_bound=final_time, weight=1)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
+    Ytrans = 0
+    Xrot = 1
+    START = 0
+    END = -1
+
     x_bounds = QAndQDotBounds(biorbd_model)
-    x_bounds[:, [0, -1]] = 0
-    x_bounds[1, -1] = 3.14
+    x_bounds[:, START] = 0
+    # x_bounds.min[Ytrans, END] = -0.1  # Give a little slack on the end position
+    # x_bounds.max[Ytrans, END] = 0.1
+    # x_bounds.min[Xrot, END] = 3.14 - 0.1
+    # x_bounds.max[Xrot, END] = 3.14 + 0.1
+    x_bounds[Xrot, END] = 3.14
 
     # Initial guess
     n_q = biorbd_model.nbQ()
@@ -82,6 +121,13 @@ def prepare_ocp(
 
     u_init = InitialGuess([tau_init] * n_tau)
 
+    constraints = ConstraintList()
+    # constraints.add(out_of_rect, node=Node.ALL_SHOOTING, y=-0.85, z=0.5, length=1, height=0.5)
+    constraints.add(out_of_rect, node=Node.ALL_SHOOTING, y=.65, z=-.5, length=.25, height=.5)
+    # constraints.add(out_of_rect, node=Node.ALL_SHOOTING, y=2.25, z=1, length=1, height=2)
+    # constraints.add(out_of_rect, node=Node.ALL_SHOOTING, y=-2.75, z=1, length=1, height=2)
+    # constraints.add(ConstraintFcn.TIME_CONSTRAINT, max_bound=final_time)
+
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
@@ -92,10 +138,11 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        constraints=constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        state_continuity_weight=10000,  # change the weight to observe the impact on the continuity of the solution
+        # state_continuity_weight=1000000,  # change the weight to observe the impact on the continuity of the solution
     )
 
 
@@ -105,7 +152,10 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum_maze.bioMod", final_time=1, n_shooting=30, n_threads=3)
+
+    solver = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
+    solver.set_maximum_iterations(10000)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
@@ -114,7 +164,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True)))
+    sol = ocp.solve(solver)
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
