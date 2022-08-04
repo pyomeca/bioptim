@@ -538,7 +538,6 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.Vu_0 = self.Vu0 if self.Vu0.shape[0] else np.zeros((0, 0))
             self.acados_ocp.cost.Vx_e = self.Vxe if self.Vxe.shape[0] else np.zeros((0, 0))
             self.acados_ocp.cost.Vx_0 = self.Vx0 if self.Vx0.shape[0] else np.zeros((0, 0))
-            self.acados_ocp.cost.Vz_0 = None
 
             # Set dimensions
             self.acados_ocp.dims.ny = sum([len(data[0]) for data in self.y_ref])
@@ -627,36 +626,33 @@ class AcadosInterface(SolverInterface):
         """
 
         param_init = []
-        # Initial node
-        if self.y_ref_start:
-            if len(self.y_ref_start) == 1:
-                self.ocp_solver.cost_set(0, "yref", np.array(self.y_ref_start[0])[:, 0])
+        for n in range(self.acados_ocp.dims.N):
+            if n == 0:
+            # Initial node
+                if self.y_ref_start:
+                    if len(self.y_ref_start) == 1:
+                        self.ocp_solver.cost_set(0, "yref", np.array(self.y_ref_start[0])[:, 0])
+                    else:
+                        self.ocp_solver.cost_set(0, "yref", np.concatenate(self.y_ref_start)[:, 0])
+                self.ocp_solver.constraints_set(0, "lbx", self.x_bound_min[:, 0])
+                self.ocp_solver.constraints_set(0, "ubx", self.x_bound_max[:, 0])
             else:
-                self.ocp_solver.cost_set(0, "yref", np.concatenate(self.y_ref_start)[:, 0])
-        self.ocp_solver.constraints_set(0, "lbx", self.x_bound_min[:, 0])
-        self.ocp_solver.constraints_set(0, "ubx", self.x_bound_max[:, 0])
-        self.ocp_solver.constraints_set(0, "uh", self.all_g_bounds.max[:, 0])
-        self.ocp_solver.constraints_set(0, "lh", self.all_g_bounds.min[:, 0])
-        self.ocp_solver.constraints_set(0, "lbu", self.ocp.nlp[0].u_bounds.min[:, 0])
-        self.ocp_solver.constraints_set(0, "ubu", self.ocp.nlp[0].u_bounds.max[:, 0])
+                if self.y_ref:  # Target
+                    self.ocp_solver.cost_set(n, "yref", np.vstack([data[n] for data in self.y_ref])[:, 0])
+                self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 1])
+                self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
 
-        # Intermediates
-        for n in range(1, self.acados_ocp.dims.N):
+            # Intermediates
             # check following line
             # self.ocp_solver.cost_set(n, "W", self.W)
             if self.nparams:
                 param_init = self.params_initial_guess.init.evaluate_at(n)
-
             self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
-            self.ocp_solver.constraints_set(n, "lbu", self.ocp.nlp[0].u_bounds.min[:, 1])
-            self.ocp_solver.constraints_set(n, "ubu", self.ocp.nlp[0].u_bounds.max[:, 1])
+            self.ocp_solver.constraints_set(n, "lbu", self.ocp.nlp[0].u_bounds.min[:, 0])
+            self.ocp_solver.constraints_set(n, "ubu", self.ocp.nlp[0].u_bounds.max[:, 0])
             self.ocp_solver.constraints_set(n, "uh", self.all_g_bounds.max[:, 0])
             self.ocp_solver.constraints_set(n, "lh", self.all_g_bounds.min[:, 0])
-            if self.y_ref:  # Target
-                self.ocp_solver.cost_set(n, "yref", np.vstack([data[n] for data in self.y_ref])[:, 0])
-            self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 1])
-            self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
 
         # Final
         if self.y_ref_end:
@@ -668,6 +664,7 @@ class AcadosInterface(SolverInterface):
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
+
         if len(self.end_g_bounds.max[:, 0]):
             self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "uh", self.end_g_bounds.max[:, 0])
             self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lh", self.end_g_bounds.min[:, 0])
@@ -741,7 +738,7 @@ class AcadosInterface(SolverInterface):
         if self.ocp_solver is None:
             for key in options:
                 setattr(self.acados_ocp.solver_options, key, options[key])
-            self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp_new.json")
+            self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
             self.opts.set_only_first_options_has_changed(False)
             self.opts.set_has_tolerance_changed(False)
 
