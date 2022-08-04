@@ -463,7 +463,7 @@ class Solver:
             self._qp_solver = val
             self.set_only_first_options_has_changed(True)
 
-        def set_option(self, val: Union[float, int, str], name: str):
+        def set_option_unsafe(self, val: Union[float, int, str], name: str):
             """
             This function is unsafe because we did not check if the option exist in the solver option list.
             If it's not it just will be ignored. Please make sure that the option you're asking for exist.
