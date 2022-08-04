@@ -628,7 +628,7 @@ class AcadosInterface(SolverInterface):
         param_init = []
         for n in range(self.acados_ocp.dims.N):
             if n == 0:
-            # Initial node
+                # Initial node
                 if self.y_ref_start:
                     if len(self.y_ref_start) == 1:
                         self.ocp_solver.cost_set(0, "yref", np.array(self.y_ref_start[0])[:, 0])
