@@ -567,11 +567,11 @@ def test_acados_one_end_constraints():
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
-    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((2.72727272, 9.81, 0)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-2.72727272, 9.81, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, 0], np.array((2.72727272, 9.81, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-2.72727272, 9.81, 0)))
 
 
 def test_acados_constraints_all():
