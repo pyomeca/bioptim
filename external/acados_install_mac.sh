@@ -91,9 +91,12 @@ REPLACE_JSON_DEP_BY="'acados_sim_layout.json',\n       'simulink_default_opts.js
 TO_REPLACE_PATH="'..\/..\/..\/'"
 REPLACE_PATH_BY="'..\/..\/..\/..\/'"
 
-# Change simulink path
-TO_REPLACE_JSON="json_path = os.path.join(acados_path, 'interfaces\/acados_template\/acados_template')"
-REPLACE_JSON_BY="import site\n            acados_path = site.getsitepackages()\n            json_path = os.path.join(acados_path[0], 'acados_template')"
+# Change acados path
+TO_REPLACE_ACADOS_SOURCE="    ACADOS_PATH = os.environ.get('ACADOS_SOURCE_DIR')"
+REPLACE_ACADOS_SOURCE_BY="    ACADOS_PATH = os.environ['CONDA_PREFIX']"
+
+TO_REPLACE_ACADOS_PYTHON="ACADOS_PYTHON_INTERFACE_PATH = os.environ.get('ACADOS_PYTHON_INTERFACE_PATH')"
+REPLACE_ACADOS_PYTHON_BY="import site\n    acados_path = site.getsitepackages()\n    ACADOS_PYTHON_INTERFACE_PATH = os.path.join(acados_path[0], 'acados_template')"
 
 # Change acados external library linking at run time
 TO_REPLACE_LIB_PATH="self.shared_lib_name = f'{code_export_dir}\/libacados_ocp_solver_{model.name}.so'"
@@ -104,7 +107,8 @@ sed -i "s/$TO_REPLACE_PYTHON_REQUIRED/$REPLACE_PYTHON_REQUIRED_BY/" setup.py
 sed -i "s/$TO_REPLACE_CASADI_DEP/$REPLACE_CASADI_DEP_BY/" setup.py
 sed -i "s/$TO_REPLACE_JSON_DEP/$REPLACE_JSON_DEP_BY/" setup.py
 sed -i "s/$TO_REPLACE_PATH/$REPLACE_PATH_BY/" acados_template/utils.py
-sed -i "s/$TO_REPLACE_JSON/$REPLACE_JSON_BY/" acados_template/acados_ocp_solver.py
+sed -i "s/$TO_REPLACE_ACADOS_PYTHON/$REPLACE_ACADOS_PYTHON_BY/" acados_template/utils.py
+sed -i "s/$TO_REPLACE_ACADOS_SOURCE/$REPLACE_ACADOS_SOURCE_BY/" acados_template/utils.py
 sed -i "s/$TO_REPLACE_LIB_PATH/$REPLACE_LIB_PATH_BY/" acados_template/acados_ocp_solver.py
 
 # Change acados external lib linking permanently
