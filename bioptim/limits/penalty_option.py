@@ -282,7 +282,10 @@ class PenaltyOption(OptionGeneric):
                     f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
                 )
             if self.target[0].shape[-1] == 1:
-                self.target = np.repeat(self.target, n_time_expected, axis=-1)
+                if len(self.rows) == 1:
+                    self.target[0] = np.reshape(self.target[0], (1, len(self.target[0])))
+                else:
+                    self.target = np.repeat(self.target, n_time_expected, axis=-1)
 
             shape = (
                 (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
