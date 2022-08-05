@@ -892,6 +892,10 @@ class NoisedInitialGuess(InitialGuess):
 
         if bounds is None:
             raise RuntimeError("bounds must be specified to generate noised initial guess")
+        if interpolation == InterpolationType.ALL_POINTS:
+            bounds.n_shooting = initial_guess.shape[1]
+            bounds.min.n_shooting = initial_guess.shape[1]
+            bounds.max.n_shooting = initial_guess.shape[1]
         self.bounds = bounds
         self.n_elements = self.bounds.min.shape[0]
         self.bounds.check_and_adjust_dimensions(self.n_elements, n_shooting)
@@ -935,6 +939,8 @@ class NoisedInitialGuess(InitialGuess):
         ns = n_shooting + 1 if interpolation == InterpolationType.ALL_POINTS else self.n_shooting
         bounds_min_matrix = np.zeros((self.n_elements, ns))
         bounds_max_matrix = np.zeros((self.n_elements, ns))
+        self.bounds.min.n_shooting = ns
+        self.bounds.max.n_shooting = ns
         for shooting_point in range(ns):
             bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
             bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
