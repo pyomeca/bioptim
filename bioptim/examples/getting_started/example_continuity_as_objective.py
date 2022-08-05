@@ -25,6 +25,7 @@ from bioptim import (
     InitialGuess,
     ObjectiveFcn,
     Objective,
+    ConstraintFcn,
     ConstraintList,
     OdeSolver,
     CostType,
@@ -35,13 +36,12 @@ from bioptim import (
 
 
 def out_of_sphere(all_pn, y, z):
-
     q = all_pn.nlp.states["q"].mx
     marker_q = all_pn.nlp.model.markers(q)[1].to_mx()
 
     distance = sqrt((y - marker_q[1])**2+(z - marker_q[2])**2)
 
-    return BiorbdInterface.mx_to_cx("out_of_rect", distance, all_pn.nlp.states["q"])
+    return BiorbdInterface.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states["q"])
 
 
 def prepare_ocp_first_pass(
@@ -91,10 +91,8 @@ def prepare_ocp_first_pass(
 
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, START] = 0
-    x_bounds.min[Ytrans, END] = -0.1  # Give a little slack on the end position, otherwise to difficult
-    x_bounds.max[Ytrans, END] = 0.1
-    # x_bounds.min[Xrot, END] = 3.14 - 0.1
-    # x_bounds.max[Xrot, END] = 3.14 + 0.1
+    x_bounds.min[Ytrans, END] = -0.05  # Give a little slack on the end position, otherwise to difficult
+    x_bounds.max[Ytrans, END] = 0.05
     x_bounds[Xrot, END] = 3.14
 
     # Initial guess
@@ -117,6 +115,8 @@ def prepare_ocp_first_pass(
     constraints.add(out_of_sphere, y=.25, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=.15, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=.45, z=-.75, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, max_bound=2)
+
 
     return OptimalControlProgram(
         biorbd_model,
@@ -171,9 +171,6 @@ def prepare_ocp_second_pass(
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
-    # objective_functions = ObjectiveList()  # BUG: causes continuity objectives to disappear
-    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
-    # objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, max_bound=final_time, weight=1)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -186,10 +183,8 @@ def prepare_ocp_second_pass(
 
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, START] = 0
-    x_bounds.min[Ytrans, END] = -0.1  # Give a little slack on the end position, itherwise to difficult
-    x_bounds.max[Ytrans, END] = 0.1
-    # x_bounds.min[Xrot, END] = 3.14 - 0.1
-    # x_bounds.max[Xrot, END] = 3.14 + 0.1
+    x_bounds.min[Ytrans, END] = -0.05  # Give a little slack on the end position, itherwise to difficult
+    x_bounds.max[Ytrans, END] = 0.05
     x_bounds[Xrot, END] = 3.14
 
     # Initial guess
@@ -211,6 +206,7 @@ def prepare_ocp_second_pass(
     constraints.add(out_of_sphere, y=.25, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=.15, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=.45, z=-.75, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, max_bound=2)
 
     return OptimalControlProgram(
         biorbd_model,
