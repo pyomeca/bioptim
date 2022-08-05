@@ -2,7 +2,7 @@ from typing import Callable, Union, Any
 
 from .constraints import Constraint, ConstraintFcn
 from ..misc.fcn_enum import FcnEnum
-from ..misc.enums import Node
+from ..misc.enums import Node, PenaltyType
 from .penalty_node import PenaltyNodeList
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 
@@ -51,6 +51,7 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
+        penalty_type: PenaltyType = PenaltyType.USER,
         **params: Any,
     ):
         """
@@ -78,6 +79,7 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
+            penalty_type=penalty_type,
             **params,
         )
         MultinodePenalty.__init__(
@@ -94,11 +96,26 @@ class MultinodeConstraint(Constraint, MultinodePenalty):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
 
-        pool = nlp.g_internal if nlp else ocp.g_internal
+        if self.penalty_type == PenaltyType.USER:
+            pool = nlp.g if nlp else ocp.g
+        elif self.penalty_type == PenaltyType.INTERNAL:
+            pool = nlp.g_internal if nlp else ocp.g_internal
+        else:
+            raise RuntimeError(
+                f"penalty_type must be {PenaltyType.USER} or {PenaltyType.INTERNAL}, not {type(self.penalty_type)}"
+            )
+
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
+        if self.penalty_type == PenaltyType.USER:
+            g_to_add_to = nlp.g if nlp else ocp.g
+        elif self.penalty_type == PenaltyType.INTERNAL:
+            g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
+        else:
+            raise RuntimeError(
+                f"penalty_type must be {PenaltyType.USER} or {PenaltyType.INTERNAL}, not {type(self.penalty_type)}"
+            )
 
         if self.list_index < 0:
             for i, j in enumerate(g_to_add_to):
@@ -144,7 +161,7 @@ class MultinodeConstraintList(MultinodePenaltyList):
             self.copy(multinode_constraint)
         else:
             super(MultinodeConstraintList, self)._add(
-                option_type=MultinodeConstraint, multinode_constraint=multinode_constraint, phase=-1, **extra_arguments
+                option_type=MultinodeConstraint, multinode_constraint=multinode_constraint, **extra_arguments
             )
 
 

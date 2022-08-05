@@ -1,7 +1,7 @@
 from typing import Callable, Union, Any
 
 from ..misc.fcn_enum import FcnEnum
-from ..misc.enums import Node
+from ..misc.enums import Node, PenaltyType
 from .objective_functions import Objective, ObjectiveFcn, ObjectiveFunction
 from .penalty_node import PenaltyNodeList
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
@@ -22,6 +22,7 @@ class MultinodeObjective(Objective, MultinodePenalty):
         multinode_objective: Union[Callable, Any] = None,
         custom_function: Callable = None,
         weight: float = 0,
+        penalty_type: PenaltyType = PenaltyType.USER,
         **params: Any,
     ):
         """
@@ -45,11 +46,11 @@ class MultinodeObjective(Objective, MultinodePenalty):
             multinode_objective = MultinodeObjectiveFcn.CUSTOM
 
         super(MultinodeObjective, self).__init__(
-            multinode_penalty=multinode_objective,
             objective=multinode_objective,
             custom_function=custom_function,
             custom_type=ObjectiveFcn.Mayer,
             weight=weight,
+            penalty_type=penalty_type,
             **params,
         )
         MultinodePenalty.__init__(
@@ -67,11 +68,26 @@ class MultinodeObjective(Objective, MultinodePenalty):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
 
-        pool = nlp.J_internal if nlp else ocp.J_internal
+        if self.penalty_type == PenaltyType.USER:
+            pool = nlp.J if nlp else ocp.J
+        elif self.penalty_type == PenaltyType.INTERNAL:
+            pool = nlp.J_internal if nlp else ocp.J_internal
+        else:
+            raise RuntimeError(
+                f"penalty_type must be {PenaltyType.USER} or {PenaltyType.INTERNAL}, not {type(self.penalty_type)}"
+            )
+
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        J_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+        if self.penalty_type == PenaltyType.USER:
+            J_to_add_to = nlp.J if nlp else ocp.J
+        elif self.penalty_type == PenaltyType.INTERNAL:
+            J_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+        else:
+            raise RuntimeError(
+                f"penalty_type must be {PenaltyType.USER} or {PenaltyType.INTERNAL}, not {type(self.penalty_type)}"
+            )
 
         if self.list_index < 0:
             for i, j in enumerate(J_to_add_to):
@@ -117,11 +133,11 @@ class MultinodeObjectiveList(MultinodePenaltyList):
             self.copy(multinode_objective)
         else:
             super(MultinodeObjectiveList, self)._add(
-                option_type=MultinodeObjective, multinode_objective=multinode_objective, phase=-1, **extra_arguments
+                option_type=MultinodeObjective, multinode_objective=multinode_objective, **extra_arguments
             )
 
 
-class MultinodeObjectiveFunctions(MultinodePenaltyFunctions):
+class MultinodeObjectiveFunctions(MultinodePenaltyFunctions, ObjectiveFunction.MayerFunction):
     @staticmethod
     def penalty_nature() -> str:
         return "multinode_objectives"

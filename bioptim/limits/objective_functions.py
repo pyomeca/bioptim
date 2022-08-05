@@ -78,10 +78,13 @@ class Objective(PenaltyOption):
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
-        if isinstance(all_pn, (list, tuple)):
-            pool = all_pn[0].nlp.J if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.J
-        else:
+        all_pn = all_pn[0] if isinstance(all_pn, (list, tuple)) else all_pn
+        if self.penalty_type == PenaltyType.INTERNAL and False:
+            pool = all_pn.nlp.J_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.J_internal
+        elif self.penalty_type == PenaltyType.USER or True:
             pool = all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+        else:
+            raise ValueError(f"Invalid penalty_type type {self.penalty_type}.")
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
@@ -121,7 +124,7 @@ class Objective(PenaltyOption):
                 raise RuntimeError("Lagrange objective are for Node.ALL_SHOOTING or Node.ALL, did you mean Mayer?")
             if self.node == Node.DEFAULT:
                 self.node = Node.ALL_SHOOTING
-        elif self.type.get_type() == ObjectiveFunction.MayerFunction:
+        elif issubclass(self.type.get_type(), ObjectiveFunction.MayerFunction):
             if self.node == Node.DEFAULT:
                 self.node = Node.END
         else:
@@ -498,5 +501,5 @@ class ContinuityObjectiveFunctions:
         # Dynamics must be respected between phases
         ObjectiveFunction.inter_phase_continuity(ocp)
 
-        if ocp.multinode_objectives:
-            ObjectiveFunction.node_equalities(ocp)
+        # if ocp.multinode_objectives:
+        #     ObjectiveFunction.node_equalities(ocp)

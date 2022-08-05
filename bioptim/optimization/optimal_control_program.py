@@ -28,8 +28,8 @@ from ..limits.constraints import (
     ContinuityConstraintFunctions,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
-from ..limits.multinode_constraint import MultinodeConstraintList
-from ..limits.multinode_objective import MultinodeObjectiveList
+from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraint
+from ..limits.multinode_objective import MultinodeObjectiveList, MultinodeObjective
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
@@ -102,11 +102,15 @@ class OptimalControlProgram:
     -------
     update_objectives(self, new_objective_function: Union[Objective, ObjectiveList])
         The main user interface to add or modify objective functions in the ocp
+    update_multinode_objectives(self, new_multinode_objective: Union[MultinodeObjective, MultinodeObjectiveList])
+        The main user interface to add or modify multinode objective functions in the ocp
     update_objectives_target(self, target, phase=None, list_index=None)
         Fast accessor to update the target of a specific objective function. To update target of global objective
         (usually defined by parameters), one can pass 'phase=-1
     update_constraints(self, new_constraint: Union[Constraint, ConstraintList])
         The main user interface to add or modify constraint in the ocp
+    update_multinode_constraints(self, new_multinode_constraint: Union[MultinodeConstraint, MultinodeConstraintList])
+        The main user interface to add or modify multinode constraint functions in the ocp
     update_parameters(self, new_parameters: Union[Parameter, ParameterList])
         The main user interface to add or modify parameters in the ocp
     update_bounds(self, x_bounds: Union[Bounds, BoundsList], u_bounds: Union[Bounds, BoundsList])
@@ -250,8 +254,8 @@ class OptimalControlProgram:
             "variable_mappings": variable_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
-            "multinode_constraints": multinode_constraints,
-            "multinode_objectives": multinode_objectives,
+            "multinode_constraints": MultinodeConstraintList(),
+            "multinode_objectives": MultinodeObjectiveList(),
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
@@ -455,8 +459,9 @@ class OptimalControlProgram:
         self.phase_transitions = phase_transitions.prepare_phase_transitions(
             self, continuity_weight=state_continuity_weight
         )
-        self.multinode_constraints = multinode_constraints.prepare_multinode_penalties(self)
-        self.multinode_objectives = multinode_objectives.prepare_multinode_penalties(self)
+
+        self.multinode_constraints = multinode_constraints
+        self.multinode_objectives = multinode_objectives
         # Skipping creates a valid but unsolvable OCP class
         # TODO: make adding multinode whatever like every other Penalty, now either mnc or mno are added
         if not skip_state_continuity:
@@ -485,9 +490,11 @@ class OptimalControlProgram:
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
         self.update_constraints(constraints)
+        self.update_multinode_constraints(self.multinode_constraints)
 
         # Prepare objectives
         self.update_objectives(objective_functions)
+        self.update_multinode_objectives(self.multinode_objectives)
 
     def _set_kinematic_phase_mapping(self):
         """
@@ -529,6 +536,31 @@ class OptimalControlProgram:
 
         else:
             raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
+
+    def update_multinode_objectives(self, new_multinode_objective: Union[MultinodeObjective, MultinodeObjectiveList]):
+        """
+        The main user interface to add or modify multinode objective in the ocp
+
+        Parameters
+        ----------
+        new_multinode_objective: Union[MultinodeConstraint, ConstraintList]
+            The constraint to add to the ocp
+        """
+
+        if isinstance(new_multinode_objective, MultinodeObjective):
+            mnol = MultinodeObjectiveList()
+            mnol.add(new_multinode_objective)
+            mnol.prepare_multinode_penalties(self)
+            self.__modify_penalty(new_multinode_objective)
+
+        elif isinstance(new_multinode_objective, MultinodeObjectiveList):
+            new_multinode_objective.prepare_multinode_penalties(self)
+            for objectives_in_phase in new_multinode_objective:
+                for objective in objectives_in_phase:
+                    self.__modify_penalty(objective)
+
+        else:
+            raise RuntimeError("new_multinode_objective must be a MultinodeConstraint or a MultinodeConstraintList")
 
     def update_objectives_target(self, target, phase=None, list_index=None):
         """
@@ -573,7 +605,34 @@ class OptimalControlProgram:
                     self.__modify_penalty(constraint)
 
         else:
-            raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
+            raise RuntimeError("new_multinode_objective must be a Constraint or a ConstraintList")
+
+    def update_multinode_constraints(
+        self, new_multinode_constraint: Union[MultinodeConstraint, MultinodeConstraintList]
+    ):
+        """
+        The main user interface to add or modify multinode constraint in the ocp
+
+        Parameters
+        ----------
+        new_multinode_constraint: Union[MultinodeConstraint, ConstraintList]
+            The constraint to add to the ocp
+        """
+
+        if isinstance(new_multinode_constraint, MultinodeConstraint):
+            mncl = MultinodeConstraintList()
+            mncl.add(new_multinode_constraint)
+            mncl.prepare_multinode_penalties(self)
+            self.__modify_penalty(new_multinode_constraint)
+
+        elif isinstance(new_multinode_constraint, MultinodeConstraintList):
+            new_multinode_constraint.prepare_multinode_penalties(self)
+            for constraints_in_phase in new_multinode_constraint:
+                for constraint in constraints_in_phase:
+                    self.__modify_penalty(constraint)
+
+        else:
+            raise RuntimeError("new_multinode_objective must be a MultinodeConstraint or a MultinodeConstraintList")
 
     def update_parameters(self, new_parameters: Union[Parameter, ParameterList]):
         """

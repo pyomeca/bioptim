@@ -624,5 +624,5 @@ class ContinuityConstraintFunctions:
         # Dynamics must be respected between phases
         ConstraintFunction.inter_phase_continuity(ocp)
 
-        if ocp.multinode_constraints:
-            ConstraintFunction.node_equalities(ocp)
+        # if ocp.multinode_constraints:
+        #     ConstraintFunction.node_equalities(ocp)

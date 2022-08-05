@@ -51,7 +51,6 @@ class MultinodePenalty:
         first_node: Union[Node, int],
         second_node: Union[Node, int],
         multinode_penalty: Union[Callable, Any],
-        penalty_type=PenaltyType.USER,
         **params: Any,
     ):
         """
@@ -81,7 +80,6 @@ class MultinodePenalty:
         self.second_node = second_node
         self.node = self.first_node, self.second_node
         self.node_idx = [0]
-        self.penalty_type = penalty_type  # TODO: fix with proper multiple inheritence
 
 
 class MultinodePenaltyList(OptionList):
@@ -98,6 +96,7 @@ class MultinodePenaltyList(OptionList):
         -------
         The list of all the multi_node penalties prepared
         """
+
         multinode_penalties = []
         for multinode_penalties_in_phase in self:
             for mnp in multinode_penalties_in_phase:
@@ -106,6 +105,19 @@ class MultinodePenaltyList(OptionList):
                     raise RuntimeError("Phase index of the multinode_penalty is higher than the number of phases")
                 if mnp.phase_first_idx < 0 or mnp.phase_second_idx < 0:
                     raise RuntimeError("Phase index of the multinode_penalty need to be positive")
+
+                first_node_name = (
+                    f"idx {str(mnp.first_node)}" if isinstance(mnp.first_node, int) else mnp.first_node.name
+                )
+                second_node_name = (
+                    f"idx {str(mnp.second_node)}" if isinstance(mnp.second_node, int) else mnp.second_node.name
+                )
+                mnp.name = (
+                    f"NODE_EQUALITY "
+                    f"Phase {mnp.phase_first_idx} Node {first_node_name}"
+                    f"->Phase {mnp.phase_second_idx} Node {second_node_name}"
+                )
+                mnp.list_index = -1  # TODO: maybe remove because it assumes unique per phase
 
                 multinode_penalties.append(mnp)
 
