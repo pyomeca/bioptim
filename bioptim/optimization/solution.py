@@ -8,6 +8,7 @@ from scipy.integrate import solve_ivp
 from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
+from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import (
     ControlType,
@@ -22,6 +23,7 @@ from ..misc.enums import (
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
+from ..dynamics.ode_solver import OdeSolver
 
 
 class Solution:
@@ -78,6 +80,10 @@ class Solution:
     @property
     states(self) -> Union[list, dict]
         Returns the state in list if more than one phases, otherwise it returns the only dict
+    @property
+    states_no_intermediate(self) -> Union[list, dict]
+        Returns the state in list if more than one phases, otherwise it returns the only dict
+        and removes the intermediate states if Collocation solver is used
     @property
     controls(self) -> Union[list, dict]
         Returns the controls in list if more than one phases, otherwise it returns the only dict
@@ -482,6 +488,28 @@ class Solution:
         """
 
         return self._states[0] if len(self._states) == 1 else self._states
+
+    @property
+    def states_no_intermediate(self) -> Union[list, dict]:
+        """
+        Returns the state in list if more than one phases, otherwise it returns the only dict
+        it removes the intermediate states in the case COLLOCATION Solver is used
+
+        Returns
+        -------
+        The states data without intermediate states in the case of collocation
+        """
+        states_no_intermediate = []
+        for i, nlp in enumerate(self.ocp.nlp):
+            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and not isinstance(nlp.ode_solver, OdeSolver.IRK):
+                states_no_intermediate.append(dict())
+                for key in self._states[i].keys():
+                    # keep one value each five values
+                    states_no_intermediate[i][key] = self._states[i][key][:, :: nlp.ode_solver.polynomial_degree + 1]
+            else:
+                states_no_intermediate.append(self._states[i])
+
+        return states_no_intermediate[0] if len(states_no_intermediate) == 1 else states_no_intermediate
 
     @property
     def controls(self) -> Union[list, dict]:
@@ -1014,6 +1042,13 @@ class Solution:
 
             all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path().absolutePath().to_string(), **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
+            for objective in self.ocp.nlp[idx_phase].J:
+                if objective.target is not None:
+                    if objective.type in (
+                        ObjectiveFcn.Mayer.TRACK_MARKERS,
+                        ObjectiveFcn.Lagrange.TRACK_MARKERS,
+                    ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
+                        all_bioviz[-1].load_experimental_markers(objective.target[0])
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)
@@ -1104,7 +1139,7 @@ class Solution:
                             )
                         ).T
                     else:
-                        target = penalty.target[0][:, penalty.node_idx.index(idx)]
+                        target = penalty.target[0][..., penalty.node_idx.index(idx)]
 
             val.append(penalty.function_non_threaded(x, u, p))
             val_weighted.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, target, dt))
@@ -1151,7 +1186,14 @@ class Solution:
 
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
-                self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
+                self.detailed_cost += [
+                    {
+                        "name": penalty.name,
+                        "cost_value_weighted": val_weighted,
+                        "cost_value": val,
+                        "params": penalty.params,
+                    }
+                ]
                 if print_only_weighted:
                     print(f"{penalty.name}: {val_weighted}")
                 else:

@@ -1,6 +1,6 @@
 from typing import Union
 
-from casadi import horzcat, vertcat, MX, SX
+from casadi import horzcat, vertcat, MX, SX, Function
 
 from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
@@ -343,6 +343,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_torque: bool = False,
         fatigue=None,
+        implicit_dynamics: bool = False,
     ) -> MX:
         """
         Forward dynamics driven by muscle.
@@ -363,6 +364,8 @@ class DynamicsFunctions:
             To define fatigue elements
         with_torque: bool
             If the dynamic should be added with residual torques
+        implicit_dynamics: bool
+            If the implicit dynamics should be used
 
         Returns
         ----------
@@ -400,11 +403,17 @@ class DynamicsFunctions:
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        dxdt = MX(nlp.states.shape, ddq.shape[1])
-        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-        dxdt[nlp.states["qdot"].index, :] = ddq
+        if implicit_dynamics:
+            ddq = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+            dxdt = MX(nlp.states.shape, 1)
+            dxdt[nlp.states["q"].index, :] = dq
+            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+        else:
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+            dxdt = MX(nlp.states.shape, ddq.shape[1])
+            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+            dxdt[nlp.states["qdot"].index, :] = ddq
 
         has_excitation = True if "muscles" in nlp.states else False
         if has_excitation:
@@ -450,6 +459,44 @@ class DynamicsFunctions:
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+
+    @staticmethod
+    def joints_acceleration_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool = False
+    ) -> MX:
+        """
+        Forward dynamics driven by joints accelerations of a free floating body.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+        implicit_dynamics: bool
+            If implicit dynamics should be used
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of states
+        """
+        if implicit_dynamics:
+            raise NotImplementedError("Implicit dynamics not implemented yet.")
+
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
+
+        qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
+        qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
+
+        return vertcat(qdot, vertcat(qddot_root_func(q, qdot, qddot_joints), qddot_joints))
 
     @staticmethod
     def get(var: OptimizationVariable, cx: Union[MX, SX]):

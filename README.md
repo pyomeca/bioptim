@@ -732,6 +732,14 @@ Please note, this dynamics is expected to be very slow to converge, if it ever d
 One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
 This has been shown to be more efficient and allows defining minimum torque.
 
+#### JOINTS_ACCELERATION_DRIVEN
+The joints acceleration driven defines the states (x) as *q* and *qdot* and the controls (u) as *qddot_joints*. The derivative of *q* is trivially *qdot*.
+The joints' acceleration *qddot_joints* is the acceleration of the actual joints of the `biorb_model` without its root's joints.
+The model's root's joints acceleration *qddot_root* are computed by the `biorbd` function: `qddot_root = boirbd_model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)`.
+The derivative of *qdot* is the vertical stack of *qddot_root* and *qddot_joints*.
+
+This dynamic is suitable for bodies in free fall.
+
 #### MUSCLE_ACTIVATIONS_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the muscle activations. 
 The derivative of *q* is trivially *qdot*.
@@ -856,6 +864,10 @@ where current_shooting_point is the current point to return, n_elements is the n
 The main methods the user will be interested in is the `init` property that returns the initial guess. 
 Unless it is a custom function, `init` is a numpy.ndarray and can be directly modified to change the initial guess. 
 Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be called to vertically concatenate multiple initial guesses.
+
+### Class NoisedInitialGuess
+The NoisedInitialGuess class is an alternative class to define initial guesses randomly noised (good for multi-start).
+The constructor can be called similarly to InitialGuess: `bounds = NoisedInitialGuess(init)`. 
 
 ### Class InitialGuessList
 A InitialGuessList is a list of InitialGuess. 
@@ -1259,6 +1271,12 @@ Since this is an Enum, it is possible to use tab key on the keyboard to dynamica
 
 #### EQUALITY
 The states are equals.
+
+#### COM_EQUALITY
+The positions of centers of mass are equals.
+
+#### COM_VELOCITY_EQUALITY
+The velocities of centers of mass are equals.
 
 #### CUSTOM
 CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
@@ -1763,8 +1781,11 @@ The main goal of this kind of simulation, especially in single shooting (that is
 is to validate the dynamics of multiple shooting. If they both are equal, it usually means that a great confidence
 can be held in the solution. Another goal would be to reload fast a previously saved optimized solution.
 
+### The example_joints_acceleration_driven.py file
+This example shows how to use the joints acceleration dynamic to achieve the same goal as the simple pendulum, but with a double pendulum for which only the angular acceleration of the second pendulum is controled.
+
 ### The pendulum.py file
-This is another way to present the pendulum example of the 'Getting started' section. 
+This is another way to present the pendulum example of the 'Getting started' section.
 
 ## Muscle driven OCP
 In this file, you will find four examples about muscle driven optimal control programs. The two first refer to traking 

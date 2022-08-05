@@ -72,31 +72,42 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.57063948309302)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.5010317, 0.6824593])
+
     elif isinstance(ode_solver, OdeSolver.IRK):
         np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 65.8236055171619)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.5536468, -0.4129719])
+
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(f[0, 0], 46.667345680854794)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 46.667345680854794)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.1780507, 0.3254202])
+
     elif isinstance(ode_solver, OdeSolver.RK1):
         np.testing.assert_almost_equal(f[0, 0], 47.360621044913245)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 47.360621044913245)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.1463538, 0.0215651])
+
     elif isinstance(ode_solver, OdeSolver.RK2):
         np.testing.assert_almost_equal(f[0, 0], 76.24887695462857)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 76.24887695462857)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.652476, -0.496652])
+
     else:
         np.testing.assert_almost_equal(f[0, 0], 41.58259426)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.58259426)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.4961208, 0.6764171])
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -315,9 +326,10 @@ def test_custom_constraint_track_markers(ode_solver):
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
 
 
+@pytest.mark.parametrize("random_init", [True, False])
 @pytest.mark.parametrize("interpolation", InterpolationType)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_initial_guesses(interpolation, ode_solver):
+def test_initial_guesses(random_init, interpolation, ode_solver):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -329,6 +341,7 @@ def test_initial_guesses(interpolation, ode_solver):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         final_time=1,
         n_shooting=5,
+        random_init=random_init,
         initial_guess=interpolation,
         ode_solver=ode_solver,
     )
@@ -358,7 +371,7 @@ def test_initial_guesses(interpolation, ode_solver):
     np.testing.assert_almost_equal(tau[:, -2], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    if interpolation == InterpolationType.CUSTOM:
+    if interpolation == InterpolationType.CUSTOM and random_init == False:
         with pytest.raises(AttributeError, match="'PathCondition' object has no attribute 'custom_function'"):
             TestUtils.save_and_load(sol, ocp, True)
     else:

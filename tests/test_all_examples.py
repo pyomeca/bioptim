@@ -1,6 +1,7 @@
 import os
-
+import pytest
 import numpy as np
+from bioptim import InterpolationType
 
 
 def test__acados__cube():
@@ -62,12 +63,30 @@ def test__getting_started__custom_dynamics():
     )
 
 
-def test__getting_started__custom_initial_guess():
+@pytest.mark.parametrize(
+    "interpolation",
+    [
+        InterpolationType.CONSTANT,
+        InterpolationType.LINEAR,
+        InterpolationType.SPLINE,
+        InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        InterpolationType.CUSTOM,
+        InterpolationType.EACH_FRAME,
+    ],
+)
+@pytest.mark.parametrize("random", [True, False])
+def test__getting_started__custom_initial_guess(interpolation, random):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", n_shooting=30, final_time=2)
+    ocp_module.prepare_ocp(
+        bioptim_folder + "/models/cube.bioMod",
+        n_shooting=30,
+        final_time=2,
+        random_init=random,
+        initial_guess=interpolation,
+    )
 
 
 def test__getting_started__custom_objectives():
@@ -331,13 +350,23 @@ def test__torque_driven_ocp__maximize_predicted_height_CoM():
     )
 
 
-def test__torque_driven_ocp__phase_transition_uneven_variable_number():
-    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number as ocp_module
+def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping():
+    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
+        biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
+    )
+
+
+def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds():
+    from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_bounds as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
         biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
     )
 

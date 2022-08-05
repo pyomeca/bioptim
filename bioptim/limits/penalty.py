@@ -149,9 +149,11 @@ class PenaltyFunctionAbstract:
             q_mx = nlp.states["q"].mx
             model = nlp.model
             jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
-            markers = horzcat(
-                *[m.to_mx() for m in model.markers(q_mx) if m.applyRT(jcs_t) is None]  # applyRT always returns None
-            )
+
+            markers = []
+            for m in model.markers(q_mx):
+                markers_in_jcs = jcs_t.to_mx() @ vertcat(m.to_mx(), 1)
+                markers = horzcat(markers, markers_in_jcs[:3])
 
             markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["q"])
             return markers_objective
@@ -434,15 +436,21 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
-                raise NotImplementedError(
-                    "MINIMIZE_COM_ACCELERATION is only working if qddot is defined as a state or a control."
+                com_ddot = nlp.model.CoMddot(
+                    nlp.states["q"].mx,
+                    nlp.states["qdot"].mx,
+                    nlp.dynamics_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)[nlp.states["qdot"].index, :],
+                ).to_mx()
+                var = []
+                var.extend([nlp.states[key] for key in nlp.states])
+                var.extend([nlp.controls[key] for key in nlp.controls])
+                var.extend([nlp.parameters[key] for key in nlp.parameters])
+                return BiorbdInterface.mx_to_cx("com_ddot", com_ddot, *var)
+            else:
+                qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
+                return BiorbdInterface.mx_to_cx(
+                    "com_ddot", nlp.model.CoMddot, nlp.states["q"], nlp.states["qdot"], qddot
                 )
-            qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
-
-            com_ddot_cx = BiorbdInterface.mx_to_cx(
-                "com_ddot", nlp.model.CoMddot, nlp.states["q"], nlp.states["qdot"], qddot
-            )
-            return com_ddot_cx
 
         @staticmethod
         def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
