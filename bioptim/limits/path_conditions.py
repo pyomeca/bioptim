@@ -924,7 +924,7 @@ class NoisedInitialGuess(InitialGuess):
         if self.seed:
             np.random.seed(self.seed)
         self.noised_initial_guess = (
-            init_instance.init + np.random.random((self.n_elements, self.n_shooting)) * self.noise_magnitude
+            init_instance.init + np.random.uniform(low=-1, high=1, size=(self.n_elements, self.n_shooting)) * self.noise_magnitude
         )
         for shooting_point in range(self.n_shooting):
             too_small_index = np.where(
