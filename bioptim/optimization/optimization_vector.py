@@ -137,9 +137,9 @@ class OptimizationVector:
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
         nlp = self.ocp.nlp[0]
         for phase, x_init in enumerate(self.x_init):
-            if type(self.ocp.original_values["x_init"]) == InitialGuess:
+            if isinstance(self.ocp.original_values["x_init"], InitialGuess):
                 interpolation_type = self.ocp.original_values["x_init"].type
-            elif type(self.ocp.original_values["x_init"]) == InitialGuessList:
+            elif isinstance(self.ocp.original_values["x_init"], InitialGuessList):
                 interpolation_type = self.ocp.original_values["x_init"][phase].type
             else:
                 interpolation_type = None
@@ -358,11 +358,11 @@ class OptimizationVector:
             if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
                 if not ocp.nlp[i].ode_solver.is_direct_collocation:
                     raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-            if type(self.ocp.original_values["x_init"]) == InitialGuess or \
-                    (type(self.ocp.original_values["x_init"]) == NoisedInitialGuess and
+            if isinstance(self.ocp.original_values["x_init"], InitialGuess) or \
+                    (isinstance(self.ocp.original_values["x_init"], NoisedInitialGuess) and
                      ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS):
                 interpolation_type = ocp.original_values["x_init"].type
-            elif type(self.ocp.original_values["x_init"]) == InitialGuessList:
+            elif isinstance(self.ocp.original_values["x_init"], InitialGuess):
                 interpolation_type = ocp.original_values["x_init"][i].type
             else:
                 interpolation_type = None
@@ -370,9 +370,9 @@ class OptimizationVector:
                 ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
                 if (ocp.nlp[i].ode_solver.is_direct_collocation
                     and (interpolation_type != InterpolationType.EACH_FRAME
-                    and type(ocp.nlp[i].x_init) != NoisedInitialGuess))
+                    and not isinstance(ocp.nlp[i].x_init, NoisedInitialGuess)))
                    or (interpolation_type == InterpolationType.ALL_POINTS
-                       and type(ocp.nlp[i].x_init) == NoisedInitialGuess)
+                       and isinstance(ocp.nlp[i].x_init, NoisedInitialGuess))
                 else ocp.nlp[i].ns
             )
             ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
@@ -397,11 +397,13 @@ class OptimizationVector:
                 repeat = 1
 
             x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
-            for k in range(nlp.ns + 1):  # todo
+            for k in range(nlp.ns + 1): 
                 for p in range(repeat if k != nlp.ns else 1):
                     span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
-                    if (nlp.x_init.type == InterpolationType.EACH_FRAME and type(nlp.x_init) != NoisedInitialGuess) or \
-                            (nlp.x_init.type == InterpolationType.ALL_POINTS and type(nlp.x_init) == NoisedInitialGuess):
+                    if (nlp.x_init.type == InterpolationType.EACH_FRAME and 
+                        not isinstance(nlp.x_init, NoisedInitialGuess)) or \
+                            (nlp.x_init.type == InterpolationType.ALL_POINTS and 
+                             isinstance(nlp.x_init, NoisedInitialGuess)):
                         point = k * repeat + p
                     else:
                         point = k if k != 0 else 0 if p == 0 else 1
