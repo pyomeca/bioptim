@@ -183,7 +183,7 @@ def prepare_ocp_second_pass(
 
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, START] = 0
-    x_bounds.min[Ytrans, END] = -0.05  # Give a little slack on the end position, itherwise to difficult
+    x_bounds.min[Ytrans, END] = -0.05  # Give a little slack on the end position, otherwise to difficult
     x_bounds.max[Ytrans, END] = 0.05
     x_bounds[Xrot, END] = 3.14
 
