@@ -356,7 +356,7 @@ class OptimizationVector:
         # Sanity check
         for i in range(ocp.n_phases):
             if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
-                if not ocp.nlp[i].ode_solver.is_direct_collocation:
+                if ocp.nlp[i].ode_solver.is_direct_shooting:
                     raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
             if isinstance(self.ocp.original_values["x_init"], InitialGuess) or \
                     (isinstance(self.ocp.original_values["x_init"], NoisedInitialGuess) and
