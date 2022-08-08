@@ -942,8 +942,12 @@ class NoisedInitialGuess(InitialGuess):
         self.bounds.min.n_shooting = ns
         self.bounds.max.n_shooting = ns
         for shooting_point in range(ns):
-            bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
-            bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
+            if shooting_point == ns-1:
+                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point+1)
+                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point+1)
+            else:
+                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
+                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
 
         tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
 
