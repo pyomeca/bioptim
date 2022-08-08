@@ -835,6 +835,16 @@ class NoisedInitialGuess(InitialGuess):
     ----------
     init: InitialGuess
         The noised initial guess
+    noise: np.array
+        The noise to add to the initial guess
+    noised_initial_guess: np.array
+        The noised initial guess
+    seed: int
+        The seed of the random generator
+    bound_push: float
+        The bound to push the noise away from the bounds
+    bounds: Bounds
+        The bounds of the decision variables
 
     Methods
     -------
@@ -889,6 +899,7 @@ class NoisedInitialGuess(InitialGuess):
 
         self.seed = seed
         self.noise_magnitude = noise_magnitude
+        self.noise = None
 
         self._create_noise_matrix(initial_guess=initial_guess, interpolation=interpolation, **parameters)
 
@@ -944,9 +955,19 @@ class NoisedInitialGuess(InitialGuess):
                 init_instance = InitialGuess(initial_guess_matrix, interpolation=InterpolationType.ALL_POINTS)
                 if self.seed:
                     np.random.seed(self.seed)
-                self.noised_initial_guess = (
-                    init_instance.init + np.random.random((self.n_elements, n_shooting)) * self.noise_magnitude
+
+                # building the noise matrix
+                self.noise = (
+                        np.random.random((self.n_elements,  n_shooting))  # random noise
+                        * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
+                        * (bounds_max_matrix - bounds_min_matrix)  # scale the noise to the range of bounds
+                        + bounds_min_matrix
+                        + (1 - self.noise_magnitude)
+                        * (bounds_max_matrix - bounds_min_matrix)
+                        / 2  # shift the noise to the center of the range of bounds
                 )
+                # building the noised initial guess
+                self.noised_initial_guess = init_instance.init + self.noise
                 for shooting_point in range(n_shooting):
                     too_small_index = np.where(
                         self.noised_initial_guess[:, shooting_point]
@@ -966,9 +987,20 @@ class NoisedInitialGuess(InitialGuess):
                 init_instance = InitialGuess(initial_guess_matrix, interpolation=InterpolationType.EACH_FRAME)
                 if self.seed:
                     np.random.seed(self.seed)
-                self.noised_initial_guess = (
-                    init_instance.init + np.random.random((self.n_elements, self.n_shooting)) * self.noise_magnitude
+
+                    # building the noise matrix
+                self.noise = (
+                        np.random.random((self.n_elements, self.n_shooting))  # random noise
+                        * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
+                        * (bounds_max_matrix - bounds_min_matrix)  # scale the noise to the range of bounds
+                        + bounds_min_matrix
+                        + (1 - self.noise_magnitude)
+                        * (bounds_max_matrix - bounds_min_matrix)
+                        / 2  # shift the noise to the center of the range of bounds
                 )
+                # building the noised initial guess
+                self.noised_initial_guess = init_instance.init + self.noise
+
                 for shooting_point in range(self.n_shooting):
                     too_small_index = np.where(
                         self.noised_initial_guess[:, shooting_point]
