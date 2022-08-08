@@ -892,6 +892,8 @@ class NoisedInitialGuess(InitialGuess):
 
         if bounds is None:
             raise RuntimeError("bounds must be specified to generate noised initial guess")
+        if isinstance(initial_guess, InitialGuess):
+            interpolation = initial_guess.type
         if interpolation == InterpolationType.ALL_POINTS:
             bounds.n_shooting = initial_guess.shape[1]
             bounds.min.n_shooting = initial_guess.shape[1]
@@ -954,6 +956,8 @@ class NoisedInitialGuess(InitialGuess):
         initial_guess_matrix = np.zeros((self.n_elements, ns))
         for shooting_point in range(ns):
             initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point)
+        if self.seed:
+            np.random.seed(self.seed)
         self.noise = (
                 np.random.random((self.n_elements, ns))  # random noise
                 * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
@@ -975,8 +979,6 @@ class NoisedInitialGuess(InitialGuess):
                                          interpolation=interpolation if interpolation == InterpolationType.ALL_POINTS
                                          else InterpolationType.EACH_FRAME)
         self.noised_initial_guess = init_instance.init + self.noise
-        if self.seed:
-            np.random.seed(self.seed)
         for shooting_point in range(ns):
             too_small_index = np.where(
                 self.noised_initial_guess[:, shooting_point]

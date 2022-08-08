@@ -4,16 +4,17 @@ import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     OptimalControlProgram,
-    DynamicsList,
     DynamicsFcn,
+    DynamicsList,
     Bounds,
+    QAndQDotBounds,
     ParameterList,
     InterpolationType,
     InitialGuess,
+    NoisedInitialGuess,
     Objective,
     ObjectiveFcn,
-    QAndQDotBounds,
-    NoisedInitialGuess,
+    OdeSolver,
 )
 
 from .utils import TestUtils
@@ -193,6 +194,7 @@ def test_add_wrong_param():
         InterpolationType.SPLINE,
         InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         InterpolationType.EACH_FRAME,
+        InterpolationType.ALL_POINTS
     ],
 )
 def test_update_noised_init(interpolation):
@@ -232,6 +234,12 @@ def test_update_noised_init(interpolation):
     elif interpolation == InterpolationType.EACH_FRAME:
         x = np.zeros((nq * 2, ns + 1))
         u = np.zeros((ntau, ns))
+    elif interpolation == InterpolationType.ALL_POINTS:
+        x = np.random.random((nq + nqdot, ns + 1))
+        u = np.random.random((ntau, ns))
+    elif interpolation == InterpolationType.ALL_POINTS:
+        x = np.random.random((nq + nqdot, ns + 1))
+        u = np.random.random((ntau, ns))
     elif interpolation == InterpolationType.SPLINE:
         # Bound , assume the first and last point are 0 and final respectively
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
@@ -259,207 +267,210 @@ def test_update_noised_init(interpolation):
         bound_push=0.1,
         **extra_params_u,
     )
+    if interpolation == InterpolationType.ALL_POINTS:
+        with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS must only be used with direct collocation"):
+            ocp.update_initial_guess(x_init, u_init)
+    else:
+        ocp.update_initial_guess(x_init, u_init)
+        print(ocp.v.init.init)
 
-    ocp.update_initial_guess(x_init, u_init)
-    print(ocp.v.init.init)
-    if interpolation == InterpolationType.CONSTANT:
-        expected = np.array(
-            [
-                8.01464405e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                8.06455681e-01,
-                2.91788226e-03,
-                -7.32358536e-03,
-                2.67410254e-01,
-                2.08991213e-01,
-                1.87966870e-01,
-                8.03082901e-01,
-                -1.24825577e-03,
-                1.83296247e-02,
-                -2.69525994e-01,
-                1.74771041e-01,
-                -2.42032305e-02,
-                8.01346495e-01,
-                -1.00000000e-01,
-                1.47000000e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -7.63451148e-01,
-                8.89337834e-01,
-                -4.70888776e-01,
-                2.79842043e-01,
-                4.36966435e-02,
-                5.48467379e-01,
-                -7.13293425e-01,
-                -1.70676120e-01,
-                -8.76993356e-02,
-            ]
-        )
-    elif interpolation == InterpolationType.LINEAR:
-        expected = np.array(
-            [
-                1.80146441e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                2.05645568e00,
-                2.91788226e-03,
-                3.85176415e-01,
-                2.67410254e-01,
-                2.08991213e-01,
-                1.87966870e-01,
-                2.20000000e00,
-                -1.24825577e-03,
-                8.03329625e-01,
-                -2.69525994e-01,
-                1.74771041e-01,
-                -2.42032305e-02,
-                2.20000000e00,
-                -1.00000000e-01,
-                1.47000000e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                6.86548852e-01,
-                1.06993378e01,
-                1.80911122e00,
-                7.63175376e-01,
-                9.85369664e00,
-                1.30846738e00,
-                -1.19662676e00,
-                9.63932388e00,
-                -8.47699336e-01,
-            ]
-        )
-    elif interpolation == InterpolationType.SPLINE:
-        expected = np.array(
-            [
-                1.41356013,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.1,
-                1.56086544,
-                0.43242159,
-                0.20005561,
-                0.88294594,
-                0.55189025,
-                0.62633582,
-                1.70614069,
-                0.138338,
-                0.31053737,
-                -0.05712797,
-                0.61455967,
-                0.17849204,
-                1.37159075,
-                -0.1,
-                1.47,
-                -0.1,
-                -0.1,
-                -0.1,
-                0.05754208,
-                1.35798904,
-                -0.18808181,
-                0.80090412,
-                0.80762251,
-                0.76935078,
-                -0.50430501,
-                0.4788157,
-                0.05657921,
-            ]
-        )
+        if interpolation == InterpolationType.CONSTANT:
+            expected = np.array(
+                [
+                    8.01464405e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    8.06455681e-01,
+                    2.91788226e-03,
+                    -7.32358536e-03,
+                    2.67410254e-01,
+                    2.08991213e-01,
+                    1.87966870e-01,
+                    8.03082901e-01,
+                    -1.24825577e-03,
+                    1.83296247e-02,
+                    -2.69525994e-01,
+                    1.74771041e-01,
+                    -2.42032305e-02,
+                    8.01346495e-01,
+                    -1.00000000e-01,
+                    1.47000000e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -7.63451148e-01,
+                    8.89337834e-01,
+                    -4.70888776e-01,
+                    2.79842043e-01,
+                    4.36966435e-02,
+                    5.48467379e-01,
+                    -7.13293425e-01,
+                    -1.70676120e-01,
+                    -8.76993356e-02,
+                ]
+            )
+        elif interpolation == InterpolationType.LINEAR:
+            expected = np.array(
+                [
+                    1.80146441e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    2.05645568e00,
+                    2.91788226e-03,
+                    3.85176415e-01,
+                    2.67410254e-01,
+                    2.08991213e-01,
+                    1.87966870e-01,
+                    2.20000000e00,
+                    -1.24825577e-03,
+                    8.03329625e-01,
+                    -2.69525994e-01,
+                    1.74771041e-01,
+                    -2.42032305e-02,
+                    2.20000000e00,
+                    -1.00000000e-01,
+                    1.47000000e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    6.86548852e-01,
+                    1.06993378e01,
+                    1.80911122e00,
+                    7.63175376e-01,
+                    9.85369664e00,
+                    1.30846738e00,
+                    -1.19662676e00,
+                    9.63932388e00,
+                    -8.47699336e-01,
+                ]
+            )
+        elif interpolation == InterpolationType.SPLINE:
+            expected = np.array(
+                [
+                    1.41356013,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    1.56086544,
+                    0.43242159,
+                    0.20005561,
+                    0.88294594,
+                    0.55189025,
+                    0.62633582,
+                    1.70614069,
+                    0.138338,
+                    0.31053737,
+                    -0.05712797,
+                    0.61455967,
+                    0.17849204,
+                    1.37159075,
+                    -0.1,
+                    1.47,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    0.05754208,
+                    1.35798904,
+                    -0.18808181,
+                    0.80090412,
+                    0.80762251,
+                    0.76935078,
+                    -0.50430501,
+                    0.4788157,
+                    0.05657921,
+                ]
+            )
 
-    elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-        expected = np.array(
-            [
-                1.80146441e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                2.20000000e00,
-                2.91788226e-03,
-                7.77676415e-01,
-                2.67410254e-01,
-                2.08991213e-01,
-                1.87966870e-01,
-                2.20000000e00,
-                -1.24825577e-03,
-                8.03329625e-01,
-                -2.69525994e-01,
-                1.74771041e-01,
-                -2.42032305e-02,
-                2.20000000e00,
-                -1.00000000e-01,
-                1.47000000e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                6.86548852e-01,
-                1.06993378e01,
-                1.80911122e00,
-                2.79842043e-01,
-                9.85369664e00,
-                5.48467379e-01,
-                -7.13293425e-01,
-                9.63932388e00,
-                -8.76993356e-02,
-            ]
-        )
+        elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+            expected = np.array(
+                [
+                    1.80146441e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    2.20000000e00,
+                    2.91788226e-03,
+                    7.77676415e-01,
+                    2.67410254e-01,
+                    2.08991213e-01,
+                    1.87966870e-01,
+                    2.20000000e00,
+                    -1.24825577e-03,
+                    8.03329625e-01,
+                    -2.69525994e-01,
+                    1.74771041e-01,
+                    -2.42032305e-02,
+                    2.20000000e00,
+                    -1.00000000e-01,
+                    1.47000000e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    6.86548852e-01,
+                    1.06993378e01,
+                    1.80911122e00,
+                    2.79842043e-01,
+                    9.85369664e00,
+                    5.48467379e-01,
+                    -7.13293425e-01,
+                    9.63932388e00,
+                    -8.76993356e-02,
+                ]
+            )
 
-    if interpolation == InterpolationType.EACH_FRAME:
-        expected = np.array(
-            [
-                8.01464405e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                8.06455681e-01,
-                2.91788226e-03,
-                -7.32358536e-03,
-                2.67410254e-01,
-                2.08991213e-01,
-                1.87966870e-01,
-                8.03082901e-01,
-                -1.24825577e-03,
-                1.83296247e-02,
-                -2.69525994e-01,
-                1.74771041e-01,
-                -2.42032305e-02,
-                8.01346495e-01,
-                -1.00000000e-01,
-                1.47000000e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -7.63451148e-01,
-                8.89337834e-01,
-                -4.70888776e-01,
-                2.79842043e-01,
-                4.36966435e-02,
-                5.48467379e-01,
-                -7.13293425e-01,
-                -1.70676120e-01,
-                -8.76993356e-02,
-            ]
-        )
+        if interpolation == InterpolationType.EACH_FRAME:
+            expected = np.array(
+                [
+                    8.01464405e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    8.06455681e-01,
+                    2.91788226e-03,
+                    -7.32358536e-03,
+                    2.67410254e-01,
+                    2.08991213e-01,
+                    1.87966870e-01,
+                    8.03082901e-01,
+                    -1.24825577e-03,
+                    1.83296247e-02,
+                    -2.69525994e-01,
+                    1.74771041e-01,
+                    -2.42032305e-02,
+                    8.01346495e-01,
+                    -1.00000000e-01,
+                    1.47000000e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -7.63451148e-01,
+                    8.89337834e-01,
+                    -4.70888776e-01,
+                    2.79842043e-01,
+                    4.36966435e-02,
+                    5.48467379e-01,
+                    -7.13293425e-01,
+                    -1.70676120e-01,
+                    -8.76993356e-02,
+                ]
+            )
 
-    np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
+        np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
 
-    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
-        ocp.update_bounds(x_init, u_init)
-
+        with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
+            ocp.update_bounds(x_init, u_init)
 
 @pytest.mark.parametrize(
     "interpolation",
@@ -469,6 +480,7 @@ def test_update_noised_init(interpolation):
         InterpolationType.SPLINE,
         InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         InterpolationType.EACH_FRAME,
+        InterpolationType.ALL_POINTS
     ],
 )
 def test_update_noised_initial_guess(interpolation):
@@ -513,6 +525,9 @@ def test_update_noised_initial_guess(interpolation):
     elif interpolation == InterpolationType.EACH_FRAME:
         x = InitialGuess(np.zeros((nq * 2, ns + 1)), interpolation=interpolation)
         u = InitialGuess(np.zeros((ntau, ns)), interpolation=interpolation)
+    elif interpolation == InterpolationType.ALL_POINTS:
+        x = InitialGuess(np.zeros((nq + nqdot, ns + 1)), interpolation=interpolation)
+        u = InitialGuess(np.zeros((ntau, ns)), interpolation=interpolation)
     elif interpolation == InterpolationType.SPLINE:
         # Bound spline assume the first and last point are 0 and final respectively
         np.random.seed(42)
@@ -538,203 +553,206 @@ def test_update_noised_initial_guess(interpolation):
         seed=42,
         **extra_params_u,
     )
+    if interpolation == InterpolationType.ALL_POINTS:
+        with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS must only be used with direct collocation"):
+            ocp.update_initial_guess(x_init, u_init)
+    else:
+        ocp.update_initial_guess(x_init, u_init)
+        print(ocp.v.init.init)
+        if interpolation == InterpolationType.CONSTANT:
+            expected = np.array(
+                [
+                    0.7962362,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    0.81352143,
+                    -0.00688011,
+                    0.01307359,
+                    -0.18074267,
+                    0.01555492,
+                    -0.22651269,
+                    0.80695982,
+                    -0.00883833,
+                    -0.03012256,
+                    -0.19991527,
+                    -0.04276021,
+                    -0.13059937,
+                    0.80295975,
+                    -0.1,
+                    1.47,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.25091976,
+                    0.19731697,
+                    -0.88383278,
+                    0.90142861,
+                    -0.68796272,
+                    0.73235229,
+                    0.46398788,
+                    -0.68801096,
+                    0.20223002,
+                ]
+            )
+        elif interpolation == InterpolationType.LINEAR:
+            expected = np.array(
+                [
+                    1.79623620e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    2.06352143e00,
+                    -6.88010959e-03,
+                    4.05573586e-01,
+                    -1.80742667e-01,
+                    1.55549247e-02,
+                    -2.26512688e-01,
+                    2.20000000e00,
+                    -8.83832776e-03,
+                    7.54877435e-01,
+                    -1.99915269e-01,
+                    -4.27602059e-02,
+                    -1.30599369e-01,
+                    2.20000000e00,
+                    -1.00000000e-01,
+                    1.47000000e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    1.19908024e00,
+                    1.00073170e01,
+                    1.39616722e00,
+                    1.38476195e00,
+                    9.12203728e00,
+                    1.49235229e00,
+                    -1.93454497e-02,
+                    9.12198904e00,
+                    -5.57769977e-01,
+                ]
+            )
+        elif interpolation == InterpolationType.SPLINE:
+            expected = np.array(
+                [
+                    1.39489469e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    1.11672435e00,
+                    6.65627498e-01,
+                    2.05044956e-01,
+                    1.57276580e-01,
+                    4.41795628e-01,
+                    1.47886691e-03,
+                    9.62969993e-01,
+                    4.57938262e-01,
+                    1.52256794e-01,
+                    2.03847059e-01,
+                    5.28820074e-01,
+                    1.12785129e-01,
+                    9.50893802e-01,
+                    -1.00000000e-01,
+                    1.47000000e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    6.97965775e-01,
+                    8.81549995e-01,
+                    2.54876264e-02,
+                    1.86521820e00,
+                    -2.20956562e-01,
+                    1.06270452e00,
+                    1.30112101e00,
+                    -5.07835040e-01,
+                    7.90965478e-01,
+                ]
+            )
 
-    ocp.update_initial_guess(x_init, u_init)
-    print(ocp.v.init.init)
-    if interpolation == InterpolationType.CONSTANT:
-        expected = np.array(
-            [
-                0.7962362,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.1,
-                0.81352143,
-                -0.00688011,
-                0.01307359,
-                -0.18074267,
-                0.01555492,
-                -0.22651269,
-                0.80695982,
-                -0.00883833,
-                -0.03012256,
-                -0.19991527,
-                -0.04276021,
-                -0.13059937,
-                0.80295975,
-                -0.1,
-                1.47,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.25091976,
-                0.19731697,
-                -0.88383278,
-                0.90142861,
-                -0.68796272,
-                0.73235229,
-                0.46398788,
-                -0.68801096,
-                0.20223002,
-            ]
-        )
-    elif interpolation == InterpolationType.LINEAR:
-        expected = np.array(
-            [
-                1.79623620e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                2.06352143e00,
-                -6.88010959e-03,
-                4.05573586e-01,
-                -1.80742667e-01,
-                1.55549247e-02,
-                -2.26512688e-01,
-                2.20000000e00,
-                -8.83832776e-03,
-                7.54877435e-01,
-                -1.99915269e-01,
-                -4.27602059e-02,
-                -1.30599369e-01,
-                2.20000000e00,
-                -1.00000000e-01,
-                1.47000000e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                1.19908024e00,
-                1.00073170e01,
-                1.39616722e00,
-                1.38476195e00,
-                9.12203728e00,
-                1.49235229e00,
-                -1.93454497e-02,
-                9.12198904e00,
-                -5.57769977e-01,
-            ]
-        )
-    elif interpolation == InterpolationType.SPLINE:
-        expected = np.array(
-            [
-                1.39489469e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                1.11672435e00,
-                6.65627498e-01,
-                2.05044956e-01,
-                1.57276580e-01,
-                4.41795628e-01,
-                1.47886691e-03,
-                9.62969993e-01,
-                4.57938262e-01,
-                1.52256794e-01,
-                2.03847059e-01,
-                5.28820074e-01,
-                1.12785129e-01,
-                9.50893802e-01,
-                -1.00000000e-01,
-                1.47000000e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                6.97965775e-01,
-                8.81549995e-01,
-                2.54876264e-02,
-                1.86521820e00,
-                -2.20956562e-01,
-                1.06270452e00,
-                1.30112101e00,
-                -5.07835040e-01,
-                7.90965478e-01,
-            ]
-        )
+        elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+            expected = np.array(
+                [
+                    1.79623620e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    2.20000000e00,
+                    -6.88010959e-03,
+                    7.98073586e-01,
+                    -1.80742667e-01,
+                    1.55549247e-02,
+                    -2.26512688e-01,
+                    2.20000000e00,
+                    -8.83832776e-03,
+                    7.54877435e-01,
+                    -1.99915269e-01,
+                    -4.27602059e-02,
+                    -1.30599369e-01,
+                    2.20000000e00,
+                    -1.00000000e-01,
+                    1.47000000e00,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    -1.00000000e-01,
+                    1.19908024e00,
+                    1.00073170e01,
+                    1.39616722e00,
+                    9.01428613e-01,
+                    9.12203728e00,
+                    7.32352292e-01,
+                    4.63987884e-01,
+                    9.12198904e00,
+                    2.02230023e-01,
+                ]
+            )
 
-    elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-        expected = np.array(
-            [
-                1.79623620e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                2.20000000e00,
-                -6.88010959e-03,
-                7.98073586e-01,
-                -1.80742667e-01,
-                1.55549247e-02,
-                -2.26512688e-01,
-                2.20000000e00,
-                -8.83832776e-03,
-                7.54877435e-01,
-                -1.99915269e-01,
-                -4.27602059e-02,
-                -1.30599369e-01,
-                2.20000000e00,
-                -1.00000000e-01,
-                1.47000000e00,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                -1.00000000e-01,
-                1.19908024e00,
-                1.00073170e01,
-                1.39616722e00,
-                9.01428613e-01,
-                9.12203728e00,
-                7.32352292e-01,
-                4.63987884e-01,
-                9.12198904e00,
-                2.02230023e-01,
-            ]
-        )
+        if interpolation == InterpolationType.EACH_FRAME:
+            expected = np.array(
+                [
+                    0.7962362,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    0.81352143,
+                    -0.00688011,
+                    0.01307359,
+                    -0.18074267,
+                    0.01555492,
+                    -0.22651269,
+                    0.80695982,
+                    -0.00883833,
+                    -0.03012256,
+                    -0.19991527,
+                    -0.04276021,
+                    -0.13059937,
+                    0.80295975,
+                    -0.1,
+                    1.47,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.25091976,
+                    0.19731697,
+                    -0.88383278,
+                    0.90142861,
+                    -0.68796272,
+                    0.73235229,
+                    0.46398788,
+                    -0.68801096,
+                    0.20223002,
+                ]
+            )
 
-    if interpolation == InterpolationType.EACH_FRAME:
-        expected = np.array(
-            [
-                0.7962362,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.1,
-                0.81352143,
-                -0.00688011,
-                0.01307359,
-                -0.18074267,
-                0.01555492,
-                -0.22651269,
-                0.80695982,
-                -0.00883833,
-                -0.03012256,
-                -0.19991527,
-                -0.04276021,
-                -0.13059937,
-                0.80295975,
-                -0.1,
-                1.47,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.25091976,
-                0.19731697,
-                -0.88383278,
-                0.90142861,
-                -0.68796272,
-                0.73235229,
-                0.46398788,
-                -0.68801096,
-                0.20223002,
-            ]
-        )
+        np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
 
-    np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
-
-    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
-        ocp.update_bounds(x_init, u_init)
+        with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
+            ocp.update_bounds(x_init, u_init)
