@@ -584,7 +584,7 @@ class ImplicitConstraintFcn(Enum):
         return ConstraintFunction
 
 
-class ContinuityFunctions:
+class ContinuityConstraintFunctions:
     """
     Interface between continuity and constraint
     """
@@ -605,5 +605,5 @@ class ContinuityFunctions:
         # Dynamics must be respected between phases
         ConstraintFunction.inter_phase_continuity(ocp)
 
-        if ocp.multinode_constraints:
+        if ocp.multinode_constraints:  # TODO: they shouldn't be added here
             ConstraintFunction.node_equalities(ocp)

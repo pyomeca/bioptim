@@ -68,7 +68,7 @@ class PhaseTransition(MultinodeConstraint):
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
-            weight=weight,
+            weight=weight if weight else 0,
             force_multinode=True,
             **params,
         )
@@ -116,7 +116,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
-    def prepare_phase_transitions(self, ocp) -> list:
+    def prepare_phase_transitions(self, ocp, continuity_weight: float = None) -> list:
         """
         Configure all the phase transitions and put them in a list
 
@@ -132,7 +132,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         # By default it assume Continuous. It can be change later
         full_phase_transitions = [
-            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS) for i in range(ocp.n_phases - 1)
+            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=continuity_weight) for i in range(ocp.n_phases - 1)
         ]
         for pt in full_phase_transitions:
             pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
