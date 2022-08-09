@@ -769,7 +769,11 @@ class OptimalControlProgram:
                     )
                 )
             elif penalty.derivative or penalty.explicit_derivative:
-                out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
+                out.append(
+                    penalty.weighted_function_non_threaded(
+                        x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]], u, p, penalty.weight, _target, dt
+                    )
+                )
             elif (
                 penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL

@@ -755,9 +755,19 @@ class PlotOcp:
                                         **self.plot_func[key][i].parameters,
                                     )
                                 else:
+                                    if (
+                                        self.plot_func[key][i].label == "CONTINUITY"
+                                        and nlp.ode_solver.is_direct_collocation
+                                    ):
+                                        states = state[:, node_idx * (step_size) : (node_idx + 1) * (step_size) + 1]
+                                    else:
+                                        states = state[
+                                            :, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size
+                                        ]
+
                                     val = self.plot_func[key][i].function(
                                         node_idx,
-                                        state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size],
+                                        states,
                                         control[:, node_idx : node_idx + 1 + u_mod],
                                         data_params_in_dyn,
                                         **self.plot_func[key][i].parameters,
