@@ -352,36 +352,48 @@ class OptimizationVector:
         """
 
         ocp = self.ocp
-
+        # original_x_init = ocp.original_values["x_init"]
         # Sanity check
         for i in range(ocp.n_phases):
-            if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
-                if ocp.nlp[i].ode_solver.is_direct_shooting:
-                    raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-            original_x_init = ocp.original_values["x_init"]
-            if original_x_init:
-                if isinstance(original_x_init, InitialGuess) \
-                        or (isinstance(original_x_init, NoisedInitialGuess)
-                            and ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS):
-                    interpolation_type = original_x_init.type
-                elif isinstance(original_x_init, InitialGuessList):
-                    interpolation_type = original_x_init[i].type
-                else:
-                    interpolation_type = None
-            else:
-                if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
-                    interpolation_type = InterpolationType.ALL_POINTS
-                else:
-                    interpolation_type = None
 
-            if ((ocp.nlp[i].ode_solver.is_direct_collocation
-                and (interpolation_type != InterpolationType.EACH_FRAME
-                     and not isinstance(ocp.nlp[i].x_init, NoisedInitialGuess)))
-                    or (interpolation_type == InterpolationType.ALL_POINTS
-                        and isinstance(ocp.nlp[i].x_init, NoisedInitialGuess))):
-                ns = ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
+            if isinstance(ocp.original_values["x_init"], InitialGuessList):
+                original_x_init = ocp.original_values["x_init"][i]
             else:
-                ns = ocp.nlp[i].ns
+                original_x_init = ocp.original_values["x_init"]
+
+            if ocp.nlp[i].ode_solver.is_direct_shooting:
+                if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
+                    raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
+                else:
+                    ns = ocp.nlp[i].ns
+                    interpolation_type = None  # only needed for direct collocation
+
+            else:
+                # define interpolation_type variable
+                if original_x_init:
+                    if isinstance(original_x_init, InitialGuess) or (
+                        isinstance(original_x_init, NoisedInitialGuess)
+                        and ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS
+                    ):
+                        interpolation_type = original_x_init.type
+                    else:
+                        # invisible for the user
+                        raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
+
+                else:
+                    interpolation_type = (
+                        InterpolationType.ALL_POINTS
+                        if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS
+                        else None  # interpolation_type is not used after
+                    )
+
+                # define ns which is the number of shooting nodes and collocation points
+                if isinstance(ocp.nlp[i].x_init, NoisedInitialGuess) and interpolation_type == InterpolationType.ALL_POINTS:
+                    ns = ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
+                elif type(ocp.nlp[i].x_init) is InitialGuess and interpolation_type != InterpolationType.EACH_FRAME:
+                    ns = ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
+                else:
+                    ns = ocp.nlp[i].ns
 
             ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
             if ocp.nlp[i].control_type == ControlType.CONSTANT:
