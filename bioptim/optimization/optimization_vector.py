@@ -462,7 +462,7 @@ class OptimizationVector:
                 for p in range(repeat if k != nlp.ns else 1):
                     span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
                     if (nlp.x_init.type == InterpolationType.EACH_FRAME and
-                        not isinstance(nlp.x_init, NoisedInitialGuess)) or \
+                        type(nlp.x_init) is InitialGuess) or \
                             (nlp.x_init.type == InterpolationType.ALL_POINTS and
                              isinstance(nlp.x_init, NoisedInitialGuess)):
                         point = k * repeat + p
