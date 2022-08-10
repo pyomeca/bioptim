@@ -505,8 +505,8 @@ class DynamicsFunctions:
 
     @staticmethod
     def joints_acceleration_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool = False
-    ) -> MX:
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+    ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joints accelerations of a free floating body.
 
@@ -520,15 +520,15 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
-        implicit_dynamics: bool
-            If implicit dynamics should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigid body dynamics to use
 
         Returns
         ----------
         MX.sym
             The derivative of states
         """
-        if implicit_dynamics:
+        if rigidbody_dynamics != RigidBodyDynamics.ODE:
             raise NotImplementedError("Implicit dynamics not implemented yet.")
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
@@ -539,7 +539,7 @@ class DynamicsFunctions:
         qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
         qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
 
-        return vertcat(qdot, vertcat(qddot_root_func(q, qdot, qddot_joints), qddot_joints))
+        return DynamicsEvaluation(dxdt=vertcat(qdot, qddot_root_func(q, qdot, qddot_joints), qddot_joints), defects=None)
 
     @staticmethod
     def get(var: OptimizationVariable, cx: Union[MX, SX]):
