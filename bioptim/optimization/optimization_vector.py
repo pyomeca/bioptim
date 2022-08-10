@@ -172,7 +172,7 @@ class OptimizationVector:
         for index, state in enumerate(init_values):
             for frame in range(nlp.ns):
                 point = (index * nlp.ns + frame) * n_points
-                x_init_vector[point: point + n_points] = np.linspace(state[frame], state[frame + 1], n_points)
+                x_init_vector[point : point + n_points] = np.linspace(state[frame], state[frame + 1], n_points)
         return InitialGuess(x_init_vector)
 
     def extract_phase_time(self, data: Union[np.array, DM]) -> list:
@@ -377,7 +377,7 @@ class OptimizationVector:
             The interpolation type of x_init
         """
         ocp = self.ocp
-        
+
         if isinstance(ocp.original_values["x_init"], InitialGuessList):
             original_x_init = ocp.original_values["x_init"][phase]
         else:
@@ -412,8 +412,10 @@ class OptimizationVector:
         ocp = self.ocp
 
         if ocp.nlp[phase].ode_solver.is_direct_collocation:
-            if isinstance(ocp.nlp[phase].x_init,
-                          NoisedInitialGuess) and interpolation_type == InterpolationType.ALL_POINTS:
+            if (
+                isinstance(ocp.nlp[phase].x_init, NoisedInitialGuess)
+                and interpolation_type == InterpolationType.ALL_POINTS
+            ):
                 ns = ocp.nlp[phase].ns * (ocp.nlp[phase].ode_solver.steps + 1)
             elif type(ocp.nlp[phase].x_init) is InitialGuess and interpolation_type != InterpolationType.EACH_FRAME:
                 ns = ocp.nlp[phase].ns * (ocp.nlp[phase].ode_solver.steps + 1)
