@@ -155,9 +155,7 @@ class DynamicsFunctions:
                     )
                 )
             defects[: dq.shape[0], :] = horzcat(*dq_defects)
-
-            tau_var = nlp.states["tau"] if "tau" in nlp.states else nlp.controls["tau"]
-            defects[dq.shape[0] :, :] = tau_var.mapping.to_first.map(tau) - tau_id
+            defects[dq.shape[0]:, :] = tau - tau_id
 
         return DynamicsEvaluation(dxdt, defects)
 
@@ -639,7 +637,7 @@ class DynamicsFunctions:
                 tau[:, i] = nlp.model.InverseDynamics(q, qdot, qddot, f_ext).to_mx()
         else:
             tau = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
-        return tau_var.mapping.to_first.map(tau)
+        return tau
 
     @staticmethod
     def compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: Union[MX, SX]):
