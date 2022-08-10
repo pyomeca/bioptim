@@ -143,21 +143,35 @@ class OptimizationVector:
                 interpolation_type = self.ocp.original_values["x_init"][phase].type
             else:
                 interpolation_type = None
+
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
-                n_points = nlp.ode_solver.polynomial_degree + 1
-                x_init_vector = np.zeros(self.n_all_x)
-                init_values = self.ocp.original_values["x_init"].init
-                for index, state in enumerate(init_values):
-                    for frame in range(nlp.ns):
-                        point = (index * nlp.ns + frame) * n_points
-                        x_init_vector[point : point + n_points] = np.linspace(state[frame], state[frame + 1], n_points)
-                v_init.concatenate(InitialGuess(x_init_vector))
+                v_init.concatenate(self._init_linear_interpolation())
             else:
                 v_init.concatenate(x_init)
         for u_init in self.u_init:
             v_init.concatenate(u_init)
         v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
+
+    def _init_linear_interpolation(self) -> InitialGuess:
+        """
+        Perform linear interpolation between shooting nodes so that initial guess values are defined for each
+        collocation point
+
+        Returns
+        -------
+        The initial guess for the states variables for all collocation points
+
+        """
+        nlp = self.ocp.nlp[0]
+        n_points = nlp.ode_solver.polynomial_degree + 1
+        x_init_vector = np.zeros(self.n_all_x)
+        init_values = self.ocp.original_values["x_init"].init
+        for index, state in enumerate(init_values):
+            for frame in range(nlp.ns):
+                point = (index * nlp.ns + frame) * n_points
+                x_init_vector[point: point + n_points] = np.linspace(state[frame], state[frame + 1], n_points)
+        return InitialGuess(x_init_vector)
 
     def extract_phase_time(self, data: Union[np.array, DM]) -> list:
         """
@@ -346,6 +360,67 @@ class OptimizationVector:
             self.x_bounds[i_phase] = x_bounds
             self.u_bounds[i_phase] = u_bounds
 
+    def get_interpolation_type(self, phase: int) -> InterpolationType:
+        """
+        Find the interpolation type of x_init
+
+        Parameters
+        ----------
+        phase: int
+            The index of the current phase of the ocp
+
+        Returns
+        -------
+        interpolation_type: InterpolationType
+        The interpolation type of x_init
+        """
+        ocp = self.ocp
+        
+        if isinstance(ocp.original_values["x_init"], InitialGuessList):
+            original_x_init = ocp.original_values["x_init"][phase]
+        else:
+            original_x_init = ocp.original_values["x_init"]
+
+        if original_x_init:
+            interpolation_type = original_x_init.type
+        else:
+            interpolation_type = (
+                InterpolationType.ALL_POINTS
+                if ocp.nlp[phase].x_init.type == InterpolationType.ALL_POINTS
+                else None  # interpolation_type is not used after
+            )
+        return interpolation_type
+
+    def get_ns(self, phase: int, interpolation_type: InterpolationType) -> int:
+        """
+        Define the number of shooting nodes and collocation points
+
+        Parameters
+        ----------
+        phase: int
+            The index of the current phase of the ocp
+        interpolation_type: InterpolationType
+            The interpolation type of x_init
+
+        Returns
+        -------
+        ns: int
+            The number of shooting nodes and collocation points
+        """
+        ocp = self.ocp
+
+        if ocp.nlp[phase].ode_solver.is_direct_collocation:
+            if isinstance(ocp.nlp[phase].x_init,
+                          NoisedInitialGuess) and interpolation_type == InterpolationType.ALL_POINTS:
+                ns = ocp.nlp[phase].ns * (ocp.nlp[phase].ode_solver.steps + 1)
+            elif type(ocp.nlp[phase].x_init) is InitialGuess and interpolation_type != InterpolationType.EACH_FRAME:
+                ns = ocp.nlp[phase].ns * (ocp.nlp[phase].ode_solver.steps + 1)
+            else:
+                ns = ocp.nlp[phase].ns
+        else:
+            ns = ocp.nlp[phase].ns
+        return ns
+
     def define_ocp_initial_guess(self):
         """
         Declare and parse the initial guesses for all the variables (v vector)
@@ -355,45 +430,11 @@ class OptimizationVector:
         # original_x_init = ocp.original_values["x_init"]
         # Sanity check
         for i in range(ocp.n_phases):
-
-            if isinstance(ocp.original_values["x_init"], InitialGuessList):
-                original_x_init = ocp.original_values["x_init"][i]
-            else:
-                original_x_init = ocp.original_values["x_init"]
-
+            interpolation_type = self.get_interpolation_type(phase=i)
+            ns = self.get_ns(phase=i, interpolation_type=interpolation_type)
             if ocp.nlp[i].ode_solver.is_direct_shooting:
                 if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
                     raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                else:
-                    ns = ocp.nlp[i].ns
-                    interpolation_type = None  # only needed for direct collocation
-
-            else:
-                # define interpolation_type variable
-                if original_x_init:
-                    if isinstance(original_x_init, InitialGuess) or (
-                        isinstance(original_x_init, NoisedInitialGuess)
-                        and ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS
-                    ):
-                        interpolation_type = original_x_init.type
-                    else:
-                        # invisible for the user
-                        raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
-
-                else:
-                    interpolation_type = (
-                        InterpolationType.ALL_POINTS
-                        if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS
-                        else None  # interpolation_type is not used after
-                    )
-
-                # define ns which is the number of shooting nodes and collocation points
-                if isinstance(ocp.nlp[i].x_init, NoisedInitialGuess) and interpolation_type == InterpolationType.ALL_POINTS:
-                    ns = ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
-                elif type(ocp.nlp[i].x_init) is InitialGuess and interpolation_type != InterpolationType.EACH_FRAME:
-                    ns = ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
-                else:
-                    ns = ocp.nlp[i].ns
 
             ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
             if ocp.nlp[i].control_type == ControlType.CONSTANT:
