@@ -17,7 +17,7 @@ echo ""
 ARG1=${1:NB_CPU}
 if [ -z "$ARG1" ]; then
   $ARG1=$CPU_COUNT
-  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs."
+  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($ARG1)."
   echo ""
 fi
 
@@ -57,6 +57,8 @@ cmake . .. \
   -DACADOS_INSTALL_DIR="$ARG2"\
   -DACADOS_PYTHON=ON\
   -DACADOS_WITH_QPOASES=ON\
+  -DACADOS_WITH_OSQP=ON\
+  -DACADOS_WITH_QPDUNES=ON\
   -DBLASFEO_TARGET="$ARG3"\
   -DCMAKE_INSTALL_PREFIX="$ARG2"\
   -DACADOS_WITH_OPENMP=ON\
@@ -99,8 +101,8 @@ TO_REPLACE_ACADOS_PYTHON="ACADOS_PYTHON_INTERFACE_PATH = os.environ.get('ACADOS_
 REPLACE_ACADOS_PYTHON_BY="import site\n    acados_path = site.getsitepackages()\n    ACADOS_PYTHON_INTERFACE_PATH = os.path.join(acados_path[0], 'acados_template')"
 
 # Change acados external library linking at run time
-TO_REPLACE_LIB_PATH="self.shared_lib_name = f'{code_export_dir}\/libacados_ocp_solver_{model.name}.so'"
-REPLACE_LIB_PATH_BY="self.shared_lib_name = f'{code_export_dir}\/libacados_ocp_solver_{model.name}.so'\n        # Relink macos lib\n        acados_ext_lib_path = os.path.abspath(acados_path[0]+'\/..\/..')\n        os.system(\n            f'install_name_tool -change libhpipm.dylib {acados_ext_lib_path}\/libhpipm.dylib {self.shared_lib_name}')\n        os.system(\n            f'install_name_tool -change libblasfeo.dylib {acados_ext_lib_path}\/libblasfeo.dylib {self.shared_lib_name}')"
+TO_REPLACE_LIB_PATH="libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'"
+REPLACE_LIB_PATH_BY="libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'\n        # Relink macos lib\n        acados_ext_lib_path = os.path.abspath(acados_path[0]+'\/..\/..')\n        os.system(\n            f'install_name_tool -change libhpipm.dylib {acados_ext_lib_path}\/libhpipm.dylib {self.shared_lib_name}')\n        os.system(\n            f'install_name_tool -change libblasfeo.dylib {acados_ext_lib_path}\/libblasfeo.dylib {self.shared_lib_name}')"
 
 # Perform the modifications
 sed -i "s/$TO_REPLACE_PYTHON_REQUIRED/$REPLACE_PYTHON_REQUIRED_BY/" setup.py
