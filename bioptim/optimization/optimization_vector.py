@@ -137,17 +137,19 @@ class OptimizationVector:
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
         nlp = self.ocp.nlp[0]
         for phase, x_init in enumerate(self.x_init):
-            if isinstance(self.ocp.original_values["x_init"], InitialGuess):
-                interpolation_type = self.ocp.original_values["x_init"].type
-            elif isinstance(self.ocp.original_values["x_init"], InitialGuessList):
-                interpolation_type = self.ocp.original_values["x_init"][phase].type
+
+            if isinstance(self.ocp.original_values["x_init"], InitialGuessList):
+                original_x_init = self.ocp.original_values["x_init"][phase]
             else:
-                interpolation_type = None
+                original_x_init = self.ocp.original_values["x_init"]
+
+            interpolation_type = None if original_x_init is None else original_x_init.type
 
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
                 v_init.concatenate(self._init_linear_interpolation())
             else:
                 v_init.concatenate(x_init)
+
         for u_init in self.u_init:
             v_init.concatenate(u_init)
         v_init.concatenate(self.parameters_in_list.initial_guess)
@@ -372,7 +374,7 @@ class OptimizationVector:
         Returns
         -------
         interpolation_type: InterpolationType
-        The interpolation type of x_init
+            The interpolation type of x_init
         """
         ocp = self.ocp
         
@@ -427,7 +429,6 @@ class OptimizationVector:
         """
 
         ocp = self.ocp
-        # original_x_init = ocp.original_values["x_init"]
         # Sanity check
         for i in range(ocp.n_phases):
             interpolation_type = self.get_interpolation_type(phase=i)
@@ -461,10 +462,9 @@ class OptimizationVector:
             for k in range(nlp.ns + 1):
                 for p in range(repeat if k != nlp.ns else 1):
                     span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
-                    if (nlp.x_init.type == InterpolationType.EACH_FRAME and
-                        type(nlp.x_init) is InitialGuess) or \
-                            (nlp.x_init.type == InterpolationType.ALL_POINTS and
-                             isinstance(nlp.x_init, NoisedInitialGuess)):
+                    if type(nlp.x_init) is InitialGuess and nlp.x_init.type == InterpolationType.EACH_FRAME:
+                        point = k * repeat + p
+                    elif isinstance(nlp.x_init, NoisedInitialGuess) and nlp.x_init.type == InterpolationType.ALL_POINTS:
                         point = k * repeat + p
                     else:
                         point = k if k != 0 else 0 if p == 0 else 1
