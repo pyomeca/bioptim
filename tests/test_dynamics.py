@@ -1210,16 +1210,17 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
-    NonLinearProgram.add(ocp, "dynamics_type", Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, rigidbody_dynamics=rigid_body_dynamics), False)
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, rigidbody_dynamics=rigid_body_dynamics),
+        False,
+    )
     np.random.seed(42)
 
     # Prepare the dynamics
     if rigid_body_dynamics != RigidBodyDynamics.ODE:
-        with pytest.raises(
-                NotImplementedError,
-                match=re.escape(
-                    "Implicit dynamics not implemented yet.")
-        ):
+        with pytest.raises(NotImplementedError, match=re.escape("Implicit dynamics not implemented yet.")):
             ConfigureProblem.initialize(ocp, nlp)
     else:
         ConfigureProblem.initialize(ocp, nlp)

@@ -505,7 +505,11 @@ class DynamicsFunctions:
 
     @staticmethod
     def joints_acceleration_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joints accelerations of a free floating body.
@@ -539,7 +543,9 @@ class DynamicsFunctions:
         qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
         qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
 
-        return DynamicsEvaluation(dxdt=vertcat(qdot, qddot_root_func(q, qdot, qddot_joints), qddot_joints), defects=None)
+        return DynamicsEvaluation(
+            dxdt=vertcat(qdot, qddot_root_func(q, qdot, qddot_joints), qddot_joints), defects=None
+        )
 
     @staticmethod
     def get(var: OptimizationVariable, cx: Union[MX, SX]):
