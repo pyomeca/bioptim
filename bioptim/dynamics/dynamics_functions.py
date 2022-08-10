@@ -1,6 +1,6 @@
 from typing import Union
 
-from casadi import horzcat, vertcat, MX, SX
+from casadi import horzcat, vertcat, MX, SX, Function
 
 from ..misc.enums import RigidBodyDynamics
 from .fatigue.fatigue_dynamics import FatigueList
@@ -502,6 +502,44 @@ class DynamicsFunctions:
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+
+    @staticmethod
+    def joints_acceleration_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, implicit_dynamics: bool = False
+    ) -> MX:
+        """
+        Forward dynamics driven by joints accelerations of a free floating body.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+        implicit_dynamics: bool
+            If implicit dynamics should be used
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of states
+        """
+        if implicit_dynamics:
+            raise NotImplementedError("Implicit dynamics not implemented yet.")
+
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
+
+        qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
+        qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
+
+        return vertcat(qdot, vertcat(qddot_root_func(q, qdot, qddot_joints), qddot_joints))
 
     @staticmethod
     def get(var: OptimizationVariable, cx: Union[MX, SX]):
