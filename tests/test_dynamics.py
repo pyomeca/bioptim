@@ -1197,7 +1197,8 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
-def test_joints_acceleration_driven(cx):
+@pytest.mark.parametrize("rigid_body_dynamics", RigidBodyDynamics)
+def test_joints_acceleration_driven(cx, rigid_body_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
@@ -1208,21 +1209,29 @@ def test_joints_acceleration_driven(cx):
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    NonLinearProgram.add(ocp, "dynamics_type", Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN), False)
 
+    NonLinearProgram.add(ocp, "dynamics_type", Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, rigidbody_dynamics=rigid_body_dynamics), False)
     np.random.seed(42)
 
     # Prepare the dynamics
-    ConfigureProblem.initialize(ocp, nlp)
+    if rigid_body_dynamics != RigidBodyDynamics.ODE:
+        with pytest.raises(
+                NotImplementedError,
+                match=re.escape(
+                    "Implicit dynamics not implemented yet.")
+        ):
+            ConfigureProblem.initialize(ocp, nlp)
+    else:
+        ConfigureProblem.initialize(ocp, nlp)
 
-    # Test the results
-    states = np.random.rand(nlp.states.shape, nlp.ns)
-    controls = np.random.rand(nlp.controls.shape, nlp.ns)
-    params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params))
+        # Test the results
+        states = np.random.rand(nlp.states.shape, nlp.ns)
+        controls = np.random.rand(nlp.controls.shape, nlp.ns)
+        params = np.random.rand(nlp.parameters.shape, nlp.ns)
+        x_out = np.array(nlp.dynamics_func(states, controls, params))
 
-    # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
-    np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
+        # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
+        np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
 
 
 @pytest.mark.parametrize("with_contact", [False, True])
