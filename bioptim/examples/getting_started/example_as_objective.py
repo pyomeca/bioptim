@@ -102,7 +102,7 @@ def prepare_ocp_first_pass(
     # Initial guess
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
-    x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, noise_magnitude=.001, n_shooting=n_shooting)
+    x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, noise_magnitude=0.001, n_shooting=n_shooting)
 
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()
@@ -110,14 +110,14 @@ def prepare_ocp_first_pass(
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = NoisedInitialGuess([tau_init] * n_tau, bounds=u_bounds, noise_magnitude=.01, n_shooting=n_shooting-1)
+    u_init = NoisedInitialGuess([tau_init] * n_tau, bounds=u_bounds, noise_magnitude=0.01, n_shooting=n_shooting - 1)
 
     constraints = ConstraintList()
     # max_bound is practically at infinity
     constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.75, z=.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=1.4, z=.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     # constraints.add(out_of_sphere, y=2, z=-0.7, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     # constraints.add(out_of_sphere, y=2, z=-1.4, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
@@ -215,9 +215,9 @@ def prepare_ocp_second_pass(
     constraints = ConstraintList()
     # max_bound is practically at infinity
     constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.75, z=.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=1.4, z=.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     # constraints.add(out_of_sphere, y=2, z=-0.7, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     # constraints.add(out_of_sphere, y=2, z=-1.4, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
