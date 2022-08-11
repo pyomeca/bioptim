@@ -67,9 +67,14 @@ class Objective(PenaltyOption):
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         if isinstance(all_pn, (list, tuple)):
-            pool = all_pn[0].nlp.J if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.J
-        else:
+            all_pn = all_pn[0]
+
+        if self.penalty_type == PenaltyType.INTERNAL:
+            pool = all_pn.nlp.J_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.J_internal
+        elif self.penalty_type == PenaltyType.USER:
             pool = all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+        else:
+            raise ValueError(f"Invalid objective type {self.contraint_type}.")
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
@@ -84,24 +89,26 @@ class Objective(PenaltyOption):
             A reference to the current phase of the ocp
         """
 
-        if nlp:
-            j_to_add_to = nlp.J
+        if self.penalty_type == PenaltyType.INTERNAL:
+            J_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+        elif self.penalty_type == PenaltyType.USER:
+            J_to_add_to = nlp.J if nlp else ocp.J
         else:
-            j_to_add_to = ocp.J
+            raise ValueError(f"Invalid Type of objective {self.penalty_type}")
 
         if self.list_index < 0:
             # Add a new one
-            for i, j in enumerate(j_to_add_to):
+            for i, j in enumerate(J_to_add_to):
                 if not j:
                     self.list_index = i
                     return
             else:
-                j_to_add_to.append([])
-                self.list_index = len(j_to_add_to) - 1
+                J_to_add_to.append([])
+                self.list_index = len(J_to_add_to) - 1
         else:
-            while self.list_index >= len(j_to_add_to):
-                j_to_add_to.append([])
-            j_to_add_to[self.list_index] = []
+            while self.list_index >= len(J_to_add_to):
+                J_to_add_to.append([])
+            J_to_add_to[self.list_index] = []
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         if self.type.get_type() == ObjectiveFunction.LagrangeFunction:
