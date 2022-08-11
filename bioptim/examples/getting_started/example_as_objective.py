@@ -1,14 +1,14 @@
 """
-TODO: Clearly not "very simple"! rewrite
 TODO: General cleaning
 A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
 while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
 
-There is however a catch: there are no hard continuity constraint. The continuity is instead added to the objective
-function. The idea behind this is to allow the solver to better find the solution more easily without hitting walls.
+There is however a catch: the problem is solved in two passes. In the first pass, continuity is an objective rather
+then a constraint. The goal of the first pass is to find quickly a potential initial solution. This initial solution
+is then given to the second pass in which continuity is a constraint to find the optimal solution.
 
-During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
-appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
+During the optimization process, the graphs are updated real-time. Finally, once it finished optimizing, it animates
+the model using the optimal solution.
 """
 
 from casadi import sqrt
@@ -132,7 +132,9 @@ def prepare_ocp_first_pass(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        # state_continuity_weight=1000000,  # change the weight to observe the impact on the continuity of the solution
+        # change the weight to observe the impact on the continuity of the solution
+        # or comment to see how the constrained program would fare
+        state_continuity_weight=1000000,
     )
 
 
@@ -235,25 +237,30 @@ def main():
     ocp_first = prepare_ocp_first_pass(biorbd_model_path="models/pendulum_maze.bioMod", final_time=2, n_shooting=100, n_threads=3)
     # ocp_first.print(to_console=True)
 
-    solver = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
-    solver.set_maximum_iterations(5000)
+    solver_first = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
+    # change maximum iterations to affect the initial solution
+    # it doesn't mather if it exits before the optimal solution, only that there is an initial guess
+    solver_first.set_maximum_iterations(500)
 
     # Custom plots
     ocp_first.add_plot_penalty(CostType.ALL)
 
     # --- Solve the ocp --- #
-    sol_first = ocp_first.solve(solver)
+    sol_first = ocp_first.solve(solver_first)
     # sol.graphs()
 
     # # --- Second pass ---#
     # # --- Prepare the ocp --- #
+    solver_second = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
+    solver_second.set_maximum_iterations(1000)
+
     ocp_second = prepare_ocp_second_pass(biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, final_time=2, n_threads=3)
 
     # Custom plots
     ocp_second.add_plot_penalty(CostType.ALL)
 
     # --- Solve the ocp --- #
-    sol_second = ocp_second.solve(solver)
+    sol_second = ocp_second.solve(solver_second)
     # sol.graphs()
 
 
