@@ -75,7 +75,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
 
 
 def get_penalty_value(ocp, penalty, t, x, u, p):
-    val = penalty.type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, u, []), **penalty.params)
+    val = penalty.type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, u, []), **penalty.params)
     if isinstance(val, float):
         return val
 
@@ -106,7 +106,7 @@ def test_penalty_minimize_time(penalty_origin, value):
 
     penalty_type = penalty_origin.MINIMIZE_TIME
     penalty = Objective(penalty_type)
-    penalty_type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], [], [], [], []))
+    penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], [], [], [], []))
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
     np.testing.assert_almost_equal(res, np.array(1))
@@ -714,11 +714,11 @@ def test_penalty_custom_fail(penalty_origin, value):
 
     with pytest.raises(TypeError):
         penalty.custom_function = custom_no_mult
-        penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], mult=2)
+        penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [], mult=2)
 
     with pytest.raises(TypeError):
         penalty.custom_function = custom_with_mult
-        penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+        penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [])
 
     with pytest.raises(TypeError):
         keywords = [
@@ -743,7 +743,7 @@ def test_penalty_custom_fail(penalty_origin, value):
                             return my_values"""
             )
             exec("""penalty.custom_function = custom_with_keyword""")
-            exec(f"""penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], {keyword}=0)""")
+            exec(f"""penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [], {keyword}=0)""")
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -781,7 +781,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], []))
+        penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], []))
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -804,7 +804,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
         RuntimeError,
         match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
     ):
-        penalty_type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], []))
+        penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], []))
 
 
 @pytest.mark.parametrize(

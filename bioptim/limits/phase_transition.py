@@ -1,6 +1,5 @@
 from typing import Callable, Union, Any
 from warnings import warn
-from enum import Enum
 
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
@@ -10,6 +9,7 @@ from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -261,7 +261,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return func
 
 
-class PhaseTransitionFcn(Enum):
+class PhaseTransitionFcn(FcnEnum):
     """
     Selection of valid phase transition functions
     """
