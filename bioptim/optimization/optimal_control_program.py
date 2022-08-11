@@ -769,18 +769,15 @@ class OptimalControlProgram:
                     )
                 )
 
-
             elif penalty.derivative or penalty.explicit_derivative:
-                if not np.all(x == 0): # initialization
+                if not np.all(x == 0):  # initialization
                     state_value = x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]]
                 else:
-                    state_value = np.zeros((x.shape[0], int(penalty.weighted_function_non_threaded.nnz_in(0)/x.shape[0])))
-
-                out.append(
-                    penalty.weighted_function_non_threaded(
-                        state_value, u, p, penalty.weight, _target, dt
+                    state_value = np.zeros(
+                        (x.shape[0], int(penalty.weighted_function_non_threaded.nnz_in(0) / x.shape[0]))
                     )
-                )
+
+                out.append(penalty.weighted_function_non_threaded(state_value, u, p, penalty.weight, _target, dt))
             elif (
                 penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
