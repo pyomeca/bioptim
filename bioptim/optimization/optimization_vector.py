@@ -410,19 +410,14 @@ class OptimizationVector:
             The number of shooting nodes and collocation points
         """
         ocp = self.ocp
-
+        ns = ocp.nlp[phase].ns
         if ocp.nlp[phase].ode_solver.is_direct_collocation:
-            if (
-                isinstance(ocp.nlp[phase].x_init, NoisedInitialGuess)
-                and interpolation_type == InterpolationType.ALL_POINTS
-            ):
-                ns = ocp.nlp[phase].ns * (ocp.nlp[phase].ode_solver.steps + 1)
-            elif type(ocp.nlp[phase].x_init) is InitialGuess and interpolation_type != InterpolationType.EACH_FRAME:
-                ns = ocp.nlp[phase].ns * (ocp.nlp[phase].ode_solver.steps + 1)
-            else:
-                ns = ocp.nlp[phase].ns
-        else:
-            ns = ocp.nlp[phase].ns
+            if isinstance(ocp.nlp[phase].x_init, NoisedInitialGuess):
+                if interpolation_type == InterpolationType.ALL_POINTS:
+                    ns *= (ocp.nlp[phase].ode_solver.steps + 1)
+            elif isinstance(ocp.nlp[phase].x_init, InitialGuess):
+                if interpolation_type != InterpolationType.EACH_FRAME:
+                    ns *= (ocp.nlp[phase].ode_solver.steps + 1)
         return ns
 
     def define_ocp_initial_guess(self):
@@ -464,12 +459,12 @@ class OptimizationVector:
             for k in range(nlp.ns + 1):
                 for p in range(repeat if k != nlp.ns else 1):
                     span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
-                    if type(nlp.x_init) is InitialGuess and nlp.x_init.type == InterpolationType.EACH_FRAME:
+                    point = k if k != 0 else 0 if p == 0 else 1
+                    if isinstance(nlp.x_init, NoisedInitialGuess):
+                        if nlp.x_init.type == InterpolationType.ALL_POINTS:
+                            point = k * repeat + p
+                    elif isinstance(nlp.x_init, InitialGuess) and nlp.x_init.type == InterpolationType.EACH_FRAME:
                         point = k * repeat + p
-                    elif isinstance(nlp.x_init, NoisedInitialGuess) and nlp.x_init.type == InterpolationType.ALL_POINTS:
-                        point = k * repeat + p
-                    else:
-                        point = k if k != 0 else 0 if p == 0 else 1
                     x_init.init[span, 0] = nlp.x_init.init.evaluate_at(shooting_point=point)
 
             # For controls
