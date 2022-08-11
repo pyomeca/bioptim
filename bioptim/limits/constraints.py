@@ -1,5 +1,4 @@
 from typing import Callable, Union, Any
-from enum import Enum
 
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
@@ -8,6 +7,7 @@ from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
 
@@ -518,7 +518,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         return "constraints"
 
 
-class ConstraintFcn(Enum):
+class ConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions
 
@@ -558,7 +558,7 @@ class ConstraintFcn(Enum):
         return ConstraintFunction
 
 
-class ImplicitConstraintFcn(Enum):
+class ImplicitConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions
 

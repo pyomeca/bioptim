@@ -1,6 +1,5 @@
 from typing import Callable, Union, Any
 from warnings import warn
-from enum import Enum
 
 import biorbd_casadi as biorbd
 from casadi import vertcat, MX
@@ -10,6 +9,7 @@ from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, InterpolationType, PenaltyType
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -360,7 +360,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return multinode_constraint.custom_function(multinode_constraint, nlp_pre, nlp_post, **extra_params)
 
 
-class MultinodeConstraintFcn(Enum):
+class MultinodeConstraintFcn(FcnEnum):
     """
     Selection of valid multinode constraint functions
     """
