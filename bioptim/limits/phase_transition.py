@@ -9,7 +9,7 @@ from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFuncti
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -41,7 +41,7 @@ class PhaseTransition(MultinodeConstraint):
         The index of the node in nlp pre
     transition: bool
         The nature of the cost function is transition
-    constraint_type: ConstraintType
+    penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
     """
 
@@ -132,7 +132,8 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         # By default it assume Continuous. It can be change later
         full_phase_transitions = [
-            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=continuity_weight) for i in range(ocp.n_phases - 1)
+            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=continuity_weight)
+            for i in range(ocp.n_phases - 1)
         ]
         for pt in full_phase_transitions:
             pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases

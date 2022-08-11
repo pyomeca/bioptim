@@ -20,7 +20,13 @@ from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.solver_options import Solver
-from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityConstraintFunctions
+from ..limits.constraints import (
+    ConstraintFunction,
+    ConstraintFcn,
+    ConstraintList,
+    Constraint,
+    ContinuityConstraintFunctions,
+)
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions

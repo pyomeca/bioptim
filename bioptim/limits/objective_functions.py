@@ -3,7 +3,7 @@ from enum import Enum
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node, IntegralApproximation, ConstraintType  # TODO: should not be needed here
+from ..misc.enums import Node, IntegralApproximation, PenaltyType
 from ..misc.options import OptionList
 
 
@@ -288,14 +288,17 @@ class ObjectiveFunction:
         # Dynamics must be sound within phases
         for i, nlp in enumerate(ocp.nlp):
             penalty = Objective(
-                ObjectiveFcn.Mayer.CONTINUITY, weight=weight, node=Node.ALL_SHOOTING, constraint_type=ConstraintType.INTERNAL  # TODO: change to ObjectiveType and handled to put in J_internal
+                ObjectiveFcn.Mayer.CONTINUITY,
+                weight=weight,
+                node=Node.ALL_SHOOTING,
+                penalty_type=PenaltyType.INTERNAL,  # TODO: handle to put in J_internal
             )
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
     def inter_phase_continuity(ocp):
         """
-        Add phase transition constraints between two phases.
+        Add phase transitions between two phases.
 
         Parameters
         ----------
@@ -391,6 +394,7 @@ class ObjectiveFcn:
         def get_type() -> Callable
             Returns the type of the penalty
         """
+
         CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
@@ -441,13 +445,13 @@ class ObjectiveFcn:
 
 class ContinuityObjectiveFunctions:
     """
-    Interface between continuity and constraint
+    Interface between continuity and objective
     """
 
     @staticmethod
     def continuity(ocp, weight):
         """
-        The declaration of inner- and inter-phase continuity constraints
+        The declaration of inner- and inter-phase continuity objectives
 
         Parameters
         ----------
