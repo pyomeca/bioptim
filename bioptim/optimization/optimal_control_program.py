@@ -770,7 +770,9 @@ class OptimalControlProgram:
                 )
 
             elif penalty.derivative or penalty.explicit_derivative:
-                if not np.all(x == 0):  # initialization
+                if not np.all(
+                    x == 0
+                ):  # This is a hack to initialize the plots because it x is (N,2) and we need (N, M) in collocation
                     state_value = x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]]
                 else:
                     state_value = np.zeros(
