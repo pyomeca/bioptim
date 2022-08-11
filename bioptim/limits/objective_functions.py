@@ -462,7 +462,7 @@ class ContinuityObjectiveFunctions:
         ObjectiveFunction.inner_phase_continuity(ocp, weight)
 
         # Dynamics must be respected between phases
-        ObjectiveFunction.inter_phase_continuity(ocp, weight)
+        ObjectiveFunction.inter_phase_continuity(ocp)
 
         # TODO: multinode_anything shouldn't be handled by "continuity".
         # Keeping multinode_constraint here because otherwise they wouldn't be added when state continuity is an
