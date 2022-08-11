@@ -74,7 +74,7 @@ class Objective(PenaltyOption):
         elif self.penalty_type == PenaltyType.USER:
             pool = all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
         else:
-            raise ValueError(f"Invalid objective type {self.contraint_type}.")
+            raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
@@ -299,7 +299,7 @@ class ObjectiveFunction:
                 weight=weight,
                 quadratic=True,
                 node=Node.ALL_SHOOTING,
-                penalty_type=PenaltyType.INTERNAL,  # TODO: handle to put in J_internal
+                penalty_type=PenaltyType.INTERNAL,
             )
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
