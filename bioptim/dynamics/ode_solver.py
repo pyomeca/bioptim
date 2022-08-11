@@ -3,7 +3,7 @@ from typing import Union, Callable
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
 from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, DefectType
 
 
 class OdeSolverBase:
@@ -96,6 +96,7 @@ class RK(OdeSolverBase):
         super(RK, self).__init__()
         self.steps = n_integration_steps
         self.is_direct_shooting = True
+        self.defects_type = DefectType.NOT_APPLICABLE
 
     def integrator(self, ocp, nlp) -> list:
         """
@@ -122,6 +123,7 @@ class RK(OdeSolverBase):
             "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
+            "defects_type": DefectType.NOT_APPLICABLE,
         }
         ode = {
             "x": nlp.states.cx,
@@ -129,6 +131,7 @@ class RK(OdeSolverBase):
             if nlp.control_type == ControlType.CONSTANT
             else horzcat(nlp.controls.cx, nlp.controls.cx_end),
             "ode": nlp.dynamics_func,
+            "implicit_ode": nlp.implicit_dynamics_func,
         }
 
         if nlp.external_forces:
@@ -232,7 +235,9 @@ class OdeSolver:
             The interface of the OdeSolver to the corresponding integrator
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre"):
+        def __init__(
+            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+        ):
             """
             Parameters
             ----------
@@ -244,6 +249,7 @@ class OdeSolver:
             self.polynomial_degree = polynomial_degree
             self.rk_integrator = COLLOCATION
             self.method = method
+            self.defects_type = defects_type
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
@@ -276,6 +282,7 @@ class OdeSolver:
                 "x": [nlp.states.cx] + nlp.states.cx_intermediates_list,
                 "p": nlp.controls.cx,
                 "ode": nlp.dynamics_func,
+                "implicit_ode": nlp.implicit_dynamics_func,
             }
             ode_opt = {
                 "t0": 0,
@@ -287,6 +294,7 @@ class OdeSolver:
                 "control_type": nlp.control_type,
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
                 "method": self.method,
+                "defects_type": self.defects_type,
             }
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
@@ -308,7 +316,9 @@ class OdeSolver:
             The interface of the OdeSolver to the corresponding integrator
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre"):
+        def __init__(
+            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+        ):
             """
             Parameters
             ----------
@@ -316,7 +326,9 @@ class OdeSolver:
                 The degree of the implicit RK
             """
 
-            super(OdeSolver.IRK, self).__init__(polynomial_degree=polynomial_degree, method=method)
+            super(OdeSolver.IRK, self).__init__(
+                polynomial_degree=polynomial_degree, method=method, defects_type=defects_type
+            )
             self.rk_integrator = IRK
             self.is_direct_collocation = False
             self.is_direct_shooting = True
@@ -354,6 +366,7 @@ class OdeSolver:
             self.is_direct_collocation = False
             self.is_direct_shooting = True
             self.steps = 1
+            self.defects_type = DefectType.NOT_APPLICABLE
 
         def integrator(self, ocp, nlp) -> list:
             """

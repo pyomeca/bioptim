@@ -3,7 +3,7 @@ from typing import Union
 from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tangent, rootfinder, MX, SX
 import numpy as np
 
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, DefectType
 
 
 class Integrator:
@@ -73,6 +73,8 @@ class Integrator:
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
+        self.implicit_fun = ode["implicit_ode"]
+        self.defects_type = ode_opt["defects_type"]
         self.control_type = ode_opt["control_type"]
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
@@ -542,8 +544,11 @@ class COLLOCATION(Integrator):
                     _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-            lfcn = Function("lfcn", [time_control_interval], [_l])
-            self._d[j] = lfcn(1.0)
+            if self.method == "radau":
+                self._d[j] = 1 if j == self.degree else 0
+            else:
+                lfcn = Function("lfcn", [time_control_interval], [_l])
+                self._d[j] = lfcn(1.0)
 
             # Construct Lagrange polynomials to get the polynomial basis at the collocation point
             _l = 1
@@ -610,9 +615,13 @@ class COLLOCATION(Integrator):
             for r in range(self.degree + 1):
                 xp_j += self._c[r, j] * states[r]
 
-            # Append collocation equations
-            f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
-            defects.append(h * f_j - xp_j)
+            if self.defects_type == DefectType.EXPLICIT:
+                f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
+                defects.append(h * f_j - xp_j)
+            elif self.defects_type == DefectType.IMPLICIT:
+                defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params, xp_j / h))
+            else:
+                raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
             # Add contribution to the end state
             states_end += self._d[j] * states[j]
