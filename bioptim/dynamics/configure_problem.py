@@ -1,5 +1,4 @@
 from typing import Callable, Any, Union
-from enum import Enum
 
 from casadi import MX, vertcat, Function
 import numpy as np
@@ -11,6 +10,7 @@ from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType
+from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
@@ -128,7 +128,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
+        nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.params)
 
     @staticmethod
     def custom(ocp, nlp, **extra_params):
@@ -1030,7 +1030,7 @@ class ConfigureProblem:
         return axes_idx
 
 
-class DynamicsFcn(Enum):
+class DynamicsFcn(FcnEnum):
     """
     Selection of valid dynamics functions
     """
