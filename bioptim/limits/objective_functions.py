@@ -290,6 +290,7 @@ class ObjectiveFunction:
             penalty = Objective(
                 ObjectiveFcn.Mayer.CONTINUITY,
                 weight=weight,
+                quadratic=True,
                 node=Node.ALL_SHOOTING,
                 penalty_type=PenaltyType.INTERNAL,  # TODO: handle to put in J_internal
             )
