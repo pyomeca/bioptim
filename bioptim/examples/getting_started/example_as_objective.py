@@ -24,7 +24,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     ObjectiveFcn,
-    Objective,
+    ObjectiveList,
     ConstraintFcn,
     ConstraintList,
     OdeSolver,
@@ -78,7 +78,8 @@ def prepare_ocp_first_pass(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=100, key="tau")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -171,7 +172,8 @@ def prepare_ocp_second_pass(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=100, key="tau")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -234,7 +236,7 @@ def main():
     # --- First pass --- #
     # --- Prepare the ocp --- #
     ocp_first = prepare_ocp_first_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod", final_time=2, n_shooting=100, n_threads=3
+        biorbd_model_path="models/pendulum_maze.bioMod", final_time=3, n_shooting=100, n_threads=3
     )
     # ocp_first.print(to_console=True)
 
@@ -256,7 +258,7 @@ def main():
     solver_second.set_maximum_iterations(1000)
 
     ocp_second = prepare_ocp_second_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, final_time=2, n_threads=3
+        biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, final_time=3, n_threads=3
     )
 
     # Custom plots
