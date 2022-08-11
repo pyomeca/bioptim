@@ -911,8 +911,8 @@ class NoisedInitialGuess(InitialGuess):
 
         super(NoisedInitialGuess, self).__init__(
             initial_guess=self.noised_initial_guess,
-            interpolation=interpolation  # this interpolation should always be done at each data point
-            if interpolation == InterpolationType.ALL_POINTS
+            interpolation=interpolation
+            if interpolation == InterpolationType.ALL_POINTS  # interpolation should always be done at each data point
             else InterpolationType.EACH_FRAME,
             **parameters,
         )
