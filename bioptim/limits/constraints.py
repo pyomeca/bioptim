@@ -595,6 +595,7 @@ class ConstraintFcn(Enum):
     CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
     TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
     TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+    TRACK_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
     TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
     TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)

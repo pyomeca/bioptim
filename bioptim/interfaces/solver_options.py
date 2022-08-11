@@ -365,7 +365,11 @@ class Solver:
             self._bound_push = val
             self._bound_frac = val
 
-        def set_option(self, val, name):
+        def set_option_unsafe(self, val, name):
+            """
+            This function is unsafe because we did not check if the option exist in the solver option list.
+            If it's not it just will be ignored. Please make sure that the option you're asking for exist.
+            """
             if f"_{name}" not in self.__dict__.keys():
                 self.__dict__[f"_{name}"] = val
 
@@ -459,7 +463,11 @@ class Solver:
             self._qp_solver = val
             self.set_only_first_options_has_changed(True)
 
-        def set_option(self, val: Union[float, int, str], name: str):
+        def set_option_unsafe(self, val: Union[float, int, str], name: str):
+            """
+            This function is unsafe because we did not check if the option exist in the solver option list.
+            If it's not it just will be ignored. Please make sure that the option you're asking for exist.
+            """
             if f"_{name}" not in self.__annotations__.keys():
                 self.__annotations__[f"_{name}"] = val
                 self.__setattr__(f"_{name}", val)
@@ -566,13 +574,11 @@ class Solver:
             self._nlp_solver_tol_stat = val
             self.set_has_tolerance_changed(True)
 
-        def set_convergence_tolerance(self, val: Union[float, int, list, tuple]):
-            if isinstance(val, (float, int)):
-                val = [val] * 4
-            self.set_nlp_solver_tol_eq(val[0])
-            self.set_nlp_solver_tol_ineq(val[1])
-            self.set_nlp_solver_tol_comp(val[2])
-            self.set_nlp_solver_tol_stat(val[3])
+        def set_convergence_tolerance(self, val: Union[float, int]):
+            self.set_nlp_solver_tol_eq(val)
+            self.set_nlp_solver_tol_ineq(val)
+            self.set_nlp_solver_tol_comp(val)
+            self.set_nlp_solver_tol_stat(val)
             self.set_has_tolerance_changed(True)
 
         def set_constraint_tolerance(self, val: float):
