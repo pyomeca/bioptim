@@ -1,7 +1,9 @@
 from typing import Callable, Union, Any
 
+import biorbd_casadi as biorbd
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
+import biorbd_casadi as biorbd
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
@@ -310,7 +312,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return all_pn.nlp.tf
 
         @staticmethod
-        def qddot_equals_forward_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def qddot_equals_forward_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, **unused_param):
             """
             Compute the difference between symbolic joint accelerations and forward dynamic results
             It includes the inversion of mass matrix
@@ -321,6 +323,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The actual constraint to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            with_contact: bool
+                True if the contact dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -330,8 +334,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
 
-            qddot = nlp.controls["qddot"].mx
-            qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+            qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls.keys() else nlp.states["qddot"].mx
+            if with_contact:
+                model = biorbd.Model(
+                    nlp.model.path().absolutePath().to_string()
+                )  # TODO: find a better solution if possible
+                qddot_fd = model.ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
+            else:
+                qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
@@ -341,7 +351,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return BiorbdInterface.mx_to_cx("ForwardDynamics", qddot - qddot_fd, *var)
 
         @staticmethod
-        def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, **unused_param):
             """
             Compute the difference between symbolic joint torques and inverse dynamic results
             It does not include any inversion of mass matrix
@@ -352,6 +362,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The actual constraint to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            with_contact: bool
+                True if the contact dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -367,9 +379,20 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
                 )
                 # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
-                # fext need to be a mx
+            if with_contact:
+                f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls.keys() else nlp.states["fext"].mx
+                count = 0
+                f_contact_vec = biorbd.VecBiorbdVector()
+                for ii in range(nlp.model.nbRigidContacts()):
+                    n_f_contact = len(nlp.model.rigidContactAxisIdx(ii))
+                    idx = [i + count for i in range(n_f_contact)]
+                    f_contact_vec.append(f_contact[idx])
+                    count = count + n_f_contact
 
-            tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
+                tau_id = nlp.model.InverseDynamics(q, qdot, qddot, None, f_contact_vec).to_mx()
+
+            else:
+                tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
@@ -377,6 +400,45 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - tau, *var)
+
+        @staticmethod
+        def implicit_marker_acceleration(_: Constraint, all_pn: PenaltyNodeList, contact_index: int, **unused_param):
+            """
+            Compute the acceleration of the contact node to set it at zero
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            contact_index: int
+                The contact index
+            **unused_param: dict
+                Since the function does nothing, we can safely ignore any argument
+            """
+
+            nlp = all_pn.nlp
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+
+            # TODO get the index of the marker
+            contact_name = nlp.model.contactNames()[contact_index].to_string()
+            if "_X" in nlp.model.contactNames()[contact_index].to_string():
+                idx_dir = 0
+            elif "_Y" in nlp.model.contactNames()[contact_index].to_string():
+                idx_dir = 1
+            elif "_Z" in nlp.model.contactNames()[contact_index].to_string():
+                idx_dir = 2
+            contact_acceleration = nlp.model.rigidContactAcceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
+
+            var = []
+            var.extend([nlp.states[key] for key in nlp.states])
+            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([nlp.parameters[key] for key in nlp.parameters])
+
+            return BiorbdInterface.mx_to_cx("contact_acceleration", contact_acceleration, *var)
 
         @staticmethod
         def tau_from_muscle_equal_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
@@ -423,7 +485,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
             """
-            The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
+            Compute the difference between symbolic soft contact forces and actual force contact dynamic
 
             Parameters
             ----------
@@ -571,6 +633,7 @@ class ImplicitConstraintFcn(FcnEnum):
     QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
     TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
+    CONTACT_ACCELERATION_EQUALS_ZERO = (ConstraintFunction.Functions.implicit_marker_acceleration,)
     TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
 
     @staticmethod

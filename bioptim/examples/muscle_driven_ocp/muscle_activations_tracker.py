@@ -28,6 +28,7 @@ from bioptim import (
     OdeSolver,
     Node,
     Solver,
+    RigidBodyDynamics,
 )
 
 
@@ -92,13 +93,26 @@ def generate_data(
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
 
     dynamics_func = biorbd.to_casadi_func(
-        "ForwardDyn", dyn_func, symbolic_states, symbolic_controls, symbolic_parameters, nlp, False
+        "ForwardDyn",
+        dyn_func(
+            states=symbolic_states,
+            controls=symbolic_controls,
+            parameters=symbolic_parameters,
+            nlp=nlp,
+            with_contact=False,
+            rigidbody_dynamics=RigidBodyDynamics.ODE,
+        ).dxdt,
+        symbolic_states,
+        symbolic_controls,
+        symbolic_parameters,
+        nlp,
+        False,
     )
 
     def dyn_interface(t, x, u):
         if use_residual_torque:
             u = np.concatenate([np.zeros(n_tau), u])
-        return np.array(dynamics_func(x, u, [])).squeeze()
+        return np.array(dynamics_func(x, u, [])[:, 0]).squeeze()
 
     # Generate some muscle activation
     U = np.random.rand(n_shooting, n_mus).T
