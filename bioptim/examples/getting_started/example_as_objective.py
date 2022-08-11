@@ -39,7 +39,7 @@ def out_of_sphere(all_pn, y, z):
     q = all_pn.nlp.states["q"].mx
     marker_q = all_pn.nlp.model.markers(q)[1].to_mx()
 
-    distance = sqrt((y - marker_q[1])**2+(z - marker_q[2])**2)
+    distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 
     return BiorbdInterface.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states["q"])
 
@@ -110,13 +110,12 @@ def prepare_ocp_first_pass(
 
     constraints = ConstraintList()
     # max_bound is practically at infinity
-    constraints.add(out_of_sphere, y=.45, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=.35, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=.25, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=.15, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=.45, z=-.75, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.45, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.35, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.25, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.15, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.45, z=-0.75, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, max_bound=final_time)
-
 
     return OptimalControlProgram(
         biorbd_model,
@@ -203,11 +202,11 @@ def prepare_ocp_second_pass(
 
     constraints = ConstraintList()
     # max_bound is practically at infinity
-    constraints.add(out_of_sphere, y=.45, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=.35, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=.25, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=.15, z=0, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=.45, z=-.75, min_bound=.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.45, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.35, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.25, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.15, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.45, z=-0.75, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, max_bound=final_time)
 
     return OptimalControlProgram(
@@ -234,7 +233,9 @@ def main():
 
     # --- First pass --- #
     # --- Prepare the ocp --- #
-    ocp_first = prepare_ocp_first_pass(biorbd_model_path="models/pendulum_maze.bioMod", final_time=2, n_shooting=100, n_threads=3)
+    ocp_first = prepare_ocp_first_pass(
+        biorbd_model_path="models/pendulum_maze.bioMod", final_time=2, n_shooting=100, n_threads=3
+    )
     # ocp_first.print(to_console=True)
 
     solver_first = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
@@ -254,7 +255,9 @@ def main():
     solver_second = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
     solver_second.set_maximum_iterations(1000)
 
-    ocp_second = prepare_ocp_second_pass(biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, final_time=2, n_threads=3)
+    ocp_second = prepare_ocp_second_pass(
+        biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, final_time=2, n_threads=3
+    )
 
     # Custom plots
     ocp_second.add_plot_penalty(CostType.ALL)
@@ -262,8 +265,6 @@ def main():
     # --- Solve the ocp --- #
     sol_second = ocp_second.solve(solver_second)
     # sol.graphs()
-
-
 
     # --- Show the results in a bioviz animation --- #
     sol_first.detailed_cost_values()
