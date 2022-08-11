@@ -1,11 +1,12 @@
 """
 TODO: General cleaning
-A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
-while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
+An optimal control program consisting in a pendulum starting downward and ending upward while requiring
+the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
 
-There is however a catch: the problem is solved in two passes. In the first pass, continuity is an objective rather
-then a constraint. The goal of the first pass is to find quickly a potential initial solution. This initial solution
-is then given to the second pass in which continuity is a constraint to find the optimal solution.
+There is a catch however: there are regions in which the weight of the pendulum cannot go.
+The problem is solved in two passes. In the first pass, continuity is an objective rather then a constraint.
+The goal of the first pass is to find quickly a potential initial solution. This initial solution is then given
+to the second pass in which continuity is a constraint to find the optimal solution.
 
 During the optimization process, the graphs are updated real-time. Finally, once it finished optimizing, it animates
 the model using the optimal solution.
@@ -22,6 +23,7 @@ from bioptim import (
     Bounds,
     InterpolationType,
     QAndQDotBounds,
+    NoisedInitialGuess,
     InitialGuess,
     ObjectiveFcn,
     ObjectiveList,
@@ -79,7 +81,8 @@ def prepare_ocp_first_pass(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=100, key="tau")
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=1, key="tau")
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -99,7 +102,7 @@ def prepare_ocp_first_pass(
     # Initial guess
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
-    x_init = InitialGuess([0] * (n_q + n_qdot))
+    x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, noise_magnitude=.001, n_shooting=n_shooting)
 
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()
@@ -107,16 +110,22 @@ def prepare_ocp_first_pass(
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = InitialGuess([tau_init] * n_tau)
+    u_init = NoisedInitialGuess([tau_init] * n_tau, bounds=u_bounds, noise_magnitude=.01, n_shooting=n_shooting-1)
 
     constraints = ConstraintList()
     # max_bound is practically at infinity
-    constraints.add(out_of_sphere, y=0.45, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.35, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.25, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.15, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.45, z=-0.75, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(ConstraintFcn.TIME_CONSTRAINT, max_bound=final_time)
+    constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.75, z=.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=1.4, z=.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=2, z=-0.7, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=2, z=-1.4, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=-2, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=-2, z=-0.7, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=-2, z=-1.4, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=-0.45, z=-1, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(ConstraintFcn.TIME_CONSTRAINT, max_bound=final_time)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -173,7 +182,8 @@ def prepare_ocp_second_pass(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=100, key="tau")
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=1, key="tau")
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -204,12 +214,18 @@ def prepare_ocp_second_pass(
 
     constraints = ConstraintList()
     # max_bound is practically at infinity
-    constraints.add(out_of_sphere, y=0.45, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.35, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.25, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.15, z=0, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.45, z=-0.75, min_bound=0.35, max_bound=1000, node=Node.ALL_SHOOTING)
-    constraints.add(ConstraintFcn.TIME_CONSTRAINT, max_bound=final_time)
+    constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=0.75, z=.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=1.4, z=.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=2, z=-0.7, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=2, z=-1.4, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(out_of_sphere, y=-2, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=-2, z=-0.7, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=-2, z=-1.4, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(out_of_sphere, y=-0.45, z=-1, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # constraints.add(ConstraintFcn.TIME_CONSTRAINT, max_bound=final_time)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -236,7 +252,7 @@ def main():
     # --- First pass --- #
     # --- Prepare the ocp --- #
     ocp_first = prepare_ocp_first_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod", final_time=3, n_shooting=100, n_threads=3
+        biorbd_model_path="models/pendulum_maze.bioMod", final_time=5, n_shooting=500, n_threads=3
     )
     # ocp_first.print(to_console=True)
 
@@ -246,7 +262,7 @@ def main():
     solver_first.set_maximum_iterations(500)
 
     # Custom plots
-    ocp_first.add_plot_penalty(CostType.ALL)
+    # ocp_first.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Solve the ocp --- #
     sol_first = ocp_first.solve(solver_first)
@@ -258,11 +274,11 @@ def main():
     solver_second.set_maximum_iterations(1000)
 
     ocp_second = prepare_ocp_second_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, final_time=3, n_threads=3
+        biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, final_time=5, n_threads=3
     )
 
     # Custom plots
-    ocp_second.add_plot_penalty(CostType.ALL)
+    # ocp_second.add_plot_penalty(CostType.CONSTRAINTS)
 
     # --- Solve the ocp --- #
     sol_second = ocp_second.solve(solver_second)
