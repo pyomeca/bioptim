@@ -895,9 +895,7 @@ class NoisedInitialGuess(InitialGuess):
         if isinstance(initial_guess, InitialGuess):
             interpolation = initial_guess.type
         if interpolation == InterpolationType.ALL_POINTS:
-            bounds.n_shooting = initial_guess.shape[1]
             bounds.min.n_shooting = initial_guess.shape[1]
-            bounds.max.n_shooting = initial_guess.shape[1]
         self.bounds = bounds
         self.n_elements = self.bounds.min.shape[0]
         self.bounds.check_and_adjust_dimensions(self.n_elements, n_shooting)
