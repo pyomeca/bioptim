@@ -523,7 +523,7 @@ class Solution:
                     all_intermediate_idx.extend([*idx[:-1]])
                 else:
                     previous_end = all_intermediate_idx[-1]
-                    new_idx = [previous_end + i for i in idx[1:-1]]
+                    new_idx = [previous_end + i + 1 for i in idx[0:-1]]
                     all_intermediate_idx.extend(new_idx)
             all_intermediate_idx.append(previous_end + idx[-1]) # add the last index
 
