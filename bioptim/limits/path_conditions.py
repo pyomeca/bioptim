@@ -891,7 +891,7 @@ class NoisedInitialGuess(InitialGuess):
         self.n_shooting = n_shooting + 1
 
         if bounds is None:
-            raise RuntimeError("bounds must be specified to generate noised initial guess")
+            raise RuntimeError("'bounds' must be specified to generate noised initial guess")
         if isinstance(initial_guess, InitialGuess):
             interpolation = initial_guess.type
         if interpolation == InterpolationType.ALL_POINTS:
