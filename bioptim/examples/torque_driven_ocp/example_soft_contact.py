@@ -2,7 +2,7 @@
 A very simple optimal control program playing with a soft contact sphere rolling going from one point to another.
 
 The soft contact sphere are hard to make converge and sensitive to parameters.
-One could use implicit_soft_contacts or implicit_dynamics to ease the convergence.
+One could use soft_contacts_dynamics or implicit_dynamics to ease the convergence.
 """
 
 import numpy as np
@@ -27,6 +27,8 @@ from bioptim import (
     InitialGuess,
     CostType,
     InterpolationType,
+    SoftContactDynamics,
+    RigidBodyDynamics,
 )
 
 
@@ -49,7 +51,11 @@ def prepare_single_shooting(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=False, implicit_soft_contacts=False)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN,
+        rigidbody_dynamics=RigidBodyDynamics.ODE,
+        soft_contacts_dynamics=SoftContactDynamics.ODE,
+    )
 
     # Initial guess
     x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
@@ -141,7 +147,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, implicit_dynamics=False, implicit_soft_contacts=False)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN,
+        rigidbody_dynamics=RigidBodyDynamics.ODE,
+        soft_contacts_dynamics=SoftContactDynamics.ODE,
+    )
 
     # Constraints
     constraints = ConstraintList()

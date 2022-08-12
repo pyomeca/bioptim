@@ -23,6 +23,7 @@ from bioptim import (
     ConstraintFcn,
     Node,
     Solver,
+    RigidBodyDynamics,
 )
 
 
@@ -34,6 +35,7 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK4(),
     objective_name: str = "MINIMIZE_PREDICTED_COM_HEIGHT",
     com_constraints: bool = False,
+    rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -55,7 +57,8 @@ def prepare_ocp(
         'MINIMIZE_COM_POSITION' or 'MINIMIZE_COM_VELOCITY')
     com_constraints: bool
         If a constraint on the COM should be applied
-
+    rigidbody_dynamics: RigidBodyDynamics
+        which transcription of rigidbody dynamics is chosen
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -86,7 +89,7 @@ def prepare_ocp(
     if use_actuators:
         dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, rigidbody_dynamics=rigidbody_dynamics)
 
     # Constraints
     constraints = ConstraintList()
@@ -119,11 +122,21 @@ def prepare_ocp(
     x_init.add(pose_at_first_node + [0] * n_qdot)
 
     # Define control path constraint
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+        nu_sup = biorbd_model.nbQddot()
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        nu_sup = biorbd_model.nbQddot() + biorbd_model.nbContacts()
+    else:
+        nu_sup = 0
+
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * len(dof_mapping["tau"].to_first), [tau_max] * len(dof_mapping["tau"].to_first))
+
+    u_bounds.add(
+        [tau_min] * (len(dof_mapping["tau"].to_first) + nu_sup), [tau_max] * (len(dof_mapping["tau"].to_first) + nu_sup)
+    )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * len(dof_mapping["tau"].to_first))
+    u_init.add([tau_init] * (len(dof_mapping["tau"].to_first) + nu_sup))
 
     return OptimalControlProgram(
         biorbd_model,

@@ -1,5 +1,4 @@
 from typing import Callable, Any, Union
-from enum import Enum
 
 from casadi import MX, vertcat, Function
 import numpy as np
@@ -10,7 +9,16 @@ from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
-from ..misc.enums import PlotType, ControlType, VariableType, Node, ConstraintType
+from ..misc.enums import (
+    PlotType,
+    ControlType,
+    VariableType,
+    Node,
+    ConstraintType,
+    RigidBodyDynamics,
+    SoftContactDynamics,
+)
+from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
@@ -128,7 +136,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
+        nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.params)
 
     @staticmethod
     def custom(ocp, nlp, **extra_params):
@@ -150,8 +158,8 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact: bool = False,
-        implicit_dynamics: bool = False,
-        implicit_soft_contacts: bool = True,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
     ):
         """
@@ -165,37 +173,95 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        implicit_dynamics: bool
-            If the implicit dynamic should be used
-        implicit_soft_contacts: bool
-            If the implicit soft contact dynamic should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used
+        soft_contacts_dynamics: SoftContactDynamics
+            which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
         """
 
-        if implicit_dynamics:
-            if not implicit_soft_contacts:
-                raise ValueError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
-            # We don't need to add a constraint to ensure implicit dynamic with soft contacts
-            implicit_soft_contacts = False
-        if nlp.model.nbSoftContacts() == 0:
-            implicit_soft_contacts = False
+        if nlp.model.nbSoftContacts() != 0:
+            if (
+                soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
+                and soft_contacts_dynamics != SoftContactDynamics.ODE
+            ):
+                raise ValueError(
+                    "soft_contacts_dynamics can be used only with SoftContactDynamics.ODE or SoftContactDynamics.CONSTRAINT"
+                )
 
+            if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+                if soft_contacts_dynamics == SoftContactDynamics.ODE:
+                    raise ValueError(
+                        "Soft contacts dynamics should not be used with SoftContactDynamics.ODE "
+                        "when rigidbody dynamics is not RigidBodyDynamics.ODE . "
+                        "Please set soft_contacts_dynamics=SoftContactDynamics.CONSTRAINT"
+                    )
+
+        # Declared rigidbody states and controls
         ConfigureProblem.configure_q(nlp, True, False)
-        ConfigureProblem.configure_qdot(nlp, True, False)
+        ConfigureProblem.configure_qdot(nlp, True, False, True)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
 
-        if implicit_dynamics:
-            ConfigureProblem.configure_qddot(nlp, False, True)
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+        ):
+            ConfigureProblem.configure_qddot(nlp, False, True, True)
+        elif (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+        ):
+            ConfigureProblem.configure_qddot(nlp, True, False, True)
+            ConfigureProblem.configure_qdddot(nlp, False, True)
+        else:
+            ConfigureProblem.configure_qddot(nlp, False, False, True)
+
+        # Algebraic constraints of rigidbody dynamics if needed
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+        ):
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
                 constraint_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
+                with_contact=with_contact,
             )
-        if implicit_soft_contacts:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
+            if with_contact:
+                # qddot is continuous with RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+                # so the consistency constraint of the marker acceleration can only be set to zero
+                # at the first shooting node
+                node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
+                ConfigureProblem.configure_contact_forces(nlp, False, True)
+                for ii in range(nlp.model.nbContacts()):
+                    ocp.implicit_constraints.add(
+                        ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
+                        with_contact=with_contact,
+                        contact_index=ii,
+                        node=node,
+                        constraint_type=ConstraintType.IMPLICIT,
+                        phase=nlp.phase_idx,
+                    )
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
+        ):
+            # contacts forces are directly handled with this constraint
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
+                with_contact=with_contact,
+                phase=nlp.phase_idx,
+            )
 
+        # Declared soft contacts controls
+        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
+            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
+
+        # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -205,14 +271,16 @@ class ConfigureProblem:
                 DynamicsFunctions.torque_driven,
                 with_contact=with_contact,
                 fatigue=fatigue,
-                implicit_dynamics=implicit_dynamics,
+                rigidbody_dynamics=rigidbody_dynamics,
             )
 
+        # Configure the contact forces
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
-
+        # Configure the soft contact forces
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if implicit_soft_contacts:
+        # Algebraic constraints of soft contact forces if needed
+        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -225,8 +293,8 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact=False,
-        implicit_dynamics: bool = False,
-        implicit_soft_contacts: bool = True,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -239,26 +307,37 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        implicit_dynamics: bool
-            If the implicit dynamic should be used
-        implicit_soft_contacts: bool
-            If the implicit soft contact dynamic should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used
+        soft_contacts_dynamics: SoftContactDynamics
+            which soft contact dynamic should be used
         """
+        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
+            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
-        if implicit_dynamics:
-            if not implicit_soft_contacts:
-                raise ValueError("Soft contacts cannot be explicit when implicit dynamics is set at True.")
-            # We don't need to add a constraint to ensure implicit dynamic with soft contacts
-            implicit_soft_contacts = False
-        if nlp.model.nbSoftContacts() == 0:
-            implicit_soft_contacts = False
+        if nlp.model.nbSoftContacts() != 0:
+            if (
+                soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
+                and soft_contacts_dynamics != SoftContactDynamics.ODE
+            ):
+                raise ValueError(
+                    "soft_contacts_dynamics can be used only with RigidBodyDynamics.ODE or SoftContactDynamics.CONSTRAINT"
+                )
+
+            if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+                if soft_contacts_dynamics == SoftContactDynamics.ODE:
+                    raise ValueError(
+                        "Soft contacts dynamics should not be used with RigidBodyDynamics.ODE "
+                        "when rigidbody dynamics is not RigidBodyDynamics.ODE . "
+                        "Please set soft_contacts_dynamics=SoftContactDynamics.CONSTRAINT"
+                    )
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
         ConfigureProblem.configure_tau(nlp, True, False)
         ConfigureProblem.configure_taudot(nlp, False, True)
 
-        if implicit_dynamics:
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
             ConfigureProblem.configure_qddot(nlp, True, False)
             ConfigureProblem.configure_qdddot(nlp, False, True)
             ocp.implicit_constraints.add(
@@ -267,8 +346,8 @@ class ConfigureProblem:
                 constraint_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
-        if implicit_soft_contacts:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
+        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
+            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -278,14 +357,14 @@ class ConfigureProblem:
                 nlp,
                 DynamicsFunctions.torque_derivative_driven,
                 with_contact=with_contact,
-                implicit_dynamics=implicit_dynamics,
+                rigidbody_dynamics=rigidbody_dynamics,
             )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if implicit_soft_contacts:
+        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -328,7 +407,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def joints_acceleration_driven(ocp, nlp, implicit_dynamics: bool = False):
+    def joints_acceleration_driven(ocp, nlp, rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE):
         """
         Configure the dynamics for a joints acceleration driven program
         (states are q and qdot, controls are qddot_joints)
@@ -339,10 +418,11 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        implicit_dynamics: bool
-            If the implicit dynamic should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used
+
         """
-        if implicit_dynamics:
+        if rigidbody_dynamics != RigidBodyDynamics.ODE:
             raise NotImplementedError("Implicit dynamics not implemented yet.")
 
         ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
@@ -368,7 +448,7 @@ class ConfigureProblem:
         fatigue: FatigueList = None,
         with_torque: bool = False,
         with_contact: bool = False,
-        implicit_dynamics: bool = False,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -391,13 +471,16 @@ class ConfigureProblem:
             If the dynamic should be added with residual torques
         with_contact: bool
             If the dynamic with contact should be used
-        implicit_dynamics: bool
-            If the implicit dynamic should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used
 
         """
 
         if fatigue is not None and "tau" in fatigue and not with_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
+
+        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
+            raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
@@ -405,7 +488,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_tau(nlp, False, True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(nlp, with_excitations, True, fatigue=fatigue)
 
-        if implicit_dynamics:
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
             ConfigureProblem.configure_qddot(nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS,
@@ -424,7 +507,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 fatigue=fatigue,
                 with_torque=with_torque,
-                implicit_dynamics=implicit_dynamics,
+                rigidbody_dynamics=rigidbody_dynamics,
             )
 
         if with_contact:
@@ -450,18 +533,29 @@ class ConfigureProblem:
 
         nlp.parameters = ocp.v.parameters_in_list
 
-        dynamics = dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)
-        if isinstance(dynamics, (list, tuple)):
-            dynamics = vertcat(*dynamics)
+        dynamics_eval = dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)
+        dynamics_dxdt = dynamics_eval.dxdt
+        if isinstance(dynamics_dxdt, (list, tuple)):
+            dynamics_dxdt = vertcat(*dynamics_dxdt)
+
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
-            [dynamics],
+            [dynamics_dxdt],
             ["x", "u", "p"],
             ["xdot"],
         )
         if expand:
             nlp.dynamics_func = nlp.dynamics_func.expand()
+
+        if dynamics_eval.defects is not None:
+            nlp.implicit_dynamics_func = Function(
+                "DynamicsDefects",
+                [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp.states_dot.mx_reduced],
+                [dynamics_eval.defects],
+                ["x", "u", "p", "xdot"],
+                ["defects"],
+            ).expand()
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -678,6 +772,7 @@ class ConfigureProblem:
         nlp,
         as_states: bool,
         as_controls: bool,
+        as_states_dot: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
@@ -697,6 +792,8 @@ class ConfigureProblem:
             A reference to the phase
         as_states: bool
             If the new variable should be added to the state variable set
+        as_states_dot: bool
+            If the new variable should be added to the state_dot variable set
         as_controls: bool
             If the new variable should be added to the control variable set
         fatigue: FatigueList
@@ -731,13 +828,16 @@ class ConfigureProblem:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
         mx_states = []
+        mx_states_dot = []
         mx_controls = []
         for i in nlp.variable_mappings[name].to_second.map_idx:
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
             mx_states.append(MX.sym(var_name, 1, 1))
             mx_controls.append(MX.sym(var_name, 1, 1))
+            mx_states_dot.append(MX.sym(var_name, 1, 1))
         mx_states = vertcat(*mx_states)
         mx_controls = vertcat(*mx_controls)
+        mx_states_dot = vertcat(*mx_states_dot)
 
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
@@ -773,8 +873,14 @@ class ConfigureProblem:
                     combine_to=f"{name}_states" if as_states and combine_state_control_plot else combine_name,
                 )
 
+        if as_states_dot:
+            n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
+            cx = define_cx(n_col=n_cx)
+
+            nlp.states_dot.append(name, cx, mx_states_dot, nlp.variable_mappings[name])
+
     @staticmethod
-    def configure_q(nlp, as_states: bool, as_controls: bool):
+    def configure_q(nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
         """
         Configure the generalized coordinates
 
@@ -786,15 +892,19 @@ class ConfigureProblem:
             If the generalized coordinates should be a state
         as_controls: bool
             If the generalized coordinates should be a control
+        as_states_dot: bool
+            If the generalized velocities should be a state_dot
         """
 
         name = "q"
         name_q = [name.to_string() for name in nlp.model.nameDof()]
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_q, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_q, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
+        )
 
     @staticmethod
-    def configure_qdot(nlp, as_states: bool, as_controls: bool):
+    def configure_qdot(nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
         """
         Configure the generalized velocities
 
@@ -806,16 +916,20 @@ class ConfigureProblem:
             If the generalized velocities should be a state
         as_controls: bool
             If the generalized velocities should be a control
+        as_states_dot: bool
+            If the generalized velocities should be a state_dot
         """
 
         name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["q", "qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qdot, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qdot, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
+        )
 
     @staticmethod
-    def configure_qddot(nlp, as_states: bool, as_controls: bool):
+    def configure_qddot(nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
         """
         Configure the generalized accelerations
 
@@ -827,13 +941,17 @@ class ConfigureProblem:
             If the generalized velocities should be a state
         as_controls: bool
             If the generalized velocities should be a control
+        as_states_dot: bool
+            If the generalized accelerations should be a state_dot
         """
 
         name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["q", "qdot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qddot, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qddot, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_qdddot(nlp, as_states: bool, as_controls: bool):
@@ -928,7 +1046,25 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_taudot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_contact_forces(nlp, as_states: bool, as_controls: bool):
+        """
+        Configure the generalized forces derivative
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized force derivatives should be a state
+        as_controls: bool
+            If the generalized force derivatives should be a control
+        """
+
+        name_contact_forces = [name.to_string() for name in nlp.model.contactNames()]
+        ConfigureProblem.configure_new_variable("fext", name_contact_forces, nlp, as_states, as_controls)
+
+    @staticmethod
+    def configure_soft_contact_forces(nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1030,7 +1166,7 @@ class ConfigureProblem:
         return axes_idx
 
 
-class DynamicsFcn(Enum):
+class DynamicsFcn(FcnEnum):
     """
     Selection of valid dynamics functions
     """

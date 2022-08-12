@@ -1,9 +1,9 @@
 from typing import Callable, Union, Any
-from enum import Enum
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, IntegralApproximation
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
 
@@ -280,7 +280,7 @@ class ObjectiveFcn:
     Selection of valid objective functions
     """
 
-    class Lagrange(Enum):
+    class Lagrange(FcnEnum):
         """
         Selection of valid Lagrange objective functions
 
@@ -324,7 +324,7 @@ class ObjectiveFcn:
             """
             return ObjectiveFunction.LagrangeFunction
 
-    class Mayer(Enum):
+    class Mayer(FcnEnum):
         """
         Selection of valid Mayer objective functions
 
@@ -361,7 +361,7 @@ class ObjectiveFcn:
             """
             return ObjectiveFunction.MayerFunction
 
-    class Parameter(Enum):
+    class Parameter(FcnEnum):
         """
         Selection of valid Parameters objective functions
 
