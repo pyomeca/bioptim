@@ -106,11 +106,11 @@ def prepare_ocp_first_pass(
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
+    constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     # for another good example, comment out this line below here and in second pass (see HERE)
     constraints.add(out_of_sphere, y=0.55, z=-0.85, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
 
@@ -136,7 +136,6 @@ def prepare_ocp_first_pass(
 
 def prepare_ocp_second_pass(
     biorbd_model_path: str,
-    final_time: float,
     solution: Solution,
     ode_solver: OdeSolver = OdeSolver.RK4(),
     use_sx: bool = True,
@@ -149,10 +148,6 @@ def prepare_ocp_second_pass(
     ----------
     biorbd_model_path: str
         The path to the biorbd model
-    final_time: float
-        The time in second required to perform the task
-    n_shooting: int
-        The number of shooting points to define int the direct multiple shooting program
     ode_solver: OdeSolver = OdeSolver.RK4()
         Which type of OdeSolver to use
     use_sx: bool
@@ -193,11 +188,11 @@ def prepare_ocp_second_pass(
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
+    constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     # HERE
     constraints.add(out_of_sphere, y=0.55, z=-0.85, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
 
@@ -205,7 +200,7 @@ def prepare_ocp_second_pass(
         biorbd_model,
         dynamics,
         solution.ns,
-        final_time,
+        solution.phase_time[-1],
         x_init=x_init,
         u_init=u_init,
         x_bounds=x_bounds,
@@ -249,7 +244,7 @@ def main():
     solver_second.set_maximum_iterations(10000)
 
     ocp_second = prepare_ocp_second_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, final_time=5, n_threads=3
+        biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, n_threads=3
     )
 
     # Custom plots
