@@ -5,7 +5,7 @@ the minimum of generalized forces. The solver is only allowed to move the pendul
 
 There is a catch however: there are regions in which the weight of the pendulum cannot go.
 The problem is solved in two passes. In the first pass, continuity is an objective rather then a constraint.
-The goal of the first pass is to find quickly a potential initial solution. This initial solution is then given
+The goal of the first pass is to find quickly find a good initial guess. This initial guess is then given
 to the second pass in which continuity is a constraint to find the optimal solution.
 
 During the optimization process, the graphs are updated real-time. Finally, once it finished optimizing, it animates
@@ -90,8 +90,6 @@ def prepare_ocp_first_pass(
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, 0] = 0
-    # x_bounds.min[0, -1] = -0.1  # Give a little loose, otherwise too difficult
-    # x_bounds.max[0, -1] = 0.1
 
     # Initial guess
     n_q = biorbd_model.nbQ()
@@ -109,6 +107,8 @@ def prepare_ocp_first_pass(
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
     constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # for another good example, comment out this line below here and in second pass (see HERE)
+    constraints.add(out_of_sphere, y=0.55, z=-0.85, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
@@ -178,8 +178,6 @@ def prepare_ocp_second_pass(
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, 0] = 0
-    # x_bounds.min[0, -1] = -0.1  # Give a little loose, otherwise too difficult
-    # x_bounds.max[0, -1] = 0.1
 
     # Initial guess
     x_init = np.vstack((solution.states["q"], solution.states["qdot"]))
@@ -196,6 +194,8 @@ def prepare_ocp_second_pass(
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
     constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    # HERE
+    constraints.add(out_of_sphere, y=0.55, z=-0.85, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
