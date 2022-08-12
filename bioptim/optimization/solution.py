@@ -500,16 +500,55 @@ class Solution:
         The states data without intermediate states in the case of collocation
         """
         states_no_intermediate = []
-        for i, nlp in enumerate(self.ocp.nlp):
-            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and not isinstance(nlp.ode_solver, OdeSolver.IRK):
-                states_no_intermediate.append(dict())
-                for key in self._states[i].keys():
-                    # keep one value each five values
-                    states_no_intermediate[i][key] = self._states[i][key][:, :: nlp.ode_solver.polynomial_degree + 1]
-            else:
-                states_no_intermediate.append(self._states[i])
+        if self.is_merged:
+            idx_no_intermediate = []
+            for i, nlp in enumerate(self.ocp.nlp):
+                if type(nlp.ode_solver) is OdeSolver.COLLOCATION:
+                    idx_no_intermediate.append(
+                        list(
+                            range(
+                                0,
+                                nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + 1,
+                                nlp.ode_solver.polynomial_degree + 1,
+                            )
+                        )
+                    )
+                else:
+                    idx_no_intermediate.append(list(range(0, self.ocp.nlp[i].ns + 1, 1)))
 
-        return states_no_intermediate[0] if len(states_no_intermediate) == 1 else states_no_intermediate
+            # merge the index of the intermediate states
+            all_intermediate_idx = []
+            for p, idx in enumerate(idx_no_intermediate):
+                if p == 0:
+                    all_intermediate_idx.extend([*idx[:-1]])
+                else:
+                    previous_end = all_intermediate_idx[-1]
+                    new_idx = [previous_end + i for i in idx[1:-1]]
+                    all_intermediate_idx.extend(new_idx)
+            all_intermediate_idx.append(previous_end + idx[-1]) # add the last index
+
+            # build the new states dictionary for each key
+            states_no_intermediate = dict()
+            for key in self._states[0].keys():
+                # keep one value each five values
+                states_no_intermediate[key] = self._states[0][key][:, all_intermediate_idx]
+
+            return states_no_intermediate
+
+        else:
+            states_no_intermediate = []
+            for i, nlp in enumerate(self.ocp.nlp):
+                if type(nlp.ode_solver) is OdeSolver.COLLOCATION:
+                    states_no_intermediate.append(dict())
+                    for key in self._states[i].keys():
+                        # keep one value each five values
+                        states_no_intermediate[i][key] = self._states[i][key][
+                            :, :: nlp.ode_solver.polynomial_degree + 1
+                        ]
+                else:
+                    states_no_intermediate.append(self._states[i])
+
+            return states_no_intermediate[0] if len(states_no_intermediate) == 1 else states_no_intermediate
 
     @property
     def controls(self) -> Union[list, dict]:
