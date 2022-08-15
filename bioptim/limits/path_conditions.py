@@ -515,6 +515,19 @@ class Bounds(OptionGeneric):
 
         return self.min.shape
 
+    def set_n_shooting(self, ns):
+        """
+        Get the size of the Bounds
+
+        Returns
+        -------
+        The size of the Bounds
+        """
+        self.n_shooting = ns
+        self.min.n_shooting = ns
+        self.max.n_shooting = ns
+
+
 
 class BoundsList(UniquePerPhaseOptionList):
     """
@@ -895,7 +908,7 @@ class NoisedInitialGuess(InitialGuess):
         if isinstance(initial_guess, InitialGuess):
             interpolation = initial_guess.type
         if interpolation == InterpolationType.ALL_POINTS:
-            bounds.min.n_shooting = initial_guess.shape[1]
+            bounds.set_n_shooting(initial_guess.shape[1])
         self.bounds = bounds
         self.n_elements = self.bounds.min.shape[0]
         self.bounds.check_and_adjust_dimensions(self.n_elements, n_shooting)
