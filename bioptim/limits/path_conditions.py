@@ -375,7 +375,7 @@ class Bounds(OptionGeneric):
         self.type = interpolation
         self.t = None
         self.extra_params = self.min.extra_params
-        self._n_shooting = self.min.n_shooting
+        self.n_shooting = self.min.n_shooting
 
     def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
         """
@@ -905,7 +905,7 @@ class NoisedInitialGuess(InitialGuess):
         if isinstance(initial_guess, InitialGuess):
             interpolation = initial_guess.type
         if interpolation == InterpolationType.ALL_POINTS:
-            bounds._n_shooting = initial_guess.shape[1]
+            bounds.n_shooting = initial_guess.shape[1]
         self.bounds = bounds
         self.n_elements = self.bounds.min.shape[0]
         self.bounds.check_and_adjust_dimensions(self.n_elements, n_shooting)
