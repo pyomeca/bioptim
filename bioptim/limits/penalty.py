@@ -838,7 +838,7 @@ class PenaltyFunctionAbstract:
             The penalty node elements
         """
 
-        func = penalty.type.value[0]
+        func = penalty.type
         node = penalty.node
         # Everything that is suspicious in terms of the span of the penalty function ca be checked here
         if (

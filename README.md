@@ -94,6 +94,9 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [CostType](#enum-costtype)
   - [SolutionIntegrator](#enum-solutionintegrator)
   - [IntegralApproximation](#enum-integralapproximation)
+  - [RigidBodyDynamics](#enum-rigidbodydynamics)
+  - [SoftContactDynamics](#enum-softcontactdynamics)
+  - [DefectType](#enum-defecttype)
         
 [Examples](#examples)
 - [Run examples](#run-examples)
@@ -1518,7 +1521,24 @@ The type of integration used to integrate the cost function terms of Lagrange:
 - RECTANGLE: The integral is approximated by a rectangle rule (Left Riemann sum)
 - TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the begin of the next interval
 - TRUE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval
+- 
+### Enum: RigidBodyDynamics
+The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
+- ODE: dynamics is handled explicitly in the continuity constraint of the ordinary differential equation of the Direct Multiple Shooting approach
+- DAE_INVERSE_DYNAMICS: it adds an extra control *qddot* to respect inverse dynamics on nodes, this is a DAE-constrained OCP
+- DAE_FORWARD_DYNAMICS: it adds an extra control *qddot* to respect forward dynamics on nodes, this is a DAE-constrained OCP
+- DAE_INVERSE_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect inverse dynamics on nodes, this is a DAE-constrained OCP
+- DAE_FORWARD_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect forward dynamics on nodes, this is a DAE-constrained OCP
 
+### Enum: SoftContactDynamics
+The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
+- ODE: soft contacts dynamics is handled explicitly
+- CONSTRAINT: an extra control *fext* is added and it ensures to respect soft contact_dynamics on nodes through a constraint.
+
+### Enum: DefectType
+- EXPLICIT: The defect comes from explicit formulation
+- IMPLICIT: The defect comes from implicit formulation
+- NOT_APPLICABLE: The defect is not applicable
 
 # Examples
 In this section, you will find the description of all the examples implemented with bioptim. They are ordered in 

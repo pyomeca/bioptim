@@ -29,6 +29,7 @@ from bioptim import (
     OdeSolver,
     Node,
     Solver,
+    RigidBodyDynamics,
 )
 
 
@@ -99,7 +100,14 @@ def generate_data(
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
-        DynamicsFunctions.muscles_driven,
+        DynamicsFunctions.muscles_driven(
+            states=symbolic_states,
+            controls=symbolic_controls,
+            parameters=symbolic_parameters,
+            nlp=nlp,
+            with_contact=False,
+            rigidbody_dynamics=RigidBodyDynamics.ODE,
+        ).dxdt,
         symbolic_states,
         symbolic_controls,
         symbolic_parameters,
@@ -109,7 +117,7 @@ def generate_data(
 
     def dyn_interface(t, x, u):
         u = np.concatenate([np.zeros(n_tau), u])
-        return np.array(dynamics_func(x, u, [])).squeeze()
+        return np.array(dynamics_func(x, u, [])[:, 0]).squeeze()
 
     # Generate some muscle excitations
     U = np.random.rand(n_shooting, n_mus).T

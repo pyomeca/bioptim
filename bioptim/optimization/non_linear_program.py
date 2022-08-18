@@ -9,6 +9,7 @@ from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
 from ..misc.options import OptionList
+from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 
 
 class NonLinearProgram:
@@ -29,8 +30,12 @@ class NonLinearProgram:
         The delta time of the current phase
     dynamics: list[ODE_SOLVER]
         All the dynamics for each of the node of the phase
+    dynamics_sym: DynamicsEvaluation
+        The dynamic MX or SX used during the current phase
     dynamics_func: Callable
-        The dynamic function used during the current phase
+        The dynamic function used during the current phase dxdt = f(x,u,p)
+    implicit_dynamics_func: Callable
+        The implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
     dynamics_type: Dynamics
         The dynamic option declared by the user for the current phase
     external_forces: list
@@ -111,7 +116,9 @@ class NonLinearProgram:
         self.cx = None
         self.dt = None
         self.dynamics = []
+        self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func = None
+        self.implicit_dynamics_func = None
         self.dynamics_type = None
         self.external_forces = []
         self.g = []
@@ -141,6 +148,7 @@ class NonLinearProgram:
         self.x_init = InitialGuess()
         self.X = None
         self.states = OptimizationVariableList()
+        self.states_dot = OptimizationVariableList()
 
     def initialize(self, cx: Callable = None):
         """
