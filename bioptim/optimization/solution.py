@@ -545,7 +545,7 @@ class Solution:
         shooting_type: Shooting
             Which type of integration
         keep_intermediate_points: bool
-            If the integration should returns the intermediate values of the integration [False]
+            If the integration should return the intermediate values of the integration [False]
             or only keep the node [True] effective keeping the initial size of the states
         merge_phases: bool
             If the phase should be merged in a unique phase
@@ -597,10 +597,14 @@ class Solution:
         continuous: bool,
         merge_phases: bool,
         integrator: SolutionIntegrator,
-    ):
+    ) -> Union[np.ndarray, list[np.ndarray]]:
         """
-        Generate time integration vector, at which the points from intagrate are evaluated
+        Generate time integration vector
 
+        Returns
+        -------
+        t_integrated: np.ndarray or list of np.ndarray
+        The time vector
         """
 
         t_integrated = []
@@ -645,6 +649,29 @@ class Solution:
         merge_phases: bool,
         integrator: SolutionIntegrator,
     ):
+        """
+        This function performs the integration of the system dynamics
+        with different options using scipy or the default integrator
+
+        Parameters
+        ----------
+        shooting_type: Shooting
+            Which type of integration (SINGLE_CONTINUOUS, MULTIPLE, SINGLE)
+        keep_intermediate_points: bool
+            If the integration should return the intermediate values of the integration
+        continuous: bool
+            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
+        merge_phases
+            If the phase should be merged in a unique phase
+        integrator
+            Use the ode solver defined by the OCP or use a separate integrator provided by scipy such as RK45 or DOP853
+
+        Returns
+        -------
+        Solution
+            A Solution data structure with the states integrated. The controls are removed from this structure
+        """
+
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
 
         if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT:
