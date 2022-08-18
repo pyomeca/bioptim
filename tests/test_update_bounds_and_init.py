@@ -590,6 +590,7 @@ def test_update_noised_init_collocation(interpolation):
                 -2.69525994e-01,
                 1.74771041e-01,
                 -2.42032305e-02,
+
                 8.03082901e-01,
                 -1.24825577e-03,
                 1.83296247e-02,
@@ -735,6 +736,7 @@ def test_update_noised_init_collocation(interpolation):
                 -1.00000000e-01,
                 -1.00000000e-01,
                 -1.00000000e-01,
+
                 2.20000000e00,
                 2.91788226e-03,
                 7.77676415e-01,
@@ -787,6 +789,7 @@ def test_update_noised_init_collocation(interpolation):
         expected = np.array(
             [
                 8.01464405e-01,
+
                 -1.00000000e-01,
                 -1.00000000e-01,
                 -1.00000000e-01,
@@ -1271,6 +1274,7 @@ def test_update_noised_initial_guess_collocation(interpolation):
         **extra_params_u,
     )
 
+
     ocp.update_initial_guess(x_init, u_init)
     print(ocp.v.init.init)
     if interpolation == InterpolationType.CONSTANT:
@@ -1441,9 +1445,10 @@ def test_update_noised_initial_guess_collocation(interpolation):
                 7.90965478e-01,
             ]
         )
-    elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+    elif interpolation == InterpolationType.SPLINE:
         expected = np.array(
             [
+
                 1.79623620e00,
                 -1.00000000e-01,
                 -1.00000000e-01,
@@ -1486,6 +1491,7 @@ def test_update_noised_initial_guess_collocation(interpolation):
                 -1.00000000e-01,
                 -1.00000000e-01,
                 -1.00000000e-01,
+
                 1.19908024e00,
                 1.00073170e01,
                 1.39616722e00,
