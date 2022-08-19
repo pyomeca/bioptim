@@ -173,7 +173,7 @@ class OptimizationVector:
             for frame in range(nlp.ns):
                 point = (index * nlp.ns + frame) * n_points + index
                 steps = np.array(self.ocp.nlp[0].ode_solver.integrator(self.ocp, self.ocp.nlp[0])[0].step_time)
-                x_init_vector[point: point + n_points] = state[frame] + (state[frame + 1] - state[frame]) * steps
+                x_init_vector[point : point + n_points] = state[frame] + (state[frame + 1] - state[frame]) * steps
             x_init_vector[point + n_points] = state[nlp.ns]
         return InitialGuess(x_init_vector)
 
@@ -416,10 +416,10 @@ class OptimizationVector:
         if ocp.nlp[phase].ode_solver.is_direct_collocation:
             if isinstance(ocp.nlp[phase].x_init, NoisedInitialGuess):
                 if interpolation_type == InterpolationType.ALL_POINTS:
-                    ns *= (ocp.nlp[phase].ode_solver.steps + 1)
+                    ns *= ocp.nlp[phase].ode_solver.steps + 1
             elif isinstance(ocp.nlp[phase].x_init, InitialGuess):
                 if interpolation_type != InterpolationType.EACH_FRAME:
-                    ns *= (ocp.nlp[phase].ode_solver.steps + 1)
+                    ns *= ocp.nlp[phase].ode_solver.steps + 1
         return ns
 
     def define_ocp_initial_guess(self):
