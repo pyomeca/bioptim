@@ -79,9 +79,21 @@ class ConfigureProblem:
     """
 
     @staticmethod
-    def _get_kinematics_based_names(nlp, type):
+    def _get_kinematics_based_names(nlp, type: str) -> list[str]:
         """
         To modify the names of the variables added to the plots if there is quaternions
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        type: str
+            A string that refers to the decision variable such as (q, qdot, qddot, tau, etc...)
+
+        Returns
+        ----------
+        new_name: list[str]
+            The list of str to display on figures
         """
 
         if nlp.phase_mapping:
