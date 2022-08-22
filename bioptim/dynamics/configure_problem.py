@@ -854,7 +854,7 @@ class ConfigureProblem:
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
 
-        legend = [f"{name}_{name_elements[idx]}" for idx in range(len(name_elements)) if idx is not None]
+        legend = [f"{name}_{name_el}" for idx, name_el in enumerate(name_elements) if idx is not None and idx in axes_idx.map_idx]
 
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
