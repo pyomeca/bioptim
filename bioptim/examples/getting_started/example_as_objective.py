@@ -232,11 +232,11 @@ def main():
     solver_first.set_maximum_iterations(500)
 
     # Custom plots
-    # ocp_first.add_plot_penalty(CostType.OBJECTIVES)
+    ocp_first.add_plot_penalty(CostType.ALL)
 
     # --- Solve the ocp --- #
     sol_first = ocp_first.solve(solver_first)
-    # sol.graphs()
+    sol_first.graphs()
 
     # # --- Second pass ---#
     # # --- Prepare the ocp --- #
@@ -248,11 +248,11 @@ def main():
     )
 
     # Custom plots
-    # ocp_second.add_plot_penalty(CostType.CONSTRAINTS)
+    ocp_second.add_plot_penalty(CostType.ALL)
 
     # --- Solve the ocp --- #
     sol_second = ocp_second.solve(solver_second)
-    # sol.graphs()
+    sol_second.graphs()
 
     # --- Show the results in a bioviz animation --- #
     sol_first.detailed_cost_values()

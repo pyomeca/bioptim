@@ -68,7 +68,7 @@ class PhaseTransition(MultinodeConstraint):
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
-            weight=weight if weight else 0,
+            weight=weight if weight is not None else 0,
             force_multinode=True,
             **params,
         )
