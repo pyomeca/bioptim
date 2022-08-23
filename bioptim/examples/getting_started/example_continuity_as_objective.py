@@ -1,5 +1,4 @@
 """
-TODO: General cleaning
 An optimal control program consisting in a pendulum starting downward and ending upward while requiring
 the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
 
