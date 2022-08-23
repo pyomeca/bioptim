@@ -236,7 +236,7 @@ def main():
 
     # --- Solve the ocp --- #
     sol_first = ocp_first.solve(solver_first)
-    sol_first.graphs()
+    #sol_first.graphs()
 
     # # --- Second pass ---#
     # # --- Prepare the ocp --- #
@@ -252,7 +252,7 @@ def main():
 
     # --- Solve the ocp --- #
     sol_second = ocp_second.solve(solver_second)
-    sol_second.graphs()
+    #sol_second.graphs()
 
     # --- Show the results in a bioviz animation --- #
     sol_first.detailed_cost_values()
