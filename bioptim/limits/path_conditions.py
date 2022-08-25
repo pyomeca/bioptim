@@ -106,7 +106,7 @@ class PathCondition(np.ndarray):
                     f"Invalid number of column for InterpolationType.LINEAR_CONTINUOUS "
                     f"(ncols = {input_array.shape[1]}), the expected number of column is 2"
                 )
-        elif interpolation == InterpolationType.EACH_FRAME:
+        elif interpolation == InterpolationType.EACH_FRAME or interpolation == InterpolationType.ALL_POINTS:
             # This will be verified when the expected number of columns is set
             pass
         elif interpolation == InterpolationType.SPLINE:
@@ -215,7 +215,7 @@ class PathCondition(np.ndarray):
             or self.type == InterpolationType.CUSTOM
         ):
             self.n_shooting = n_shooting
-        elif self.type == InterpolationType.EACH_FRAME:
+        elif self.type == InterpolationType.EACH_FRAME or self.type == InterpolationType.ALL_POINTS:
             self.n_shooting = n_shooting + 1
         else:
             if self.n_shooting != n_shooting:
@@ -240,6 +240,12 @@ class PathCondition(np.ndarray):
             if self.shape[1] != self.n_shooting:
                 raise RuntimeError(
                     f"Invalid number of column for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
+                    f"the expected number of column is {self.n_shooting}"
+                )
+        elif self.type == InterpolationType.ALL_POINTS:
+            if self.shape[1] != self.n_shooting:
+                raise RuntimeError(
+                    f"Invalid number of column for InterpolationType.ALL_POINTS (ncols = {self.shape[1]}), "
                     f"the expected number of column is {self.n_shooting}"
                 )
 
@@ -274,6 +280,8 @@ class PathCondition(np.ndarray):
         elif self.type == InterpolationType.LINEAR:
             return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / self.n_shooting
         elif self.type == InterpolationType.EACH_FRAME:
+            return self[:, shooting_point]
+        elif self.type == InterpolationType.ALL_POINTS:
             return self[:, shooting_point]
         elif self.type == InterpolationType.SPLINE:
             spline = interp1d(self.t, self)
@@ -506,6 +514,16 @@ class Bounds(OptionGeneric):
         """
 
         return self.min.shape
+
+    @property
+    def n_shooting(self):
+        return self._n_shooting
+
+    @n_shooting.setter
+    def n_shooting(self, ns):
+        self._n_shooting = ns
+        self.min.n_shooting = ns
+        self.max.n_shooting = ns
 
 
 class BoundsList(UniquePerPhaseOptionList):
@@ -883,7 +901,11 @@ class NoisedInitialGuess(InitialGuess):
         self.n_shooting = n_shooting + 1
 
         if bounds is None:
-            raise RuntimeError("bounds must be specified to generate noised initial guess")
+            raise RuntimeError("'bounds' must be specified to generate noised initial guess")
+        if isinstance(initial_guess, InitialGuess):
+            interpolation = initial_guess.type
+        if interpolation == InterpolationType.ALL_POINTS:
+            bounds.n_shooting = initial_guess.shape[1]
         self.bounds = bounds
         self.n_elements = self.bounds.min.shape[0]
         self.bounds.check_and_adjust_dimensions(self.n_elements, n_shooting)
@@ -896,7 +918,11 @@ class NoisedInitialGuess(InitialGuess):
         self._create_noise_matrix(initial_guess=initial_guess, interpolation=interpolation, **parameters)
 
         super(NoisedInitialGuess, self).__init__(
-            initial_guess=self.noised_initial_guess, interpolation=InterpolationType.EACH_FRAME, **parameters
+            initial_guess=self.noised_initial_guess,
+            interpolation=interpolation
+            if interpolation == InterpolationType.ALL_POINTS  # interpolation should always be done at each data point
+            else InterpolationType.EACH_FRAME,
+            **parameters,
         )
 
     def _create_noise_matrix(
@@ -909,35 +935,39 @@ class NoisedInitialGuess(InitialGuess):
         Create the matrix of the initial guess + noise evaluated at each node
         """
 
-        bounds_min_matrix = np.zeros((self.n_elements, self.n_shooting))
-        bounds_max_matrix = np.zeros((self.n_elements, self.n_shooting))
-        for shooting_point in range(self.n_shooting):
-            bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
-            bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
-
-        if initial_guess is None:
-            init_instance = InitialGuess(
-                (bounds_min_matrix + bounds_max_matrix) / 2, interpolation=InterpolationType.EACH_FRAME
-            )
+        if isinstance(initial_guess, InitialGuess):
+            tp = initial_guess
         else:
-            if isinstance(initial_guess, InitialGuess):
-                tp = initial_guess
+            tp = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
+        if tp.type == InterpolationType.EACH_FRAME:
+            n_shooting = self.n_shooting - 1
+        elif tp.type == InterpolationType.ALL_POINTS:
+            n_shooting = tp.shape[1] - 1
+        else:
+            n_shooting = self.n_shooting
+
+        ns = n_shooting + 1 if interpolation == InterpolationType.ALL_POINTS else self.n_shooting
+        bounds_min_matrix = np.zeros((self.n_elements, ns))
+        bounds_max_matrix = np.zeros((self.n_elements, ns))
+        self.bounds.min.n_shooting = ns
+        self.bounds.max.n_shooting = ns
+        for shooting_point in range(ns):
+            if shooting_point == ns - 1:
+                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point + 1)
+                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point + 1)
             else:
-                tp = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
-            n_shooting = self.n_shooting - (1 if tp.type == InterpolationType.EACH_FRAME else 0)
-            tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
+                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
+                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
 
-            initial_guess_matrix = np.zeros((self.n_elements, self.n_shooting))
-            for shooting_point in range(self.n_shooting):
-                initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point)
-            init_instance = InitialGuess(initial_guess_matrix, interpolation=InterpolationType.EACH_FRAME)
+        tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
 
+        initial_guess_matrix = np.zeros((self.n_elements, ns))
+        for shooting_point in range(ns):
+            initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point)
         if self.seed:
             np.random.seed(self.seed)
-
-        # building the noise matrix
         self.noise = (
-            np.random.random((self.n_elements, self.n_shooting))  # random noise
+            np.random.random((self.n_elements, ns))  # random noise
             * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
             * (bounds_max_matrix - bounds_min_matrix)  # scale the noise to the range of bounds
             + bounds_min_matrix
@@ -946,9 +976,22 @@ class NoisedInitialGuess(InitialGuess):
             / 2  # shift the noise to the center of the range of bounds
         )
         # building the noised initial guess
+        if initial_guess is None:
+            init_instance = InitialGuess(
+                (bounds_min_matrix + bounds_max_matrix) / 2,
+                interpolation=interpolation
+                if interpolation == InterpolationType.ALL_POINTS
+                else InterpolationType.EACH_FRAME,
+            )
+        else:
+            init_instance = InitialGuess(
+                initial_guess_matrix,
+                interpolation=interpolation
+                if interpolation == InterpolationType.ALL_POINTS
+                else InterpolationType.EACH_FRAME,
+            )
         self.noised_initial_guess = init_instance.init + self.noise
-
-        for shooting_point in range(self.n_shooting):
+        for shooting_point in range(ns):
             too_small_index = np.where(
                 self.noised_initial_guess[:, shooting_point] < bounds_min_matrix[:, shooting_point] + self.bound_push
             )
