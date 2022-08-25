@@ -58,6 +58,10 @@ class Constraint(PenaltyOption):
         super(Constraint, self).__init__(
             penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params
         )
+
+        if isinstance(constraint, ImplicitConstraintFcn):
+            self.penalty_type = ConstraintType.IMPLICIT  # doing this puts the relevance of this enum in question
+
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
