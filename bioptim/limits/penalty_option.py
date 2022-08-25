@@ -497,6 +497,7 @@ class PenaltyOption(OptionGeneric):
         else:
             modified_fcn = (self.function(state_cx, control_cx, param_cx) - target_cx) ** exponent
 
+        # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
         modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
 
         # Do not use nlp.add_casadi_func because all of them must be registered

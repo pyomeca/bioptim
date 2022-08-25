@@ -340,7 +340,6 @@ class IpoptInterface(SolverInterface):
                         u = []
                     else:
                         x, u = get_x_and_u_at_idx(penalty, idx)
-                    # for the future bioptim adventurer: here lies the reason that a constraint has weight = 0.
                     p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
             out = vertcat(out, sum2(p))
         return out

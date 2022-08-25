@@ -8,7 +8,9 @@ def test_continuity_as_objective():
     np.random.seed(42)
     model_path = TestUtils.bioptim_folder() + "/examples/getting_started/models/pendulum_maze.bioMod"
 
-    ocp = ocp_module.prepare_ocp_first_pass(biorbd_model_path=model_path, final_time=1, n_shooting=30)
+    ocp = ocp_module.prepare_ocp_first_pass(
+        biorbd_model_path=model_path, final_time=1, n_shooting=30, state_continuity_weight=1000000
+    )
     sol = ocp.solve()
 
     expected = np.array([-0.1376, 2.9976372])

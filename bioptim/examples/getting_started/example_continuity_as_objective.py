@@ -3,12 +3,14 @@ An optimal control program consisting in a pendulum starting downward and ending
 the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
 
 There is a catch however: there are regions in which the weight of the pendulum cannot go.
-The problem is solved in two passes. In the first pass, continuity is an objective rather then a constraint.
+The problem is solved in two passes. In the first pass, continuity is an objective rather than a constraint.
 The goal of the first pass is to find quickly find a good initial guess. This initial guess is then given
 to the second pass in which continuity is a constraint to find the optimal solution.
 
 During the optimization process, the graphs are updated real-time. Finally, once it finished optimizing, it animates
 the model using the optimal solution.
+
+User might want to start reading the script by the `main` function to get a better feel.
 """
 
 from casadi import sqrt
@@ -49,6 +51,7 @@ def prepare_ocp_first_pass(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
+    state_continuity_weight: float,
     ode_solver: OdeSolver = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
@@ -64,6 +67,8 @@ def prepare_ocp_first_pass(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
+    state_continuity_weight: float
+        The weight on the continuity objective.
     ode_solver: OdeSolver = OdeSolver.RK4()
         Which type of OdeSolver to use
     use_sx: bool
@@ -127,9 +132,7 @@ def prepare_ocp_first_pass(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        # change the weight to observe the impact on the continuity of the solution
-        # or comment to see how the constrained program would fare
-        state_continuity_weight=1000000,
+        state_continuity_weight=state_continuity_weight,
     )
 
 
@@ -189,7 +192,7 @@ def prepare_ocp_second_pass(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
     constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    # HERE
+    # HERE (referenced in first pass)
     constraints.add(out_of_sphere, y=0.55, z=-0.85, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
@@ -221,7 +224,13 @@ def main():
     # --- Prepare the ocp --- #
     np.random.seed(123456)
     ocp_first = prepare_ocp_first_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod", final_time=5, n_shooting=500, n_threads=3
+        biorbd_model_path="models/pendulum_maze.bioMod",
+        final_time=5,
+        n_shooting=500,
+        # change the weight to observe the impact on the continuity of the solution
+        # or comment to see how the constrained program would fare
+        state_continuity_weight=1_000_000,
+        n_threads=3,
     )
     # ocp_first.print(to_console=True)
 
@@ -231,7 +240,7 @@ def main():
     solver_first.set_maximum_iterations(500)
 
     # Custom plots
-    ocp_first.add_plot_penalty(CostType.ALL)
+    ocp_first.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Solve the ocp --- #
     sol_first = ocp_first.solve(solver_first)
@@ -247,7 +256,7 @@ def main():
     )
 
     # Custom plots
-    ocp_second.add_plot_penalty(CostType.ALL)
+    ocp_second.add_plot_penalty(CostType.CONSTRAINTS)
 
     # --- Solve the ocp --- #
     sol_second = ocp_second.solve(solver_second)
