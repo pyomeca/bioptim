@@ -780,8 +780,18 @@ class OptimalControlProgram:
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
                     )
                 )
+
             elif penalty.derivative or penalty.explicit_derivative:
-                out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
+                if not np.all(
+                    x == 0
+                ):  # This is a hack to initialize the plots because it x is (N,2) and we need (N, M) in collocation
+                    state_value = x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]]
+                else:
+                    state_value = np.zeros(
+                        (x.shape[0], int(penalty.weighted_function_non_threaded.nnz_in(0) / x.shape[0]))
+                    )
+
+                out.append(penalty.weighted_function_non_threaded(state_value, u, p, penalty.weight, _target, dt))
             elif (
                 penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
