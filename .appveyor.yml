@@ -36,7 +36,6 @@ install:
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
   - conda list
   - sh: if [[ $CI_LINUX == true ]]; then black . -l120 --exclude "external/*" --check; fi
-
   
   # Install ACADOS on LINUX and MAC
   - cd external
