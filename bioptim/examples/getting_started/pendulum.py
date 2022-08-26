@@ -23,7 +23,6 @@ from bioptim import (
     CostType,
     Solver,
     IntegralApproximation,
-    DefectType,
 )
 
 
@@ -31,8 +30,8 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.IRK(defects_type=DefectType.IMPLICIT),
-    use_sx: bool = False,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
+    use_sx: bool = True,
     n_threads: int = 1,
 ) -> OptimalControlProgram:
     """
@@ -78,8 +77,8 @@ def prepare_ocp(
 
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()
-    tau_min, tau_max, tau_init= -100, 100, 0
-    u_bounds = Bounds([tau_min]* n_tau, [tau_max] * n_tau)
+    tau_min, tau_max, tau_init = -100, 100, 0
+    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
     u_init = InitialGuess([tau_init] * n_tau)
@@ -115,9 +114,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    solver = Solver.IPOPT(show_online_optim=False)
-    solver.set_maximum_iterations(3)
-    sol = ocp.solve(solver)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
