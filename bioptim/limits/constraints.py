@@ -8,7 +8,7 @@ import biorbd_casadi as biorbd
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
@@ -58,6 +58,10 @@ class Constraint(PenaltyOption):
         super(Constraint, self).__init__(
             penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params
         )
+
+        if isinstance(constraint, ImplicitConstraintFcn):
+            self.penalty_type = ConstraintType.IMPLICIT  # doing this puts the relevance of this enum in question
+
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
@@ -93,25 +97,25 @@ class Constraint(PenaltyOption):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
     def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
-        if self.constraint_type == ConstraintType.INTERNAL:
+        if self.penalty_type == PenaltyType.INTERNAL:
             pool = all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
-        elif self.constraint_type == ConstraintType.IMPLICIT:
+        elif self.penalty_type == ConstraintType.IMPLICIT:
             pool = all_pn.nlp.g_implicit if all_pn is not None and all_pn.nlp else all_pn.ocp.g_implicit
-        elif self.constraint_type == ConstraintType.USER:
+        elif self.penalty_type == PenaltyType.USER:
             pool = all_pn.nlp.g if all_pn is not None and all_pn.nlp else all_pn.ocp.g
         else:
             raise ValueError(f"Invalid constraint type {self.contraint_type}.")
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        if self.constraint_type == ConstraintType.INTERNAL:
+        if self.penalty_type == PenaltyType.INTERNAL:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        elif self.constraint_type == ConstraintType.IMPLICIT:
+        elif self.penalty_type == ConstraintType.IMPLICIT:
             g_to_add_to = nlp.g_implicit if nlp else ocp.g_implicit
-        elif self.constraint_type == ConstraintType.USER:
+        elif self.penalty_type == PenaltyType.USER:
             g_to_add_to = nlp.g if nlp else ocp.g
         else:
-            raise ValueError(f"Invalid Type of Constraint {self.constraint_type}")
+            raise ValueError(f"Invalid Type of Constraint {self.penalty_type}")
 
         if self.list_index < 0:
             for i, j in enumerate(g_to_add_to):
@@ -527,10 +531,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
 
         # Dynamics must be sound within phases
-        for i, nlp in enumerate(ocp.nlp):
-            penalty = Constraint(
-                ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, constraint_type=ConstraintType.INTERNAL
-            )
+        for nlp in ocp.nlp:
+            penalty = Constraint(ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
@@ -543,7 +545,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, pt in enumerate(ocp.phase_transitions):
+        for pt in ocp.phase_transitions:
             # Dynamics must be respected between phases
             pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
             pt.list_index = -1
@@ -559,7 +561,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, mnc in enumerate(ocp.multinode_constraints):
+        for mnc in ocp.multinode_constraints:
             # Equality constraint between nodes
             first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
             second_node_name = (
@@ -647,7 +649,7 @@ class ImplicitConstraintFcn(FcnEnum):
         return ConstraintFunction
 
 
-class ContinuityFunctions:
+class ContinuityConstraintFunctions:
     """
     Interface between continuity and constraint
     """
@@ -668,5 +670,5 @@ class ContinuityFunctions:
         # Dynamics must be respected between phases
         ConstraintFunction.inter_phase_continuity(ocp)
 
-        if ocp.multinode_constraints:
+        if ocp.multinode_constraints:  # TODO: they shouldn't be added here
             ConstraintFunction.node_equalities(ocp)

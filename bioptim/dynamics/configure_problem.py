@@ -237,7 +237,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
                 with_contact=with_contact,
             )
@@ -296,7 +296,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
 
@@ -355,7 +355,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
@@ -380,7 +380,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
 
@@ -505,7 +505,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
 

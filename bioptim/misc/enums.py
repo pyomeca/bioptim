@@ -119,13 +119,20 @@ class SolutionIntegrator(Enum):
     SCIPY_LSODA = "LSODA"
 
 
+class PenaltyType(Enum):  # it's more of a "Category" than "Type"
+    """
+    Selection of penalty types
+    """
+
+    USER = "user"
+    INTERNAL = "internal"
+
+
 class ConstraintType(Enum):
     """
     Selection of constraint types
     """
 
-    USER = "user"
-    INTERNAL = "internal"
     IMPLICIT = "implicit"
 
 
