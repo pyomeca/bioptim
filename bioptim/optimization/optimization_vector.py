@@ -146,7 +146,7 @@ class OptimizationVector:
             interpolation_type = None if original_x_init is None else original_x_init.type
 
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
-                v_init.concatenate(self._init_linear_interpolation())
+                v_init.concatenate(self._init_linear_interpolation(phase=phase))
             else:
                 v_init.concatenate(x_init)
 
@@ -155,10 +155,15 @@ class OptimizationVector:
         v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
 
-    def _init_linear_interpolation(self) -> InitialGuess:
+    def _init_linear_interpolation(self, phase: int) -> InitialGuess:
         """
         Perform linear interpolation between shooting nodes so that initial guess values are defined for each
         collocation point
+
+        Parameters
+        ----------
+        phase: int
+            The phase index
 
         Returns
         -------
@@ -168,7 +173,11 @@ class OptimizationVector:
         nlp = self.ocp.nlp[0]
         n_points = nlp.ode_solver.polynomial_degree + 1
         x_init_vector = np.zeros(self.n_all_x)
-        init_values = self.ocp.original_values["x_init"].init
+        init_values = (
+            self.ocp.original_values["x_init"][phase].init
+            if isinstance(self.ocp.original_values["x_init"], InitialGuessList)
+            else self.ocp.original_values["x_init"].init
+        )
         for index, state in enumerate(init_values):
             for frame in range(nlp.ns):
                 point = (index * nlp.ns + frame) * n_points + index
