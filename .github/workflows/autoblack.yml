@@ -17,7 +17,7 @@ jobs:
       - name: Install Black
         run: pip install black
       - name: Run black --check .
-        run: black . -l120 --exclude "external/*"
+        run: black --check .
       - name: If needed, commit black changes to the pull request
         if: failure()
         run: |
