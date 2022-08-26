@@ -137,6 +137,7 @@ class OptimizationVector:
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
         nlp = self.ocp.nlp[0]  # this could introduce a bug if one wants to use DMS and DC in the same multiphase OCP.
         for phase, x_init in enumerate(self.x_init):
+            nlp = self.ocp.nlp[phase]
 
             if isinstance(self.ocp.original_values["x_init"], InitialGuessList):
                 original_x_init = self.ocp.original_values["x_init"][phase]
