@@ -135,7 +135,7 @@ class OptimizationVector:
         The vector of all init
         """
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
-        nlp = self.ocp.nlp[0]
+        nlp = self.ocp.nlp[0]  # this could introduce a bug if one wants to use DMS and DC in the same multiphase OCP.
         for phase, x_init in enumerate(self.x_init):
 
             if isinstance(self.ocp.original_values["x_init"], InitialGuessList):
@@ -170,7 +170,7 @@ class OptimizationVector:
         The initial guess for the states variables for all collocation points
 
         """
-        nlp = self.ocp.nlp[0]
+        nlp = self.ocp.nlp[phase]
         n_points = nlp.ode_solver.polynomial_degree + 1
         x_init_vector = np.zeros(self.n_all_x)
         init_values = (
@@ -181,7 +181,7 @@ class OptimizationVector:
         for index, state in enumerate(init_values):
             for frame in range(nlp.ns):
                 point = (index * nlp.ns + frame) * n_points + index
-                steps = np.array(self.ocp.nlp[0].ode_solver.integrator(self.ocp, self.ocp.nlp[0])[0].step_time)
+                steps = np.array(self.ocp.nlp[phase].ode_solver.integrator(self.ocp, self.ocp.nlp[phase])[0].step_time)
                 x_init_vector[point : point + n_points] = state[frame] + (state[frame + 1] - state[frame]) * steps
             x_init_vector[point + n_points] = state[nlp.ns]
         return InitialGuess(x_init_vector)
