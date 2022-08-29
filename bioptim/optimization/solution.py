@@ -518,16 +518,18 @@ class Solution:
 
             # merge the index of the intermediate states
             all_intermediate_idx = []
+            previous_end = -1
+
             for p, idx in enumerate(idx_no_intermediate):
+                offset = (
+                    (nlp.ode_solver.polynomial_degree + 1)
+                    if type(nlp.ode_solver) is OdeSolver.COLLOCATION
+                    else 1
+                )
                 if p == 0:
                     all_intermediate_idx.extend([*idx[:-1]])
                 else:
                     previous_end = all_intermediate_idx[-1]
-                    offset = (
-                        (nlp.ode_solver.polynomial_degree + 1)
-                        if type(self.ocp.nlp[p].ode_solver) is OdeSolver.COLLOCATION
-                        else 1
-                    )
                     new_idx = [previous_end + i + offset for i in idx[0:-1]]
                     all_intermediate_idx.extend(new_idx)
             all_intermediate_idx.append(previous_end + idx[-1] + offset)  # add the last index
