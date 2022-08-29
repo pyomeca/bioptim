@@ -522,8 +522,8 @@ class Solution:
 
             for p, idx in enumerate(idx_no_intermediate):
                 offset = (
-                    (nlp.ode_solver.polynomial_degree + 1)
-                    if type(nlp.ode_solver) is OdeSolver.COLLOCATION
+                    (self.ocp.nlp[p].ode_solver.polynomial_degree + 1)
+                    if type(self.ocp.nlp[p].ode_solver) is OdeSolver.COLLOCATION
                     else 1
                 )
                 if p == 0:
