@@ -518,7 +518,7 @@ class Solution:
 
             # merge the index of the intermediate states
             all_intermediate_idx = []
-            previous_end = -1
+            previous_end = -1 * (self.ocp.nlp[0].ode_solver.polynomial_degree + 1) if type(self.ocp.nlp[0].ode_solver) is OdeSolver.COLLOCATION else -1
 
             for p, idx in enumerate(idx_no_intermediate):
                 offset = (
