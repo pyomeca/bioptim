@@ -8,7 +8,7 @@ from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
@@ -43,7 +43,7 @@ class MultinodeConstraint(Constraint):
         The index of the node in nlp pre
     multinode_constraint: Union[Callable, Any]
         The nature of the cost function is the multi node constraint
-    constraint_type: ConstraintType
+    penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
     """
 
@@ -107,7 +107,7 @@ class MultinodeConstraint(Constraint):
         self.node = self.first_node, self.second_node
         self.dt = 1
         self.node_idx = [0]
-        self.constraint_type = ConstraintType.INTERNAL
+        self.penalty_type = PenaltyType.INTERNAL
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         ocp = all_pn[0].ocp
@@ -191,15 +191,11 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
         The list of all the multi_node constraints prepared
         """
         full_phase_multinode_constraint = []
-        existing_phases = []
         for mnc in self:
-
-            idx_phase = mnc.phase_first_idx
             if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
                 raise RuntimeError("Phase index of the multinode_constraint is higher than the number of phases")
             if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
                 raise RuntimeError("Phase index of the multinode_constraint need to be positive")
-            existing_phases.append(idx_phase)
 
             if mnc.weight:
                 mnc.base = ObjectiveFunction.MayerFunction

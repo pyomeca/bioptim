@@ -79,9 +79,21 @@ class ConfigureProblem:
     """
 
     @staticmethod
-    def _get_kinematics_based_names(nlp, type):
+    def _get_kinematics_based_names(nlp, type: str) -> list[str]:
         """
         To modify the names of the variables added to the plots if there is quaternions
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        type: str
+            A string that refers to the decision variable such as (q, qdot, qddot, tau, etc...)
+
+        Returns
+        ----------
+        new_name: list[str]
+            The list of str to display on figures
         """
 
         if nlp.phase_mapping:
@@ -225,7 +237,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
                 with_contact=with_contact,
             )
@@ -284,7 +296,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
 
@@ -343,7 +355,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
@@ -368,7 +380,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
 
@@ -493,7 +505,7 @@ class ConfigureProblem:
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
+                penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
 
@@ -842,7 +854,11 @@ class ConfigureProblem:
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
 
-        legend = [f"{name}_{name_elements[idx]}" for idx in range(len(name_elements)) if idx is not None]
+        legend = [
+            f"{name}_{name_el}"
+            for idx, name_el in enumerate(name_elements)
+            if idx is not None and idx in axes_idx.map_idx
+        ]
 
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2

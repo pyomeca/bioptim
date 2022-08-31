@@ -133,6 +133,13 @@ def prepare_ocp(
     elif initial_guess == InterpolationType.EACH_FRAME:
         x = np.random.random((nq + nqdot, n_shooting + 1))
         u = np.random.random((ntau, n_shooting))
+    elif initial_guess == InterpolationType.ALL_POINTS:
+        if ode_solver.is_direct_collocation:
+            x = np.random.random((nq + nqdot, n_shooting * (ode_solver.polynomial_degree + 1) + 1))
+            u = np.random.random((ntau, n_shooting))
+        else:
+            x = np.random.random((nq + nqdot, n_shooting + 1))
+            u = np.random.random((ntau, n_shooting))
     elif initial_guess == InterpolationType.SPLINE:
         # Bound spline assume the first and last point are 0 and final respectively
         t = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))

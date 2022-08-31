@@ -156,7 +156,7 @@ class DynamicsFunctions:
                 )
             defects[: dq.shape[0], :] = horzcat(*dq_defects)
             # We modified on purpose the size of the tau to keep the zero in the defects in order to respect the dynamics
-            defects[dq.shape[0]:, :] = tau - tau_id
+            defects[dq.shape[0] :, :] = tau - tau_id
 
         return DynamicsEvaluation(dxdt, defects)
 
