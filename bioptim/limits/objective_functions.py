@@ -2,7 +2,7 @@ from typing import Callable, Union, Any
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node, IntegralApproximation
+from ..misc.enums import Node, IntegralApproximation, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
@@ -67,9 +67,14 @@ class Objective(PenaltyOption):
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         if isinstance(all_pn, (list, tuple)):
-            pool = all_pn[0].nlp.J if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.J
-        else:
+            all_pn = all_pn[0]
+
+        if self.penalty_type == PenaltyType.INTERNAL:
+            pool = all_pn.nlp.J_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.J_internal
+        elif self.penalty_type == PenaltyType.USER:
             pool = all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+        else:
+            raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
@@ -84,24 +89,26 @@ class Objective(PenaltyOption):
             A reference to the current phase of the ocp
         """
 
-        if nlp:
-            j_to_add_to = nlp.J
+        if self.penalty_type == PenaltyType.INTERNAL:
+            J_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+        elif self.penalty_type == PenaltyType.USER:
+            J_to_add_to = nlp.J if nlp else ocp.J
         else:
-            j_to_add_to = ocp.J
+            raise ValueError(f"Invalid Type of objective {self.penalty_type}")
 
         if self.list_index < 0:
             # Add a new one
-            for i, j in enumerate(j_to_add_to):
+            for i, j in enumerate(J_to_add_to):
                 if not j:
                     self.list_index = i
                     return
             else:
-                j_to_add_to.append([])
-                self.list_index = len(j_to_add_to) - 1
+                J_to_add_to.append([])
+                self.list_index = len(J_to_add_to) - 1
         else:
-            while self.list_index >= len(j_to_add_to):
-                j_to_add_to.append([])
-            j_to_add_to[self.list_index] = []
+            while self.list_index >= len(J_to_add_to):
+                J_to_add_to.append([])
+            J_to_add_to[self.list_index] = []
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         if self.type.get_type() == ObjectiveFunction.LagrangeFunction:
@@ -274,6 +281,68 @@ class ObjectiveFunction:
 
         ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, Union[list, tuple]) else new_target
 
+    @staticmethod
+    def inner_phase_continuity(ocp, weight: float):
+        """
+        Add continuity objectives between each nodes of a phase.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
+        # Dynamics must be sound within phases
+        for nlp in ocp.nlp:
+            penalty = Objective(
+                ObjectiveFcn.Mayer.CONTINUITY,
+                weight=weight,
+                quadratic=True,
+                node=Node.ALL_SHOOTING,
+                penalty_type=PenaltyType.INTERNAL,
+            )
+            penalty.add_or_replace_to_penalty_pool(ocp, nlp)
+
+    @staticmethod
+    def inter_phase_continuity(ocp):
+        """
+        Add phase transitions between two phases.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+        for pt in ocp.phase_transitions:
+            # Dynamics must be respected between phases
+            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
+
+    @staticmethod
+    def node_equalities(ocp):
+        """
+        Add multi node constraints between chosen phases.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+        for mnc in ocp.multinode_constraints:
+            # Equality constraint between nodes
+            first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
+            second_node_name = (
+                f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
+            )
+            mnc.name = (
+                f"NODE_EQUALITY "
+                f"Phase {mnc.phase_first_idx} Node {first_node_name}"
+                f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
+            )
+            mnc.list_index = -1
+            mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
+
 
 class ObjectiveFcn:
     """
@@ -334,6 +403,7 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
+        CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
@@ -379,3 +449,31 @@ class ObjectiveFcn:
             Returns the type of the penalty
             """
             return ObjectiveFunction.ParameterFunction
+
+
+class ContinuityObjectiveFunctions:
+    """
+    Interface between continuity and objective
+    """
+
+    @staticmethod
+    def continuity(ocp, weight):
+        """
+        The declaration of inner- and inter-phase continuity objectives
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
+        ObjectiveFunction.inner_phase_continuity(ocp, weight)
+
+        # Dynamics must be respected between phases
+        ObjectiveFunction.inter_phase_continuity(ocp)
+
+        # TODO: multinode_anything shouldn't be handled by "continuity".
+        # Keeping multinode_constraint here because otherwise they wouldn't be added when state continuity is an
+        # objective, should REALLY be changed.
+        if ocp.multinode_constraints:
+            ObjectiveFunction.node_equalities(ocp)

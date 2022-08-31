@@ -20,10 +20,16 @@ from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.solver_options import Solver
-from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
+from ..limits.constraints import (
+    ConstraintFunction,
+    ConstraintFcn,
+    ConstraintList,
+    Constraint,
+    ContinuityConstraintFunctions,
+)
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import MultinodeConstraintList
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
 from ..limits.path_conditions import InterpolationType
@@ -44,7 +50,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.8.5", "1.9.0")
+check_version(biorbd, "1.8.5", "1.10.0")
 
 
 class OptimalControlProgram:
@@ -152,6 +158,7 @@ class OptimalControlProgram:
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
+        state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
         skip_continuity: bool = False,
@@ -242,6 +249,7 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "multinode_constraints": multinode_constraints,
+            "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
         }
@@ -433,12 +441,16 @@ class OptimalControlProgram:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
-        self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
+        self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
+        # TODO: multinode_whatever should be handled the same way as constraints and objectives
         self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
-            # Inner- and inter-phase continuity
-            ContinuityFunctions.continuity(self)
+            if not state_continuity_weight:
+                # Inner- and inter-phase continuity
+                ContinuityConstraintFunctions.continuity(self)
+            else:
+                ContinuityObjectiveFunctions.continuity(self, state_continuity_weight)
 
         self.isdef_x_init = False
         self.isdef_u_init = False
@@ -768,8 +780,18 @@ class OptimalControlProgram:
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
                     )
                 )
+
             elif penalty.derivative or penalty.explicit_derivative:
-                out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
+                if not np.all(
+                    x == 0
+                ):  # This is a hack to initialize the plots because it x is (N,2) and we need (N, M) in collocation
+                    state_value = x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]]
+                else:
+                    state_value = np.zeros(
+                        (x.shape[0], int(penalty.weighted_function_non_threaded.nnz_in(0) / x.shape[0]))
+                    )
+
+                out.append(penalty.weighted_function_non_threaded(state_value, u, p, penalty.weight, _target, dt))
             elif (
                 penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
