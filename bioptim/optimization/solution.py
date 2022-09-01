@@ -291,7 +291,7 @@ class Solution:
         self.real_time_to_optimize = None
         self.iterations = None
         self.status = None
-        self.time_vector = None
+        self._time_vector = None
 
         # Extract the data now for further use
         self._states, self._controls, self.parameters = {}, {}, {}
@@ -327,6 +327,8 @@ class Solution:
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+
+            self._time_vector = self._generate_time(time_phase=self.phase_time)
 
         def init_from_initial_guess(_sol: list):
             """
@@ -466,7 +468,7 @@ class Solution:
         new.phase_time = deepcopy(self.phase_time)
         new.ns = deepcopy(self.ns)
 
-        new.time_vector = deepcopy(self.time_vector)
+        new._time_vector = deepcopy(self._time_vector)
 
         if skip_data:
             new._states, new._controls, new.parameters = [], [], {}
@@ -573,6 +575,24 @@ class Solution:
             )
         return self._controls[0] if len(self._controls) == 1 else self._controls
 
+    @property
+    def time(self) -> Union[list, dict]:
+        """
+        Returns the time vector in list if more than one phases, otherwise it returns the only dict
+
+        Returns
+        -------
+        The time instant vector
+        """
+
+        if not self._time_vector:
+            raise RuntimeError(
+                "There is no time vector in the solution. "
+                "This may happen in "
+                "previously integrated and interpolated structure"
+            )
+        return self._time_vector[0] if len(self._time_vector) == 1 else self._time_vector
+
     def integrate(
         self,
         shooting_type: Shooting = Shooting.SINGLE_CONTINUOUS,
@@ -633,6 +653,97 @@ class Solution:
         out.is_integrated = True
 
         return out
+
+    def _generate_time(
+        self,
+        time_phase: np.ndarray,
+        keep_intermediate_points: bool = None,
+        continuous: bool = True,
+        merge_phases: bool = False,
+    ) -> Union[np.ndarray, list[np.ndarray]]:
+        """
+        Generate time integration vector
+
+        Parameters
+        ----------
+        time_phase: np.ndarray
+            Time vector of the phase
+        keep_intermediate_points
+            If the integration should return the intermediate values of the integration [False]
+            or only keep the node [True] effective keeping the initial size of the states
+        continuous: bool
+            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
+            arrival node and the beginning of the next one are expected to be almost equal when the problem converged
+        merge_phases: bool
+            If the phase should be merged in a unique phase
+
+        Returns
+        -------
+        t_integrated: np.ndarray or list of np.ndarray
+        The time vector
+        """
+
+        time_vector = []
+
+        for p, nlp in enumerate(self.ocp.nlp):
+            is_direct_collocation = nlp.ode_solver.is_direct_collocation
+
+            if keep_intermediate_points is None:
+                keep_intermediate_points = True if is_direct_collocation else False
+
+            if is_direct_collocation:
+                # time is not linear because of the collocation points
+                step_times = (
+                    np.array(nlp.dynamics[p].step_time + [1])
+                    if keep_intermediate_points
+                    else np.array(nlp.dynamics[p].step_time + [1])[[0, -1]]
+                )
+
+            else:
+                # time is linear in the case of direct multiple shooting
+                step_times = (
+                    np.linspace(0, nlp.dynamics[p].step_time, nlp.ode_solver.steps + 1)
+                    if keep_intermediate_points
+                    else np.array([0, nlp.dynamics[p].step_time])
+                )
+            # it does not take the last nodes of each interval
+            if continuous:
+                step_times = step_times[:-1]
+
+            dt_ns = time_phase[p + 1] / nlp.ns
+            time = [(step_times * dt_ns + i * dt_ns).tolist() for i in range(nlp.ns)]
+            # flatten the list of list into a list of floats
+            flat_time = [st for sub_time in time for st in sub_time]
+
+            # add the final time of the phase
+            if continuous:
+                flat_time += [nlp.ns * dt_ns]
+
+            time_vector.append(np.array(flat_time))
+
+        if merge_phases:
+            return self.__concatenate_decision_variables(time_vector)
+        else:
+            return time_vector
+
+    @staticmethod
+    def __concatenate_decision_variables(z: list) -> np.ndarray:
+        """
+        This function concatenates the decision variables of the phases of the system
+        into a single array, ommitting the last element of each phase except for the last one.
+
+        Parameters
+        ----------
+        z : list
+            list of decision variables of the phases of the system
+
+        Returns
+        -------
+        z_concatenated : np.ndarray
+            array of the decision variables of the phases of the system concatenated
+        """
+        final_tuple = [y[:, :-1] if i < (len(z) - 1) else y for i, y in enumerate(z)]
+        return np.hstack(final_tuple)
 
     def _generate_time_vector(
         self,
