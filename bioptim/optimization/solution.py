@@ -715,7 +715,7 @@ class Solution:
             if continuous:
                 flat_time += [nlp.ns * dt_ns]
 
-            time_vector.append(np.array(flat_time))
+            time_vector.append(sum(time_phase[:p+1]) + np.array(flat_time))
 
         if merge_phases:
             return self.__concatenate_decision_variables(time_vector)
