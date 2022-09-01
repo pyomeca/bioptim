@@ -775,16 +775,16 @@ class Solution:
 
         t_integrated = []
         last_t = 0
-        for phase_idx, nlp in enumerate(self.ocp.nlp):
+        for p, nlp in enumerate(self.ocp.nlp):
             n_int_steps = (
                 nlp.ode_solver.steps_scipy if integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
             )
-            dt_ns = time_phase[phase_idx + 1] / nlp.ns
+            dt_ns = time_phase[p + 1] / nlp.ns
             time_phase_integrated = []
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
                 if nlp.ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT:
-                    time_phase_integrated += (np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int).tolist()
+                    time_phase_integrated += (np.array(nlp.dynamics[p].step_time) * dt_ns + last_t_int).tolist()
                 else:
                     time_interval = np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1)
                     if continuous and _ != nlp.ns - 1:
@@ -800,11 +800,11 @@ class Solution:
                     time_phase_integrated += [time_phase_integrated[-1]]
 
                 last_t_int += dt_ns
-            if continuous and merge_phases and phase_idx != len(self.ocp.nlp) - 1:
+            if continuous and merge_phases and p != len(self.ocp.nlp) - 1:
                 t_integrated += time_phase_integrated[:-1]
             else:
                 t_integrated += time_phase_integrated
-            last_t += time_phase[phase_idx + 1]
+            last_t += time_phase[p + 1]
         return t_integrated
 
     def __perform_integration(
