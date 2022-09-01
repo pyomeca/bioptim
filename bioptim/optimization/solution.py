@@ -655,7 +655,6 @@ class Solution:
 
     def _generate_ocp_time(
         self,
-        time_phase: np.ndarray,
         keep_intermediate_points: bool = None,
         continuous: bool = True,
         merge_phases: bool = False,
@@ -665,8 +664,6 @@ class Solution:
 
         Parameters
         ----------
-        time_phase: np.ndarray
-            Time vector of the phase
         keep_intermediate_points
             If the integration should return the intermediate values of the integration [False]
             or only keep the node [True] effective keeping the initial size of the states
@@ -683,7 +680,7 @@ class Solution:
         """
 
         time_vector = []
-
+        time_phase = self.phase_time
         for p, nlp in enumerate(self.ocp.nlp):
             is_direct_collocation = nlp.ode_solver.is_direct_collocation
 
