@@ -743,14 +743,29 @@ class Solution:
 
     def _generate_time_vector(
         self,
-        time_phase,
-        keep_intermediate_points: bool,
-        continuous: bool,
-        merge_phases: bool,
-        integrator: SolutionIntegrator,
+        time_phase: np.ndarray,
+        keep_intermediate_points: bool = False,
+        continuous: bool = False,
+        merge_phases: bool = False,
+        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
     ) -> Union[np.ndarray, list[np.ndarray]]:
         """
         Generate time integration vector
+
+        Parameters
+        ----------
+        time_phase: np.ndarray
+            Time vector of the phase
+        keep_intermediate_points
+            If the integration should return the intermediate values of the integration [False]
+            or only keep the node [True] effective keeping the initial size of the states
+        continuous: bool
+            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
+            arrival node and the beginning of the next one are expected to be almost equal when the problem converged
+        merge_phases: bool
+            If the phase should be merged in a unique phase
+        integrator: SolutionIntegrator
+            Use the ode defined by OCP or use a separate integrator provided by scipy
 
         Returns
         -------
