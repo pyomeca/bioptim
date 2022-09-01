@@ -327,8 +327,7 @@ class Solution:
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
-
-            self._time_vector = self._generate_time(time_phase=self.phase_time)
+            self._time_vector = self._generate_ocp_time()
 
         def init_from_initial_guess(_sol: list):
             """
@@ -654,7 +653,7 @@ class Solution:
 
         return out
 
-    def _generate_time(
+    def _generate_ocp_time(
         self,
         time_phase: np.ndarray,
         keep_intermediate_points: bool = None,
