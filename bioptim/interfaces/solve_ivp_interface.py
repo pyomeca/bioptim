@@ -10,6 +10,7 @@ def solve_ivp_interface(
     u: np.ndarray,
     params: np.ndarray,
     method: str = "RK45",
+    keep_intermediate_points: bool = False,
 ):
     """
     This function solves the initial value problem with scipy.integrate.solve_ivp
@@ -28,6 +29,8 @@ def solve_ivp_interface(
         array of parameters
     method : str, optional
         method to use for the integration, by default "RK45"
+    keep_intermediate_points : bool
+        whether to keep the intermediate points or not, by default False
 
     Returns
     -------
@@ -35,6 +38,14 @@ def solve_ivp_interface(
         array of the solution of the system at the times t_eval
 
     """
+    if keep_intermediate_points:
+        # repeat values of u to match the size of t_eval
+        u = np.concatenate((
+            np.repeat(u[:, :-1], t_eval[:-1].shape[0] / u[: , :-1].shape[1], axis=1),
+            u[:, -1:]),
+            axis=1,
+        )
+
     t_span = [t_eval[0], t_eval[-1]]
     integrated_sol = solve_ivp(
         lambda t, x: np.array(dynamics_func(x, piecewise_constant_u(t, t_eval, u), params))[:, 0],
