@@ -720,7 +720,7 @@ class Solution:
             return time_vector
 
     @staticmethod
-    def __define_step_times(
+    def _define_step_times(
         dynamics_step_time: list,
         ode_solver_steps: int,
         keep_intermediate_points: bool = None,
@@ -759,11 +759,7 @@ class Solution:
 
         else:
             # time is linear in the case of direct multiple shooting
-            step_times = (
-                np.linspace(0, dynamics_step_time, ode_solver_steps + 1)
-                if keep_intermediate_points
-                else np.array([0, dynamics_step_time])
-            )
+            step_times = np.linspace(0, 1, ode_solver_steps + 1) if keep_intermediate_points else np.array([0, 1])
         # it does not take the last nodes of each interval
         if continuous:
             step_times = step_times[:-1]
