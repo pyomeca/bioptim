@@ -1126,7 +1126,7 @@ class Solution:
             The shooting type to use
         integrator: SolutionIntegrator
             The integrator to use
-        p: int
+        phase: int
             The phase of the ocp to consider
 
         Returns
@@ -1135,9 +1135,10 @@ class Solution:
         """
         # Get the first frame of the phase
         if shooting_type == Shooting.SINGLE_CONTINUOUS:
-            if p != 0:
-                u0 = self._controls[p - 1]["all"][:, -1]
-                val = self.ocp.phase_transitions[p - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
+            if phase != 0:
+                u0 = self._controls[phase - 1]["all"][:, -1]
+                params = self.parameters["all"]
+                val = self.ocp.phase_transitions[phase - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
                 if val.shape[0] != x0.shape[0]:
                     raise RuntimeError(
                         f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -1146,13 +1147,13 @@ class Solution:
                     )
                 x0 += np.array(val)[:, 0]
                 return x0
+            else:
+                return x0
         else:
-            col = (
-                slice(0, n_steps)
-                if nlp.ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT
-                else 0
-            )
-            return self._states[p]["all"][:, col]
+            if self.ocp.nlp[phase].ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT:
+                return self._states[phase]["all"][:, slice(0, n_steps)]
+            else:
+                return self._states[phase]["all"][:, 0]
 
     def __get_phase_controls(self, p: int) -> np.ndarray:
         """
