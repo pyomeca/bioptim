@@ -117,6 +117,9 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
         """
         return previous_t(t, t_eval) - 1 if previous_t(t, t_eval) == len(t_eval) - 1 else previous_t(t, t_eval)
 
+    if t_eval.shape[0] != u.shape[1]:
+        raise ValueError("t_eval and u must have the same length, please report the bug to the developers")
+
     return u[:, previous_t_except_the_last_one(t, t_eval)]
 
 
