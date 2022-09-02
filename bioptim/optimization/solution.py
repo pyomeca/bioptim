@@ -593,12 +593,12 @@ class Solution:
         return self._time_vector[0] if len(self._time_vector) == 1 else self._time_vector
 
     def integrate(
-            self,
-            shooting_type: Shooting = Shooting.SINGLE_CONTINUOUS,
-            keep_intermediate_points: bool = False,
-            merge_phases: bool = False,
-            continuous: bool = True,
-            integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        self,
+        shooting_type: Shooting = Shooting.SINGLE_CONTINUOUS,
+        keep_intermediate_points: bool = False,
+        merge_phases: bool = False,
+        continuous: bool = True,
+        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
     ) -> Any:
         """
         Integrate the states
@@ -654,10 +654,10 @@ class Solution:
         return out
 
     def _generate_ocp_time(
-            self,
-            keep_intermediate_points: bool = None,
-            continuous: bool = True,
-            merge_phases: bool = False,
+        self,
+        keep_intermediate_points: bool = None,
+        continuous: bool = True,
+        merge_phases: bool = False,
     ) -> Union[np.ndarray, list[np.ndarray]]:
         """
         Generate time integration vector
@@ -701,7 +701,7 @@ class Solution:
             if continuous:
                 flat_time += [nlp.ns * dt_ns]
 
-            time_vector.append(sum(time_phase[:p + 1]) + np.array(flat_time))
+            time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time))
 
         if merge_phases:
             return self.__concatenate_decision_variables(time_vector)
@@ -710,11 +710,12 @@ class Solution:
 
     @staticmethod
     def __define_step_times(
-            dynamics_step_time: list,
-            ode_solver_steps: int,
-            keep_intermediate_points: bool = None,
-            continuous: bool = True,
-            is_direct_collocation: bool = None) -> np.ndarray:
+        dynamics_step_time: list,
+        ode_solver_steps: int,
+        keep_intermediate_points: bool = None,
+        continuous: bool = True,
+        is_direct_collocation: bool = None,
+    ) -> np.ndarray:
         """
         Define the time steps for the integration of the whole phase
 
@@ -778,12 +779,12 @@ class Solution:
         return np.hstack(final_tuple)
 
     def _generate_time_vector(
-            self,
-            time_phase: np.ndarray,
-            keep_intermediate_points: bool = False,
-            continuous: bool = False,
-            merge_phases: bool = False,
-            integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        self,
+        time_phase: np.ndarray,
+        keep_intermediate_points: bool = False,
+        continuous: bool = False,
+        merge_phases: bool = False,
+        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
     ) -> Union[np.ndarray, list[np.ndarray]]:
         """
         Generate time integration vector
@@ -910,7 +911,7 @@ class Solution:
             out._states[p]["all"] = np.ndarray((n_states, out.ns[p] + 1))
 
             x0 = self.__get_first_frame_states(x0, shooting_type, integrator, p=p)
-            u = out._controls[p]['all'][:, :]
+            u = out._controls[p]["all"][:, :]
 
             dynamics_func = nlp[p].dynamics_func
 
@@ -971,9 +972,9 @@ class Solution:
 
         return out
 
-    @staticmethod
-    def __piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np.ndarray) -> float:
-        """
+    def __get_first_frame_states(
+        self, x0: np.ndarray, shooting_type: Shooting, integrator: SolutionIntegrator, p: int
+    ) -> np.ndarray:
         This function computes the values of u at any time t as piecewise constant function
 
         Parameters
@@ -1075,7 +1076,6 @@ class Solution:
 
         return integrated_sol.y
 
-    def __get_first_frame_states(self, x0: np.ndarray, shooting_type: Shooting, integrator: SolutionIntegrator, p: int)->np.ndarray:
         """
             Get the first frame of the states for a given phase.
         Parameters
@@ -1104,16 +1104,17 @@ class Solution:
                         f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
                         f"please integrate with Shooting.SINGLE"
                     )
-                return x0 += np.array(val)[:, 0]
+                x0 += np.array(val)[:, 0]
+                return x0
         else:
             col = (
                 slice(0, n_steps)
                 if nlp.ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT
                 else 0
             )
-            return x0 = self._states[p]["all"][:, col]
+            return self._states[p]["all"][:, col]
 
-    def __get_phase_controls(self, p: int)->np.ndarray:
+    def __get_phase_controls(self, p: int) -> np.ndarray:
         """
             Get the controls for a given phase.
         Parameters
@@ -1132,16 +1133,17 @@ class Solution:
                 raise NotImplementedError("Linear continuous controls are not implemented yet")
                 # return self._controls[p]["all"][:, s: s + 2]
             else:
-                raise NotImplementedError(f"ControlType {self.ocp.nlp[p].control_type} " f"not yet implemented in integrating")
-
+                raise NotImplementedError(
+                    f"ControlType {self.ocp.nlp[p].control_type} " f"not yet implemented in integrating"
+                )
 
     def __perform_integration(
-            self,
-            shooting_type: Shooting,
-            keep_intermediate_points: bool,
-            continuous: bool,
-            merge_phases: bool,
-            integrator: SolutionIntegrator,
+        self,
+        shooting_type: Shooting,
+        keep_intermediate_points: bool,
+        continuous: bool,
+        merge_phases: bool,
+        integrator: SolutionIntegrator,
     ):
         """
         This function performs the integration of the system dynamics
@@ -1228,7 +1230,7 @@ class Solution:
                 if nlp.control_type == ControlType.CONSTANT:
                     u = self._controls[p]["all"][:, s]
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    u = self._controls[p]["all"][:, s: s + 2]
+                    u = self._controls[p]["all"][:, s : s + 2]
                 else:
                     raise NotImplementedError(f"ControlType {nlp.control_type} " f"not yet implemented in integrating")
 
@@ -1357,7 +1359,7 @@ class Solution:
                 if key == "all":
                     continue
                 n_elements = data_states[p][key].shape[0]
-                out._states[p][key] = out._states[p]["all"][offset: offset + n_elements]
+                out._states[p][key] = out._states[p]["all"][offset : offset + n_elements]
                 offset += n_elements
 
         out.is_interpolated = True
@@ -1478,12 +1480,12 @@ class Solution:
                 raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
 
     def graphs(
-            self,
-            automatically_organize: bool = True,
-            show_bounds: bool = False,
-            show_now: bool = True,
-            shooting_type: Shooting = Shooting.MULTIPLE,
-            integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        self,
+        automatically_organize: bool = True,
+        show_bounds: bool = False,
+        show_now: bool = True,
+        shooting_type: Shooting = Shooting.MULTIPLE,
+        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
     ):
         """
         Show the graphs of the simulation
@@ -1511,7 +1513,7 @@ class Solution:
             plt.show()
 
     def animate(
-            self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any
+        self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any
     ) -> Union[None, list]:
         """
         Animate the simulation
@@ -1566,8 +1568,8 @@ class Solution:
             for objective in self.ocp.nlp[idx_phase].J:
                 if objective.target is not None:
                     if objective.type in (
-                            ObjectiveFcn.Mayer.TRACK_MARKERS,
-                            ObjectiveFcn.Lagrange.TRACK_MARKERS,
+                        ObjectiveFcn.Mayer.TRACK_MARKERS,
+                        ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
                         all_bioviz[-1].load_experimental_markers(objective.target[0])
 
@@ -1632,13 +1634,13 @@ class Solution:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
                     if (
-                            penalty.derivative
-                            or penalty.explicit_derivative
-                            or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        penalty.derivative
+                        or penalty.explicit_derivative
+                        or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                     ):
                         col_x_idx.append((idx + 1) * steps)
                         if (
-                                penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
+                            penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
                         ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                             col_u_idx.append((idx + 1))
                     elif penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
@@ -1650,8 +1652,8 @@ class Solution:
                     if penalty.target is None:
                         target = []
                     elif (
-                            penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                            or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                        penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
                     ):
                         target = np.vstack(
                             (
@@ -1752,9 +1754,9 @@ class Solution:
             # Todo, min/mean/max
             print(f"\n--------- CONSTRAINTS ---------")
             if (
-                    print_penalty_list(None, ocp.g_internal, True)
-                    + print_penalty_list(None, ocp.g_implicit, True)
-                    + print_penalty_list(None, ocp.g, True)
+                print_penalty_list(None, ocp.g_internal, True)
+                + print_penalty_list(None, ocp.g_implicit, True)
+                + print_penalty_list(None, ocp.g, True)
             ):
                 print("")
 
