@@ -658,11 +658,18 @@ class Solution:
         )
 
         if merge_phases:
+            out.is_merged = True
             if continuous:
-                out = out.interpolate(sum(out.ns) + 1)
+                # todo: what is interpolation?
+                # out = out.interpolate(sum(out.ns) + 1)
+                out._states = self.__concatenate_decision_variables_dict(out._states)
+                # out._controls = self.__concatenate_decision_variables_dict(out._controls)
+                out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
+                out.ns = sum(out.ns)
+                out._time_vector = [self.__concatenate_decision_variables(out._time_vector)]
             else:
                 out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
-                out.is_merged = True
+                # out.is_merged = True
         out.is_integrated = True
 
         return out
