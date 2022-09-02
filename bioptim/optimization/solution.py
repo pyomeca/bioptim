@@ -1239,6 +1239,7 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             param_scaling = nlp.parameters.scaling
             n_states = self._states[p]["all"].shape[0]
+
             n_steps = nlp.ode_solver.steps_scipy if integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
             if not continuous:
                 n_steps += 1
