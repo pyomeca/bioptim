@@ -658,6 +658,7 @@ class Solution:
         keep_intermediate_points: bool = None,
         continuous: bool = True,
         merge_phases: bool = False,
+        shooting_type: Shooting = None,
     ) -> Union[np.ndarray, list[np.ndarray]]:
         """
         Generate time integration vector
@@ -672,20 +673,25 @@ class Solution:
             arrival node and the beginning of the next one are expected to be almost equal when the problem converged
         merge_phases: bool
             If the phase should be merged in a unique phase
+        shooting_type: Shooting
+            Which type of integration such as Shooting.SINGLE_CONTINUOUS or Shooting.MULTIPLE,
+            default is None but behaves as Shooting.SINGLE.
 
         Returns
         -------
         t_integrated: np.ndarray or list of np.ndarray
         The time vector
         """
+        if shooting_type is None:
+            shooting_type = Shooting.SINGLE
 
         time_vector = []
         time_phase = self.phase_time
         for p, nlp in enumerate(self.ocp.nlp):
             is_direct_collocation = nlp.ode_solver.is_direct_collocation
 
-            step_times = self.__define_step_times(
-                dynamics_step_time=nlp.dynamics_func[p].step_time,
+            step_times = self._define_step_times(
+                dynamics_step_time=nlp.dynamics[0].step_time,
                 ode_solver_steps=nlp.ode_solver.steps,
                 is_direct_collocation=is_direct_collocation,
                 keep_intermediate_points=keep_intermediate_points,
@@ -694,8 +700,13 @@ class Solution:
 
             dt_ns = time_phase[p + 1] / nlp.ns
             time = [(step_times * dt_ns + i * dt_ns).tolist() for i in range(nlp.ns)]
-            # flatten the list of list into a list of floats
-            flat_time = [st for sub_time in time for st in sub_time]
+
+            if shooting_type == Shooting.MULTIPLE:
+                # keep all the intervals in separate lists
+                flat_time = time
+            else:
+                # flatten the list of list into a list of floats
+                flat_time = [st for sub_time in time for st in sub_time]
 
             # add the final time of the phase
             if continuous:
