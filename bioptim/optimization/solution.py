@@ -834,8 +834,7 @@ class Solution:
         """
         if len(z[0].shape):
             final_tuple = [
-                (y[:, :-1] if len(y.shape) == 2 else y[:-1])
-                if i < (len(z) - 1) else y for i, y in enumerate(z)
+                (y[:, :-1] if len(y.shape) == 2 else y[:-1]) if i < (len(z) - 1) else y for i, y in enumerate(z)
             ]
         return np.hstack(final_tuple)
 
