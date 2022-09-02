@@ -118,3 +118,46 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
         return previous_t(t, t_eval) - 1 if previous_t(t, t_eval) == len(t_eval) - 1 else previous_t(t, t_eval)
 
     return u[:, previous_t_except_the_last_one(t, t_eval)]
+
+
+def solve_ivp_bioptim_interface(
+    dynamics_func: list[Callable],
+    keep_intermediate_points: bool,
+    x0: np.ndarray,
+    u: np.ndarray,
+    params: np.ndarray,
+    param_scaling: np.ndarray,
+):
+    """
+    This function solves the initial value problem with scipy.integrate.solve_ivp
+
+    Parameters
+    ----------
+    dynamics_func : list[Callable]
+        function that computes the dynamics of the system
+    keep_intermediate_points : bool
+        whether to keep the intermediate points or not
+    x0 : np.ndarray
+        array of initial conditions
+    u : np.ndarray
+        arrays of controls u evaluated at t_eval
+    params : np.ndarray
+        array of parameters
+    param_scaling : np.ndarray
+        array of scaling factors for the parameters
+
+    Returns
+    -------
+    y: np.ndarray
+        array of the solution of the system at the times t_eval
+
+    """
+    dynamics_output = "xall" if keep_intermediate_points else "xf"
+    y = x0[:, np.newaxis]
+    for s, func in enumerate(dynamics_func):
+        y = np.concatenate(
+            (y, np.array(func(x0=x0, p=u[:, s], params=params / param_scaling)[dynamics_output])), axis=1
+        )
+        x0 = y[:, -1]
+
+    return y
