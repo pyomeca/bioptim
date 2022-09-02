@@ -1012,112 +1012,42 @@ class Solution:
 
         return out
 
-    def __get_first_frame_states(
-        self, x0: np.ndarray, shooting_type: Shooting, integrator: SolutionIntegrator, p: int
-    ) -> np.ndarray:
-        This function computes the values of u at any time t as piecewise constant function
-
-        Parameters
-        ----------
-        t : float
-            time to evaluate the piecewise constant function
-        t_eval : Union[np.ndarray, List[float]]
-            array of times t the controls u are evaluated at
-        u : np.ndarray
-            arrays of controls u evaluated at t_eval
-
-        Returns
-        -------
-        u_t: float
-            value of u at time t
-        """
-        def previous_t(t: float, t_eval: Union[np.ndarray, List[float]]) -> int:
-            """
-            find the closest time in t_eval to t
-
-            Parameters
-            ----------
-            t : float
-                time to compare to t_eval
-            t_eval : Union[np.ndarray, List[float]]
-                array of times to compare to t
-
-            Returns
-            -------
-            idx: int
-                index of the closest previous time in t_eval to t
-            """
-            diff = t_eval - t
-            # keep only positive values
-            diff = diff[diff <= 0]
-            return int(np.argmin(np.abs(diff)))
-
-
-        def previous_t_except_the_last_one(t: float, t_eval: Union[np.ndarray, List[float]]) -> int:
-            """
-            find the closest time in t_eval to t
-
-            Parameters
-            ----------
-            t : float
-                time to compare to t_eval
-            t_eval : Union[np.ndarray, List[float]]
-                array of times to compare to t
-
-            Returns
-            -------
-            idx: int
-                index of the closest previous time in t_eval to t
-            """
-            return previous_t(t, t_eval) - 1 if previous_t(t, t_eval) == len(
-                t_eval) - 1 else previous_t(t, t_eval)
-
-        return u[:, previous_t_except_the_last_one(t, t_eval)]
-
     @staticmethod
-    def __solve_ivp_interface(dynamics_func: Callable,
-        t_eval: Union[np.ndarray, List[float]],
-        x0: np.ndarray,
-        u: np.ndarray,
-        params: np.ndarray,
-        method: str = "RK45"):
+    def __get_integration_steps(
+        ode_solver: OdeSolver(),
+        integrator: SolutionIntegrator,
+        continuous: bool,
+    ):
         """
-        This function solves the initial value problem with scipy.integrate.solve_ivp
+        This function returns the number of integration steps for each shooting interval for a given nlp and integrator
 
         Parameters
         ----------
-        dynamics_func : Callable
-            function that computes the dynamics of the system
-        t_eval : Union[np.ndarray, List[float]]
-            array of times t the controls u are evaluated at
-        x0 : np.ndarray
-            array of initial conditions
-        u : np.ndarray
-            arrays of controls u evaluated at t_eval
-        params : np.ndarray
-            array of parameters
-        method : str, optional
-            method to use for the integration, by default "RK45"
-
+        ode_solver : OdeSolver
+            The OdeSolver of the nlp
+        integrator: bool
+            The integrator used for the integration
+        continuous: bool
+            If the integration is continuous or not
         Returns
         -------
-        y: np.ndarray
-            array of the solution of the system at the times t_eval
-
+        n_steps : int
+            The number of integration steps for each shooting interval
         """
-        t_span = [t_eval[0], t_eval[-1]]
-        integrated_sol = solve_ivp(
-            lambda t, x: np.array(dynamics_func(x, self.__piecewise_constant_u(t, t_eval, u), params))[:, 0],
-            t_span=t_span,
-            y0=x0,
-            t_eval=t_eval,
-            method=method,
-        )
 
-        return integrated_sol.y
+        n_steps = ode_solver.steps_scipy + 1 if integrator != SolutionIntegrator.DEFAULT else ode_solver.steps + 1
+        if continuous:
+            n_steps -= 1
 
+        return n_steps
+
+    def __get_first_frame_states(
+        self, x0: np.ndarray, shooting_type: Shooting, integrator: SolutionIntegrator, phase: int
+    ) -> np.ndarray:
         """
-            Get the first frame of the states for a given phase.
+        Get the first frame of the states for a given phase,
+        according to the shooting type, the integrator and the phase of the ocp
+
         Parameters
         ----------
         x0: np.ndarray
