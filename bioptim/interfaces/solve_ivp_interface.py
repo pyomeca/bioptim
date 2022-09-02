@@ -141,6 +141,8 @@ def solve_ivp_bioptim_interface(
         function that computes the dynamics of the system
     keep_intermediate_points : bool
         whether to keep the intermediate points or not
+    continuous : bool
+        whether to keep the last node of the interval or not, if continuous is True, the last node is not kept
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray
@@ -156,15 +158,23 @@ def solve_ivp_bioptim_interface(
         array of the solution of the system at the times t_eval
 
     """
+    if len(x0.shape) != len(u.shape):
+        x0 = x0[:, np.newaxis]
+
     dynamics_output = "xall" if keep_intermediate_points else "xf"
 
-    y_final = x0[:, np.newaxis]
+    y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0) if continuous and keep_intermediate_points else x0
+
     for s, func in enumerate(dynamics_func):
         y = np.array(func(x0=x0, p=u[:, s], params=params / param_scaling)[dynamics_output])
-        y_final = np.concatenate(
-            (y_final,
-             y[:, :-1] if (continuous and keep_intermediate_points) else y
-             ), axis=1)
-        x0 = y[:, -1]
+
+        concatenated_y = y[:, 0:-1] if continuous and keep_intermediate_points else y
+
+        y_final = np.concatenate((y_final, concatenated_y), axis=1)
+
+        x0 = y[:, -1:]
+
+    if continuous and keep_intermediate_points:
+        y_final = np.concatenate((y_final, x0), axis=1)
 
     return y_final
