@@ -767,22 +767,55 @@ class Solution:
         return step_times
 
     @staticmethod
-    def __concatenate_decision_variables(z: list) -> np.ndarray:
+    def __concatenate_decision_variables_dict(z: list[dict[np.ndarray]]) -> list[dict[np.ndarray]]:
         """
         This function concatenates the decision variables of the phases of the system
         into a single array, ommitting the last element of each phase except for the last one.
 
         Parameters
         ----------
-        z : list
+        z : list or dict
             list of decision variables of the phases of the system
 
         Returns
         -------
-        z_concatenated : np.ndarray
+        z_concatenated : np.ndarray or dict
             array of the decision variables of the phases of the system concatenated
         """
-        final_tuple = [y[:, :-1] if i < (len(z) - 1) else y for i, y in enumerate(z)]
+        if isinstance(z, list):
+            if isinstance(z[0], dict):
+                z_dict = dict()
+                for key in z[0].keys():
+                    z_dict[key] = [z_i[key] for z_i in z]
+                    final_tuple = [y[:, :-1] if i < (len(z_dict[key]) - 1) else y for i, y in enumerate(z_dict[key])]
+                    z_dict[key] = np.hstack(final_tuple)
+                return [z_dict]
+        else:
+            raise ValueError("the input must be a list")
+
+    @staticmethod
+    def __concatenate_decision_variables(
+        z: Union[list[np.ndarray], list[dict[np.ndarray]]]
+    ) -> Union[np.ndarray, list[dict[np.ndarray]]]:
+        """
+        This function concatenates the decision variables of the phases of the system
+        into a single array, ommitting the last element of each phase except for the last one.
+
+        Parameters
+        ----------
+        z : list or dict
+            list of decision variables of the phases of the system
+
+        Returns
+        -------
+        z_concatenated : np.ndarray or dict
+            array of the decision variables of the phases of the system concatenated
+        """
+        if len(z[0].shape):
+            final_tuple = [
+                (y[:, :-1] if len(y.shape) == 2 else y[:-1])
+                if i < (len(z) - 1) else y for i, y in enumerate(z)
+            ]
         return np.hstack(final_tuple)
 
     def _generate_time_vector(
