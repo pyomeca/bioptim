@@ -1417,6 +1417,7 @@ class Solution:
         new = self.copy(skip_data=True)
         new.parameters = deepcopy(self.parameters)
         new._states, new._controls, new.phase_time, new.ns = self._merge_phases()
+        new._time_vector = [np.array(self.__concatenate_decision_variables(self._time_vector))]
         new.is_merged = True
         return new
 
