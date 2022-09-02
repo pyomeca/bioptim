@@ -24,6 +24,7 @@ from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
+from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
 
 
 class Solution:
@@ -641,7 +642,20 @@ class Solution:
                 "Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction"
             )
 
-        out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, merge_phases, integrator)
+        # out = self.__perform_integration(
+        #     shooting_type=shooting_type,
+        #     keep_intermediate_points=keep_intermediate_points,
+        #     continuous=continuous,
+        #     merge_phases=merge_phases,
+        #     integrator=integrator,
+        # )
+        out = self.__perform_integration_2(
+            shooting_type=shooting_type,
+            keep_intermediate_points=keep_intermediate_points,
+            continuous=continuous,
+            merge_phases=merge_phases,
+            integrator=integrator,
+        )
 
         if merge_phases:
             if continuous:
