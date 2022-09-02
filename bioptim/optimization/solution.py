@@ -994,6 +994,7 @@ class Solution:
                     out._states[p]["all"] = solve_ivp_bioptim_interface(
                         dynamics_func=nlp.dynamics,
                         keep_intermediate_points=keep_intermediate_points,
+                        continuous=continuous,
                         x0=x0,
                         u=u,
                         params=params,

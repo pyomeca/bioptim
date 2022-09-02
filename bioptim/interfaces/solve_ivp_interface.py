@@ -123,6 +123,7 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
 def solve_ivp_bioptim_interface(
     dynamics_func: list[Callable],
     keep_intermediate_points: bool,
+    continuous: bool,
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
@@ -153,11 +154,14 @@ def solve_ivp_bioptim_interface(
 
     """
     dynamics_output = "xall" if keep_intermediate_points else "xf"
-    y = x0[:, np.newaxis]
+
+    y_final = x0[:, np.newaxis]
     for s, func in enumerate(dynamics_func):
-        y = np.concatenate(
-            (y, np.array(func(x0=x0, p=u[:, s], params=params / param_scaling)[dynamics_output])), axis=1
-        )
+        y = np.array(func(x0=x0, p=u[:, s], params=params / param_scaling)[dynamics_output])
+        y_final = np.concatenate(
+            (y_final,
+             y[:, :-1] if (continuous and keep_intermediate_points) else y
+             ), axis=1)
         x0 = y[:, -1]
 
-    return y
+    return y_final
