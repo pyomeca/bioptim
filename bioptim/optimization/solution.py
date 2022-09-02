@@ -549,8 +549,8 @@ class Solution:
                     for key in self._states[i].keys():
                         # keep one value each five values
                         states_no_intermediate[i][key] = self._states[i][key][
-                                                         :, :: nlp.ode_solver.polynomial_degree + 1
-                                                         ]
+                            :, :: nlp.ode_solver.polynomial_degree + 1
+                        ]
                 else:
                     states_no_intermediate.append(self._states[i])
 
