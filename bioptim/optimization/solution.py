@@ -873,8 +873,8 @@ class Solution:
                             time_interval = np.array([time_interval[0]])
                     time_phase_integrated += time_interval.tolist()
 
-                # if not continuous:
-                #     time_phase_integrated += [time_phase_integrated[-1]]
+                if not continuous and _ == nlp.ns - 1:
+                    time_phase_integrated += [time_phase_integrated[-1]]
 
                 last_t_int += dt_ns
             if continuous and merge_phases and p != len(self.ocp.nlp) - 1:
