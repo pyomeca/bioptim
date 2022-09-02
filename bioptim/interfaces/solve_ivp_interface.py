@@ -40,9 +40,8 @@ def solve_ivp_interface(
     """
     if keep_intermediate_points:
         # repeat values of u to match the size of t_eval
-        u = np.concatenate((
-            np.repeat(u[:, :-1], t_eval[:-1].shape[0] / u[: , :-1].shape[1], axis=1),
-            u[:, -1:]),
+        u = np.concatenate(
+            (np.repeat(u[:, :-1], t_eval[:-1].shape[0] / u[:, :-1].shape[1], axis=1), u[:, -1:]),
             axis=1,
         )
 
@@ -167,11 +166,10 @@ def solve_ivp_bioptim_interface(
 
     for s, func in enumerate(dynamics_func):
         y = np.array(func(x0=x0, p=u[:, s], params=params / param_scaling)[dynamics_output])
-
+        # select the output of the integrated solution
         concatenated_y = y[:, 0:-1] if continuous and keep_intermediate_points else y
-
         y_final = np.concatenate((y_final, concatenated_y), axis=1)
-
+        # update x0 for the next step
         x0 = y[:, -1:]
 
     if continuous and keep_intermediate_points:
