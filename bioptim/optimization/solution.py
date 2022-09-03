@@ -1078,7 +1078,7 @@ class Solution:
                 return x0
         else:
             if self.ocp.nlp[phase].ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT:
-                return self._states[phase]["all"][:, slice(0, n_steps)]
+                return self._states[phase]["all"][:, slice(0, self.ocp.nlp[phase].ode_solver.steps)]
             else:
                 return self._states[phase]["all"][:, 0]
 
