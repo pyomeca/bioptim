@@ -719,6 +719,11 @@ class Solution:
                 continuous=continuous,
             )
 
+            if shooting_type == Shooting.SINGLE and not continuous:
+                # discard the last time step because continuity concerns only the end of the phases
+                # and not the end of each interval
+                step_times = step_times[:-1]
+
             dt_ns = time_phase[p + 1] / nlp.ns
             time = [(step_times * dt_ns + i * dt_ns).tolist() for i in range(nlp.ns)]
 
