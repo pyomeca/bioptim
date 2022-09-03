@@ -162,7 +162,7 @@ def solve_ivp_bioptim_interface(
 
     dynamics_output = "xall" if keep_intermediate_points else "xf"
 
-    if (continuous and keep_intermediate_points):
+    if continuous and keep_intermediate_points:
         y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
     else:
         y_final = x0

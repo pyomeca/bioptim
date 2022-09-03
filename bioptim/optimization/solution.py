@@ -799,7 +799,9 @@ class Solution:
         return step_times
 
     @staticmethod
-    def __concatenate_decision_variables_dict(z: list[dict[np.ndarray]], continuous: bool = True) -> list[dict[np.ndarray]]:
+    def __concatenate_decision_variables_dict(
+        z: list[dict[np.ndarray]], continuous: bool = True
+    ) -> list[dict[np.ndarray]]:
         """
         This function concatenates the decision variables of the phases of the system
         into a single array, ommitting the last element of each phase except for the last one.
@@ -821,7 +823,9 @@ class Solution:
                 z_dict = dict()
                 for key in z[0].keys():
                     z_dict[key] = [z_i[key] for z_i in z]
-                    final_tuple = [y[:, :-1] if i < (len(z_dict[key]) - 1) and continuous else y for i, y in enumerate(z_dict[key])]
+                    final_tuple = [
+                        y[:, :-1] if i < (len(z_dict[key]) - 1) and continuous else y for i, y in enumerate(z_dict[key])
+                    ]
                     z_dict[key] = np.hstack(final_tuple)
                 return [z_dict]
         else:
@@ -850,8 +854,8 @@ class Solution:
         """
         if len(z[0].shape):
             final_tuple = [
-                (y[:, :-1] if len(y.shape) == 2 else y[:-1]) if i < (len(z) - 1) and continuous
-                else y for i, y in enumerate(z)
+                (y[:, :-1] if len(y.shape) == 2 else y[:-1]) if i < (len(z) - 1) and continuous else y
+                for i, y in enumerate(z)
             ]
         return np.hstack(final_tuple)
 
