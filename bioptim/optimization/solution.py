@@ -741,7 +741,7 @@ class Solution:
                 flat_time = [st for sub_time in time for st in sub_time]
 
             # add the final time of the phase
-            if continuous:
+            if continuous or (not continuous and shooting_type == Shooting.SINGLE):
                 flat_time += [nlp.ns * dt_ns]
 
             time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time))
