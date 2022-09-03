@@ -1372,7 +1372,7 @@ One can consider the other arguments to verify the relevance of the integration.
 Let's begin with `shooting_type = Shooting.SINGLE`:
 
 OdeSolver | <div style="width:110px">merge_phase</div> | <div style="width:90px">continuous</div>  | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment
-----|-------------|-----------------------|-----------|------------------ |----------|-----------
+----|-------------|-----------------------|-----------|:----:|-----------
 DMS | True  | True | DEFAULT | :white_check_mark: | Equivalent to SINGLE_CONTINUOUS merged
 DMS | True  | False | DEFAULT | :white_check_mark: | Merging will cause a discontinuity in the solution
 DMS | False | True | DEFAULT | :white_check_mark: | Equivalent to SINGLE_CONTINUOUS not merged
@@ -1393,7 +1393,7 @@ COLLOCATION | False | False | SCIPY | :white_check_mark: |
 Let's pursue with `shooting_type = Shooting.SINGLE_CONTINUOUS`:
 
 OdeSolver | <div style="width:110px">merge_phase</div> | <div style="width:90px">continuous</div>  | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment
-----|-------------|-----------------------|-----------|------------------ |----------|-----------
+----|-------------|-----------------------|-----------|:----:|-----------
 DMS | True | True | DEFAULT | :white_check_mark: |
 DMS | True | False | DEFAULT | :x: | As phases are merged, the last nodes of intervals cannot be stored
 DMS | False | True | DEFAULT | :white_check_mark: | Last node not stored
@@ -1414,7 +1414,7 @@ COLLOCATION | False | False | SCIPY | :white_check_mark: | Last nodes are stored
 Let's finish with `shooting_type = Shooting.MULTIPLE`:
 
 OdeSolver | <div style="width:110px">merge_phase</div> | <div style="width:90px">continuous</div>  | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment
-----|-------------|-----------------------|-----------|------------------ |----------|-----------
+----|-------------|-----------------------|-----------|:----:|-----------
 DMS | True | True | DEFAULT | :white_check_mark: |
 DMS | True | False | DEFAULT | :x: | As phases are merged, the last nodes of intervals cannot be stored
 DMS | False | True | DEFAULT | :white_check_mark: | Last node not stored
