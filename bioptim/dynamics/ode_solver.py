@@ -144,7 +144,7 @@ class RK(OdeSolverBase):
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
     def __str__(self):
-        ode_solver_string = f"{self.rk_integrator.__name__}\n{self.steps} step"
+        ode_solver_string = f"{self.rk_integrator.__name__} {self.steps} step"
         if self.steps > 1:
             ode_solver_string += "s"
 
@@ -299,7 +299,7 @@ class OdeSolver:
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
         def __str__(self):
-            return f"{self.rk_integrator.__name__}\n{self.method}\n{self.polynomial_degree}"
+            return f"{self.rk_integrator.__name__} {self.method} {self.polynomial_degree}"
 
     class IRK(COLLOCATION):
         """
