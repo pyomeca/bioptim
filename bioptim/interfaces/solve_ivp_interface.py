@@ -162,12 +162,20 @@ def solve_ivp_bioptim_interface(
 
     dynamics_output = "xall" if keep_intermediate_points else "xf"
 
-    y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0) if continuous and keep_intermediate_points else x0
+    if (continuous and keep_intermediate_points):
+        y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
+    else:
+        y_final = x0
 
     for s, func in enumerate(dynamics_func):
         y = np.array(func(x0=x0, p=u[:, s], params=params / param_scaling)[dynamics_output])
         # select the output of the integrated solution
-        concatenated_y = y[:, 0:-1] if continuous and keep_intermediate_points else y
+        if continuous and keep_intermediate_points:
+            concatenated_y = y[:, 0:-1]
+        elif not continuous and keep_intermediate_points:
+            concatenated_y = y[:, 1:]
+        else:
+            concatenated_y = y
         y_final = np.concatenate((y_final, concatenated_y), axis=1)
         # update x0 for the next step
         x0 = y[:, -1:]
