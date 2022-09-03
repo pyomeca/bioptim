@@ -1360,11 +1360,79 @@ It is possible to integrate (also called simulate) the states at will, by callin
 The `shooting_type: Shooting` parameter allows to select the type of integration to perform (see the enum Shooting for more detail).
 The `keepdims` parameter allows to keep the initial dimensions of the return structure. If set to false, depending on the integrator, intermediate points between the node can be added (usually a multiple of n_steps of the Runge-Kutta).
 By definition, setting `keepdims` to True while asking for `Shooting.MULTIPLE` would return the exact same structure. This will therefore raise an error.
-The same is true if `continusous` is set to False, which necessarily changes the dimension. It is therefore prohibited.
+The same is true if `continuous` is set to False, which necessarily changes the dimension. It is therefore prohibited.
 The `merge_phase: bool` parameter requests to merge all the phases into one [True] or not [False].
 The `continuous: bool` parameter can be deceiving. If it mostly for internal purposes. 
 In brief, it discards [True] or keeps [False] the arrival value of a node of integration, resulting in doubling the number of points at each node.
 Most of the time, one wants to set `continuous` to True, unless you need to get the individual integrations of each node.
+
+Here are the tables of the combinations for `sol.integrate` and shooting_types.
+As the argument `keep_intermediates_points` does not have a significant effect on the implementations it has been withdraw from the tables.
+One can consider the other arguments to verify the relevance of the integration. If it's implemented, it will be done with `keep_intermediates_points=True or False`.
+Let's begin with `shooting_type = Shooting.SINGLE`:
+
+OdeSolver | <div style="width:110px">merge_phase</div> | <div style="width:90px">continuous</div>  | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment
+----|-------------|-----------------------|-----------|------------------ |----------|-----------
+DMS | True  | True | DEFAULT | :white_check_mark: | Equivalent to SINGLE_CONTINUOUS merged
+DMS | True  | False | DEFAULT | :white_check_mark: | Merging will cause a discontinuity in the solution
+DMS | False | True | DEFAULT | :white_check_mark: | Equivalent to SINGLE_CONTINUOUS not merged
+DMS | False | False | DEFAULT | :white_check_mark: |
+DMS | True | True | SCIPY | :white_check_mark: | Equivalent to SINGLE_CONTINUOUS merged
+DMS | True | False | SCIPY | :white_check_mark: | Merging will cause a discontinuity in the solution
+DMS | False | True | SCIPY | :white_check_mark: | Equivalent to SINGLE_CONTINUOUS not merged
+DMS | False | False | SCIPY | :white_check_mark: |
+COLLOCATION | True | True | DEFAULT | :x: | COLLOCATION Solvers cannot be used with single shooting
+COLLOCATION | True | False | DEFAULT | :x: | COLLOCATION Solvers cannot be used with single shooting
+COLLOCATION | False | True | DEFAULT |  :x: | COLLOCATION Solvers cannot be used with single shooting
+COLLOCATION | False | False | DEFAULT |  :x: | COLLOCATION Solvers cannot be used with single shooting
+COLLOCATION | True | True | SCIPY | :white_check_mark: | Equivalent to SINGLE_CONTINUOUS merged
+COLLOCATION | True | False | SCIPY | :white_check_mark: | Merging will cause a discontinuity in the solution
+COLLOCATION | False | True | SCIPY | :white_check_mark: | Equivalent to SINGLE_CONTINUOUS not merged
+COLLOCATION | False | False | SCIPY | :white_check_mark: |
+
+Let's pursue with `shooting_type = Shooting.SINGLE_CONTINUOUS`:
+
+OdeSolver | <div style="width:110px">merge_phase</div> | <div style="width:90px">continuous</div>  | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment
+----|-------------|-----------------------|-----------|------------------ |----------|-----------
+DMS | True | True | DEFAULT | :white_check_mark: |
+DMS | True | False | DEFAULT | :x: | As phases are merged, the last nodes of intervals cannot be stored
+DMS | False | True | DEFAULT | :white_check_mark: | Last node not stored
+DMS | False | False | DEFAULT | :white_check_mark: | Last nodes are stored twice, once at the end of an interval, once at the beginning of the next interval
+DMS | True | True | SCIPY | :white_check_mark: |
+DMS | True | False | SCIPY | :x: | As phases are merged, the last nodes of intervals cannot be stored
+DMS | False | True | SCIPY | :white_check_mark: | Last node not stored
+DMS | False | False | SCIPY | :white_check_mark: | Last nodes are stored twice, once at the end of an interval, once at the beginning of the next interval
+COLLOCATION | True | True | DEFAULT | :x: | COLLOCATION Solvers cannot be used with single shooting
+COLLOCATION | True | False | DEFAULT | :x: | COLLOCATION Solvers cannot be used with single shooting
+COLLOCATION | False | True | DEFAULT | :x: | COLLOCATION Solvers cannot be used with single shooting
+COLLOCATION | False | False | DEFAULT | :x: | COLLOCATION Solvers cannot be used with single shooting
+COLLOCATION | True | True | SCIPY | :white_check_mark: |
+COLLOCATION | True | False | SCIPY | :x: | As phases are merged, the last nodes of intervals cannot be stored
+COLLOCATION | False | True | SCIPY | :white_check_mark: | Last node not stored
+COLLOCATION | False | False | SCIPY | :white_check_mark: | Last nodes are stored twice, once at the end of an interval, once at the beginning of the next interval
+
+Let's finish with `shooting_type = Shooting.MULTIPLE`:
+
+OdeSolver | <div style="width:110px">merge_phase</div> | <div style="width:90px">continuous</div>  | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment
+----|-------------|-----------------------|-----------|------------------ |----------|-----------
+DMS | True | True | DEFAULT | :white_check_mark: |
+DMS | True | False | DEFAULT | :x: | As phases are merged, the last nodes of intervals cannot be stored
+DMS | False | True | DEFAULT | :white_check_mark: | Last node not stored
+DMS | False | False | DEFAULT | :white_check_mark: | Last nodes are stored twice, once at the end of an interval, once at the beginning of the next interval
+DMS | True | True | SCIPY | :white_check_mark: |
+DMS | True | False | SCIPY | :x: | As phases are merged, the last nodes of intervals cannot be stored
+DMS | False | True | SCIPY | :white_check_mark: | Last node not stored
+DMS | False | False | SCIPY | :white_check_mark: | Last nodes are stored twice, once at the end of an interval, once at the beginning of the next interval
+COLLOCATION | True | True | DEFAULT | :x: | COLLOCATION Solvers cannot be used with multiple shooting
+COLLOCATION | True | False | DEFAULT | :x: | COLLOCATION Solvers cannot be used with multiple shooting
+COLLOCATION | False | True | DEFAULT | :x: | COLLOCATION Solvers cannot be used with multiple shooting
+COLLOCATION | False | False | DEFAULT | :x: | COLLOCATION Solvers cannot be used with multiple shootingg
+COLLOCATION | True | True | SCIPY  | :white_check_mark: |
+COLLOCATION | True | False | SCIPY | :x: | As phases are merged, the last nodes of intervals cannot be stored
+COLLOCATION | False | True | SCIPY | :white_check_mark: | Last node not stored
+COLLOCATION | False | False | SCIPY | :white_check_mark: | Last nodes are stored twice, once at the end of an interval, once at the beginning of the next interval
+
+
 
 The `sol.interpolation(n_frames: [int, tuple])` method returns the states interpolated by changing the number of shooting points.
 If the program is multiphase, but only a `int` is sent, then the phases are merged and the interpolation keeps their respective time ratio consistent.
