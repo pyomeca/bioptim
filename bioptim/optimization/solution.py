@@ -977,31 +977,32 @@ class Solution:
             x0 = self.__get_first_frame_states(x0, shooting_type, integrator, phase=p)
             u = self._controls[p]["all"][:, :]
 
-            if continuous:
-                if integrator != SolutionIntegrator.DEFAULT:
-                    out._states[p]["all"] = solve_ivp_interface(
-                        dynamics_func=nlp.dynamics_func,
-                        keep_intermediate_points=keep_intermediate_points,
-                        t_eval=t_eval,
-                        x0=x0,
-                        u=u,
-                        params=params,
-                        method=integrator.value,
-                    )
-                    x0 = out._states[p]["all"][:, -1]
-                else:
-                    out._states[p]["all"] = solve_ivp_bioptim_interface(
-                        dynamics_func=nlp.dynamics,
-                        keep_intermediate_points=keep_intermediate_points,
-                        continuous=continuous,
-                        x0=x0,
-                        u=u,
-                        params=params,
-                        param_scaling=param_scaling,
-                    )
-                    x0 = out._states[p]["all"][:, -1]
+            # if continuous:
+            if integrator != SolutionIntegrator.DEFAULT:
+                if not continuous:
+                    raise NotImplementedError("to be done")
+
+                out._states[p]["all"] = solve_ivp_interface(
+                    dynamics_func=nlp.dynamics_func,
+                    keep_intermediate_points=keep_intermediate_points,
+                    t_eval=t_eval,
+                    x0=x0,
+                    u=u,
+                    params=params,
+                    method=integrator.value,
+                )
+                x0 = out._states[p]["all"][:, -1]
             else:
-                print("not implemented yet")
+                out._states[p]["all"] = solve_ivp_bioptim_interface(
+                    dynamics_func=nlp.dynamics,
+                    keep_intermediate_points=keep_intermediate_points,
+                    continuous=continuous,
+                    x0=x0,
+                    u=u,
+                    params=params,
+                    param_scaling=param_scaling,
+                )
+                x0 = out._states[p]["all"][:, -1]
 
             # Dispatch the integrated values to all the keys
             for key in nlp.states:
