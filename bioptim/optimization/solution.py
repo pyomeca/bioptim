@@ -642,6 +642,19 @@ class Solution:
                 "Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction"
             )
 
+        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
+        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT:
+            if continuous:
+                raise RuntimeError(
+                    "Integration with direct collocation must be not continuous if a scipy integrator is used"
+                )
+
+            if shooting_type != Shooting.MULTIPLE:
+                raise RuntimeError(
+                    "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
+                    "if a scipy integrator is not used"
+                )
+
         # out = self.__perform_integration(
         #     shooting_type=shooting_type,
         #     keep_intermediate_points=keep_intermediate_points,
@@ -955,20 +968,6 @@ class Solution:
         Solution
             A Solution data structure with the states integrated. The controls are removed from this structure
         """
-
-        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
-
-        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT:
-            if continuous:
-                raise RuntimeError(
-                    "Integration with direct collocation must be not continuous if a scipy integrator is used"
-                )
-
-            if shooting_type != Shooting.MULTIPLE:
-                raise RuntimeError(
-                    "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
-                    "if a scipy integrator is not used"
-                )
 
         # Copy the data
         out = self.copy(skip_data=True)
