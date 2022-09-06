@@ -599,6 +599,7 @@ ocp, solution = OptimalControlProgram.load(file_path)
 ```
 Please note that this is `bioptim` version dependent, which means that an optimized solution from a previous version will not probably load on a newer `bioptim` version.
 To save the solution in a version independent manner, you may want to manually save the data from the solution.
+**** Bioptim changes quickly, therefore we DO NOT RECOMMAND YOU TO USE THE SAVE AND LOAD FUNCTIONS (you should save the variables of interest in a pickle yourself instead) ***
 
 Finally, the `add_plot(name, update_function)` method can be used to create new dynamics plots.
 The name is simply the name of the figure.
