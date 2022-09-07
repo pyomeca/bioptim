@@ -966,7 +966,6 @@ class Solution:
         else:
             raise NotImplementedError(f"Shooting type {shooting_type} is not implemented")
 
-
     def __get_phase_controls(self, p: int) -> np.ndarray:
         """
             Get the controls for a given phase.
@@ -991,12 +990,11 @@ class Solution:
                 )
 
     def __perform_integration(
-        self,
-        shooting_type: Shooting,
-        keep_intermediate_points: bool,
-        continuous: bool,
-        merge_phases: bool,
-        integrator: SolutionIntegrator,
+            self,
+            shooting_type: Shooting,
+            keep_intermediate_points: bool,
+            continuous: bool,
+            integrator: SolutionIntegrator,
     ):
         """
         This function performs the integration of the system dynamics
