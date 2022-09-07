@@ -684,7 +684,7 @@ class Solution:
                 # out._controls = _concatenate_decision_variables_dict(out._controls)
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
                 out.ns = sum(out.ns)
-                out._time_vector = [_concatenate_decision_variables(out._time_vector, continuous=False)]
+                out._time_vector = [_concatenate_decision_variables(out._time_vector, continuous_phase=False, continous_interval=False)]
 
                 # out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
                 # out.is_merged = True
@@ -1607,6 +1607,7 @@ def _concatenate_decision_variables(
     z: Union[list[np.ndarray], list[dict[np.ndarray]]],
     continuous_phase: bool = True,
     continous_interval: bool = True,
+    merge_phases: bool = True,
 ) -> Union[np.ndarray, list[dict[np.ndarray]]]:
     """
     This function concatenates the decision variables of the phases of the system
@@ -1621,6 +1622,8 @@ def _concatenate_decision_variables(
     continous_interval: bool
         If the arrival value of a node of each interval should be discarded [True] or kept [False].
         Only useful in direct multiple shooting
+    merge_phases: bool
+        If the decision variables of each phase should be merged into a single array [True] or kept separated [False].
 
     Returns
     -------
@@ -1632,7 +1635,10 @@ def _concatenate_decision_variables(
             z_final = []
             for zi in z:
                 z_final.append(_concatenate_decision_variables(zi, continous_interval))
-            return _concatenate_decision_variables(z_final, continuous_phase)
+            if merge_phases:
+                return _concatenate_decision_variables(z_final, continuous_phase)
+            else:
+                return z_final
         else:
             final_tuple = [
                 (y[:, :-1] if len(y.shape) == 2 else y[:-1]) if i < (len(z) - 1) and continuous_phase else y
