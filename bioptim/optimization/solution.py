@@ -658,6 +658,8 @@ class Solution:
                     "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
                     "if a scipy integrator is not used"
                 )
+            else:
+                raise NotImplementedError("The feature Shooting.COLLOCATION is not implemented yet")
 
         out = self.__perform_integration(
             shooting_type=shooting_type,
