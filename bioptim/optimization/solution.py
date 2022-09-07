@@ -659,18 +659,10 @@ class Solution:
                     "if a scipy integrator is not used"
                 )
 
-        # out = self.__perform_integration(
-        #     shooting_type=shooting_type,
-        #     keep_intermediate_points=keep_intermediate_points,
-        #     continuous=continuous,
-        #     merge_phases=merge_phases,
-        #     integrator=integrator,
-        # )
-        out = self.__perform_integration_2(
+        out = self.__perform_integration(
             shooting_type=shooting_type,
             keep_intermediate_points=keep_intermediate_points,
             continuous=continuous,
-            merge_phases=merge_phases,
             integrator=integrator,
         )
 
