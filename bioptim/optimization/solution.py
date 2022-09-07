@@ -1010,8 +1010,6 @@ class Solution:
             If the integration should return the intermediate values of the integration
         continuous: bool
             If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
-        merge_phases
-            If the phase should be merged in a unique phase
         integrator
             Use the ode solver defined by the OCP or use a separate integrator provided by scipy such as RK45 or DOP853
 
