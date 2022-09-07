@@ -684,12 +684,16 @@ class Solution:
                 # out._controls = _concatenate_decision_variables_dict(out._controls)
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
                 out.ns = sum(out.ns)
-                out._time_vector = [_concatenate_decision_variables(out._time_vector, continuous_phase=False, continous_interval=False)]
+                out._time_vector = [
+                    _concatenate_decision_variables(out._time_vector, continuous_phase=False, continous_interval=False)
+                ]
 
                 # out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
                 # out.is_merged = True
         elif shooting_type == Shooting.MULTIPLE:
-            out._time_vector = _concatenate_decision_variables(out._time_vector, continuous_phase=continuous, continous_interval=continuous, merge_phases=merge_phases)
+            out._time_vector = _concatenate_decision_variables(
+                out._time_vector, continuous_phase=continuous, continous_interval=continuous, merge_phases=merge_phases
+            )
 
         out.is_integrated = True
 
@@ -993,11 +997,11 @@ class Solution:
                 )
 
     def __perform_integration(
-            self,
-            shooting_type: Shooting,
-            keep_intermediate_points: bool,
-            continuous: bool,
-            integrator: SolutionIntegrator,
+        self,
+        shooting_type: Shooting,
+        keep_intermediate_points: bool,
+        continuous: bool,
+        integrator: SolutionIntegrator,
     ):
         """
         This function performs the integration of the system dynamics
@@ -1570,9 +1574,7 @@ class Solution:
             raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")
 
 
-def _concatenate_decision_variables_dict(
-    z: list[dict[np.ndarray]], continuous: bool = True
-) -> list[dict[np.ndarray]]:
+def _concatenate_decision_variables_dict(z: list[dict[np.ndarray]], continuous: bool = True) -> list[dict[np.ndarray]]:
     """
     This function concatenates the decision variables of the phases of the system
     into a single array, ommitting the last element of each phase except for the last one.

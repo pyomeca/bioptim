@@ -5,14 +5,14 @@ from ..misc.enums import Shooting
 
 
 def solve_ivp_interface(
-        dynamics_func: Callable,
-        t_eval: Union[np.ndarray, List[float]],
-        x0: np.ndarray,
-        u: np.ndarray,
-        params: np.ndarray,
-        method: Union[str, Any] = "RK45",
-        keep_intermediate_points: bool = False,
-        continuous: bool = False,
+    dynamics_func: Callable,
+    t_eval: Union[np.ndarray, List[float]],
+    x0: np.ndarray,
+    u: np.ndarray,
+    params: np.ndarray,
+    method: Union[str, Any] = "RK45",
+    keep_intermediate_points: bool = False,
+    continuous: bool = False,
 ):
     """
     This function solves the initial value problem with scipy.integrate.solve_ivp
@@ -75,7 +75,7 @@ def solve_ivp_interface(
 
         return y_final
 
-    else: # Single shooting
+    else:  # Single shooting
         if keep_intermediate_points:
             # repeat values of u to match the size of t_eval
             u = np.concatenate(
@@ -161,14 +161,14 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
 
 
 def solve_ivp_bioptim_interface(
-        dynamics_func: list[Callable],
-        keep_intermediate_points: bool,
-        continuous: bool,
-        x0: np.ndarray,
-        u: np.ndarray,
-        params: np.ndarray,
-        param_scaling: np.ndarray,
-        shooting_type: Shooting,
+    dynamics_func: list[Callable],
+    keep_intermediate_points: bool,
+    continuous: bool,
+    x0: np.ndarray,
+    u: np.ndarray,
+    params: np.ndarray,
+    param_scaling: np.ndarray,
+    shooting_type: Shooting,
 ):
     """
     This function solves the initial value problem with scipy.integrate.solve_ivp
@@ -225,7 +225,7 @@ def solve_ivp_bioptim_interface(
         y_final = np.concatenate((y_final, concatenated_y), axis=1)
 
         # update x0 for the next step
-        if shooting_type == Shooting.MULTIPLE: # and continuous is False:
+        if shooting_type == Shooting.MULTIPLE:  # and continuous is False:
             x0i = x0[:, s + 1] if s < len(dynamics_func) - 1 else None
         # else:
         #     x0i = y[:, -1:]
