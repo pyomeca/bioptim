@@ -677,17 +677,8 @@ class Solution:
                 # out._controls = _concatenate_decision_variables_dict(out._controls)
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
                 out.ns = sum(out.ns)
-                if shooting_type == Shooting.MULTIPLE:
-                    # flatten the list of list into a list of floats
-                    # flat_time = []
-                    # for sub_time in out._time_vector:
-                    #     flat_time.append([s for st in sub_time for s in st.tolist()])
-                    # # list of array
-                    # flat_time = [np.array(s) for s in flat_time]
-                    # flat_time = [st for sub_time in out._time_vector for st in sub_time]
-                    out._time_vector = [_concatenate_decision_variables(out._time_vector)]
-                else:
-                    out._time_vector = [_concatenate_decision_variables(out._time_vector)]
+                out._time_vector = [_concatenate_decision_variables(out._time_vector)]
+
             else:
                 out._states = _concatenate_decision_variables_dict(out._states, continuous=False)
                 # out._controls = _concatenate_decision_variables_dict(out._controls)
