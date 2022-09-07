@@ -624,7 +624,7 @@ class Solution:
         A Solution data structure with the states integrated. The controls are removed from this structure
         """
 
-        # Sanity check
+        # Sanity checks
         if self.is_integrated:
             raise RuntimeError("Cannot integrate twice")
         if self.is_interpolated:
