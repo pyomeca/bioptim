@@ -675,27 +675,27 @@ class Solution:
             if continuous:
                 # todo: what is interpolation?
                 # out = out.interpolate(sum(out.ns) + 1)
-                out._states = self.__concatenate_decision_variables_dict(out._states)
-                # out._controls = self.__concatenate_decision_variables_dict(out._controls)
+                out._states = _concatenate_decision_variables_dict(out._states)
+                # out._controls = _concatenate_decision_variables_dict(out._controls)
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
                 out.ns = sum(out.ns)
                 if shooting_type == Shooting.MULTIPLE:
                     # flatten the list of list into a list of floats
-                    flat_time = []
-                    for sub_time in out._time_vector:
-                        flat_time.append([s for st in sub_time for s in st.tolist()])
-                    # list of array
-                    flat_time = [np.array(s) for s in flat_time]
+                    # flat_time = []
+                    # for sub_time in out._time_vector:
+                    #     flat_time.append([s for st in sub_time for s in st.tolist()])
+                    # # list of array
+                    # flat_time = [np.array(s) for s in flat_time]
                     # flat_time = [st for sub_time in out._time_vector for st in sub_time]
-                    out._time_vector = [self.__concatenate_decision_variables(flat_time)]
+                    out._time_vector = [_concatenate_decision_variables(out._time_vector)]
                 else:
-                    out._time_vector = [self.__concatenate_decision_variables(out._time_vector)]
+                    out._time_vector = [_concatenate_decision_variables(out._time_vector)]
             else:
-                out._states = self.__concatenate_decision_variables_dict(out._states, continuous=False)
-                # out._controls = self.__concatenate_decision_variables_dict(out._controls)
+                out._states = _concatenate_decision_variables_dict(out._states, continuous=False)
+                # out._controls = _concatenate_decision_variables_dict(out._controls)
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
                 out.ns = sum(out.ns)
-                out._time_vector = [self.__concatenate_decision_variables(out._time_vector, continuous=False)]
+                out._time_vector = [_concatenate_decision_variables(out._time_vector, continuous=False)]
 
                 # out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
                 # out.is_merged = True
@@ -773,7 +773,7 @@ class Solution:
             time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time))
 
         if merge_phases:
-            return self.__concatenate_decision_variables(time_vector, continuous=continuous)
+            return _concatenate_decision_variables(time_vector, continuous=continuous)
         else:
             return time_vector
 
@@ -932,7 +932,7 @@ class Solution:
         out._states = [dict() for _ in range(len(self._states))]
         out._time_vector = self._generate_ocp_time(
             keep_intermediate_points=keep_intermediate_points,
-            continuous=continuous,
+            continuous=False if shooting_type == Shooting.MULTIPLE else continuous,
             merge_phases=False,
             shooting_type=shooting_type,
         )
@@ -965,6 +965,7 @@ class Solution:
                     u=u,
                     params=params,
                     method=integrator.value,
+                    continuous=continuous,
                 )
 
             else:
@@ -1332,7 +1333,7 @@ class Solution:
         new = self.copy(skip_data=True)
         new.parameters = deepcopy(self.parameters)
         new._states, new._controls, new.phase_time, new.ns = self._merge_phases()
-        new._time_vector = [np.array(self.__concatenate_decision_variables(self._time_vector))]
+        new._time_vector = [np.array(_concatenate_decision_variables(self._time_vector))]
         new.is_merged = True
         return new
 
