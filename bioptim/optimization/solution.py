@@ -829,67 +829,6 @@ class Solution:
 
         return step_times
 
-    @staticmethod
-    def __concatenate_decision_variables_dict(
-        z: list[dict[np.ndarray]], continuous: bool = True
-    ) -> list[dict[np.ndarray]]:
-        """
-        This function concatenates the decision variables of the phases of the system
-        into a single array, ommitting the last element of each phase except for the last one.
-
-        Parameters
-        ----------
-        z : list or dict
-            list of decision variables of the phases of the system
-        continuous: bool
-            If the arrival value of a node should be discarded [True] or kept [False].
-
-        Returns
-        -------
-        z_concatenated : np.ndarray or dict
-            array of the decision variables of the phases of the system concatenated
-        """
-        if isinstance(z, list):
-            if isinstance(z[0], dict):
-                z_dict = dict()
-                for key in z[0].keys():
-                    z_dict[key] = [z_i[key] for z_i in z]
-                    final_tuple = [
-                        y[:, :-1] if i < (len(z_dict[key]) - 1) and continuous else y for i, y in enumerate(z_dict[key])
-                    ]
-                    z_dict[key] = np.hstack(final_tuple)
-                return [z_dict]
-        else:
-            raise ValueError("the input must be a list")
-
-    @staticmethod
-    def __concatenate_decision_variables(
-        z: Union[list[np.ndarray], list[dict[np.ndarray]]],
-        continuous: bool = True,
-    ) -> Union[np.ndarray, list[dict[np.ndarray]]]:
-        """
-        This function concatenates the decision variables of the phases of the system
-        into a single array, ommitting the last element of each phase except for the last one.
-
-        Parameters
-        ----------
-        z : list or dict
-            list of decision variables of the phases of the system
-        continuous: bool
-            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
-
-        Returns
-        -------
-        z_concatenated : np.ndarray or dict
-            array of the decision variables of the phases of the system concatenated
-        """
-        if len(z[0].shape):
-            final_tuple = [
-                (y[:, :-1] if len(y.shape) == 2 else y[:-1]) if i < (len(z) - 1) and continuous else y
-                for i, y in enumerate(z)
-            ]
-        return np.hstack(final_tuple)
-
     def _generate_time_vector(
         self,
         time_phase: np.ndarray,
@@ -1798,3 +1737,74 @@ class Solution:
             self.print_cost(CostType.CONSTRAINTS)
         else:
             raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")
+
+
+def _concatenate_decision_variables_dict(
+    z: list[dict[np.ndarray]], continuous: bool = True
+) -> list[dict[np.ndarray]]:
+    """
+    This function concatenates the decision variables of the phases of the system
+    into a single array, ommitting the last element of each phase except for the last one.
+
+    Parameters
+    ----------
+    z : list or dict
+        list of decision variables of the phases of the system
+    continuous: bool
+        If the arrival value of a node should be discarded [True] or kept [False].
+
+    Returns
+    -------
+    z_concatenated : np.ndarray or dict
+        array of the decision variables of the phases of the system concatenated
+    """
+    if isinstance(z, list):
+        if isinstance(z[0], dict):
+            z_dict = dict()
+            for key in z[0].keys():
+                z_dict[key] = [z_i[key] for z_i in z]
+                final_tuple = [
+                    y[:, :-1] if i < (len(z_dict[key]) - 1) and continuous else y for i, y in enumerate(z_dict[key])
+                ]
+                z_dict[key] = np.hstack(final_tuple)
+            return [z_dict]
+    else:
+        raise ValueError("the input must be a list")
+
+
+def _concatenate_decision_variables(
+    z: Union[list[np.ndarray], list[dict[np.ndarray]]],
+    continuous_phase: bool = True,
+    continous_interval: bool = True,
+) -> Union[np.ndarray, list[dict[np.ndarray]]]:
+    """
+    This function concatenates the decision variables of the phases of the system
+    into a single array, ommitting the last element of each phase except for the last one.
+
+    Parameters
+    ----------
+    z : list or dict
+        list of decision variables of the phases of the system
+    continuous_phase: bool
+        If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
+    continous_interval: bool
+        If the arrival value of a node of each interval should be discarded [True] or kept [False].
+        Only useful in direct multiple shooting
+
+    Returns
+    -------
+    z_concatenated : np.ndarray or dict
+        array of the decision variables of the phases of the system concatenated
+    """
+    if len(z[0].shape):
+        if isinstance(z[0][0], np.ndarray):
+            z_final = []
+            for zi in z:
+                z_final.append(_concatenate_decision_variables(zi, continous_interval))
+            return _concatenate_decision_variables(z_final, continuous_phase)
+        else:
+            final_tuple = [
+                (y[:, :-1] if len(y.shape) == 2 else y[:-1]) if i < (len(z) - 1) and continuous_phase else y
+                for i, y in enumerate(z)
+            ]
+        return np.hstack(final_tuple)
