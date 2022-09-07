@@ -899,97 +899,6 @@ class Solution:
             last_t += time_phase[p + 1]
         return t_integrated
 
-    def __perform_integration_2(
-        self,
-        shooting_type: Shooting,
-        keep_intermediate_points: bool,
-        continuous: bool,
-        merge_phases: bool,
-        integrator: SolutionIntegrator,
-    ):
-        """
-        This function performs the integration of the system dynamics
-        with different options using scipy or the default integrator
-
-        Parameters
-        ----------
-        shooting_type: Shooting
-            Which type of integration (SINGLE_CONTINUOUS, MULTIPLE, SINGLE)
-        keep_intermediate_points: bool
-            If the integration should return the intermediate values of the integration
-        continuous: bool
-            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
-        merge_phases
-            If the phase should be merged in a unique phase
-        integrator
-            Use the ode solver defined by the OCP or use a separate integrator provided by scipy such as RK45 or DOP853
-
-        Returns
-        -------
-        Solution
-            A Solution data structure with the states integrated. The controls are removed from this structure
-        """
-
-        # Copy the data
-        out = self.copy(skip_data=True)
-        out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
-        out._states = [dict() for _ in range(len(self._states))]
-        out._time_vector = self._generate_ocp_time(
-            keep_intermediate_points=keep_intermediate_points,
-            continuous=False if shooting_type == Shooting.MULTIPLE else continuous,
-            merge_phases=False,
-            shooting_type=shooting_type,
-        )
-
-        params = self.parameters["all"]
-        x0 = self._states[0]["all"][:, 0]
-
-        for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
-
-            # n_steps = self.__get_integration_steps(ode_solver=nlp.ode_solver,
-            #                                        integrator=integrator,
-            #                                        continuous=continuous,
-            #                                        )
-            param_scaling = nlp.parameters.scaling
-
-            n_states = self._states[p]["all"].shape[0]
-            out._states[p]["all"] = np.ndarray((n_states, t_eval.shape[0]))
-
-            x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p, continuous=continuous)
-            u = self._controls[p]["all"][:, :]
-
-            # if continuous:
-            if integrator != SolutionIntegrator.DEFAULT:
-
-                out._states[p]["all"] = solve_ivp_interface(
-                    dynamics_func=nlp.dynamics_func,
-                    keep_intermediate_points=keep_intermediate_points,
-                    t_eval=t_eval,
-                    x0=x0,
-                    u=u,
-                    params=params,
-                    method=integrator.value,
-                    continuous=continuous,
-                )
-
-            else:
-                out._states[p]["all"] = solve_ivp_bioptim_interface(
-                    dynamics_func=nlp.dynamics,
-                    keep_intermediate_points=keep_intermediate_points,
-                    continuous=continuous,
-                    x0=x0,
-                    u=u,
-                    params=params,
-                    param_scaling=param_scaling,
-                    shooting_type=shooting_type,
-                )
-
-            # Dispatch the integrated values to all the keys
-            for key in nlp.states:
-                out._states[p][key] = out._states[p]["all"][nlp.states[key].index, :]
-
-        return out
-
     @staticmethod
     def __get_integration_steps(
         ode_solver: OdeSolver(),
@@ -1127,130 +1036,63 @@ class Solution:
             A Solution data structure with the states integrated. The controls are removed from this structure
         """
 
-        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
-
-        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT:
-            if continuous:
-                raise RuntimeError(
-                    "Integration with direct collocation must be not continuous if a scipy integrator is used"
-                )
-
-            if shooting_type != Shooting.MULTIPLE:
-                raise RuntimeError(
-                    "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
-                    "if a scipy integrator is not used"
-                )
-
         # Copy the data
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
-        out._states = []
-        out.time_vector = self._generate_time_vector(
-            out.phase_time, keep_intermediate_points, continuous, merge_phases, integrator
+        out._states = [dict() for _ in range(len(self._states))]
+        out._time_vector = self._generate_ocp_time(
+            keep_intermediate_points=keep_intermediate_points,
+            continuous=False if shooting_type == Shooting.MULTIPLE else continuous,
+            merge_phases=False,
+            shooting_type=shooting_type,
         )
-        for _ in range(len(self._states)):
-            out._states.append({})
 
-        sum_states_len = 0
         params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
-        for p, nlp in enumerate(self.ocp.nlp):
+
+        for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
+
+            # n_steps = self.__get_integration_steps(ode_solver=nlp.ode_solver,
+            #                                        integrator=integrator,
+            #                                        continuous=continuous,
+            #                                        )
             param_scaling = nlp.parameters.scaling
+
             n_states = self._states[p]["all"].shape[0]
+            out._states[p]["all"] = np.ndarray((n_states, t_eval.shape[0]))
 
-            n_steps = nlp.ode_solver.steps_scipy if integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
-            if not continuous:
-                n_steps += 1
-            if keep_intermediate_points:
-                out.ns[p] *= n_steps
+            x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p, continuous=continuous)
+            u = self._controls[p]["all"][:, :]
 
-            out._states[p]["all"] = np.ndarray((n_states, out.ns[p] + 1))
+            # if continuous:
+            if integrator != SolutionIntegrator.DEFAULT:
 
-            # Get the first frame of the phase
-            if shooting_type == Shooting.SINGLE_CONTINUOUS:
-                if p != 0:
-                    u0 = self._controls[p - 1]["all"][:, -1]
-                    val = self.ocp.phase_transitions[p - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
-                    if val.shape[0] != x0.shape[0]:
-                        raise RuntimeError(
-                            f"Phase transition must have the same number of states ({val.shape[0]}) "
-                            f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
-                            f"please integrate with Shooting.SINGLE"
-                        )
-                    x0 += np.array(val)[:, 0]
+                out._states[p]["all"] = solve_ivp_interface(
+                    dynamics_func=nlp.dynamics_func,
+                    keep_intermediate_points=keep_intermediate_points,
+                    t_eval=t_eval,
+                    x0=x0,
+                    u=u,
+                    params=params,
+                    method=integrator.value,
+                    continuous=continuous,
+                )
+
             else:
-                col = (
-                    slice(0, n_steps)
-                    if nlp.ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT
-                    else 0
+                out._states[p]["all"] = solve_ivp_bioptim_interface(
+                    dynamics_func=nlp.dynamics,
+                    keep_intermediate_points=keep_intermediate_points,
+                    continuous=continuous,
+                    x0=x0,
+                    u=u,
+                    params=params,
+                    param_scaling=param_scaling,
+                    shooting_type=shooting_type,
                 )
-                x0 = self._states[p]["all"][:, col]
-
-            for s in range(self.ns[p]):
-                if nlp.control_type == ControlType.CONSTANT:
-                    u = self._controls[p]["all"][:, s]
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    u = self._controls[p]["all"][:, s : s + 2]
-                else:
-                    raise NotImplementedError(f"ControlType {nlp.control_type} " f"not yet implemented in integrating")
-
-                if integrator != SolutionIntegrator.DEFAULT:
-                    t_init = sum(out.phase_time[:p]) / nlp.ns
-                    t_end = sum(out.phase_time[: (p + 2)]) / nlp.ns
-                    n_points = n_steps + 1 if continuous else n_steps
-                    t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
-                    integrated = solve_ivp(
-                        lambda t, x: np.array(nlp.dynamics_func(x, u, params))[:, 0],
-                        [t_init, t_end],
-                        x0,
-                        t_eval=t_eval,
-                        method=integrator.value,
-                    ).y
-
-                    next_state_col = (
-                        (s + 1) * (nlp.ode_solver.steps + 1) if nlp.ode_solver.is_direct_collocation else s + 1
-                    )
-                    cols_in_out = [s * n_steps, (s + 1) * n_steps] if keep_intermediate_points else [s, s + 2]
-                else:
-                    if nlp.ode_solver.is_direct_collocation:
-                        if keep_intermediate_points:
-                            integrated = x0  # That is only for continuous=False
-                            cols_in_out = [s * n_steps, (s + 1) * n_steps]
-                        else:
-                            integrated = x0[:, [0, -1]]
-                            cols_in_out = [s, s + 2]
-                        next_state_col = slice((s + 1) * n_steps, (s + 2) * n_steps)
-
-                    else:
-                        if keep_intermediate_points:
-                            integrated = np.array(nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xall"])
-                            cols_in_out = [s * n_steps, (s + 1) * n_steps]
-                        else:
-                            integrated = np.concatenate(
-                                (x0[:, np.newaxis], nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xf"]),
-                                axis=1,
-                            )
-                            cols_in_out = [s, s + 2]
-                        next_state_col = s + 1
-
-                cols_in_out = slice(
-                    cols_in_out[0], cols_in_out[1] + 1 if continuous and keep_intermediate_points else cols_in_out[1]
-                )
-                out._states[p]["all"][:, cols_in_out] = integrated
-                x0 = (
-                    np.array(self._states[p]["all"][:, next_state_col])
-                    if shooting_type == Shooting.MULTIPLE
-                    else integrated[:, -1]
-                )
-
-            if not continuous:
-                out._states[p]["all"][:, -1] = self._states[p]["all"][:, -1]
 
             # Dispatch the integrated values to all the keys
             for key in nlp.states:
                 out._states[p][key] = out._states[p]["all"][nlp.states[key].index, :]
-
-            sum_states_len += out._states[p]["all"].shape[1]
 
         return out
 
