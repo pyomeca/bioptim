@@ -12,6 +12,7 @@ def solve_ivp_interface(
         params: np.ndarray,
         method: str = "RK45",
         keep_intermediate_points: bool = False,
+        continuous: bool = False,
 ):
     """
     This function solves the initial value problem with scipy.integrate.solve_ivp
@@ -32,6 +33,8 @@ def solve_ivp_interface(
         method to use for the integration, by default "RK45"
     keep_intermediate_points : bool
         whether to keep the intermediate points or not, by default False
+    continuous : bool
+        whether the problem is continuous or not, by default False
 
     Returns
     -------
@@ -39,23 +42,53 @@ def solve_ivp_interface(
         array of the solution of the system at the times t_eval
 
     """
-    if keep_intermediate_points:
-        # repeat values of u to match the size of t_eval
-        u = np.concatenate(
-            (np.repeat(u[:, :-1], t_eval[:-1].shape[0] / u[:, :-1].shape[1], axis=1), u[:, -1:]),
-            axis=1,
+    if isinstance(t_eval[0], np.ndarray):  # Direct multiple shooting
+
+        y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
+
+        for s, (t_eval_step, ui) in enumerate(zip(t_eval, u[:, -1].T)):
+            # determine the initial values
+            if continuous:  # direct multiple shooting
+                x0i = y[:, -1] if s > 0 else x0[:, 0]
+            else:
+                x0i = x0[:, s]
+
+            y = solve_ivp_interface(
+                dynamics_func=dynamics_func,
+                t_eval=t_eval_step,
+                x0=x0i,
+                u=np.repeat(ui[:, np.newaxis], t_eval_step.shape[0], axis=1),
+                params=params,
+                method=method,
+                keep_intermediate_points=False,
+                continuous=continuous,
+            )
+
+            if continuous:
+                y_final = np.hstack((y_final, y[:, :-1]))
+            else:
+                y_final = np.hstack((y_final, y))
+
+        return y_final
+
+    else: # Single shooting
+        if keep_intermediate_points:
+            # repeat values of u to match the size of t_eval
+            u = np.concatenate(
+                (np.repeat(u[:, :-1], t_eval[:-1].shape[0] / u[:, :-1].shape[1], axis=1), u[:, -1:]),
+                axis=1,
+            )
+
+        t_span = [t_eval[0], t_eval[-1]]
+        integrated_sol = solve_ivp(
+            lambda t, x: np.array(dynamics_func(x, piecewise_constant_u(t, t_eval, u), params))[:, 0],
+            t_span=t_span,
+            y0=x0,
+            t_eval=t_eval,
+            method=method,
         )
 
-    t_span = [t_eval[0], t_eval[-1]]
-    integrated_sol = solve_ivp(
-        lambda t, x: np.array(dynamics_func(x, piecewise_constant_u(t, t_eval, u), params))[:, 0],
-        t_span=t_span,
-        y0=x0,
-        t_eval=t_eval,
-        method=method,
-    )
-
-    return integrated_sol.y
+        return integrated_sol.y
 
 
 def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np.ndarray) -> float:
