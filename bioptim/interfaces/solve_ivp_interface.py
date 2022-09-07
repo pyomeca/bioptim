@@ -10,7 +10,7 @@ def solve_ivp_interface(
         x0: np.ndarray,
         u: np.ndarray,
         params: np.ndarray,
-        method: str = "RK45",
+        method: Union[str, Any] = "RK45",
         keep_intermediate_points: bool = False,
         continuous: bool = False,
 ):
@@ -44,15 +44,19 @@ def solve_ivp_interface(
     """
     if isinstance(t_eval[0], np.ndarray):  # Direct multiple shooting
 
-        y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
+        if continuous:
+            y_final = x0[:, 0:1]
+        else:
+            y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
 
-        for s, (t_eval_step, ui) in enumerate(zip(t_eval, u[:, -1].T)):
+        for s, (t_eval_step, ui) in enumerate(zip(t_eval, u[:, :-1].T)):
             # determine the initial values
             if continuous:  # direct multiple shooting
                 x0i = y[:, -1] if s > 0 else x0[:, 0]
             else:
                 x0i = x0[:, s]
 
+            # solve single shooting for each phase
             y = solve_ivp_interface(
                 dynamics_func=dynamics_func,
                 t_eval=t_eval_step,
@@ -65,7 +69,7 @@ def solve_ivp_interface(
             )
 
             if continuous:
-                y_final = np.hstack((y_final, y[:, :-1]))
+                y_final = np.hstack((y_final, y[:, 1:]))
             else:
                 y_final = np.hstack((y_final, y))
 
