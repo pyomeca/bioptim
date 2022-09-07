@@ -688,6 +688,9 @@ class Solution:
 
                 # out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
                 # out.is_merged = True
+        elif shooting_type == Shooting.MULTIPLE:
+            out._time_vector = _concatenate_decision_variables(out._time_vector, continuous_phase=continuous, continous_interval=continuous, merge_phases=merge_phases)
+
         out.is_integrated = True
 
         return out
