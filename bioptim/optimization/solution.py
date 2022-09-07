@@ -637,6 +637,10 @@ class Solution:
                 "Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously "
                 "since it would do nothing"
             )
+        if shooting_type == Shooting.MULTIPLE and continuous:
+            raise ValueError(
+                "Shooting.MULTIPLE is not compatible with continuous=True since it is discontinuous by definition"
+            )
         if shooting_type == Shooting.SINGLE_CONTINUOUS and not continuous:
             raise ValueError(
                 "Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction"
