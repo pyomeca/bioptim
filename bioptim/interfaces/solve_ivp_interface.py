@@ -44,17 +44,17 @@ def solve_ivp_interface(
     """
     if isinstance(t_eval[0], np.ndarray):  # Direct multiple shooting
 
-        if continuous:
-            y_final = x0[:, 0:1]
-        else:
-            y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
+        # if continuous:
+        #     y_final = x0[:, 0:1]
+        # else:
+        y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
 
         for s, (t_eval_step, ui) in enumerate(zip(t_eval, u[:, :-1].T)):
             # determine the initial values
-            if continuous:  # direct multiple shooting
-                x0i = y[:, -1] if s > 0 else x0[:, 0]
-            else:
-                x0i = x0[:, s]
+            # if continuous:  # direct multiple shooting
+            #     x0i = y[:, -1] if s > 0 else x0[:, 0]
+            # else:
+            x0i = x0[:, s]
 
             # solve single shooting for each phase
             y = solve_ivp_interface(
@@ -68,10 +68,10 @@ def solve_ivp_interface(
                 continuous=continuous,
             )
 
-            if continuous:
-                y_final = np.hstack((y_final, y[:, 1:]))
-            else:
-                y_final = np.hstack((y_final, y))
+            # if continuous:
+            #     y_final = np.hstack((y_final, y[:, 1:]))
+            # else:
+            y_final = np.hstack((y_final, y))
 
         return y_final
 
@@ -206,29 +206,31 @@ def solve_ivp_bioptim_interface(
     dynamics_output = "xall" if keep_intermediate_points else "xf"
 
     # todo: begin with an empty array for all cases
-    if continuous and keep_intermediate_points:
+    if (continuous and keep_intermediate_points) or shooting_type == Shooting.MULTIPLE:
         y_final = np.array([], dtype=np.float).reshape(x0i.shape[0], 0)
     else:
-        y_final = x0i
+        y_final = x0i[:, np.newaxis] if len(x0i.shape) == 1 else x0i
 
     for s, func in enumerate(dynamics_func):
         y = np.array(func(x0=x0i, p=u[:, s], params=params / param_scaling)[dynamics_output])
         # select the output of the integrated solution
         if continuous and keep_intermediate_points:
             concatenated_y = y[:, 0:-1]
-        elif not continuous and keep_intermediate_points:
+        elif not continuous and keep_intermediate_points and shooting_type != Shooting.MULTIPLE:
             concatenated_y = y[:, 1:]
+        elif not continuous and keep_intermediate_points and shooting_type == Shooting.MULTIPLE:
+            concatenated_y = y[:, :]
         else:
             concatenated_y = y
         y_final = np.concatenate((y_final, concatenated_y), axis=1)
 
         # update x0 for the next step
-        if shooting_type == Shooting.MULTIPLE and continuous is False:
-            x0i = x0[:, s + 1]
-        else:
-            x0i = y[:, -1:]
+        if shooting_type == Shooting.MULTIPLE: # and continuous is False:
+            x0i = x0[:, s + 1] if s < len(dynamics_func) - 1 else None
+        # else:
+        #     x0i = y[:, -1:]
 
     if continuous and keep_intermediate_points:
-        y_final = np.concatenate((y_final, x0i), axis=1)
+        y_final = np.concatenate((y_final, x0i), axis=1) if x0i is not None else y_final
 
     return y_final
