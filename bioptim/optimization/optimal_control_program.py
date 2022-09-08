@@ -1049,10 +1049,12 @@ class OptimalControlProgram:
         with open(file_path, "rb") as file:
             try:
                 data = pickle.load(file)
-            except ValueError:
+            except BaseException as error_message:
                 raise ValueError(
-                    "The file cannot be loaded, maybe the version of bioptim is not the same "
-                    "as the one that created the file."
+                    f"The file '{file_path}' cannot be loaded, maybe the version of bioptim (version {__version__})\n"
+                    f"is not the same as the one that created the file (version unknown). For more information\n"
+                    "please refer to the original error message below\n\n"
+                    f"{type(error_message).__name__}: {error_message}"
                 )
             ocp = OptimalControlProgram(**data["ocp_initializer"])
             for key in data["versions"].keys():
