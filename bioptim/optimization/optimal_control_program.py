@@ -989,8 +989,13 @@ class OptimalControlProgram:
 
     def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
-        Save the ocp and solution structure to the hard drive. It automatically create the required
-        folder if it does not exists. Please note that biorbd is required to load back this structure.
+        Save the ocp and solution structure to the hard drive. It automatically creates the required
+        folder if it does not exist. Please note that biorbd is required to load back this structure.
+
+        IMPORTANT NOTICE: Please note that this is dependent on the bioptim version used to create the .bo file
+        and retrocompatibility is NOT enforced. This means that an optimized solution from a previous version will
+        probably NOT load on a newer bioptim version. To save the solution in a way which is independent of the
+        version of bioptim, one may use the stand_alone flag to True.
 
         Parameters
         ----------
@@ -1042,7 +1047,13 @@ class OptimalControlProgram:
         """
 
         with open(file_path, "rb") as file:
-            data = pickle.load(file)
+            try:
+                data = pickle.load(file)
+            except ValueError:
+                raise ValueError(
+                    "The file cannot be loaded, maybe the version of bioptim is not the same "
+                    "as the one that created the file."
+                )
             ocp = OptimalControlProgram(**data["ocp_initializer"])
             for key in data["versions"].keys():
                 key_module = "biorbd_casadi" if key == "biorbd" else key
