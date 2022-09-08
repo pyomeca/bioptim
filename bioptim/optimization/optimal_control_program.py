@@ -1047,7 +1047,13 @@ class OptimalControlProgram:
         """
 
         with open(file_path, "rb") as file:
-            data = pickle.load(file)
+            try:
+                data = pickle.load(file)
+            except ValueError:
+                raise ValueError(
+                    "The file cannot be loaded, maybe the version of bioptim is not the same "
+                    "as the one that created the file."
+                )
             ocp = OptimalControlProgram(**data["ocp_initializer"])
             for key in data["versions"].keys():
                 key_module = "biorbd_casadi" if key == "biorbd" else key
