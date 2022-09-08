@@ -30,6 +30,8 @@ class Integrator:
         The parameters variables scaling factor
     fun: Callable
         The dynamic function which provides the derivative of the states
+    implicit_fun: Callable
+        The implicit dynamic function which provides the defects of the dynamics
     control_type: ControlType
         The type of the controls
     step_time: float
