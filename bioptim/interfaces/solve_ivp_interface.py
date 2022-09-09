@@ -44,16 +44,10 @@ def solve_ivp_interface(
     """
     if isinstance(t_eval[0], np.ndarray):  # Direct multiple shooting
 
-        # if continuous:
-        #     y_final = x0[:, 0:1]
-        # else:
         y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
 
         for s, (t_eval_step, ui) in enumerate(zip(t_eval, u[:, :-1].T)):
-            # determine the initial values
-            # if continuous:  # direct multiple shooting
-            #     x0i = y[:, -1] if s > 0 else x0[:, 0]
-            # else:
+
             x0i = x0[:, s]
 
             # solve single shooting for each phase
@@ -64,13 +58,10 @@ def solve_ivp_interface(
                 u=np.repeat(ui[:, np.newaxis], t_eval_step.shape[0], axis=1),
                 params=params,
                 method=method,
-                keep_intermediate_points=False,
+                keep_intermediate_points=False,  # error raise in direct multiple shooting so it's always False
                 continuous=continuous,
             )
 
-            # if continuous:
-            #     y_final = np.hstack((y_final, y[:, 1:]))
-            # else:
             y_final = np.hstack((y_final, y))
 
         return y_final
