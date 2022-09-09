@@ -227,8 +227,8 @@ def solve_ivp_bioptim_interface(
         # update x0 for the next step
         if shooting_type == Shooting.MULTIPLE:  # and continuous is False:
             x0i = x0[:, s + 1] if s < len(dynamics_func) - 1 else None
-        # else:
-        #     x0i = y[:, -1:]
+        else:
+            x0i = y[:, -1:]
 
     if continuous and keep_intermediate_points:
         y_final = np.concatenate((y_final, x0i), axis=1) if x0i is not None else y_final
