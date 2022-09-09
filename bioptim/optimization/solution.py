@@ -595,10 +595,9 @@ class Solution:
 
     def integrate(
         self,
-        shooting_type: Shooting = Shooting.SINGLE_CONTINUOUS,
+        shooting_type: Shooting = Shooting.SINGLE,
         keep_intermediate_points: bool = False,
         merge_phases: bool = False,
-        continuous: bool = True,
         integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
     ) -> Any:
         """
@@ -613,9 +612,9 @@ class Solution:
             or only keep the node [True] effective keeping the initial size of the states
         merge_phases: bool
             If the phase should be merged in a unique phase
-        continuous: bool
-            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
-            arrival node and the beginning of the next one are expected to be almost equal when the problem converged
+        # continuous: bool
+        #     If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
+        #     arrival node and the beginning of the next one are expected to be almost equal when the problem converged
         integrator: SolutionIntegrator
             Use the ode defined by OCP or use a separate integrator provided by scipy
 
@@ -664,15 +663,13 @@ class Solution:
         out = self.__perform_integration(
             shooting_type=shooting_type,
             keep_intermediate_points=keep_intermediate_points,
-            continuous=continuous,
+            continuous=shooting_type == Shooting.SINGLE,
             integrator=integrator,
         )
 
         if merge_phases:
             out.is_merged = True
-            if continuous:
-                # todo: what is interpolation?
-                # out = out.interpolate(sum(out.ns) + 1)
+            if shooting_type == Shooting.SINGLE:
                 out._states = _concatenate_decision_variables_dict(out._states)
                 # out._controls = _concatenate_decision_variables_dict(out._controls)
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
@@ -702,7 +699,6 @@ class Solution:
     def _generate_ocp_time(
         self,
         keep_intermediate_points: bool = None,
-        continuous: bool = True,
         merge_phases: bool = False,
         shooting_type: Shooting = None,
     ) -> Union[np.ndarray, list[np.ndarray]]:
@@ -714,9 +710,6 @@ class Solution:
         keep_intermediate_points
             If the integration should return the intermediate values of the integration [False]
             or only keep the node [True] effective keeping the initial size of the states
-        continuous: bool
-            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
-            arrival node and the beginning of the next one are expected to be almost equal when the problem converged
         merge_phases: bool
             If the phase should be merged in a unique phase
         shooting_type: Shooting
@@ -729,7 +722,7 @@ class Solution:
         The time vector
         """
         if shooting_type is None:
-            shooting_type = Shooting.SINGLE
+            shooting_type = Shooting.SINGLE_DISCONTINUOUS_PHASE
 
         time_vector = []
         time_phase = self.phase_time
@@ -741,10 +734,10 @@ class Solution:
                 ode_solver_steps=nlp.ode_solver.steps,
                 is_direct_collocation=is_direct_collocation,
                 keep_intermediate_points=keep_intermediate_points,
-                continuous=continuous,
+                continuous=shooting_type == Shooting.SINGLE,
             )
 
-            if (shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_CONTINUOUS) and not continuous:
+            if shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
                 # discard the last time step because continuity concerns only the end of the phases
                 # and not the end of each interval
                 step_times = step_times[:-1]
@@ -760,16 +753,15 @@ class Solution:
                 flat_time = [st for sub_time in time for st in sub_time]
 
             # add the final time of the phase
-            if continuous or (not continuous and shooting_type == Shooting.SINGLE):
-                if shooting_type == Shooting.MULTIPLE:
-                    flat_time[-1] = np.concatenate((flat_time[-1], np.array([nlp.ns * dt_ns])))
-                else:
-                    flat_time += [nlp.ns * dt_ns]
+            # if shooting_type == Shooting.MULTIPLE:
+            #     flat_time[-1] = np.concatenate((flat_time[-1], np.array([nlp.ns * dt_ns])))
+            if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
+                flat_time += [nlp.ns * dt_ns]
 
             time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time))
 
         if merge_phases:
-            return _concatenate_decision_variables(time_vector, continuous=continuous)
+            return _concatenate_decision_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
         else:
             return time_vector
 
@@ -947,7 +939,7 @@ class Solution:
             Shape is n_states x n_shooting if Shooting.MULTIPLE
         """
         # Get the first frame of the phase
-        if shooting_type == Shooting.SINGLE_CONTINUOUS or (shooting_type == Shooting.SINGLE and continuous):
+        if shooting_type == Shooting.SINGLE:
             if phase != 0:
                 x0 = sol._states[phase - 1]["all"][:, -1]  # the last node of the previous phase
                 u0 = self._controls[phase - 1]["all"][:, -1]
@@ -963,7 +955,7 @@ class Solution:
                 return x0
             else:
                 return self._states[phase]["all"][:, 0]
-        elif shooting_type == Shooting.SINGLE and not continuous:
+        elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
             if self.ocp.nlp[phase].ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT:
                 return self._states[phase]["all"][:, slice(0, self.ocp.nlp[phase].ode_solver.steps)]
             else:
@@ -1030,7 +1022,6 @@ class Solution:
         out._states = [dict() for _ in range(len(self._states))]
         out._time_vector = self._generate_ocp_time(
             keep_intermediate_points=keep_intermediate_points,
-            continuous=False if shooting_type == Shooting.MULTIPLE else continuous,
             merge_phases=False,
             shooting_type=shooting_type,
         )
