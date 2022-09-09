@@ -209,8 +209,6 @@ def solve_ivp_bioptim_interface(
             concatenated_y = y[:, 0:-1]
         elif not continuous and keep_intermediate_points and shooting_type != Shooting.MULTIPLE:
             concatenated_y = y[:, 1:]
-        elif not continuous and keep_intermediate_points and shooting_type == Shooting.MULTIPLE:
-            concatenated_y = y[:, :]
         else:
             concatenated_y = y
         y_final = np.concatenate((y_final, concatenated_y), axis=1)
