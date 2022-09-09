@@ -975,7 +975,10 @@ class Solution:
             else:
                 return self._states[phase]["all"][:, 0]
         elif shooting_type == Shooting.MULTIPLE:
-            return self._states[phase]["all"][:, :-1]
+            if self.ocp.nlp[phase].ode_solver.is_direct_collocation:
+                return self.states_no_intermediate[phase]["all"][:, :-1] if len(self.ocp.nlp) > 1 else self.states_no_intermediate["all"][:, :-1]
+            else:
+                return self._states[phase]["all"][:, :-1]
         else:
             raise NotImplementedError(f"Shooting type {shooting_type} is not implemented")
 
