@@ -585,13 +585,58 @@ class Solution:
         The time instant vector
         """
 
-        if not self._time_vector:
+        if self._time_vector is None:
             raise RuntimeError(
                 "There is no time vector in the solution. "
                 "This may happen in "
                 "previously integrated and interpolated structure"
             )
         return self._time_vector[0] if len(self._time_vector) == 1 else self._time_vector
+
+    def __integrate_sanity_checks(
+            self,
+            shooting_type,
+            keep_intermediate_points,
+            integrator,
+    ):
+        """
+        Sanity checks for the integrate method
+
+        Parameters
+        ----------
+        shooting_type: Shooting
+            The shooting type
+        keep_intermediate_points: bool
+            If True, the intermediate points are kept
+        integrator: Integrator
+            The integrator to use such as SolutionIntegrator.DEFAULT, SolutionIntegrator.SCIPY_RK45, etc...
+        """
+        if self.is_integrated:
+            raise RuntimeError("Cannot integrate twice")
+        if self.is_interpolated:
+            raise RuntimeError("Cannot integrate after interpolating")
+        if self.is_merged:
+            raise RuntimeError("Cannot integrate after merging phases")
+
+        if shooting_type == Shooting.MULTIPLE and not keep_intermediate_points:
+            raise ValueError(
+                "shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
+                "When using multiple shooting, the intermediate points should be kept."
+            )
+
+        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
+        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT and shooting_type != Shooting.MULTIPLE:
+            raise ValueError(
+                "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                "and one uses the SolutionIntegrator.DEFAULT, we must use the shooting_type=Shooting.MULTIPLE.\n"
+                "Or, we can use one of the SolutionIntegrator provided by scipy to any Shooting such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
+            )
+
+        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT and shooting_type == Shooting.MULTIPLE:
+            raise NotImplementedError(
+                "TO BE DONE"
+            )
 
     def integrate(
         self,
@@ -623,42 +668,11 @@ class Solution:
         A Solution data structure with the states integrated. The controls are removed from this structure
         """
 
-        # Sanity checks
-        if self.is_integrated:
-            raise RuntimeError("Cannot integrate twice")
-        if self.is_interpolated:
-            raise RuntimeError("Cannot integrate after interpolating")
-        if self.is_merged:
-            raise RuntimeError("Cannot integrate after merging phases")
-
-        if shooting_type == Shooting.MULTIPLE and not keep_intermediate_points:
-            raise ValueError(
-                "Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously "
-                "since it would do nothing"
-            )
-        if shooting_type == Shooting.MULTIPLE and continuous:
-            raise ValueError(
-                "Shooting.MULTIPLE is not compatible with continuous=True since it is discontinuous by definition"
-            )
-        if shooting_type == Shooting.SINGLE_CONTINUOUS and not continuous:
-            raise ValueError(
-                "Shooting.SINGLE_CONTINUOUS and continuous=False cannot be used simultaneously it is a contradiction"
-            )
-
-        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
-        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT:
-            if continuous:
-                raise RuntimeError(
-                    "Integration with direct collocation must be not continuous if a scipy integrator is used"
-                )
-
-            if shooting_type != Shooting.MULTIPLE:
-                raise RuntimeError(
-                    "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
-                    "if a scipy integrator is not used"
-                )
-            else:
-                raise NotImplementedError("The feature Shooting.COLLOCATION is not implemented yet")
+        self.__integrate_sanity_checks(
+            shooting_type=shooting_type,
+            keep_intermediate_points=keep_intermediate_points,
+            integrator=integrator,
+        )
 
         out = self.__perform_integration(
             shooting_type=shooting_type,
