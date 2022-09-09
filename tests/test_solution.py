@@ -290,46 +290,55 @@ def test_generate_integrate(
             integrator=integrator
         )
 
-
-
         merged_sol = sol.merge_phases()
 
-        import matplotlib.pyplot as plt
-        plt.figure()
-
-        print(merged_sol.time)
-        plt.plot(merged_sol.time, merged_sol.states["q"][0, :], label="merged", marker=".")
+        np.testing.assert_equal(merged_sol.time.shape, merged_sol.states["q"][0, :].shape)
         if merge_phase:
-            print(type(integrated_sol.states))
-            print(integrated_sol.time)
-            plt.plot(integrated_sol.time, integrated_sol.states["q"][0, :], label="integrated by bioptim", marker=".",
-                     alpha=0.5, markersize=5)
+            np.testing.assert_almost_equal(integrated_sol.time.shape, integrated_sol.states["q"][0, :].shape)
         else:
-            print(integrated_sol.time)
-            print(integrated_sol.states)
             for t, state in zip(integrated_sol.time, integrated_sol.states):
-                plt.plot(t[:, np.newaxis], state["q"].T, label="integrated by bioptim", marker=".")
-            print(integrated_sol.states[0]["q"][:, -1] - integrated_sol.states[1]["q"][:, 0])
-            print(integrated_sol.states[1]["q"][:, -1] - integrated_sol.states[2]["q"][:, 0])
+                np.testing.assert_almost_equal(t.shape, state["q"][0, :].shape)
 
-        # if shooting_type == Shooting.MULTIPLE:
-        #     if not continuous and merge_phases:
-        #         print(integrated_sol.time[5], integrated_sol.time[6])
-        #         print(integrated_sol.states["q"][:, 5] - integrated_sol.states["q"][:, 6])
-        #     elif continuous and not merge_phases:
-        #         print(integrated_sol._time_vector)
-        #         print(integrated_sol._time_vector[0][5], integrated_sol._time_vector[0][6])
-        #         print(integrated_sol.states[0]["q"][:, 5] - integrated_sol.states[0]["q"][:, 6])
+        if shooting_type == Shooting.SINGLE and merge_phase is False:
+            np.testing.assert_almost_equal(integrated_sol.states[0]["q"][0, -1], integrated_sol.states[1]["q"][0, 0])
+            np.testing.assert_almost_equal(integrated_sol.states[1]["q"][0, -1], integrated_sol.states[2]["q"][0, 0])
 
-        plt.legend()
-        plt.vlines(0.2, -1, 1, color="black", linestyle="--")
-        plt.vlines(0.5, -1, 1, color="black", linestyle="--")
-
-        plt.title(f"keep_intermediate={keep_intermediate_points},\n"
-                  f" merged={merge_phase},\n"
-                  f" ode_solver={ode_solver},\n"
-                  f" integrator={integrator},\n"
-                  )
-        plt.rcParams['axes.titley'] = 1.0  # y is in axes-relative coordinates.
-        plt.rcParams['axes.titlepad'] = -20
-        plt.show()
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        #
+        # print(merged_sol.time)
+        # plt.plot(merged_sol.time, merged_sol.states["q"][0, :], label="merged", marker=".")
+        # if merge_phase:
+        #     print(type(integrated_sol.states))
+        #     print(integrated_sol.time)
+        #     plt.plot(integrated_sol.time, integrated_sol.states["q"][0, :], label="integrated by bioptim", marker=".",
+        #              alpha=0.5, markersize=5)
+        # else:
+        #     print(integrated_sol.time)
+        #     print(integrated_sol.states)
+        #     for t, state in zip(integrated_sol.time, integrated_sol.states):
+        #         plt.plot(t[:, np.newaxis], state["q"].T, label="integrated by bioptim", marker=".")
+        #     print(integrated_sol.states[0]["q"][:, -1] - integrated_sol.states[1]["q"][:, 0])
+        #     print(integrated_sol.states[1]["q"][:, -1] - integrated_sol.states[2]["q"][:, 0])
+        #
+        # # if shooting_type == Shooting.MULTIPLE:
+        # #     if not continuous and merge_phases:
+        # #         print(integrated_sol.time[5], integrated_sol.time[6])
+        # #         print(integrated_sol.states["q"][:, 5] - integrated_sol.states["q"][:, 6])
+        # #     elif continuous and not merge_phases:
+        # #         print(integrated_sol._time_vector)
+        # #         print(integrated_sol._time_vector[0][5], integrated_sol._time_vector[0][6])
+        # #         print(integrated_sol.states[0]["q"][:, 5] - integrated_sol.states[0]["q"][:, 6])
+        #
+        # plt.legend()
+        # plt.vlines(0.2, -1, 1, color="black", linestyle="--")
+        # plt.vlines(0.5, -1, 1, color="black", linestyle="--")
+        #
+        # plt.title(f"keep_intermediate={keep_intermediate_points},\n"
+        #           f" merged={merge_phase},\n"
+        #           f" ode_solver={ode_solver},\n"
+        #           f" integrator={integrator},\n"
+        #           )
+        # plt.rcParams['axes.titley'] = 1.0  # y is in axes-relative coordinates.
+        # plt.rcParams['axes.titlepad'] = -20
+        # # plt.show()
