@@ -1057,7 +1057,6 @@ class Solution:
             x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p, continuous=continuous)
             u = self._controls[p]["all"][:, :]
 
-            # if continuous:
             if integrator != SolutionIntegrator.DEFAULT:
 
                 out._states[p]["all"] = solve_ivp_interface(
