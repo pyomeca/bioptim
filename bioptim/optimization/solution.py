@@ -703,7 +703,7 @@ class Solution:
                 # out.is_merged = True
         elif shooting_type == Shooting.MULTIPLE:
             out._time_vector = _concatenate_decision_variables(
-                out._time_vector, continuous_phase=continuous, continous_interval=continuous, merge_phases=merge_phases
+                out._time_vector, continuous_phase=False, continous_interval=False, merge_phases=merge_phases
             )
 
         out.is_integrated = True
@@ -772,7 +772,7 @@ class Solution:
             if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
                 flat_time += [nlp.ns * dt_ns]
 
-            time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time))
+            time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time))  # todo: refactor because it will be deprecated
 
         if merge_phases:
             return _concatenate_decision_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
@@ -1058,7 +1058,7 @@ class Solution:
             out._states[p]["all"] = np.ndarray((n_states, t_eval.shape[0]))
 
             x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p, continuous=continuous)
-            u = self._controls[p]["all"][:, :]
+            u = self._controls[p]["all"][:, :] # todo: check why double double dot, if useful write why it is.
 
             if integrator != SolutionIntegrator.DEFAULT:
 
@@ -1613,18 +1613,18 @@ def _concatenate_decision_variables_dict(z: list[dict[np.ndarray]], continuous: 
 
 
 def _concatenate_decision_variables(
-    z: Union[list[np.ndarray], list[dict[np.ndarray]]],
+    variable: Union[list[np.ndarray], list[dict[np.ndarray]]],
     continuous_phase: bool = True,
     continous_interval: bool = True,
     merge_phases: bool = True,
 ) -> Union[np.ndarray, list[dict[np.ndarray]]]:
     """
     This function concatenates the decision variables of the phases of the system
-    into a single array, ommitting the last element of each phase except for the last one.
+    into a single array, omitting the last element of each phase except for the last one.
 
     Parameters
     ----------
-    z : list or dict
+    variable : list or dict
         list of decision variables of the phases of the system
     continuous_phase: bool
         If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
@@ -1639,18 +1639,20 @@ def _concatenate_decision_variables(
     z_concatenated : np.ndarray or dict
         array of the decision variables of the phases of the system concatenated
     """
-    if len(z[0].shape):
-        if isinstance(z[0][0], np.ndarray):
+    if len(variable[0].shape):
+        if isinstance(variable[0][0], np.ndarray):
             z_final = []
-            for zi in z:
+            for zi in variable:
+                # todo: good type please
                 z_final.append(_concatenate_decision_variables(zi, continous_interval))
             if merge_phases:
                 return _concatenate_decision_variables(z_final, continuous_phase)
             else:
                 return z_final
         else:
+            # todo: not in comprehension
             final_tuple = [
-                (y[:, :-1] if len(y.shape) == 2 else y[:-1]) if i < (len(z) - 1) and continuous_phase else y
-                for i, y in enumerate(z)
+                (y[:, :-1] if len(y.shape) == 2 else y[:-1]) if i < (len(variable) - 1) and continuous_phase else y
+                for i, y in enumerate(variable)
             ]
         return np.hstack(final_tuple)
