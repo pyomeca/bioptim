@@ -157,7 +157,7 @@ def solve_ivp_bioptim_interface(
     shooting_type: Shooting,
 ):
     """
-    This function solves the initial value problem with scipy.integrate.solve_ivp
+    This function solves the initial value problem with the dynamics_func built by bioptim
 
     Parameters
     ----------
