@@ -182,37 +182,38 @@ def solve_ivp_bioptim_interface(
         array of the solution of the system at the times t_eval
 
     """
+
+    # todo: x0i size has to be int(penalty.weighted_function_non_threaded.nnz_in(0)) when it is a COLLOCATION integrator
+
+    dynamics_output = "xall" if keep_intermediate_points else "xf"
+
     if len(x0.shape) != len(u.shape):
         x0 = x0[:, np.newaxis]
     # if multiple shooting, we need to set the first x0
     x0i = x0[:, 0] if x0.shape[1] > 1 else x0
 
-    dynamics_output = "xall" if keep_intermediate_points else "xf"
-
-    # todo: begin with an empty array for all cases
-    if (shooting_type == Shooting.SINGLE and keep_intermediate_points) or shooting_type == Shooting.MULTIPLE:
-        y_final = np.array([], dtype=np.float).reshape(x0i.shape[0], 0)
-    else:
-        y_final = x0i[:, np.newaxis] if len(x0i.shape) == 1 else x0i
+    y_final = np.array([], dtype=np.float).reshape(x0i.shape[0], 0)
 
     for s, func in enumerate(dynamics_func):
-        y = np.array(func(x0=x0i, p=u[:, s], params=params / param_scaling)[dynamics_output])
+        # y always contains [x0, xf] of the interval
+        y = np.concatenate((
+            np.array([], dtype=np.float).reshape(x0i.shape[0], 0) if keep_intermediate_points else x0i,  # x0 or None
+            np.array(func(x0=x0i, p=u[:, s], params=params / param_scaling)[dynamics_output])),  # xf or xall
+            axis=1,
+        )
+
         # select the output of the integrated solution
-        if shooting_type == Shooting.SINGLE and keep_intermediate_points:
-            concatenated_y = y[:, 0:-1]
-        elif not shooting_type == Shooting.SINGLE and keep_intermediate_points and shooting_type != Shooting.MULTIPLE:
-            concatenated_y = y[:, 1:]
-        else:
+        # and update x0i for the next step
+        if shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE):
+            concatenated_y = y[:, :-1]
+            x0i = y[:, -1:]
+        else:  # Shooting.MULTIPLE
             concatenated_y = y
+            x0i = x0[:, s + 1] if s < len(dynamics_func) - 1 else None
+
         y_final = np.concatenate((y_final, concatenated_y), axis=1)
 
-        # update x0 for the next step
-        if shooting_type == Shooting.MULTIPLE:  # and continuous is False:
-            x0i = x0[:, s + 1] if s < len(dynamics_func) - 1 else None
-        else:
-            x0i = y[:, -1:]
-
-    if shooting_type == Shooting.SINGLE and keep_intermediate_points:
-        y_final = np.concatenate((y_final, x0i), axis=1) if x0i is not None else y_final
+    # add the final states to the solution for Shooting.SINGLE and Shooting.SINGLE_DISCONTINUOUS_PHASE
+    y_final = np.concatenate((y_final, x0i), axis=1) if x0i is not None else y_final
 
     return y_final
