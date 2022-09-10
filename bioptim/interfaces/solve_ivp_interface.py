@@ -12,7 +12,6 @@ def solve_ivp_interface(
     params: np.ndarray,
     method: Union[str, Any] = "RK45",
     keep_intermediate_points: bool = False,
-    continuous: bool = False,
 ):
     """
     This function solves the initial value problem with scipy.integrate.solve_ivp
@@ -33,8 +32,6 @@ def solve_ivp_interface(
         method to use for the integration, by default "RK45"
     keep_intermediate_points : bool
         whether to keep the intermediate points or not, by default False
-    continuous : bool
-        whether the problem is continuous or not, by default False
 
     Returns
     -------
@@ -59,7 +56,6 @@ def solve_ivp_interface(
                 params=params,
                 method=method,
                 keep_intermediate_points=False,  # error raise in direct multiple shooting so it's always False
-                continuous=continuous,
             )
 
             y_final = np.hstack((y_final, y))
@@ -154,7 +150,6 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
 def solve_ivp_bioptim_interface(
     dynamics_func: list[Callable],
     keep_intermediate_points: bool,
-    continuous: bool,
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
@@ -170,8 +165,6 @@ def solve_ivp_bioptim_interface(
         function that computes the dynamics of the system
     keep_intermediate_points : bool
         whether to keep the intermediate points or not
-    continuous : bool
-        whether to keep the last node of the interval or not, if continuous is True, the last node is not kept
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray
@@ -197,7 +190,7 @@ def solve_ivp_bioptim_interface(
     dynamics_output = "xall" if keep_intermediate_points else "xf"
 
     # todo: begin with an empty array for all cases
-    if (continuous and keep_intermediate_points) or shooting_type == Shooting.MULTIPLE:
+    if (shooting_type == Shooting.SINGLE and keep_intermediate_points) or shooting_type == Shooting.MULTIPLE:
         y_final = np.array([], dtype=np.float).reshape(x0i.shape[0], 0)
     else:
         y_final = x0i[:, np.newaxis] if len(x0i.shape) == 1 else x0i
@@ -205,9 +198,9 @@ def solve_ivp_bioptim_interface(
     for s, func in enumerate(dynamics_func):
         y = np.array(func(x0=x0i, p=u[:, s], params=params / param_scaling)[dynamics_output])
         # select the output of the integrated solution
-        if continuous and keep_intermediate_points:
+        if shooting_type == Shooting.SINGLE and keep_intermediate_points:
             concatenated_y = y[:, 0:-1]
-        elif not continuous and keep_intermediate_points and shooting_type != Shooting.MULTIPLE:
+        elif not shooting_type == Shooting.SINGLE and keep_intermediate_points and shooting_type != Shooting.MULTIPLE:
             concatenated_y = y[:, 1:]
         else:
             concatenated_y = y
@@ -219,7 +212,7 @@ def solve_ivp_bioptim_interface(
         else:
             x0i = y[:, -1:]
 
-    if continuous and keep_intermediate_points:
+    if shooting_type == Shooting.SINGLE and keep_intermediate_points:
         y_final = np.concatenate((y_final, x0i), axis=1) if x0i is not None else y_final
 
     return y_final

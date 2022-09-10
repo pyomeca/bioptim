@@ -696,14 +696,14 @@ class Solution:
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
                 out.ns = sum(out.ns)
                 out._time_vector = [
-                    _concatenate_decision_variables(out._time_vector, continuous_phase=False, continous_interval=False)
+                    _concatenate_decision_variables(out._time_vector, continuous_phase=False, continuous_interval=False)
                 ]
 
                 # out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
                 # out.is_merged = True
         elif shooting_type == Shooting.MULTIPLE:
             out._time_vector = _concatenate_decision_variables(
-                out._time_vector, continuous_phase=False, continous_interval=False, merge_phases=merge_phases
+                out._time_vector, continuous_phase=False, continuous_interval=False, merge_phases=merge_phases
             )
 
         out.is_integrated = True
@@ -897,37 +897,8 @@ class Solution:
             last_t += time_phase[p + 1]
         return t_integrated
 
-    @staticmethod
-    def __get_integration_steps(
-        ode_solver: OdeSolver(),
-        integrator: SolutionIntegrator,
-        continuous: bool,
-    ):
-        """
-        This function returns the number of integration steps for each shooting interval for a given nlp and integrator
-
-        Parameters
-        ----------
-        ode_solver : OdeSolver
-            The OdeSolver of the nlp
-        integrator: bool
-            The integrator used for the integration
-        continuous: bool
-            If the integration is continuous or not
-        Returns
-        -------
-        n_steps : int
-            The number of integration steps for each shooting interval
-        """
-
-        n_steps = ode_solver.steps_scipy + 1 if integrator != SolutionIntegrator.DEFAULT else ode_solver.steps + 1
-        if continuous:
-            n_steps -= 1
-
-        return n_steps
-
     def _get_first_frame_states(
-        self, sol, shooting_type: Shooting, integrator: SolutionIntegrator, phase: int, continuous: bool
+        self, sol, shooting_type: Shooting, integrator: SolutionIntegrator, phase: int
     ) -> np.ndarray:
         """
         Get the first frame of the states for a given phase,
@@ -943,8 +914,6 @@ class Solution:
             The integrator to use
         phase: int
             The phase of the ocp to consider
-        continuous: bool
-            If the integration is continuous or not
 
         Returns
         -------
@@ -975,10 +944,7 @@ class Solution:
             else:
                 return self._states[phase]["all"][:, 0]
         elif shooting_type == Shooting.MULTIPLE:
-            if self.ocp.nlp[phase].ode_solver.is_direct_collocation:
-                return self.states_no_intermediate[phase]["all"][:, :-1] if len(self.ocp.nlp) > 1 else self.states_no_intermediate["all"][:, :-1]
-            else:
-                return self._states[phase]["all"][:, :-1]
+            return self.states_no_intermediate[phase]["all"][:, :-1] if len(self.ocp.nlp) > 1 else self.states_no_intermediate["all"][:, :-1]
         else:
             raise NotImplementedError(f"Shooting type {shooting_type} is not implemented")
 
@@ -1057,7 +1023,7 @@ class Solution:
             n_states = self._states[p]["all"].shape[0]
             out._states[p]["all"] = np.ndarray((n_states, t_eval.shape[0]))
 
-            x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p, continuous=continuous)
+            x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p)
             u = self._controls[p]["all"][:, :] # todo: check why double double dot, if useful write why it is.
 
             if integrator != SolutionIntegrator.DEFAULT:
@@ -1070,14 +1036,12 @@ class Solution:
                     u=u,
                     params=params,
                     method=integrator.value,
-                    continuous=continuous,
                 )
 
             else:
                 out._states[p]["all"] = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
-                    continuous=continuous,
                     x0=x0,
                     u=u,
                     params=params,
@@ -1615,7 +1579,7 @@ def _concatenate_decision_variables_dict(z: list[dict[np.ndarray]], continuous: 
 def _concatenate_decision_variables(
     variable: Union[list[np.ndarray], list[dict[np.ndarray]]],
     continuous_phase: bool = True,
-    continous_interval: bool = True,
+    continuous_interval: bool = True,
     merge_phases: bool = True,
 ) -> Union[np.ndarray, list[dict[np.ndarray]]]:
     """
@@ -1628,7 +1592,7 @@ def _concatenate_decision_variables(
         list of decision variables of the phases of the system
     continuous_phase: bool
         If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
-    continous_interval: bool
+    continuous_interval: bool
         If the arrival value of a node of each interval should be discarded [True] or kept [False].
         Only useful in direct multiple shooting
     merge_phases: bool
@@ -1644,7 +1608,7 @@ def _concatenate_decision_variables(
             z_final = []
             for zi in variable:
                 # todo: good type please
-                z_final.append(_concatenate_decision_variables(zi, continous_interval))
+                z_final.append(_concatenate_decision_variables(zi, continuous_interval))
             if merge_phases:
                 return _concatenate_decision_variables(z_final, continuous_phase)
             else:
