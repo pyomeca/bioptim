@@ -675,7 +675,6 @@ class Solution:
         out = self.__perform_integration(
             shooting_type=shooting_type,
             keep_intermediate_points=keep_intermediate_points,
-            continuous=shooting_type == Shooting.SINGLE,
             integrator=integrator,
         )
 
@@ -916,7 +915,6 @@ class Solution:
         self,
         shooting_type: Shooting,
         keep_intermediate_points: bool,
-        continuous: bool,
         integrator: SolutionIntegrator,
     ):
         """
@@ -929,8 +927,6 @@ class Solution:
             Which type of integration (SINGLE_CONTINUOUS, MULTIPLE, SINGLE)
         keep_intermediate_points: bool
             If the integration should return the intermediate values of the integration
-        continuous: bool
-            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
         integrator
             Use the ode solver defined by the OCP or use a separate integrator provided by scipy such as RK45 or DOP853
 
