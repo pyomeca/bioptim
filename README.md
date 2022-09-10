@@ -1345,12 +1345,28 @@ sol = ocp.solve()
 
 ### Data manipulation
 The Solution structure holds all the optimized values. 
-To get the states variable, one can invoke the `states = sol.states` property.
-Similarly, to get the controls variable, one can invoke the `states = sol.controls` property.
+To get the states variable, control variables and time, one can invoke each property.
+
+```python
+states = sol.states
+controls = sol.controls
+time = sol.time
+```
+
 If the program was a single phase problem, then the returned values are dictionaries, otherwise it is a list of dictionaries of size equals to the number of phases.
 The keys of the returned dictionaries correspond to the name of the variables. 
 For instance, if generalized coordinates (*q*) are states, then the state dictionary has *q* as key.
 In any cases, the key `all` is always there.
+
+```python
+# single-phase case
+q = sol.states["q"]  # generalized coordinates
+q = sol.states["all"] # all states
+# multiple-phase case - states of the first phase
+q = sol.states[0]["q"]
+q = sol.states[0]["all"]
+```
+
 The values inside the dictionaries are np.array of dimension `n_elements` x `n_shooting`, unless the data were previously altered by integrating or interpolating (then the number of columns may differ).
 
 The parameters are very similar, but differs by the fact that it is always a dictionary (since parameters don't depend on the phases).
@@ -1360,18 +1376,18 @@ Also, the values inside the dictionaries are of dimension `n_elements` x 1.
 
 It is possible to integrate (also called simulate) the states at will, by calling the `sol.integrate()` method.
 The `shooting_type: Shooting` parameter allows to select the type of integration to perform (see the enum Shooting for more detail).
-The `keepdims` parameter allows to keep the initial dimensions of the return structure. If set to false, depending on the integrator, intermediate points between the node can be added (usually a multiple of n_steps of the Runge-Kutta).
-By definition, setting `keepdims` to True while asking for `Shooting.MULTIPLE` would return the exact same structure. This will therefore raise an error.
-The same is true if `continuous` is set to False, which necessarily changes the dimension. It is therefore prohibited.
+The `keep_intermediate_points` parameter allows to keep the intermediate shooting points (usually a multiple of n_steps of the Runge-Kutta) or collocation points.
+If set to false, this points are not stored into the output structure.
+By definition, setting `keep_intermediate_points` to True while asking for `Shooting.MULTIPLE` would return the exact same structure.
+This will therefore raise an error is set to False with `Shooting.MULTIPLE`.
 The `merge_phase: bool` parameter requests to merge all the phases into one [True] or not [False].
-The `continuous: bool` parameter can be deceiving. If it mostly for internal purposes. 
-In brief, it discards [True] or keeps [False] the arrival value of a node of integration, resulting in doubling the number of points at each node.
-Most of the time, one wants to set `continuous` to True, unless you need to get the individual integrations of each node.
+The `continuous: bool` parameter can be deceiving. If it mostly for internal purposes.
 
 Here are the tables of the combinations for `sol.integrate` and shooting_types.
 As the argument `keep_intermediates_points` does not have a significant effect on the implementations it has been withdraw from the tables.
-One can consider the other arguments to verify the relevance of the integration. If it's implemented, it will be done with `keep_intermediates_points=True or False`.
-Let's begin with `shooting_type = Shooting.SINGLE`:
+If it's implemented, it will be done with `keep_intermediates_points=True or False`.
+
+Let's begin with `shooting_type = Shooting.SINGLE`, it re-integrates the ocp as a single phase ocp :
 
 ##### Shooting.SINGLE
 
@@ -1387,7 +1403,8 @@ COLLOCATION | True | SCIPY | :white_check_mark: | |
 COLLOCATION | False | SCIPY | :white_check_mark: | |
 
 ##### Shooting.SINGLE_DISCONTINUOUS_PHASES
-Let's pursue with `shooting_type = Shooting.SINGLE_DISCONTINUOUS_PHASES`:
+Let's pursue with `shooting_type = Shooting.SINGLE_DISCONTINUOUS_PHASES`, it re-integrates each phase of the ocp as a single phase ocp.
+Thus, SINGLE and SINGLE_DISCONTINUOUS_PHASES are equivalent if there is only one phase. Here is the table:
 
 OdeSolver | <div style="width:110px">merge_phase</div> |  <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment|
 ----|-------------|-----------|:----:|:-----------:|
@@ -1554,9 +1571,10 @@ The accepted values are:
 
 ### Enum: Shooting
 The type of integration to perform
-- MULTIPLE: resets the state at each node
-- SINGLE: resets the state at each phase
-- SINGLE_CONTINUOUS: never resets the state. The behaviour of SINGLE and SINGLE_CONTINUOUS are the same for a single phase program
+- SINGLE: It re-integrate the solution as a single-phase optimal control problem
+- SINGLE_DISCONTINUOUS_PHASE: It re-integrate each phase of the solution as a single-phase optimal control problem. The phases are therefore not continuous.
+- MULTIPLE: The word `MULTIPLE` is used as a common terminology, to be able to execute DMS and COLLOCATION. It refers to the fact there are several points per intervals, shooting points in DMS and collocation points in COLLOCATION.
+
 
 ### Enum: CostType
 The type of cost
