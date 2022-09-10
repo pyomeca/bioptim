@@ -1432,8 +1432,8 @@ DMS | True | SCIPY | :white_check_mark: | |
 DMS | False | SCIPY | :white_check_mark: | |
 COLLOCATION | True | DEFAULT | :white_check_mark: | |
 COLLOCATION | False | DEFAULT | :white_check_mark: | |
-COLLOCATION | True | SCIPY  | :white_check_mark: | |
-COLLOCATION | False | SCIPY | :white_check_mark: | |
+COLLOCATION | True | SCIPY  | :x: | it would require to interface solve_bvp |
+COLLOCATION | False | SCIPY | :x: | it would require to interface solve_bvp |
 
 #### Interpolation
 
