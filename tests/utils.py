@@ -111,12 +111,12 @@ class TestUtils:
         sol_merged = sol.merge_phases()
         if sum([nlp.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
             with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
-                sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
+                sol.integrate(shooting_type=Shooting.SINGLE)
             return
 
         sol_single = sol.integrate(
             merge_phases=True,
-            shooting_type=Shooting.SINGLE_CONTINUOUS,
+            shooting_type=Shooting.SINGLE,
             keep_intermediate_points=True,
             integrator=SolutionIntegrator.DEFAULT,
         )
