@@ -951,16 +951,10 @@ class Solution:
         )
 
         params = self.parameters["all"]
-        x0 = self._states[0]["all"][:, 0]
 
         for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
 
-            # n_steps = self.__get_integration_steps(ode_solver=nlp.ode_solver,
-            #                                        integrator=integrator,
-            #                                        continuous=continuous,
-            #                                        )
             param_scaling = nlp.parameters.scaling
-
             n_states = self._states[p]["all"].shape[0]
             out._states[p]["all"] = np.ndarray((n_states, t_eval.shape[0]))
 
