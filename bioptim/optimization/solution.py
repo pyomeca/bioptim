@@ -594,10 +594,10 @@ class Solution:
         return self._time_vector[0] if len(self._time_vector) == 1 else self._time_vector
 
     def __integrate_sanity_checks(
-            self,
-            shooting_type,
-            keep_intermediate_points,
-            integrator,
+        self,
+        shooting_type,
+        keep_intermediate_points,
+        integrator,
     ):
         """
         Sanity checks for the integrate method
@@ -634,9 +634,7 @@ class Solution:
             )
 
         if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT and shooting_type == Shooting.MULTIPLE:
-            raise NotImplementedError(
-                "TO BE DONE"
-            )
+            raise NotImplementedError("TO BE DONE")
 
     def integrate(
         self,
@@ -772,7 +770,9 @@ class Solution:
             if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
                 flat_time += [nlp.ns * dt_ns]
 
-            time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time))  # todo: refactor because it will be deprecated
+            time_vector.append(
+                sum(time_phase[: p + 1]) + np.array(flat_time)
+            )  # todo: refactor because it will be deprecated
 
         if merge_phases:
             return _concatenate_decision_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
@@ -944,7 +944,11 @@ class Solution:
             else:
                 return self._states[phase]["all"][:, 0]
         elif shooting_type == Shooting.MULTIPLE:
-            return self.states_no_intermediate[phase]["all"][:, :-1] if len(self.ocp.nlp) > 1 else self.states_no_intermediate["all"][:, :-1]
+            return (
+                self.states_no_intermediate[phase]["all"][:, :-1]
+                if len(self.ocp.nlp) > 1
+                else self.states_no_intermediate["all"][:, :-1]
+            )
         else:
             raise NotImplementedError(f"Shooting type {shooting_type} is not implemented")
 
@@ -1024,7 +1028,7 @@ class Solution:
             out._states[p]["all"] = np.ndarray((n_states, t_eval.shape[0]))
 
             x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p)
-            u = self._controls[p]["all"][:, :] # todo: check why double double dot, if useful write why it is.
+            u = self._controls[p]["all"][:, :]  # todo: check why double double dot, if useful write why it is.
 
             if integrator != SolutionIntegrator.DEFAULT:
 
