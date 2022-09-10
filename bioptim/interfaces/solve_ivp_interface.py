@@ -182,9 +182,6 @@ def solve_ivp_bioptim_interface(
         array of the solution of the system at the times t_eval
 
     """
-
-    # todo: x0i size has to be int(penalty.weighted_function_non_threaded.nnz_in(0)) when it is a COLLOCATION integrator
-
     dynamics_output = "xall" if keep_intermediate_points else "xf"
 
     if len(x0.shape) != len(u.shape):

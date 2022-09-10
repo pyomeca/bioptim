@@ -608,12 +608,21 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, v)
-        data_states = sol.integrate(
-            continuous=False,
-            shooting_type=self.shooting_type,
-            keep_intermediate_points=True,
-            integrator=self.integrator,
-        ).states
+
+        if all([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]):
+            # no need to integrate when using direct collocation
+            data_states = sol.states
+            data_time = sol._generate_ocp_time()
+        elif all([nlp.ode_solver.is_direct_shooting for nlp in self.ocp.nlp]):
+            integrated = sol.integrate(
+                shooting_type=self.shooting_type,
+                keep_intermediate_points=True,
+                integrator=self.integrator,
+            )
+            data_states = integrated.states
+            data_time = integrated._time_vector
+        else:
+            raise NotImplementedError("Graphs are not implemented when mixing direct collocation and direct shooting")
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
@@ -630,8 +639,9 @@ class PlotOcp:
                 if self.integrator != SolutionIntegrator.DEFAULT
                 else nlp.ode_solver.steps + 1
             )
-            n_elements = nlp.ns * step_size + 1
-
+            # n_elements = nlp.ns * step_size + 1
+            # n_elements = nlp.ns * step_size  # seems like it could work in DMS but no in DC
+            n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
             for s in nlp.states:
                 if isinstance(data_states, (list, tuple)):
