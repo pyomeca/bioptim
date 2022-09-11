@@ -967,6 +967,7 @@ class Solution:
                     u=u,
                     params=params,
                     method=integrator.value,
+                    control_type=nlp.control_type,
                 )
 
             else:
@@ -978,6 +979,7 @@ class Solution:
                     params=params,
                     param_scaling=param_scaling,
                     shooting_type=shooting_type,
+                    control_type=nlp.control_type,
                 )
 
             # Dispatch the integrated values to all the keys

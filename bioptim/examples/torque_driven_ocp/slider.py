@@ -17,6 +17,7 @@ from bioptim import (
     OdeSolver,
     Solver,
     CostType,
+    ControlType,
 )
 
 
@@ -25,6 +26,7 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK4(),
     n_shooting: tuple = (20, 20, 20),
     phase_time: tuple = (0.2, 0.3, 0.5),
+    control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -107,6 +109,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        control_type=control_type,
     )
 
 
