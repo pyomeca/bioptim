@@ -200,8 +200,8 @@ def test_integrate(integrator, ode_solver):
     opts = {"shooting_type": Shooting.MULTIPLE, "keep_intermediate_points": False, "integrator": integrator}
     with pytest.raises(
         ValueError,
-        match="Shooting.MULTIPLE and keep_intermediate_points=False "
-        "cannot be used simultaneously since it would do nothing",
+        match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
+                "When using multiple shooting, the intermediate points should be kept.",
     ):
         _ = sol.integrate(**opts)
 
@@ -213,7 +213,7 @@ def test_integrate(integrator, ode_solver):
 
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
-    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time_vector)[0]
+    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time)[0]
 
     decimal = 5 if integrator != SolutionIntegrator.DEFAULT else 8
     for i, key in enumerate(sol.states):
@@ -258,7 +258,10 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
 
     opts = {"keep_intermediate_points": keep_intermediate_points, "integrator": SolutionIntegrator.DEFAULT}
     if ode_solver == OdeSolver.COLLOCATION:
-        with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
+        with pytest.raises(ValueError, match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                "and one uses the SolutionIntegrator.DEFAULT, we must use the shooting_type=Shooting.MULTIPLE.\n"
+                "Or, we can use one of the SolutionIntegrator provided by scipy to any Shooting such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"):
             sol.integrate(**opts)
         return
 
@@ -457,7 +460,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
 @pytest.mark.parametrize("merge", [False, True])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.DEFAULT, SolutionIntegrator.SCIPY_RK45])
-def test_integrate_non_continuous(shooting, merge, integrator, ode_solver):
+def test_integrate_2(shooting, merge, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -481,14 +484,8 @@ def test_integrate_non_continuous(shooting, merge, integrator, ode_solver):
         "keep_intermediate_points": False,
         "integrator": integrator,
     }
-    if shooting == Shooting.SINGLE:
-        with pytest.raises(
-            ValueError,
-            match="Shooting.SINGLE and continuous=False cannot be used simultaneously it is a contradiction",
-        ):
-            _ = sol.integrate(**opts)
-        return
-    elif shooting == Shooting.MULTIPLE:
+
+    if shooting == Shooting.MULTIPLE:
         with pytest.raises(
             ValueError,
             match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "

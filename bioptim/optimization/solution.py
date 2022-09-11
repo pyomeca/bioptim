@@ -888,29 +888,6 @@ class Solution:
         else:
             raise NotImplementedError(f"Shooting type {shooting_type} is not implemented")
 
-    def __get_phase_controls(self, p: int) -> np.ndarray:
-        """
-            Get the controls for a given phase.
-        Parameters
-        ----------
-        p: int
-            The phase of the ocp to consider
-
-        Returns
-        -------
-        np.ndarray
-        """
-        for s in range(self.ns[p]):
-            if self.ocp.nlp[p].control_type == ControlType.CONSTANT:
-                return self._controls[p]["all"][:, s]
-            elif self.ocp.nlp[p].control_type == ControlType.LINEAR_CONTINUOUS:
-                raise NotImplementedError("Linear continuous controls are not implemented yet")
-                # return self._controls[p]["all"][:, s: s + 2]
-            else:
-                raise NotImplementedError(
-                    f"ControlType {self.ocp.nlp[p].control_type} " f"not yet implemented in integrating"
-                )
-
     def __perform_integration(
         self,
         shooting_type: Shooting,
@@ -955,7 +932,7 @@ class Solution:
             out._states[p]["all"] = np.ndarray((n_states, t_eval.shape[0]))
 
             x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p)
-            u = self._controls[p]["all"][:, :]  # todo: check why double double dot, if useful write why it is.
+            u = self._controls[p]["all"]
 
             if integrator != SolutionIntegrator.DEFAULT:
 
