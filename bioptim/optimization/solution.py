@@ -625,16 +625,13 @@ class Solution:
             )
 
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
-        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT and shooting_type != Shooting.MULTIPLE:
+        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT:
             raise ValueError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
                 "and one uses the SolutionIntegrator.DEFAULT, we must use the shooting_type=Shooting.MULTIPLE.\n"
                 "Or, we can use one of the SolutionIntegrator provided by scipy to any Shooting such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
-
-        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT and shooting_type == Shooting.MULTIPLE:
-            raise NotImplementedError("TO BE DONE")
 
     def integrate(
         self,
@@ -681,25 +678,25 @@ class Solution:
         if merge_phases:
             out.is_merged = True
             if shooting_type == Shooting.SINGLE:
-                out._states = _concatenate_decision_variables_dict(out._states)
+                out._states = concatenate_optimization_variables_dict(out._states)
                 # out._controls = _concatenate_decision_variables_dict(out._controls)
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
                 out.ns = sum(out.ns)
-                out._time_vector = [_concatenate_decision_variables(out._time_vector)]
+                out._time_vector = [concatenate_optimization_variables(out._time_vector)]
 
             else:
-                out._states = _concatenate_decision_variables_dict(out._states, continuous=False)
+                out._states = concatenate_optimization_variables_dict(out._states, continuous=False)
                 # out._controls = _concatenate_decision_variables_dict(out._controls)
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
                 out.ns = sum(out.ns)
                 out._time_vector = [
-                    _concatenate_decision_variables(out._time_vector, continuous_phase=False, continuous_interval=False)
+                    concatenate_optimization_variables(out._time_vector, continuous_phase=False, continuous_interval=False)
                 ]
 
                 # out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
                 # out.is_merged = True
         elif shooting_type == Shooting.MULTIPLE:
-            out._time_vector = _concatenate_decision_variables(
+            out._time_vector = concatenate_optimization_variables(
                 out._time_vector, continuous_phase=False, continuous_interval=False, merge_phases=merge_phases
             )
 
@@ -774,7 +771,7 @@ class Solution:
             )  # todo: refactor because it will be deprecated
 
         if merge_phases:
-            return _concatenate_decision_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
+            return concatenate_optimization_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
         else:
             return time_vector
 
@@ -1048,7 +1045,7 @@ class Solution:
         new = self.copy(skip_data=True)
         new.parameters = deepcopy(self.parameters)
         new._states, new._controls, new.phase_time, new.ns = self._merge_phases()
-        new._time_vector = [np.array(_concatenate_decision_variables(self._time_vector))]
+        new._time_vector = [np.array(concatenate_optimization_variables(self._time_vector))]
         new.is_merged = True
         return new
 
@@ -1455,7 +1452,7 @@ class Solution:
             raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")
 
 
-def _concatenate_decision_variables_dict(z: list[dict[np.ndarray]], continuous: bool = True) -> list[dict[np.ndarray]]:
+def concatenate_optimization_variables_dict(z: list[dict[np.ndarray]], continuous: bool = True) -> list[dict[np.ndarray]]:
     """
     This function concatenates the decision variables of the phases of the system
     into a single array, ommitting the last element of each phase except for the last one.
@@ -1486,8 +1483,8 @@ def _concatenate_decision_variables_dict(z: list[dict[np.ndarray]], continuous: 
         raise ValueError("the input must be a list")
 
 
-def _concatenate_decision_variables(
-    variable: Union[list[np.ndarray], list[dict[np.ndarray]]],
+def concatenate_optimization_variables(
+    variable: Union[list[np.ndarray], np.ndarray],
     continuous_phase: bool = True,
     continuous_interval: bool = True,
     merge_phases: bool = True,
@@ -1517,16 +1514,19 @@ def _concatenate_decision_variables(
         if isinstance(variable[0][0], np.ndarray):
             z_final = []
             for zi in variable:
-                # todo: good type please
-                z_final.append(_concatenate_decision_variables(zi, continuous_interval))
+                z_final.append(concatenate_optimization_variables(zi, continuous_interval))
+
             if merge_phases:
-                return _concatenate_decision_variables(z_final, continuous_phase)
+                return concatenate_optimization_variables(z_final, continuous_phase)
             else:
                 return z_final
         else:
-            # todo: not in comprehension
-            final_tuple = [
-                (y[:, :-1] if len(y.shape) == 2 else y[:-1]) if i < (len(variable) - 1) and continuous_phase else y
-                for i, y in enumerate(variable)
-            ]
+
+            final_tuple = []
+            for i, y in enumerate(variable):
+                if i < (len(variable) - 1) and continuous_phase:
+                    final_tuple.append(y[:, :-1] if len(y.shape) == 2 else y[:-1])
+                else:
+                    final_tuple.append(y)
+
         return np.hstack(final_tuple)
