@@ -690,7 +690,9 @@ class Solution:
                 out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
                 out.ns = sum(out.ns)
                 out._time_vector = [
-                    concatenate_optimization_variables(out._time_vector, continuous_phase=False, continuous_interval=False)
+                    concatenate_optimization_variables(
+                        out._time_vector, continuous_phase=False, continuous_interval=False
+                    )
                 ]
 
                 # out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
@@ -1452,7 +1454,9 @@ class Solution:
             raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")
 
 
-def concatenate_optimization_variables_dict(z: list[dict[np.ndarray]], continuous: bool = True) -> list[dict[np.ndarray]]:
+def concatenate_optimization_variables_dict(
+    z: list[dict[np.ndarray]], continuous: bool = True
+) -> list[dict[np.ndarray]]:
     """
     This function concatenates the decision variables of the phases of the system
     into a single array, ommitting the last element of each phase except for the last one.

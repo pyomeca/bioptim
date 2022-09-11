@@ -1,9 +1,8 @@
-import warnings
 import os
-from sys import platform
-import pytest
 
+import pytest
 import numpy as np
+
 from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, ControlType
 
 
@@ -204,8 +203,21 @@ def test_generate_time(
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("merge_phase", [True, False])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
-@pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
-@pytest.mark.parametrize("integrator", [SolutionIntegrator.DEFAULT, SolutionIntegrator.SCIPY_RK45])
+@pytest.mark.parametrize(
+    "shooting_type",
+    [
+        Shooting.SINGLE,
+        Shooting.SINGLE_DISCONTINUOUS_PHASE,
+        Shooting.MULTIPLE,
+    ],
+)
+@pytest.mark.parametrize(
+    "integrator",
+    [
+        SolutionIntegrator.DEFAULT,
+        SolutionIntegrator.SCIPY_RK45,
+    ],
+)
 def test_generate_integrate(
     ode_solver: OdeSolver,
     merge_phase: bool,
@@ -241,11 +253,7 @@ def test_generate_integrate(
                 keep_intermediate_points=keep_intermediate_points,
                 integrator=integrator,
             )
-    elif (
-        ode_solver == OdeSolver.COLLOCATION
-        and integrator == SolutionIntegrator.DEFAULT
-        and shooting_type != Shooting.MULTIPLE
-    ):
+    elif ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
@@ -260,18 +268,6 @@ def test_generate_integrate(
                 integrator=integrator,
             )
 
-    elif (
-        ode_solver == OdeSolver.COLLOCATION
-        and integrator == SolutionIntegrator.DEFAULT
-        and shooting_type == Shooting.MULTIPLE
-    ):
-        with pytest.raises(NotImplementedError, match="TO BE DONE"):
-            integrated_sol = sol.integrate(
-                shooting_type=shooting_type,
-                merge_phases=merge_phase,
-                keep_intermediate_points=keep_intermediate_points,
-                integrator=integrator,
-            )
     else:
         integrated_sol = sol.integrate(
             shooting_type=shooting_type,
@@ -293,65 +289,57 @@ def test_generate_integrate(
             np.testing.assert_almost_equal(integrated_sol.states[0]["q"][0, -1], integrated_sol.states[1]["q"][0, 0])
             np.testing.assert_almost_equal(integrated_sol.states[1]["q"][0, -1], integrated_sol.states[2]["q"][0, 0])
 
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        #
-        # print(merged_sol.time)
-        # plt.plot(merged_sol.time, merged_sol.states["q"][0, :], label="merged", marker=".")
-        # if merge_phase:
-        #     print(type(integrated_sol.states))
-        #     print(integrated_sol.time)
-        #     plt.plot(integrated_sol.time, integrated_sol.states["q"][0, :], label="integrated by bioptim", marker=".",
-        #              alpha=0.5, markersize=5)
-        # else:
-        #     print(integrated_sol.time)
-        #     print(integrated_sol.states)
-        #     for t, state in zip(integrated_sol.time, integrated_sol.states):
-        #         plt.plot(t[:, np.newaxis], state["q"].T, label="integrated by bioptim", marker=".")
-        #     print(integrated_sol.states[0]["q"][:, -1] - integrated_sol.states[1]["q"][:, 0])
-        #     print(integrated_sol.states[1]["q"][:, -1] - integrated_sol.states[2]["q"][:, 0])
-        #
-        # # if shooting_type == Shooting.MULTIPLE:
-        # #     if not continuous and merge_phases:
-        # #         print(integrated_sol.time[5], integrated_sol.time[6])
-        # #         print(integrated_sol.states["q"][:, 5] - integrated_sol.states["q"][:, 6])
-        # #     elif continuous and not merge_phases:
-        # #         print(integrated_sol._time_vector)
-        # #         print(integrated_sol._time_vector[0][5], integrated_sol._time_vector[0][6])
-        # #         print(integrated_sol.states[0]["q"][:, 5] - integrated_sol.states[0]["q"][:, 6])
-        #
-        # plt.legend()
-        # plt.vlines(0.2, -1, 1, color="black", linestyle="--")
-        # plt.vlines(0.5, -1, 1, color="black", linestyle="--")
-        #
-        # plt.title(f"keep_intermediate={keep_intermediate_points},\n"
-        #           f" merged={merge_phase},\n"
-        #           f" ode_solver={ode_solver},\n"
-        #           f" integrator={integrator},\n"
-        #           )
-        # plt.rcParams['axes.titley'] = 1.0  # y is in axes-relative coordinates.
-        # plt.rcParams['axes.titlepad'] = -20
-        # # plt.show()
-@pytest.mark.parametrize("ode_solver", [
-    OdeSolver.RK4,
-    # OdeSolver.COLLOCATION
-])
-@pytest.mark.parametrize("merge_phase", [
-    True,
-    False
-])
-@pytest.mark.parametrize("keep_intermediate_points", [True,
-                                                      False
-                                                      ])
-@pytest.mark.parametrize("shooting_type", [
-    Shooting.SINGLE,
-    Shooting.SINGLE_DISCONTINUOUS_PHASE,
-    Shooting.MULTIPLE,
-])
-@pytest.mark.parametrize("integrator", [
-    SolutionIntegrator.DEFAULT,
-    SolutionIntegrator.SCIPY_RK45,
-])
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+
+        plt.plot(merged_sol.time, merged_sol.states["q"][0, :], label="merged", marker=".")
+        if merge_phase:
+            plt.plot(
+                integrated_sol.time,
+                integrated_sol.states["q"][0, :],
+                label="integrated by bioptim",
+                marker=".",
+                alpha=0.5,
+                markersize=5,
+            )
+        else:
+            for t, state in zip(integrated_sol.time, integrated_sol.states):
+                plt.plot(t[:, np.newaxis], state["q"].T, label="integrated by bioptim", marker=".")
+
+        plt.legend()
+        plt.vlines(0.2, -1, 1, color="black", linestyle="--")
+        plt.vlines(0.5, -1, 1, color="black", linestyle="--")
+
+        plt.title(
+            f"keep_intermediate={keep_intermediate_points},\n"
+            f" merged={merge_phase},\n"
+            f" ode_solver={ode_solver},\n"
+            f" integrator={integrator},\n"
+        )
+        plt.rcParams["axes.titley"] = 1.0  # y is in axes-relative coordinates.
+        plt.rcParams["axes.titlepad"] = -20
+        # plt.show()
+
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("merge_phase", [True, False])
+@pytest.mark.parametrize("keep_intermediate_points", [True, False])
+@pytest.mark.parametrize(
+    "shooting_type",
+    [
+        Shooting.SINGLE,
+        Shooting.SINGLE_DISCONTINUOUS_PHASE,
+        Shooting.MULTIPLE,
+    ],
+)
+@pytest.mark.parametrize(
+    "integrator",
+    [
+        SolutionIntegrator.DEFAULT,
+        SolutionIntegrator.SCIPY_RK45,
+    ],
+)
 def test_generate_integrate_linear_continuous(
     ode_solver: OdeSolver,
     merge_phase: bool,
@@ -364,7 +352,9 @@ def test_generate_integrate_linear_continuous(
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     if ode_solver == OdeSolver.COLLOCATION:
-        with pytest.raises(NotImplementedError, match= "ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"):
+        with pytest.raises(
+            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
+        ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/slider.bioMod",
                 ode_solver=ode_solver(),
@@ -390,7 +380,7 @@ def test_generate_integrate_linear_continuous(
         with pytest.raises(
             ValueError,
             match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
-                  "When using multiple shooting, the intermediate points should be kept",
+            "When using multiple shooting, the intermediate points should be kept",
         ):
             sol.integrate(
                 shooting_type=shooting_type,
@@ -398,11 +388,7 @@ def test_generate_integrate_linear_continuous(
                 keep_intermediate_points=keep_intermediate_points,
                 integrator=integrator,
             )
-    elif (
-        ode_solver == OdeSolver.COLLOCATION
-        and integrator == SolutionIntegrator.DEFAULT
-        and shooting_type != Shooting.MULTIPLE
-    ):
+    elif ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
@@ -417,18 +403,6 @@ def test_generate_integrate_linear_continuous(
                 integrator=integrator,
             )
 
-    # elif (
-    #     ode_solver == OdeSolver.COLLOCATION
-    #     and integrator == SolutionIntegrator.DEFAULT
-    #     and shooting_type == Shooting.MULTIPLE
-    # ):
-    #     with pytest.raises(NotImplementedError, match="TO BE DONE"):
-    #         integrated_sol = sol.integrate(
-    #             shooting_type=shooting_type,
-    #             merge_phases=merge_phase,
-    #             keep_intermediate_points=keep_intermediate_points,
-    #             integrator=integrator,
-    #         )
     else:
         integrated_sol = sol.integrate(
             shooting_type=shooting_type,
@@ -451,6 +425,7 @@ def test_generate_integrate_linear_continuous(
             np.testing.assert_almost_equal(integrated_sol.states[1]["q"][0, -1], integrated_sol.states[2]["q"][0, 0])
 
         import matplotlib.pyplot as plt
+
         plt.figure()
 
         print(merged_sol.time)
@@ -458,8 +433,14 @@ def test_generate_integrate_linear_continuous(
         if merge_phase:
             print(type(integrated_sol.states))
             print(integrated_sol.time)
-            plt.plot(integrated_sol.time, integrated_sol.states["q"][0, :], label="integrated by bioptim", marker=".",
-                     alpha=0.5, markersize=5)
+            plt.plot(
+                integrated_sol.time,
+                integrated_sol.states["q"][0, :],
+                label="integrated by bioptim",
+                marker=".",
+                alpha=0.5,
+                markersize=5,
+            )
         else:
             print(integrated_sol.time)
             print(integrated_sol.states)
@@ -468,24 +449,15 @@ def test_generate_integrate_linear_continuous(
             print(integrated_sol.states[0]["q"][:, -1] - integrated_sol.states[1]["q"][:, 0])
             print(integrated_sol.states[1]["q"][:, -1] - integrated_sol.states[2]["q"][:, 0])
 
-        # if shooting_type == Shooting.MULTIPLE:
-        #     if not continuous and merge_phases:
-        #         print(integrated_sol.time[5], integrated_sol.time[6])
-        #         print(integrated_sol.states["q"][:, 5] - integrated_sol.states["q"][:, 6])
-        #     elif continuous and not merge_phases:
-        #         print(integrated_sol._time_vector)
-        #         print(integrated_sol._time_vector[0][5], integrated_sol._time_vector[0][6])
-        #         print(integrated_sol.states[0]["q"][:, 5] - integrated_sol.states[0]["q"][:, 6])
-
-        plt.legend()
-        plt.vlines(0.2, -1, 1, color="black", linestyle="--")
-        plt.vlines(0.5, -1, 1, color="black", linestyle="--")
-
-        plt.title(f"keep_intermediate={keep_intermediate_points},\n"
-                  f" merged={merge_phase},\n"
-                  f" ode_solver={ode_solver},\n"
-                  f" integrator={integrator},\n"
-                  )
-        plt.rcParams['axes.titley'] = 1.0  # y is in axes-relative coordinates.
-        plt.rcParams['axes.titlepad'] = -20
-        plt.show()
+        # plt.legend()
+        # plt.vlines(0.2, -1, 1, color="black", linestyle="--")
+        # plt.vlines(0.5, -1, 1, color="black", linestyle="--")
+        #
+        # plt.title(f"keep_intermediate={keep_intermediate_points},\n"
+        #           f" merged={merge_phase},\n"
+        #           f" ode_solver={ode_solver},\n"
+        #           f" integrator={integrator},\n"
+        #           )
+        # plt.rcParams['axes.titley'] = 1.0  # y is in axes-relative coordinates.
+        # plt.rcParams['axes.titlepad'] = -20
+        # plt.show()

@@ -110,10 +110,13 @@ class TestUtils:
     def simulate(sol, decimal_value=7):
         sol_merged = sol.merge_phases()
         if sum([nlp.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
-            with pytest.raises(ValueError, match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+            with pytest.raises(
+                ValueError,
+                match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
                 "and one uses the SolutionIntegrator.DEFAULT, we must use the shooting_type=Shooting.MULTIPLE.\n"
                 "Or, we can use one of the SolutionIntegrator provided by scipy to any Shooting such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"):
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            ):
                 sol.integrate(shooting_type=Shooting.SINGLE)
             return
 
