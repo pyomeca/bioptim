@@ -822,7 +822,7 @@ class Solution:
         return step_times
 
     def _get_first_frame_states(
-        self, sol, shooting_type: Shooting, integrator: SolutionIntegrator, phase: int
+        self, sol, shooting_type: Shooting, phase: int
     ) -> np.ndarray:
         """
         Get the first frame of the states for a given phase,
@@ -834,8 +834,6 @@ class Solution:
             The initial state of the phase
         shooting_type: Shooting
             The shooting type to use
-        integrator: SolutionIntegrator
-            The integrator to use
         phase: int
             The phase of the ocp to consider
 
@@ -863,19 +861,14 @@ class Solution:
             else:
                 return self._states[phase]["all"][:, 0]
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            if self.ocp.nlp[phase].ode_solver.is_direct_collocation and integrator == SolutionIntegrator.OCP:
-                return self._states[phase]["all"][:, slice(0, self.ocp.nlp[phase].ode_solver.steps)]
-            else:
-                return self._states[phase]["all"][:, 0]
+            return self._states[phase]["all"][:, 0]
+
         elif shooting_type == Shooting.MULTIPLE:
-            if self.ocp.nlp[phase].ode_solver.is_direct_collocation and integrator == SolutionIntegrator.OCP:
-                return self._states[phase]["all"]
-            else:
-                return (
-                    self.states_no_intermediate[phase]["all"][:, :-1]
-                    if len(self.ocp.nlp) > 1
-                    else self.states_no_intermediate["all"][:, :-1]
-                )
+            return (
+                self.states_no_intermediate[phase]["all"][:, :-1]
+                if len(self.ocp.nlp) > 1
+                else self.states_no_intermediate["all"][:, :-1]
+            )
         else:
             raise NotImplementedError(f"Shooting type {shooting_type} is not implemented")
 
@@ -919,10 +912,7 @@ class Solution:
         for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
 
             param_scaling = nlp.parameters.scaling
-            n_states = self._states[p]["all"].shape[0]
-            out._states[p]["all"] = np.ndarray((n_states, t_eval.shape[0]))
-
-            x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p)
+            x0 = self._get_first_frame_states(out, shooting_type, phase=p)
             u = self._controls[p]["all"]
 
             if integrator != SolutionIntegrator.OCP:
