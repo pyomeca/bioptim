@@ -117,7 +117,12 @@ class TestUtils:
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             ):
-                sol.integrate(shooting_type=Shooting.SINGLE)
+                sol.integrate(
+                    merge_phases=True,
+                    shooting_type=Shooting.SINGLE,
+                    keep_intermediate_points=True,
+                    integrator=SolutionIntegrator.OCP,
+                )
             return
 
         sol_single = sol.integrate(

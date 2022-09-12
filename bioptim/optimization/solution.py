@@ -763,7 +763,7 @@ class Solution:
 
             time_vector.append(
                 sum(time_phase[: p + 1]) + np.array(flat_time)
-            )  # todo: refactor because it will be deprecated
+            )
 
         if merge_phases:
             return concatenate_optimization_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
@@ -859,6 +859,7 @@ class Solution:
                 return x0
             else:
                 return self._states[phase]["all"][:, 0]
+
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
             return self._states[phase]["all"][:, 0]
 
