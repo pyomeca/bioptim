@@ -180,9 +180,9 @@ def test_generate_time(
             np.testing.assert_almost_equal(time[0][0][0], 0)
             np.testing.assert_almost_equal(time[-1][-1][-1], 1)
             if keep_intermediate_points:
-                np.testing.assert_equal(time[0].shape, (3, 6))
-                np.testing.assert_equal(time[1].shape, (4, 6))
-                np.testing.assert_equal(time[2].shape, (5, 6))
+                np.testing.assert_equal(time[0].shape, (4,))
+                np.testing.assert_equal(time[1].shape, (5,))
+                np.testing.assert_equal(time[2].shape, (6,))
                 if ode_solver == OdeSolver.RK4:
                     np.testing.assert_almost_equal(time[0][0][4], 0.05333333333333334)
                     np.testing.assert_almost_equal(time[1][0][4], 0.26)
@@ -192,9 +192,9 @@ def test_generate_time(
                     np.testing.assert_almost_equal(time[1][0][4], 0.269792611684777)
                     np.testing.assert_almost_equal(time[2][0][4], 0.5930568155797027)
             else:
-                np.testing.assert_equal(time[0].shape, (3, 2))
-                np.testing.assert_equal(time[1].shape, (4, 2))
-                np.testing.assert_equal(time[2].shape, (5, 2))
+                np.testing.assert_equal(time[0].shape, (4,))
+                np.testing.assert_equal(time[1].shape, (5,))
+                np.testing.assert_equal(time[2].shape, (6,))
                 np.testing.assert_almost_equal(time[0][0][1], 0.06666666666666667)
                 np.testing.assert_almost_equal(time[1][0][1], 0.275)
                 np.testing.assert_almost_equal(time[2][0][1], 0.6)
@@ -245,7 +245,8 @@ def test_generate_integrate(
     if shooting_type == Shooting.MULTIPLE and keep_intermediate_points is False:
         with pytest.raises(
             ValueError,
-            match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously.When using multiple shooting, the intermediate points should be kept",
+            match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
+                  "When using multiple shooting, the intermediate points should be kept",
         ):
             sol.integrate(
                 shooting_type=shooting_type,
@@ -257,9 +258,9 @@ def test_generate_integrate(
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-            "and one uses the SolutionIntegrator.OCP, we must use the shooting_type=Shooting.MULTIPLE.\n"
-            "Or, we can use one of the SolutionIntegrator provided by scipy to any Shooting such as"
-            " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+                "we cannot use the  SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
             sol.integrate(
                 shooting_type=shooting_type,

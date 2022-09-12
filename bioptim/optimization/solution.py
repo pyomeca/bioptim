@@ -755,8 +755,9 @@ class Solution:
                 flat_time = [st for sub_time in time for st in sub_time]
 
             # add the final time of the phase
-            # if shooting_type == Shooting.MULTIPLE:
-            #     flat_time[-1] = np.concatenate((flat_time[-1], np.array([nlp.ns * dt_ns])))
+            if shooting_type == Shooting.MULTIPLE:
+                # flat_time[-1] = np.concatenate((flat_time[-1], np.array([nlp.ns * dt_ns])))
+                flat_time.append(np.array([nlp.ns * dt_ns]))
             if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
                 flat_time += [nlp.ns * dt_ns]
 
@@ -920,7 +921,7 @@ class Solution:
                 out._states[p]["all"] = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
                     keep_intermediate_points=keep_intermediate_points,
-                    t_eval=t_eval,
+                    t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
                     x0=x0,
                     u=u,
                     params=params,
@@ -940,6 +941,10 @@ class Solution:
                     shooting_type=shooting_type,
                     control_type=nlp.control_type,
                 )
+
+            if shooting_type == Shooting.MULTIPLE:
+                # last node of the phase is not integrated but do exist as an independent node
+                out._states[p]["all"] = np.concatenate((out._states[p]["all"], self._states[p]["all"][:, -1:]), axis=1)
 
             # Dispatch the integrated values to all the keys
             for key in nlp.states:
