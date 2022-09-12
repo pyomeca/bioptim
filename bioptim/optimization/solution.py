@@ -674,26 +674,21 @@ class Solution:
 
         if merge_phases:
             out.is_merged = True
+            out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
+            out.ns = sum(out.ns)
+
             if shooting_type == Shooting.SINGLE:
                 out._states = concatenate_optimization_variables_dict(out._states)
-                # out._controls = _concatenate_decision_variables_dict(out._controls)
-                out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
-                out.ns = sum(out.ns)
                 out._time_vector = [concatenate_optimization_variables(out._time_vector)]
 
             else:
                 out._states = concatenate_optimization_variables_dict(out._states, continuous=False)
-                # out._controls = _concatenate_decision_variables_dict(out._controls)
-                out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
-                out.ns = sum(out.ns)
                 out._time_vector = [
                     concatenate_optimization_variables(
                         out._time_vector, continuous_phase=False, continuous_interval=False
                     )
                 ]
 
-                # out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, continuous=continuous)
-                # out.is_merged = True
         elif shooting_type == Shooting.MULTIPLE:
             out._time_vector = concatenate_optimization_variables(
                 out._time_vector, continuous_phase=False, continuous_interval=False, merge_phases=merge_phases
@@ -1453,15 +1448,15 @@ class Solution:
 
 
 def concatenate_optimization_variables_dict(
-    z: list[dict[np.ndarray]], continuous: bool = True
+    variable: list[dict[np.ndarray]], continuous: bool = True
 ) -> list[dict[np.ndarray]]:
     """
     This function concatenates the decision variables of the phases of the system
-    into a single array, ommitting the last element of each phase except for the last one.
+    into a single array, omitting the last element of each phase except for the last one.
 
     Parameters
     ----------
-    z : list or dict
+    variable : list or dict
         list of decision variables of the phases of the system
     continuous: bool
         If the arrival value of a node should be discarded [True] or kept [False].
@@ -1471,16 +1466,16 @@ def concatenate_optimization_variables_dict(
     z_concatenated : np.ndarray or dict
         array of the decision variables of the phases of the system concatenated
     """
-    if isinstance(z, list):
-        if isinstance(z[0], dict):
-            z_dict = dict()
-            for key in z[0].keys():
-                z_dict[key] = [z_i[key] for z_i in z]
+    if isinstance(variable, list):
+        if isinstance(variable[0], dict):
+            variable_dict = dict()
+            for key in variable[0].keys():
+                variable_dict[key] = [v_i[key] for v_i in variable]
                 final_tuple = [
-                    y[:, :-1] if i < (len(z_dict[key]) - 1) and continuous else y for i, y in enumerate(z_dict[key])
+                    y[:, :-1] if i < (len(variable_dict[key]) - 1) and continuous else y for i, y in enumerate(variable_dict[key])
                 ]
-                z_dict[key] = np.hstack(final_tuple)
-            return [z_dict]
+                variable_dict[key] = np.hstack(final_tuple)
+            return [variable_dict]
     else:
         raise ValueError("the input must be a list")
 

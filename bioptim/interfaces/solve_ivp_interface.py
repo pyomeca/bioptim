@@ -139,7 +139,6 @@ def define_control_function(
 
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             # interpolate linearly the values of u at each time step to match the size of t_eval
-            # t_u = t_eval[::int(t_eval[:-1].shape[0] / controls[:, :-1].shape[1])]
             return interp1d(t_eval, controls, kind="linear", axis=1)
 
 
