@@ -497,11 +497,7 @@ def test_integrate_2(shooting, merge, integrator, ode_solver):
 
     opts["keep_intermediate_points"] = True
     opts["merge_phases"] = merge
-    if (
-        ode_solver == OdeSolver.COLLOCATION
-        and shooting != Shooting.MULTIPLE
-        and integrator == SolutionIntegrator.OCP
-    ):
+    if ode_solver == OdeSolver.COLLOCATION and shooting != Shooting.MULTIPLE and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
             RuntimeError,
             match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE",

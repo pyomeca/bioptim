@@ -822,9 +822,7 @@ class Solution:
 
         return step_times
 
-    def _get_first_frame_states(
-        self, sol, shooting_type: Shooting, phase: int
-    ) -> np.ndarray:
+    def _get_first_frame_states(self, sol, shooting_type: Shooting, phase: int) -> np.ndarray:
         """
         Get the first frame of the states for a given phase,
         according to the shooting type, the integrator and the phase of the ocp
@@ -1467,7 +1465,8 @@ def concatenate_optimization_variables_dict(
             for key in variable[0].keys():
                 variable_dict[key] = [v_i[key] for v_i in variable]
                 final_tuple = [
-                    y[:, :-1] if i < (len(variable_dict[key]) - 1) and continuous else y for i, y in enumerate(variable_dict[key])
+                    y[:, :-1] if i < (len(variable_dict[key]) - 1) and continuous else y
+                    for i, y in enumerate(variable_dict[key])
                 ]
                 variable_dict[key] = np.hstack(final_tuple)
             return [variable_dict]

@@ -246,7 +246,7 @@ def test_generate_integrate(
         with pytest.raises(
             ValueError,
             match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
-                  "When using multiple shooting, the intermediate points should be kept",
+            "When using multiple shooting, the intermediate points should be kept",
         ):
             sol.integrate(
                 shooting_type=shooting_type,
@@ -258,9 +258,9 @@ def test_generate_integrate(
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-                "we cannot use the  SolutionIntegrator.OCP.\n"
-                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+            " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
             sol.integrate(
                 shooting_type=shooting_type,
