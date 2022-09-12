@@ -1393,12 +1393,12 @@ Let's begin with `shooting_type = Shooting.SINGLE`, it re-integrates the ocp as 
 
 OdeSolver | <div style="width:110px">merge_phase</div> | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment|
 ----|-------------|-----------|:----:|:-----------:|
-DMS | True  | DEFAULT | :white_check_mark: | |
-DMS | False | DEFAULT | :white_check_mark: | |
+DMS | True  | OCP | :white_check_mark: | |
+DMS | False | OCP | :white_check_mark: | |
 DMS | True  | SCIPY | :white_check_mark: | |
 DMS | False | SCIPY | :white_check_mark: | |
-COLLOCATION | True | DEFAULT | :x: | COLLOCATION Solvers cannot be used with single shooting|
-COLLOCATION | False |  DEFAULT |  :x: | COLLOCATION Solvers cannot be used with single shooting|
+COLLOCATION | True | OCP | :x: | COLLOCATION Solvers cannot be used with single shooting|
+COLLOCATION | False |  OCP |  :x: | COLLOCATION Solvers cannot be used with single shooting|
 COLLOCATION | True | SCIPY | :white_check_mark: | |
 COLLOCATION | False | SCIPY | :white_check_mark: | |
 
@@ -1408,12 +1408,12 @@ Thus, SINGLE and SINGLE_DISCONTINUOUS_PHASES are equivalent if there is only one
 
 OdeSolver | <div style="width:110px">merge_phase</div> |  <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment|
 ----|-------------|-----------|:----:|:-----------:|
-DMS | True | DEFAULT | :white_check_mark: | |
-DMS | False | DEFAULT | :white_check_mark: | |
+DMS | True | OCP | :white_check_mark: | |
+DMS | False | OCP | :white_check_mark: | |
 DMS | True | SCIPY | :white_check_mark: | |
 DMS | False | SCIPY | :white_check_mark: | |
-COLLOCATION | True | DEFAULT | :x: | COLLOCATION Solvers cannot be used with single shooting|
-COLLOCATION | False | DEFAULT | :x: | COLLOCATION Solvers cannot be used with single shooting|
+COLLOCATION | True | OCP | :x: | COLLOCATION Solvers cannot be used with single shooting|
+COLLOCATION | False | OCP | :x: | COLLOCATION Solvers cannot be used with single shooting|
 COLLOCATION | True | SCIPY | :white_check_mark: |
 COLLOCATION | False | SCIPY | :white_check_mark: | |
 
@@ -1426,12 +1426,12 @@ It refers to the fact there are several points per intervals, shooting points un
 
 OdeSolver | <div style="width:110px">merge_phase</div>  | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment|
 ----|-------------|-----------|:----:|:-----------:|
-DMS | True | DEFAULT | :white_check_mark: | |
-DMS | False | DEFAULT | :white_check_mark: | |
+DMS | True | OCP | :white_check_mark: | |
+DMS | False | OCP | :white_check_mark: | |
 DMS | True | SCIPY | :white_check_mark: | |
 DMS | False | SCIPY | :white_check_mark: | |
-COLLOCATION | True | DEFAULT | :white_check_mark: | |
-COLLOCATION | False | DEFAULT | :white_check_mark: | |
+COLLOCATION | True | OCP | :white_check_mark: | |
+COLLOCATION | False | OCP | :white_check_mark: | |
 COLLOCATION | True | SCIPY  | :white_check_mark: | This is re-integrated with solve_ivp, so as direct multiple shooting problem |
 COLLOCATION | False | SCIPY | :white_check_mark: | This is re-integrated with solve_ivp, so as direct multiple shooting problem |
 
@@ -1584,7 +1584,7 @@ The type of cost
 
 ### Enum: SolutionIntegrator
 The type of integrator used to integrate the solution of the optimal control problem
-- DEFAULT: The default integrator initially chosen with [OdeSolver](#class-odesolver)
+- OCP: The OCP integrator initially chosen with [OdeSolver](#class-odesolver)
 - SCIPY_RK23: The scipy integrator RK23
 - SCIPY_RK45: The scipy integrator RK45
 - SCIPY_DOP853: The scipy integrator DOP853
