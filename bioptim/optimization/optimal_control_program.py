@@ -869,7 +869,7 @@ class OptimalControlProgram:
         automatically_organize: bool = True,
         show_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
-        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
     ) -> PlotOcp:
         """
         Create all the plots associated with the OCP

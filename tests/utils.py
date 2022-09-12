@@ -113,8 +113,8 @@ class TestUtils:
             with pytest.raises(
                 ValueError,
                 match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-                "and one uses the SolutionIntegrator.DEFAULT, we must use the shooting_type=Shooting.MULTIPLE.\n"
-                "Or, we can use one of the SolutionIntegrator provided by scipy to any Shooting such as"
+                "we cannot use the  SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             ):
                 sol.integrate(shooting_type=Shooting.SINGLE)
@@ -124,7 +124,7 @@ class TestUtils:
             merge_phases=True,
             shooting_type=Shooting.SINGLE,
             keep_intermediate_points=True,
-            integrator=SolutionIntegrator.DEFAULT,
+            integrator=SolutionIntegrator.OCP,
         )
 
         # Evaluate the final error of the single shooting integration versus the finale node

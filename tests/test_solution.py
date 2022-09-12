@@ -214,7 +214,7 @@ def test_generate_time(
 @pytest.mark.parametrize(
     "integrator",
     [
-        SolutionIntegrator.DEFAULT,
+        SolutionIntegrator.OCP,
         SolutionIntegrator.SCIPY_RK45,
     ],
 )
@@ -253,11 +253,11 @@ def test_generate_integrate(
                 keep_intermediate_points=keep_intermediate_points,
                 integrator=integrator,
             )
-    elif ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
+    elif ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-            "and one uses the SolutionIntegrator.DEFAULT, we must use the shooting_type=Shooting.MULTIPLE.\n"
+            "and one uses the SolutionIntegrator.OCP, we must use the shooting_type=Shooting.MULTIPLE.\n"
             "Or, we can use one of the SolutionIntegrator provided by scipy to any Shooting such as"
             " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
@@ -336,7 +336,7 @@ def test_generate_integrate(
 @pytest.mark.parametrize(
     "integrator",
     [
-        SolutionIntegrator.DEFAULT,
+        SolutionIntegrator.OCP,
         SolutionIntegrator.SCIPY_RK45,
     ],
 )
@@ -388,11 +388,11 @@ def test_generate_integrate_linear_continuous(
                 keep_intermediate_points=keep_intermediate_points,
                 integrator=integrator,
             )
-    elif ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.DEFAULT:
+    elif ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-            "and one uses the SolutionIntegrator.DEFAULT, we must use the shooting_type=Shooting.MULTIPLE.\n"
+            "and one uses the SolutionIntegrator.OCP, we must use the shooting_type=Shooting.MULTIPLE.\n"
             "Or, we can use one of the SolutionIntegrator provided by scipy to any Shooting such as"
             " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):

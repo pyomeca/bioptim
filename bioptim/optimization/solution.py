@@ -609,7 +609,7 @@ class Solution:
         keep_intermediate_points: bool
             If True, the intermediate points are kept
         integrator: Integrator
-            The integrator to use such as SolutionIntegrator.DEFAULT, SolutionIntegrator.SCIPY_RK45, etc...
+            The integrator to use such as SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45, etc...
         """
         if self.is_integrated:
             raise RuntimeError("Cannot integrate twice")
@@ -625,11 +625,11 @@ class Solution:
             )
 
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
-        if n_direct_collocation > 0 and integrator == SolutionIntegrator.DEFAULT:
+        if n_direct_collocation > 0 and integrator == SolutionIntegrator.OCP:
             raise ValueError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-                "and one uses the SolutionIntegrator.DEFAULT, we must use the shooting_type=Shooting.MULTIPLE.\n"
-                "Or, we can use one of the SolutionIntegrator provided by scipy to any Shooting such as"
+                "we cannot use the  SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
 
@@ -638,7 +638,7 @@ class Solution:
         shooting_type: Shooting = Shooting.SINGLE,
         keep_intermediate_points: bool = False,
         merge_phases: bool = False,
-        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        integrator: SolutionIntegrator = SolutionIntegrator.SCIPY_RK45,
     ) -> Any:
         """
         Integrate the states
@@ -652,11 +652,8 @@ class Solution:
             or only keep the node [True] effective keeping the initial size of the states
         merge_phases: bool
             If the phase should be merged in a unique phase
-        # continuous: bool
-        #     If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
-        #     arrival node and the beginning of the next one are expected to be almost equal when the problem converged
         integrator: SolutionIntegrator
-            Use the ode defined by OCP or use a separate integrator provided by scipy
+            Use the scipy integrator RK45 by default, you can use any integrator provided by scipy or the OCP integrator
 
         Returns
         -------
@@ -871,12 +868,12 @@ class Solution:
             else:
                 return self._states[phase]["all"][:, 0]
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            if self.ocp.nlp[phase].ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT:
+            if self.ocp.nlp[phase].ode_solver.is_direct_collocation and integrator == SolutionIntegrator.OCP:
                 return self._states[phase]["all"][:, slice(0, self.ocp.nlp[phase].ode_solver.steps)]
             else:
                 return self._states[phase]["all"][:, 0]
         elif shooting_type == Shooting.MULTIPLE:
-            if self.ocp.nlp[phase].ode_solver.is_direct_collocation and integrator == SolutionIntegrator.DEFAULT:
+            if self.ocp.nlp[phase].ode_solver.is_direct_collocation and integrator == SolutionIntegrator.OCP:
                 return self._states[phase]["all"]
             else:
                 return (
@@ -914,7 +911,7 @@ class Solution:
 
         # Copy the data
         out = self.copy(skip_data=True)
-        out.recomputed_time_steps = integrator != SolutionIntegrator.DEFAULT
+        out.recomputed_time_steps = integrator != SolutionIntegrator.OCP
         out._states = [dict() for _ in range(len(self._states))]
         out._time_vector = self._generate_ocp_time(
             keep_intermediate_points=keep_intermediate_points,
@@ -933,7 +930,7 @@ class Solution:
             x0 = self._get_first_frame_states(out, shooting_type, integrator, phase=p)
             u = self._controls[p]["all"]
 
-            if integrator != SolutionIntegrator.DEFAULT:
+            if integrator != SolutionIntegrator.OCP:
 
                 out._states[p]["all"] = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
@@ -947,6 +944,7 @@ class Solution:
                 )
 
             else:
+
                 out._states[p]["all"] = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
@@ -1156,7 +1154,7 @@ class Solution:
         show_bounds: bool = False,
         show_now: bool = True,
         shooting_type: Shooting = Shooting.MULTIPLE,
-        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
     ):
         """
         Show the graphs of the simulation
