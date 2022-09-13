@@ -188,9 +188,7 @@ def test_simulate_from_initial_multiple_shoot():
     sol = Solution(ocp, [X, U])
     controls = sol.controls
     sol = sol.integrate(
-        shooting_type=Shooting.MULTIPLE,
-        keep_intermediate_points=True,
-        integrator=SolutionIntegrator.OCP
+        shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
     )
     states = sol.states
 
