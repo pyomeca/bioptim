@@ -197,11 +197,11 @@ def test_simulate_from_initial_multiple_shoot():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.7553692, -1.6579819)))
+    np.testing.assert_almost_equal(q[:, -2], np.array((-0.7553692, -1.6579819)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.05240919, 2.864199)))
+    np.testing.assert_almost_equal(qdot[:, -2], np.array((1.05240919, 2.864199)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
