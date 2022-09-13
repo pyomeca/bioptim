@@ -210,7 +210,7 @@ def test_integrate(integrator, ode_solver):
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "we cannot use the SolutionIntegrator.OCP.\n"
             "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
             " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
@@ -267,7 +267,7 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "we cannot use the SolutionIntegrator.OCP.\n"
             "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
             " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
@@ -597,7 +597,7 @@ def test_integrate_2(shooting, merge, integrator, ode_solver):
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "we cannot use the SolutionIntegrator.OCP.\n"
             "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
             " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
@@ -677,7 +677,7 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "we cannot use the SolutionIntegrator.OCP.\n"
             "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
             " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
@@ -762,7 +762,7 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "we cannot use the SolutionIntegrator.OCP.\n"
             "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
             " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
