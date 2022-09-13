@@ -1430,10 +1430,10 @@ DMS | True | OCP | :white_check_mark: | |
 DMS | False | OCP | :white_check_mark: | |
 DMS | True | SCIPY | :white_check_mark: | |
 DMS | False | SCIPY | :white_check_mark: | |
-COLLOCATION | True | OCP | :white_check_mark: | |
-COLLOCATION | False | OCP | :white_check_mark: | |
-COLLOCATION | True | SCIPY  | :white_check_mark: | This is re-integrated with solve_ivp, so as direct multiple shooting problem |
-COLLOCATION | False | SCIPY | :white_check_mark: | This is re-integrated with solve_ivp, so as direct multiple shooting problem |
+COLLOCATION | True | OCP | :x: | The solution cannot be re-integrated with the ocp solver|
+COLLOCATION | False | OCP | :x: | The solution cannot be re-integrated with the ocp solver|
+COLLOCATION | True | SCIPY  | :white_check_mark: | This is re-integrated with solve_ivp, as direct multiple shooting problem |
+COLLOCATION | False | SCIPY | :white_check_mark: | This is re-integrated with solve_ivp, as direct multiple shooting problem |
 
 #### Interpolation
 
