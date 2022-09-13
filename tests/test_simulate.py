@@ -482,7 +482,8 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
                             -0.98540299,
                             -0.997886,
                             -0.65275624,
-                        ],[
+                        ],
+                        [
                             0.0,
                             -0.33842998,
                             -0.60464118,
@@ -494,7 +495,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
                             1.59212878,
                             2.02424576,
                             2.4979688,
-                        ]
+                        ],
                     ]
                 ),
                 decimal=decimal,
@@ -515,7 +516,8 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
                             -4.08055065,
                             4.42081733,
                             2.28438883,
-                        ],[
+                        ],
+                        [
                             0.0,
                             -4.53728128,
                             -1.86356667,
@@ -527,7 +529,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
                             4.275839,
                             6.01933341,
                             3.747852,
-                        ]
+                        ],
                     ]
                 ),
                 decimal=decimal,
@@ -555,10 +557,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
 @pytest.mark.parametrize("merge", [False, True])
-@pytest.mark.parametrize("integrator", [
-    SolutionIntegrator.OCP,
-    SolutionIntegrator.SCIPY_RK45
-])
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
 def test_integrate_2(shooting, merge, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
@@ -610,9 +609,7 @@ def test_integrate_2(shooting, merge, integrator, ode_solver):
     assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated._time_vector)[1]
 
     decimal = 0 if integrator != SolutionIntegrator.OCP or ode_solver == OdeSolver.COLLOCATION else 8
-    np.testing.assert_almost_equal(
-        sol_integrated.states["q"][:, [0, -1]], sol.states["q"][:, [0, -1]], decimal=decimal
-    )
+    np.testing.assert_almost_equal(sol_integrated.states["q"][:, [0, -1]], sol.states["q"][:, [0, -1]], decimal=decimal)
     for i, key in enumerate(sol.states):
 
         if ode_solver == OdeSolver.COLLOCATION:
@@ -639,20 +636,16 @@ def test_integrate_2(shooting, merge, integrator, ode_solver):
         _ = sol_integrated.controls
 
 
-@pytest.mark.parametrize("ode_solver", [
-    OdeSolver.RK4,
-    OdeSolver.COLLOCATION,
-])
-@pytest.mark.parametrize("shooting", [
-    Shooting.SINGLE,
-                                      Shooting.MULTIPLE,
-                                      Shooting.SINGLE_DISCONTINUOUS_PHASE
-                                      ])
+@pytest.mark.parametrize(
+    "ode_solver",
+    [
+        OdeSolver.RK4,
+        OdeSolver.COLLOCATION,
+    ],
+)
+@pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
-@pytest.mark.parametrize("integrator", [
-    SolutionIntegrator.OCP,
-    SolutionIntegrator.SCIPY_RK45
-])
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
 def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
@@ -675,18 +668,18 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
         with pytest.raises(
             ValueError,
             match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
-                "When using multiple shooting, the intermediate points should be kept.",
+            "When using multiple shooting, the intermediate points should be kept.",
         ):
             _ = sol.integrate(**opts)
         return
 
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
-                ValueError,
-                match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-                      "we cannot use the  SolutionIntegrator.OCP.\n"
-                      "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                      " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            ValueError,
+            match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+            " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
             sol.integrate(**opts)
         return
@@ -758,20 +751,20 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
 
     if shooting == Shooting.MULTIPLE and not keep_intermediate_points:
         with pytest.raises(
-                ValueError,
-                match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
-                      "When using multiple shooting, the intermediate points should be kept.",
+            ValueError,
+            match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
+            "When using multiple shooting, the intermediate points should be kept.",
         ):
             _ = sol.integrate(**opts)
         return
 
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
-                ValueError,
-                match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-                      "we cannot use the  SolutionIntegrator.OCP.\n"
-                      "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                      " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            ValueError,
+            match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+            " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
             sol.integrate(**opts)
         return
