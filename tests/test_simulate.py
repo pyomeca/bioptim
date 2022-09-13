@@ -184,7 +184,7 @@ def test_integrate(integrator, ode_solver):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    n_shooting = 80
+    n_shooting = 30 if integrator == SolutionIntegrator.SCIPY_RK45 else 10
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -207,7 +207,13 @@ def test_integrate(integrator, ode_solver):
 
     opts["keep_intermediate_points"] = True
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
-        with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
+        with pytest.raises(
+            ValueError,
+            match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+            " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+        ):
             sol.integrate(**opts)
         return
 
@@ -221,7 +227,7 @@ def test_integrate(integrator, ode_solver):
             sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
         )
 
-        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
+        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 6 + 1)
         if ode_solver == OdeSolver.COLLOCATION:
             assert sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
         else:
@@ -261,9 +267,9 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-                "we cannot use the  SolutionIntegrator.OCP.\n"
-                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+            " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
             sol.integrate(**opts)
         return
@@ -320,7 +326,11 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
     solver.set_print_level(0)
     sol = ocp.solve(solver)
 
-    opts = {"keep_intermediate_points": keep_intermediate_points, "integrator": SolutionIntegrator.SCIPY_RK45}
+    opts = {
+        "keep_intermediate_points": keep_intermediate_points,
+        "integrator": SolutionIntegrator.SCIPY_RK45,
+        "shooting_type": Shooting.SINGLE,
+    }
 
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
@@ -331,24 +341,26 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(
             sol_integrated.states["q"][:, [0, -1]],
-            np.array([[0.0, -0.40229917], [0.0, 2.66577734]]),
+            # np.array([[0.0, -0.40229917], [0.0, 2.66577734]]),
+            np.array([[0.0, -0.65275624], [0.0, 2.4979688]]),
             decimal=decimal,
         )
         np.testing.assert_almost_equal(
             sol_integrated.states["qdot"][:, [0, -1]],
-            np.array([[0.0, 4.09704146], [0.0, 4.54449186]]),
+            # np.array([[0.0, 4.09704146], [0.0, 4.54449186]]),
+            np.array([[0.0, 2.28438883], [0.0, 3.747852]]),
             decimal=decimal,
         )
 
     else:
         np.testing.assert_almost_equal(
             sol_integrated.states["q"][:, [0, -1]],
-            np.array([[0.0, -0.93010486], [0.0, 1.25096783]]),
+            np.array([[0.0, -0.97760288], [0.0, 1.3947029]]),
             decimal=decimal,
         )
         np.testing.assert_almost_equal(
             sol_integrated.states["qdot"][:, [0, -1]],
-            np.array([[0.0, -0.78079849], [0.0, 1.89447328]]),
+            np.array([[0.0, -0.74437441], [0.0, 2.5110703]]),
             decimal=decimal,
         )
 
@@ -362,44 +374,127 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
                 sol_integrated.states["all"],
                 np.array(
                     [
-                        [0.0, 0.3, 0.6, 0.8, 0.9, 0.8, -0.4, -0.8, -1.0, -0.9, -0.4],
-                        [0.0, -0.3, -0.6, -0.7, -0.8, -0.6, 0.6, 1.2, 1.6, 2.1, 2.7],
-                        [0.0, 4.6, 2.0, 1.7, 0.7, -4.2, -9.3, -1.1, -3.7, 6.0, 4.1],
-                        [0.0, -4.5, -1.8, -1.1, 0.3, 4.8, 10.2, 4.9, 4.1, 6.8, 4.5],
+                        [
+                            0.0,
+                            0.33788399,
+                            0.61305985,
+                            0.78294447,
+                            0.90394038,
+                            0.81104196,
+                            -0.31545745,
+                            -0.73812949,
+                            -0.98540299,
+                            -0.997886,
+                            -0.65275624,
+                        ],
+                        [
+                            0.0,
+                            -0.33842998,
+                            -0.60464118,
+                            -0.73699337,
+                            -0.78250955,
+                            -0.61080633,
+                            0.54787307,
+                            1.1720749,
+                            1.59212878,
+                            2.02424576,
+                            2.4979688,
+                        ],
+                        [
+                            0.0,
+                            4.57076562,
+                            2.06524347,
+                            1.77056981,
+                            0.82868553,
+                            -3.49623828,
+                            -10.46753253,
+                            -1.47986831,
+                            -4.08055065,
+                            4.42081733,
+                            2.28438883,
+                        ],
+                        [
+                            0.0,
+                            -4.53728128,
+                            -1.86356667,
+                            -1.11539845,
+                            0.17461346,
+                            4.18288921,
+                            11.20544048,
+                            4.87140204,
+                            4.275839,
+                            6.01933341,
+                            3.747852,
+                        ],
                     ]
                 ),
+                # np.array(
+                #     [
+                #         [0.0, 0.3, 0.6, 0.8, 0.9, 0.8, -0.4, -0.8, -1.0, -0.9, -0.4],
+                #         [0.0, -0.3, -0.6, -0.7, -0.8, -0.6, 0.6, 1.2, 1.6, 2.1, 2.7],
+                #         [0.0, 4.6, 2.0, 1.7, 0.7, -4.2, -9.3, -1.1, -3.7, 6.0, 4.1],
+                #         [0.0, -4.5, -1.8, -1.1, 0.3, 4.8, 10.2, 4.9, 4.1, 6.8, 4.5],
+                #     ]
+                # ),
                 decimal=decimal,
             )
             np.testing.assert_almost_equal(
                 sol_integrated.states["q"],
                 np.array(
+                    # [
+                    #     [
+                    #         0.0,
+                    #         0.33771737,
+                    #         0.60745128,
+                    #         0.77322807,
+                    #         0.87923355,
+                    #         0.75783664,
+                    #         -0.39855413,
+                    #         -0.78071335,
+                    #         -0.9923451,
+                    #         -0.92719046,
+                    #         -0.40229917,
+                    #     ],
+                    #     [
+                    #         0.0,
+                    #         -0.33826953,
+                    #         -0.59909116,
+                    #         -0.72747641,
+                    #         -0.76068201,
+                    #         -0.56369461,
+                    #         0.62924769,
+                    #         1.23356971,
+                    #         1.64774156,
+                    #         2.09574642,
+                    #         2.66577734,
+                    #     ],
+                    # ]
                     [
                         [
                             0.0,
-                            0.33771737,
-                            0.60745128,
-                            0.77322807,
-                            0.87923355,
-                            0.75783664,
-                            -0.39855413,
-                            -0.78071335,
-                            -0.9923451,
-                            -0.92719046,
-                            -0.40229917,
-                        ],
-                        [
+                            0.33788399,
+                            0.61305985,
+                            0.78294447,
+                            0.90394038,
+                            0.81104196,
+                            -0.31545745,
+                            -0.73812949,
+                            -0.98540299,
+                            -0.997886,
+                            -0.65275624,
+                        ],[
                             0.0,
-                            -0.33826953,
-                            -0.59909116,
-                            -0.72747641,
-                            -0.76068201,
-                            -0.56369461,
-                            0.62924769,
-                            1.23356971,
-                            1.64774156,
-                            2.09574642,
-                            2.66577734,
-                        ],
+                            -0.33842998,
+                            -0.60464118,
+                            -0.73699337,
+                            -0.78250955,
+                            -0.61080633,
+                            0.54787307,
+                            1.1720749,
+                            1.59212878,
+                            2.02424576,
+                            2.4979688,
+                        ]
                     ]
                 ),
                 decimal=decimal,
@@ -410,30 +505,29 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
                     [
                         [
                             0.0,
-                            4.56061105,
-                            2.00396203,
-                            1.71628908,
-                            0.67171827,
-                            -4.17420278,
-                            -9.3109149,
-                            -1.09241789,
-                            -3.74378463,
-                            6.01186572,
-                            4.09704146,
-                        ],
-                        [
+                            4.57076562,
+                            2.06524347,
+                            1.77056981,
+                            0.82868553,
+                            -3.49623828,
+                            -10.46753253,
+                            -1.47986831,
+                            -4.08055065,
+                            4.42081733,
+                            2.28438883,
+                        ],[
                             0.0,
-                            -4.52749096,
-                            -1.8038578,
-                            -1.06710062,
-                            0.30405407,
-                            4.80782728,
-                            10.24044964,
-                            4.893414,
-                            4.12673905,
-                            6.83563286,
-                            4.54449186,
-                        ],
+                            -4.53728128,
+                            -1.86356667,
+                            -1.11539845,
+                            0.17461346,
+                            4.18288921,
+                            11.20544048,
+                            4.87140204,
+                            4.275839,
+                            6.01933341,
+                            3.747852,
+                        ]
                     ]
                 ),
                 decimal=decimal,
@@ -461,18 +555,21 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
 @pytest.mark.parametrize("merge", [False, True])
-@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
+@pytest.mark.parametrize("integrator", [
+    SolutionIntegrator.OCP,
+    SolutionIntegrator.SCIPY_RK45
+])
 def test_integrate_2(shooting, merge, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    n_shooting = 10
+    n_shooting = 10 if integrator == SolutionIntegrator.OCP else 30
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=0.9,
+        final_time=1,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
     )
@@ -490,17 +587,20 @@ def test_integrate_2(shooting, merge, integrator, ode_solver):
     if shooting == Shooting.MULTIPLE:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "
-            "simultaneously since it would do nothing",
+            match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
+            "When using multiple shooting, the intermediate points should be kept.",
         ):
             _ = sol.integrate(**opts)
 
     opts["keep_intermediate_points"] = True
     opts["merge_phases"] = merge
-    if ode_solver == OdeSolver.COLLOCATION and shooting != Shooting.MULTIPLE and integrator == SolutionIntegrator.OCP:
+    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
-            RuntimeError,
-            match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE",
+            ValueError,
+            match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+            "we cannot use the  SolutionIntegrator.OCP.\n"
+            "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+            " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
             sol.integrate(**opts)
         return
@@ -509,20 +609,26 @@ def test_integrate_2(shooting, merge, integrator, ode_solver):
     shapes = (4, 2, 2)
     assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated._time_vector)[1]
 
-    decimal = 1 if integrator != SolutionIntegrator.OCP or ode_solver == OdeSolver.COLLOCATION else 8
+    decimal = 0 if integrator != SolutionIntegrator.OCP or ode_solver == OdeSolver.COLLOCATION else 8
+    np.testing.assert_almost_equal(
+        sol_integrated.states["q"][:, [0, -1]], sol.states["q"][:, [0, -1]], decimal=decimal
+    )
     for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(
-            sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
-        )
 
         if ode_solver == OdeSolver.COLLOCATION:
             if integrator != SolutionIntegrator.OCP:
-                assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
+                if shooting == Shooting.MULTIPLE:
+                    assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 6 + 1)
+                else:
+                    assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
             else:
                 assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (4 + 1) + 1)
             assert sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
         else:
-            assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
+            if shooting == Shooting.MULTIPLE:
+                assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
+            else:
+                assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
             assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
     with pytest.raises(
@@ -533,10 +639,20 @@ def test_integrate_2(shooting, merge, integrator, ode_solver):
         _ = sol_integrated.controls
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-@pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
+@pytest.mark.parametrize("ode_solver", [
+    OdeSolver.RK4,
+    OdeSolver.COLLOCATION,
+])
+@pytest.mark.parametrize("shooting", [
+    Shooting.SINGLE,
+                                      Shooting.MULTIPLE,
+                                      Shooting.SINGLE_DISCONTINUOUS_PHASE
+                                      ])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
-@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
+@pytest.mark.parametrize("integrator", [
+    SolutionIntegrator.OCP,
+    SolutionIntegrator.SCIPY_RK45
+])
 def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, ode_solver):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
@@ -555,30 +671,22 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
         "keep_intermediate_points": keep_intermediate_points,
         "integrator": integrator,
     }
-
-    if ode_solver == OdeSolver.COLLOCATION:
-        if integrator == SolutionIntegrator.OCP:
-            if shooting != Shooting.MULTIPLE:
-                with pytest.raises(
-                    RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
-                ):
-                    _ = sol.integrate(**opts)
-                return
-
-    if shooting == Shooting.MULTIPLE:
-        if not keep_intermediate_points:
-            with pytest.raises(
-                ValueError,
-                match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "
-                "simultaneously since it would do nothing",
-            ):
-                _ = sol.integrate(**opts)
-            return
+    if shooting == Shooting.MULTIPLE and not keep_intermediate_points:
+        with pytest.raises(
+            ValueError,
+            match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
+                "When using multiple shooting, the intermediate points should be kept.",
+        ):
+            _ = sol.integrate(**opts)
+        return
 
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
-            RuntimeError,
-            match="Integration with direct collocation must be not continuous",
+                ValueError,
+                match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                      "we cannot use the  SolutionIntegrator.OCP.\n"
+                      "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                      " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
             sol.integrate(**opts)
         return
@@ -602,7 +710,10 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
                 )
 
             if keep_intermediate_points:
-                assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
+                if shooting == Shooting.MULTIPLE:
+                    assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * 6 + 1)
+                else:
+                    assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
             else:
                 if integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE:
                     np.testing.assert_almost_equal(sol_integrated.states[i][key], sol.states[i][key])
@@ -645,41 +756,27 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
         "integrator": integrator,
     }
 
-    if shooting == Shooting.SINGLE:
+    if shooting == Shooting.MULTIPLE and not keep_intermediate_points:
         with pytest.raises(
-            ValueError,
-            match="Shooting.SINGLE and continuous=False cannot be used simultaneously it is a contradiction",
+                ValueError,
+                match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
+                      "When using multiple shooting, the intermediate points should be kept.",
         ):
             _ = sol.integrate(**opts)
         return
 
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
-        if shooting != Shooting.MULTIPLE:
-            with pytest.raises(
-                RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
-            ):
-                _ = sol.integrate(**opts)
-            return
-
-    if shooting == Shooting.MULTIPLE:
-        if not keep_intermediate_points:
-            with pytest.raises(
-                ValueError,
-                match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used "
-                "simultaneously since it would do nothing",
-            ):
-                _ = sol.integrate(**opts)
-            return
-
-    opts["merge_phases"] = True
-
-    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
-            RuntimeError,
-            match="Integration with direct collocation must be not continuous",
+                ValueError,
+                match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                      "we cannot use the  SolutionIntegrator.OCP.\n"
+                      "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                      " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
             sol.integrate(**opts)
         return
+
+    opts["merge_phases"] = True
 
     n_shooting = [20, 30, 20]
     sol_integrated = sol.integrate(**opts)
@@ -693,7 +790,12 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
             np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected, decimal=decimal)
 
         if keep_intermediate_points:
-            assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 5 + 1)
+            if shooting == Shooting.MULTIPLE:
+                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 6 + 3 * 1)
+            elif shooting == Shooting.SINGLE_DISCONTINUOUS_PHASE:
+                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 5 + 3 * 1)
+            else:
+                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 5 + 1)
         else:
             # The interpolation prevents from comparing all points
             if integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE:
@@ -701,7 +803,11 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
                     (sol.states[0][key][:, 0:1], sol.states[-1][key][:, -1][:, np.newaxis]), axis=1
                 )
                 np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
-            assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) + 1)
+
+            if shooting == Shooting.SINGLE_DISCONTINUOUS_PHASE:
+                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) + 3 * 1)
+            else:
+                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) + 1)
 
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
