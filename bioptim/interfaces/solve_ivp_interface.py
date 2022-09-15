@@ -94,14 +94,14 @@ def solve_ivp_interface(
 
 
 def define_control_function(
-    t_eval: np.ndarray, controls: np.ndarray, control_type: ControlType, keep_intermediate_points: bool
+    t_u: np.ndarray, controls: np.ndarray, control_type: ControlType, keep_intermediate_points: bool
 ) -> Callable:
     """
     This function defines the control function to use in the integration.
 
     Parameters
     ----------
-    t_eval : np.ndarray
+    t_u : np.ndarray
         array of times t where the controls u are evaluated at
     controls : np.ndarray
         arrays of controls u evaluated at t_eval
@@ -117,29 +117,33 @@ def define_control_function(
     """
 
     if keep_intermediate_points:
+        # repeat values of u to match the size of t_eval
+        n_shooting_extended = t_u.shape[0] - 1
+        n_shooting = controls.shape[1] - 1
+        n_step = n_shooting_extended // n_shooting
+
         if control_type == ControlType.CONSTANT:
-            # repeat values of u to match the size of t_eval
             controls = np.concatenate(
                 (
-                    np.repeat(controls[:, :-1], t_eval[:-1].shape[0] / controls[:, :-1].shape[1], axis=1),
+                    np.repeat(controls[:, :-1], n_step, axis=1),
                     controls[:, -1:],
                 ),
                 axis=1,
             )
-            return lambda t: piecewise_constant_u(t, t_eval, controls)
+            return lambda t: piecewise_constant_u(t, t_u, controls)
 
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             # interpolate linearly the values of u at each time step to match the size of t_eval
-            t_u = t_eval[:: int(t_eval[:-1].shape[0] / controls[:, :-1].shape[1])]  # get the actual time steps of u
+            t_u = t_u[:: n_step]  # get the actual time steps of u
             return interp1d(t_u, controls, kind="linear", axis=1)
     else:
 
         if control_type == ControlType.CONSTANT:
-            return lambda t: piecewise_constant_u(t, t_eval, controls)
+            return lambda t: piecewise_constant_u(t, t_u, controls)
 
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             # interpolate linearly the values of u at each time step to match the size of t_eval
-            return interp1d(t_eval, controls, kind="linear", axis=1)
+            return interp1d(t_u, controls, kind="linear", axis=1)
 
 
 def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np.ndarray) -> float:
@@ -199,7 +203,11 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
         idx: int
             index of the closest previous time in t_eval to t
         """
-        return previous_t(t, t_eval) - 1 if previous_t(t, t_eval) == len(t_eval) - 1 else previous_t(t, t_eval)
+        val = previous_t(t, t_eval)
+        if val == len(t_eval) - 1:
+            return val - 1
+        else:
+            return val
 
     if t_eval.shape[0] != u.shape[1]:
         raise ValueError("t_eval and u must have the same length, please report the bug to the developers")
