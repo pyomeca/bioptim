@@ -131,7 +131,7 @@ def test_penalty_minimize_qddot(penalty_origin, value):
     t = [0, 1]
     x = [DM.ones((8, 1)) * value, DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
-    if penalty_origin == ObjectiveFcn.Mayer or penalty_origin == ConstraintFcn:
+    if penalty_origin == ConstraintFcn:
         with pytest.raises(AttributeError, match="MINIMIZE_QDDOT"):
             _ = penalty_origin.MINIMIZE_QDDOT
         return
