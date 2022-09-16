@@ -300,8 +300,14 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
         _ = sol_integrated.controls
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-@pytest.mark.parametrize("keep_intermediate_points", [False, True])
+@pytest.mark.parametrize("ode_solver", [
+    OdeSolver.RK4,
+    OdeSolver.COLLOCATION
+])
+@pytest.mark.parametrize("keep_intermediate_points", [
+    False,
+    True
+])
 def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
     if ode_solver == OdeSolver.COLLOCATION and platform == "darwin":
         # For some reason, the test fails on Mac
@@ -337,12 +343,6 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
     assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time)[0]
 
     decimal = 1
-    #
-    # import matplotlib.pyplot as plt
-    # plt.plot(sol.time, sol.states["qdot"].T, label="solution")
-    # plt.plot(sol_integrated.time, sol_integrated.states["qdot"].T, label="integrated")
-    # plt.legend()
-    # plt.show()
 
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(

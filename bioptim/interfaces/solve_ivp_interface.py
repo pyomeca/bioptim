@@ -175,7 +175,6 @@ def run_solve_ivp(
         y0=x0,
         t_eval=t_eval,
         method=method,
-        # max_step=np.min(np.diff(t_eval)),
     )
 
     return integrated_sol.y
