@@ -334,7 +334,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
 
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
-    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated._time_vector)[1]
+    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time)[0]
 
     decimal = 1
     #

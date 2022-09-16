@@ -328,7 +328,7 @@ class Solution:
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
-            self._time_vector = self._generate_ocp_time()
+            self._time_vector = self._generate_time()
 
         def init_from_initial_guess(_sol: list):
             """
@@ -698,7 +698,7 @@ class Solution:
 
         return out
 
-    def _generate_ocp_time(
+    def _generate_time(
         self,
         keep_intermediate_points: bool = None,
         merge_phases: bool = False,
@@ -756,7 +756,6 @@ class Solution:
 
             # add the final time of the phase
             if shooting_type == Shooting.MULTIPLE:
-                # flat_time[-1] = np.concatenate((flat_time[-1], np.array([nlp.ns * dt_ns])))
                 flat_time.append(np.array([nlp.ns * dt_ns]))
             if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
                 flat_time += [nlp.ns * dt_ns]
@@ -899,7 +898,7 @@ class Solution:
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = integrator != SolutionIntegrator.OCP
         out._states = [dict() for _ in range(len(self._states))]
-        out._time_vector = self._generate_ocp_time(
+        out._time_vector = self._generate_time(
             keep_intermediate_points=keep_intermediate_points,
             merge_phases=False,
             shooting_type=shooting_type,

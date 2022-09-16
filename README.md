@@ -1361,7 +1361,7 @@ In any cases, the key `all` is always there.
 ```python
 # single-phase case
 q = sol.states["q"]  # generalized coordinates
-q = sol.states["all"] # all states
+q = sol.states["all"]  # all states
 # multiple-phase case - states of the first phase
 q = sol.states[0]["q"]
 q = sol.states[0]["all"]
@@ -1420,9 +1420,8 @@ COLLOCATION | False | SCIPY | :white_check_mark: | |
 ##### Shooting.MULTIPLE
 
 Let's finish with `shooting_type = Shooting.MULTIPLE`,
-please not that this cannot be used with `keep_intermediates_points=False`.
-Also, the word `MULTIPLE` is used as a common terminology, to be able to execute DMS and COLLOCATION.
-It refers to the fact there are several points per intervals, shooting points un DMS and collocation points in COLLOCATION.
+please note that this cannot be used with `keep_intermediates_points=False`.
+Also, the word `MULTIPLE` is used to refer to direct multiple shooting.
 
 OdeSolver | <div style="width:110px">merge_phase</div>  | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment|
 ----|-------------|-----------|:----:|:-----------:|

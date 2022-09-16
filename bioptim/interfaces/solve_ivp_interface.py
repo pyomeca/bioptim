@@ -55,12 +55,14 @@ def solve_ivp_interface(
             # resize u to match the size of t_eval according to the type of control
             if control_type == ControlType.CONSTANT:
                 ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
-            else:
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
                 ui = f(t_eval_step)
+            else:
+                raise NotImplementedError("Control type not implemented")
 
             # solve single shooting for each phase
-            y = solve_ivp_interface(
+            y = run_solve_ivp(
                 dynamics_func=dynamics_func,
                 t_eval=t_eval_step,
                 x0=x0i,
@@ -76,21 +78,107 @@ def solve_ivp_interface(
         return y_final
 
     else:  # Single shooting
-        # resize u to match t_eval and handle control types (piecewise constant or linear continuous)
-        control_function = define_control_function(
-            t_eval, controls=u, control_type=control_type, keep_intermediate_points=keep_intermediate_points
-        )
+        # reshape t_eval to get t_eval_step, single shooting is solved for each interval
+        if keep_intermediate_points:
+            # resize t_eval to get intervals of [ti,..., ti+1] for each intervals with nsteps
+            n_shooting_extended = t_eval.shape[0] - 1
+            n_shooting = u.shape[1] - 1
+            n_step = n_shooting_extended // n_shooting
 
-        t_span = [t_eval[0], t_eval[-1]]
-        integrated_sol = solve_ivp(
-            lambda t, x: np.array(dynamics_func(x, control_function(t), params))[:, 0],
-            t_span=t_span,
-            y0=x0,
-            t_eval=t_eval,
-            method=method,
-        )
+            t_eval_block_1 = t_eval[:-1].reshape(n_shooting, n_step)
+            t_eval_block_2 = np.vstack((t_eval_block_1[1:, 0:1], t_eval[-1]))
+            t_eval = np.hstack((t_eval_block_1, t_eval_block_2))
+        else:
+            # resize t_eval to get intervals of [ti, ti+1] for each intervals
+            t_eval = np.hstack((np.array(t_eval).reshape(-1, 1)[:-1], np.array(t_eval).reshape(-1, 1)[1:]))
 
-        return integrated_sol.y
+        y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
+        x0i = x0
+
+        for s, t_eval_step in enumerate(t_eval):
+
+            u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
+
+            # resize u to match the size of t_eval according to the type of control
+            if control_type == ControlType.CONSTANT:
+                ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
+                f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
+                ui = f(t_eval_step)
+            else:
+                raise NotImplementedError("Control type not implemented")
+
+            y = run_solve_ivp(
+                dynamics_func=dynamics_func,
+                t_eval=t_eval_step,
+                x0=x0i,
+                u=ui,
+                params=params,
+                method=method,
+                keep_intermediate_points=keep_intermediate_points,
+                control_type=control_type,
+            )
+
+            y_final = np.hstack((y_final, y[:, 0:-1]))
+            x0i = y[:, -1]
+        y_final = np.hstack((y_final, y[:, -1:]))
+
+        return y_final
+
+
+def run_solve_ivp(
+        dynamics_func: Callable,
+        t_eval: Union[np.ndarray, List[float]],
+        x0: np.ndarray,
+        u: np.ndarray,
+        params: np.ndarray,
+        method: Union[str, Any] = "RK45",
+        keep_intermediate_points: bool = False,
+        control_type: ControlType = ControlType.CONSTANT,
+):
+    """
+    This function solves the initial value problem with scipy.integrate.solve_ivp
+
+    Parameters
+    ----------
+    dynamics_func : Callable
+        function that computes the dynamics of the system
+    t_eval : Union[np.ndarray, List[float]]
+        array of times t the controls u are evaluated at
+    x0 : np.ndarray
+        array of initial conditions
+    u : np.ndarray
+        arrays of controls u evaluated at t_eval
+    params : np.ndarray
+        array of parameters
+    method : str, optional
+        method to use for the integration, by default "RK45"
+    keep_intermediate_points : bool
+        whether to keep the intermediate points or not, by default False
+    control_type : ControlType
+        type of control, by default ControlType.CONSTANT
+
+    Returns
+    -------
+    y: np.ndarray
+        array of the solution of the system at the times t_eval
+
+    """
+    control_function = define_control_function(
+        t_eval, controls=u, control_type=control_type, keep_intermediate_points=keep_intermediate_points
+    )
+
+    t_span = [t_eval[0], t_eval[-1]]
+    integrated_sol = solve_ivp(
+        lambda t, x: np.array(dynamics_func(x, control_function(t), params))[:, 0],
+        t_span=t_span,
+        y0=x0,
+        t_eval=t_eval,
+        method=method,
+        # max_step=np.min(np.diff(t_eval)),
+    )
+
+    return integrated_sol.y
 
 
 def define_control_function(
@@ -200,14 +288,14 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
 
         Returns
         -------
-        idx: int
+        int
             index of the closest previous time in t_eval to t
         """
-        val = previous_t(t, t_eval)
-        if val == len(t_eval) - 1:
-            return val - 1
+        out = previous_t(t, t_eval)
+        if out == len(t_eval) - 1:
+            return out - 1
         else:
-            return val
+            return out
 
     if t_eval.shape[0] != u.shape[1]:
         raise ValueError("t_eval and u must have the same length, please report the bug to the developers")

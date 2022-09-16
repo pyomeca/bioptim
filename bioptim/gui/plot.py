@@ -612,7 +612,7 @@ class PlotOcp:
         if all([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]):
             # no need to integrate when using direct collocation
             data_states = sol.states
-            data_time = sol._generate_ocp_time()
+            data_time = sol._generate_time()
         elif all([nlp.ode_solver.is_direct_shooting for nlp in self.ocp.nlp]):
             integrated = sol.integrate(
                 shooting_type=self.shooting_type,
@@ -640,8 +640,7 @@ class PlotOcp:
                 if self.integrator != SolutionIntegrator.OCP
                 else nlp.ode_solver.steps + 1
             )
-            # n_elements = nlp.ns * step_size + 1
-            # n_elements = nlp.ns * step_size  # seems like it could work in DMS but no in DC
+
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
             for s in nlp.states:

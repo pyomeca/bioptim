@@ -107,7 +107,7 @@ def test_generate_time(
 
     sol = ocp.solve(solver=solver)
 
-    time = sol._generate_ocp_time(
+    time = sol._generate_time(
         shooting_type=shooting_type,
         keep_intermediate_points=keep_intermediate_points,
         merge_phases=merge_phase,
