@@ -127,14 +127,14 @@ def solve_ivp_interface(
 
 
 def run_solve_ivp(
-        dynamics_func: Callable,
-        t_eval: Union[np.ndarray, List[float]],
-        x0: np.ndarray,
-        u: np.ndarray,
-        params: np.ndarray,
-        method: Union[str, Any] = "RK45",
-        keep_intermediate_points: bool = False,
-        control_type: ControlType = ControlType.CONSTANT,
+    dynamics_func: Callable,
+    t_eval: Union[np.ndarray, List[float]],
+    x0: np.ndarray,
+    u: np.ndarray,
+    params: np.ndarray,
+    method: Union[str, Any] = "RK45",
+    keep_intermediate_points: bool = False,
+    control_type: ControlType = ControlType.CONSTANT,
 ):
     """
     This function solves the initial value problem with scipy.integrate.solve_ivp
@@ -221,7 +221,7 @@ def define_control_function(
 
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             # interpolate linearly the values of u at each time step to match the size of t_eval
-            t_u = t_u[:: n_step]  # get the actual time steps of u
+            t_u = t_u[::n_step]  # get the actual time steps of u
             return interp1d(t_u, controls, kind="linear", axis=1)
     else:
 
