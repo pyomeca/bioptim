@@ -14,4 +14,4 @@ jobs:
       - name: Install Black
         run: pip install black
       - name: Run black --check .
-        run: black --exclude "external/*" --check .
+        run: black . --exclude "external/*" --check -l120
