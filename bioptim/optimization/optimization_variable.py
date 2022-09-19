@@ -215,7 +215,7 @@ class OptimizationVariableList:
     @property
     def cx(self):
         """
-        The the cx of all elements together (starting point)
+        The cx of all elements together (starting point)
         """
 
         return self._cx[:, 0]
@@ -223,7 +223,7 @@ class OptimizationVariableList:
     @property
     def cx_end(self):
         """
-        The the cx of all elements together (ending point)
+        The cx of all elements together (ending point)
         """
 
         return self._cx_end[:, 0]

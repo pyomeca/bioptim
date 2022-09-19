@@ -597,8 +597,9 @@ Finally, one can save and load previously optimized values by using
 ocp.save(solution, file_path)
 ocp, solution = OptimalControlProgram.load(file_path)
 ```
-Please note that this is `bioptim` version dependent, which means that an optimized solution from a previous version will not probably load on a newer `bioptim` version.
-To save the solution in a version independent manner, you may want to manually save the data from the solution.
+IMPORTANT NOTICE: Please note that this is dependent on the `bioptim` version used to create the .bo file and retrocompatibility is NOT enforced.
+This means that an optimized solution from a previous version will probably NOT load on a newer `bioptim` version.
+To save the solution in a way which is independent of the version of `bioptim`, one may use the `stand_alone` flag to `True`.
 
 Finally, the `add_plot(name, update_function)` method can be used to create new dynamics plots.
 The name is simply the name of the figure.

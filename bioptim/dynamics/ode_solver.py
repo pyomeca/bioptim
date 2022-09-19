@@ -228,6 +228,10 @@ class OdeSolver:
         ----------
         polynomial_degree: int
             The degree of the implicit RK
+        method : str
+            The method of interpolation ("legendre" or "radau")
+        defects_type: DefectType
+            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
 
         Methods
         -------
@@ -309,6 +313,10 @@ class OdeSolver:
         ----------
         polynomial_degree: int
             The degree of the implicit RK
+        method: str
+            The method of interpolation ("legendre" or "radau")
+        defects_type: DefectType
+            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
 
         Methods
         -------
