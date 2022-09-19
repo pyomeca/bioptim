@@ -199,7 +199,7 @@ class PlotOcp:
         automatically_organize: bool = True,
         show_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
-        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
     ):
         """
         Prepares the figures during the simulation
@@ -295,13 +295,13 @@ class PlotOcp:
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
             n_int_steps = (
-                nlp.ode_solver.steps_scipy if self.integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
+                nlp.ode_solver.steps_scipy if self.integrator != SolutionIntegrator.OCP else nlp.ode_solver.steps
             )
             dt_ns = self.tf[phase_idx] / nlp.ns
             time_phase_integrated = []
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
-                if nlp.ode_solver.is_direct_collocation and self.integrator == SolutionIntegrator.DEFAULT:
+                if nlp.ode_solver.is_direct_collocation and self.integrator == SolutionIntegrator.OCP:
                     time_phase_integrated.append(np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int)
                 else:
                     time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
@@ -438,7 +438,7 @@ class PlotOcp:
                         plots_integrated = []
                         n_int_steps = (
                             nlp.ode_solver.steps_scipy
-                            if self.integrator != SolutionIntegrator.DEFAULT
+                            if self.integrator != SolutionIntegrator.OCP
                             else nlp.ode_solver.steps
                         )
                         zero = np.zeros(n_int_steps + 1)
@@ -608,12 +608,22 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, v)
-        data_states = sol.integrate(
-            continuous=False,
-            shooting_type=self.shooting_type,
-            keep_intermediate_points=True,
-            integrator=self.integrator,
-        ).states
+
+        if all([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]):
+            # no need to integrate when using direct collocation
+            data_states = sol.states
+            data_time = sol._generate_time()
+        elif all([nlp.ode_solver.is_direct_shooting for nlp in self.ocp.nlp]):
+            integrated = sol.integrate(
+                shooting_type=self.shooting_type,
+                keep_intermediate_points=True,
+                integrator=self.integrator,
+            )
+            data_states = integrated.states
+            data_time = integrated._time_vector
+        else:
+            raise NotImplementedError("Graphs are not implemented when mixing direct collocation and direct shooting")
+
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
@@ -627,11 +637,11 @@ class PlotOcp:
         for i, nlp in enumerate(self.ocp.nlp):
             step_size = (
                 nlp.ode_solver.steps_scipy + 1
-                if self.integrator != SolutionIntegrator.DEFAULT
+                if self.integrator != SolutionIntegrator.OCP
                 else nlp.ode_solver.steps + 1
             )
-            n_elements = nlp.ns * step_size + 1
 
+            n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
             for s in nlp.states:
                 if isinstance(data_states, (list, tuple)):
