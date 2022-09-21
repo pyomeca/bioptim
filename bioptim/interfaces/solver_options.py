@@ -433,6 +433,12 @@ class Solver:
             True if the tolerance has been modified, use ful for moving horizon estimation
         _only_first_options_has_changed
             True if non editable options has been modified in options.
+        _c_compile: bool
+            True if you want to compile in C the code.
+        _c_generated_code_path: str
+            Directory of the generated code (default: "c_generated_code").
+        _acados_model_name: str
+            Name of the Acados model name used to build an existing c_generated library.
         """
 
         type: SolverType = SolverType.ACADOS
@@ -454,6 +460,9 @@ class Solver:
         _acados_dir: str = ""
         _has_tolerance_changed: bool = False
         _only_first_options_has_changed: bool = False
+        _c_compile: bool = True
+        _c_generated_code_path: str = "c_generated_code"
+        _acados_model_name: str = None
 
         @property
         def qp_solver(self):
@@ -618,6 +627,9 @@ class Solver:
                     or key == "_has_tolerance_changed"
                     or key == "_only_first_options_has_changed"
                     or key == "type"
+                    or key == "_c_compile"
+                    or key == "_c_generated_code_path"
+                    or key == "_acados_model_name"
                 ):
                     continue
                 if key[0] == "_":
@@ -630,9 +642,30 @@ class Solver:
         def print_level(self):
             return self._print_level
 
+        @property
+        def c_compile(self):
+            return self._c_compile
+
+        @property
+        def c_generated_code_path(self):
+            return self._c_generated_code_path
+
+        @property
+        def acados_model_name(self):
+            return self._acados_model_name
+
         def set_print_level(self, num: int):
             self._print_level = num
             self.set_only_first_options_has_changed(True)
+
+        def set_c_compile(self, val: bool):
+            self._c_compile = val
+
+        def set_c_generated_code_path(self, val: str):
+            self._c_generated_code_path = val
+
+        def set_acados_model_name(self, val: str):
+            self._acados_model_name = val
 
         @staticmethod
         def get_tolerance_keys():

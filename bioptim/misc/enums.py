@@ -62,7 +62,7 @@ class Shooting(Enum):
 
     MULTIPLE = "Multiple"
     SINGLE = "Single"
-    SINGLE_CONTINUOUS = "Single continuous"
+    SINGLE_DISCONTINUOUS_PHASE = "Single discontinuous phase"
 
 
 class CostType(Enum):
@@ -111,7 +111,7 @@ class SolutionIntegrator(Enum):
     Selection of integrator to use integrate function
     """
 
-    DEFAULT = "DEFAULT"
+    OCP = "OCP"
     SCIPY_RK23 = "RK23"
     SCIPY_RK45 = "RK45"
     SCIPY_DOP853 = "DOP853"

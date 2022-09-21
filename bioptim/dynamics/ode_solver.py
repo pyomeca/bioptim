@@ -144,7 +144,7 @@ class RK(OdeSolverBase):
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
     def __str__(self):
-        ode_solver_string = f"{self.rk_integrator.__name__}\n{self.steps} step"
+        ode_solver_string = f"{self.rk_integrator.__name__} {self.steps} step"
         if self.steps > 1:
             ode_solver_string += "s"
 
@@ -228,6 +228,10 @@ class OdeSolver:
         ----------
         polynomial_degree: int
             The degree of the implicit RK
+        method : str
+            The method of interpolation ("legendre" or "radau")
+        defects_type: DefectType
+            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
 
         Methods
         -------
@@ -299,7 +303,7 @@ class OdeSolver:
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
         def __str__(self):
-            return f"{self.rk_integrator.__name__}\n{self.method}\n{self.polynomial_degree}"
+            return f"{self.rk_integrator.__name__} {self.method} {self.polynomial_degree}"
 
     class IRK(COLLOCATION):
         """
@@ -309,6 +313,10 @@ class OdeSolver:
         ----------
         polynomial_degree: int
             The degree of the implicit RK
+        method: str
+            The method of interpolation ("legendre" or "radau")
+        defects_type: DefectType
+            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
 
         Methods
         -------

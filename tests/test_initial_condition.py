@@ -2,7 +2,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import InterpolationType, InitialGuess, Solution, Shooting
+from bioptim import InterpolationType, InitialGuess, Solution, Shooting, SolutionIntegrator
 
 # TODO: Add negative test for sizes
 
@@ -187,7 +187,9 @@ def test_simulate_from_initial_multiple_shoot():
 
     sol = Solution(ocp, [X, U])
     controls = sol.controls
-    sol = sol.integrate(shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True)
+    sol = sol.integrate(
+        shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
+    )
     states = sol.states
 
     # Check some of the results
@@ -195,11 +197,11 @@ def test_simulate_from_initial_multiple_shoot():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.7553692, -1.6579819)))
+    np.testing.assert_almost_equal(q[:, -2], np.array((-0.7553692, -1.6579819)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.05240919, 2.864199)))
+    np.testing.assert_almost_equal(qdot[:, -2], np.array((1.05240919, 2.864199)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
@@ -224,7 +226,7 @@ def test_simulate_from_initial_single_shoot():
 
     sol = Solution(ocp, [X, U])
     controls = sol.controls
-    sol = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS, keep_intermediate_points=True)
+    sol = sol.integrate(shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP)
 
     # Check some of the results
     states = sol.states
