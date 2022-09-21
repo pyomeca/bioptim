@@ -29,6 +29,7 @@ from bioptim import (
     InterpolationType,
     SoftContactDynamics,
     RigidBodyDynamics,
+    SolutionIntegrator,
 )
 
 
@@ -86,7 +87,7 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     U = InitialGuess([0, 0, 0])
 
     sol_from_initial_guess = Solution(ocp, [X, U])
-    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, continuous=True)
+    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 
     # Rolling Sphere at equilibrium
@@ -97,7 +98,7 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     U = InitialGuess([0, 0, -10])
 
     sol_from_initial_guess = Solution(ocp, [X, U])
-    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, continuous=True)
+    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
     return X0
 

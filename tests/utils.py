@@ -110,15 +110,26 @@ class TestUtils:
     def simulate(sol, decimal_value=7):
         sol_merged = sol.merge_phases()
         if sum([nlp.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
-            with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
-                sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
+            with pytest.raises(
+                ValueError,
+                match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            ):
+                sol.integrate(
+                    merge_phases=True,
+                    shooting_type=Shooting.SINGLE,
+                    keep_intermediate_points=True,
+                    integrator=SolutionIntegrator.OCP,
+                )
             return
 
         sol_single = sol.integrate(
             merge_phases=True,
-            shooting_type=Shooting.SINGLE_CONTINUOUS,
+            shooting_type=Shooting.SINGLE,
             keep_intermediate_points=True,
-            integrator=SolutionIntegrator.DEFAULT,
+            integrator=SolutionIntegrator.OCP,
         )
 
         # Evaluate the final error of the single shooting integration versus the finale node

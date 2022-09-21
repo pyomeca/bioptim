@@ -135,8 +135,8 @@ class OptimizationVector:
         The vector of all init
         """
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
-        nlp = self.ocp.nlp[0]
         for phase, x_init in enumerate(self.x_init):
+            nlp = self.ocp.nlp[phase]
 
             if isinstance(self.ocp.original_values["x_init"], InitialGuessList):
                 original_x_init = self.ocp.original_values["x_init"][phase]
@@ -146,7 +146,7 @@ class OptimizationVector:
             interpolation_type = None if original_x_init is None else original_x_init.type
 
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
-                v_init.concatenate(self._init_linear_interpolation())
+                v_init.concatenate(self._init_linear_interpolation(phase=phase))
             else:
                 v_init.concatenate(x_init)
 
@@ -155,27 +155,42 @@ class OptimizationVector:
         v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
 
-    def _init_linear_interpolation(self) -> InitialGuess:
+    def _init_linear_interpolation(self, phase: int) -> InitialGuess:
         """
         Perform linear interpolation between shooting nodes so that initial guess values are defined for each
         collocation point
+
+        Parameters
+        ----------
+        phase: int
+            The phase index
 
         Returns
         -------
         The initial guess for the states variables for all collocation points
 
         """
-        nlp = self.ocp.nlp[0]
+        nlp = self.ocp.nlp[phase]
         n_points = nlp.ode_solver.polynomial_degree + 1
-        x_init_vector = np.zeros(self.n_all_x)
-        init_values = self.ocp.original_values["x_init"].init
-        for index, state in enumerate(init_values):
+        x_init_vector = np.zeros((nlp.states.shape, self.n_phase_x[phase] // nlp.states.shape))
+        init_values = (
+            self.ocp.original_values["x_init"][phase].init
+            if isinstance(self.ocp.original_values["x_init"], InitialGuessList)
+            else self.ocp.original_values["x_init"].init
+        )
+        # the linear interpolation is performed at the given time steps from the ode solver
+        steps = np.array(nlp.ode_solver.integrator(self.ocp, nlp)[0].step_time)
+
+        for idx_state, state in enumerate(init_values):
             for frame in range(nlp.ns):
-                point = (index * nlp.ns + frame) * n_points + index
-                steps = np.array(self.ocp.nlp[0].ode_solver.integrator(self.ocp, self.ocp.nlp[0])[0].step_time)
-                x_init_vector[point : point + n_points] = state[frame] + (state[frame + 1] - state[frame]) * steps
-            x_init_vector[point + n_points] = state[nlp.ns]
-        return InitialGuess(x_init_vector)
+                x_init_vector[idx_state, frame * n_points : (frame + 1) * n_points] = (
+                    state[frame] + (state[frame + 1] - state[frame]) * steps
+                )
+
+            x_init_vector[idx_state, -1] = state[nlp.ns]
+
+        x_init_reshaped = x_init_vector.reshape((1, -1), order="F").T
+        return InitialGuess(x_init_reshaped)
 
     def extract_phase_time(self, data: Union[np.array, DM]) -> list:
         """
