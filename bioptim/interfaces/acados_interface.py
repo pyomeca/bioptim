@@ -101,8 +101,10 @@ class AcadosInterface(SolverInterface):
         # solver_options = solver_options.__dict__
         if solver_options is None:
             solver_options = Solver.ACADOS()
+        self.opts = solver_options
 
         self.acados_ocp = AcadosOcp(acados_path=solver_options.acados_dir)
+        self.acados_ocp.code_export_directory = solver_options.c_generated_code_path
         self.acados_model = AcadosModel()
 
         self.__set_cost_type(solver_options.cost_type)
@@ -137,8 +139,6 @@ class AcadosInterface(SolverInterface):
         self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
         self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
         self.Vx0 = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
-
-        self.opts = Solver.ACADOS() if solver_options is None else solver_options
 
     def __acados_export_model(self, ocp):
         """
@@ -182,8 +182,16 @@ class AcadosInterface(SolverInterface):
         self.acados_model.con_h_expr = np.zeros((0, 0))
         self.acados_model.con_h_expr_e = np.zeros((0, 0))
         self.acados_model.p = []
-        now = datetime.now()  # current date and time
-        self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
+        if not self.opts.acados_model_name:
+            if self.opts.c_compile:
+                now = datetime.now()  # current date and time
+                self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
+            else:
+                raise RuntimeError(
+                    "If not compiling the library you must provide the name of the model" " you want to use."
+                )
+        else:
+            self.acados_model.name = self.opts.acados_model_name
 
     def __prepare_acados(self, ocp):
         """
@@ -726,7 +734,7 @@ class AcadosInterface(SolverInterface):
         if self.ocp_solver is None:
             for key in options:
                 setattr(self.acados_ocp.solver_options, key, options[key])
-            self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
+            self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json", build=self.opts.c_compile)
             self.opts.set_only_first_options_has_changed(False)
             self.opts.set_has_tolerance_changed(False)
 
