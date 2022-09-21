@@ -187,8 +187,9 @@ class AcadosInterface(SolverInterface):
                 now = datetime.now()  # current date and time
                 self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
             else:
-                raise RuntimeError("If not compiling the library you must provide the name of the model"
-                                   " you want to use.")
+                raise RuntimeError(
+                    "If not compiling the library you must provide the name of the model" " you want to use."
+                )
         else:
             self.acados_model.name = self.opts.acados_model_name
 
