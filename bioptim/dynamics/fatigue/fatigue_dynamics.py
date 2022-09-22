@@ -15,7 +15,9 @@ class FatigueModel(ABC):
         """
         self.scaling = scaling
         self.state_only = self.default_state_only() if state_only is None else state_only
-        self.apply_to_joint_dynamics = self.default_apply_to_joint_dynamics() if apply_to_joint_dynamics is None else apply_to_joint_dynamics
+        self.apply_to_joint_dynamics = (
+            self.default_apply_to_joint_dynamics() if apply_to_joint_dynamics is None else apply_to_joint_dynamics
+        )
 
     @staticmethod
     @abstractmethod
@@ -112,7 +114,14 @@ class FatigueModel(ABC):
 
 
 class MultiFatigueModel(OptionGeneric):
-    def __init__(self, model: Union[FatigueModel, list], state_only: bool, split_controls: bool = True, apply_to_joint_dynamics: bool = False, **params):
+    def __init__(
+        self,
+        model: Union[FatigueModel, list],
+        state_only: bool,
+        split_controls: bool = True,
+        apply_to_joint_dynamics: bool = False,
+        **params
+    ):
         """
         model: FatigueModel
             The actual fatigue model
@@ -349,7 +358,13 @@ class FatigueUniqueList(UniquePerPhaseOptionList):
 
 
 class FatigueList(OptionDict):
-    def add(self, model: Union[FatigueModel, MultiFatigueModel], index: int = -1, state_only: bool = None, apply_to_joint_dynamics: bool = None):
+    def add(
+        self,
+        model: Union[FatigueModel, MultiFatigueModel],
+        index: int = -1,
+        state_only: bool = None,
+        apply_to_joint_dynamics: bool = None,
+    ):
         """
         Add a muscle to the dynamic list
 

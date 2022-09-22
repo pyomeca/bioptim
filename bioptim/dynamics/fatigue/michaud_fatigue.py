@@ -124,7 +124,14 @@ class MichaudTauFatigue(TauFatigue):
     def fatigue_suffix() -> str:
         return "mf"
 
-    def __init__(self, minus: MichaudFatigue, plus: MichaudFatigue, state_only: bool = False, apply_to_joint_dynamics: bool = False, **kwargs):
+    def __init__(
+        self,
+        minus: MichaudFatigue,
+        plus: MichaudFatigue,
+        state_only: bool = False,
+        apply_to_joint_dynamics: bool = False,
+        **kwargs
+    ):
         """
         Parameters
         ----------
@@ -138,4 +145,6 @@ class MichaudTauFatigue(TauFatigue):
             If the fatigue should be applied to joint directly
         """
 
-        super(MichaudTauFatigue, self).__init__(minus, plus, state_only=state_only, apply_to_joint_dynamics=apply_to_joint_dynamics **kwargs)
+        super(MichaudTauFatigue, self).__init__(
+            minus, plus, state_only=state_only, apply_to_joint_dynamics=apply_to_joint_dynamics**kwargs
+        )

@@ -193,7 +193,9 @@ class DynamicsFunctions:
                 raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
             apply_to_joint_dynamics = sum([t.models.apply_to_joint_dynamics for t in tau_fatigue])
             if 0 < n_state_only < len(fatigue["tau"]):
-                raise NotImplementedError("fatigue list without homogeneous apply_to_joint_dynamics flag is not supported yet")
+                raise NotImplementedError(
+                    "fatigue list without homogeneous apply_to_joint_dynamics flag is not supported yet"
+                )
             if apply_to_joint_dynamics != 0:
                 raise NotImplementedError("apply_to_joint_dynamics is not implemented for joint torque")
 
@@ -448,7 +450,10 @@ class DynamicsFunctions:
             fatigue_suffix = mus_fatigue[0].models.models[fatigue_name].fatigue_suffix()
             for m in mus_fatigue:
                 for key in m.models.models:
-                    if m.models.models[key].dynamics_suffix() != dyn_suffix or m.models.models[key].fatigue_suffix() != fatigue_suffix:
+                    if (
+                        m.models.models[key].dynamics_suffix() != dyn_suffix
+                        or m.models.models[key].fatigue_suffix() != fatigue_suffix
+                    ):
                         raise ValueError(f"{fatigue_name} must be of all same types")
 
             if n_state_only == 0:
@@ -723,7 +728,11 @@ class DynamicsFunctions:
 
     @staticmethod
     def compute_tau_from_muscle(
-        nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], muscle_activations: Union[MX, SX], fatigue_states: Union[MX, SX] = None
+        nlp: NonLinearProgram,
+        q: Union[MX, SX],
+        qdot: Union[MX, SX],
+        muscle_activations: Union[MX, SX],
+        fatigue_states: Union[MX, SX] = None,
     ):
         """
         Easy accessor to tau computed from muscles

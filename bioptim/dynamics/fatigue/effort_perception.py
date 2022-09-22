@@ -84,7 +84,9 @@ class TauEffortPerception(TauFatigue):
             The Michaud model for the positive tau
         """
 
-        super(TauEffortPerception, self).__init__(minus=minus, plus=plus, state_only=True, apply_to_joint_dynamics=False, **kwargs)
+        super(TauEffortPerception, self).__init__(
+            minus=minus, plus=plus, state_only=True, apply_to_joint_dynamics=False, **kwargs
+        )
 
     @staticmethod
     def default_state_only():

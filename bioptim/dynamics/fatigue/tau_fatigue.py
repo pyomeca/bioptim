@@ -12,7 +12,14 @@ class TauFatigue(MultiFatigueModel):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, minus: FatigueModel, plus: FatigueModel, state_only: bool = True, apply_to_joint_dynamics: bool = False,**kwargs):
+    def __init__(
+        self,
+        minus: FatigueModel,
+        plus: FatigueModel,
+        state_only: bool = True,
+        apply_to_joint_dynamics: bool = False,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -26,7 +33,9 @@ class TauFatigue(MultiFatigueModel):
             If the fatigue should be applied to joint directly
         """
 
-        super(TauFatigue, self).__init__([minus, plus], state_only=state_only, apply_to_joint_dynamics=apply_to_joint_dynamics, **kwargs)
+        super(TauFatigue, self).__init__(
+            [minus, plus], state_only=state_only, apply_to_joint_dynamics=apply_to_joint_dynamics, **kwargs
+        )
 
     def suffix(self) -> tuple:
         return "minus", "plus"
