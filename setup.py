@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="bioptim",
-    version="2.1.3",
+    version="2.3.0",
     author="Pariterre",
     author_email="pariterre@hotmail.com",
     description="An optimization framework for Optimal Control Programming in biomechanics",
