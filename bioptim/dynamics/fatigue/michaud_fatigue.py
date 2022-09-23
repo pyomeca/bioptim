@@ -146,5 +146,5 @@ class MichaudTauFatigue(TauFatigue):
         """
 
         super(MichaudTauFatigue, self).__init__(
-            minus, plus, state_only=state_only, apply_to_joint_dynamics=apply_to_joint_dynamics**kwargs
+            minus, plus, state_only=state_only, apply_to_joint_dynamics=apply_to_joint_dynamics, **kwargs
         )
