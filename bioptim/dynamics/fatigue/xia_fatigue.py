@@ -51,6 +51,10 @@ class XiaFatigue(MuscleFatigue):
     def dynamics_suffix() -> str:
         return "ma"
 
+    @staticmethod
+    def fatigue_suffix() -> str:
+        return "mf"
+
     def apply_dynamics(self, target_load, *states):
         """
         The dynamics of the fatigue model that returns the derivatives of the states.
@@ -115,3 +119,7 @@ class XiaTauFatigue(TauFatigue):
     @staticmethod
     def dynamics_suffix() -> str:
         return "ma"
+
+    @staticmethod
+    def fatigue_suffix() -> str:
+        return "mf"

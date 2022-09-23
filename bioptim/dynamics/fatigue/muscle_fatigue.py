@@ -60,6 +60,9 @@ class MuscleFatigue(FatigueModel):
     def default_state_only(self) -> bool:
         return False
 
+    def default_apply_to_joint_dynamics(self) -> bool:
+        return False
+
 
 class MultiFatigueInterfaceMuscle(MultiFatigueInterface):
     @staticmethod
@@ -70,4 +73,7 @@ class MultiFatigueInterfaceMuscle(MultiFatigueInterface):
         return "muscles"
 
     def default_state_only(self) -> bool:
+        return False
+
+    def default_apply_to_joint_dynamics(self) -> bool:
         return False

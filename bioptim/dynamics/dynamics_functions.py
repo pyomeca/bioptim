@@ -191,6 +191,13 @@ class DynamicsFunctions:
             n_state_only = sum([t.models.state_only for t in tau_fatigue])
             if 0 < n_state_only < len(fatigue["tau"]):
                 raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
+            apply_to_joint_dynamics = sum([t.models.apply_to_joint_dynamics for t in tau_fatigue])
+            if 0 < n_state_only < len(fatigue["tau"]):
+                raise NotImplementedError(
+                    "fatigue list without homogeneous apply_to_joint_dynamics flag is not supported yet"
+                )
+            if apply_to_joint_dynamics != 0:
+                raise NotImplementedError("apply_to_joint_dynamics is not implemented for joint torque")
 
             if not tau_fatigue[0].models.split_controls and "tau" in nlp.controls:
                 pass
@@ -422,6 +429,7 @@ class DynamicsFunctions:
 
         mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
+        fatigue_states = None
         if fatigue is not None and "muscles" in fatigue:
             mus_fatigue = fatigue["muscles"]
             fatigue_name = mus_fatigue.suffix[0]
@@ -432,16 +440,28 @@ class DynamicsFunctions:
                 raise NotImplementedError(
                     f"{fatigue_name} list without homogeneous state_only flag is not supported yet"
                 )
+            apply_to_joint_dynamics = sum([m.models.apply_to_joint_dynamics for m in mus_fatigue])
+            if 0 < apply_to_joint_dynamics < len(fatigue["muscles"]):
+                raise NotImplementedError(
+                    f"{fatigue_name} list without homogeneous apply_to_joint_dynamics flag is not supported yet"
+                )
 
             dyn_suffix = mus_fatigue[0].models.models[fatigue_name].dynamics_suffix()
+            fatigue_suffix = mus_fatigue[0].models.models[fatigue_name].fatigue_suffix()
             for m in mus_fatigue:
                 for key in m.models.models:
-                    if m.models.models[key].dynamics_suffix() != dyn_suffix:
+                    if (
+                        m.models.models[key].dynamics_suffix() != dyn_suffix
+                        or m.models.models[key].fatigue_suffix() != fatigue_suffix
+                    ):
                         raise ValueError(f"{fatigue_name} must be of all same types")
 
             if n_state_only == 0:
                 mus_activations = DynamicsFunctions.get(nlp.states[f"muscles_{dyn_suffix}"], states)
-        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
+
+            if apply_to_joint_dynamics > 0:
+                fatigue_states = DynamicsFunctions.get(nlp.states[f"muscles_{fatigue_suffix}"], states)
+        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
@@ -708,7 +728,11 @@ class DynamicsFunctions:
 
     @staticmethod
     def compute_tau_from_muscle(
-        nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], muscle_activations: Union[MX, SX]
+        nlp: NonLinearProgram,
+        q: Union[MX, SX],
+        qdot: Union[MX, SX],
+        muscle_activations: Union[MX, SX],
+        fatigue_states: Union[MX, SX] = None,
     ):
         """
         Easy accessor to tau computed from muscles
@@ -723,6 +747,8 @@ class DynamicsFunctions:
             The value of qdot from "get"
         muscle_activations: Union[MX, SX]
             The value of muscle_activations from "get"
+        fatigue_states: Union[MX, SX]
+            The states of fatigue
 
         Returns
         -------
@@ -731,7 +757,10 @@ class DynamicsFunctions:
 
         muscles_states = nlp.model.stateSet()
         for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setActivation(muscle_activations[k])
+            if fatigue_states is not None:
+                muscles_states[k].setActivation(muscle_activations[k] * (1 - fatigue_states[k]))
+            else:
+                muscles_states[k].setActivation(muscle_activations[k])
         return nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
 
     @staticmethod
