@@ -190,6 +190,25 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
 
         @staticmethod
+        def discontinuous(transition, all_pn):
+            """
+            There is no continuity constraints on the states
+
+            Parameters
+            ----------
+            transition : PhaseTransition
+                A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the state after and before
+            """
+
+            return MultinodeConstraintFunctions.Functions.no_constraint(transition, all_pn)
+
+        @staticmethod
         def cyclic(transition, all_pn) -> MX:
             """
             The continuity function applied to the last to first node
@@ -268,6 +287,7 @@ class PhaseTransitionFcn(FcnEnum):
     """
 
     CONTINUOUS = (PhaseTransitionFunctions.Functions.continuous,)
+    DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
