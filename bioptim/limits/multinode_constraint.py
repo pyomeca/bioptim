@@ -365,6 +365,51 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
+        def time_equality(multinode_constraint, all_pn):
+            """
+            The duration of one phase must be the same as the duration of another phase
+
+            Parameters
+            ----------
+            multinode_constraint : MultinodeConstraint
+                A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the duration of the phases
+            """
+            time_pre_idx = None
+            for i in range(all_pn[0].nlp.parameters.cx.shape[0]):
+                param_name = all_pn[0].nlp.parameters.cx[i].name()
+                if param_name == "time_phase_" + str(all_pn[0].nlp.phase_idx):
+                    time_pre_idx = all_pn[0].nlp.phase_idx
+            if time_pre_idx == None:
+                raise RuntimeError(
+                    f"Time constraint can't be established since the first phase has no time parameter. "
+                    f"\nTime parameter can be added with : "
+                    f"\nobjective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
+                    f"\nwith constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
+                )
+
+            time_post_idx = None
+            for i in range(all_pn[1].nlp.parameters.cx.shape[0]):
+                param_name = all_pn[1].nlp.parameters.cx[i].name()
+                if param_name == "time_phase_" + str(all_pn[1].nlp.phase_idx):
+                    time_post_idx = all_pn[1].nlp.phase_idx
+            if time_post_idx == None:
+                raise RuntimeError(
+                    f"Time constraint can't be established since the second phase has no time parameter. Time parameter "
+                    f"can be added with : objective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
+                    f"with constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
+                )
+
+            time_pre, time_post = all_pn[0].nlp.parameters.cx[time_pre_idx], all_pn[1].nlp.parameters.cx[time_post_idx]
+
+            return time_pre - time_post
+
+        @staticmethod
         def custom(multinode_constraint, all_pn, **extra_params):
             """
             Calls the custom transition function provided by the user
@@ -394,6 +439,7 @@ class MultinodeConstraintFcn(FcnEnum):
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
     COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
     COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
+    TIME_CONSTRAINT = (MultinodeConstraintFunctions.Functions.time_equality,)
 
     @staticmethod
     def get_type():
