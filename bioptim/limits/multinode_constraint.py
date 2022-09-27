@@ -216,7 +216,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def equality(multinode_constraint, all_pn):
+        def states_equality(multinode_constraint, all_pn):
             """
             The most common continuity function, that is state before equals state after
 
@@ -245,7 +245,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             return states_pre - states_post
 
-        def no_constraint(multinode_constraint, all_pn):
+        def states_no_constraint(multinode_constraint, all_pn):
             """
             There is no continuity on the states
 
@@ -435,7 +435,7 @@ class MultinodeConstraintFcn(FcnEnum):
     Selection of valid multinode constraint functions
     """
 
-    EQUALITY = (MultinodeConstraintFunctions.Functions.equality,)
+    EQUALITY = (MultinodeConstraintFunctions.Functions.states_equality,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
     COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
     COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
