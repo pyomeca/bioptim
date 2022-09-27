@@ -17,6 +17,8 @@ from bioptim import (
     PhaseTransitionList,
     PhaseTransitionFcn,
     BiMapping,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
 )
 
 
@@ -41,12 +43,13 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=1)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6, phase=0)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6, phase=1)
 
-    # Constraints
-    constraints = ConstraintList()
-    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=0.3, max_bound=3, phase=0)
-    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=0.3, max_bound=3, phase=1)
-    # time constraint ##############
+    # Multi-node constraints
+    multinode_constraints = MultinodeConstraintList()
+    multinode_constraints.add(MultinodeConstraintFcn.TIME_CONSTRAINT, phase_first_idx=0, phase_second_idx=1,
+                              first_node=Node.END, second_node=Node.END)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -100,9 +103,9 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        constraints=constraints,
         variable_mappings=tau_mappings,
         phase_transitions=phase_transitions,
+        multinode_constraints=multinode_constraints,
     )
 
 
