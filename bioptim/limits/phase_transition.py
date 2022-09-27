@@ -187,7 +187,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
+            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn)
 
         @staticmethod
         def discontinuous(transition, all_pn):
@@ -206,7 +206,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.no_constraint(transition, all_pn)
+            return MultinodeConstraintFunctions.Functions.states_no_constraint(transition, all_pn)
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:
