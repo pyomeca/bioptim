@@ -731,7 +731,7 @@ class DynamicsFunctions:
 
         muscles_states = nlp.model.stateSet()
         for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setActivation(muscle_activations[k])
+            muscles_states[k].setActivation(muscle_activations[k])  # TODO: ADD FATIGUE HERE
         return nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
 
     @staticmethod

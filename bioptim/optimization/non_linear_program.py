@@ -143,6 +143,9 @@ class NonLinearProgram:
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
         self.U = None
+        self.use_states_from_phase_idx = None
+        self.use_controls_from_phase_idx = None
+        self.use_states_dot_from_phase_idx = None
         self.controls = OptimizationVariableList()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
