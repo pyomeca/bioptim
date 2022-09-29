@@ -126,6 +126,10 @@ BiMapping
     Mapping of two index sets between each other
 BiMappingList
     A list of BiMapping
+NodeMapping
+    Mapping of two node sets
+NodeMappingList
+    A list of NodeMapping
 
 
 # --- Version of bioptim --- #
@@ -199,7 +203,7 @@ from .misc.enums import (
     SoftContactDynamics,
     DefectType,
 )
-from .misc.mapping import BiMappingList, BiMapping, Mapping
+from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl
