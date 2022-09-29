@@ -5,20 +5,17 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
-    ConstraintList,
-    ConstraintFcn,
     BoundsList,
     InitialGuessList,
     Node,
     QAndQDotBounds,
     ObjectiveFcn,
     BiMappingList,
-    Axis,
     PhaseTransitionList,
     PhaseTransitionFcn,
-    BiMapping,
     MultinodeConstraintList,
     MultinodeConstraintFcn,
+    NodeMappingList,
 )
 
 
@@ -38,6 +35,10 @@ def prepare_ocp(
     tau_mappings = BiMappingList()
     tau_mappings.add("tau", [None, 0], [1], phase=0)
     tau_mappings.add("tau", [None, 0], [1], phase=1)
+
+    # Phase mapping
+    node_mappings = NodeMappingList()
+    node_mappings.add("tau", phase_pre=0, phase_post=1, nodes_pre=Node.ALL, nodes_post=Node.ALL)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -64,13 +65,15 @@ def prepare_ocp(
     # Phase 0
     x_bounds[0][0, 0] = - np.pi
     x_bounds[0][1, 0] = 0
-    x_bounds[0][0, 2] = np.pi
+    x_bounds[0].min[0, 2] = np.pi - 0.1
+    x_bounds[0].max[0, 2] = np.pi + 0.1
     x_bounds[0][1, 2] = 0
 
     # Phase 1
-    x_bounds[1][0, 0] = 0
+    x_bounds[1][0, 0] = - np.pi
     x_bounds[1][1, 0] = 0
-    x_bounds[1][0, 2] = 2 * np.pi
+    x_bounds[1].min[0, 2] = np.pi - 0.1
+    x_bounds[1].max[0, 2] = np.pi + 0.1
     x_bounds[1][1, 2] = 0
 
     # Initial guess
@@ -104,6 +107,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         variable_mappings=tau_mappings,
+        node_mappings=node_mappings,
         phase_transitions=phase_transitions,
         multinode_constraints=multinode_constraints,
     )
