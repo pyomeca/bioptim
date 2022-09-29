@@ -841,12 +841,29 @@ class ConfigureProblem:
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
-        copy_states = nlp.use_states_from_phase_idx is not None and name in ocp.nlp[nlp.use_states_from_phase_idx].states
-        copy_controls = nlp.use_controls_from_phase_idx is not None and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls
-        copy_states_dot = nlp.use_states_dot_from_phase_idx is not None and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot
+        copy_states = False
+        if nlp.use_states_from_phase_idx is not None:
+            if nlp.use_states_from_phase_idx < nlp.phase_idx:
+                if name in ocp.nlp[nlp.use_states_from_phase_idx].states:
+                    copy_states = True
+
+        copy_controls = False
+        if nlp.use_controls_from_phase_idx is not None:
+            if nlp.use_controls_from_phase_idx < nlp.phase_idx:
+                if name in ocp.nlp[nlp.use_controls_from_phase_idx].controls:
+                    copy_controls = True
+
+        copy_states_dot = False
+        if nlp.use_states_dot_from_phase_idx is not None:
+            if nlp.use_states_dot_from_phase_idx < nlp.phase_idx:
+                if name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot:
+                    copy_states_dot = True
+
         mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[name].mx]
         mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].mx]
         mx_states_dot = [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].mx]
+
+        # if mapping on variables, what do we do with mapping on the nodes ?
 
         for i in nlp.variable_mappings[name].to_second.map_idx:
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
@@ -875,7 +892,7 @@ class ConfigureProblem:
 
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
-            cx = ocp.nlp[0].states[name].original_cx if copy_states else define_cx(n_col=n_cx)
+            cx = ocp.nlp[nlp.use_states_from_phase_idx].states[name].original_cx if copy_states else define_cx(n_col=n_cx)
 
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             if not skip_plot:
@@ -888,7 +905,7 @@ class ConfigureProblem:
                 )
 
         if as_controls:
-            cx = ocp.nlp[0].controls[name].original_cx if copy_controls else define_cx(n_col=2)
+            cx = ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].original_cx if copy_controls else define_cx(n_col=2)
 
             nlp.controls.append(name, cx, mx_controls, nlp.variable_mappings[name])
 
@@ -904,7 +921,7 @@ class ConfigureProblem:
 
         if as_states_dot:
             n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
-            cx = ocp.nlp[0].states_dot[name].original_cx if copy_states_dot else define_cx(n_col=n_cx)
+            cx = ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].original_cx if copy_states_dot else define_cx(n_col=n_cx)
 
             nlp.states_dot.append(name, cx, mx_states_dot, nlp.variable_mappings[name])
 
