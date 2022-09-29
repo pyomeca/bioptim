@@ -15,7 +15,7 @@ from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
-from ..dynamics.configure_problem import ConfigureProblem
+from ..dynamics.configure_problem import ConfigureProblem, DynamicsFcn
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
@@ -45,7 +45,7 @@ from ..misc.enums import (
     SolutionIntegrator,
     IntegralApproximation,
 )
-from ..misc.mapping import BiMappingList, Mapping
+from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
@@ -155,6 +155,7 @@ class OptimalControlProgram:
         ode_solver: Union[list, OdeSolverBase, OdeSolver] = None,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
+        node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
@@ -196,6 +197,8 @@ class OptimalControlProgram:
             The type of controls for each phase
         variable_mappings: BiMappingList
             The mapping to apply on variables
+        node_mappings: NodeMappingList
+            The mapping to apply between the variables associated with the nodes
         plot_mappings: Mapping
             The mapping to apply on the plots
         phase_mappings: Mapping
@@ -246,6 +249,7 @@ class OptimalControlProgram:
             "ode_solver": ode_solver,
             "control_type": control_type,
             "variable_mappings": variable_mappings,
+            "node_mappings": node_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "multinode_constraints": multinode_constraints,
@@ -428,6 +432,32 @@ class OptimalControlProgram:
 
         variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
+
+        # Prepare the node mappings
+        if node_mappings is None:
+            node_mappings = NodeMappingList()
+
+        # ToDo: Move elsewhere (will ask Pariterre)
+        # def define_variables_before_configure(ocp):
+        states_names = []
+        states_dot_names = []
+        controls_names = []
+        for nlp in self.nlp:
+            if nlp.dynamics_type.type == DynamicsFcn.TORQUE_DRIVEN:
+                states_names.append(["q", "qdot"])
+                states_dot_names.append(["q", "q_dot"])
+                controls_names.append(["tau"])
+            else:
+                # TORQUE_DERIVATIVE_DRIVEN
+                # TORQUE_ACTIVATIONS_DRIVEN
+                # JOINTS_ACCELERATION_DRIVEN
+                # MUSCLE_DRIVEN
+                # CUSTOM -> will be problematic!
+                raise RuntimeError("Not implemented yet")
+            # return states_names, controls_names, states_dot_names
+
+        # states_names, controls_names, states_dot_names = define_variables_before_configure
+        node_mappings.get_variable_from_phase_idx(self, NLP, states_names, controls_names, states_dot_names)
 
         # Prepare the dynamics
         for i in range(self.n_phases):
