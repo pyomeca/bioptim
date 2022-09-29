@@ -219,13 +219,13 @@ class ConfigureProblem:
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
         ):
-            ConfigureProblem.configure_qddot(nlp, False, True, True)
+            ConfigureProblem.configure_qddot(ocp, nlp, False, True, True)
         elif (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
             or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
         ):
-            ConfigureProblem.configure_qddot(nlp, True, False, True)
-            ConfigureProblem.configure_qdddot(nlp, False, True)
+            ConfigureProblem.configure_qddot(ocp, nlp, True, False, True)
+            ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
         else:
             ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
 
@@ -246,7 +246,7 @@ class ConfigureProblem:
                 # so the consistency constraint of the marker acceleration can only be set to zero
                 # at the first shooting node
                 node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
-                ConfigureProblem.configure_contact_forces(nlp, False, True)
+                ConfigureProblem.configure_contact_forces(ocp, nlp, False, True)
                 for ii in range(nlp.model.nbContacts()):
                     ocp.implicit_constraints.add(
                         ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
@@ -271,7 +271,7 @@ class ConfigureProblem:
 
         # Declared soft contacts controls
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
@@ -344,14 +344,14 @@ class ConfigureProblem:
                         "Please set soft_contacts_dynamics=SoftContactDynamics.CONSTRAINT"
                     )
 
-        ConfigureProblem.configure_q(nlp, True, False)
-        ConfigureProblem.configure_qdot(nlp, True, False)
-        ConfigureProblem.configure_tau(nlp, True, False)
-        ConfigureProblem.configure_taudot(nlp, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, True, False)
+        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
+        ConfigureProblem.configure_tau(ocp, nlp, True, False)
+        ConfigureProblem.configure_taudot(ocp, nlp, False, True)
 
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            ConfigureProblem.configure_qddot(nlp, True, False)
-            ConfigureProblem.configure_qdddot(nlp, False, True)
+            ConfigureProblem.configure_qddot(ocp, nlp, True, False)
+            ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -359,7 +359,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
             )
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ConfigureProblem.configure_soft_contact_forces(nlp, False, True)
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -401,9 +401,9 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         """
 
-        ConfigureProblem.configure_q(nlp, True, False)
-        ConfigureProblem.configure_qdot(nlp, True, False)
-        ConfigureProblem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, True, False)
+        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
+        ConfigureProblem.configure_tau(ocp, nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -437,8 +437,8 @@ class ConfigureProblem:
         if rigidbody_dynamics != RigidBodyDynamics.ODE:
             raise NotImplementedError("Implicit dynamics not implemented yet.")
 
-        ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         # Configure qddot joints
         nb_root = nlp.model.nbRoot()
         if not nb_root > 0:
@@ -446,7 +446,7 @@ class ConfigureProblem:
 
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nbQddot() - nb_root)]
         ConfigureProblem.configure_new_variable(
-            "qddot_joints", name_qddot_joints, nlp, as_states=False, as_controls=True
+            "qddot_joints", name_qddot_joints, ocp, nlp, as_states=False, as_controls=True
         )
         ConfigureProblem.configure_dynamics_function(
             ocp, nlp, DynamicsFunctions.joints_acceleration_driven, expand=False
@@ -494,14 +494,14 @@ class ConfigureProblem:
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
-        ConfigureProblem.configure_q(nlp, True, False)
-        ConfigureProblem.configure_qdot(nlp, True, False)
+        ConfigureProblem.configure_q(ocp, nlp, True, False)
+        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
         if with_torque:
-            ConfigureProblem.configure_tau(nlp, False, True, fatigue=fatigue)
-        ConfigureProblem.configure_muscles(nlp, with_excitations, True, fatigue=fatigue)
+            ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue=fatigue)
+        ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, True, fatigue=fatigue)
 
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            ConfigureProblem.configure_qddot(nlp, False, True)
+            ConfigureProblem.configure_qddot(ocp, nlp, False, True)
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS,
                 node=Node.ALL_SHOOTING,
@@ -676,6 +676,7 @@ class ConfigureProblem:
     def _manage_fatigue_to_new_variable(
         name: str,
         name_elements: list,
+        ocp,
         nlp,
         as_states: bool,
         as_controls: bool,
@@ -734,7 +735,7 @@ class ConfigureProblem:
 
             if split_controls:
                 ConfigureProblem.configure_new_variable(
-                    var_names_with_suffix[-1], name_elements, nlp, as_states, as_controls, skip_plot=True
+                    var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
                 )
                 nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
                     lambda t, x, u, p, key: u[nlp.controls[key].index, :],
@@ -745,7 +746,7 @@ class ConfigureProblem:
                 )
             elif i == 0:
                 ConfigureProblem.configure_new_variable(
-                    f"{name}", name_elements, nlp, as_states, as_controls, skip_plot=True
+                    f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
                 )
                 nlp.plot[f"{name}_controls"] = CustomPlot(
                     lambda t, x, u, p, key: u[nlp.controls[key].index, :],
@@ -757,8 +758,8 @@ class ConfigureProblem:
 
             for p, params in enumerate(fatigue_suffix):
                 name_tp = f"{var_names_with_suffix[-1]}_{params}"
-                ConfigureProblem._adjust_mapping(name_tp, [var_names_with_suffix[-1]], nlp)
-                ConfigureProblem.configure_new_variable(name_tp, name_elements, nlp, True, False, skip_plot=True)
+                ConfigureProblem._adjust_mapping(name_tp, [var_names_with_suffix[-1]], ocp, nlp)
+                ConfigureProblem.configure_new_variable(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
                 nlp.plot[name_tp] = CustomPlot(
                     lambda t, x, u, p, key, mod: mod * x[nlp.states[key].index, :],
                     plot_type=PlotType.INTEGRATED,
@@ -832,7 +833,7 @@ class ConfigureProblem:
                     _cx[j] = vertcat(_cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{j}", 1, 1))
             return _cx
 
-        if ConfigureProblem._manage_fatigue_to_new_variable(name, name_elements, nlp, as_states, as_controls, fatigue):
+        if ConfigureProblem._manage_fatigue_to_new_variable(name, name_elements, ocp, nlp, as_states, as_controls, fatigue):
             # If the element is fatigable, this function calls back configure_new_variable to fill everything.
             # Therefore, we can exist now
             return
@@ -926,7 +927,7 @@ class ConfigureProblem:
 
         name = "q"
         name_q = [name.to_string() for name in nlp.model.nameDof()]
-        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_q, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx,
         )
@@ -951,7 +952,7 @@ class ConfigureProblem:
         name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["q", "qdot", "taudot"], nlp)
-        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qdot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
@@ -976,13 +977,13 @@ class ConfigureProblem:
         name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["q", "qdot"], nlp)
-        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qddot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
 
     @staticmethod
-    def configure_qdddot(nlp, as_states: bool, as_controls: bool):
+    def configure_qdddot(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized accelerations
 
@@ -999,8 +1000,8 @@ class ConfigureProblem:
         name = "qdddot"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["q", "qdot", "qddot"], nlp)
-        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qdddot, nlp, as_states, as_controls, axes_idx=axes_idx)
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_tau(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
@@ -1022,7 +1023,7 @@ class ConfigureProblem:
         name = "tau"
         name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
-        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_tau, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
         )
@@ -1053,7 +1054,7 @@ class ConfigureProblem:
         optim_var.append_fake(name, index, mx, BiMapping(to_second, to_first))
 
     @staticmethod
-    def configure_taudot(nlp, as_states: bool, as_controls: bool):
+    def configure_taudot(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1070,11 +1071,11 @@ class ConfigureProblem:
         name = "taudot"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["qdot", "tau"], nlp)
-        axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_taudot, nlp, as_states, as_controls, axes_idx=axes_idx)
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
+        ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_contact_forces(nlp, as_states: bool, as_controls: bool):
+    def configure_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1089,10 +1090,10 @@ class ConfigureProblem:
         """
 
         name_contact_forces = [name.to_string() for name in nlp.model.contactNames()]
-        ConfigureProblem.configure_new_variable("fext", name_contact_forces, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable("fext", name_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
-    def configure_soft_contact_forces(nlp, as_states: bool, as_controls: bool):
+    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1116,10 +1117,10 @@ class ConfigureProblem:
                 ]
             )
 
-        ConfigureProblem.configure_new_variable("fext", name_soft_contact_forces, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable("fext", name_soft_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
-    def configure_muscles(nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
+    def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
         """
         Configure the muscles
 
@@ -1139,6 +1140,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(
             "muscles",
             muscle_names,
+            ocp,
             nlp,
             as_states,
             as_controls,
@@ -1181,7 +1183,7 @@ class ConfigureProblem:
             raise RuntimeError("Could not adjust mapping with the reference_keys provided")
 
     @staticmethod
-    def _apply_phase_mapping(nlp, name):
+    def _apply_phase_mapping(ocp, nlp, name):
         if nlp.phase_mapping:
             if name in nlp.variable_mappings.keys():
                 double_mapping = nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.map_idx).T.tolist()[0]
