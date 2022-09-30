@@ -1348,7 +1348,9 @@ class Solution:
                 if not penalty:
                     continue
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
-                self.detailed_cost += [{"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}]
+                self.detailed_cost += [
+                    {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
+                ]
         return
 
     def print_cost(self, cost_type: CostType = CostType.ALL):
