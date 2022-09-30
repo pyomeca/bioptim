@@ -547,9 +547,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         for pt in ocp.phase_transitions:
             # Dynamics must be respected between phases
-            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-            pt.list_index = -1
-            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
+            if pt.phase_pre_idx != pt.phase_post_idx: # PhaseTransitionFcn.DISCONTINUOUS -> relative import
+                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+                pt.list_index = -1
+                pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
 
     @staticmethod
     def node_equalities(ocp):

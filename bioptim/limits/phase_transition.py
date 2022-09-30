@@ -140,9 +140,15 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         existing_phases = []
         for pt in self:
-            if pt.phase_pre_idx is None and pt.type == PhaseTransitionFcn.CYCLIC:
-                pt.phase_pre_idx = ocp.n_phases - 1
-            pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
+            if pt.phase_pre_idx is None:
+                if pt.type == PhaseTransitionFcn.CYCLIC:
+                    pt.phase_pre_idx = ocp.n_phases - 1
+                elif pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                    pt.phase_pre_idx = 0
+            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                pt.phase_post_idx = 0
+            else:
+                pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
             idx_phase = pt.phase_pre_idx
             if idx_phase >= ocp.n_phases:
