@@ -103,9 +103,14 @@ class OptimizationVector:
         -------
         The vector of all variables
         """
-
-        x = [x.reshape((-1, 1)) for x in self.x]
-        return vertcat(*x, *self.u, self.parameters_in_list.cx)
+        x = []
+        u = []
+        for nlp in self.ocp.nlp:
+            if nlp.use_states_from_phase_idx == nlp.phase_idx:
+                x += [self.x[nlp.phase_idx].reshape((-1, 1))]
+            if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+                u += [self.u[nlp.phase_idx]]
+        return vertcat(*x, *u, self.parameters_in_list.cx)
 
     @property
     def bounds(self):
@@ -290,36 +295,50 @@ class OptimizationVector:
         """
         Declare all the casadi variables with the right size to be used during a specific phase
         """
-
+        x = []
+        u = []
         for nlp in self.ocp.nlp:
-            x = []
-            u = []
+            x.append([])
+            u.append([])
             if nlp.control_type != ControlType.CONSTANT and nlp.control_type != ControlType.LINEAR_CONTINUOUS:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
-                if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
-                    x.append(
-                        nlp.cx.sym(
-                            "X_" + str(nlp.phase_idx) + "_" + str(k),
-                            nlp.states.shape,
-                            nlp.ode_solver.polynomial_degree + 1,
+                if nlp.phase_idx == nlp.use_states_from_phase_idx:
+                    if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
+                        x[nlp.phase_idx].append(
+                            nlp.cx.sym(
+                                "X_" + str(nlp.phase_idx) + "_" + str(k),
+                                nlp.states.shape,
+                                nlp.ode_solver.polynomial_degree + 1,
+                            )
                         )
-                    )
+                    else:
+                        x[nlp.phase_idx].append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, 1))
                 else:
-                    x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, 1))
+                    x[nlp.phase_idx].append([])
 
-                if nlp.control_type != ControlType.CONSTANT or (
-                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
-                ):
-                    u.append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1))
+                if nlp.phase_idx == nlp.use_controls_from_phase_idx:
+                    if nlp.control_type != ControlType.CONSTANT or (
+                        nlp.control_type == ControlType.CONSTANT and k != nlp.ns
+                    ):
+                        u[nlp.phase_idx].append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1))
+                else:
+                    u[nlp.phase_idx].append([])
 
-            nlp.X = x
-            self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x])
+        for nlp in self.ocp.nlp:
+            if nlp.phase_idx == nlp.use_states_from_phase_idx:
+                nlp.X = x[nlp.phase_idx]
+            else:
+                nlp.X = []
+            self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x[nlp.use_states_from_phase_idx]])
             self.n_phase_x[nlp.phase_idx] = self.x[nlp.phase_idx].size()[0]
 
-            nlp.U = u
-            self.u[nlp.phase_idx] = vertcat(*u)
+            if nlp.phase_idx == nlp.use_controls_from_phase_idx:
+                nlp.U = u[nlp.phase_idx]
+            else:
+                nlp.U = []
+            self.u[nlp.phase_idx] = vertcat(*u[nlp.use_controls_from_phase_idx])
             self.n_phase_u[nlp.phase_idx] = self.u[nlp.phase_idx].size()[0]
 
         self.n_all_x = sum(self.n_phase_x)
