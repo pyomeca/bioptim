@@ -1372,10 +1372,17 @@ class Solution:
                 running_total += val_weighted
                 self.detailed_cost += [
                     {
-                        "name": penalty.name,
+                        "name": penalty.type.__str__(),
                         "cost_value_weighted": val_weighted,
                         "cost_value": val,
                         "params": penalty.params,
+                        "derivative": penalty.derivative,
+                        "explicit_derivative": penalty.explicit_derivative,
+                        "integration_rule": penalty.integration_rule,
+                        "weight": penalty.weight,
+                        "type": penalty.type,
+                        "expand": penalty.expand,
+                        "node": penalty.node,
                     }
                 ]
                 if print_only_weighted:
