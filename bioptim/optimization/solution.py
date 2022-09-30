@@ -1375,6 +1375,7 @@ class Solution:
                 self.detailed_cost += [
                     {
                         "name": penalty.type.__str__(),
+                        "penalty": penalty.type.__str__().split(".")[0],
                         "function": penalty.name,
                         "cost_value_weighted": val_weighted,
                         "cost_value": val,
