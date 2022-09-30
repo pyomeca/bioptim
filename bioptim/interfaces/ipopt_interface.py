@@ -139,3 +139,121 @@ class IpoptInterface(SolverInterface):
 
         """
         return generic_get_all_penalties(self, nlp, penalties)
+
+        def format_target(target_in: np.array) -> np.array:
+            """
+            Format the target of a penalty to a numpy array
+
+            Parameters
+            ----------
+            target_in: np.array
+                The target of the penalty
+            Returns
+            -------
+                np.array
+                    The target of the penalty formatted to a numpy array
+            """
+            if len(target_in.shape) == 2:
+                target_out = target_in[:, penalty.node_idx.index(idx)]
+            elif len(target_in.shape) == 3:
+                target_out = target_in[:, :, penalty.node_idx.index(idx)]
+            else:
+                raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
+            return target_out
+
+        def get_x_and_u_at_idx(_penalty, _idx):
+            ocp = self.ocp
+            states_idx = nlp.use_states_from_phase_idx
+            controls_idx = nlp.use_controls_from_phase_idx
+            if _penalty.transition:
+                _x = vertcat(ocp.nlp[_penalty.phase_pre_idx].X[-1], ocp.nlp[_penalty.phase_post_idx].X[0][:, 0])
+                _u = vertcat(ocp.nlp[_penalty.phase_pre_idx].U[-1], ocp.nlp[_penalty.phase_post_idx].U[0])
+            elif _penalty.multinode_constraint:
+                states_phase_first_idx = ocp.nlp[_penalty.phase_first_idx].use_states_from_phase_idx
+                controls_phase_first_idx = ocp.nlp[_penalty.phase_first_idx].use_controls_from_phase_idx
+                states_phase_second_idx = ocp.nlp[_penalty.phase_second_idx].use_states_from_phase_idx
+                controls_phase_second_idx = ocp.nlp[_penalty.phase_second_idx].use_controls_from_phase_idx
+                _x = vertcat(
+                    ocp.nlp[states_phase_first_idx].X[_penalty.node_idx[0]],
+                    ocp.nlp[states_phase_second_idx].X[_penalty.node_idx[1]][:, 0],
+                )
+                # Make an exception to the fact that U is not available for the last node
+                mod_u0 = 1 if _penalty.first_node == Node.END else 0
+                mod_u1 = 1 if _penalty.second_node == Node.END else 0
+                _u = vertcat(
+                    ocp.nlp[controls_phase_first_idx].U[_penalty.node_idx[0] - mod_u0],
+                    ocp.nlp[controls_phase_second_idx].U[_penalty.node_idx[1] - mod_u1],
+                )
+            elif _penalty.integrate:
+                _x = ocp.nlp[states_idx].X[_idx]
+                _u = ocp.nlp[controls_idx].U[_idx][:, 0] if _idx < len(ocp.nlp[controls_idx].U) else []
+            else:
+                _x = ocp.nlp[states_idx].X[_idx][:, 0]
+                _u = ocp.nlp[controls_idx].U[_idx][:, 0] if _idx < len(ocp.nlp[controls_idx].U) else []
+
+            if _penalty.derivative or _penalty.explicit_derivative:
+                _x = horzcat(_x, ocp.nlp[states_idx].X[_idx + 1][:, 0])
+                _u = horzcat(_u, ocp.nlp[controls_idx].U[_idx + 1][:, 0] if _idx + 1 < len(ocp.nlp[controls_idx].U) else [])
+
+            if _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+                _x = horzcat(_x, ocp.nlp[states_idx].X[_idx + 1][:, 0])
+                if ocp.nlp[controls_idx].control_type == ControlType.LINEAR_CONTINUOUS:
+                    _u = horzcat(_u, ocp.nlp[controls_idx].U[_idx + 1][:, 0] if _idx + 1 < len(ocp.nlp[controls_idx].U) else [])
+
+            if _penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
+                if ocp.nlp[controls_idx].control_type == ControlType.LINEAR_CONTINUOUS:
+                    _u = horzcat(_u, ocp.nlp[controls_idx].U[_idx + 1][:, 0] if _idx + 1 < len(ocp.nlp[controls_idx].U) else [])
+            return _x, _u
+
+        param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
+        out = self.ocp.cx()
+        for penalty in penalties:
+            if not penalty:
+                continue
+
+            if penalty.multi_thread:
+                if penalty.target is not None and len(penalty.target[0].shape) != 2:
+                    raise NotImplementedError(
+                        "multi_thread penalty with target shape != [n x m] is not implemented yet"
+                    )
+                target = penalty.target if penalty.target is not None else []
+
+                x = nlp.cx()
+                u = nlp.cx()
+                for idx in penalty.node_idx:
+                    x_tp, u_tp = get_x_and_u_at_idx(penalty, idx)
+                    x = horzcat(x, x_tp)
+                    u = horzcat(u, u_tp)
+                if (
+                    penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL
+                ) and nlp.control_type == ControlType.CONSTANT:
+                    u = horzcat(u, u[:, -1])
+
+                p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)
+
+            else:
+                p = self.ocp.cx()
+                for idx in penalty.node_idx:
+                    if penalty.target is None:
+                        target = []
+                    elif (
+                        penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    ):
+                        target0 = format_target(penalty.target[0])
+                        target1 = format_target(penalty.target[1])
+                        target = np.vstack((target0, target1)).T
+                    else:
+                        target = format_target(penalty.target[0])
+
+                    if np.isnan(np.sum(target)):
+                        continue
+
+                    if not nlp:
+                        x = []
+                        u = []
+                    else:
+                        x, u = get_x_and_u_at_idx(penalty, idx)
+                    p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
+            out = vertcat(out, sum2(p))
+        return out
