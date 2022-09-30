@@ -1348,7 +1348,7 @@ class Solution:
                 if not penalty:
                     continue
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
-                self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
+                self.detailed_cost += [{"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}]
         return
 
     def print_cost(self, cost_type: CostType = CostType.ALL):
@@ -1373,22 +1373,22 @@ class Solution:
                 self.detailed_cost += [
                     {
                         "name": penalty.type.__str__(),
+                        "function": penalty.name,
                         "cost_value_weighted": val_weighted,
                         "cost_value": val,
                         "params": penalty.params,
                         "derivative": penalty.derivative,
                         "explicit_derivative": penalty.explicit_derivative,
-                        "integration_rule": penalty.integration_rule,
+                        "integration_rule": penalty.integration_rule.name,
                         "weight": penalty.weight,
-                        "type": penalty.type,
                         "expand": penalty.expand,
-                        "node": penalty.node,
+                        "node": penalty.node[0].name,
                     }
                 ]
                 if print_only_weighted:
-                    print(f"{penalty.name}: {val_weighted}")
+                    print(f"{penalty.type.__str__()}: {val_weighted}")
                 else:
-                    print(f"{penalty.name}: {val: .2f} (weighted {val_weighted})")
+                    print(f"{penalty.type.__str__()}: {val_weighted} (non weighted {val: .2f})")
 
             return running_total
 
