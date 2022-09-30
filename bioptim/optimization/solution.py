@@ -1415,7 +1415,7 @@ class Solution:
 
         def print_constraints(ocp, sol):
             """
-            Print the values of each constraints with its lagrange multiplier to the console
+            Print the values of each constraint with its lagrange multiplier to the console
             """
 
             if sol.constraints is None:
