@@ -26,7 +26,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     weight: float,
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolver = OdeSolver.IRK(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -108,7 +108,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=0.5, n_shooting=50, weight=1000)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # --- Show results --- #
     sol.animate(show_meshes=True)

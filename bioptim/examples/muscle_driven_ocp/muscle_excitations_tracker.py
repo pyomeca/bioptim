@@ -184,6 +184,8 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=excitations_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.001)
+    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=0.001)
     if use_residual_torque:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     if kin_data_to_track == "markers":
