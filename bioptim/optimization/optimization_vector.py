@@ -468,61 +468,65 @@ class OptimizationVector:
 
         ocp = self.ocp
         # Sanity check
-        for i in range(ocp.n_phases):
-            interpolation_type = self.get_interpolation_type(phase=i)
-            ns = self.get_ns(phase=i, interpolation_type=interpolation_type)
-            if ocp.nlp[i].ode_solver.is_direct_shooting:
-                if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
-                    raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
+        for nlp in ocp.nlp:
+            interpolation_type = self.get_interpolation_type(phase=nlp.phase_idx)
+            ns = self.get_ns(phase=nlp.phase_idx, interpolation_type=interpolation_type)
+            if nlp.use_states_from_phase_idx == nlp.phase_idx:
+                if nlp.ode_solver.is_direct_shooting:
+                    if nlp.x_init.type == InterpolationType.ALL_POINTS:
+                        raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
 
-            ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
-            if ocp.nlp[i].control_type == ControlType.CONSTANT:
-                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns - 1)
-            elif ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns)
-            else:
-                raise NotImplementedError(f"Plotting {ocp.nlp[i].control_type} is not implemented yet")
+                nlp.x_init.check_and_adjust_dimensions(nlp.states.shape, ns)
+            if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+                if nlp.control_type == ControlType.CONSTANT:
+                    nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
+                else:
+                    raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
-            nx = nlp.states.shape
-            if nlp.ode_solver.is_direct_collocation and interpolation_type != InterpolationType.EACH_FRAME:
-                all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
-                outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
-                repeat = nlp.ode_solver.polynomial_degree + 1
-            else:
-                all_nx = nx * (nlp.ns + 1)
-                outer_offset = nx
-                repeat = 1
+            if nlp.use_states_from_phase_idx == nlp.phase_idx:
+                nx = nlp.states.shape
+                if nlp.ode_solver.is_direct_collocation and interpolation_type != InterpolationType.EACH_FRAME:
+                    all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
+                    outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
+                    repeat = nlp.ode_solver.polynomial_degree + 1
+                else:
+                    all_nx = nx * (nlp.ns + 1)
+                    outer_offset = nx
+                    repeat = 1
 
-            x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
-            for k in range(nlp.ns + 1):
-                for p in range(repeat if k != nlp.ns else 1):
-                    span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
-                    point = k if k != 0 else 0 if p == 0 else 1
-                    if isinstance(nlp.x_init, NoisedInitialGuess):
-                        if nlp.x_init.type == InterpolationType.ALL_POINTS:
+                x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
+                for k in range(nlp.ns + 1):
+                    for p in range(repeat if k != nlp.ns else 1):
+                        span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
+                        point = k if k != 0 else 0 if p == 0 else 1
+                        if isinstance(nlp.x_init, NoisedInitialGuess):
+                            if nlp.x_init.type == InterpolationType.ALL_POINTS:
+                                point = k * repeat + p
+                        elif isinstance(nlp.x_init, InitialGuess) and nlp.x_init.type == InterpolationType.EACH_FRAME:
                             point = k * repeat + p
-                    elif isinstance(nlp.x_init, InitialGuess) and nlp.x_init.type == InterpolationType.EACH_FRAME:
-                        point = k * repeat + p
-                    x_init.init[span, 0] = nlp.x_init.init.evaluate_at(shooting_point=point)
+                        x_init.init[span, 0] = nlp.x_init.init.evaluate_at(shooting_point=point)
+                self.x_init[i_phase] = x_init
 
             # For controls
-            if nlp.control_type == ControlType.CONSTANT:
-                ns = nlp.ns
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                ns = nlp.ns + 1
-            else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            nu = nlp.controls.shape
-            all_nu = nu * ns
-            u_init = InitialGuess([0] * all_nu, interpolation=InterpolationType.CONSTANT)
-            for k in range(ns):
-                u_init.init[k * nu : (k + 1) * nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
+            if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+                if nlp.control_type == ControlType.CONSTANT:
+                    ns = nlp.ns
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    ns = nlp.ns + 1
+                else:
+                    raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
+                nu = nlp.controls.shape
+                all_nu = nu * ns
+                u_init = InitialGuess([0] * all_nu, interpolation=InterpolationType.CONSTANT)
+                for k in range(ns):
+                    u_init.init[k * nu : (k + 1) * nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
 
-            self.x_init[i_phase] = x_init
-            self.u_init[i_phase] = u_init
+                self.u_init[i_phase] = u_init
 
     def add_parameter(self, param: Parameter):
         """

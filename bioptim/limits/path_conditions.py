@@ -1018,7 +1018,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Print the InitialGuessList to the console
     """
 
-    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple], **extra_arguments: Any):
+    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple] = None, **extra_arguments: Any):
         """
         Add a new initial guess to the list
 
