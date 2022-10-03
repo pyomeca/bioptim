@@ -146,7 +146,7 @@ def prepare_ocp(
     q_ref: np.ndarray,
     kin_data_to_track: str = "markers",
     use_residual_torque: bool = True,
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolver = OdeSolver.IRK(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp to solve
@@ -180,14 +180,14 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=activations_ref)
-
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot")
     if use_residual_torque:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     if kin_data_to_track == "markers":
         objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref[:, :, :-1])
     elif kin_data_to_track == "q":
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=100, target=q_ref, node=Node.ALL)
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=1000, target=q_ref, node=Node.ALL)
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
@@ -245,10 +245,11 @@ def main():
     # Define the problem
     biorbd_model = biorbd.Model("models/arm26.bioMod")
     final_time = 0.5
-    n_shooting_points = 50
+    n_shooting_points = 75
     use_residual_torque = True
 
     # Generate random data to fit
+    # np.random.seed(15)
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(
         biorbd_model, final_time, n_shooting_points, use_residual_torque=use_residual_torque
     )
@@ -267,7 +268,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # --- Show the results --- #
     q = sol.states["q"]
