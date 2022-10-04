@@ -1299,7 +1299,9 @@ class Solution:
                         or penalty.explicit_derivative
                         or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                     ):
-                        col_x_idx.append((idx + 1) * steps)
+                        col_x_idx.append((idx + 1) * steps) if nlp.ode_solver.is_direct_shooting else col_x_idx.append(
+                            (idx + 1)
+                        )
                         if (
                             penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
                         ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -1307,9 +1309,17 @@ class Solution:
                     elif penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
                         if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                             col_u_idx.append((idx + 1))
-
-                    x = self._states[phase_idx]["all"][:, col_x_idx]
-                    u = self._controls[phase_idx]["all"][:, col_u_idx]
+                    if nlp.ode_solver.is_direct_collocation and (
+                        "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
+                    ):
+                        x = (
+                            self.states_no_intermediate["all"][:, col_x_idx]
+                            if len(self.phase_time) - 1 == 1
+                            else self.states_no_intermediate[phase_idx]["all"][:, col_x_idx]
+                        )
+                    else:
+                        x = self._states[phase_idx]["all"][:, col_x_idx]
+                        u = self._controls[phase_idx]["all"][:, col_u_idx]
                     if penalty.target is None:
                         target = []
                     elif (
