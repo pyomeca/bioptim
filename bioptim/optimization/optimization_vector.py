@@ -225,10 +225,8 @@ class OptimizationVector:
             cmp = 0
             for i in range(len(phase_time)):
                 if isinstance(phase_time[i], self.ocp.cx):
-                    for key in self.ocp.parameter_mappings.keys():
-                        if key == "time":
-                            phase_time[i] = data_time_optimized[self.ocp.parameter_mappings["time"].to_second.map_idx[cmp]]
-                            cmp += 1
+                    phase_time[i] = data_time_optimized[self.ocp.parameter_mappings["time"].to_second.map_idx[cmp]]
+                    cmp += 1
         return phase_time
 
     def to_dictionaries(self, data: Union[np.array, DM]) -> tuple:
