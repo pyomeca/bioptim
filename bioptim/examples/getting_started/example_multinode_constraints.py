@@ -83,6 +83,7 @@ def prepare_ocp(
         phase_second_idx=2,
         first_node=Node.START,
         second_node=Node.START,
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
@@ -92,6 +93,7 @@ def prepare_ocp(
         first_node=2,
         second_node=Node.MID,
         weight=2,
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
@@ -101,6 +103,7 @@ def prepare_ocp(
         first_node=Node.MID,
         second_node=Node.END,
         weight=0.1,
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(

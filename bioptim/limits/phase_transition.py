@@ -231,7 +231,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn)
+            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
 
         @staticmethod
         def impact(transition, all_pn):
