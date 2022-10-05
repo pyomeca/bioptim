@@ -1235,9 +1235,9 @@ def test_custom_dynamics(with_contact):
         return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
     def configure(ocp, nlp, with_contact=None):
-        ConfigureProblem.configure_q(nlp, True, False)
-        ConfigureProblem.configure_qdot(nlp, True, False)
-        ConfigureProblem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, True, False)
+        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
+        ConfigureProblem.configure_tau(ocp, nlp, False, True)
         ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_contact=with_contact)
 
         if with_contact:

@@ -91,9 +91,9 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_addit
         An example of an extra parameter sent by the user
     """
 
-    ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, my_additional_factor=my_additional_factor)
 
 
