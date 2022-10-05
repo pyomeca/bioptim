@@ -121,9 +121,16 @@ def main():
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    # --- Show results --- #
-    sol.animate(n_frames=80)
+    # sol.graphs()
 
+    # --- Show results --- #
+    show_solution_animation = True
+    if show_solution_animation:
+        q_both = np.vstack((sol.states[0]['q'], sol.states[1]['q']))
+        import bioviz
+        b = bioviz.Viz("models/double_pendulum_both_inertia.bioMod")
+        b.load_movement(q_both)
+        b.exec()
 
 if __name__ == "__main__":
     main()
