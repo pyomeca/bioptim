@@ -85,7 +85,7 @@ def main():
     warm_start_ipopt_from_acados_solution = False
 
     # --- Solve the program using ACADOS --- #
-    ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
+    ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=1, n_shooting=100, use_sx=True)
 
     solver_acados = Solver.ACADOS()
     solver_acados.set_convergence_tolerance(1e-3)
@@ -96,7 +96,7 @@ def main():
     x_warm = sol_acados["qqdot"] if warm_start_ipopt_from_acados_solution else None
     ocp_ipopt = prepare_ocp(
         biorbd_model_path="models/arm26.bioMod",
-        final_time=2,
+        final_time=1,
         x_warm=x_warm,
         n_shooting=51,
         use_sx=False,

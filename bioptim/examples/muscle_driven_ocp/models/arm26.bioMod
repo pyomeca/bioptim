@@ -200,7 +200,7 @@ musclegroup base_to_r_ulna_radius_hand
 endmusclegroup
 
     muscle    TRIlong
-        Type    hillthelenfatigable
+        Type    hilldegrootefatigable
         statetype   degroote
         musclegroup    base_to_r_ulna_radius_hand
         OriginPosition    -0.053650000000000003 -0.013729999999999999 0.14723
