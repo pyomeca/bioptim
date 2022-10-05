@@ -216,7 +216,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def states_equality(multinode_constraint, all_pn):
+        def states_equality(multinode_constraint, all_pn, key: str):
             """
             The most common continuity function, that is state before equals state after
 
@@ -233,8 +233,12 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+            if key == "all":
+                states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+                states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+            else:
+                states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)[nlp_pre.states[key].index]
+                states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)[nlp_post.states[key].index]
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -244,6 +248,40 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             return states_pre - states_post
+
+        @staticmethod
+        def controls_equality(multinode_constraint, all_pn, key: str):
+            """
+            The controls before equals controls after
+
+            Parameters
+            ----------
+            multinode_constraint : MultinodeConstraint
+                A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the controls after and before
+            """
+
+            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
+            if key == "all":
+                controls_pre = nlp_pre.controls.cx_end
+                controls_post = nlp_post.controls.cx
+            else:
+                controls_pre = nlp_pre.controls[key].cx_end
+                controls_post = nlp_post.controls[key].cx
+
+            if controls_pre.shape != controls_post.shape:
+                raise RuntimeError(
+                    f"Continuity can't be established since the number of x to be matched is {controls_pre.shape} in the "
+                    f"pre-transition phase and {controls_post.shape} post-transition phase. Please use a custom "
+                    f"transition or supply states_mapping"
+                )
+
+            return controls_pre - controls_post
 
         def states_no_constraint(multinode_constraint, all_pn):
             """
@@ -435,7 +473,8 @@ class MultinodeConstraintFcn(FcnEnum):
     Selection of valid multinode constraint functions
     """
 
-    EQUALITY = (MultinodeConstraintFunctions.Functions.states_equality,)
+    STATES_EQUALITY = (MultinodeConstraintFunctions.Functions.states_equality,)
+    CONTROLS_EQUALITY = (MultinodeConstraintFunctions.Functions.controls_equality,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
     COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
     COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
