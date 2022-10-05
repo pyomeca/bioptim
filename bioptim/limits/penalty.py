@@ -335,7 +335,11 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
-                return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
+                if penalty.node == Node.END_FINAL_INTERVAL:
+                    states = nlp.dynamics[-1].function(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+                    return nlp.dynamics_func(states, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
+                else:
+                    return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
             elif "qddot" in nlp.states.keys():
                 return nlp.states["qddot"].cx
             elif "qddot" in nlp.controls.keys():

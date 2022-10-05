@@ -31,6 +31,7 @@ class Node(Enum):
     MID = "mid"  # The middle node of the phase
     INTERMEDIATES = "intermediates"  # All the nodes but the first and last
     PENULTIMATE = "penultimate"  # The second to last node of the phase
+    END_FINAL_INTERVAL = "end_final_interval"  # The last node of the final interval
     END = "end"  # The last node of the phase
     ALL = "all"  # All the nodes
     ALL_SHOOTING = "all_shooting"  # All the shooting nodes

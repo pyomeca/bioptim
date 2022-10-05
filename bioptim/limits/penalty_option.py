@@ -735,6 +735,8 @@ class PenaltyOption(OptionGeneric):
                 t.extend(range(nlp.ns))
             elif node == Node.ALL:
                 t.extend(range(nlp.ns + 1))
+            elif node == Node.END_FINAL_INTERVAL:
+                t.append(nlp.ns - 1)
             else:
                 raise RuntimeError(" is not a valid node")
 
