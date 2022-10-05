@@ -339,7 +339,9 @@ class PenaltyFunctionAbstract:
                     states = nlp.dynamics[-1].function(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
                     return nlp.dynamics_func(states, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
                 else:
-                    return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
+                    return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[
+                        nlp.states["qdot"].index, :
+                    ]
             elif "qddot" in nlp.states.keys():
                 return nlp.states["qddot"].cx
             elif "qddot" in nlp.controls.keys():
