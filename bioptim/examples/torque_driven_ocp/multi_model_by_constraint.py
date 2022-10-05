@@ -48,7 +48,7 @@ def prepare_ocp(
                               first_node=Node.END, second_node=Node.END)
     for i in range(n_shooting[0]):
         multinode_constraints.add(MultinodeConstraintFcn.CONTROLS_EQUALITY, phase_first_idx=0,
-                                  phase_second_idx=1, first_node=i, second_node=i)  # key="tau"
+                                  phase_second_idx=1, first_node=i, second_node=i, key="all")
 
     # Dynamics
     dynamics = DynamicsList()
