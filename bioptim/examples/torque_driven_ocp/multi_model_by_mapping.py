@@ -38,7 +38,7 @@ def prepare_ocp(
 
     # Phase mapping
     node_mappings = NodeMappingList()
-    node_mappings.add("tau", phase_pre=0, phase_post=1, nodes_pre=Node.ALL, nodes_post=Node.ALL)
+    node_mappings.add("tau", map_controls=True, phase_pre=0, phase_post=1)
 
     # Add objective functions
     objective_functions = ObjectiveList()

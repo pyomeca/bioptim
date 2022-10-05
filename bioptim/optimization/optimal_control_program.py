@@ -437,27 +437,8 @@ class OptimalControlProgram:
         if node_mappings is None:
             node_mappings = NodeMappingList()
 
-        # ToDo: Move elsewhere (will ask Pariterre)
-        # def define_variables_before_configure(ocp):
-        states_names = []
-        states_dot_names = []
-        controls_names = []
-        for nlp in self.nlp:
-            if nlp.dynamics_type.type == DynamicsFcn.TORQUE_DRIVEN:
-                states_names.append(["q", "qdot"])
-                states_dot_names.append(["q", "q_dot"])
-                controls_names.append(["tau"])
-            else:
-                # TORQUE_DERIVATIVE_DRIVEN
-                # TORQUE_ACTIVATIONS_DRIVEN
-                # JOINTS_ACCELERATION_DRIVEN
-                # MUSCLE_DRIVEN
-                # CUSTOM -> will be problematic!
-                raise RuntimeError("Not implemented yet")
-            # return states_names, controls_names, states_dot_names
-
         # states_names, controls_names, states_dot_names = define_variables_before_configure
-        node_mappings.get_variable_from_phase_idx(self, NLP, states_names, controls_names, states_dot_names)
+        node_mappings.get_variable_from_phase_idx(self, NLP)
 
         # Prepare the dynamics
         for i in range(self.n_phases):

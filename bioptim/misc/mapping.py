@@ -249,10 +249,10 @@ class NodeMapping(OptionGeneric):
 
     def __init__(
         self,
+        map_states: bool = False,
+        map_controls: bool = False,
         phase_pre: int = None,
         phase_post: int = None,
-        nodes_pre: Union[Node, int, list, tuple, range] = None,
-        nodes_post: Union[Node, int, list, tuple, range] = None,
         oppose_to_second: Union[Node, int, list, tuple, range] = None,
         oppose_to_first: Union[Node, int, list, tuple, range] = None,
         **params
@@ -280,10 +280,6 @@ class NodeMapping(OptionGeneric):
             raise RuntimeError("phase_pre must be an int (the number of the fisrt phase to map)")
         if not isinstance(phase_post, int):
             raise RuntimeError("phase_post must be an int (the number of the second phase to map)")
-        if not isinstance(nodes_pre, (Node, int, list, tuple, range)):
-            raise RuntimeError("nodes_pre must be a Node class, an int, a list, a tuple or a range")
-        if not isinstance(nodes_post, (Node, int, list, tuple, range)):
-            raise RuntimeError("nodes_post must be a Node class, an int, a list, a tuple or a range")
         if oppose_to_second is not None:
             if not isinstance(oppose_to_second, (Node, int, list, tuple, range)):
                 raise RuntimeError("oppose_to_second must be a Node class, an int, a list, a tuple or a range")
@@ -291,10 +287,10 @@ class NodeMapping(OptionGeneric):
             if not isinstance(oppose_to_first, (Node, int, list, tuple, range)):
                 raise RuntimeError("oppose_to_first must be a Node class, an int, a list, a tuple or a range")
 
+        self.map_states = map_states
+        self.map_controls = map_controls
         self.phase_pre = phase_pre
         self.phase_post = phase_post
-        self.nodes_pre = nodes_pre
-        self.nodes_post = nodes_post
         self.oppose_to_second = oppose_to_second
         self.oppose_to_first = oppose_to_first
 
@@ -305,10 +301,10 @@ class NodeMappingList(OptionDict):
     def add(
         self,
         name: str,
+        map_states: bool = False,
+        map_controls: bool = False,
         phase_pre: int = None,
         phase_post: int = None,
-        nodes_pre: Union[Node, int, list, tuple, range] = None,
-        nodes_post: Union[Node, int, list, tuple, range] = None,
         oppose_to_second: Union[Node, int, list, tuple, range] = None,
         oppose_to_first: Union[Node, int, list, tuple, range] = None,
     ):
@@ -330,44 +326,42 @@ class NodeMappingList(OptionDict):
             The BiMapping to copy
         """
 
-        if phase_pre is None or phase_post is None or nodes_pre is None or nodes_post is None:
-            raise ValueError("NodeMappingList should contain phase_pre, phase_post, node_pre and node_post.")
+        if map_states == False and map_controls == False:
+            raise Warning("You should use either map_states=True or map_controls=True. "
+                          "For now your node mapping has no effect.")
+
+        if phase_pre is None or phase_post is None:
+            raise ValueError("NodeMappingList should contain phase_pre and phase_post.")
 
         super(NodeMappingList, self)._add(
             key=name,
+            map_states=map_states,
+            map_controls=map_controls,
             phase=phase_pre,
             option_type=NodeMapping,
             phase_pre=phase_pre,
             phase_post=phase_post,
-            nodes_pre=nodes_pre,
-            nodes_post=nodes_post,
             oppose_to_second=oppose_to_second,
             oppose_to_first=oppose_to_first,
         )
 
-    def get_variable_from_phase_idx(self, ocp, NLP, states_names, controls_names, states_dot_names):
-        # ocp.nlp[ocp.nlp.use_states_dot_from_phase_idx].states_dot
-        use_states_from_phase_idx = []
-        use_states_dot_from_phase_idx = []
-        use_controls_from_phase_idx = []
-        for i in range(len(ocp.nlp)):
-            for key in self.keys():
-                if key in states_names[self[key].phase_post] and i == self[key].phase_post:
-                    use_states_from_phase_idx += [self[key].phase_pre]
-                else:
-                    use_states_from_phase_idx += [i]
-                if key in states_dot_names[self[key].phase_post] and i == self[key].phase_post:
-                    use_states_dot_from_phase_idx += [self[key].phase_pre]
-                else:
-                    use_states_dot_from_phase_idx += [i]
-                if key in controls_names[self[key].phase_post] and i == self[key].phase_post:
-                    use_controls_from_phase_idx += [self[key].phase_pre]
-                else:
-                    use_controls_from_phase_idx += [i]
+    def get_variable_from_phase_idx(self, ocp, NLP):
+
+        use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+        use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+        use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+
+        for key in self.keys():
+            if self[key].map_states:
+                use_states_from_phase_idx[self[key].phase_post] = self[key].phase_pre
+                use_states_dot_from_phase_idx[self[key].phase_post] = self[key].phase_pre
+            if self[key].map_controls:
+                use_controls_from_phase_idx[self[key].phase_post] = self[key].phase_pre
 
         NLP.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
         NLP.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
         NLP.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
         return
 
     def __getitem__(self, item) -> Union[dict, BiMapping]:
