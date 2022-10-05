@@ -256,26 +256,28 @@ class OptimizationVector:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states.shape, -1), order="F")
-            data_states[p_idx]["all"] = x_array
-            offset_var = 0
-            for var in ocp.nlp[p].states:
-                data_states[p_idx][var] = x_array[offset_var : offset_var + len(ocp.nlp[p].states[var]), :]
-                offset_var += len(ocp.nlp[p].states[var])
-            p_idx += 1
-            offset += self.n_phase_x[p]
+            if self.ocp.nlp[p].use_states_from_phase_idx == self.ocp.nlp[p].phase_idx:
+                x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states.shape, -1), order="F")
+                data_states[p_idx]["all"] = x_array
+                offset_var = 0
+                for var in ocp.nlp[p].states:
+                    data_states[p_idx][var] = x_array[offset_var : offset_var + len(ocp.nlp[p].states[var]), :]
+                    offset_var += len(ocp.nlp[p].states[var])
+                p_idx += 1
+                offset += self.n_phase_x[p]
 
         offset = self.n_all_x
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].controls.shape, -1), order="F")
-            data_controls[p_idx]["all"] = u_array
-            offset_var = 0
-            for var in ocp.nlp[p].controls:
-                data_controls[p_idx][var] = u_array[offset_var : offset_var + len(ocp.nlp[p].controls[var]), :]
-                offset_var += len(ocp.nlp[p].controls[var])
-            p_idx += 1
-            offset += self.n_phase_u[p]
+            if self.ocp.nlp[p].use_controls_from_phase_idx == self.ocp.nlp[p].phase_idx:
+                u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].controls.shape, -1), order="F")
+                data_controls[p_idx]["all"] = u_array
+                offset_var = 0
+                for var in ocp.nlp[p].controls:
+                    data_controls[p_idx][var] = u_array[offset_var : offset_var + len(ocp.nlp[p].controls[var]), :]
+                    offset_var += len(ocp.nlp[p].controls[var])
+                p_idx += 1
+                offset += self.n_phase_u[p]
 
         offset = self.n_all_x + self.n_all_u
         scaling_offset = 0
@@ -332,14 +334,14 @@ class OptimizationVector:
             else:
                 nlp.X = []
             self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x[nlp.use_states_from_phase_idx]])
-            self.n_phase_x[nlp.phase_idx] = self.x[nlp.phase_idx].size()[0]
+            self.n_phase_x[nlp.phase_idx] = (self.x[nlp.phase_idx].size()[0] if nlp.use_states_from_phase_idx == nlp.use_states_from_phase_idx else 0)
 
             if nlp.phase_idx == nlp.use_controls_from_phase_idx:
                 nlp.U = u[nlp.phase_idx]
             else:
                 nlp.U = []
             self.u[nlp.phase_idx] = vertcat(*u[nlp.use_controls_from_phase_idx])
-            self.n_phase_u[nlp.phase_idx] = self.u[nlp.phase_idx].size()[0]
+            self.n_phase_u[nlp.phase_idx] = (self.u[nlp.phase_idx].size()[0] if nlp.phase_idx == nlp.use_controls_from_phase_idx else 0)
 
         self.n_all_x = sum(self.n_phase_x)
         self.n_all_u = sum(self.n_phase_u)
