@@ -59,14 +59,14 @@ def prepare_ocp(
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model[1]))
 
     # Phase 0
-    x_bounds[0][0, 0] = - np.pi
+    x_bounds[0][0, 0] = -np.pi
     x_bounds[0][1, 0] = 0
     x_bounds[0].min[0, 2] = np.pi - 0.1
     x_bounds[0].max[0, 2] = np.pi + 0.1
     x_bounds[0][1, 2] = 0
 
     # Phase 1
-    x_bounds[1][0, 0] = - np.pi
+    x_bounds[1][0, 0] = -np.pi
     x_bounds[1][1, 0] = 0
     x_bounds[1].min[0, 2] = np.pi - 0.1
     x_bounds[1].max[0, 2] = np.pi + 0.1
@@ -89,7 +89,8 @@ def prepare_ocp(
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(
-        PhaseTransitionFcn.DISCONTINUOUS, phase_pre_idx=0,
+        PhaseTransitionFcn.DISCONTINUOUS,
+        phase_pre_idx=0,
     )
 
     return OptimalControlProgram(
@@ -122,11 +123,13 @@ def main():
     # --- Show results --- #
     show_solution_animation = True
     if show_solution_animation:
-        q_both = np.vstack((sol.states[0]['q'], sol.states[1]['q']))
+        q_both = np.vstack((sol.states[0]["q"], sol.states[1]["q"]))
         import bioviz
+
         b = bioviz.Viz("models/double_pendulum_both_inertia.bioMod")
         b.load_movement(q_both)
         b.exec()
+
 
 if __name__ == "__main__":
     main()

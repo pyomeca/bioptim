@@ -200,16 +200,22 @@ class IpoptInterface(SolverInterface):
 
             if _penalty.derivative or _penalty.explicit_derivative:
                 _x = horzcat(_x, ocp.nlp[states_idx].X[_idx + 1][:, 0])
-                _u = horzcat(_u, ocp.nlp[controls_idx].U[_idx + 1][:, 0] if _idx + 1 < len(ocp.nlp[controls_idx].U) else [])
+                _u = horzcat(
+                    _u, ocp.nlp[controls_idx].U[_idx + 1][:, 0] if _idx + 1 < len(ocp.nlp[controls_idx].U) else []
+                )
 
             if _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
                 _x = horzcat(_x, ocp.nlp[states_idx].X[_idx + 1][:, 0])
                 if ocp.nlp[controls_idx].control_type == ControlType.LINEAR_CONTINUOUS:
-                    _u = horzcat(_u, ocp.nlp[controls_idx].U[_idx + 1][:, 0] if _idx + 1 < len(ocp.nlp[controls_idx].U) else [])
+                    _u = horzcat(
+                        _u, ocp.nlp[controls_idx].U[_idx + 1][:, 0] if _idx + 1 < len(ocp.nlp[controls_idx].U) else []
+                    )
 
             if _penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
                 if ocp.nlp[controls_idx].control_type == ControlType.LINEAR_CONTINUOUS:
-                    _u = horzcat(_u, ocp.nlp[controls_idx].U[_idx + 1][:, 0] if _idx + 1 < len(ocp.nlp[controls_idx].U) else [])
+                    _u = horzcat(
+                        _u, ocp.nlp[controls_idx].U[_idx + 1][:, 0] if _idx + 1 < len(ocp.nlp[controls_idx].U) else []
+                    )
             return _x, _u
 
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)

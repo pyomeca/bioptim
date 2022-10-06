@@ -294,6 +294,7 @@ class NodeMapping(OptionGeneric):
         self.oppose_to_second = oppose_to_second
         self.oppose_to_first = oppose_to_first
 
+
 class NodeMappingList(OptionDict):
     def __init__(self):
         super(NodeMappingList, self).__init__()
@@ -327,8 +328,10 @@ class NodeMappingList(OptionDict):
         """
 
         if map_states == False and map_controls == False:
-            raise Warning("You should use either map_states=True or map_controls=True. "
-                          "For now your node mapping has no effect.")
+            raise Warning(
+                "You should use either map_states=True or map_controls=True. "
+                "For now your node mapping has no effect."
+            )
 
         if phase_pre is None or phase_post is None:
             raise ValueError("NodeMappingList should contain phase_pre and phase_post.")

@@ -417,18 +417,20 @@ def test_phase_transition_uneven_variable_number_by_bounds():
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([0., 0., 3.14, 1.31632191]))
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([0., 0.,  6.27999994, -1.26241947]))
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([0.,  0.,  6.27999994, -1.26241947]))
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([-0.32257863, -4.89339993,  9.4783899 , -0.82639208]))
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([0.0, 0.0, 3.14, 1.31632191]))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([0.0, 0.0, 6.27999994, -1.26241947]))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([0.0, 0.0, 6.27999994, -1.26241947]))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([-0.32257863, -4.89339993, 9.4783899, -0.82639208]))
     # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0., 0.,  1.46325183, -5.62025695]))
-    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0., 0., -0.81745942,  9.76461884]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0., 0., -0.81745942,  9.76461884]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([24.25885769,  -7.72698493,  22.04825645, -16.55976218]))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.0, 0.0, 1.46325183, -5.62025695]))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.0, 0.0, -0.81745942, 9.76461884]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.0, 0.0, -0.81745942, 9.76461884]))
+    np.testing.assert_almost_equal(
+        states[1]["qdot"][:, -1], np.array([24.25885769, -7.72698493, 22.04825645, -16.55976218])
+    )
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([2.24465939, 0.93382179, 2.70624195]))
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-10.2828808 ,  10.79561267,  11.30408553]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-10.2828808, 10.79561267, 11.30408553]))
     np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([5.93898959]))
     np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([0.71101929]))
 
@@ -443,8 +445,9 @@ def test_phase_transition_uneven_variable_number_by_mapping():
     biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
     biorbd_model_path_withTranslations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=biorbd_model_path,
-                                 biorbd_model_path_withTranslations=biorbd_model_path_withTranslations)
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=biorbd_model_path, biorbd_model_path_withTranslations=biorbd_model_path_withTranslations
+    )
     sol = ocp.solve()
 
     # Check objective function value
@@ -461,20 +464,23 @@ def test_phase_transition_uneven_variable_number_by_mapping():
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([3.14, 0.]))
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([3.14, 0.0]))
     np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([8.34553412, -1.49476117]))
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([0.,  0.,  8.35220747, -1.49768318]))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([0.0, 0.0, 8.35220747, -1.49768318]))
     np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([4.3615878, 2.14480639, 10.79222634, 1.43970003]))
     # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([-0.69668687,  0.52746273]))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([-0.69668687, 0.52746273]))
     np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([2.14064262, 14.77599501]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.,  0.,  2.14317197, 14.77871693]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([2.59087355, 22.38161183, 16.20960498, 3.48132539]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.0, 0.0, 2.14317197, 14.77871693]))
+    np.testing.assert_almost_equal(
+        states[1]["qdot"][:, -1], np.array([2.59087355, 22.38161183, 16.20960498, 3.48132539])
+    )
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([-0.00444966]))
     np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-2.18577026]))
     np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([0.6362266]))
     np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([0.59226538]))
+
 
 def test_multi_model_by_mapping():
     # Load multi_model_by_mapping
@@ -486,8 +492,9 @@ def test_multi_model_by_mapping():
     biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=biorbd_model_path,
-                                 biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia)
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia
+    )
     sol = ocp.solve()
 
     # Check objective function value
@@ -504,10 +511,10 @@ def test_multi_model_by_mapping():
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265,  0.]))
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.14261123, 0.]))
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265,  0.]))
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.1387283, 0.]))
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.14261123, 0.0]))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.1387283, 0.0]))
     # initial and final velocities
     np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.02032024, -0.11683541]))
     np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.39250662, 0.36244284]))
@@ -529,8 +536,9 @@ def test_multi_model_by_constraint():
     biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=biorbd_model_path,
-                                 biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia)
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia
+    )
     sol = ocp.solve()
 
     # Check objective function value
@@ -547,14 +555,14 @@ def test_multi_model_by_constraint():
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265e+00, -1.52694304e-16]))
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.09877448e+00, -1.88600092e-16]))
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265e+00, -1.17038074e-16]))
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.06719675e+00, 1.51871101e-17]))
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265e00, -1.52694304e-16]))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.09877448e00, -1.88600092e-16]))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265e00, -1.17038074e-16]))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.06719675e00, 1.51871101e-17]))
     # initial and final velocities
     np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.19084639, -0.01976167]))
     np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.26783255, 0.35826908]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.3576423 , 0.10950598]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.3576423, 0.10950598]))
     np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([0.03454933, 0.32656719]))
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.77451039e-07]))

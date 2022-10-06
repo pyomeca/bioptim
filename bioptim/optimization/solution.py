@@ -948,11 +948,19 @@ class Solution:
 
             if shooting_type == Shooting.MULTIPLE:
                 # last node of the phase is not integrated but do exist as an independent node
-                out._states[self.ocp.nlp[p].use_states_from_phase_idx]["all"] = np.concatenate((out._states[self.ocp.nlp[p].use_states_from_phase_idx]["all"], self._states[self.ocp.nlp[p].use_states_from_phase_idx]["all"][:, -1:]), axis=1)
+                out._states[self.ocp.nlp[p].use_states_from_phase_idx]["all"] = np.concatenate(
+                    (
+                        out._states[self.ocp.nlp[p].use_states_from_phase_idx]["all"],
+                        self._states[self.ocp.nlp[p].use_states_from_phase_idx]["all"][:, -1:],
+                    ),
+                    axis=1,
+                )
 
             # Dispatch the integrated values to all the keys
             for key in nlp.states:
-                out._states[self.ocp.nlp[p].use_states_from_phase_idx][key] = out._states[self.ocp.nlp[p].use_states_from_phase_idx]["all"][nlp.states[key].index, :]
+                out._states[self.ocp.nlp[p].use_states_from_phase_idx][key] = out._states[
+                    self.ocp.nlp[p].use_states_from_phase_idx
+                ]["all"][nlp.states[key].index, :]
 
         return out
 
