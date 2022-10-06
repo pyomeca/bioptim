@@ -11,7 +11,7 @@ from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
-
+# from ..limits.phase_transition import PhaseTransitionFcn
 
 class Constraint(PenaltyOption):
     """
@@ -532,6 +532,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         # Dynamics must be sound within phases
         for nlp in ocp.nlp:
+            # if nlp.use_states_from_phase_idx == nlp.phase_idx:  # PhaseTransitionFcn.DISCONTINUOUS -> relative import
             penalty = Constraint(ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
@@ -547,7 +548,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         for pt in ocp.phase_transitions:
             # Dynamics must be respected between phases
-            if pt.phase_pre_idx != pt.phase_post_idx: # PhaseTransitionFcn.DISCONTINUOUS -> relative import
+            if not (pt.phase_pre_idx == -42 and pt.phase_post_idx == -42): # PhaseTransitionFcn.DISCONTINUOUS -> relative import
                 pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
                 pt.list_index = -1
                 pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
