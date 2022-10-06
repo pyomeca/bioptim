@@ -24,7 +24,7 @@ def prepare_ocp(
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path_modified_inertia))
 
     # Problem parameters
-    n_shooting = (40, 40)
+    n_shooting = (5, 5)
     final_time = (1.5, 1.5)
     tau_min, tau_max, tau_init = -200, 200, 0
 

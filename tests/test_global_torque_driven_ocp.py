@@ -389,3 +389,90 @@ def test_trampo_quaternions():
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
+
+
+def test_multi_model_by_mapping():
+    # Load multi_model_by_mapping
+    from bioptim.examples.torque_driven_ocp import multi_model_by_mapping as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    # Define the problem
+    biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=biorbd_model_path,
+                                 biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia)
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 7.443574590553702e-06)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (44, 1))
+    np.testing.assert_almost_equal(g, np.zeros((44, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
+
+    # initial and final position
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265,  0.]))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.14261123, 0.]))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265,  0.]))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.1387283, 0.]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.02032024, -0.11683541]))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.39250662, 0.36244284]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.05343674, -0.10060115]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([0.33994252, 0.28596524]))
+    # initial and final controls
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([7.10563304e-10]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-5.12573519e-08]))
+    np.testing.assert_equal(controls[1], {})
+
+
+def test_multi_model_by_constraint():
+    # Load multi_model_by_constraint
+    from bioptim.examples.torque_driven_ocp import multi_model_by_constraint as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    # Define the problem
+    biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=biorbd_model_path,
+                                 biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia)
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 6.649006745212458e-06)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (56, 1))
+    np.testing.assert_almost_equal(g, np.zeros((56, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
+
+    # initial and final position
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265e+00, -1.52694304e-16]))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.09877448e+00, -1.88600092e-16]))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265e+00, -1.17038074e-16]))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.06719675e+00, 1.51871101e-17]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.19084639, -0.01976167]))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.26783255, 0.35826908]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.3576423 , 0.10950598]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([0.03454933, 0.32656719]))
+    # initial and final controls
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.77451039e-07]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([4.01610057e-07]))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([1.7745104e-07]))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([4.01610057e-07]))
