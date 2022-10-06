@@ -33,7 +33,15 @@ class OptimizationVariable:
         The CX of the variable (ending point)
     """
 
-    def __init__(self, name: str, mx: MX, cx: Union[list, None], index: [range, list], mapping: BiMapping = None, parent_list=None,):
+    def __init__(
+        self,
+        name: str,
+        mx: MX,
+        cx: Union[list, None],
+        index: [range, list],
+        mapping: BiMapping = None,
+        parent_list=None,
+    ):
         """
         Parameters
         ----------
