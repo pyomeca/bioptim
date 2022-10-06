@@ -1299,9 +1299,8 @@ class Solution:
                         or penalty.explicit_derivative
                         or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                     ):
-                        col_x_idx.append((idx + 1) * steps) if nlp.ode_solver.is_direct_shooting else col_x_idx.append(
-                            (idx + 1)
-                        )
+                        col_x_idx.append((idx + 1) * (steps if nlp.ode_solver.is_direct_shooting else 1))
+
                         if (
                             penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
                         ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:

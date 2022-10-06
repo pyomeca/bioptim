@@ -115,12 +115,12 @@ def sum_cost_function_output(sol):
     """
     Sum the cost function output from sol.print_cost()
     """
-    capturedOutput = io.StringIO()  # Create StringIO object
-    sys.stdout = capturedOutput  # and redirect stdout.
+    captured_output = io.StringIO()  # Create StringIO object
+    sys.stdout = captured_output  # and redirect stdout.
     sol.print_cost()  # Call function.
     sys.stdout = sys.__stdout__  # Reset redirect.
-    idx = capturedOutput.getvalue().find("Sum cost functions")
-    output = capturedOutput.getvalue()[idx:].split("\n")[0]
+    idx = captured_output.getvalue().find("Sum cost functions")
+    output = captured_output.getvalue()[idx:].split("\n")[0]
     idx = len("Sum cost functions: ")
     return float(output[idx:])
 
@@ -214,7 +214,7 @@ def test_pendulum(control_type, integration_rule, objective):
 @pytest.mark.parametrize(
     "objective",
     [
-        # "torque",
+        "torque",
         "qdot",
     ],
 )
@@ -225,9 +225,9 @@ def test_pendulum(control_type, integration_rule, objective):
 @pytest.mark.parametrize(
     "integration_rule",
     [
-        # IntegralApproximation.RECTANGLE,
+        IntegralApproximation.RECTANGLE,
         IntegralApproximation.TRAPEZOIDAL,
-        # IntegralApproximation.TRUE_TRAPEZOIDAL,
+        IntegralApproximation.TRUE_TRAPEZOIDAL,
     ],
 )
 def test_pendulum_collocation(control_type, integration_rule, objective):
