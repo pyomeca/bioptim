@@ -50,7 +50,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.9.1", "1.10.0")
+check_version(biorbd, "1.9.5", "1.10.0")
 
 
 class OptimalControlProgram:
