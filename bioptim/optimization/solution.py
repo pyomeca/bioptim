@@ -1389,9 +1389,9 @@ class Solution:
                     }
                 ]
                 if print_only_weighted:
-                    print(f"{penalty.type.__str__()}: {val_weighted}")
+                    print(f"{penalty.type}: {val_weighted}")
                 else:
-                    print(f"{penalty.type.__str__()}: {val_weighted} (non weighted {val: .2f})")
+                    print(f"{penalty.type}: {val_weighted} (non weighted {val: .2f})")
 
             return running_total
 
