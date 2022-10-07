@@ -277,17 +277,6 @@ class NodeMapping(OptionGeneric):
         """
         super(NodeMapping, self).__init__(**params)
 
-        if not isinstance(phase_pre, int):
-            raise RuntimeError("phase_pre must be an int (the number of the fisrt phase to map)")
-        if not isinstance(phase_post, int):
-            raise RuntimeError("phase_post must be an int (the number of the second phase to map)")
-        if oppose_to_second is not None:
-            if not isinstance(oppose_to_second, (Node, int, list, tuple, range)):
-                raise RuntimeError("oppose_to_second must be a Node class, an int, a list, a tuple or a range")
-        if oppose_to_first is not None:
-            if not isinstance(oppose_to_first, (Node, int, list, tuple, range)):
-                raise RuntimeError("oppose_to_first must be a Node class, an int, a list, a tuple or a range")
-
         self.map_states = map_states
         self.map_controls = map_controls
         self.phase_pre = phase_pre
@@ -339,6 +328,13 @@ class NodeMappingList(OptionDict):
 
         if phase_pre > phase_post:
             raise ValueError("Please provide a phase_pre index value smaller than the phase_post index value.")
+
+        if oppose_to_second is not None:
+            if not isinstance(oppose_to_second, (Node, int, list, tuple, range)):
+                raise RuntimeError("oppose_to_second must be a Node class, an int, a list, a tuple or a range")
+        if oppose_to_first is not None:
+            if not isinstance(oppose_to_first, (Node, int, list, tuple, range)):
+                raise RuntimeError("oppose_to_first must be a Node class, an int, a list, a tuple or a range")
 
         super(NodeMappingList, self)._add(
             key=name,

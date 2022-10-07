@@ -212,7 +212,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.states_no_constraint(transition, all_pn)
+            return MX.zeros(0, 0)
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:

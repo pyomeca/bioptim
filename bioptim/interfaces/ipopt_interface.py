@@ -169,12 +169,8 @@ class IpoptInterface(SolverInterface):
             states_idx = nlp.use_states_from_phase_idx
             controls_idx = nlp.use_controls_from_phase_idx
             if _penalty.transition:
-                if _penalty.type == PhaseTransitionFcn.DISCONTINUOUS:
-                    _x = vertcat(ocp.nlp[0].X[-1], ocp.nlp[0].X[0][:, 0])
-                    _u = vertcat(ocp.nlp[0].U[-1], ocp.nlp[0].U[0])
-                else:
-                    _x = vertcat(ocp.nlp[_penalty.phase_pre_idx].X[-1], ocp.nlp[_penalty.phase_post_idx].X[0][:, 0])
-                    _u = vertcat(ocp.nlp[_penalty.phase_pre_idx].U[-1], ocp.nlp[_penalty.phase_post_idx].U[0])
+                _x = vertcat(ocp.nlp[_penalty.phase_pre_idx].X[-1], ocp.nlp[_penalty.phase_post_idx].X[0][:, 0])
+                _u = vertcat(ocp.nlp[_penalty.phase_pre_idx].U[-1], ocp.nlp[_penalty.phase_post_idx].U[0])
             elif _penalty.multinode_constraint:
                 states_phase_first_idx = ocp.nlp[_penalty.phase_first_idx].use_states_from_phase_idx
                 controls_phase_first_idx = ocp.nlp[_penalty.phase_first_idx].use_controls_from_phase_idx
