@@ -400,7 +400,9 @@ def test_phase_transition_uneven_variable_number_by_bounds():
     # Define the problem
     biorbd_model_path_withTranslations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path_withTranslations=biorbd_model_path_withTranslations)
+    ocp = ocp_module.prepare_ocp(biorbd_model_path_withTranslations=biorbd_model_path_withTranslations,
+                                 n_shooting=(5, 5),
+                                 )
     sol = ocp.solve()
 
     # Check objective function value
@@ -446,7 +448,8 @@ def test_phase_transition_uneven_variable_number_by_mapping():
     biorbd_model_path_withTranslations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=biorbd_model_path, biorbd_model_path_withTranslations=biorbd_model_path_withTranslations
+        biorbd_model_path=biorbd_model_path, biorbd_model_path_withTranslations=biorbd_model_path_withTranslations,
+        n_shooting=(5, 5),
     )
     sol = ocp.solve()
 
@@ -493,7 +496,8 @@ def test_multi_model_by_mapping():
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia
+        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
+        n_shooting=(5, 5),
     )
     sol = ocp.solve()
 
@@ -537,7 +541,8 @@ def test_multi_model_by_constraint():
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia
+        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
+        n_shooting=(5, 5),
     )
     sol = ocp.solve()
 

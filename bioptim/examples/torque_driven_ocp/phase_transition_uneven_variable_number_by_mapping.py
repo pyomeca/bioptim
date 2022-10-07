@@ -22,12 +22,12 @@ from bioptim import (
 def prepare_ocp(
     biorbd_model_path: str = "models/double_pendulum.bioMod",
     biorbd_model_path_withTranslations: str = "models/double_pendulum_with_translations.bioMod",
+    n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
 
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path_withTranslations))
 
     # Problem parameters
-    n_shooting = (5, 5)
     final_time = (1.5, 2.5)
     tau_min, tau_max, tau_init = -200, 200, 0
 
