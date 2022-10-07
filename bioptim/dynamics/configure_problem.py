@@ -888,11 +888,16 @@ class ConfigureProblem:
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
 
-        legend = [
-            f"{name}_{name_el}"
-            for idx, name_el in enumerate(name_elements)
-            if idx is not None and idx in axes_idx.map_idx
-        ]
+        legend = []
+        for idx, name_el in enumerate(name_elements):
+            if idx is not None and idx in axes_idx.map_idx:
+                current_legend = f"{name}_{name_el}"
+                for i in range(ocp.n_phases):
+                    if as_states:
+                        current_legend += f"-{ocp.nlp[i].use_states_from_phase_idx}"
+                    if as_controls:
+                        current_legend += f"-{ocp.nlp[i].use_controls_from_phase_idx}"
+                legend += [current_legend]
 
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2

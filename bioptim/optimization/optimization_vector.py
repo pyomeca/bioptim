@@ -336,11 +336,11 @@ class OptimizationVector:
 
             nlp.X = x[nlp.phase_idx]
             self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x[nlp.use_states_from_phase_idx]])
-            self.n_phase_x[nlp.phase_idx] = self.x[nlp.phase_idx].size()[0]
+            self.n_phase_x[nlp.phase_idx] = (self.x[nlp.phase_idx].size()[0] if nlp.phase_idx == nlp.use_states_from_phase_idx else 0)
 
             nlp.U = u[nlp.phase_idx]
             self.u[nlp.phase_idx] = vertcat(*u[nlp.use_controls_from_phase_idx])
-            self.n_phase_u[nlp.phase_idx] = self.u[nlp.phase_idx].size()[0]
+            self.n_phase_u[nlp.phase_idx] = (self.u[nlp.phase_idx].size()[0] if nlp.phase_idx == nlp.use_controls_from_phase_idx else 0)
 
 
         self.n_all_x = sum(self.n_phase_x)
