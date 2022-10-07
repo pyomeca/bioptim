@@ -504,29 +504,29 @@ def test_multi_model_by_mapping():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 7.443574590553702e-06)
+    np.testing.assert_almost_equal(f[0, 0], 6.80695707245568e-06)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (44, 1))
-    np.testing.assert_almost_equal(g, np.zeros((44, 1)), decimal=6)
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]))
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.14261123, 0.0]))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.14722436, 0.0]))
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]))
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.1387283, 0.0]))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.15131268, 0.0]))
     # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.02032024, -0.11683541]))
-    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.39250662, 0.36244284]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.05343674, -0.10060115]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([0.33994252, 0.28596524]))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.39247128, 0.12790372]))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.22586103, 0.20610523]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.38908178, 0.1233187]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([0.23694924, 0.20191947]))
     # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([7.10563304e-10]))
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-5.12573519e-08]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([-1.74622594e-08]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([4.01481943e-08]))
     np.testing.assert_equal(controls[1], {})
 
 
@@ -549,28 +549,28 @@ def test_multi_model_by_constraint():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 6.649006745212458e-06)
+    np.testing.assert_almost_equal(f[0, 0], 2.8232730955008725)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (56, 1))
-    np.testing.assert_almost_equal(g, np.zeros((56, 1)), decimal=6)
+    np.testing.assert_equal(g.shape, (52, 1))
+    np.testing.assert_almost_equal(g, np.zeros((52, 1)), decimal=6)
 
     # Check some of the results
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265e00, -1.52694304e-16]))
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.09877448e00, -1.88600092e-16]))
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265e00, -1.17038074e-16]))
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.06719675e00, 1.51871101e-17]))
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265,  0.]))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159263, 0.]))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265,  0.]))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.14267685, 0.]))
     # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.19084639, -0.01976167]))
-    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.26783255, 0.35826908]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.3576423, 0.10950598]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([0.03454933, 0.32656719]))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.41541724, 0.27730616]))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([3.03651582, -3.68060635]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.92515377, 1.1095279]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([1.06740301, 0.10475334]))
     # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.77451039e-07]))
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([4.01610057e-07]))
-    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([1.7745104e-07]))
-    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([4.01610057e-07]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([0.06752773]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-0.68139465]))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([0.06752773]))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([-0.68139465]))
