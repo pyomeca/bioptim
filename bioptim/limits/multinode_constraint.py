@@ -287,35 +287,6 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             return controls_pre - controls_post
 
-        def states_no_constraint(multinode_constraint, all_pn):
-            """
-            There is no continuity on the states
-
-            Parameters
-            ----------
-            multinode_constraint : MultinodeConstraint
-                A reference to the phase transition
-            all_pn: PenaltyNodeList
-                    The penalty node elements
-
-            Returns
-            -------
-            The difference between the state after and before
-            """
-
-            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
-
-            if states_pre.shape != states_post.shape:
-                raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
-                    f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
-                    f"transition or supply states_mapping"
-                )
-
-            return MX.zeros(states_pre.shape)
-
         @staticmethod
         def com_equality(multinode_constraint, all_pn):
             """

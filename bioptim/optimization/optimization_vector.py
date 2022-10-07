@@ -322,7 +322,7 @@ class OptimizationVector:
                             nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, 1)
                         )
                 else:
-                    x[nlp.phase_idx].append([])
+                    x[nlp.phase_idx] = x[nlp.use_states_from_phase_idx]
 
                 if nlp.phase_idx == nlp.use_controls_from_phase_idx:
                     if nlp.control_type != ControlType.CONSTANT or (
@@ -332,26 +332,16 @@ class OptimizationVector:
                             nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1)
                         )
                 else:
-                    u[nlp.phase_idx].append([])
+                    u[nlp.phase_idx] = u[nlp.use_controls_from_phase_idx]
 
-        for nlp in self.ocp.nlp:
-            if nlp.phase_idx == nlp.use_states_from_phase_idx:
-                nlp.X = x[nlp.phase_idx]
-            else:
-                nlp.X = []
+            nlp.X = x[nlp.phase_idx]
             self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x[nlp.use_states_from_phase_idx]])
-            self.n_phase_x[nlp.phase_idx] = (
-                self.x[nlp.phase_idx].size()[0] if nlp.use_states_from_phase_idx == nlp.use_states_from_phase_idx else 0
-            )
+            self.n_phase_x[nlp.phase_idx] = self.x[nlp.phase_idx].size()[0]
 
-            if nlp.phase_idx == nlp.use_controls_from_phase_idx:
-                nlp.U = u[nlp.phase_idx]
-            else:
-                nlp.U = []
+            nlp.U = u[nlp.phase_idx]
             self.u[nlp.phase_idx] = vertcat(*u[nlp.use_controls_from_phase_idx])
-            self.n_phase_u[nlp.phase_idx] = (
-                self.u[nlp.phase_idx].size()[0] if nlp.phase_idx == nlp.use_controls_from_phase_idx else 0
-            )
+            self.n_phase_u[nlp.phase_idx] = self.u[nlp.phase_idx].size()[0]
+
 
         self.n_all_x = sum(self.n_phase_x)
         self.n_all_u = sum(self.n_phase_u)
