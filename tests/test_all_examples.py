@@ -358,6 +358,7 @@ def test__torque_driven_ocp__multi_model_by_constraint():
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
         biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
+        n_shooting=(5, 5),
     )
 
 
@@ -369,6 +370,7 @@ def test__torque_driven_ocp__multi_model_by_mapping():
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
         biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
+        n_shooting=(5, 5),
     )
 
 
@@ -380,6 +382,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
         biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
+        n_shooting=(5, 5),
     )
 
 
@@ -390,6 +393,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds()
 
     ocp_module.prepare_ocp(
         biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
+        n_shooting=(5, 5),
     )
 
 

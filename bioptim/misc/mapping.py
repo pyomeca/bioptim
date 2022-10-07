@@ -246,6 +246,7 @@ class NodeMapping(OptionGeneric):
     to_first: Mapping
         The mapping that links the second variable to the first
     """
+    # TODO: should take care of Node individually instead of all the phase necessarily
 
     def __init__(
         self,
@@ -336,6 +337,9 @@ class NodeMappingList(OptionDict):
         if phase_pre is None or phase_post is None:
             raise ValueError("NodeMappingList should contain phase_pre and phase_post.")
 
+        if phase_pre > phase_post:
+            raise ValueError("Please provide a phase_pre index value smaller than the phase_post index value.")
+
         super(NodeMappingList, self)._add(
             key=name,
             map_states=map_states,
@@ -365,7 +369,7 @@ class NodeMappingList(OptionDict):
         NLP.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
         NLP.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
-        return
+        return use_states_from_phase_idx, use_states_dot_from_phase_idx, use_controls_from_phase_idx
 
     def __getitem__(self, item) -> Union[dict, BiMapping]:
         return super(NodeMappingList, self).__getitem__(item)

@@ -19,12 +19,12 @@ from bioptim import (
 def prepare_ocp(
     biorbd_model_path: str = "models/double_pendulum.bioMod",
     biorbd_model_path_modified_inertia: str = "models/double_pendulum_modified_inertia.bioMod",
+    n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
 
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path_modified_inertia))
 
     # Problem parameters
-    n_shooting = (5, 5)
     final_time = (1.5, 1.5)
     tau_min, tau_max, tau_init = -200, 200, 0
 
@@ -121,7 +121,7 @@ def main():
     # sol.graphs()
 
     # --- Show results --- #
-    show_solution_animation = True
+    show_solution_animation = False
     if show_solution_animation:
         q_both = np.vstack((sol.states[0]["q"], sol.states[1]["q"]))
         import bioviz

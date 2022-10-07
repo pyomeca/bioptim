@@ -532,9 +532,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             A reference to the ocp
         """
 
+        from ..limits.phase_transition import PhaseTransitionFcn
         # Dynamics must be sound within phases
         for nlp in ocp.nlp:
-            # if nlp.use_states_from_phase_idx == nlp.phase_idx:  # PhaseTransitionFcn.DISCONTINUOUS -> relative import
+            if nlp.phase_idx < (ocp.n_phases-1) and ocp.phase_transitions[nlp.phase_idx].type == PhaseTransitionFcn.DISCONTINUOUS:
+                continue
             penalty = Constraint(ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
@@ -548,14 +550,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
+        from ..limits.phase_transition import PhaseTransitionFcn
         for pt in ocp.phase_transitions:
             # Dynamics must be respected between phases
-            if not (
-                pt.phase_pre_idx == 1000 and pt.phase_post_idx == 1000
-            ):  # PhaseTransitionFcn.DISCONTINUOUS -> relative import
-                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-                pt.list_index = -1
-                pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
+            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                continue
+            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
 
     @staticmethod
     def node_equalities(ocp):
