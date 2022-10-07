@@ -181,10 +181,9 @@ class OptimizationVariableList:
 
     def _choose_cx_from_key(self, key, cx_type):
         if key == "all":
-            return (self.cx if cx_type == CxType.CX else self.cx_end)
+            return self.cx if cx_type == CxType.CX else self.cx_end
         else:
-            return (self[key].cx if cx_type == CxType.CX else self[key].cx_end)
-
+            return self[key].cx if cx_type == CxType.CX else self[key].cx_end
 
     def append_fake(self, name: str, index: Union[MX, SX, list], mx: MX, bimapping: BiMapping):
         """

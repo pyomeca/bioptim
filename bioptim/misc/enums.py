@@ -165,6 +165,7 @@ class DefectType(Enum):
     IMPLICIT = "implicit"
     NOT_APPLICABLE = "not_applicable"
 
+
 class CxType(Enum):
     CX = "CX"
     CX_END = "cx_end"

@@ -548,6 +548,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             A reference to the ocp
         """
         from ..limits.phase_transition import PhaseTransitionFcn
+
         for pt in ocp.phase_transitions:
             if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
                 continue
