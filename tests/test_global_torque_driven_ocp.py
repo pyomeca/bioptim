@@ -400,9 +400,10 @@ def test_phase_transition_uneven_variable_number_by_bounds():
     # Define the problem
     biorbd_model_path_withTranslations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path_withTranslations=biorbd_model_path_withTranslations,
-                                 n_shooting=(5, 5),
-                                 )
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path_withTranslations=biorbd_model_path_withTranslations,
+        n_shooting=(5, 5),
+    )
     sol = ocp.solve()
 
     # Check objective function value
@@ -448,7 +449,8 @@ def test_phase_transition_uneven_variable_number_by_mapping():
     biorbd_model_path_withTranslations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=biorbd_model_path, biorbd_model_path_withTranslations=biorbd_model_path_withTranslations,
+        biorbd_model_path=biorbd_model_path,
+        biorbd_model_path_withTranslations=biorbd_model_path_withTranslations,
         n_shooting=(5, 5),
     )
     sol = ocp.solve()
@@ -496,7 +498,8 @@ def test_multi_model_by_mapping():
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
+        biorbd_model_path=biorbd_model_path,
+        biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
         n_shooting=(5, 5),
     )
     sol = ocp.solve()
@@ -541,7 +544,8 @@ def test_multi_model_by_constraint():
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
+        biorbd_model_path=biorbd_model_path,
+        biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
         n_shooting=(5, 5),
     )
     sol = ocp.solve()
@@ -560,10 +564,10 @@ def test_multi_model_by_constraint():
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265,  0.]))
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159263, 0.]))
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265,  0.]))
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.14267685, 0.]))
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159263, 0.0]))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.14267685, 0.0]))
     # initial and final velocities
     np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.41541724, 0.27730616]))
     np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([3.03651582, -3.68060635]))

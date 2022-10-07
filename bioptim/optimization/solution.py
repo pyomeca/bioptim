@@ -960,9 +960,7 @@ class Solution:
 
             # Dispatch the integrated values to all the keys
             for key in nlp.states:
-                out._states[states_phase_idx][key] = out._states[
-                    states_phase_idx
-                ]["all"][nlp.states[key].index, :]
+                out._states[states_phase_idx][key] = out._states[states_phase_idx]["all"][nlp.states[key].index, :]
 
         return out
 

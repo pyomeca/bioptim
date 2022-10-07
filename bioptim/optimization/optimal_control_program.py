@@ -447,8 +447,14 @@ class OptimalControlProgram:
         # Prepare the node mappings
         if node_mappings is None:
             node_mappings = NodeMappingList()
-        use_states_from_phase_idx, use_states_dot_from_phase_idx, use_controls_from_phase_idx = node_mappings.get_variable_from_phase_idx(self, NLP)
-        self._check_variable_mapping_consistency_with_node_mapping(use_states_from_phase_idx, use_controls_from_phase_idx)
+        (
+            use_states_from_phase_idx,
+            use_states_dot_from_phase_idx,
+            use_controls_from_phase_idx,
+        ) = node_mappings.get_variable_from_phase_idx(self, NLP)
+        self._check_variable_mapping_consistency_with_node_mapping(
+            use_states_from_phase_idx, use_controls_from_phase_idx
+        )
 
         # Prepare the dynamics
         for i in range(self.n_phases):
@@ -488,21 +494,37 @@ class OptimalControlProgram:
         # Prepare objectives
         self.update_objectives(objective_functions)
 
-    def _check_variable_mapping_consistency_with_node_mapping(self, use_states_from_phase_idx, use_controls_from_phase_idx):
+    def _check_variable_mapping_consistency_with_node_mapping(
+        self, use_states_from_phase_idx, use_controls_from_phase_idx
+    ):
         for i in range(self.n_phases):
             for j in [idx for idx, x in enumerate(use_states_from_phase_idx) if x == i]:
                 for key in self.nlp[i].variable_mappings.keys():
                     if key in self.nlp[j].variable_mappings.keys():
-                        if self.nlp[i].variable_mappings[key].to_first.map_idx != self.nlp[j].variable_mappings[key].to_first.map_idx or self.nlp[i].variable_mappings[key].to_second.map_idx != self.nlp[j].variable_mappings[key].to_second.map_idx:
-                            raise RuntimeError(f"The variable mappings must be the same for the mapped phases."
-                                               f"Mapping on {key} is different between phases {i} and {j}.")
+                        if (
+                            self.nlp[i].variable_mappings[key].to_first.map_idx
+                            != self.nlp[j].variable_mappings[key].to_first.map_idx
+                            or self.nlp[i].variable_mappings[key].to_second.map_idx
+                            != self.nlp[j].variable_mappings[key].to_second.map_idx
+                        ):
+                            raise RuntimeError(
+                                f"The variable mappings must be the same for the mapped phases."
+                                f"Mapping on {key} is different between phases {i} and {j}."
+                            )
         for i in range(self.n_phases):
             for j in [idx for idx, x in enumerate(use_controls_from_phase_idx) if x == i]:
                 for key in self.nlp[i].variable_mappings.keys():
                     if key in self.nlp[j].variable_mappings.keys():
-                        if self.nlp[i].variable_mappings[key].to_first.map_idx != self.nlp[j].variable_mappings[key].to_first.map_idx or self.nlp[i].variable_mappings[key].to_second.map_idx != self.nlp[j].variable_mappings[key].to_second.map_idx:
-                            raise RuntimeError(f"The variable mappings must be the same for the mapped phases."
-                                               f"Mapping on {key} is different between phases {i} and {j}.")
+                        if (
+                            self.nlp[i].variable_mappings[key].to_first.map_idx
+                            != self.nlp[j].variable_mappings[key].to_first.map_idx
+                            or self.nlp[i].variable_mappings[key].to_second.map_idx
+                            != self.nlp[j].variable_mappings[key].to_second.map_idx
+                        ):
+                            raise RuntimeError(
+                                f"The variable mappings must be the same for the mapped phases."
+                                f"Mapping on {key} is different between phases {i} and {j}."
+                            )
         return
 
     def _set_kinematic_phase_mapping(self):

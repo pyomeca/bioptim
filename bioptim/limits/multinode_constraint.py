@@ -233,8 +233,12 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states._choose_cx_from_key(key, CxType.CX_END))
-            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states._choose_cx_from_key(key, CxType.CX))
+            states_pre = multinode_constraint.states_mapping.to_second.map(
+                nlp_pre.states._choose_cx_from_key(key, CxType.CX_END)
+            )
+            states_post = multinode_constraint.states_mapping.to_first.map(
+                nlp_post.states._choose_cx_from_key(key, CxType.CX)
+            )
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(

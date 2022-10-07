@@ -246,6 +246,7 @@ class NodeMapping(OptionGeneric):
     to_first: Mapping
         The mapping that links the second variable to the first
     """
+
     # TODO: should take care of Node individually instead of all the phase necessarily
 
     def __init__(
