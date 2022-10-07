@@ -296,8 +296,6 @@ class NodeMappingList(OptionDict):
         map_controls: bool = False,
         phase_pre: int = None,
         phase_post: int = None,
-        oppose_to_second: Union[Node, int, list, tuple, range] = None,
-        oppose_to_first: Union[Node, int, list, tuple, range] = None,
     ):
         """
         Add a new NodeMapping to the list
@@ -329,13 +327,6 @@ class NodeMappingList(OptionDict):
         if phase_pre > phase_post:
             raise ValueError("Please provide a phase_pre index value smaller than the phase_post index value.")
 
-        if oppose_to_second is not None:
-            if not isinstance(oppose_to_second, (Node, int, list, tuple, range)):
-                raise RuntimeError("oppose_to_second must be a Node class, an int, a list, a tuple or a range")
-        if oppose_to_first is not None:
-            if not isinstance(oppose_to_first, (Node, int, list, tuple, range)):
-                raise RuntimeError("oppose_to_first must be a Node class, an int, a list, a tuple or a range")
-
         super(NodeMappingList, self)._add(
             key=name,
             map_states=map_states,
@@ -344,8 +335,6 @@ class NodeMappingList(OptionDict):
             option_type=NodeMapping,
             phase_pre=phase_pre,
             phase_post=phase_post,
-            oppose_to_second=oppose_to_second,
-            oppose_to_first=oppose_to_first,
         )
 
     def get_variable_from_phase_idx(self, ocp, NLP):
