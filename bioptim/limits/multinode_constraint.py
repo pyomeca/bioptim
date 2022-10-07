@@ -8,7 +8,7 @@ from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, PenaltyType
+from ..misc.enums import Node, InterpolationType, PenaltyType, CxType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
@@ -216,7 +216,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def states_equality(multinode_constraint, all_pn, key: str):
+        def states_equality(multinode_constraint, all_pn, key: str = "all"):
             """
             The most common continuity function, that is state before equals state after
 
@@ -233,16 +233,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            if key == "all":
-                states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-                states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
-            else:
-                states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)[
-                    nlp_pre.states[key].index
-                ]
-                states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)[
-                    nlp_post.states[key].index
-                ]
+            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states._choose_cx_from_key(key, CxType.CX_END))
+            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states._choose_cx_from_key(key, CxType.CX))
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -254,7 +246,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return states_pre - states_post
 
         @staticmethod
-        def controls_equality(multinode_constraint, all_pn, key: str):
+        def controls_equality(multinode_constraint, all_pn, key: str = "all"):
             """
             The controls before equals controls after
 
@@ -271,12 +263,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            if key == "all":
-                controls_pre = nlp_pre.controls.cx_end
-                controls_post = nlp_post.controls.cx
-            else:
-                controls_pre = nlp_pre.controls[key].cx_end
-                controls_post = nlp_post.controls[key].cx
+            controls_pre = nlp_pre.controls._choose_cx_from_key(key, CxType.CX_END)
+            controls_post = nlp_post.controls._choose_cx_from_key(key, CxType.CX)
 
             if controls_pre.shape != controls_post.shape:
                 raise RuntimeError(

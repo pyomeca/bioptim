@@ -4,6 +4,7 @@ import numpy as np
 from casadi import MX, SX, vertcat
 
 from ..misc.mapping import BiMapping
+from ..misc.enums import CxType
 
 
 class OptimizationVariable:
@@ -177,6 +178,13 @@ class OptimizationVariableList:
 
     def __setitem__(self, key, value: OptimizationVariable):
         self.elements.append(value)
+
+    def _choose_cx_from_key(self, key, cx_type):
+        if key == "all":
+            return (self.cx if cx_type == CxType.CX else self.cx_end)
+        else:
+            return (self[key].cx if cx_type == CxType.CX else self[key].cx_end)
+
 
     def append_fake(self, name: str, index: Union[MX, SX, list], mx: MX, bimapping: BiMapping):
         """
