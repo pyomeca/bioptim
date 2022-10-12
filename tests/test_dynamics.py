@@ -39,7 +39,6 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.phase_idx = 0
 
     nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
@@ -51,6 +50,14 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
         Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=rigidbody_dynamics),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -170,7 +177,6 @@ def test_torque_driven_implicit(with_contact, cx):
     nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    nlp.phase_idx = 0
 
     NonLinearProgram.add(
         ocp,
@@ -182,6 +188,14 @@ def test_torque_driven_implicit(with_contact, cx):
         ),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -224,7 +238,6 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    nlp.phase_idx = 0
 
     NonLinearProgram.add(
         ocp,
@@ -232,6 +245,15 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
         Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact),
         False,
     )
+
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -274,11 +296,19 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    nlp.phase_idx = 0
 
     NonLinearProgram.add(
         ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact), False
     )
+
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -384,7 +414,6 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.phase_idx = 0
     nlp.x_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 2))
     ocp = OptimalControlProgram(nlp)
@@ -399,6 +428,14 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
         ),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -483,6 +520,15 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
         False,
     )
 
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
 
@@ -557,6 +603,14 @@ def test_soft_contacts_dynamics_errors(dynamics):
         Dynamics(dynamics, soft_contacts_dynamics=True),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     with pytest.raises(
@@ -588,6 +642,14 @@ def test_implicit_dynamics_errors(dynamics):
         Dynamics(dynamics, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     with pytest.raises(
@@ -615,6 +677,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
     NonLinearProgram.add(
         ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact), False
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -697,7 +767,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
     nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2 + nlp.model.nbMuscles(), 1))
     nlp.u_bounds = np.zeros((nlp.model.nbMuscles(), 1))
-    nlp.phase_idx = 0
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -713,6 +782,14 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
         ),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -1203,6 +1280,14 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
         False,
     )
     np.random.seed(42)
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     if rigid_body_dynamics != RigidBodyDynamics.ODE:
@@ -1258,6 +1343,14 @@ def test_custom_dynamics(with_contact):
     NonLinearProgram.add(
         ocp, "dynamics_type", Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact), False
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
