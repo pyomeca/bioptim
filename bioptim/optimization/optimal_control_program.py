@@ -50,7 +50,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.8.5", "1.10.0")
+check_version(biorbd, "1.9.1", "1.10.0")
 
 
 class OptimalControlProgram:
@@ -869,7 +869,7 @@ class OptimalControlProgram:
         automatically_organize: bool = True,
         show_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
-        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
     ) -> PlotOcp:
         """
         Create all the plots associated with the OCP
@@ -989,8 +989,13 @@ class OptimalControlProgram:
 
     def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
-        Save the ocp and solution structure to the hard drive. It automatically create the required
-        folder if it does not exists. Please note that biorbd is required to load back this structure.
+        Save the ocp and solution structure to the hard drive. It automatically creates the required
+        folder if it does not exist. Please note that biorbd is required to load back this structure.
+
+        IMPORTANT NOTICE: Please note that this is dependent on the bioptim version used to create the .bo file
+        and retrocompatibility is NOT enforced. This means that an optimized solution from a previous version will
+        probably NOT load on a newer bioptim version. To save the solution in a way which is independent of the
+        version of bioptim, one may use the stand_alone flag to True.
 
         Parameters
         ----------
@@ -1042,7 +1047,15 @@ class OptimalControlProgram:
         """
 
         with open(file_path, "rb") as file:
-            data = pickle.load(file)
+            try:
+                data = pickle.load(file)
+            except BaseException as error_message:
+                raise ValueError(
+                    f"The file '{file_path}' cannot be loaded, maybe the version of bioptim (version {__version__})\n"
+                    f"is not the same as the one that created the file (version unknown). For more information\n"
+                    "please refer to the original error message below\n\n"
+                    f"{type(error_message).__name__}: {error_message}"
+                )
             ocp = OptimalControlProgram(**data["ocp_initializer"])
             for key in data["versions"].keys():
                 key_module = "biorbd_casadi" if key == "biorbd" else key

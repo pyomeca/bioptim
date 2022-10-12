@@ -828,7 +828,7 @@ class PenaltyFunctionAbstract:
     @staticmethod
     def validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyNodeList):
         """
-        Check for any non sense in the requested times for the penalty. Raises an error if so
+        Check for any nonsense in the requested times for the penalty. Raises an error if so
 
         Parameters
         ----------
@@ -844,6 +844,7 @@ class PenaltyFunctionAbstract:
         if (
             func == PenaltyFunctionAbstract.Functions.minimize_controls
             or func == PenaltyFunctionAbstract.Functions.proportional_controls
+            or func == PenaltyFunctionAbstract.Functions.minimize_qddot
         ):
             if node == Node.END or (isinstance(node, int) and node >= all_pn.nlp.ns):
                 raise RuntimeError("No control u at last node")

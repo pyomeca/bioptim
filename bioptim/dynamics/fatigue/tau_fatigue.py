@@ -12,7 +12,14 @@ class TauFatigue(MultiFatigueModel):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, minus: FatigueModel, plus: FatigueModel, state_only: bool = True, **kwargs):
+    def __init__(
+        self,
+        minus: FatigueModel,
+        plus: FatigueModel,
+        state_only: bool = True,
+        apply_to_joint_dynamics: bool = False,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -22,9 +29,13 @@ class TauFatigue(MultiFatigueModel):
             The Xia model for the positive tau
         state_only: bool
             If the dynamics should be passed to tau or only computed
+        apply_to_joint_dynamics: bool
+            If the fatigue should be applied to joint directly
         """
 
-        super(TauFatigue, self).__init__([minus, plus], state_only=state_only, **kwargs)
+        super(TauFatigue, self).__init__(
+            [minus, plus], state_only=state_only, apply_to_joint_dynamics=apply_to_joint_dynamics, **kwargs
+        )
 
     def suffix(self) -> tuple:
         return "minus", "plus"
@@ -48,6 +59,13 @@ class TauFatigue(MultiFatigueModel):
         Returns
         -------
         The name of the dynamic variable in the suffix variables
+        """
+
+    @staticmethod
+    @abstractmethod
+    def fatigue_suffix() -> str:
+        """
+        The suffix that is appended to the variable name that describes the fatigue
         """
 
     def _dynamics_per_suffix(self, dxdt, suffix, nlp, index, states, controls):
@@ -78,6 +96,10 @@ class TauFatigue(MultiFatigueModel):
 
     @staticmethod
     def default_state_only():
+        return False
+
+    @staticmethod
+    def default_apply_to_joint_dynamics():
         return False
 
     def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
