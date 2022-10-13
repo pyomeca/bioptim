@@ -1,6 +1,5 @@
 from typing import Callable, Union, Any
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
 import biorbd_casadi as biorbd
@@ -11,8 +10,6 @@ from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
-
-# from ..limits.phase_transition import PhaseTransitionFcn
 
 
 class Constraint(PenaltyOption):

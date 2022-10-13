@@ -8,7 +8,7 @@ from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, PenaltyType, CxType
+from ..misc.enums import Node, InterpolationType, PenaltyType, CXStep
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
@@ -234,10 +234,10 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
             states_pre = multinode_constraint.states_mapping.to_second.map(
-                nlp_pre.states._choose_cx_from_key(key, CxType.CX_END)
+                nlp_pre.states.get_cx(key, CXStep.CX_END)
             )
             states_post = multinode_constraint.states_mapping.to_first.map(
-                nlp_post.states._choose_cx_from_key(key, CxType.CX)
+                nlp_post.states.get_cx(key, CXStep.CX_START)
             )
 
             if states_pre.shape != states_post.shape:
@@ -267,8 +267,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            controls_pre = nlp_pre.controls._choose_cx_from_key(key, CxType.CX_END)
-            controls_post = nlp_post.controls._choose_cx_from_key(key, CxType.CX)
+            controls_pre = nlp_pre.controls.get_cx(key, CXStep.CX_END)
+            controls_post = nlp_post.controls.get_cx(key, CXStep.CX_START)
 
             if controls_pre.shape != controls_post.shape:
                 raise RuntimeError(
