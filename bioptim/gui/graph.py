@@ -250,7 +250,7 @@ class GraphAbstract:
 
         initial_guess_str = self._structure_scaling_parameter(parameter.initial_guess.init, parameter)
         min_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
-        max_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
+        max_bound_str = self._structure_scaling_parameter(parameter.bounds.max, parameter)
 
         scaling = [parameter.scaling[i][0] for i in range(parameter.size)]
         scaling_str = f"{self._vector_layout(scaling)}"
