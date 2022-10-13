@@ -166,6 +166,6 @@ class DefectType(Enum):
     NOT_APPLICABLE = "not_applicable"
 
 
-class CxType(Enum):
-    CX = "CX"
+class CXStep(Enum):
+    CX_START = "cx_start"
     CX_END = "cx_end"

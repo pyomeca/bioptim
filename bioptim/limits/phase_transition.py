@@ -143,10 +143,6 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             if pt.phase_pre_idx is None:
                 if pt.type == PhaseTransitionFcn.CYCLIC:
                     pt.phase_pre_idx = ocp.n_phases - 1
-                elif pt.type == PhaseTransitionFcn.DISCONTINUOUS:
-                    pt.phase_pre_idx = 10000  # Ask Pariterre what to do
-            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
-                pt.phase_post_idx = 1000
             else:
                 pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 

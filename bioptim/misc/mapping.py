@@ -255,8 +255,6 @@ class NodeMapping(OptionGeneric):
         map_controls: bool = False,
         phase_pre: int = None,
         phase_post: int = None,
-        oppose_to_second: Union[Node, int, list, tuple, range] = None,
-        oppose_to_first: Union[Node, int, list, tuple, range] = None,
         **params
     ):
 
@@ -271,10 +269,6 @@ class NodeMapping(OptionGeneric):
             The indices of the nodes to map in first phase
         nodes_post: Union[Node, int, list, tuple, range]
             The indices of the nodes to map in second phase
-        oppose_to_second: Union[list, tuple, range]
-            Index to multiply by -1 of the to_second mapping
-        oppose_to_first: Union[list, tuple, range]
-            Index to multiply by -1 of the to_first mapping
         """
         super(NodeMapping, self).__init__(**params)
 
@@ -282,8 +276,6 @@ class NodeMapping(OptionGeneric):
         self.map_controls = map_controls
         self.phase_pre = phase_pre
         self.phase_post = phase_post
-        self.oppose_to_second = oppose_to_second
-        self.oppose_to_first = oppose_to_first
 
 
 class NodeMappingList(OptionDict):
@@ -308,10 +300,6 @@ class NodeMappingList(OptionDict):
             The mapping that links the first variable to the second
         to_first: Mapping
             The mapping that links the second variable to the first
-        oppose_to_second: Union[list, tuple, range]
-            Index to multiply by -1 of the to_second mapping
-        oppose_to_first: Union[list, tuple, range]
-            Index to multiply by -1 of the to_first mapping
         bimapping: BiMapping
             The BiMapping to copy
         """
