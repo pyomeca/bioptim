@@ -332,12 +332,13 @@ class NodeMappingList(OptionDict):
         use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
 
-        for key in self.keys():
-            if self[key].map_states:
-                use_states_from_phase_idx[self[key].phase_post] = self[key].phase_pre
-                use_states_dot_from_phase_idx[self[key].phase_post] = self[key].phase_pre
-            if self[key].map_controls:
-                use_controls_from_phase_idx[self[key].phase_post] = self[key].phase_pre
+        for i in range(len(self)):
+            for key in self[i].keys():
+                if self[i][key].map_states:
+                    use_states_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
+                    use_states_dot_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
+                if self[i][key].map_controls:
+                    use_controls_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
 
         NLP.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
         NLP.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
