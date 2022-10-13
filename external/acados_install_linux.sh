@@ -97,9 +97,9 @@ TO_REPLACE_PATH="'..\/..\/..\/'"
 REPLACE_PATH_BY="'..\/..\/..\/..\/'"
 
 # Changed acados path
-"CONDA_PREFIX" = $CONDA_PREFIX
+#"CONDA_PREFIX" = $CONDA_PREFIX
 TO_REPLACE_ACADOS_SOURCE="    ACADOS_PATH = os.environ.get('ACADOS_SOURCE_DIR')"
-REPLACE_ACADOS_SOURCE_BY="    ACADOS_PATH = os.environ['CONDA_PREFIX']"
+REPLACE_ACADOS_SOURCE_BY="    acados_template_path = os.path.dirname(os.path.abspath(__file__))\n    acados_path = os.path.join(acados_template_path, '..', '..', '..')\n    ACADOS_PATH = os.path.realpath(acados_path)[:-4]\n"
 
 TO_REPLACE_ACADOS_PYTHON="ACADOS_PYTHON_INTERFACE_PATH = os.environ.get('ACADOS_PYTHON_INTERFACE_PATH')"
 REPLACE_ACADOS_PYTHON_BY="import site\n    acados_path = site.getsitepackages()\n    ACADOS_PYTHON_INTERFACE_PATH = os.path.join(acados_path[0], 'acados_template')"
