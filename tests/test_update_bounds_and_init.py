@@ -1229,7 +1229,9 @@ def test_update_noised_initial_guess_rk4(n_extra):
 
     state_noise = np.array([0.01] * nq + [0.2] * nqdot + [0.1] * n_extra)
     if n_extra > 0:
-        with pytest.raises(ValueError, match="noise_magnitude must be a float or list of float of the size of states or controls"):
+        with pytest.raises(
+            ValueError, match="noise_magnitude must be a float or list of float of the size of states or controls"
+        ):
             NoisedInitialGuess(
                 initial_guess=x,
                 bounds=x_bounds,
@@ -1264,41 +1266,41 @@ def test_update_noised_initial_guess_rk4(n_extra):
     ocp.update_initial_guess(x_init, u_init)
     print(ocp.v.init.init)
     expected = np.array(
-            [
-                1.7962362,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.1,
-                1.81352143,
-                0.9,
-                1.01307359,
-                -2.61485335,
-                1.31109849,
-                -3.53025376,
-                1.80695982,
-                0.9,
-                0.96987744,
-                -2.99830538,
-                0.14479588,
-                -1.61198738,
-                1.80295975,
-                -0.1,
-                1.47,
-                -0.1,
-                -0.1,
-                -0.1,
-                -0.45275929,
-                0.89195091,
-                -2.35149833,
-                3.00428584,
-                -1.76388816,
-                2.49705687,
-                1.69196365,
-                -1.76403288,
-                0.90669007,
-            ]
+        [
+            1.7962362,
+            -0.1,
+            -0.1,
+            -0.1,
+            -0.1,
+            -0.1,
+            1.81352143,
+            0.9,
+            1.01307359,
+            -2.61485335,
+            1.31109849,
+            -3.53025376,
+            1.80695982,
+            0.9,
+            0.96987744,
+            -2.99830538,
+            0.14479588,
+            -1.61198738,
+            1.80295975,
+            -0.1,
+            1.47,
+            -0.1,
+            -0.1,
+            -0.1,
+            -0.45275929,
+            0.89195091,
+            -2.35149833,
+            3.00428584,
+            -1.76388816,
+            2.49705687,
+            1.69196365,
+            -1.76403288,
+            0.90669007,
+        ]
     )
 
     np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
