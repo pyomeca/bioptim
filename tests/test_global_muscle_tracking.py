@@ -126,6 +126,8 @@ def test_muscle_activations_and_states_tracking(ode_solver):
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
+
+
 #
 #
 # @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
@@ -231,6 +233,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
 #     # simulate
 #     TestUtils.simulate(sol, decimal_value=6)
 #
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
