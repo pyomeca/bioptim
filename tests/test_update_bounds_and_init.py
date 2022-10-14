@@ -1198,6 +1198,115 @@ def test_update_noised_initial_guess_rk4(interpolation):
             ocp.update_bounds(x_init, u_init)
 
 
+@pytest.mark.parametrize("n_extra", [0, 1])
+def test_update_noised_initial_guess_rk4(n_extra):
+    bioptim_folder = TestUtils.bioptim_folder()
+    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = biorbd_model.nbQ()
+    nqdot = biorbd_model.nbQdot()
+    ntau = biorbd_model.nbGeneralizedTorque()
+    ns = 3
+    phase_time = 1.0
+
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    ocp = OptimalControlProgram(biorbd_model, dynamics, n_shooting=ns, phase_time=phase_time)
+
+    # Path constraint and control path constraints
+    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
+
+    tau_min, tau_max, tau_init = -100, 100, 0.3
+    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
+
+    # Initial guesses
+    t = None
+    extra_params_x = {}
+    extra_params_u = {}
+    x = InitialGuess([1] * (nq + nqdot), interpolation=InterpolationType.CONSTANT)
+    u = InitialGuess([tau_init] * ntau, interpolation=InterpolationType.CONSTANT)
+
+    state_noise = np.array([0.01] * nq + [0.2] * nqdot + [0.1] * n_extra)
+    if n_extra > 0:
+        with pytest.raises(ValueError, match="noise_magnitude must be a float or list of float of the size of states or controls"):
+            NoisedInitialGuess(
+                initial_guess=x,
+                bounds=x_bounds,
+                noise_magnitude=state_noise,
+                n_shooting=ns,
+                bound_push=0.1,
+                seed=42,
+                **extra_params_x,
+            )
+        return
+    else:
+        x_init = NoisedInitialGuess(
+            initial_guess=x,
+            bounds=x_bounds,
+            noise_magnitude=state_noise,
+            n_shooting=ns,
+            bound_push=0.1,
+            seed=42,
+            **extra_params_x,
+        )
+
+    u_init = NoisedInitialGuess(
+        initial_guess=u,
+        bounds=u_bounds,
+        noise_magnitude=np.array([0.03] * ntau),
+        n_shooting=ns - 1,
+        bound_push=0.1,
+        seed=42,
+        **extra_params_u,
+    )
+
+    ocp.update_initial_guess(x_init, u_init)
+    print(ocp.v.init.init)
+    expected = np.array(
+            [
+                1.7962362,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                1.81352143,
+                0.9,
+                1.01307359,
+                -2.61485335,
+                1.31109849,
+                -3.53025376,
+                1.80695982,
+                0.9,
+                0.96987744,
+                -2.99830538,
+                0.14479588,
+                -1.61198738,
+                1.80295975,
+                -0.1,
+                1.47,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.45275929,
+                0.89195091,
+                -2.35149833,
+                3.00428584,
+                -1.76388816,
+                2.49705687,
+                1.69196365,
+                -1.76403288,
+                0.90669007,
+            ]
+    )
+
+    np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
+
+    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
+        ocp.update_bounds(x_init, u_init)
+
+
 @pytest.mark.parametrize(
     "interpolation",
     [

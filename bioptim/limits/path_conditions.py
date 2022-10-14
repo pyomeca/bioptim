@@ -867,7 +867,7 @@ class NoisedInitialGuess(InitialGuess):
         initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
-        noise_magnitude: Union[list, int, float] = 1,
+        noise_magnitude: Union[list, int, float, np.ndarray] = 1,
         n_shooting: int = None,
         bound_push: Union[list, int, float] = 0.1,
         seed: int = None,
@@ -912,6 +912,16 @@ class NoisedInitialGuess(InitialGuess):
         self.bound_push = bound_push
 
         self.seed = seed
+        if not isinstance(noise_magnitude, (int, float)):
+            noise_magnitude = np.array(noise_magnitude)
+            noise_magnitude = (
+                noise_magnitude[:, np.newaxis] if noise_magnitude.shape.__len__() == 1 else noise_magnitude
+            )
+            noise_magnitude = np.repeat(noise_magnitude, self.n_shooting, axis=1)
+
+            if noise_magnitude.shape[0] != 1 and noise_magnitude.shape[0] != self.n_elements:
+                raise ValueError("noise_magnitude must be a float or list of float of the size of states or controls")
+
         self.noise_magnitude = noise_magnitude
         self.noise = None
 
