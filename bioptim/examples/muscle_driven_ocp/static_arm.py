@@ -26,7 +26,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     weight: float,
-    ode_solver: OdeSolver = OdeSolver.IRK(),
+    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
