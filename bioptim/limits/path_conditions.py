@@ -980,7 +980,7 @@ class NoisedInitialGuess(InitialGuess):
 
         # building the noised initial guess
         if initial_guess is None:
-            initial_guess_matrix = (bounds_min_matrix + bounds_max_matrix) / 2,
+            initial_guess_matrix = (bounds_min_matrix + bounds_max_matrix) / 2
         else:
             tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
             initial_guess_matrix = np.zeros((self.n_elements, ns))
