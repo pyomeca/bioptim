@@ -969,37 +969,31 @@ class NoisedInitialGuess(InitialGuess):
                 bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
                 bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
 
-        tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
-
-        initial_guess_matrix = np.zeros((self.n_elements, ns))
-        for shooting_point in range(ns):
-            initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point)
         if self.seed:
             np.random.seed(self.seed)
+
         self.noise = (
-            np.random.random((self.n_elements, ns))  # random noise
+            (np.random.random((self.n_elements, ns)) * 2 - 1)  # random noise
             * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
             * (bounds_max_matrix - bounds_min_matrix)  # scale the noise to the range of bounds
-            + bounds_min_matrix
-            + (1 - self.noise_magnitude)
-            * (bounds_max_matrix - bounds_min_matrix)
-            / 2  # shift the noise to the center of the range of bounds
         )
+
         # building the noised initial guess
         if initial_guess is None:
-            init_instance = InitialGuess(
-                (bounds_min_matrix + bounds_max_matrix) / 2,
-                interpolation=interpolation
-                if interpolation == InterpolationType.ALL_POINTS
-                else InterpolationType.EACH_FRAME,
-            )
+            initial_guess_matrix = (bounds_min_matrix + bounds_max_matrix) / 2,
         else:
-            init_instance = InitialGuess(
-                initial_guess_matrix,
-                interpolation=interpolation
-                if interpolation == InterpolationType.ALL_POINTS
-                else InterpolationType.EACH_FRAME,
-            )
+            tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
+            initial_guess_matrix = np.zeros((self.n_elements, ns))
+            for shooting_point in range(ns):
+                initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point)
+
+        init_instance = InitialGuess(
+            initial_guess_matrix,
+            interpolation=interpolation
+            if interpolation == InterpolationType.ALL_POINTS
+            else InterpolationType.EACH_FRAME,
+        )
+
         self.noised_initial_guess = init_instance.init + self.noise
         for shooting_point in range(ns):
             too_small_index = np.where(
