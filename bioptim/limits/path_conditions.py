@@ -997,10 +997,10 @@ class NoisedInitialGuess(InitialGuess):
         self.noised_initial_guess = init_instance.init + self.noise
         for shooting_point in range(ns):
             too_small_index = np.where(
-                self.noised_initial_guess[:, shooting_point] < bounds_min_matrix[:, shooting_point] + self.bound_push
+                self.noised_initial_guess[:, shooting_point] < bounds_min_matrix[:, shooting_point]
             )
             too_big_index = np.where(
-                self.noised_initial_guess[:, shooting_point] > bounds_max_matrix[:, shooting_point] - self.bound_push
+                self.noised_initial_guess[:, shooting_point] > bounds_max_matrix[:, shooting_point]
             )
             self.noised_initial_guess[too_small_index, shooting_point] = (
                 bounds_min_matrix[too_small_index, shooting_point] + self.bound_push
