@@ -1372,6 +1372,7 @@ class Solution:
 
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
+
                 self.detailed_cost += [
                     {
                         "name": penalty.type.__str__(),
@@ -1385,7 +1386,7 @@ class Solution:
                         "integration_rule": penalty.integration_rule.name,
                         "weight": penalty.weight,
                         "expand": penalty.expand,
-                        "node": penalty.node[0].name,
+                        "node": penalty.node[0].name if penalty.node != Node.TRANSITION else penalty.node.name,
                     }
                 ]
                 if print_only_weighted:
