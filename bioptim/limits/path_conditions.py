@@ -902,6 +902,11 @@ class NoisedInitialGuess(InitialGuess):
 
         if bounds is None:
             raise RuntimeError("'bounds' must be specified to generate noised initial guess")
+
+        # test if initial_guess is a np.array, tuple or list
+        if isinstance(initial_guess, (np.ndarray, tuple, list)):
+            self.init = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
+
         if isinstance(initial_guess, InitialGuess):
             interpolation = initial_guess.type
         if interpolation == InterpolationType.ALL_POINTS:
