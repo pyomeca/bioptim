@@ -70,8 +70,14 @@ def prepare_ocp(
     # Initial guess
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
-    x_init = NoisedInitialGuess([0] * (n_q + n_qdot), interpolation=InterpolationType.CONSTANT, bounds=x_bounds,
-                                noise_magnitude=0.5, n_shooting=n_shooting, seed=seed)
+    x_init = NoisedInitialGuess(
+        [0] * (n_q + n_qdot),
+        interpolation=InterpolationType.CONSTANT,
+        bounds=x_bounds,
+        noise_magnitude=0.5,
+        n_shooting=n_shooting,
+        seed=seed,
+    )
 
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()
@@ -79,9 +85,14 @@ def prepare_ocp(
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = NoisedInitialGuess([0] * n_tau, interpolation=InterpolationType.CONSTANT, bounds=u_bounds,
-                                noise_magnitude=0.5, n_shooting=n_shooting, seed=seed)
-
+    u_init = NoisedInitialGuess(
+        [0] * n_tau,
+        interpolation=InterpolationType.CONSTANT,
+        bounds=u_bounds,
+        noise_magnitude=0.5,
+        n_shooting=n_shooting,
+        seed=seed,
+    )
 
     return OptimalControlProgram(
         biorbd_model,
@@ -129,8 +140,12 @@ def solve_ocp(args: list = None):
 def main():
 
     # --- Prepare the multi-start and run it --- #
-    multi_start = MultiStart(solve_ocp, n_random=10, n_pools=4, args_dict={"biorbd_model_path": ["models/pendulum.bioMod"],
-                                                                     "final_time": [1], "n_shooting": [30, 40, 50]})
+    multi_start = MultiStart(
+        solve_ocp,
+        n_random=10,
+        n_pools=4,
+        args_dict={"biorbd_model_path": ["models/pendulum.bioMod"], "final_time": [1], "n_shooting": [30, 40, 50]},
+    )
     multi_start.run()
 
 
