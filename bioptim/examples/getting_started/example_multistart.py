@@ -137,14 +137,20 @@ def solve_ocp(args: list = None):
     ocp.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
 
 
-def main():
-
-    # --- Prepare the multi-start and run it --- #
-    multi_start = MultiStart(
+def prepare_multi_start(biorbd_model_path: list, final_time: list, n_shooting: list):
+    return MultiStart(
         solve_ocp,
         n_random=10,
         n_pools=4,
-        args_dict={"biorbd_model_path": ["models/pendulum.bioMod"], "final_time": [1], "n_shooting": [30, 40, 50]},
+        args_dict={"biorbd_model_path": biorbd_model_path, "final_time": final_time, "n_shooting": n_shooting},
+    )
+
+
+def main():
+
+    # --- Prepare the multi-start and run it --- #
+    multi_start = prepare_multi_start(
+        biorbd_model_path=["models/pendulum.bioMod"], final_time=[1], n_shooting=[30, 40, 50]
     )
     multi_start.run()
 
