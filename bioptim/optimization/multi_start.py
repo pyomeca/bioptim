@@ -1,6 +1,7 @@
 from multiprocessing import Pool
 
-class MultiStart():
+
+class MultiStart:
     """
     The main class to define a multi-start. This class executes the optimal control problems with the possibility to
     vary parameters.
@@ -40,7 +41,6 @@ class MultiStart():
         self.args_dict = args_dict
         self.combined_args_to_list = self.combine_args_to_list()
 
-
     def combine_args_to_list(self):
         """
         Combine the varying arguments of the multi-start into a list of arguments to be passed to the solve_ocp function
@@ -56,7 +56,10 @@ class MultiStart():
                     list_out_before = list_out
                     list_out_temporary = list_out
                     for k in range(len(self.args_dict[args_names_list[i]])):
-                        list_now = [list_out_temporary[l] + [self.args_dict[args_names_list[i]][k]] for l in range(len(list_out_before))]
+                        list_now = [
+                            list_out_temporary[l] + [self.args_dict[args_names_list[i]][k]]
+                            for l in range(len(list_out_before))
+                        ]
                         if k == 0:
                             list_out = list_now
                         else:
