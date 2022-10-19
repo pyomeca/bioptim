@@ -28,7 +28,7 @@ def prepare_ocp(
     n_shooting: int,
     ode_solver: OdeSolver = OdeSolver.RK4(),
     use_sx: bool = True,
-    n_threads: int = 1,
+    n_threads: int = 1,  # You cannot use multi-threading for the resolution of the ocp with multi-start
     seed: int = 0,
 ) -> OptimalControlProgram:
     """
@@ -133,7 +133,7 @@ def solve_ocp(args: list = None):
 
     ocp = prepare_ocp(biorbd_model_path, final_time, n_shooting)
     ocp.add_plot_penalty(CostType.ALL)
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))  # You cannot use show_online_optim with multi-start
     ocp.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
 
 
