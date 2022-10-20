@@ -372,8 +372,11 @@ And that is all!
 You have completed your first optimal control program with `bioptim`! 
 
 ## Solving using multi-start
-To find local minima, it is usefull to proceed through multi-starting the problem.
-You can do that by creating a multi-start object with `MultiStart()` and running it with its method `run()`.
+Due to the gradient descent methods used, we can affirm that the optimal solution is a local minima. However, it is not 
+possible to know if a global minima was found. For highly non-linear problems, there might exist a wide range of local 
+optima. Solving the same problem with different initial guesses can be useful to find the best local minimum or to 
+compare the different optimal kinemtaics. It is possible to multi-start the problem by creating a multi-start object 
+with `MultiStart()` and running it with its method `run()`.
 An example of how to use multi-start is given in examples/getting_started/multi-start.py.
 
 
