@@ -24,7 +24,6 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    x_ipopt: np.ndarray,
     ode_solver: OdeSolver = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
@@ -69,13 +68,12 @@ def prepare_ocp(
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
     x_init = InitialGuess([0] * (n_q + n_qdot))
-    # x_init = InitialGuess(x_ipopt, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
+    u_bounds[1, :] = 0
 
     u_init = InitialGuess([tau_init] * n_tau)
 
@@ -100,29 +98,18 @@ def main():
     If pendulum is run as a script, it will perform the optimization and animates it
     """
 
-    # # --- Load the solution form IPOPT --- #
-    _, sol_load = OptimalControlProgram.load("../getting_started/pendulum.bo")
-    states_IPOPT = np.vstack((sol_load.states['q'], sol_load.states['qdot']))
-# 5, 30, 50, 100, 500 (hyper long ??)
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=70, x_ipopt=states_IPOPT)
-
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=100)
 
     # --- Solve the ocp --- #
     solver = Solver.SQP_METHOD(show_online_optim=False)
-    # solver.set_qpsol('ooqp')
-    # solver.qpsol_options()
+    solver.set_tol_du(1e-1)
+    solver.set_tol_pr(1e-1)
     sol = ocp.solve(solver)
 
     # --- Show the results in a bioviz animation --- #
     sol.animate(n_frames=100)
-
-    # --- Show a comparison between IPOPT and SQPmethod --- #
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.plot(states_IPOPT.T, 'tab::reb', label='IPOPT')
-    plt.plot(sol.states['q'].T, 'tab::green', label='SQP method')
-    plt.show()
+    sol.graphs()
 
 if __name__ == "__main__":
     main()

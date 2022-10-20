@@ -409,8 +409,6 @@ class Solver:
             Print information about execution time
         set_qpsol(qpsol: str):
             The QP solver to be used by the SQP method
-        set_qpsol_options(qpsol_options: dict):
-            Options to be passed to the QP solver
         set_tol_du(tol_du: float):
             Stopping criterion for dual infeasability
         set_tol_pr(tol_pr: float):
@@ -438,9 +436,8 @@ class Solver:
         _print_header: bool
         _print_time: bool
         _qpsol: str
-        _qpsol_options = {"ooqp.error_on_fail": False}
-        _tol_du: float = 1e-6
-        _tol_pr: float = 1e-6
+        _tol_du: float
+        _tol_pr: float
 
         """
         type: SolverType = SolverType.SQP_METHOD
@@ -456,8 +453,7 @@ class Solver:
         _merit_memory: int = 4
         _print_header: bool = True
         _print_time: bool = True
-        _qpsol: str = "ooqp"
-        _qpsol_options = {"ooqp.error_on_fail": False}
+        _qpsol: str = "qpoases"
         _tol_du: float = 1e-6
         _tol_pr: float = 1e-6
 
@@ -500,10 +496,6 @@ class Solver:
         @property
         def qpsol(self):
             return self._qpsol
-
-        @property
-        def qpsol_options(self):
-            return self._qpsol_options
 
         @property
         def set_tol_du(self):
@@ -570,12 +562,6 @@ class Solver:
             """
             self._qpsol = qpsol
 
-        def set_qpsol_options(self, qpsol_options: dict):
-            """
-            Options to be passed to the QP solver
-            """
-            self._qpsol_options = qpsol_options
-
         def set_tol_du(self, tol_du: float):
             """
             Stopping criterion for dual infeasability
@@ -596,13 +582,11 @@ class Solver:
             if f"_{name}" not in self.__dict__.keys():
                 self.__dict__[f"_{name}"] = val
 
-        @abstractmethod
         def set_convergence_tolerance(self, tol: float):
             raise RuntimeError("At the moment, set_convergence_tolerance cannot be set for SQP method solver."
                                "\nPlease use set_tol_du to set the tolerance on the dual condition and set_tol_pr to set"
                                " the tolerance on the primal condition")
 
-        @abstractmethod
         def set_constraint_tolerance(self, tol: float):
             raise RuntimeError("At the moment, set_constraint_tolerance cannot be set for SQP method solver."
                                "\nPlease use set_tol_du to set the tolerance on the dual condition and set_tol_pr to set"
@@ -618,7 +602,6 @@ class Solver:
                     options[sqp_key] = solver_options[key]
             return {**options, **solver.options_common}
 
-        @abstractmethod
         def set_print_level(self, num: int):
             raise RuntimeError("At the moment, set_print_level cannot be set for SQP method solver")
 
