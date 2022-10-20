@@ -1,9 +1,9 @@
 """
 A very simple example to show how to use the SQP method.
-The example is taken from getting_started/pendulum.py
+The example is taken from getting_started/pendulum.py.
+Note that this example is there for reference and unfortunately doest not converge.
 """
 
-import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -16,7 +16,7 @@ from bioptim import (
     Objective,
     OdeSolver,
     Solver,
-    InterpolationType
+    InterpolationType,
 )
 
 
@@ -110,6 +110,7 @@ def main():
     # --- Show the results in a bioviz animation --- #
     sol.animate(n_frames=100)
     sol.graphs()
+
 
 if __name__ == "__main__":
     main()

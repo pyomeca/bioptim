@@ -84,7 +84,6 @@ class SQPInterface(SolverInterface):
             raise RuntimeError("Online graphics are not available on Windows")
         self.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
-
     def solve(self) -> dict:
         """
         Solve the prepared ocp

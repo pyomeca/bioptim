@@ -382,6 +382,7 @@ class Solver:
                     ipopt_key = "ipopt." + key[1:]
                     options[ipopt_key] = solver_options[key]
             return {**options, **solver.options_common}
+
     @dataclass
     class SQP_METHOD(Generic):
         """
@@ -440,6 +441,7 @@ class Solver:
         _tol_pr: float
 
         """
+
         type: SolverType = SolverType.SQP_METHOD
         show_online_optim: bool = False
         show_options: dict = None
@@ -583,14 +585,18 @@ class Solver:
                 self.__dict__[f"_{name}"] = val
 
         def set_convergence_tolerance(self, tol: float):
-            raise RuntimeError("At the moment, set_convergence_tolerance cannot be set for SQP method solver."
-                               "\nPlease use set_tol_du to set the tolerance on the dual condition and set_tol_pr to set"
-                               " the tolerance on the primal condition")
+            raise RuntimeError(
+                "At the moment, set_convergence_tolerance cannot be set for SQP method solver."
+                "\nPlease use set_tol_du to set the tolerance on the dual condition and set_tol_pr to set"
+                " the tolerance on the primal condition"
+            )
 
         def set_constraint_tolerance(self, tol: float):
-            raise RuntimeError("At the moment, set_constraint_tolerance cannot be set for SQP method solver."
-                               "\nPlease use set_tol_du to set the tolerance on the dual condition and set_tol_pr to set"
-                               " the tolerance on the primal condition")
+            raise RuntimeError(
+                "At the moment, set_constraint_tolerance cannot be set for SQP method solver."
+                "\nPlease use set_tol_du to set the tolerance on the dual condition and set_tol_pr to set"
+                " the tolerance on the primal condition"
+            )
 
         def as_dict(self, solver):
             solver_options = self.__dict__
