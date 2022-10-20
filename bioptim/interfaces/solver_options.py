@@ -20,27 +20,27 @@ class Solver:
 
         type: SolverType = SolverType.NONE
 
-        @abstractmethod
-        def set_convergence_tolerance(self, tol: float):
-            """
-            This function set the convergence tolerance
+        # @abstractmethod
+        # def set_convergence_tolerance(self, tol: float):
+        #     """
+        #     This function set the convergence tolerance
+        #
+        #     Parameters
+        #     ----------
+        #     tol: float
+        #         Global converge tolerance value
+        #     """
 
-            Parameters
-            ----------
-            tol: float
-                Global converge tolerance value
-            """
-
-        @abstractmethod
-        def set_constraint_tolerance(self, tol: float):
-            """
-            This function set the constraint tolerance.
-
-            Parameters
-            ----------
-            tol: float
-                Global constraint tolerance value
-            """
+        # @abstractmethod
+        # def set_constraint_tolerance(self, tol: float):
+        #     """
+        #     This function set the constraint tolerance.
+        #
+        #     Parameters
+        #     ----------
+        #     tol: float
+        #         Global constraint tolerance value
+        #     """
 
         @abstractmethod
         def set_maximum_iterations(self, num: int):
@@ -64,16 +64,16 @@ class Solver:
                 Ipopt ou Acados interface
             """
 
-        @abstractmethod
-        def set_print_level(self, num: int):
-            """
-            This function set Output verbosity level.
-
-            Parameters
-            ----------
-            num: int
-                print_level
-            """
+        # @abstractmethod
+        # def set_print_level(self, num: int):
+        #     """
+        #     This function set Output verbosity level.
+        #
+        #     Parameters
+        #     ----------
+        #     num: int
+        #         print_level
+        #     """
 
     @dataclass
     class IPOPT(Generic):
@@ -382,6 +382,295 @@ class Solver:
                     ipopt_key = "ipopt." + key[1:]
                     options[ipopt_key] = solver_options[key]
             return {**options, **solver.options_common}
+    @dataclass
+    class SQP_METHOD(Generic):
+        type: SolverType = SolverType.SQP_METHOD
+        show_online_optim: bool = False
+        show_options: dict = None
+        c_compile = False
+        _beta: float = 0.8
+        _hessian_approximation: str = "exact"  # "exact", "limited-memory"
+        _lbfgs_memory: int = 10
+        _max_iter: int = 50
+        _max_iter_ls: int = 3
+        _merit_memory: int = 4
+        _print_header: bool = True
+        _print_time: bool = True
+        _qpsol = "ooqp"
+        _qpsol_options = {"ooqp.error_on_fail": False}
+        _tol_du: float = 1e-6
+        _tol_pr: float = 1e-6
+        _c1: float = 1e-4
+        # _codegen: bool = False
+        # _expand: bool = False
+        # _expand_f: bool = False
+        # _expand_g: bool = False
+        # _gather_stats: float = 1e-6
+        # _inputs_check: bool = True
+        # _merit_start: float = 1 ############
+        # _reg_threshold: float = 1e-6 #####################
+        # _regularize: bool = False
+        # _tol_pr_step: float = 1e-6
+        # _tol_reg: float = 1e-6
+        # _ad_mode: str = "automatic"
+
+        @property
+        def ad_mode(self):
+            return self._ad_mode
+
+        @property
+        def beta(self):
+            return self._beta
+
+        @property
+        def c1(self):
+            return self._c1
+
+        @property
+        def expand(self):
+            return self._expand
+
+        @property
+        def codegen(self):
+            return self._codegen
+
+        @property
+        def expand_g(self):
+            return self._expand_g
+
+        @property
+        def gather_stats(self):
+            return self._gather_stats
+
+        @property
+        def hessian_approximation(self):
+            return self._hessian_approximation
+
+        @property
+        def inputs_check(self):
+            return self._inputs_check
+
+        @property
+        def iteration_callback(self):
+            return self._iteration_callback
+
+        @property
+        def lbfgs_memory(self):
+            return self._lbfgs_memory
+
+        @property
+        def maximum_iterations(self):
+            return self._max_iter
+
+        @property
+        def max_iter_ls(self):
+            return self._max_iter_ls
+
+        @property
+        def merit_memory(self):
+            return self._merit_memory
+
+        @property
+        def merit_start(self):
+            return self._merit_start
+
+        @property
+        def print_header(self):
+            return self._print_header
+
+        @property
+        def print_time(self):
+            return self._print_time
+
+        @property
+        def qpsol(self):
+            return self._qpsol
+
+        @property
+        def qpsol_options(self):
+            return self._qpsol_options
+
+        @property
+        def reg_threshold(self):
+           return self._reg_threshold
+
+        @property
+        def regularize(self):
+            return self._regularize
+
+        @property
+        def set_tol_du(self):
+            return self._tol_du
+
+        @property
+        def set_tol_pr(self):
+            return self._tol_pr
+
+        @property
+        def set_tol_pr_step(self):
+            return self._tol_pr_step
+
+        @property
+        def tol_reg(self):
+            return self._tol_reg
+
+
+        def set_ad_mode(self, ad_mode: str):
+            """
+            How to calculate the Jacobians.
+            forward: only forward mode
+            reverse: only adjoint mode
+            automatic: a heuristic decides which is more appropriate)
+            """
+            self._ad_mode = ad_mode
+
+        def set_beta(self, beta: float):
+            """
+            Line-search parameter, restoration factor of stepsize
+            """
+            self._beta = beta
+
+        def set_c1(self, c1: float):
+            """
+            Armijo condition, coefficient of decrease in merit
+            """
+            self._c1 = c1
+
+        def set_expand(self, expand: bool):
+            self._expand = expand
+
+        def set_codegen(self, codegen: bool):
+            self._codegen = codegen
+
+        def set_expand_g(self, expand_g: bool):
+            self._expand_g = expand_g
+
+        def set_gather_stats(self, gather_stats: bool):
+            self._gather_stats = gather_stats
+
+        def set_hessian_approximation(self, hessian_approximation: str):
+            self._hessian_approximation = hessian_approximation
+
+        def set_inputs_check(self, inputs_check: bool):
+            """
+            Throw exceptions when the numerical values of the inputs don't make sense
+            """
+            self._inputs_check = inputs_check
+
+        def set_iteration_callback(self, iteration_callback):
+            """
+            A function that will be called at each iteration with the solver as input.
+            Check CasADi documentation for Callback.
+            """
+            self._iteration_callback = iteration_callback
+
+        def set_lbfgs_memory(self, lbfgs_memory: int):
+            """
+            Size of L-BFGS memory.
+            """
+            self._lbfgs_memory = lbfgs_memory
+
+        def set_maximum_iterations(self, max_iter: int):
+            """
+            Maximum number of SQP iterations
+            """
+            self._max_iter = max_iter
+
+        def set_max_iter_ls(self, max_iter_ls: int):
+            """
+            Maximum number of linesearch iterations
+            """
+            self._max_iter_ls = max_iter_ls
+
+        def set_merit_memory(self, merit_memory: int):
+            """
+            Size of memory to store history of merit function values
+            """
+            self._merit_memory = merit_memory
+
+        def set_merit_start(self, merit_start: float):
+            """
+            The size (inf-norm) of the step size should not become smaller than this.
+            """
+            self._merit_start = merit_start
+
+        def set_print_header(self, print_header: bool):
+            """
+            Print the header with problem statistics
+            """
+            self._print_header = print_header
+
+        def set_print_time(self, print_time: bool):
+            """
+            Print information about execution time
+            """
+            self._print_time = print_time
+
+        def set_qpsol(self, qpsol: str):
+            """
+            The QP solver to be used by the SQP method
+            """
+            self._qpsol = qpsol
+
+        def set_qpsol_options(self, qpsol_options: dict):
+            """
+            Options to be passed to the QP solver
+            """
+            self._qpsol_options = qpsol_options
+
+        def set_reg_threshold(self, reg_threshold: bool):
+            """
+            Throw exceptions when NaN or Inf appears during evaluation
+            """
+            self._reg_threshold = reg_threshold
+
+        def set_regularize(self, regularize: bool):
+            """
+            Automatic regularization of Lagrange Hessian.
+            """
+            self._regularize = regularize
+
+        def set_tol_du(self, tol_du: float):
+            """
+            Stopping criterion for dual infeasability
+            """
+            self._tol_du = tol_du
+
+        def set_tol_pr(self, tol_pr: float):
+            """
+            Stopping criterion for primal infeasibility
+            """
+            self._tol_pr = tol_pr
+
+        def set_tol_pr_step(self, tol_pr_step: float):
+            """
+            Verbose evaluation – for debugging
+            """
+            self._tol_pr_step = tol_pr_step
+
+        def set_tol_reg(self, tol_reg: float):
+            """
+            Warn if the initial guess does not satisfy LBX and UBX
+            """
+            self._tol_reg = tol_reg
+
+        def set_set_option_unsafe(self, val, name):
+            """
+            This function is unsafe because we did not check if the option exist in the solver option list.
+            If it's not it just will be ignored. Please make sure that the option you're asking for exist.
+            """
+            if f"_{name}" not in self.__dict__.keys():
+                self.__dict__[f"_{name}"] = val
+
+        def as_dict(self, solver):
+            solver_options = self.__dict__
+            options = {}
+            non_python_options = ["type", "show_online_optim", "show_options"]
+            for key in solver_options:
+                if key not in non_python_options:
+                    sqp_key = key[1:]
+                    options[sqp_key] = solver_options[key]
+            return {**options, **solver.options_common}
 
     @dataclass
     class ACADOS(Generic):
@@ -442,7 +731,7 @@ class Solver:
         """
 
         type: SolverType = SolverType.ACADOS
-        _qp_solver: str = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
+        _qpsol: str = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
         _hessian_approx: str = "GAUSS_NEWTON"
         _integrator_type: str = "IRK"
         _nlp_solver_type: str = "SQP"
