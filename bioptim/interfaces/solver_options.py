@@ -20,27 +20,27 @@ class Solver:
 
         type: SolverType = SolverType.NONE
 
-        # @abstractmethod
-        # def set_convergence_tolerance(self, tol: float):
-        #     """
-        #     This function set the convergence tolerance
-        #
-        #     Parameters
-        #     ----------
-        #     tol: float
-        #         Global converge tolerance value
-        #     """
+        @abstractmethod
+        def set_convergence_tolerance(self, tol: float):
+            """
+            This function set the convergence tolerance
 
-        # @abstractmethod
-        # def set_constraint_tolerance(self, tol: float):
-        #     """
-        #     This function set the constraint tolerance.
-        #
-        #     Parameters
-        #     ----------
-        #     tol: float
-        #         Global constraint tolerance value
-        #     """
+            Parameters
+            ----------
+            tol: float
+                Global converge tolerance value
+            """
+
+        @abstractmethod
+        def set_constraint_tolerance(self, tol: float):
+            """
+            This function set the constraint tolerance.
+
+            Parameters
+            ----------
+            tol: float
+                Global constraint tolerance value
+            """
 
         @abstractmethod
         def set_maximum_iterations(self, num: int):
@@ -64,16 +64,16 @@ class Solver:
                 Ipopt ou Acados interface
             """
 
-        # @abstractmethod
-        # def set_print_level(self, num: int):
-        #     """
-        #     This function set Output verbosity level.
-        #
-        #     Parameters
-        #     ----------
-        #     num: int
-        #         print_level
-        #     """
+        @abstractmethod
+        def set_print_level(self, num: int):
+            """
+            This function set Output verbosity level.
+
+            Parameters
+            ----------
+            num: int
+                print_level
+            """
 
     @dataclass
     class IPOPT(Generic):
@@ -384,11 +384,71 @@ class Solver:
             return {**options, **solver.options_common}
     @dataclass
     class SQP_METHOD(Generic):
+        """
+        This class is used to set the SQP method options
+
+        Methods
+        -------
+        set_beta(beta: float):
+            Line-search parameter, restoration factor of stepsize
+        set_c1(c1: float):
+            Armijo condition, coefficient of decrease in merit
+        set_hessian_approximation(hessian_approximation: str):
+            Hessian approximation method
+        set_lbfgs_memory(lbfgs_memory: int):
+            Size of L-BFGS memory.
+        set_maximum_iterations(max_iter: int):
+            Maximum number of SQP iterations
+        set_max_iter_ls(max_iter_ls: int):
+            Maximum number of linesearch iterations
+        set_merit_memory(merit_memory: int):
+            Size of memory to store history of merit function values
+        set_print_header(print_header: bool):
+            Print the header with problem statistics
+        set_print_time(print_time: bool):
+            Print information about execution time
+        set_qpsol(qpsol: str):
+            The QP solver to be used by the SQP method
+        set_qpsol_options(qpsol_options: dict):
+            Options to be passed to the QP solver
+        set_tol_du(tol_du: float):
+            Stopping criterion for dual infeasability
+        set_tol_pr(tol_pr: float):
+            Stopping criterion for primal infeasibility
+        set_set_option_unsafe(val, name):
+            Seting an option that is not in the list of options
+        set_convergence_tolerance(tol: float):
+            Set the convergence tolerance NA
+        set_constraint_tolerance(tol: float):
+            Set the constraint tolerance NA
+        as_dict(solver):
+            Return the options as a dictionary
+        set_print_level(num: int):
+            Set the print level of the solver NA
+
+        Attributes
+        ----------
+        _beta: float
+        _c1: float
+        _hessian_approximation: str
+        _lbfgs_memory: int
+        _max_iter: int
+        _max_iter_ls: int
+        _merit_memory: int
+        _print_header: bool
+        _print_time: bool
+        _qpsol: str
+        _qpsol_options = {"ooqp.error_on_fail": False}
+        _tol_du: float = 1e-6
+        _tol_pr: float = 1e-6
+
+        """
         type: SolverType = SolverType.SQP_METHOD
         show_online_optim: bool = False
         show_options: dict = None
         c_compile = False
         _beta: float = 0.8
+        _c1: float = 1e-4
         _hessian_approximation: str = "exact"  # "exact", "limited-memory"
         _lbfgs_memory: int = 10
         _max_iter: int = 50
@@ -396,27 +456,10 @@ class Solver:
         _merit_memory: int = 4
         _print_header: bool = True
         _print_time: bool = True
-        _qpsol = "ooqp"
+        _qpsol: str = "ooqp"
         _qpsol_options = {"ooqp.error_on_fail": False}
         _tol_du: float = 1e-6
         _tol_pr: float = 1e-6
-        _c1: float = 1e-4
-        # _codegen: bool = False
-        # _expand: bool = False
-        # _expand_f: bool = False
-        # _expand_g: bool = False
-        # _gather_stats: float = 1e-6
-        # _inputs_check: bool = True
-        # _merit_start: float = 1 ############
-        # _reg_threshold: float = 1e-6 #####################
-        # _regularize: bool = False
-        # _tol_pr_step: float = 1e-6
-        # _tol_reg: float = 1e-6
-        # _ad_mode: str = "automatic"
-
-        @property
-        def ad_mode(self):
-            return self._ad_mode
 
         @property
         def beta(self):
@@ -427,32 +470,8 @@ class Solver:
             return self._c1
 
         @property
-        def expand(self):
-            return self._expand
-
-        @property
-        def codegen(self):
-            return self._codegen
-
-        @property
-        def expand_g(self):
-            return self._expand_g
-
-        @property
-        def gather_stats(self):
-            return self._gather_stats
-
-        @property
         def hessian_approximation(self):
             return self._hessian_approximation
-
-        @property
-        def inputs_check(self):
-            return self._inputs_check
-
-        @property
-        def iteration_callback(self):
-            return self._iteration_callback
 
         @property
         def lbfgs_memory(self):
@@ -471,10 +490,6 @@ class Solver:
             return self._merit_memory
 
         @property
-        def merit_start(self):
-            return self._merit_start
-
-        @property
         def print_header(self):
             return self._print_header
 
@@ -491,38 +506,12 @@ class Solver:
             return self._qpsol_options
 
         @property
-        def reg_threshold(self):
-           return self._reg_threshold
-
-        @property
-        def regularize(self):
-            return self._regularize
-
-        @property
         def set_tol_du(self):
             return self._tol_du
 
         @property
         def set_tol_pr(self):
             return self._tol_pr
-
-        @property
-        def set_tol_pr_step(self):
-            return self._tol_pr_step
-
-        @property
-        def tol_reg(self):
-            return self._tol_reg
-
-
-        def set_ad_mode(self, ad_mode: str):
-            """
-            How to calculate the Jacobians.
-            forward: only forward mode
-            reverse: only adjoint mode
-            automatic: a heuristic decides which is more appropriate)
-            """
-            self._ad_mode = ad_mode
 
         def set_beta(self, beta: float):
             """
@@ -536,33 +525,8 @@ class Solver:
             """
             self._c1 = c1
 
-        def set_expand(self, expand: bool):
-            self._expand = expand
-
-        def set_codegen(self, codegen: bool):
-            self._codegen = codegen
-
-        def set_expand_g(self, expand_g: bool):
-            self._expand_g = expand_g
-
-        def set_gather_stats(self, gather_stats: bool):
-            self._gather_stats = gather_stats
-
         def set_hessian_approximation(self, hessian_approximation: str):
             self._hessian_approximation = hessian_approximation
-
-        def set_inputs_check(self, inputs_check: bool):
-            """
-            Throw exceptions when the numerical values of the inputs don't make sense
-            """
-            self._inputs_check = inputs_check
-
-        def set_iteration_callback(self, iteration_callback):
-            """
-            A function that will be called at each iteration with the solver as input.
-            Check CasADi documentation for Callback.
-            """
-            self._iteration_callback = iteration_callback
 
         def set_lbfgs_memory(self, lbfgs_memory: int):
             """
@@ -588,12 +552,6 @@ class Solver:
             """
             self._merit_memory = merit_memory
 
-        def set_merit_start(self, merit_start: float):
-            """
-            The size (inf-norm) of the step size should not become smaller than this.
-            """
-            self._merit_start = merit_start
-
         def set_print_header(self, print_header: bool):
             """
             Print the header with problem statistics
@@ -618,18 +576,6 @@ class Solver:
             """
             self._qpsol_options = qpsol_options
 
-        def set_reg_threshold(self, reg_threshold: bool):
-            """
-            Throw exceptions when NaN or Inf appears during evaluation
-            """
-            self._reg_threshold = reg_threshold
-
-        def set_regularize(self, regularize: bool):
-            """
-            Automatic regularization of Lagrange Hessian.
-            """
-            self._regularize = regularize
-
         def set_tol_du(self, tol_du: float):
             """
             Stopping criterion for dual infeasability
@@ -642,18 +588,6 @@ class Solver:
             """
             self._tol_pr = tol_pr
 
-        def set_tol_pr_step(self, tol_pr_step: float):
-            """
-            Verbose evaluation – for debugging
-            """
-            self._tol_pr_step = tol_pr_step
-
-        def set_tol_reg(self, tol_reg: float):
-            """
-            Warn if the initial guess does not satisfy LBX and UBX
-            """
-            self._tol_reg = tol_reg
-
         def set_set_option_unsafe(self, val, name):
             """
             This function is unsafe because we did not check if the option exist in the solver option list.
@@ -661,6 +595,18 @@ class Solver:
             """
             if f"_{name}" not in self.__dict__.keys():
                 self.__dict__[f"_{name}"] = val
+
+        @abstractmethod
+        def set_convergence_tolerance(self, tol: float):
+            raise RuntimeError("At the moment, set_convergence_tolerance cannot be set for SQP method solver."
+                               "\nPlease use set_tol_du to set the tolerance on the dual condition and set_tol_pr to set"
+                               " the tolerance on the primal condition")
+
+        @abstractmethod
+        def set_constraint_tolerance(self, tol: float):
+            raise RuntimeError("At the moment, set_constraint_tolerance cannot be set for SQP method solver."
+                               "\nPlease use set_tol_du to set the tolerance on the dual condition and set_tol_pr to set"
+                               " the tolerance on the primal condition")
 
         def as_dict(self, solver):
             solver_options = self.__dict__
@@ -671,6 +617,10 @@ class Solver:
                     sqp_key = key[1:]
                     options[sqp_key] = solver_options[key]
             return {**options, **solver.options_common}
+
+        @abstractmethod
+        def set_print_level(self, num: int):
+            raise RuntimeError("At the moment, set_print_level cannot be set for SQP method solver")
 
     @dataclass
     class ACADOS(Generic):

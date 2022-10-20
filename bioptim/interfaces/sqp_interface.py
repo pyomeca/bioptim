@@ -14,20 +14,20 @@ from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 
 
-class IpoptInterface(SolverInterface):
+class SQPInterface(SolverInterface):
     """
-    The Ipopt solver interface
+    The SQP method solver interface
 
     Attributes
     ----------
     options_common: dict
         Options irrelevant of a specific ocp
-    opts: IPOPT
+    opts: SQP
         Options of the current ocp
-    ipopt_nlp: dict
-        The declaration of the variables Ipopt-friendly
-    ipopt_limits: dict
-        The declaration of the bound Ipopt-friendly
+    sqp_nlp: dict
+        The declaration of the variables SQP-friendly
+    sqp_limits: dict
+        The declaration of the bound SQP-friendly
     lam_g: np.ndarray
         The lagrange multiplier of the constraints to initialize the solver
     lam_x: np.ndarray
@@ -42,9 +42,9 @@ class IpoptInterface(SolverInterface):
     set_lagrange_multiplier(self, sol: dict)
         Set the lagrange multiplier from a solution structure
     __dispatch_bounds(self)
-        Parse the bounds of the full ocp to a Ipopt-friendly one
+        Parse the bounds of the full ocp to a SQP-friendly one
     __dispatch_obj_func(self)
-        Parse the objective functions of the full ocp to a Ipopt-friendly one
+        Parse the objective functions of the full ocp to a SQP-friendly one
     """
 
     def __init__(self, ocp):
@@ -58,10 +58,10 @@ class IpoptInterface(SolverInterface):
         super().__init__(ocp)
 
         self.options_common = {}
-        self.opts = Solver.IPOPT()
+        self.opts = Solver.SQP_METHOD()
 
-        self.ipopt_nlp = {}
-        self.ipopt_limits = {}
+        self.sqp_nlp = {}
+        self.sqp_limits = {}
         self.ocp_solver = None
         self.c_compile = False
 
@@ -84,6 +84,7 @@ class IpoptInterface(SolverInterface):
             raise RuntimeError("Online graphics are not available on Windows")
         self.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
+
     def solve(self) -> dict:
         """
         Solve the prepared ocp
@@ -99,21 +100,21 @@ class IpoptInterface(SolverInterface):
         if self.opts.show_online_optim:
             self.online_optim(self.ocp, self.opts.show_options)
 
-        self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
+        self.sqp_nlp = {"x": self.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
         self.c_compile = self.opts.c_compile
         options = self.opts.as_dict(self)
 
         if self.c_compile:
             if not self.ocp_solver or self.ocp.program_changed:
-                nlpsol("nlpsol", "ipopt", self.ipopt_nlp, options).generate_dependencies("nlp.c")
-                self.ocp_solver = nlpsol("nlpsol", "ipopt", Importer("nlp.c", "shell"), options)
+                nlpsol("nlpsol", "sqpmethod", self.sqp_nlp, options).generate_dependencies("nlp.c")
+                self.ocp_solver = nlpsol("nlpsol", "sqpmethod", Importer("nlp.c", "shell"), options)
                 self.ocp.program_changed = False
         else:
-            self.ocp_solver = nlpsol("solver", "ipopt", self.ipopt_nlp, options)
+            self.ocp_solver = nlpsol("solver", "sqpmethod", self.sqp_nlp, options)
 
         v_bounds = self.ocp.v.bounds
         v_init = self.ocp.v.init
-        self.ipopt_limits = {
+        self.sqp_limits = {
             "lbx": v_bounds.min,
             "ubx": v_bounds.max,
             "lbg": all_g_bounds.min,
@@ -122,13 +123,13 @@ class IpoptInterface(SolverInterface):
         }
 
         if self.lam_g is not None:
-            self.ipopt_limits["lam_g0"] = self.lam_g
+            self.sqp_limits["lam_g0"] = self.lam_g
         if self.lam_x is not None:
-            self.ipopt_limits["lam_x0"] = self.lam_x
+            self.sqp_limits["lam_x0"] = self.lam_x
 
         # Solve the problem
         tic = perf_counter()
-        self.out = {"sol": self.ocp_solver.call(self.ipopt_limits)}
+        self.out = {"sol": self.ocp_solver.call(self.sqp_limits)}
         self.out["sol"]["solver_time_to_optimize"] = self.ocp_solver.stats()["t_wall_total"]
         self.out["sol"]["real_time_to_optimize"] = perf_counter() - tic
         self.out["sol"]["iter"] = self.ocp_solver.stats()["iter_count"]
@@ -159,7 +160,7 @@ class IpoptInterface(SolverInterface):
 
     def __dispatch_bounds(self):
         """
-        Parse the bounds of the full ocp to a Ipopt-friendly one
+        Parse the bounds of the full ocp to a SQP-friendly one
         """
 
         all_g = self.ocp.cx()
@@ -194,12 +195,12 @@ class IpoptInterface(SolverInterface):
                     all_g_bounds.concatenate(g.bounds)
 
         if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
-            raise RuntimeError("Ipopt doesn't support SX/MX types in constraints bounds")
+            raise RuntimeError("SQP method doesn't support SX/MX types in constraints bounds")
         return all_g, all_g_bounds
 
     def __dispatch_obj_func(self):
         """
-        Parse the objective functions of the full ocp to a Ipopt-friendly one
+        Parse the objective functions of the full ocp to a SQP-friendly one
 
         Returns
         -------
@@ -219,7 +220,7 @@ class IpoptInterface(SolverInterface):
 
     def __get_all_penalties(self, nlp: NonLinearProgram, penalties):
         """
-        Parse the penalties of the full ocp to a Ipopt-friendly one
+        Parse the penalties of the full ocp to a SQP-friendly one
 
         Parameters
         ----------
