@@ -1318,7 +1318,8 @@ class Solution:
                         )
                     else:
                         x = self._states[phase_idx]["all"][:, col_x_idx]
-                        u = self._controls[phase_idx]["all"][:, col_u_idx]
+
+                    u = self._controls[phase_idx]["all"][:, col_u_idx]
                     if penalty.target is None:
                         target = []
                     elif (
