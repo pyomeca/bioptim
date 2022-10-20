@@ -47,7 +47,7 @@ class IpoptInterface(SolverInterface):
         Parse the objective functions of the full ocp to a Ipopt-friendly one
     """
 
-    def __init__(self, ocp):
+    def __init__(self, ocp, solver):
         """
         Parameters
         ----------
@@ -58,7 +58,11 @@ class IpoptInterface(SolverInterface):
         super().__init__(ocp)
 
         self.options_common = {}
-        self.opts = Solver.IPOPT()
+        self.solver_type = solver.type
+        if self.solver_type == SolverType.IPOPT:
+            self.opts = Solver.IPOPT()
+        elif self.solver_type == SolverType.SQP_METHOD:
+            self.opts = Solver.SQP_METHOD()
 
         self.ipopt_nlp = {}
         self.ipopt_limits = {}
@@ -102,13 +106,19 @@ class IpoptInterface(SolverInterface):
         self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
         self.c_compile = self.opts.c_compile
         options = self.opts.as_dict(self)
+
+        if self.solver_type == SolverType.IPOPT:
+            solver_name = "ipopt"
+        elif self.solver_type == SolverType.SQP_METHOD:
+            solver_name = "sqpmethod"
+
         if self.c_compile:
             if not self.ocp_solver or self.ocp.program_changed:
-                nlpsol("nlpsol", "ipopt", self.ipopt_nlp, options).generate_dependencies("nlp.c")
-                self.ocp_solver = nlpsol("nlpsol", "ipopt", Importer("nlp.c", "shell"), options)
+                nlpsol("nlpsol", solver_name, self.ipopt_nlp, options).generate_dependencies("nlp.c")
+                self.ocp_solver = nlpsol("nlpsol", solver_name, Importer("nlp.c", "shell"), options)
                 self.ocp.program_changed = False
         else:
-            self.ocp_solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, options)
+            self.ocp_solver = nlpsol("solver", solver_name, self.ipopt_nlp, options)
 
         v_bounds = self.ocp.v.bounds
         v_init = self.ocp.v.init
@@ -139,7 +149,7 @@ class IpoptInterface(SolverInterface):
         )
         # To match acados convention (0 = success, 1 = error)
         self.out["sol"]["status"] = int(not self.ocp_solver.stats()["success"])
-        self.out["sol"]["solver"] = SolverType.IPOPT
+        self.out["sol"]["solver"] = self.solver_type
 
         return self.out
 
