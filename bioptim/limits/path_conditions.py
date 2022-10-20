@@ -911,21 +911,23 @@ class NoisedInitialGuess(InitialGuess):
             interpolation = initial_guess.type
         if interpolation == InterpolationType.ALL_POINTS:
             bounds.n_shooting = initial_guess.shape[1]
+
         self.bounds = bounds
         self.n_elements = self.bounds.min.shape[0]
         self.bounds.check_and_adjust_dimensions(self.n_elements, n_shooting)
         self.bound_push = bound_push
 
         self.seed = seed
-        if not isinstance(noise_magnitude, (int, float)):
-            noise_magnitude = np.array(noise_magnitude)
-            noise_magnitude = (
-                noise_magnitude[:, np.newaxis] if noise_magnitude.shape.__len__() == 1 else noise_magnitude
-            )
-            noise_magnitude = np.repeat(noise_magnitude, self.n_shooting, axis=1)
 
-            if noise_magnitude.shape[0] != 1 and noise_magnitude.shape[0] != self.n_elements:
-                raise ValueError("noise_magnitude must be a float or list of float of the size of states or controls")
+        if isinstance(noise_magnitude, (int, float)):
+            noise_magnitude = (noise_magnitude,)
+
+        noise_magnitude = np.array(noise_magnitude)
+        noise_magnitude = noise_magnitude[:, np.newaxis] if noise_magnitude.shape.__len__() == 1 else noise_magnitude
+        noise_magnitude = np.repeat(noise_magnitude, self.n_shooting, axis=1)
+
+        if noise_magnitude.shape[0] != 1 and noise_magnitude.shape[0] != self.n_elements:
+            raise ValueError("noise_magnitude must be a float or list of float of the size of states or controls")
 
         self.noise_magnitude = noise_magnitude
         self.noise = None
