@@ -1,5 +1,5 @@
 from multiprocessing import Pool
-
+from itertools import product
 
 class MultiStart:
     """
@@ -18,7 +18,6 @@ class MultiStart:
     def __init__(
         self,
         solve_ocp,
-        n_random: int = 1,
         n_pools: int = 1,
         args_dict: dict = None,
     ):
@@ -36,7 +35,6 @@ class MultiStart:
         """
 
         self.solve_ocp = solve_ocp
-        self.n_random = n_random
         self.n_pools = n_pools
         self.args_dict = args_dict
         self.combined_args_to_list = self.combine_args_to_list()
@@ -46,29 +44,10 @@ class MultiStart:
         Combine the varying arguments of the multi-start into a list of arguments to be passed to the solve_ocp function
         inside the pools
         """
-        args_names_list = list(self.args_dict.keys())
-        if len(args_names_list) == 0:
-            list_out = [[]]
-        else:
-            list_out = [[elem] for elem in self.args_dict[args_names_list[0]]]
-            for i in range(1, len(args_names_list)):
-                for j in range(len(list_out)):
-                    list_out_before = list_out
-                    list_out_temporary = list_out
-                    for k in range(len(self.args_dict[args_names_list[i]])):
-                        list_now = [
-                            list_out_temporary[l] + [self.args_dict[args_names_list[i]][k]]
-                            for l in range(len(list_out_before))
-                        ]
-                        if k == 0:
-                            list_out = list_now
-                        else:
-                            list_out += list_now
-
+        combined_args = [instance for instance in product(*self.args_dict.values())]
         combined_args_to_list = []
-        for i in range(self.n_random):
-            combined_args_to_list += [list_out[j] + [i] for j in range(len(list_out))]
-
+        for i in range(len(combined_args)):
+            combined_args_to_list += [[instance for instance in combined_args[i]]]
         return combined_args_to_list
 
     def run(self):

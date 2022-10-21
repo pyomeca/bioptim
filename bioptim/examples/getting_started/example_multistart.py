@@ -85,14 +85,16 @@ def prepare_ocp(
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = NoisedInitialGuess(
-        [0] * n_tau,
-        interpolation=InterpolationType.CONSTANT,
-        bounds=u_bounds,
-        noise_magnitude=0.5,
-        n_shooting=n_shooting,
-        seed=seed,
-    )
+    # To be changed when the issue on NoisedInitialGuess is fixed
+    # u_init = NoisedInitialGuess(
+    #     [0] * n_tau,
+    #     interpolation=InterpolationType.CONSTANT,
+    #     bounds=u_bounds,
+    #     noise_magnitude=0.5,
+    #     n_shooting=n_shooting,
+    #     seed=seed,
+    # )
+    u_init = InitialGuess([tau_init] * n_tau, interpolation=InterpolationType.CONSTANT)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -110,7 +112,7 @@ def prepare_ocp(
     )
 
 
-def solve_ocp(args: list = None):
+def solve_ocp(args):
     """
     Solving the ocp
 
@@ -126,10 +128,7 @@ def solve_ocp(args: list = None):
         The seed to use for the random initial guess
     """
 
-    biorbd_model_path = args[0]
-    final_time = args[1]
-    n_shooting = args[2]
-    seed = args[3]
+    biorbd_model_path, final_time, n_shooting, seed = args
 
     ocp = prepare_ocp(biorbd_model_path, final_time, n_shooting)
     ocp.add_plot_penalty(CostType.ALL)
@@ -140,9 +139,8 @@ def solve_ocp(args: list = None):
 def prepare_multi_start(biorbd_model_path: list, final_time: list, n_shooting: list):
     return MultiStart(
         solve_ocp,
-        n_random=10,
         n_pools=4,
-        args_dict={"biorbd_model_path": biorbd_model_path, "final_time": final_time, "n_shooting": n_shooting},
+        args_dict={"biorbd_model_path": biorbd_model_path, "final_time": final_time, "n_shooting": n_shooting, 'seed': [0, 1, 2, 3]},
     )
 
 
