@@ -18,6 +18,8 @@ class MultiStart:
     def __init__(
         self,
         solve_ocp,
+        # prepare_ocp,
+        # solver,
         n_pools: int = 1,
         **kwargs,
     ):
@@ -35,6 +37,8 @@ class MultiStart:
         """
 
         self.solve_ocp = solve_ocp
+        # self.prepare_ocp = prepare_ocp
+        # self.solver = solver
         self.n_pools = n_pools
         self.args_dict = kwargs
         self.combined_args_to_list = self.combine_args_to_list()
@@ -54,5 +58,6 @@ class MultiStart:
         """
         Run the multi-start in the pools for multi-threading
         """
+
         with Pool(self.n_pools) as p:
             p.map(self.solve_ocp, self.combined_args_to_list)

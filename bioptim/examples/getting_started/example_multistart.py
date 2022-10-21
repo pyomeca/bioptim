@@ -13,7 +13,6 @@ from bioptim import (
     InitialGuess,
     ObjectiveFcn,
     Objective,
-    OdeSolver,
     CostType,
     Solver,
     NoisedInitialGuess,
@@ -26,9 +25,6 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
-    use_sx: bool = True,
-    n_threads: int = 1,  # You cannot use multi-threading for the resolution of the ocp with multi-start
     seed: int = 0,
 ) -> OptimalControlProgram:
     """
@@ -106,9 +102,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
-        use_sx=use_sx,
-        n_threads=n_threads,
+        n_threads=1,  # You cannot use multi-threading for the resolution of the ocp with multi-start
     )
 
 
@@ -130,11 +124,16 @@ def solve_ocp(args):
 
     biorbd_model_path, final_time, n_shooting, seed = args
 
-    ocp = prepare_ocp(biorbd_model_path, final_time, n_shooting)
+    ocp = prepare_ocp(biorbd_model_path, final_time, n_shooting, seed)
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))  # You cannot use show_online_optim with multi-start
     ocp.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
 
+
+# def solve_ocp_func(args):
+#     sol = self.ocp_generator(*args).solve(self.solver)
+#     self.callback_function(*args, sol)
+#     return sol
 
 def prepare_multi_start(biorbd_model_path: list, final_time: list, n_shooting: list, seed: list) -> MultiStart:
     return MultiStart(
