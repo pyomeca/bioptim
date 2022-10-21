@@ -18,6 +18,7 @@ from bioptim import (
     NoisedInitialGuess,
     InterpolationType,
     MultiStart,
+    Solution,
 )
 
 
@@ -92,18 +93,22 @@ def prepare_ocp(
     # )
     u_init = InitialGuess([tau_init] * n_tau, interpolation=InterpolationType.CONSTANT)
 
-    return OptimalControlProgram(
-        biorbd_model,
-        dynamics,
-        n_shooting,
-        final_time,
-        x_init=x_init,
-        u_init=u_init,
-        x_bounds=x_bounds,
-        u_bounds=u_bounds,
-        objective_functions=objective_functions,
-        n_threads=1,  # You cannot use multi-threading for the resolution of the ocp with multi-start
-    )
+    ocp = OptimalControlProgram(
+            biorbd_model,
+            dynamics,
+            n_shooting,
+            final_time,
+            x_init=x_init,
+            u_init=u_init,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            objective_functions=objective_functions,
+            n_threads=1,  # You cannot use multi-threading for the resolution of the ocp with multi-start
+        )
+
+    ocp.add_plot_penalty(CostType.ALL)
+
+    return ocp
 
 
 def solve_ocp(args):
@@ -122,13 +127,28 @@ def solve_ocp(args):
         The seed to use for the random initial guess
     """
 
-    biorbd_model_path, final_time, n_shooting, seed = args
-
-    ocp = prepare_ocp(biorbd_model_path, final_time, n_shooting, seed)
-    ocp.add_plot_penalty(CostType.ALL)
+    ocp = prepare_ocp(*args)
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))  # You cannot use show_online_optim with multi-start
-    ocp.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
+    save_results(sol, *args)
+    return sol
 
+def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_shooting: int, seed: int):
+    """
+    Solving the ocp
+    Parameters
+    ----------
+    sol: Solution
+        The solution to the ocp at the current pool
+    args[0] -> biorbd_model_path: str
+        The path to the biorbd model
+    args[1] -> final_time: float
+        The time in second required to perform the task
+    args[2] -> n_shooting: int
+        The number of shooting points to define int the direct multiple shooting program
+    args[3] -> seed: int
+        The seed to use for the random initial guess
+    """
+    OptimalControlProgram.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
 
 # def solve_ocp_func(args):
 #     sol = self.ocp_generator(*args).solve(self.solver)
