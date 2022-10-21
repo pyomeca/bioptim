@@ -112,3 +112,5 @@ c_generated_code
 *.gv.pdf
 
 bioptim/examples/getting_started/pendulum_multi_start_random_states_0.pkl
+
+*.pkl

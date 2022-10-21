@@ -1141,6 +1141,9 @@ def test_multistart():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     multi_start = ocp_module.prepare_multi_start(
-        biorbd_model_path=[bioptim_folder + "/models/pendulum.bioMod"], final_time=[1], n_shooting=[5, 10]
+        biorbd_model_path=[bioptim_folder + "/models/pendulum.bioMod"],
+        final_time=[1],
+        n_shooting=[5, 10],
+        seed=[0, 1],
     )
-    multi_start.run()
+    multi_start.solve()
