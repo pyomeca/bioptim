@@ -94,17 +94,17 @@ def prepare_ocp(
     u_init = InitialGuess([tau_init] * n_tau, interpolation=InterpolationType.CONSTANT)
 
     ocp = OptimalControlProgram(
-            biorbd_model,
-            dynamics,
-            n_shooting,
-            final_time,
-            x_init=x_init,
-            u_init=u_init,
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
-            objective_functions=objective_functions,
-            n_threads=1,  # You cannot use multi-threading for the resolution of the ocp with multi-start
-        )
+        biorbd_model,
+        dynamics,
+        n_shooting,
+        final_time,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
+        n_threads=1,  # You cannot use multi-threading for the resolution of the ocp with multi-start
+    )
 
     ocp.add_plot_penalty(CostType.ALL)
 
@@ -132,19 +132,20 @@ def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_sho
     with open(f"pendulum_multi_start_random_states_{seed}.pkl", "wb") as file:
         pickle.dump(states, file)
 
+
 def prepare_multi_start(biorbd_model_path: list, final_time: list, n_shooting: list, seed: list) -> MultiStart:
     """
     The initialization of the multi-start
     """
     return MultiStart(
         prepare_ocp,
-        solver=Solver.IPOPT(show_online_optim=False), # You cannot use show_online_optim with multi-start
+        solver=Solver.IPOPT(show_online_optim=False),  # You cannot use show_online_optim with multi-start
         callback_function=save_results,
         n_pools=4,
         biorbd_model_path=biorbd_model_path,
         final_time=final_time,
         n_shooting=n_shooting,
-        seed=seed
+        seed=seed,
     )
 
 
@@ -152,10 +153,10 @@ def main():
 
     # --- Prepare the multi-start and run it --- #
     multi_start = prepare_multi_start(
-        # biorbd_model_path=["models/pendulum.bioMod"], final_time=[1], n_shooting=[30, 40, 50], seed=[0, 1, 2, 3]
-        biorbd_model_path=["models/pendulum.bioMod"], final_time=[1], n_shooting=[30], seed=[0]
+        biorbd_model_path=["models/pendulum.bioMod"], final_time=[1], n_shooting=[30, 40, 50], seed=[0, 1, 2, 3]
     )
-    sols = multi_start.run()
+    multi_start.solve()
+
 
 if __name__ == "__main__":
     main()

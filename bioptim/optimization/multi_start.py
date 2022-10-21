@@ -64,7 +64,7 @@ class MultiStart:
         self.callback_function(sol, *args)
         return
 
-    def run(self):
+    def solve(self):
         """
         Run the multi-start in the pools for multi-threading
         """
