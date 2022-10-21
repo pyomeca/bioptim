@@ -30,6 +30,7 @@ def prepare_ocp(
     control_type: ControlType,
     objective: str,
     target: np.array = None,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -48,6 +49,8 @@ def prepare_ocp(
         The objective to minimize (torque or power)
     target: np.array
         The target value to reach
+    ode_solver: OdeSolver = OdeSolver.RK4()
+        Which type of OdeSolver to use
 
     Returns
     -------
@@ -101,7 +104,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=OdeSolver.RK4(),
+        ode_solver=ode_solver,
         use_sx=True,
         n_threads=1,
         control_type=control_type,
@@ -112,13 +115,12 @@ def sum_cost_function_output(sol):
     """
     Sum the cost function output from sol.print_cost()
     """
-    capturedOutput = io.StringIO()  # Create StringIO object
-    sys.stdout = capturedOutput  # and redirect stdout.
+    captured_output = io.StringIO()  # Create StringIO object
+    sys.stdout = captured_output  # and redirect stdout.
     sol.print_cost()  # Call function.
     sys.stdout = sys.__stdout__  # Reset redirect.
-    output = capturedOutput.getvalue()
-    idx = capturedOutput.getvalue().find("Sum cost functions")
-    output = capturedOutput.getvalue()[idx:].split("\n")[0]
+    idx = captured_output.getvalue().find("Sum cost functions")
+    output = captured_output.getvalue()[idx:].split("\n")[0]
     idx = len("Sum cost functions: ")
     return float(output[idx:])
 
@@ -207,6 +209,72 @@ def test_pendulum(control_type, integration_rule, objective):
             else:
                 np.testing.assert_almost_equal(f[0, 0], 18.799673213312587)
                 np.testing.assert_almost_equal(j_printed, 18.799673213312587)
+
+
+@pytest.mark.parametrize(
+    "objective",
+    [
+        "torque",
+        "qdot",
+    ],
+)
+@pytest.mark.parametrize(
+    "control_type",
+    [ControlType.CONSTANT],
+)
+@pytest.mark.parametrize(
+    "integration_rule",
+    [
+        IntegralApproximation.RECTANGLE,
+        IntegralApproximation.TRAPEZOIDAL,
+        IntegralApproximation.TRUE_TRAPEZOIDAL,
+    ],
+)
+def test_pendulum_collocation(control_type, integration_rule, objective):
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_shooting=10,
+        integration_rule=integration_rule,
+        objective=objective,
+        control_type=control_type,
+        ode_solver=OdeSolver.COLLOCATION(),
+    )
+    solver = Solver.IPOPT()
+    solver.set_maximum_iterations(5)
+    sol = ocp.solve(solver)
+    j_printed = sum_cost_function_output(sol)
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    if integration_rule == IntegralApproximation.RECTANGLE:
+        if control_type == ControlType.CONSTANT:
+            if objective == "torque":
+                np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
+                np.testing.assert_almost_equal(j_printed, 11.795040652982767)
+            else:
+                np.testing.assert_almost_equal(f[0, 0], 12.336208562756555)
+                np.testing.assert_almost_equal(j_printed, 12.336208562756553)
+    elif integration_rule == IntegralApproximation.TRAPEZOIDAL:
+        if control_type == ControlType.CONSTANT:
+            if objective == "torque":
+                np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
+                np.testing.assert_almost_equal(j_printed, 11.795040652982767)
+            else:
+                np.testing.assert_almost_equal(f[0, 0], 12.336208562756559)
+                np.testing.assert_almost_equal(j_printed, 12.336208562756559)
+    elif integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
+        if control_type == ControlType.CONSTANT:
+            if objective == "torque":
+                np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
+                np.testing.assert_almost_equal(j_printed, 11.795040652982767)
+            else:
+                np.testing.assert_almost_equal(f[0, 0], 12.336208562756564)
+                np.testing.assert_almost_equal(j_printed, 12.336208562756564)
 
 
 @pytest.mark.parametrize(
