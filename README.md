@@ -2276,15 +2276,10 @@ The arm must reach a marker while minimizing the muscles activity and the states
 
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
-@article {Bioptim2021,
-	author = {Michaud, Benjamin and Bailly, Fran{\c c}ois and Charbonneau, Eve and Ceglia, Amedeo and Sanchez, L{\'e}a and Begon, Mickael},
-	title = {Bioptim, a Python framework for Musculoskeletal Optimal Control in Biomechanics},
-	elocation-id = {2021.02.27.432868},
-	year = {2021},
-	doi = {10.1101/2021.02.27.432868},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v1},
-	eprint = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v1.full.pdf},
-	journal = {bioRxiv}
+@article{michaud2022bioptim,
+  title={Bioptim, a python framework for musculoskeletal optimal control in biomechanics},
+  author={Michaud, Benjamin and Bailly, Fran{\c{c}}ois and Charbonneau, Eve and Ceglia, Amedeo and Sanchez, L{\'e}a and Begon, Mickael},
+  journal={IEEE Transactions on Systems, Man, and Cybernetics: Systems},
+  year={2022},
+  publisher={IEEE}
 }
-
