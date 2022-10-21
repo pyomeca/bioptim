@@ -1,5 +1,9 @@
 from multiprocessing import Pool
 from itertools import product
+from typing import Callable
+
+from ..optimization.optimal_control_program import OptimalControlProgram
+from ..interfaces.solver_options import Solver
 
 
 class MultiStart:
@@ -18,9 +22,9 @@ class MultiStart:
 
     def __init__(
         self,
-        # solve_ocp,
-        prepare_ocp,
-        solver,
+        prepare_ocp: OptimalControlProgram,
+        solver: Solver,
+        callback_function: Callable = None,
         n_pools: int = 1,
         **kwargs,
     ):
@@ -37,9 +41,9 @@ class MultiStart:
             The dictionary of arguments to be passed to the solve_ocp function
         """
 
-        # self.solve_ocp = solve_ocp
         self.prepare_ocp = prepare_ocp
         self.solver = solver
+        self.callback_function = callback_function
         self.n_pools = n_pools
         self.args_dict = kwargs
         self.combined_args_to_list = self.combine_args_to_list()
@@ -57,8 +61,8 @@ class MultiStart:
 
     def solve_ocp_func(self, args):
         sol = self.prepare_ocp(*args).solve(self.solver)
-        # self.callback_function(*args, sol)
-        return sol
+        self.callback_function(sol, *args)
+        return
 
     def run(self):
         """
@@ -66,5 +70,4 @@ class MultiStart:
         """
 
         with Pool(self.n_pools) as p:
-            # p.map(self.solve_ocp, self.combined_args_to_list)
             p.map(self.solve_ocp_func, self.combined_args_to_list)
