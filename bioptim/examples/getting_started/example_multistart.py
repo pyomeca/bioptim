@@ -132,6 +132,7 @@ def solve_ocp(args):
     save_results(sol, *args)
     return sol
 
+
 def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_shooting: int, seed: int):
     """
     Solving the ocp
@@ -150,14 +151,10 @@ def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_sho
     """
     OptimalControlProgram.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
 
-# def solve_ocp_func(args):
-#     sol = self.ocp_generator(*args).solve(self.solver)
-#     self.callback_function(*args, sol)
-#     return sol
-
 def prepare_multi_start(biorbd_model_path: list, final_time: list, n_shooting: list, seed: list) -> MultiStart:
     return MultiStart(
-        solve_ocp,
+        prepare_ocp,
+        solver=Solver.IPOPT(show_online_optim=False),
         n_pools=4,
         biorbd_model_path=biorbd_model_path,
         final_time=final_time,

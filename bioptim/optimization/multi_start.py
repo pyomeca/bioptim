@@ -1,6 +1,7 @@
 from multiprocessing import Pool
 from itertools import product
 
+
 class MultiStart:
     """
     The main class to define a multi-start. This class executes the optimal control problems with the possibility to
@@ -17,9 +18,9 @@ class MultiStart:
 
     def __init__(
         self,
-        solve_ocp,
-        # prepare_ocp,
-        # solver,
+        # solve_ocp,
+        prepare_ocp,
+        solver,
         n_pools: int = 1,
         **kwargs,
     ):
@@ -36,9 +37,9 @@ class MultiStart:
             The dictionary of arguments to be passed to the solve_ocp function
         """
 
-        self.solve_ocp = solve_ocp
-        # self.prepare_ocp = prepare_ocp
-        # self.solver = solver
+        # self.solve_ocp = solve_ocp
+        self.prepare_ocp = prepare_ocp
+        self.solver = solver
         self.n_pools = n_pools
         self.args_dict = kwargs
         self.combined_args_to_list = self.combine_args_to_list()
@@ -54,10 +55,16 @@ class MultiStart:
             combined_args_to_list += [[instance for instance in combined_args[i]]]
         return combined_args_to_list
 
+    def solve_ocp_func(self, args):
+        sol = self.prepare_ocp(*args).solve(self.solver)
+        # self.callback_function(*args, sol)
+        return sol
+
     def run(self):
         """
         Run the multi-start in the pools for multi-threading
         """
 
         with Pool(self.n_pools) as p:
-            p.map(self.solve_ocp, self.combined_args_to_list)
+            # p.map(self.solve_ocp, self.combined_args_to_list)
+            p.map(self.solve_ocp_func, self.combined_args_to_list)
