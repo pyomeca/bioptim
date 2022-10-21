@@ -922,9 +922,14 @@ class NoisedInitialGuess(InitialGuess):
         if isinstance(noise_magnitude, (int, float)):
             noise_magnitude = (noise_magnitude,)
 
-        noise_magnitude = np.array(noise_magnitude)
-        noise_magnitude = noise_magnitude[:, np.newaxis] if noise_magnitude.shape.__len__() == 1 else noise_magnitude
-        noise_magnitude = np.repeat(noise_magnitude, self.n_shooting, axis=1)
+        if isinstance(noise_magnitude, (list, tuple)):
+            noise_magnitude = np.array(noise_magnitude)
+
+        if noise_magnitude.shape.__len__() == 1:
+            noise_magnitude = noise_magnitude[:, np.newaxis]
+
+        if noise_magnitude.shape[0] == 1:
+            noise_magnitude = np.repeat(noise_magnitude, self.n_elements, axis=0)
 
         if noise_magnitude.shape[0] != 1 and noise_magnitude.shape[0] != self.n_elements:
             raise ValueError("noise_magnitude must be a float or list of float of the size of states or controls")
