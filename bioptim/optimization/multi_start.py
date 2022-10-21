@@ -19,7 +19,7 @@ class MultiStart:
         self,
         solve_ocp,
         n_pools: int = 1,
-        args_dict: dict = None,
+        **kwargs,
     ):
         """
         Parameters
@@ -36,7 +36,7 @@ class MultiStart:
 
         self.solve_ocp = solve_ocp
         self.n_pools = n_pools
-        self.args_dict = args_dict
+        self.args_dict = kwargs
         self.combined_args_to_list = self.combine_args_to_list()
 
     def combine_args_to_list(self):
