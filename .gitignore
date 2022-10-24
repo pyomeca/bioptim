@@ -110,3 +110,5 @@ c_generated_code
 # Remove graphviz files
 *.gv
 *.gv.pdf
+
+bioptim/sandbox/
