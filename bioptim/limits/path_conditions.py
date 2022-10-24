@@ -1043,62 +1043,85 @@ class InitialGuessList(UniquePerPhaseOptionList):
 
     def to_noised_initial_guess(
             self,
+            # todo: re-order type of hints
             bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
             noise_magnitude: Union[List[int], List[float], int, float, ndarray] = 1,
-            n_shooting: Union[List[int], int, Tuple[int]] = None,
-            bound_push: Union[List[int], List[float], int, float, ndarray] = 0.1,
-            seed: Union[List[int], int] = 1,
+            n_shooting: Union[int, List[int], Tuple[int]] = None,
+            bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
+            seed: Union[int, List[int]] = 1,
     ):
+        """
+        Apply noise to each initial guesses from a multiphase ocp
+
+        Parameters
+        ----------
+        bounds: Union[Bounds, BoundsList, QAndQDotBounds]
+            The bounds of each phase
+        noise_magnitude: Union[List[int], List[float], int, float, ndarray]
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = gaussian noise with a
+            standard deviation of the size of the range defined between the bounds. If only one value is given,
+            applies this value to each initial guess.
+        n_shooting: Union[List[int], int, Tuple[int]]
+            Number of nodes (second dim) per initial guess
+        bound_push: Union[int, float, List[int], List[float], ndarray]
+            The absolute minimal distance between the bound and the noised initial guess (if the originally generated
+            initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push).
+            if one value is given, applies this value to each initial guess
+        seed: Union[int, List[int]] = 1
+            If one value is given, applies this value to each initial guess
+        """
 
         nb_phases = self.__len__()  # number of init guesses, i.e. number of phases
 
         if bounds is None:
-            raise RuntimeError("bounds must be specified to generate noised initial guess")
+            raise ValueError("bounds must be specified to generate noised initial guess")
         if len(bounds) != nb_phases:
-            raise RuntimeError("bounds must be the same length as the number of phases")
+            raise ValueError(f"bounds must be the same length as the number of phases: {nb_phases}")
 
         if n_shooting is None:
-            raise RuntimeError("n_shooting must be specified to generate noised initial guess")
+            raise ValueError("n_shooting must be specified to generate noised initial guess")
 
         if isinstance(noise_magnitude, (int, float)):
             noise_magnitude = [noise_magnitude for j in range(nb_phases)]
-        elif isinstance(noise_magnitude, list):
+
+        if isinstance(noise_magnitude, list):
             if len(noise_magnitude) == 1:
-                noise_magnitude = [noise_magnitude for j in range(nb_phases)]
+                noise_magnitude = [noise_magnitude[0] for j in range(nb_phases)]
             elif len(noise_magnitude) == nb_phases:
                 noise_magnitude = noise_magnitude
             else:
-                raise RuntimeError("'noise_magnitude' as list must be length 1 or same length as the number of phases")
-        elif isinstance(noise_magnitude, ndarray):
-            if noise_magnitude.size == 1:
-                noise_magnitude = [noise_magnitude for j in range(nb_phases)]
-            elif noise_magnitude.size == nb_phases:
-                noise_magnitude = noise_magnitude
-            else:
-                raise RuntimeError("'noise_magnitude as array must be size 1 or same size as the number of phases")
+                raise ValueError(f"'noise_magnitude' as list must be length 1 or {nb_phases}")
+
+        if isinstance(noise_magnitude, ndarray):
+            if noise_magnitude.shape.__len__() > 1:
+                # if todo: prepare the 2dimensional noise magnitude
+                raise ValueError()   # todo
+            if noise_magnitude.shape[0] == 1:
+                noise_magnitude = [noise_magnitude[0] for j in range(nb_phases)]
+            elif noise_magnitude.shape[0] != nb_phases:
+                raise ValueError(f"'noise_magnitude as array must be size 1 or {nb_phases}")
         else:
-            raise RuntimeError("'noise_magnitude' must be instance of list, integer, float or ndarray")
+            raise ValueError("'noise_magnitude' must be instance of float, list, or ndarray")
 
         if bound_push is None:
-            raise RuntimeError("bound_push must be specified to generate noised initial guess")
+            raise ValueError("'bound_push' must be specified to generate noised initial guess")
+
         if isinstance(bound_push, list):
             if len(bound_push) == 1:
-                bound_push = [bound_push for j in range(nb_phases)]
-            elif len(bound_push) == nb_phases:
-                bound_push = bound_push
-            else:
-                raise RuntimeError("'bound_push' as list must be length 1 or same length as the number of phases")
-        elif isinstance(bound_push, (float, int)):
+                bound_push = [bound_push[0] for j in range(nb_phases)]
+            elif len(bound_push) != nb_phases:
+                raise ValueError(f"'bound_push' as list must be length 1 or {nb_phases}")
+
+        if isinstance(bound_push, (float, int)):
             bound_push = [bound_push for j in range(nb_phases)]
-        elif isinstance(bound_push, ndarray):
-            if bound_push.size == 1:
-                bound_push = [bound_push for j in range(nb_phases)]
-            elif bound_push.size == nb_phases:
-                bound_push = bound_push
-            else:
-                raise RuntimeError("'bound_push as array must be size 1 or same size as the number of phases")
+
+        if isinstance(bound_push, ndarray):
+            if bound_push.shape[0] == 1:
+                bound_push = [bound_push[0] for j in range(nb_phases)]
+            elif bound_push.shape[0] != nb_phases:
+                raise ValueError(f"'bound_push as array must be size 1 or {nb_phases}")
         else:
-            raise RuntimeError("'bound_push' must be an instance of list, integer, float or ndarray")
+            raise ValueError("'bound_push' must be an instance of list, integer, float or ndarray")
 
         if seed is None:
             seed = [None for j in range(nb_phases)]
@@ -1106,25 +1129,19 @@ class InitialGuessList(UniquePerPhaseOptionList):
             seed = [seed for j in range(nb_phases)]
         elif isinstance(seed, list):
             if len(seed) == 1:
-                seed = [seed for j in range(nb_phases)]
-            elif len(seed) == nb_phases:
-                seed = seed
-            else:
-                raise RuntimeError("Seed as list must have length = 1 or same length as the number of phases")
+                seed = [seed[0] for j in range(nb_phases)]
+            elif len(seed) != nb_phases: # todo : remove
+                raise ValueError(f"Seed as list must have length = 1 or {nb_phases}") # todo
         else:
-            raise RuntimeError("Seed must be an integer or a list of integer")
+            raise ValueError("Seed must be an integer or a list of integer")
 
-        noised_init = InitialGuessList()
         for i in range(nb_phases):
-            noised_init.add(
-                NoisedInitialGuess(
-                    self[i],
-                    bounds=bounds[i],
-                    noise_magnitude=noise_magnitude[i],
-                    n_shooting=n_shooting[i],
-                    bound_push=bound_push[i],
-                    seed=seed[i]
-                )
+            self.options[i][0] = NoisedInitialGuess(
+                self[i],
+                bounds=bounds[i],
+                noise_magnitude=noise_magnitude[i],
+                n_shooting=n_shooting[i],
+                bound_push=bound_push[i],
+                seed=seed[i]
             )
 
-        return noised_init
