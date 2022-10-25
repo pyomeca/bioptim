@@ -883,8 +883,8 @@ class NoisedInitialGuess(InitialGuess):
         bounds: Union[Bounds, BoundsList, QAndQDotBounds]
             The bounds
         noise_magnitude: Union[list, int, float]
-            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = gaussian noise with a
-            standard deviation of the size of the range defined between the bounds
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
+            range defined between the bounds
         n_elements: int
             Number of elements (first dim)
         n_shooting: int
@@ -1042,13 +1042,12 @@ class InitialGuessList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of InitialGuessList is not ready yet")
 
     def to_noised_initial_guess(
-            self,
-            # todo: re-order type of hints
-            bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
-            noise_magnitude: Union[int, float, List[int], List[float], ndarray] = 1,
-            n_shooting: Union[int, List[int], Tuple[int]] = None,
-            bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
-            seed: Union[int, List[int]] = 1,
+        self,
+        bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
+        noise_magnitude: Union[int, float, List[int], List[float], ndarray] = 1,
+        n_shooting: Union[int, List[int], Tuple[int]] = None,
+        bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
+        seed: Union[int, List[int]] = 1,
     ):
         """
         Apply noise to each initial guesses from a multiphase ocp
@@ -1058,8 +1057,8 @@ class InitialGuessList(UniquePerPhaseOptionList):
         bounds: Union[Bounds, BoundsList, QAndQDotBounds]
             The bounds of each phase
         noise_magnitude: Union[int, float, List[int], List[float], ndarray]
-            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = gaussian noise with a
-            standard deviation of the size of the range defined between the bounds. If only one value is given,
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
+            range defined between the bounds. If only one value is given,
             applies this value to each initial guess.
         n_shooting: Union[List[int], int, Tuple[int]]
             Number of nodes (second dim) per initial guess
@@ -1099,7 +1098,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
         if isinstance(noise_magnitude, ndarray):
             if noise_magnitude.shape.__len__() > 1:
                 # if todo: prepare the 2dimensional noise magnitude
-                raise ValueError()   # todo
+                raise ValueError("'noise_magnitude must be a 1 dimension array'")
             if noise_magnitude.shape[0] == 1:
                 noise_magnitude = [noise_magnitude[0] for j in range(nb_phases)]
             elif noise_magnitude.shape[0] != nb_phases:
@@ -1109,7 +1108,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
             raise ValueError("'bound_push' must be specified to generate noised initial guess")
 
         if not isinstance(bound_push, (int, float, list, ndarray)):
-            raise ValueError("'bound_push' must be an instance of list, integer, float or ndarray")
+            raise ValueError("'bound_push' must be an instance of integer, float, list or ndarray")
 
         if isinstance(bound_push, (float, int)):
             bound_push = [bound_push for j in range(nb_phases)]
@@ -1133,8 +1132,8 @@ class InitialGuessList(UniquePerPhaseOptionList):
         elif isinstance(seed, list):
             if len(seed) == 1:
                 seed = [seed[0] for j in range(nb_phases)]
-            elif len(seed) != nb_phases: # todo : remove
-                raise ValueError(f"Seed as list must have length = 1 or {nb_phases}") # todo
+            elif len(seed) != nb_phases:
+                raise ValueError(f"Seed as list must have length = 1 or {nb_phases}")
         else:
             raise ValueError("Seed must be an integer or a list of integer")
 
@@ -1145,5 +1144,5 @@ class InitialGuessList(UniquePerPhaseOptionList):
                 noise_magnitude=noise_magnitude[i],
                 n_shooting=n_shooting[i],
                 bound_push=bound_push[i],
-                seed=seed[i]
+                seed=seed[i],
             )
