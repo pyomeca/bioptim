@@ -919,22 +919,7 @@ class NoisedInitialGuess(InitialGuess):
 
         self.seed = seed
 
-        if isinstance(noise_magnitude, (int, float)):
-            noise_magnitude = (noise_magnitude,)
-
-        if isinstance(noise_magnitude, (list, tuple)):
-            noise_magnitude = np.array(noise_magnitude)
-
-        if noise_magnitude.shape.__len__() == 1:
-            noise_magnitude = noise_magnitude[:, np.newaxis]
-
-        if noise_magnitude.shape[0] == 1:
-            noise_magnitude = np.repeat(noise_magnitude, self.n_elements, axis=0)
-
-        if noise_magnitude.shape[0] != 1 and noise_magnitude.shape[0] != self.n_elements:
-            raise ValueError("noise_magnitude must be a float or list of float of the size of states or controls")
-
-        self.noise_magnitude = noise_magnitude
+        self._check_noise_magnitude(noise_magnitude)
         self.noise = None
 
         self._create_noise_matrix(initial_guess=initial_guess, interpolation=interpolation, **parameters)
@@ -946,6 +931,34 @@ class NoisedInitialGuess(InitialGuess):
             else InterpolationType.EACH_FRAME,
             **parameters,
         )
+
+    def _check_noise_magnitude(self, noise_magnitude: Union[list, int, float, np.ndarray]):
+        """
+        Check noise magnitude type and shape
+
+        Parameters
+        ----------
+        noise_magnitude: Union[list, int, float, np.ndarray]
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = gaussian noise with a
+            standard deviation of the size of the range defined between the bounds
+        """
+
+        if isinstance(noise_magnitude, (int, float)):
+            noise_magnitude = (noise_magnitude,)
+
+        if isinstance(noise_magnitude, (list, tuple)):
+            noise_magnitude = np.array(noise_magnitude)
+
+        if len(noise_magnitude.shape) == 1:
+            noise_magnitude = noise_magnitude[:, np.newaxis]
+
+        if noise_magnitude.shape[0] == 1:
+            noise_magnitude = np.repeat(noise_magnitude, self.n_elements, axis=0)
+
+        if noise_magnitude.shape[0] != 1 and noise_magnitude.shape[0] != self.n_elements:
+            raise ValueError("noise_magnitude must be a float or list of float of the size of states or controls")
+
+        self.noise_magnitude = noise_magnitude
 
     def _create_noise_matrix(
         self,
