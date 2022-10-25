@@ -1041,7 +1041,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of InitialGuessList is not ready yet")
 
-    def to_noised_initial_guess(
+    def add_noise(
         self,
         bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
         noise_magnitude: Union[int, float, List[int], List[float], ndarray] = 1,
