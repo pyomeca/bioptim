@@ -863,15 +863,17 @@ class NoisedInitialGuess(InitialGuess):
     """
 
     def __init__(
-        self,
-        initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
-        interpolation: InterpolationType = InterpolationType.CONSTANT,
-        bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
-        noise_magnitude: Union[list, int, float, np.ndarray] = 1,
-        n_shooting: int = None,
-        bound_push: Union[list, int, float] = 0.1,
-        seed: int = None,
-        **parameters: Any,
+            self,
+            initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
+            interpolation: InterpolationType = InterpolationType.CONSTANT,
+            bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
+            noise_magnitude: Union[list, int, float, np.ndarray] = 1,
+            n_shooting: int = None,
+            bound_push: Union[list, int, float] = 0.1,
+            seed: int = None,
+            absolute_noise: bool = False,
+            gaussian_noise: bool = False,
+            **parameters: Any,
     ):
         """
         Parameters
@@ -892,6 +894,10 @@ class NoisedInitialGuess(InitialGuess):
         bound_push: Union[list, int, float]
             The absolute minimal distance between the bound and the noised initial guess (if the originally generated
             initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push)
+        absolute_noise: bool
+            Get if the noise is absolute or relative to the bounds
+        gaussian_noise: bool
+            Get if the noise has a gaussian or equal distribution
         parameters: dict
             Any extra parameters that is associated to the path condition
         """
@@ -921,6 +927,8 @@ class NoisedInitialGuess(InitialGuess):
 
         self._check_noise_magnitude(noise_magnitude)
         self.noise = None
+        self.absolute_noise = absolute_noise
+        self.gaussian_noise = gaussian_noise
 
         self._create_noise_matrix(initial_guess=initial_guess, interpolation=interpolation, **parameters)
 
@@ -997,12 +1005,40 @@ class NoisedInitialGuess(InitialGuess):
         if self.seed:
             np.random.seed(self.seed)
 
-        self.noise = (
-            (np.random.random((self.n_elements, ns)) * 2 - 1)  # random noise
-            * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
-            * (bounds_max_matrix - bounds_min_matrix)  # scale the noise to the range of bounds
-        )
-
+        if self.gaussian_noise:
+            if self.absolute_noise:
+                self.noise = (
+                        (np.random.randn(self.n_elements, ns) * 2 - 1)  # random noise
+                        * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
+                        / 2  # shift the noise to the center of the range of bounds
+                )
+            else:
+                self.noise = (
+                        (np.random.randn(self.n_elements, ns) * 2 - 1)  # random noise
+                        * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
+                        * (bounds_max_matrix - bounds_min_matrix)  # scale the noise to the range of bounds
+                        + bounds_min_matrix
+                        + (1 - self.noise_magnitude)
+                        * (bounds_max_matrix - bounds_min_matrix)
+                        / 2  # shift the noise to the center of the range of bounds
+                )
+        else:
+            if self.absolute_noise:
+                self.noise = (
+                        (np.random.random((self.n_elements, ns)) * 2 - 1)  # random noise
+                        * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
+                        / 2  # shift the noise to the center of the range of bounds
+                )
+            else:
+                self.noise = (
+                        (np.random.random((self.n_elements, ns)) * 2 - 1)  # random noise
+                        * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
+                        * (bounds_max_matrix - bounds_min_matrix)  # scale the noise to the range of bounds
+                        + bounds_min_matrix
+                        + (1 - self.noise_magnitude)
+                        * (bounds_max_matrix - bounds_min_matrix)
+                        / 2  # shift the noise to the center of the range of bounds
+                )
         # building the noised initial guess
         if initial_guess is None:
             initial_guess_matrix = (bounds_min_matrix + bounds_max_matrix) / 2
@@ -1028,10 +1064,10 @@ class NoisedInitialGuess(InitialGuess):
                 self.noised_initial_guess[:, shooting_point] > bounds_max_matrix[:, shooting_point]
             )
             self.noised_initial_guess[too_small_index, shooting_point] = (
-                bounds_min_matrix[too_small_index, shooting_point] + self.bound_push
+                    bounds_min_matrix[too_small_index, shooting_point] + self.bound_push
             )
             self.noised_initial_guess[too_big_index, shooting_point] = (
-                bounds_max_matrix[too_big_index, shooting_point] - self.bound_push
+                    bounds_max_matrix[too_big_index, shooting_point] - self.bound_push
             )
 
 
@@ -1077,6 +1113,8 @@ class InitialGuessList(UniquePerPhaseOptionList):
             n_shooting: Union[int, List[int], Tuple[int]] = None,
             bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
             seed: Union[int, List[int]] = 1,
+            absolute_noise: Union[bool, List[bool]] = False,
+            gaussian_noise: Union[bool, List[bool]] = True,
             **parameters: any
     ):
         """
@@ -1098,6 +1136,10 @@ class InitialGuessList(UniquePerPhaseOptionList):
             If one value is given, applies this value to each initial guess
         seed: Union[int, List[int]]
             If one value is given, applies this value to each initial guess
+        absolute_noise: Union[bool, List[bool]]
+            Get if the noise is absolute or relative to the bounds
+        gaussian_noise: Union[bool, List[bool]]
+            Get if the noise has a gaussian or equal distribution
         parameters: Union[dict, List[dict]]
             Any extra parameters that is associated to the path condition
         """
@@ -1185,11 +1227,35 @@ class InitialGuessList(UniquePerPhaseOptionList):
         if isinstance(parameters, list):
             if isinstance(parameters[0], dict):
                 if len(parameters) == 1:
-                    parameters = [parameters for j in range(nb_phases)]
+                    parameters = [parameters[0] for j in range(nb_phases)]
                 elif len(parameters) != nb_phases:
                     raise ValueError(f"extra parameters as list must have length = 1 or {nb_phases}")
             else:
                 raise ValueError("'parameters' as list must be a dict type list")
+
+        if not isinstance(absolute_noise, (bool, list)):
+            raise ValueError("absolute_noise must be a bool or a list of bool")
+
+        if isinstance(absolute_noise, bool):
+            absolute_noise = [absolute_noise for j in range(nb_phases)]
+
+        if isinstance(absolute_noise, list):
+            if len(absolute_noise) == 1:
+                absolute_noise = [absolute_noise[0] for j in range(nb_phases)]
+            if len(absolute_noise) != nb_phases:
+                raise ValueError(f"absolute_noise as list must have length = 1 or {nb_phases}")
+
+        if not isinstance(gaussian_noise, (bool, list)):
+            raise ValueError("gaussian_noise must be a bool or a list of bool")
+
+        if isinstance(gaussian_noise, bool):
+            gaussian_noise = [gaussian_noise for j in range(nb_phases)]
+
+        if isinstance(gaussian_noise, list):
+            if len(gaussian_noise) == 1:
+                gaussian_noise = [gaussian_noise[0] for j in range(nb_phases)]
+            if len(gaussian_noise) != nb_phases:
+                raise ValueError(f"gaussian_noise as list must have length = 1 or {nb_phases}")
 
         for i in range(nb_phases):
             self.options[i][0] = NoisedInitialGuess(
@@ -1199,5 +1265,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
                 n_shooting=n_shooting[i],
                 bound_push=bound_push[i],
                 seed=seed[i],
+                absolute_noise=absolute_noise[i],
+                gaussian_noise=gaussian_noise[i],
                 **parameters[i]
             )
