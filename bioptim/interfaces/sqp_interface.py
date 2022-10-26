@@ -13,20 +13,20 @@ from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 
 
-class IpoptInterface(SolverInterface):
+class SQPInterface(SolverInterface):
     """
-    The Ipopt solver interface
+    The SQP method solver interface
 
     Attributes
     ----------
     options_common: dict
         Options irrelevant of a specific ocp
-    opts: IPOPT
+    opts: SQP
         Options of the current ocp
-    ipopt_nlp: dict
-        The declaration of the variables Ipopt-friendly
-    ipopt_limits: dict
-        The declaration of the bound Ipopt-friendly
+    sqp_nlp: dict
+        The declaration of the variables SQP-friendly
+    sqp_limits: dict
+        The declaration of the bound SQP-friendly
     lam_g: np.ndarray
         The lagrange multiplier of the constraints to initialize the solver
     lam_x: np.ndarray
@@ -41,9 +41,9 @@ class IpoptInterface(SolverInterface):
     set_lagrange_multiplier(self, sol: dict)
         Set the lagrange multiplier from a solution structure
     __dispatch_bounds(self)
-        Parse the bounds of the full ocp to a Ipopt-friendly one
+        Parse the bounds of the full ocp to a SQP-friendly one
     __dispatch_obj_func(self)
-        Parse the objective functions of the full ocp to a Ipopt-friendly one
+        Parse the objective functions of the full ocp to a SQP-friendly one
     """
 
     def __init__(self, ocp):
@@ -57,11 +57,11 @@ class IpoptInterface(SolverInterface):
         super().__init__(ocp)
 
         self.options_common = {}
-        self.opts = Solver.IPOPT()
-        self.solver_name = "ipopt"
+        self.opts = Solver.SQP_METHOD()
+        self.solver_name = "sqpmethod"
 
-        self.ipopt_nlp = {}
-        self.ipopt_limits = {}
+        self.sqp_nlp = {}
+        self.sqp_limits = {}
         self.ocp_solver = None
         self.c_compile = False
 
@@ -79,7 +79,6 @@ class IpoptInterface(SolverInterface):
         show_options: dict
             The options to pass to PlotOcp
         """
-
         generic_online_optim(self, ocp, show_options)
 
     def solve(self) -> dict:
@@ -101,17 +100,17 @@ class IpoptInterface(SolverInterface):
         sol: dict
             A solution structure where the lagrange multipliers are set
         """
-        sol = generic_set_lagrange_multiplier(self, sol)
+        generic_set_lagrange_multiplier(self, sol)
 
     def dispatch_bounds(self):
         """
-        Parse the bounds of the full ocp to a Ipopt-friendly one
+        Parse the bounds of the full ocp to a SQP-friendly one
         """
         return generic_dispatch_bounds(self)
 
     def dispatch_obj_func(self):
         """
-        Parse the objective functions of the full ocp to a Ipopt-friendly one
+        Parse the objective functions of the full ocp to a SQP-friendly one
 
         Returns
         -------
@@ -122,7 +121,7 @@ class IpoptInterface(SolverInterface):
 
     def get_all_penalties(self, nlp: NonLinearProgram, penalties):
         """
-        Parse the penalties of the full ocp to a Ipopt-friendly one
+        Parse the penalties of the full ocp to a SQP-friendly one
 
         Parameters
         ----------
