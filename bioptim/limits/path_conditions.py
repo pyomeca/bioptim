@@ -1071,12 +1071,13 @@ class InitialGuessList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of InitialGuessList is not ready yet")
 
     def add_noise(
-        self,
-        bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
-        noise_magnitude: Union[int, float, List[int], List[float], ndarray] = 1,
-        n_shooting: Union[int, List[int], Tuple[int]] = None,
-        bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
-        seed: Union[int, List[int]] = 1,
+            self,
+            bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
+            noise_magnitude: Union[int, float, List[int], List[float], ndarray] = 1,
+            n_shooting: Union[int, List[int], Tuple[int]] = None,
+            bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
+            seed: Union[int, List[int]] = 1,
+            **parameters: any
     ):
         """
         Apply noise to each initial guesses from a multiphase ocp
@@ -1087,16 +1088,18 @@ class InitialGuessList(UniquePerPhaseOptionList):
             The bounds of each phase
         noise_magnitude: Union[int, float, List[int], List[float], ndarray]
             The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
-            range defined between the bounds. If only one value is given,
-            applies this value to each initial guess.
+            range defined between the bounds.
+            If only one value is given, applies this value to each initial guess.
         n_shooting: Union[List[int], int, Tuple[int]]
             Number of nodes (second dim) per initial guess
         bound_push: Union[int, float, List[int], List[float], ndarray]
             The absolute minimal distance between the bound and the noised initial guess (if the originally generated
             initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push).
-            if one value is given, applies this value to each initial guess
-        seed: Union[int, List[int]] = 1
             If one value is given, applies this value to each initial guess
+        seed: Union[int, List[int]]
+            If one value is given, applies this value to each initial guess
+        parameters: Union[dict, List[dict]]
+            Any extra parameters that is associated to the path condition
         """
 
         nb_phases = self.__len__()  # number of init guesses, i.e. number of phases
@@ -1156,15 +1159,37 @@ class InitialGuessList(UniquePerPhaseOptionList):
 
         if seed is None:
             seed = [None for j in range(nb_phases)]
-        elif isinstance(seed, int):
+
+        if not isinstance(seed, (int, list)):
+            raise ValueError("Seed must be an integer or a list of integer")
+
+        if isinstance(seed, int):
             seed = [seed for j in range(nb_phases)]
-        elif isinstance(seed, list):
+
+        if isinstance(seed, list):
             if len(seed) == 1:
                 seed = [seed[0] for j in range(nb_phases)]
             elif len(seed) != nb_phases:
                 raise ValueError(f"Seed as list must have length = 1 or {nb_phases}")
-        else:
-            raise ValueError("Seed must be an integer or a list of integer")
+
+        #  todo: extra parameters configuration
+        if parameters is None:
+            parameters = [None for j in range(nb_phases)]
+
+        if not isinstance(parameters, (dict, list)):
+            raise ValueError("extra parameters must be a dictionary or a list of dictionaries")
+
+        if isinstance(parameters, dict):
+            parameters = [parameters for j in range(nb_phases)]
+
+        if isinstance(parameters, list):
+            if isinstance(parameters[0], dict):
+                if len(parameters) == 1:
+                    parameters = [parameters for j in range(nb_phases)]
+                elif len(parameters) != nb_phases:
+                    raise ValueError(f"extra parameters as list must have length = 1 or {nb_phases}")
+            else:
+                raise ValueError("'parameters' as list must be a dict type list")
 
         for i in range(nb_phases):
             self.options[i][0] = NoisedInitialGuess(
@@ -1174,4 +1199,5 @@ class InitialGuessList(UniquePerPhaseOptionList):
                 n_shooting=n_shooting[i],
                 bound_push=bound_push[i],
                 seed=seed[i],
+                **parameters[i]
             )
