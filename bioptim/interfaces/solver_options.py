@@ -558,7 +558,7 @@ class Solver:
             """
             self._print_time = print_time
 
-        def set_qpsol(self, qpsol: str):
+        def set_qp_solver(self, qpsol: str):
             """
             The QP solver to be used by the SQP method
             """
@@ -670,7 +670,7 @@ class Solver:
         """
 
         type: SolverType = SolverType.ACADOS
-        _qpsol: str = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
+        _qp_solver: str = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
         _hessian_approx: str = "GAUSS_NEWTON"
         _integrator_type: str = "IRK"
         _nlp_solver_type: str = "SQP"
