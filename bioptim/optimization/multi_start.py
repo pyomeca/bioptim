@@ -24,7 +24,7 @@ class MultiStart:
         self,
         prepare_ocp: OptimalControlProgram,
         solver: Solver,
-        callback_function: Callable = None,
+        post_optimization_callback: Callable = None,
         n_pools: int = 1,
         **kwargs,
     ):
@@ -43,7 +43,7 @@ class MultiStart:
 
         self.prepare_ocp = prepare_ocp
         self.solver = solver
-        self.callback_function = callback_function
+        self.post_optimization_callback = post_optimization_callback
         self.n_pools = n_pools
         self.args_dict = kwargs
         self.combined_args_to_list = self.combine_args_to_list()
@@ -61,7 +61,7 @@ class MultiStart:
 
     def solve_ocp_func(self, args):
         sol = self.prepare_ocp(*args).solve(self.solver)
-        self.callback_function(sol, *args)
+        self.post_optimization_callback(sol, *args)
         return
 
     def solve(self):

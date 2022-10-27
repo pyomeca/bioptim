@@ -140,7 +140,7 @@ def prepare_multi_start(biorbd_model_path: list, final_time: list, n_shooting: l
     return MultiStart(
         prepare_ocp,
         solver=Solver.IPOPT(show_online_optim=False),  # You cannot use show_online_optim with multi-start
-        callback_function=save_results,
+        post_optimization_callback=save_results,
         n_pools=4,
         biorbd_model_path=biorbd_model_path,
         final_time=final_time,
