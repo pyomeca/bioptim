@@ -165,3 +165,8 @@ class DefectType(Enum):
     EXPLICIT = "explicit"
     IMPLICIT = "implicit"
     NOT_APPLICABLE = "not_applicable"
+
+
+class MagnitudeType(Enum):
+    RELATIVE = 0
+    ABSOLUTE = 1
