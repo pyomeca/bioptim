@@ -135,8 +135,6 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     TestUtils.simulate(sol, decimal_value=5)
 
 
-
-
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_activations_tracker
@@ -239,7 +237,6 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
-
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
