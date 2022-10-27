@@ -442,7 +442,7 @@ class Solver:
 
         """
 
-        type: SolverType = SolverType.SQP_METHOD
+        type: SolverType = SolverType.SQP
         show_online_optim: bool = False
         show_options: dict = None
         c_compile = False

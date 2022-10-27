@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType, Node, SolverType, IntegralApproximation
+from ..misc.enums import InterpolationType, ControlType, Node, IntegralApproximation
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 
@@ -50,11 +50,11 @@ def generic_solve(interface) -> dict:
 
     if interface.c_compile:
         if not interface.ocp_solver or interface.ocp.program_changed:
-            nlpsol("nlpsol", interface.solver_name, interface.sqp_nlp, options).generate_dependencies("nlp.c")
+            nlpsol("nlpsol", interface.solver_name.lower(), interface.sqp_nlp, options).generate_dependencies("nlp.c")
             interface.ocp_solver = nlpsol("nlpsol", interface.solver_name, Importer("nlp.c", "shell"), options)
             interface.ocp.program_changed = False
     else:
-        interface.ocp_solver = nlpsol("solver", interface.solver_name, interface.sqp_nlp, options)
+        interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
 
     v_bounds = interface.ocp.v.bounds
     v_init = interface.ocp.v.init

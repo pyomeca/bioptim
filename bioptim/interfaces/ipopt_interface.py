@@ -11,6 +11,9 @@ from .solver_interface import SolverInterface
 from ..interfaces.solver_options import Solver
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
+from ..misc.enums import (
+    SolverType,
+)
 
 
 class IpoptInterface(SolverInterface):
@@ -58,7 +61,7 @@ class IpoptInterface(SolverInterface):
 
         self.options_common = {}
         self.opts = Solver.IPOPT()
-        self.solver_name = "ipopt"
+        self.solver_name = SolverType.IPOPT.value
 
         self.ipopt_nlp = {}
         self.ipopt_limits = {}
