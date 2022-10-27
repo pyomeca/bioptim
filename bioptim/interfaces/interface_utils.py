@@ -142,7 +142,7 @@ def generic_dispatch_bounds(interface):
                 all_g_bounds.concatenate(g.bounds)
 
     if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
-        raise RuntimeError("SQP method doesn't support SX/MX types in constraints bounds")
+        raise RuntimeError(f"{interface.solver_name} doesn't support SX/MX types in constraints bounds")
     return all_g, all_g_bounds
 
 
