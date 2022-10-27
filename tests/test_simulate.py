@@ -303,7 +303,7 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("keep_intermediate_points", [False, True])
 def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
-    if ode_solver == OdeSolver.COLLOCATION and platform != 'linux-64':
+    if ode_solver == OdeSolver.COLLOCATION and platform != "linux-64":
         # For some reason, the test fails on Mac
         warnings.warn("Test test_integrate_single_shoot_use_scipy skiped on Mac")
         return
