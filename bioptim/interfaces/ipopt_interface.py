@@ -6,7 +6,7 @@ from .interface_utils import (
     generic_dispatch_bounds,
     generic_dispatch_obj_func,
     generic_get_all_penalties,
-    generic_set_lagrange_multiplier
+    generic_set_lagrange_multiplier,
 )
 from .solver_interface import SolverInterface
 from ..interfaces.solver_options import Solver
