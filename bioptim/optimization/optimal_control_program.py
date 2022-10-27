@@ -927,6 +927,11 @@ class OptimalControlProgram:
 
                 self.ocp_solver = IpoptInterface(self)
 
+            elif solver.type == SolverType.SQP_METHOD:
+                from ..interfaces.sqp_interface import SQPInterface
+
+                self.ocp_solver = SQPInterface(self)
+
             elif solver.type == SolverType.ACADOS:
                 from ..interfaces.acados_interface import AcadosInterface
 

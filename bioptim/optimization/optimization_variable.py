@@ -231,7 +231,7 @@ class OptimizationVariableList:
     @property
     def cx_intermediates_list(self):
         """
-        The the cx of all elements together (starting point)
+        The cx of all elements together (starting point)
         """
 
         return self._cx_intermediates

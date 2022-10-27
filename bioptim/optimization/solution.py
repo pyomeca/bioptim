@@ -1299,7 +1299,8 @@ class Solution:
                         or penalty.explicit_derivative
                         or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                     ):
-                        col_x_idx.append((idx + 1) * steps)
+                        col_x_idx.append((idx + 1) * (steps if nlp.ode_solver.is_direct_shooting else 1))
+
                         if (
                             penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
                         ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -1307,8 +1308,17 @@ class Solution:
                     elif penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
                         if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                             col_u_idx.append((idx + 1))
+                    if nlp.ode_solver.is_direct_collocation and (
+                        "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
+                    ):
+                        x = (
+                            self.states_no_intermediate["all"][:, col_x_idx]
+                            if len(self.phase_time) - 1 == 1
+                            else self.states_no_intermediate[phase_idx]["all"][:, col_x_idx]
+                        )
+                    else:
+                        x = self._states[phase_idx]["all"][:, col_x_idx]
 
-                    x = self._states[phase_idx]["all"][:, col_x_idx]
                     u = self._controls[phase_idx]["all"][:, col_u_idx]
                     if penalty.target is None:
                         target = []
@@ -1348,7 +1358,9 @@ class Solution:
                 if not penalty:
                     continue
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
-                self.detailed_cost += [{"name": penalty.name, "cost_value_weighted": val_weighted, "cost_value": val}]
+                self.detailed_cost += [
+                    {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
+                ]
         return
 
     def print_cost(self, cost_type: CostType = CostType.ALL):
@@ -1370,18 +1382,27 @@ class Solution:
 
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
+
                 self.detailed_cost += [
                     {
-                        "name": penalty.name,
+                        "name": penalty.type.__str__(),
+                        "penalty": penalty.type.__str__().split(".")[0],
+                        "function": penalty.name,
                         "cost_value_weighted": val_weighted,
                         "cost_value": val,
                         "params": penalty.params,
+                        "derivative": penalty.derivative,
+                        "explicit_derivative": penalty.explicit_derivative,
+                        "integration_rule": penalty.integration_rule.name,
+                        "weight": penalty.weight,
+                        "expand": penalty.expand,
+                        "node": penalty.node[0].name if penalty.node != Node.TRANSITION else penalty.node.name,
                     }
                 ]
                 if print_only_weighted:
-                    print(f"{penalty.name}: {val_weighted}")
+                    print(f"{penalty.type}: {val_weighted}")
                 else:
-                    print(f"{penalty.name}: {val: .2f} (weighted {val_weighted})")
+                    print(f"{penalty.type}: {val_weighted} (non weighted {val: .2f})")
 
             return running_total
 
@@ -1406,7 +1427,7 @@ class Solution:
 
         def print_constraints(ocp, sol):
             """
-            Print the values of each constraints with its lagrange multiplier to the console
+            Print the values of each constraint with its lagrange multiplier to the console
             """
 
             if sol.constraints is None:
