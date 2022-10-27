@@ -61,7 +61,9 @@ def test_plot_merged_graphs():
         use_residual_torque=True,
         kin_data_to_track="markers",
     )
-    sol = ocp.solve()
+    solver = Solver.IPOPT()
+    solver.set_maximum_iterations(1)
+    sol = ocp.solve(solver)
     sol.graphs(automatically_organize=False)
 
 
