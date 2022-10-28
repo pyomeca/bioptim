@@ -19,6 +19,7 @@ class SolverType(Enum):
 
     IPOPT = "Ipopt"
     ACADOS = "ACADOS"
+    SQP = "SqpMethod"
     NONE = None
 
 

@@ -50,7 +50,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.9.1", "1.10.0")
+check_version(biorbd, "1.9.5", "1.10.0")
 
 
 class OptimalControlProgram:
@@ -926,6 +926,11 @@ class OptimalControlProgram:
                 from ..interfaces.ipopt_interface import IpoptInterface
 
                 self.ocp_solver = IpoptInterface(self)
+
+            elif solver.type == SolverType.SQP:
+                from ..interfaces.sqp_interface import SQPInterface
+
+                self.ocp_solver = SQPInterface(self)
 
             elif solver.type == SolverType.ACADOS:
                 from ..interfaces.acados_interface import AcadosInterface
