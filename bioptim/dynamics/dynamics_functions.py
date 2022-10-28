@@ -712,10 +712,14 @@ class DynamicsFunctions:
         Torques in tau
         """
 
-        tau_var = nlp.states["tau"] if "tau" in nlp.states else nlp.controls["tau"]
-
         if nlp.external_forces:
-            tau = MX(tau_var.mx.shape[0], nlp.ns)
+            if "tau" in nlp.states:
+                tau_shape = nlp.states["tau"].mx.shape[0]
+            elif "tau" in nlp.controls:
+                tau_shape = nlp.controls["tau"].mx.shape[0]
+            else:
+                tau_shape = nlp.model.nbGeneralizedTorque()
+            tau = MX(tau_shape, nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 tau[:, i] = nlp.model.InverseDynamics(q, qdot, qddot, f_ext).to_mx()
         else:
