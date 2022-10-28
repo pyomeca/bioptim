@@ -140,7 +140,7 @@ class DynamicsFunctions:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
-        # todo: contacts and fatigue to be handled with implicit dynamics
+        # TODO: contacts and fatigue to be handled with implicit dynamics
         if not with_contact and fatigue is None:
             qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
             tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
@@ -487,7 +487,7 @@ class DynamicsFunctions:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
-        # todo: contacts and fatigue to be handled with implicit dynamics
+        # TODO: contacts and fatigue to be handled with implicit dynamics
         if not with_contact and fatigue is None:
             qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
             tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
