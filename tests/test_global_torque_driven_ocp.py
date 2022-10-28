@@ -369,6 +369,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type):
     # simulate
     TestUtils.simulate(sol)
 
+
 def test_trampo_quaternions():
     # Load trampo_quaternion
     from bioptim.examples.torque_driven_ocp import trampo_quaternions as ocp_module

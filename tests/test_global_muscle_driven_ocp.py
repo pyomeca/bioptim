@@ -184,8 +184,7 @@ def test_muscle_driven_ocp(ode_solver):
         )
         np.testing.assert_almost_equal(
             mus[:, -2],
-            np.array([5.4664028e-05, 6.5610959e-03, 3.7092411e-03, 4.6592962e-04,
-                  4.8159442e-04, 9.0543847e-03]),
+            np.array([5.4664028e-05, 6.5610959e-03, 3.7092411e-03, 4.6592962e-04, 4.8159442e-04, 9.0543847e-03]),
         )
     else:
         raise ValueError("Test not ready")
