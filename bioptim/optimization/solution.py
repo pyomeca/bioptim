@@ -309,7 +309,7 @@ class Solution:
             """
 
             self.vector = _sol["x"]
-            if _sol["solver"] == SolverType.IPOPT:
+            if _sol["solver"] == SolverType.IPOPT.value:
                 self._cost = _sol["f"]
                 self.constraints = _sol["g"]
 
@@ -430,6 +430,7 @@ class Solution:
                 for J in nlp.J:
                     _, val_weighted = self._get_penalty_cost(nlp, J)
                     self._cost += val_weighted
+            self._cost = DM(self._cost)
         return self._cost
 
     def copy(self, skip_data: bool = False) -> Any:
