@@ -168,5 +168,5 @@ class DefectType(Enum):
 
 
 class MagnitudeType(Enum):
-    RELATIVE = 0
-    ABSOLUTE = 1
+    RELATIVE = "relative"
+    ABSOLUTE = "absolute"
