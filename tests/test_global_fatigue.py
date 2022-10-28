@@ -295,7 +295,6 @@ def test_fatigable_xia_torque_non_split():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-
 def test_fatigable_xia_torque_split():
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
@@ -452,7 +451,6 @@ def test_fatigable_michaud_torque_non_split():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
-
 
 
 def test_fatigable_michaud_torque_split():
