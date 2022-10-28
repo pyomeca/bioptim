@@ -1,9 +1,10 @@
-from typing import Union
+from typing import Union, Any
 
 import numpy as np
 from casadi import MX, SX, vertcat, horzcat
 
 from ..misc.mapping import BiMapping
+from ..misc.options import OptionGeneric, UniquePerPhaseOptionList
 
 
 class OptimizationVariable:
@@ -307,3 +308,120 @@ class OptimizationVariableList:
         if self._iter_idx > len(self):
             raise StopIteration
         return self[self._iter_idx - 1].name
+
+
+class VariableScaling(OptionGeneric):
+    def __init__(
+        self,
+        scaling: Union[np.ndarray, list] = None,
+    ):
+        """
+        Parameters
+        ----------
+        scaling: Union[np.ndarray, list]
+            The scaling of the variables
+        """
+        if isinstance(scaling, list):
+            scaling = np.array(scaling)
+        self.scaling = scaling
+        super(VariableScaling, self).__init__()
+
+    def __bool__(self) -> bool:
+        """
+        Get if the VariableScaling is empty
+
+        Returns
+        -------
+        If the VariableScaling is empty
+        """
+
+        return len(self.scaling) > 0
+
+    @property
+    def shape(self) -> int:
+        """
+        Get the size of the InitialGuess
+
+        Returns
+        -------
+        The size of the InitialGuess
+        """
+
+        return self.scaling.shape
+
+    def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
+        """
+        Allows to set from square brackets
+
+        Parameters
+        ----------
+        _slice: Union[slice, list, tuple]
+            The slice where to put the data
+        value: Union[np.ndarray, float]
+            The value to set
+        """
+
+        self.scaling[_slice] = value
+
+class VariableScalingList(UniquePerPhaseOptionList):
+    """
+    A list of VariableScaling if more than one is required
+
+    Methods
+    -------
+    add(self, scaling: Union[np.ndarray, list] = None)
+        Add a new variable scaling to the list
+    __getitem__(self, item) -> Bounds
+        Get the ith option of the list
+    print(self)
+        Print the VariableScalingList to the console
+    """
+
+    def add(
+        self,
+        scaling: Union[np.ndarray, list, VariableScaling] = None,
+    ):
+        """
+        Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
+
+        Parameters
+        ----------
+        min_bound: Union[PathCondition, np.ndarray, list, tuple]
+            The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
+        max_bound: [PathCondition, np.ndarray, list, tuple]
+            The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
+        bounds: Bounds
+            Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
+        extra_arguments: dict
+            Any parameters to pass to the Bounds
+        """
+
+        if isinstance(scaling, VariableScaling):
+            if scaling.phase == -1:
+                scaling.phase = len(self.options) if self.options[0] else 0
+            self.copy(scaling)
+        else:
+            super(VariableScalingList, self)._add(scaling=scaling, option_type=VariableScaling)
+
+    def __getitem__(self, item) -> VariableScaling:
+        """
+        Get the ith option of the list
+
+        Parameters
+        ----------
+        item: int
+            The index of the option to get
+
+        Returns
+        -------
+        The ith option of the list
+        """
+
+        return super(VariableScalingList, self).__getitem__(item)
+
+    def print(self):
+        """
+        Print the VariableScalingList to the console
+        """
+
+        raise NotImplementedError("Printing of VariableScalingList is not ready yet")

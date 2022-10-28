@@ -9,6 +9,7 @@ from numpy import array, ndarray
 from ..misc.enums import InterpolationType
 from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
+from ..optimization.optimization_variable import VariableScaling
 
 
 class PathCondition(np.ndarray):
@@ -419,7 +420,7 @@ class Bounds(OptionGeneric):
         self.extra_params = self.min.extra_params
         self.n_shooting = self.min.n_shooting
 
-    def scale(self, scaling: Union[float, np.ndarray]):
+    def scale(self, scaling: Union[float, np.ndarray, VariableScaling]):
         """
         Scaling a Bound
 
@@ -429,6 +430,8 @@ class Bounds(OptionGeneric):
             The scaling factor
         """
 
+        if isinstance(scaling, VariableScaling):
+            scaling = scaling.scaling
         self.min /= scaling
         self.max /= scaling
         return
@@ -787,7 +790,7 @@ class InitialGuess(OptionGeneric):
             interpolation=self.init.type,
         )
 
-    def scale(self, scaling: float):
+    def scale(self, scaling: Union[float, np.ndarray, VariableScaling]):
         """
         Scaling an InitialGuess
 
@@ -796,6 +799,8 @@ class InitialGuess(OptionGeneric):
         scaling: float
             The scaling factor
         """
+        if isinstance(scaling, VariableScaling):
+            scaling = scaling.scaling
         self.init /= scaling
         return
 

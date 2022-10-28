@@ -49,6 +49,7 @@ from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
+from ..optimization.optimization_variable import VariableScalingList, VariableScaling
 
 check_version(biorbd, "1.9.1", "1.10.0")
 
@@ -148,6 +149,8 @@ class OptimalControlProgram:
         u_init: Union[InitialGuess, InitialGuessList, NoisedInitialGuess] = None,
         x_bounds: Union[Bounds, BoundsList] = None,
         u_bounds: Union[Bounds, BoundsList] = None,
+        x_scaling: Union[VariableScaling, VariableScalingList] = None,
+        u_scaling: Union[VariableScaling, VariableScalingList] = None,
         objective_functions: Union[Objective, ObjectiveList] = None,
         constraints: Union[Constraint, ConstraintList] = None,
         parameters: Union[Parameter, ParameterList] = None,
@@ -182,6 +185,10 @@ class OptimalControlProgram:
             The bounds for the states
         u_bounds: Union[Bounds, BoundsList]
             The bounds for the controls
+        x_scaling: Union[VariableScaling, VariableScalingList]
+            The scaling for the states
+        u_scaling: Union[VariableScaling, VariableScalingList]
+            The scaling for the controls
         objective_functions: Union[Objective, ObjectiveList]
             All the objective function of the program
         constraints: Union[Constraint, ConstraintList]
@@ -239,6 +246,8 @@ class OptimalControlProgram:
             "u_init": u_init,
             "x_bounds": x_bounds,
             "u_bounds": u_bounds,
+            "x_scaling": x_scaling,
+            "u_scaling": u_scaling,
             "objective_functions": ObjectiveList(),
             "constraints": ConstraintList(),
             "parameters": ParameterList(),
@@ -290,6 +299,24 @@ class OptimalControlProgram:
             u_bounds = u_bounds_tp
         elif not isinstance(u_bounds, BoundsList):
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
+
+        if x_scaling is None:
+            x_scaling = VariableScalingList()
+        elif isinstance(x_scaling, VariableScaling):
+            x_scaling_tp = VariableScalingList()
+            x_scaling_tp.add(scaling=x_scaling)
+            x_scaling = x_scaling_tp
+        elif not isinstance(x_scaling, VariableScalingList):
+            raise RuntimeError("x_bounds should be built from a VariableScaling or a VariableScalingList")
+
+        if u_scaling is None:
+            u_scaling = VariableScalingList()
+        elif isinstance(u_scaling, VariableScaling):
+            u_scaling_tp = VariableScalingList()
+            u_scaling_tp.add(scaling=u_scaling)
+            u_scaling = u_scaling_tp
+        elif not isinstance(u_scaling, VariableScalingList):
+            raise RuntimeError("u_scaling should be built from a VariableScaling or a VariableScalingList")
 
         if x_init is None:
             x_init = InitialGuessList()
@@ -428,6 +455,10 @@ class OptimalControlProgram:
 
         variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
+
+        # Add the scaling of the variables
+        NLP.add(self, "x_scaling", x_scaling, True)
+        NLP.add(self, "u_scaling", u_scaling, True)
 
         # Prepare the dynamics
         for i in range(self.n_phases):
