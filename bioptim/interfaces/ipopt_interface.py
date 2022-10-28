@@ -6,11 +6,15 @@ from .interface_utils import (
     generic_dispatch_bounds,
     generic_dispatch_obj_func,
     generic_get_all_penalties,
+    generic_set_lagrange_multiplier,
 )
 from .solver_interface import SolverInterface
 from ..interfaces.solver_options import Solver
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
+from ..misc.enums import (
+    SolverType,
+)
 
 
 class IpoptInterface(SolverInterface):
@@ -58,7 +62,7 @@ class IpoptInterface(SolverInterface):
 
         self.options_common = {}
         self.opts = Solver.IPOPT()
-        self.solver_name = "ipopt"
+        self.solver_name = SolverType.IPOPT.value
 
         self.ipopt_nlp = {}
         self.ipopt_limits = {}
