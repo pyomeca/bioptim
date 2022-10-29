@@ -51,7 +51,7 @@ from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 from ..optimization.optimization_variable import VariableScalingList, VariableScaling
 
-check_version(biorbd, "1.9.1", "1.10.0")
+check_version(biorbd, "1.9.5", "1.10.0")
 
 
 class OptimalControlProgram:
@@ -958,7 +958,7 @@ class OptimalControlProgram:
 
                 self.ocp_solver = IpoptInterface(self)
 
-            elif solver.type == SolverType.SQP_METHOD:
+            elif solver.type == SolverType.SQP:
                 from ..interfaces.sqp_interface import SQPInterface
 
                 self.ocp_solver = SQPInterface(self)

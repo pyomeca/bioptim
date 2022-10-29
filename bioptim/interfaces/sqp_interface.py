@@ -11,6 +11,9 @@ from .solver_interface import SolverInterface
 from ..interfaces.solver_options import Solver
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
+from ..misc.enums import (
+    SolverType,
+)
 
 
 class SQPInterface(SolverInterface):
@@ -58,7 +61,7 @@ class SQPInterface(SolverInterface):
 
         self.options_common = {}
         self.opts = Solver.SQP_METHOD()
-        self.solver_name = "sqpmethod"
+        self.solver_name = SolverType.SQP.value
 
         self.sqp_nlp = {}
         self.sqp_limits = {}
