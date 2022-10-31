@@ -211,6 +211,7 @@ class ConfigureProblem:
                     )
 
         # Declared rigidbody states and controls
+        ##### key_to_index ??? so that I can get the index of the state in the state vector and have the right index in the scaling ??
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False, True)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)
@@ -545,7 +546,9 @@ class ConfigureProblem:
 
         nlp.parameters = ocp.v.parameters_in_list
 
-        dynamics_eval = dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)
+        states_reduced_scaled = nlp.states.mx_reduced * np.reshape(nlp.x_scaling.scaling, (-1, 1))
+        controls_reduced_scaled = nlp.controls.mx_reduced * np.reshape(nlp.u_scaling.scaling, (-1, 1))
+        dynamics_eval = dyn_func(states_reduced_scaled, controls_reduced_scaled, nlp.parameters.mx, nlp, **extra_params)
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
@@ -865,6 +868,7 @@ class ConfigureProblem:
             cx = define_cx(n_col=n_cx)
 
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
+            ######### scaling ???
             if not skip_plot:
                 nlp.plot[f"{name}_states"] = CustomPlot(
                     lambda t, x, u, p: x[nlp.states[name].index, :],
