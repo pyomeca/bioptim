@@ -17,6 +17,7 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 from typing import Union
 import numpy as np
 import biorbd_casadi as biorbd
+from bioptim.misc.enums import MagnitudeType
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -160,10 +161,10 @@ def prepare_ocp(
             t=t,
             interpolation=initial_guess,
             bounds=x_bounds,
-            noise_magnitude=1,
+            magnitude=1,
+            magnitude_type=MagnitudeType.RELATIVE,
             n_shooting=n_shooting,
             bound_push=0.1,
-            **extra_params_x,
         )
         u_init = NoisedInitialGuess(
             u,
