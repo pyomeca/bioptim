@@ -573,6 +573,39 @@ class PenaltyOption(OptionGeneric):
                 node_idx=self.node_idx,
             )
 
+    def get_x_u_p(self, all_pn: PenaltyNodeList, **params):
+        """
+        Select the states, controls and parameters to be used in the penalty function
+
+        Returns
+        -------
+        The states, controls and parameters
+        """
+        # apply_key_to_controls = True /False ?
+
+        if "key" in params:
+            key = params["key"] + "_scaled"
+        else:
+            key = "all"
+
+        if all_pn.nlp.control_type == ControlType.CONSTANT:
+            u = all_pn.nlp.controls[key].cx
+        elif all_pn.nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            u = horzcat(all_pn.nlp.controls[key].cx, all_pn.nlp.controls[key].cx_end)
+        else:
+            raise NotImplementedError(f"Dynamics with {all_pn.nlp.control_type} is not implemented yet")
+
+        if all_pn.nlp.ode_solver.is_direct_collocation:
+            x = horzcat(*([all_pn.nlp.states[key].cx * all_pn.nlp.x_scaling[key].scaling] + all_pn.nlp.states[key].cx_intermediates_list * all_pn.nlp.x_scaling[key].scaling))
+        else:
+            x = all_pn.nlp.states[key].cx * all_pn.nlp.x_scaling[key].scaling
+
+        x_end = all_pn.nlp.states[key].cx_end * all_pn.nlp.x_scaling[key].scaling
+        u = u * all_pn.nlp.u_scaling[key].scaling
+        p = all_pn.nlp.parameters[key].cx
+
+        return x, x_end, u, p
+
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         """
         Doing some configuration on the penalty and add it to the list of penalty
@@ -663,7 +696,9 @@ class PenaltyOption(OptionGeneric):
                 else all_pn.t
             )
 
-        penalty_function = self.type(self, all_pn, **self.params)
+        x, x_end, u, p = self.select_x_u_p(all_pn, **self.params)
+        penalty_function = self.type(self, all_pn, x, x_end, u, p, **self.params)
+        # penalty_function = self.type(self, all_pn, **self.params)
         self.set_penalty(penalty_function, all_pn)
 
     def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):

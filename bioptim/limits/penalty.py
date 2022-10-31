@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function
+from casadi import horzcat, vertcat, MX, SX, Function
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -89,7 +89,33 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return all_pn.nlp.controls[key].cx
+            return u[key + "_scaled"]
+
+        #
+        # @staticmethod
+        # def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
+        #     """
+        #     Minimize the joint torque part of the control variables.
+        #     By default this function is quadratic, meaning that it minimizes towards the target.
+        #     Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+        #
+        #     Parameters
+        #     ----------
+        #     penalty: PenaltyOption
+        #         The actual penalty to declare
+        #     all_pn: PenaltyNodeList
+        #         The penalty node elements
+        #     key: str
+        #         The name of the controls to minimize
+        #     """
+        #
+        #     penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+        #     if penalty.integration_rule == IntegralApproximation.RECTANGLE:
+        #         # todo: for trapezoidal integration
+        #         penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
+        #     penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+        #
+        #     return all_pn.nlp.controls[key + "_scaled"].cx
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
@@ -655,35 +681,59 @@ class PenaltyFunctionAbstract:
             return marker_objective
 
         @staticmethod
-        def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list]):
+        def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], x: Union[MX, SX], x_end: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
 
             nlp = all_pn.nlp
-            if nlp.control_type == ControlType.CONSTANT:
-                u = nlp.controls.cx
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                u = horzcat(nlp.controls.cx, nlp.controls.cx_end)
-            else:
-                raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
-
             if isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
                 raise RuntimeError("continuity should be called one node at a time")
 
             penalty.expand = all_pn.nlp.dynamics_type.expand
 
-            continuity = nlp.states.cx_end
+            continuity = x_end
             if nlp.ode_solver.is_direct_collocation:
-                cx = horzcat(*([nlp.states.cx] + nlp.states.cx_intermediates_list))
-                continuity -= nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
-                continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
+                # cx = horzcat(*([x] + nlp.states.cx_intermediates_list))
+                continuity -= nlp.dynamics[0](x0=x, p=u, params=p)["xf"]
+                continuity = vertcat(continuity, nlp.dynamics[0](x0=x, p=u, params=p)["defects"])
                 penalty.integrate = True
 
             else:
-                continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+                continuity -= nlp.dynamics[0](x0=x, p=u, params=p)["xf"]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
             return continuity
+
+        # @staticmethod
+        # def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list]):
+        #
+        #     nlp = all_pn.nlp
+        #     if nlp.control_type == ControlType.CONSTANT:
+        #         u = nlp.controls.cx
+        #     elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+        #         u = horzcat(nlp.controls.cx, nlp.controls.cx_end)
+        #     else:
+        #         raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
+        #
+        #     if isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
+        #         raise RuntimeError("continuity should be called one node at a time")
+        #
+        #     penalty.expand = all_pn.nlp.dynamics_type.expand
+        #
+        #     continuity = nlp.states.cx_end
+        #     if nlp.ode_solver.is_direct_collocation:
+        #         cx = horzcat(*([nlp.states.cx] + nlp.states.cx_intermediates_list))
+        #         continuity -= nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
+        #         continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
+        #         penalty.integrate = True
+        #
+        #     else:
+        #         continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+        #
+        #     penalty.explicit_derivative = True
+        #     penalty.multi_thread = True
+        #
+        #     return continuity
 
         @staticmethod
         def custom(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], **parameters: Any):
