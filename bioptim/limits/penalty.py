@@ -63,10 +63,11 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_states")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return all_pn.nlp.states[key].cx
+            return all_pn.nlp.states[key + "_scaled"].cx
+
 
         @staticmethod
-        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
+        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, x: Union[MX, SX], x_end: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX], key: str):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -279,7 +280,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            states = all_pn.nlp.states[key].cx
+            states = all_pn.nlp.states[key + "_scaled"].cx
             return states[first_dof, :] - coef * states[second_dof, :]
 
         @staticmethod
@@ -313,7 +314,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            controls = all_pn.nlp.controls[key].cx
+            controls = all_pn.nlp.controls[key + "_scaled"].cx
             return controls[first_dof, :] - coef * controls[second_dof, :]
 
         @staticmethod
@@ -442,9 +443,9 @@ class PenaltyFunctionAbstract:
                     nlp.dynamics_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)[nlp.states["qdot"].index, :],
                 ).to_mx()
                 var = []
-                var.extend([nlp.states[key] for key in nlp.states])
-                var.extend([nlp.controls[key] for key in nlp.controls])
-                var.extend([nlp.parameters[key] for key in nlp.parameters])
+                var.extend([nlp.states[key + "_scaled"] for key in nlp.states])
+                var.extend([nlp.controls[key + "_scaled"] for key in nlp.controls])
+                var.extend([nlp.parameters[key + "_scaled"] for key in nlp.parameters])
                 return BiorbdInterface.mx_to_cx("com_ddot", com_ddot, *var)
             else:
                 qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
