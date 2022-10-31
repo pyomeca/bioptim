@@ -303,18 +303,18 @@ class OptimizationVector:
                 if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
                     x.append(
                         nlp.cx.sym(
-                            "X_" + str(nlp.phase_idx) + "_" + str(k),
+                            "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
                             nlp.states.shape,
                             nlp.ode_solver.polynomial_degree + 1,
                         )
                     )
                 else:
-                    x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, 1))
+                    x.append(nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, 1))
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
-                    u.append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1))
+                    u.append(nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1))
 
             nlp.X = x
             self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x])
