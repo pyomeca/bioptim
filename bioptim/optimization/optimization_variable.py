@@ -363,6 +363,25 @@ class VariableScaling(OptionGeneric):
 
         self.scaling[_slice] = value
 
+    def to_vector(self, n_elements: int, n_shooting: int):
+        """
+        Sanity check if the dimension of the matrix are sounds when compare to the number
+        of required elements and time. If the function exit, then everything is okay
+
+        """
+
+        if self.scaling.shape[0] != n_elements:
+            raise RuntimeError(
+                f"The number of elements in the scaling ({self.scaling.shape[0]}) is not the same as the number of elements ({n_elements})"
+            )
+
+        scaling_vector = np.zeros((n_elements * n_shooting, 1))
+        for i in range(n_shooting):
+            scaling_vector[i * n_elements : (i + 1) * n_elements] = np.reshape(self.scaling, (n_elements, 1))
+
+        return scaling_vector
+
+
 class VariableScalingList(UniquePerPhaseOptionList):
     """
     A list of VariableScaling if more than one is required
@@ -376,6 +395,32 @@ class VariableScalingList(UniquePerPhaseOptionList):
     print(self)
         Print the VariableScalingList to the console
     """
+
+    def add(
+        self,
+        scaling: Union[np.ndarray, list, VariableScaling] = None,
+    ):
+        """
+        Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
+
+        Parameters
+        ----------
+        min_bound: Union[PathCondition, np.ndarray, list, tuple]
+            The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
+        max_bound: [PathCondition, np.ndarray, list, tuple]
+            The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
+        bounds: Bounds
+            Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
+        extra_arguments: dict
+            Any parameters to pass to the Bounds
+        """
+
+        if isinstance(scaling, VariableScaling):
+            if scaling.phase == -1:
+                scaling.phase = len(self.options) if self.options[0] else 0
+            self.copy(scaling)
+        else:
+            super(VariableScalingList, self)._add(scaling=scaling, option_type=VariableScaling)
 
     def add(
         self,

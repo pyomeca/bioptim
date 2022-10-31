@@ -116,12 +116,13 @@ class OptimizationVector:
         -------
         The vector of all bounds
         """
+        # if ... ns+1 ?
 
         v_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for phase, x_bound in enumerate(self.x_bounds):
-            v_bounds.concatenate(x_bound.scale(self.ocp.nlp[phase].x_scaling))
+            v_bounds.concatenate(x_bound.scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states.shape, self.ocp.nlp[phase].ns+1))
         for phase, u_bound in enumerate(self.u_bounds):
-            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling))
+            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling, self.ocp.nlp[phase].controls.shape, self.ocp.nlp[phase].ns))
         v_bounds.concatenate(self.parameters_in_list.bounds)
         return v_bounds
 
@@ -146,12 +147,13 @@ class OptimizationVector:
             interpolation_type = None if original_x_init is None else original_x_init.type
 
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
-                v_init.concatenate(self._init_linear_interpolation(phase=phase).scale(self.ocp.nlp[phase].x_scaling))
+                ####### attention je crois que ca devrait être 5*(ns+1)
+                v_init.concatenate(self._init_linear_interpolation(phase=phase).scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states.shape, self.ocp.nlp[phase].ns+1))
             else:
-                v_init.concatenate(x_init.scale(self.ocp.nlp[phase].x_scaling))
+                v_init.concatenate(x_init.scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states.shape, self.ocp.nlp[phase].ns+1))
 
         for u_init in self.u_init:
-            v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling))
+            v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling, self.ocp.nlp[phase].controls.shape, self.ocp.nlp[phase].ns))
         v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
 
