@@ -112,25 +112,25 @@ class ConfigureProblem:
                     new_name += [nlp.model.nameDof()[i].to_string()]
                 else:
                     if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
-                        if type == "qdot":
+                        if type == "qdot_scaled":
                             new_name += [
                                 nlp.model.nameDof()[i].to_string()[:-5]
-                                + "omega"
+                                + "omega_scaled"
                                 + nlp.model.nameDof()[i].to_string()[-1]
                             ]
-                        elif type == "qddot":
+                        elif type == "qddot_scaled":
                             new_name += [
                                 nlp.model.nameDof()[i].to_string()[:-5]
-                                + "omegadot"
+                                + "omegadot_scaled"
                                 + nlp.model.nameDof()[i].to_string()[-1]
                             ]
-                        elif type == "qdddot":
+                        elif type == "qdddot_scaled":
                             new_name += [
                                 nlp.model.nameDof()[i].to_string()[:-5]
-                                + "omegaddot"
+                                + "omegaddot_scaled"
                                 + nlp.model.nameDof()[i].to_string()[-1]
                             ]
-                        elif type == "tau" or type == "taudot":
+                        elif type == "tau_scaled" or type == "taudot_scaled":
                             new_name += [nlp.model.nameDof()[i].to_string()]
 
         return new_name
@@ -488,7 +488,7 @@ class ConfigureProblem:
 
         """
 
-        if fatigue is not None and "tau" in fatigue and not with_torque:
+        if fatigue is not None and "tau_scaled" in fatigue and not with_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
@@ -911,8 +911,7 @@ class ConfigureProblem:
         as_states_dot: bool
             If the generalized velocities should be a state_dot
         """
-
-        name = "q"
+        name = "q_scaled"
         name_q = [name.to_string() for name in nlp.model.nameDof()]
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
@@ -936,9 +935,9 @@ class ConfigureProblem:
             If the generalized velocities should be a state_dot
         """
 
-        name = "qdot"
+        name = "qdot_scaled"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "taudot"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["q_scaled", "qdot_scaled", "taudot_scaled"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qdot, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
@@ -961,9 +960,9 @@ class ConfigureProblem:
             If the generalized accelerations should be a state_dot
         """
 
-        name = "qddot"
+        name = "qddot_scaled"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q", "qdot"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["q_scaled", "qdot_scaled"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qddot, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
@@ -984,9 +983,9 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name = "qdddot"
+        name = "qdddot_scaled"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "qddot"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["q_scaled", "qdot_scaled", "qddot_scaled"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qdddot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
@@ -1007,9 +1006,9 @@ class ConfigureProblem:
             If the dynamics with fatigue should be declared
         """
 
-        name = "tau"
+        name = "tau_scaled"
         name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["qdot_scaled", "taudot_scaled"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_tau, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
@@ -1055,9 +1054,9 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name = "taudot"
+        name = "taudot_scaled"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot", "tau"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["qdot_scaled", "tau_scaled"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(name, name_taudot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
@@ -1125,7 +1124,7 @@ class ConfigureProblem:
 
         muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
         ConfigureProblem.configure_new_variable(
-            "muscles",
+            "muscles_scaled",
             muscle_names,
             nlp,
             as_states,
@@ -1152,7 +1151,7 @@ class ConfigureProblem:
         if key_to_adjust not in nlp.variable_mappings:
             for n in reference_keys:
                 if n in nlp.variable_mappings:
-                    if n == "q":
+                    if n == "q_scaled":
                         q_map = list(nlp.variable_mappings[n].to_first.map_idx)
                         target = list(range(nlp.model.nbQ()))
                         if nlp.model.nbQuat() > 0:
