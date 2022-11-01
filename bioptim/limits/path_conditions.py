@@ -881,6 +881,7 @@ class InitialGuess(OptionGeneric):
             **parameters,
         )
 
+
 class NoisedInitialGuess(InitialGuess):
     """
     A placeholder for the noised initial guess

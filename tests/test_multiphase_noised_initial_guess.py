@@ -946,4 +946,3 @@ def test_add_wrong_n_shooting():
             seed=42,
             magnitude_type=MagnitudeType.RELATIVE,
         )
-
