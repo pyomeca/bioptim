@@ -863,16 +863,16 @@ class NoisedInitialGuess(InitialGuess):
     """
 
     def __init__(
-            self,
-            initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
-            interpolation: InterpolationType = InterpolationType.CONSTANT,
-            bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
-            magnitude: Union[list, int, float, np.ndarray] = 1,
-            magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
-            n_shooting: int = None,
-            bound_push: Union[list, int, float] = 0.1,
-            seed: int = None,
-            **parameters: Any,
+        self,
+        initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
+        interpolation: InterpolationType = InterpolationType.CONSTANT,
+        bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
+        magnitude: Union[list, int, float, np.ndarray] = 1,
+        magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
+        n_shooting: int = None,
+        bound_push: Union[list, int, float] = 0.1,
+        seed: int = None,
+        **parameters: Any,
     ):
         """
         Parameters
@@ -926,11 +926,9 @@ class NoisedInitialGuess(InitialGuess):
         self._check_noise_magnitude(magnitude)
         self.noise = None
 
-        self._create_noise_matrix(initial_guess=initial_guess,
-                                  interpolation=interpolation,
-                                  magnitude_type=magnitude_type,
-                                  **parameters
-                                  )
+        self._create_noise_matrix(
+            initial_guess=initial_guess, interpolation=interpolation, magnitude_type=magnitude_type, **parameters
+        )
 
         super(NoisedInitialGuess, self).__init__(
             initial_guess=self.noised_initial_guess,
@@ -1007,10 +1005,8 @@ class NoisedInitialGuess(InitialGuess):
             np.random.seed(self.seed)
 
         self.noise = (
-                (np.random.random((self.n_elements, ns)) * 2 - 1)  # random noise
-                * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
-
-        )
+            np.random.random((self.n_elements, ns)) * 2 - 1  # random noise
+        ) * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
         if magnitude_type == MagnitudeType.RELATIVE:
             self.noise *= (bounds_max_matrix - bounds_min_matrix)
 
@@ -1039,10 +1035,10 @@ class NoisedInitialGuess(InitialGuess):
                 self.noised_initial_guess[:, shooting_point] > bounds_max_matrix[:, shooting_point]
             )
             self.noised_initial_guess[too_small_index, shooting_point] = (
-                    bounds_min_matrix[too_small_index, shooting_point] + self.bound_push
+                bounds_min_matrix[too_small_index, shooting_point] + self.bound_push
             )
             self.noised_initial_guess[too_big_index, shooting_point] = (
-                    bounds_max_matrix[too_big_index, shooting_point] - self.bound_push
+                bounds_max_matrix[too_big_index, shooting_point] - self.bound_push
             )
 
 
@@ -1143,7 +1139,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
             if magnitude.shape == ():
                 magnitude = magnitude[np.newaxis]
                 magnitude = [magnitude[0] for j in range(nb_phases)]
-            elif magnitude.shape[0]== 1:
+            elif magnitude.shape[0] == 1:
                 magnitude = [magnitude[0] for j in range(nb_phases)]
             elif magnitude.shape[0] != nb_phases:
                 raise ValueError(f"Invalid size of 'magnitude', 'magnitude' as array must be size 1 or {nb_phases}")
@@ -1214,47 +1210,15 @@ class InitialGuessList(UniquePerPhaseOptionList):
 
         return seed
 
-    @staticmethod
-    def _check_type_and_format_parameters(parameters, nb_phases):
-        """
-        Check parameters type and format
-
-        Parameters
-        ----------
-        nb_phases
-            The number of phases
-        """
-        if parameters is None:
-            parameters = [None for j in range(nb_phases)]
-
-        if not isinstance(parameters, (dict, list)):
-            raise ValueError("extra parameters must be a dictionary or a list of dictionaries")
-
-        if isinstance(parameters, dict):
-            parameters = [parameters for j in range(nb_phases)]
-
-        if isinstance(parameters, list):
-            if isinstance(parameters[0], dict):
-                if len(parameters) == 1:
-                    parameters = [parameters[0] for j in range(nb_phases)]
-                elif len(parameters) != nb_phases:
-                    raise ValueError(
-                        f"Invalid size of 'parameters', 'parameters' as list must be size 1 or {nb_phases}"
-                    )
-            else:
-                raise ValueError("'parameters' as list must be a dict type list")
-
-        return parameters
-
     def add_noise(
-            self,
-            bounds: BoundsList = None,
-            n_shooting: Union[int, List[int], Tuple[int]] = None,
-            magnitude: Union[list, int, float, np.ndarray] = 1,
-            magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
-            bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
-            seed: Union[int, List[int]] = 1,
-            **parameters: any
+        self,
+        bounds: BoundsList = None,
+        n_shooting: Union[int, List[int], Tuple[int]] = None,
+        magnitude: Union[list, int, float, np.ndarray] = 1,
+        magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
+        bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
+        seed: Union[int, List[int]] = 1,
+        **parameters: any,
     ):
         """
         Add noise to each initial guesses from an InitialGuessList
@@ -1294,7 +1258,6 @@ class InitialGuessList(UniquePerPhaseOptionList):
         bounds = self._check_type_and_format_bounds(bounds, nb_phases)
         magnitude = self._check_type_and_format_magnitude(magnitude, nb_phases)
         bound_push = self._check_type_and_format_bound_push(bound_push, nb_phases)
-        parameters = self._check_type_and_format_parameters(parameters, nb_phases)
         seed = self._check_type_and_format_seed(seed, nb_phases)
 
         for i in range(nb_phases):
@@ -1306,5 +1269,5 @@ class InitialGuessList(UniquePerPhaseOptionList):
                 seed=seed[i],
                 magnitude=magnitude[i],
                 magnitude_type=magnitude_type,
-                **parameters[i]
+                **parameters,
             )
