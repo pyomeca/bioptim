@@ -830,7 +830,7 @@ def test_add_wrong_bound_push(bound_push, raised_str):
     "seed, raised_str",
     [
         (0.1, "Seed must be an integer or a list of integer"),
-        ([0.1, 0.1], f"Seed as list must have length = 1 or 3"),
+        ([0.1, 0.1], f"Invalid size of 'seed', 'seed' as list must be size 1 or 3"),
     ],
 )
 def test_add_wrong_seed(seed, raised_str):
