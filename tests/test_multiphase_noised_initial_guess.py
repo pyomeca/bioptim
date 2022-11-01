@@ -63,7 +63,7 @@ def test_noisy_multiphase():
     x_init.add_noise(
         bounds=x_bounds,
         magnitude=0.1,  # n phase
-        n_shooting=[ns for ns in n_shooting],
+        n_shooting=[ns + 1 for ns in n_shooting],
         bound_push=0.1,
         seed=42,
         magnitude_type=MagnitudeType.RELATIVE,
@@ -72,7 +72,7 @@ def test_noisy_multiphase():
     u_init.add_noise(
         bounds=u_bounds,
         magnitude=0.1,  # n phase
-        n_shooting=[ns - 1 for ns in n_shooting],
+        n_shooting=[ns for ns in n_shooting],
         bound_push=0.1,
         seed=42,
         magnitude_type=MagnitudeType.RELATIVE,
@@ -819,7 +819,7 @@ def test_add_wrong_bound_push(bound_push, raised_str):
         x_init.add_noise(
             bounds=x_bounds,
             magnitude=0.1,  # n phase
-            n_shooting=[ns for ns in n_shooting],
+            n_shooting=[ns + 1 for ns in n_shooting],
             bound_push=bound_push,
             seed=42,
             magnitude_type=MagnitudeType.RELATIVE,
@@ -858,7 +858,7 @@ def test_add_wrong_seed(seed, raised_str):
         x_init.add_noise(
             bounds=x_bounds,
             magnitude=0.1,  # n phase
-            n_shooting=[ns for ns in n_shooting],
+            n_shooting=[ns + 1 for ns in n_shooting],
             bound_push=0.1,
             seed=seed,
             magnitude_type=MagnitudeType.RELATIVE,
@@ -891,7 +891,7 @@ def test_add_wrong_bounds():
         x_init.add_noise(
             bounds=None,
             magnitude=0.1,  # n phase
-            n_shooting=[ns for ns in n_shooting],
+            n_shooting=[ns + 1 for ns in n_shooting],
             bound_push=0.1,
             seed=42,
             magnitude_type=MagnitudeType.RELATIVE,
@@ -900,7 +900,7 @@ def test_add_wrong_bounds():
         x_init.add_noise(
             bounds=x_bounds,
             magnitude=0.1,  # n phase
-            n_shooting=[ns for ns in n_shooting],
+            n_shooting=[ns + 1 for ns in n_shooting],
             bound_push=0.1,
             seed=42,
             magnitude_type=MagnitudeType.RELATIVE,
