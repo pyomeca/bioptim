@@ -1242,7 +1242,7 @@ def test_update_noised_initial_guess_rk4(n_extra):
     state_noise = np.array([0.01] * nq + [0.2] * nqdot + [0.1] * n_extra)
     if n_extra > 0:
         with pytest.raises(
-            ValueError, match="noise_magnitude must be a float or list of float of the size of states or controls"
+            ValueError, match="magnitude must be a float or list of float of the size of states or controls"
         ):
             NoisedInitialGuess(
                 initial_guess=x,
