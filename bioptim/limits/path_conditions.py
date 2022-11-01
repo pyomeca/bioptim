@@ -836,6 +836,50 @@ class InitialGuess(OptionGeneric):
 
         self.init[_slice] = value
 
+    def add_noise(
+        self,
+        bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
+        magnitude: Union[list, int, float, np.ndarray] = 1,
+        magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
+        n_shooting: int = None,
+        bound_push: Union[list, int, float] = 0.1,
+        seed: int = None,
+        **parameters: Any,
+    ):
+        """
+        An interface for NoisedInitialGuess class
+
+        Parameters
+        ----------
+        bounds: Union[Bounds, BoundsList, QAndQDotBounds]
+            The bounds
+        magnitude: Union[list, int, float, np.ndarray]
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
+            range defined between the bounds or between -magnitude and +magnitude for absolute noise
+            If one value is given, applies this value to each initial guess
+        magnitude_type: MagnitudeType
+            The type of magnitude to apply : relative to the bounds or absolute
+        n_shooting: int
+            Number of nodes (second dim)
+        bound_push: Union[list, int, float]
+            The absolute minimal distance between the bound and the noised initial guess (if the originally generated
+            initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push)
+        seed: int
+            The seed of the random generator
+        parameters: dict
+            Any extra parameters that is associated to the path condition
+        """
+
+        return NoisedInitialGuess(
+            initial_guess=self.init,
+            bounds=bounds,
+            n_shooting=n_shooting,
+            bound_push=bound_push,
+            seed=seed,
+            magnitude=magnitude,
+            magnitude_type=magnitude_type,
+            **parameters,
+        )
 
 class NoisedInitialGuess(InitialGuess):
     """
