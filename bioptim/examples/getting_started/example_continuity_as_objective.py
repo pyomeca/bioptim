@@ -98,7 +98,7 @@ def prepare_ocp_first_pass(
     # Initial guess
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
-    x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, magnitude=0.001, n_shooting=n_shooting)
+    x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, magnitude=0.001, n_shooting=n_shooting + 1)
 
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()
@@ -106,7 +106,7 @@ def prepare_ocp_first_pass(
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = NoisedInitialGuess([tau_init] * n_tau, bounds=u_bounds, magnitude=0.01, n_shooting=n_shooting - 1)
+    u_init = NoisedInitialGuess([tau_init] * n_tau, bounds=u_bounds, magnitude=0.01, n_shooting=n_shooting)
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")

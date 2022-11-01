@@ -163,7 +163,7 @@ def prepare_ocp(
             bounds=x_bounds,
             magnitude=1,
             magnitude_type=MagnitudeType.RELATIVE,
-            n_shooting=n_shooting,
+            n_shooting=n_shooting + 1,
             bound_push=0.1,
         )
         u_init = NoisedInitialGuess(
@@ -171,7 +171,7 @@ def prepare_ocp(
             t=t,
             interpolation=initial_guess,
             bounds=u_bounds,
-            n_shooting=n_shooting - 1,
+            n_shooting=n_shooting,
             bound_push=0.1,
             **extra_params_u,
         )

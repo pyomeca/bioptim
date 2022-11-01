@@ -902,7 +902,7 @@ class NoisedInitialGuess(InitialGuess):
 
         if n_shooting is None:
             raise RuntimeError("n_shooting must be specified to generate noised initial guess")
-        self.n_shooting = n_shooting + 1
+        self.n_shooting = n_shooting
 
         if bounds is None:
             raise RuntimeError("'bounds' must be specified to generate noised initial guess")
