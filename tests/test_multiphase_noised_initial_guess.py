@@ -2,26 +2,12 @@ import pytest
 import os
 import numpy as np
 import biorbd_casadi as biorbd
-from casadi import MX
-from bioptim.misc.enums import MagnitudeType
 from bioptim import (
-    OptimalControlProgram,
-    DynamicsFcn,
-    DynamicsList,
-    Bounds,
     BoundsList,
     QAndQDotBounds,
-    ParameterList,
-    InterpolationType,
-    InitialGuess,
     InitialGuessList,
-    NoisedInitialGuess,
-    Objective,
-    ObjectiveFcn,
-    OdeSolver,
+    MagnitudeType,
 )
-
-from .utils import TestUtils
 
 
 def test_noisy_multiphase():

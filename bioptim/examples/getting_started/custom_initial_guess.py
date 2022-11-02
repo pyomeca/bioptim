@@ -17,7 +17,6 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 from typing import Union
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim.misc.enums import MagnitudeType
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -33,6 +32,7 @@ from bioptim import (
     NoisedInitialGuess,
     InterpolationType,
     OdeSolver,
+    MagnitudeType,
 )
 
 

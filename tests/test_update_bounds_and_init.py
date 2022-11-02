@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 import biorbd_casadi as biorbd
 from casadi import MX
-from bioptim.misc.enums import MagnitudeType
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
@@ -16,6 +15,7 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     OdeSolver,
+    MagnitudeType,
 )
 
 from .utils import TestUtils
