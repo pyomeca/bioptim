@@ -72,7 +72,7 @@ def prepare_ocp(
         interpolation=InterpolationType.CONSTANT,
         bounds=x_bounds,
         noise_magnitude=0.1,
-        n_shooting=n_shooting+1,
+        n_shooting=n_shooting + 1,
         seed=seed,
     )
 

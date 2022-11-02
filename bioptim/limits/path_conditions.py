@@ -1053,7 +1053,7 @@ class NoisedInitialGuess(InitialGuess):
             np.random.random((self.n_elements, ns)) * 2 - 1  # random noise
         ) * self.magnitude  # magnitude of the noise within the range defined by the bounds
         if magnitude_type == MagnitudeType.RELATIVE:
-            self.noise *= (bounds_max_matrix - bounds_min_matrix)
+            self.noise *= bounds_max_matrix - bounds_min_matrix
 
         # building the noised initial guess
         if initial_guess is None:
