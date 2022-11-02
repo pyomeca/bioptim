@@ -111,4 +111,6 @@ c_generated_code
 *.gv
 *.gv.pdf
 
+# Bioptim files
 bioptim/sandbox/
+*.pkl
