@@ -8,6 +8,8 @@ It is designed to show how one can define a multiphase optimal control program
 
 import casadi as cas
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.cm as mcm
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -146,32 +148,38 @@ def main():
     ####verif rang jacobienne instant init####
     ##########################################"""
 
-    for phase in range (0,len(ocp.nlp)):
-        jacobienne_cas = cas.MX()
-        liste_contrainte = []
-        for i in range (0,len(ocp.nlp[phase].g)):
-            for axe in range (0, ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx).shape[0]):
 
-                #gerer les parametres
+    #calculate all jacobian constraints and all hessian matrix norms
+    jacobian_list = []
+    jacobian_rank = []
+    tick_labels_list = []
+    hessian_norm_list = []
+    for phase in range (0,len(ocp.nlp)):
+        jacobian_cas = cas.MX()
+        list_constraints = []
+        for i in range (0,len(ocp.nlp[phase].g)):
+            for axis in range (0, ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx).shape[0]):
+
+                #depends if there are parameters
                 if (ocp.nlp[phase].parameters.shape == 0) == True :
-                    liste_contrainte.append(cas.jacobian(
-                        ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx)[axe],
+                    list_constraints.append(cas.jacobian(
+                        ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx)[axis],
                         cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, ocp.nlp[phase].parameters.cx)))
                 else:
-                    liste_contrainte.append(cas.jacobian(
+                    list_constraints.append(cas.jacobian(
                             ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx,
-                            ocp.nlp[phase].parameters.cx)[axe],cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx])))
+                            ocp.nlp[phase].parameters.cx)[axis],cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx])))
 
 
-        jacobienne_cas = cas.vcat(liste_contrainte).T
+        jacobian_cas = cas.vcat(list_constraints).T
 
-        # gerer les parametres
+        #depends if there are parameters
         if (ocp.nlp[phase].parameters.shape == 0) == True:
-            jac_func = cas.Function("jacobienne", [cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, ocp.nlp[phase].parameters.cx)], [jacobienne_cas])
+            jac_func = cas.Function("jacobian", [cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, ocp.nlp[phase].parameters.cx)], [jacobian_cas])
         else:
-            jac_func = cas.Function("jacobienne",[cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx])],[jacobienne_cas])
+            jac_func = cas.Function("jacobian",[cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx])],[jacobian_cas])
 
-        #evaluation jac_func en X_init, U_init, avec param
+        #evaluate jac_func at X_init, U_init, considering the parameters
 
         X_init = np.zeros((len(ocp.nlp[phase].X), ocp.nlp[phase].x_init.shape[0]))
         U_init = np.zeros((len(ocp.nlp[phase].U), ocp.nlp[phase].u_init.shape[0]))
@@ -186,56 +194,55 @@ def main():
         U_init = U_init.reshape((U_init.size, 1))
         Param_init = Param_init.reshape((np.array(ocp.nlp[phase].parameters.initial_guess.init).size, 1))
 
-        jacobienne = np.array(jac_func(np.vstack((X_init, U_init, Param_init))))
+        jacobian_matrix = np.array(jac_func(np.vstack((X_init, U_init, Param_init))))
 
-        # plt.matshow(jacobienne)
-        # plt.show()
+        jacobian_matrix[15][2] = 20 ############################################################################################TEST
 
-        #verification rang de la jacobienne
-        rang = np.linalg.matrix_rank(jacobienne)
+        jacobian_list.append(jacobian_matrix)
 
-        if rang == len(ocp.nlp[phase].g):
-            print('Phase ' + str(phase) + ' : contraintes ok')
-        if rang != len(ocp.nlp[phase].g):
-            print('Phase ' + str(phase) + ' : contraintes mal définies')
+        #verification jacobian rank
+        rank = np.linalg.matrix_rank(jacobian_matrix)
+        jacobian_rank.append(rank)
+        # if rank == len(ocp.nlp[phase].g): ############a corriger
+        #     print('Phase ' + str(phase) + ' : constraints ok')
+        # if rank != len(ocp.nlp[phase].g): ############a corriger
+        #     print('Phase ' + str(phase) + ' : constraints not ok')
 
 
-    ################################################
-    """"#####################################################
-    ####verif contrainte egalité linéaire si norme hessian proche de 0####
-    #########################################################"""
-
-    for phase in range (0,len(ocp.nlp)):
-        liste_hessienne = []
-        liste_norme_hessienne = []
+        """"###############################################################
+        ##verif contrainte egalité linéaire si norme hessian proche de 0##
+        #################################################################"""
+        tick_labels = []
+        list_hessian = []
+        list_norm = []
         for i in range (0,len(ocp.nlp[phase].g)):
-            for axe in range (0, ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx).shape[0]):
+            for axis in range (0, ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx).shape[0]):
 
-                #determiner si c'est une contraintes d'egalité
-                if (ocp.nlp[phase].g[i].bounds.min[axe][0] == ocp.nlp[phase].g[i].bounds.max[axe][0]) == True:
+                #find all equality constraints
+                if (ocp.nlp[phase].g[i].bounds.min[axis][0] == ocp.nlp[phase].g[i].bounds.max[axis][0]) == True:
 
-                    #gerer les parametres
+                    #parameters
                     if (ocp.nlp[phase].parameters.shape == 0) == True :
                         hessienne_cas = cas.hessian(
-                            ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx)[axe],
+                            ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx)[axis],
                             cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, ocp.nlp[phase].parameters.cx))[0]
                     else:
                         hessienne_cas = cas.hessian(
                                 ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx,
-                                ocp.nlp[phase].parameters.cx)[axe], cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx]))[0]
+                                ocp.nlp[phase].parameters.cx)[axis], cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx]))[0]
+                    tick_labels.append(ocp.nlp[phase].g[i].name)
 
-
-                    # gerer les parametres
+                    #parameters
                     if (ocp.nlp[phase].parameters.shape == 0) == True:
-                        hes_func = cas.Function("hessienne", [
+                        hes_func = cas.Function("hessian", [
                             cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, ocp.nlp[phase].parameters.cx)],
                                                 [hessienne_cas])
                     else:
-                        hes_func = cas.Function("hessienne", [
+                        hes_func = cas.Function("hessian", [
                             cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx])],
                                                 [hessienne_cas])
 
-                    # evaluation hes_func en X_init, U_init, avec param
+                    # evaluate hes_func en X_init, U_init, with parameters
 
                     X_init = np.zeros((len(ocp.nlp[phase].X), ocp.nlp[phase].x_init.shape[0]))
                     U_init = np.zeros((len(ocp.nlp[phase].U), ocp.nlp[phase].u_init.shape[0]))
@@ -248,40 +255,108 @@ def main():
 
                     X_init = X_init.reshape((X_init.size, 1))
                     U_init = U_init.reshape((U_init.size, 1))
-                    Param_init = Param_init.reshape(
-                        (np.array(ocp.nlp[phase].parameters.initial_guess.init).size, 1))
+                    Param_init = Param_init.reshape((np.array(ocp.nlp[phase].parameters.initial_guess.init).size, 1))
 
-                    hessienne = np.array(hes_func(np.vstack((X_init, U_init, Param_init))))
+                    hessian = np.array(hes_func(np.vstack((X_init, U_init, Param_init))))
 
                     #on met la hessienne de cote
-                    liste_hessienne.append(hessienne)
+                    list_hessian.append(hessian)
 
                 else:
                     do = 'nothing'
 
-        # calcul norm
-        for nb_hessienne in range(0, len(liste_hessienne)):
-            norm = 0
-            for row in range(liste_hessienne[nb_hessienne].shape[0]):
-                for column in range(liste_hessienne[nb_hessienne].shape[1]):
-                    norm += liste_hessienne[nb_hessienne][row, column] ** 2
+        tick_labels_list.append(tick_labels)
 
-            liste_norme_hessienne.append(norm)
-        #liste_norme_hessienne[3] = 10
-        # array_norm = np.array(liste_norme_hessienne).reshape(len(liste_hessienne), 1)
-        # plt.matshow(array_norm)
-        # plt.show()
+        # calcul norm
+        for nb_hessian in range(0, len(list_hessian)):
+            norm = 0
+            for row in range(list_hessian[nb_hessian].shape[0]):
+                for column in range(list_hessian[nb_hessian].shape[1]):
+                    norm += list_hessian[nb_hessian][row, column] ** 2
+
+            list_norm.append(norm)
+        array_norm = np.array(list_norm).reshape(len(list_hessian), 1)
+
+        array_norm[0][0] = 65 ##################################################################################################TEST
+
+        hessian_norm_list.append(array_norm)
+
+    hessian_norm_list[0][2][0] = 80 #################################################################################################
+    jacobian_list[0][50][3] = 50#####################################################################################################
+    jacobian_list[0][78][2] = 0.2
+
+
+
+    max_norm = []
+    min_norm = []
+    for i in range (0,len(hessian_norm_list)):
+        max_norm.append(np.ndarray.max(hessian_norm_list[i]))
+        min_norm.append(np.ndarray.min(hessian_norm_list[i]))
+    max_jac = []
+    min_jac = []
+    for i in range(0, len(jacobian_list)):
+        max_jac.append(np.ndarray.max(jacobian_list[i]))
+        min_jac.append(np.ndarray.min(jacobian_list[i]))
+
+    min_norm = min(min_norm)
+    max_norm = max(max_norm)
+    max_jac = max(max_jac)
+    min_jac = min(min_jac)
+
+    #PLOT GENERAL
+    fig, axis = plt.subplots(1, 2*len(ocp.nlp))
+    for ax in range (0, len(ocp.nlp)):
+        # Jacobian plot
+        jacobian_list[ax][~(jacobian_list[ax] != 0).astype(bool)] = np.nan
+        cmap = plt.cm.seismic
+        current_cmap = mcm.get_cmap('seismic')
+        current_cmap.set_bad(color='k')
+        norm = mcolors.TwoSlopeNorm(vmin=min_jac-0.1, vmax=max_jac, vcenter=0)
+        im = axis[ax].imshow(jacobian_list[ax], aspect='auto', cmap=current_cmap, norm=norm)#, vmin=min_jac, vmax=max_jac,
+        axis[ax].set_title('Jacobian constraints \n Phase ' + str(ax), fontweight='bold', fontsize=8)
+        axis[ax].text(0, jacobian_list[ax].shape[0]*1.08, 'Matrix rank = ' + str(jacobian_rank[ax]) + '\n Number of constraints = ' + str(len(hessian_norm_list[ax])), horizontalalignment='center', fontweight='bold', fontsize=8)
+        axis[ax].text(0, jacobian_list[ax].shape[0] * 1.1, 'The rank should be equal to the number of constraints',horizontalalignment='center', fontsize=6)
+
+        #Hessian constraints plot
+        hessian_norm_list[ax][~(hessian_norm_list[ax] != 0).astype(bool)] = np.nan
+        cmap2 = plt.cm.seismic
+        current_cmap2 = mcm.get_cmap('seismic')
+        current_cmap2.set_bad(color='k')
+        norm2 = mcolors.TwoSlopeNorm(vmin=min_norm - 0.1, vmax=max_norm, vcenter=0)
+        liste_ytick = []
+        for i in range (0,len(hessian_norm_list[ax])):
+            liste_ytick.append(i)
+
+        im2 = axis[ax+len(ocp.nlp)].imshow(hessian_norm_list[ax], aspect='auto', cmap=current_cmap2, norm=norm2)#, vmin=min_norm, vmax=max_norm)
+        axis[ax + len(ocp.nlp)].set_title('Hessian constraint norms \n Phase ' + str(ax), fontweight='bold', fontsize=8)
+        axis[ax + len(ocp.nlp)].set_xticks([0])
+        axis[ax + len(ocp.nlp)].set_xticklabels(['Norms should be close to 0'], fontsize=8)
+        axis[ax + len(ocp.nlp)].set_yticks(liste_ytick)
+        axis[ax + len(ocp.nlp)].set_yticklabels(tick_labels_list[ax], fontsize=6, rotation=90)
+
+    cbar_ax = fig.add_axes([0.02, 0.4, 0.015, 0.3])
+    cbar_ax2 = fig.add_axes([0.95, 0.4, 0.015, 0.3])
+    fig.colorbar(im, cax=cbar_ax)
+    fig.colorbar(im2, cax=cbar_ax2)
+    plt.suptitle('Check conditioning for constraints ', color='b', fontsize=15, fontweight='bold')
+    plt.show()
+
 
     ################################################
     """"#########################################
     ####verif objectif convexe avec hessienne####
     ##########################################"""
-    for phase in range(0, len(ocp.nlp)):
-        hessienne_obj = 0
-        ocp.nlp[0].J[0].function_non_threaded(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx)
+    # for phase in range(0, len(ocp.nlp)):
+    #     hessienne_obj = 0
+    #     ocp.nlp[0].J[0].function_non_threaded(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx)
 
-
-
+    # plt.subplot(1, 5, 5)
+    # plt.imshow(np.diag(np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])))
+    # plt.xlabel('H ⪰ 0 : oui/non')
+    # plt.title('Hessian objective', pad=15)
+    # plt.text(5, 13, 'Hessienne des objectifs', horizontalalignment='center', fontweight='bold')
+    # plt.text(5, 14, 'Si ⪰ 0, probleme convexe', horizontalalignment='center')
+    # '\n λmax/λmin = , le conditionement doit etre proche de 0'
 
     ################################################
     ################################################
