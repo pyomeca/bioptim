@@ -71,8 +71,8 @@ def prepare_ocp(
         [0] * (n_q + n_qdot),
         interpolation=InterpolationType.CONSTANT,
         bounds=x_bounds,
-        noise_magnitude=0.5,
-        n_shooting=n_shooting,
+        noise_magnitude=0.1,
+        n_shooting=n_shooting+1,
         seed=seed,
     )
 
@@ -82,16 +82,14 @@ def prepare_ocp(
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    # TODO: To be changed for n_shooting
-    # u_init = NoisedInitialGuess(
-    #     [0] * n_tau,
-    #     interpolation=InterpolationType.CONSTANT,
-    #     bounds=u_bounds,
-    #     noise_magnitude=0.5,
-    #     n_shooting=n_shooting-1,
-    #     seed=seed,
-    # )
-    u_init = InitialGuess([tau_init] * n_tau, interpolation=InterpolationType.CONSTANT)
+    u_init = NoisedInitialGuess(
+        [0] * n_tau,
+        interpolation=InterpolationType.CONSTANT,
+        bounds=u_bounds,
+        noise_magnitude=0.1,
+        n_shooting=n_shooting,
+        seed=seed,
+    )
 
     ocp = OptimalControlProgram(
         biorbd_model,
