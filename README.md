@@ -46,6 +46,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [Solving the ocp](#solving-the-ocp)
 - [Show the results](#show-the-results)
 - [The full example files](#the-full-example-files)
+- [Solving using multi-start](#solving-using-multi-start)
 
 [A more in depth look at the `bioptim` API](#a-more-in-depth-look-at-the-bioptim-api)
 - [The OCP](#the-ocp)
@@ -369,6 +370,15 @@ sol.detailed_cost_values()  # For adding the objectives details to sol for later
 
 And that is all! 
 You have completed your first optimal control program with `bioptim`! 
+
+## Solving using multi-start
+Due to the gradient descent methods used, we can affirm that the optimal solution is a local minima. However, it is not 
+possible to know if a global minima was found. For highly non-linear problems, there might exist a wide range of local 
+optima. Solving the same problem with different initial guesses can be useful to find the best local minimum or to 
+compare the different optimal kinemtaics. It is possible to multi-start the problem by creating a multi-start object 
+with `MultiStart()` and running it with its method `run()`.
+An example of how to use multi-start is given in examples/getting_started/multi-start.py.
+
 
 ## The full example files
 If you did not completely follow (or were too lazy to!) you will find in this section the complete files described in the Getting started section.
