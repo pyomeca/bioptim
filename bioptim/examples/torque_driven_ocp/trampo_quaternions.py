@@ -38,7 +38,7 @@ def eul2quat(eul: np.ndarray) -> np.ndarray:
     The quaternion associated to the Euler angles in the format [W, X, Y, Z]
     """
     eul_sym = MX.sym("eul", 3)
-    Quat = Function("Quaternion_fromEulerAngles", [eul_sym], [biorbd.Quaternion_fromXYZAngles(eul_sym).to_mx()])(eul)
+    Quat = Function("Quaternion_fromEulerAngles", [eul_sym], [biorbd.Quaternion.fromXYZAngles(eul_sym).to_mx()])(eul)
     return Quat
 
 
