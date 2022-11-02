@@ -56,7 +56,7 @@ jobs:
         if: matrix.label == 'osx-64'
 
       - name: Change casadi_path to find QPOASES
-        run: export CASADIPATH=${matrix.prefix}/lib/:$CASADIPATH
+        run: export CASADIPATH=${{matrix.prefix}}/lib/:$CASADIPATH
 
       - name: Run the actual tests
         run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
