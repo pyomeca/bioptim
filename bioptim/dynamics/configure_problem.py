@@ -495,7 +495,8 @@ class ConfigureProblem:
             raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
+        ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
+        ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
         if with_torque:
             ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, True, fatigue=fatigue)

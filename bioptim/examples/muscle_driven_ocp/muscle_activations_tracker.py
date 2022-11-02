@@ -57,6 +57,7 @@ def generate_data(
     # Aliases
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
+    n_qddot = biorbd_model.nbQddot()
     n_tau = biorbd_model.nbGeneralizedTorque()
     n_mus = biorbd_model.nbMuscleTotal()
     dt = final_time / n_shooting
@@ -68,11 +69,13 @@ def generate_data(
         "qdot": BiMapping(range(n_qdot), range(n_qdot)),
         "tau": BiMapping(range(n_tau), range(n_tau)),
         "muscles": BiMapping(range(n_mus), range(n_mus)),
+        "qddot": BiMapping(range(n_qddot), range(n_qddot)),
     }
 
     # Casadi related stuff
     symbolic_q = MX.sym("q", n_q, 1)
     symbolic_qdot = MX.sym("qdot", n_qdot, 1)
+    symbolic_qddot = MX.sym("qddot", n_qddot, 1)
     symbolic_tau = MX.sym("tau", n_tau, 1)
     symbolic_mus = MX.sym("muscles", n_mus, 1)
     symbolic_parameters = MX.sym("params", 0, 0)
@@ -80,6 +83,9 @@ def generate_data(
 
     nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
     nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+
+    nlp.states_dot.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+    nlp.states_dot.append("qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"])
 
     if use_residual_torque:
         nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
