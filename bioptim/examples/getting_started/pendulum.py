@@ -22,7 +22,6 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
-    IntegralApproximation,
 )
 
 
