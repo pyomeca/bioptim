@@ -1133,3 +1133,17 @@ def test_multinode_constraints(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+
+def test_multistart():
+    from bioptim.examples.getting_started import example_multistart as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    multi_start = ocp_module.prepare_multi_start(
+        biorbd_model_path=[bioptim_folder + "/models/pendulum.bioMod"],
+        final_time=[1],
+        n_shooting=[5, 10],
+        seed=[0, 1],
+    )
+    multi_start.solve()

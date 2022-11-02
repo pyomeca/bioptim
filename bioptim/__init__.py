@@ -204,6 +204,7 @@ from .misc.enums import (
     DefectType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList
+from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl
