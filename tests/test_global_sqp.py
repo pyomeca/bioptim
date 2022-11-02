@@ -54,4 +54,3 @@ def test_pendulum():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
-
