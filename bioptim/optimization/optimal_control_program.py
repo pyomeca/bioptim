@@ -150,6 +150,7 @@ class OptimalControlProgram:
         x_bounds: Union[Bounds, BoundsList] = None,
         u_bounds: Union[Bounds, BoundsList] = None,
         x_scaling: Union[VariableScaling, VariableScalingList] = None,
+        xdot_scaling: Union[VariableScaling, VariableScalingList] = None,
         u_scaling: Union[VariableScaling, VariableScalingList] = None,
         objective_functions: Union[Objective, ObjectiveList] = None,
         constraints: Union[Constraint, ConstraintList] = None,
@@ -187,6 +188,8 @@ class OptimalControlProgram:
             The bounds for the controls
         x_scaling: Union[VariableScaling, VariableScalingList]
             The scaling for the states
+        xdot_scaling: Union[VariableScaling, VariableScalingList]
+            The scaling for the states derivative
         u_scaling: Union[VariableScaling, VariableScalingList]
             The scaling for the controls
         objective_functions: Union[Objective, ObjectiveList]
@@ -247,6 +250,7 @@ class OptimalControlProgram:
             "x_bounds": x_bounds,
             "u_bounds": u_bounds,
             "x_scaling": x_scaling,
+            "xdot_scaling": xdot_scaling,
             "u_scaling": u_scaling,
             "objective_functions": ObjectiveList(),
             "constraints": ConstraintList(),
@@ -307,7 +311,16 @@ class OptimalControlProgram:
             x_scaling_tp.add(scaling=x_scaling)
             x_scaling = x_scaling_tp
         elif not isinstance(x_scaling, VariableScalingList):
-            raise RuntimeError("x_bounds should be built from a VariableScaling or a VariableScalingList")
+            raise RuntimeError("x_scaling should be built from a VariableScaling or a VariableScalingList")
+
+        if xdot_scaling is None:
+            xdot_scaling = VariableScalingList()
+        elif isinstance(xdot_scaling, VariableScaling):
+            xdot_scaling_tp = VariableScalingList()
+            xdot_scaling_tp.add(scaling=xdot_scaling)
+            xdot_scaling = xdot_scaling_tp
+        elif not isinstance(xdot_scaling, VariableScalingList):
+            raise RuntimeError("xdot_scaling should be built from a VariableScaling or a VariableScalingList")
 
         if u_scaling is None:
             u_scaling = VariableScalingList()
@@ -458,6 +471,7 @@ class OptimalControlProgram:
 
         # Add the scaling of the variables
         NLP.add(self, "x_scaling", x_scaling, True)
+        NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
 
         # Prepare the dynamics

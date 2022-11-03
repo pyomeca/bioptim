@@ -63,11 +63,11 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_states")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return all_pn.nlp.states[key + "_scaled"].cx
+            return all_pn.nlp.states["unscaled"][key].cx
 
 
         @staticmethod
-        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, x: Union[MX, SX], x_end: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX], key: str):
+        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -89,33 +89,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return u[key + "_scaled"]
-
-        #
-        # @staticmethod
-        # def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
-        #     """
-        #     Minimize the joint torque part of the control variables.
-        #     By default this function is quadratic, meaning that it minimizes towards the target.
-        #     Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        #
-        #     Parameters
-        #     ----------
-        #     penalty: PenaltyOption
-        #         The actual penalty to declare
-        #     all_pn: PenaltyNodeList
-        #         The penalty node elements
-        #     key: str
-        #         The name of the controls to minimize
-        #     """
-        #
-        #     penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-        #     if penalty.integration_rule == IntegralApproximation.RECTANGLE:
-        #         # todo: for trapezoidal integration
-        #         penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
-        #     penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
-        #
-        #     return all_pn.nlp.controls[key + "_scaled"].cx
+            return all_pn.nlp.controls["unscaled"][key].cx
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
@@ -173,7 +147,7 @@ class PenaltyFunctionAbstract:
 
             # Compute the position of the marker in the requested reference frame (None for global)
             nlp = all_pn.nlp
-            q_mx = nlp.states["q"].mx
+            q_mx = nlp.states["unscaled"]["q"].mx
             model = nlp.model
             jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
 
@@ -182,7 +156,7 @@ class PenaltyFunctionAbstract:
                 markers_in_jcs = jcs_t.to_mx() @ vertcat(m.to_mx(), 1)
                 markers = horzcat(markers, markers_in_jcs[:3])
 
-            markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["q"])
+            markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["unscaled"]["q"])
             return markers_objective
 
         @staticmethod
@@ -221,13 +195,13 @@ class PenaltyFunctionAbstract:
 
             # Add the penalty in the requested reference frame. None for global
             nlp = all_pn.nlp
-            q_mx = nlp.states["q"].mx
-            qdot_mx = nlp.states["qdot"].mx
+            q_mx = nlp.states["unscaled"]["q"].mx
+            qdot_mx = nlp.states["unscaled"]["qdot"].mx
             model = nlp.model
             jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
             markers = horzcat(*[m.to_mx() for m in model.markersVelocity(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
 
-            markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
+            markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["unscaled"]["q"], nlp.states["unscaled"]["qdot"])
             return markers_objective
 
         @staticmethod
@@ -268,10 +242,10 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             marker_0 = BiorbdInterface.mx_to_cx(
-                f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx
+                f"markers_{first_marker}", nlp.model.marker, nlp.states["unscaled"]["q"], first_marker_idx
             )
             marker_1 = BiorbdInterface.mx_to_cx(
-                f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker_idx
+                f"markers_{second_marker}", nlp.model.marker, nlp.states["unscaled"]["q"], second_marker_idx
             )
             return marker_1 - marker_0
 
@@ -306,7 +280,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            states = all_pn.nlp.states[key + "_scaled"].cx
+            states = all_pn.nlp.states["unscaled"][key].cx
             return states[first_dof, :] - coef * states[second_dof, :]
 
         @staticmethod
@@ -340,7 +314,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            controls = all_pn.nlp.controls[key + "_scaled"].cx
+            controls = all_pn.nlp.controls["unscaled"][key].cx
             return controls[first_dof, :] - coef * controls[second_dof, :]
 
         @staticmethod
@@ -361,12 +335,12 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
-                return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
-            elif "qddot" in nlp.states.keys():
-                return nlp.states["qddot"].cx
-            elif "qddot" in nlp.controls.keys():
-                return nlp.controls["qddot"].cx
+            if "qddot" not in nlp.states["unscaled"].keys() and "qddot" not in nlp.controls["unscaled"].keys():
+                return nlp.dynamics_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx)[nlp.states["unscaled"]["qdot"].index, :]
+            elif "qddot" in nlp.states["unscaled"].keys():
+                return nlp.states["unscaled"]["qddot"].cx
+            elif "qddot" in nlp.controls["unscaled"].keys():
+                return nlp.controls["unscaled"]["qddot"].cx
 
         @staticmethod
         def minimize_predicted_com_height(_: PenaltyOption, all_pn: PenaltyNodeList):
@@ -385,10 +359,10 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             g = nlp.model.getGravity().to_mx()[2]
-            com = nlp.model.CoM(nlp.states["q"].mx).to_mx()
-            com_dot = nlp.model.CoMdot(nlp.states["q"].mx, nlp.states["qdot"].mx).to_mx()
+            com = nlp.model.CoM(nlp.states["unscaled"]["q"].mx).to_mx()
+            com_dot = nlp.model.CoMdot(nlp.states["unscaled"]["q"].mx, nlp.states["unscaled"]["qdot"].mx).to_mx()
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
-            com_height_cx = BiorbdInterface.mx_to_cx("com_height", com_height, nlp.states["q"], nlp.states["qdot"])
+            com_height_cx = BiorbdInterface.mx_to_cx("com_height", com_height, nlp.states["unscaled"]["q"], nlp.states["unscaled"]["qdot"])
             return com_height_cx
 
         @staticmethod
@@ -412,7 +386,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            com_cx = BiorbdInterface.mx_to_cx("com", all_pn.nlp.model.CoM, all_pn.nlp.states["q"])
+            com_cx = BiorbdInterface.mx_to_cx("com", all_pn.nlp.model.CoM, all_pn.nlp.states["unscaled"]["q"])
             return com_cx
 
         @staticmethod
@@ -437,7 +411,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"])
+            com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.CoMdot, nlp.states["unscaled"]["q"], nlp.states["unscaled"]["qdot"])
             return com_dot_cx
 
         @staticmethod
@@ -462,21 +436,21 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+            if "qddot" not in nlp.states["unscaled"].keys() and "qddot" not in nlp.controls["unscaled"].keys():
                 com_ddot = nlp.model.CoMddot(
-                    nlp.states["q"].mx,
-                    nlp.states["qdot"].mx,
-                    nlp.dynamics_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)[nlp.states["qdot"].index, :],
+                    nlp.states["unscaled"]["q"].mx,
+                    nlp.states["unscaled"]["qdot"].mx,
+                    nlp.dynamics_func(nlp.states["unscaled"].mx, nlp.controls["unscaled"].mx, nlp.parameters.mx)[nlp.states["unscaled"]["qdot"].index, :],
                 ).to_mx()
                 var = []
-                var.extend([nlp.states[key + "_scaled"] for key in nlp.states])
-                var.extend([nlp.controls[key + "_scaled"] for key in nlp.controls])
-                var.extend([nlp.parameters[key + "_scaled"] for key in nlp.parameters])
+                var.extend([nlp.states["unscaled"][key] for key in nlp.states["unscaled"]])
+                var.extend([nlp.controls["unscaled"][key] for key in nlp.controls["unscaled"]])
+                var.extend([nlp.parameters[key] for key in nlp.parameters])
                 return BiorbdInterface.mx_to_cx("com_ddot", com_ddot, *var)
             else:
-                qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
+                qddot = nlp.states["unscaled"]["qddot"] if "qddot" in nlp.states["unscaled"].keys() else nlp.controls["unscaled"]["qddot"]
                 return BiorbdInterface.mx_to_cx(
-                    "com_ddot", nlp.model.CoMddot, nlp.states["q"], nlp.states["qdot"], qddot
+                    "com_ddot", nlp.model.CoMddot, nlp.states["unscaled"]["q"], nlp.states["unscaled"]["qdot"], qddot
                 )
 
         @staticmethod
@@ -499,7 +473,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             nlp = all_pn.nlp
             angular_momentum_cx = BiorbdInterface.mx_to_cx(
-                "angular_momentum", nlp.model.angularMomentum, nlp.states["q"], nlp.states["qdot"]
+                "angular_momentum", nlp.model.angularMomentum, nlp.states["unscaled"]["q"], nlp.states["unscaled"]["qdot"]
             )
             return angular_momentum_cx
 
@@ -525,7 +499,7 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             com_velocity = BiorbdInterface.mx_to_cx(
-                "com_velocity", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"]
+                "com_velocity", nlp.model.CoMdot, nlp.states["unscaled"]["q"], nlp.states["unscaled"]["qdot"]
             )
             if isinstance(com_velocity, SX):
                 mass = Function("mass", [], [nlp.model.mass().to_mx()]).expand()
@@ -562,7 +536,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            contact_force = nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+            contact_force = nlp.contact_forces_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx)
             return contact_force
 
         @staticmethod
@@ -597,7 +571,7 @@ class PenaltyFunctionAbstract:
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
-            soft_contact_force = nlp.soft_contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+            soft_contact_force = nlp.soft_contact_forces_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx)
             return soft_contact_force[force_idx]
 
         @staticmethod
@@ -625,11 +599,11 @@ class PenaltyFunctionAbstract:
             nlp = all_pn.nlp
             segment_index = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
 
-            r_seg = nlp.model.globalJCS(nlp.states["q"].mx, segment_index).rot()
-            r_rt = nlp.model.RT(nlp.states["q"].mx, rt).rot()
+            r_seg = nlp.model.globalJCS(nlp.states["unscaled"]["q"].mx, segment_index).rot()
+            r_rt = nlp.model.RT(nlp.states["unscaled"]["q"].mx, rt).rot()
             angles_diff = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
-            angle_objective = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
+            angle_objective = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["unscaled"]["q"])
             return angle_objective
 
         @staticmethod
@@ -668,10 +642,10 @@ class PenaltyFunctionAbstract:
             segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
 
             # Get the marker in rt reference frame
-            jcs = nlp.model.globalJCS(nlp.states["q"].mx, segment_idx)
-            marker = nlp.model.marker(nlp.states["q"].mx, marker_idx)
+            jcs = nlp.model.globalJCS(nlp.states["unscaled"]["q"].mx, segment_idx)
+            marker = nlp.model.marker(nlp.states["unscaled"]["q"].mx, marker_idx)
             marker.applyRT(jcs.transpose())
-            marker_objective = BiorbdInterface.mx_to_cx("marker", marker.to_mx(), nlp.states["q"])
+            marker_objective = BiorbdInterface.mx_to_cx("marker", marker.to_mx(), nlp.states["unscaled"]["q"])
 
             # To align an axis, the other must be equal to 0
             if penalty.rows is not None:
@@ -679,61 +653,61 @@ class PenaltyFunctionAbstract:
             penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
 
             return marker_objective
-
-        @staticmethod
-        def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], x: Union[MX, SX], x_end: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
-
-            nlp = all_pn.nlp
-            if isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
-                raise RuntimeError("continuity should be called one node at a time")
-
-            penalty.expand = all_pn.nlp.dynamics_type.expand
-
-            continuity = x_end
-            if nlp.ode_solver.is_direct_collocation:
-                # cx = horzcat(*([x] + nlp.states.cx_intermediates_list))
-                continuity -= nlp.dynamics[0](x0=x, p=u, params=p)["xf"]
-                continuity = vertcat(continuity, nlp.dynamics[0](x0=x, p=u, params=p)["defects"])
-                penalty.integrate = True
-
-            else:
-                continuity -= nlp.dynamics[0](x0=x, p=u, params=p)["xf"]
-
-            penalty.explicit_derivative = True
-            penalty.multi_thread = True
-
-            return continuity
-
+        #
         # @staticmethod
-        # def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list]):
+        # def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], x: Union[MX, SX], x_end: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
         #
         #     nlp = all_pn.nlp
-        #     if nlp.control_type == ControlType.CONSTANT:
-        #         u = nlp.controls.cx
-        #     elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-        #         u = horzcat(nlp.controls.cx, nlp.controls.cx_end)
-        #     else:
-        #         raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
-        #
         #     if isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
         #         raise RuntimeError("continuity should be called one node at a time")
         #
         #     penalty.expand = all_pn.nlp.dynamics_type.expand
         #
-        #     continuity = nlp.states.cx_end
+        #     continuity = x_end
         #     if nlp.ode_solver.is_direct_collocation:
-        #         cx = horzcat(*([nlp.states.cx] + nlp.states.cx_intermediates_list))
-        #         continuity -= nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
-        #         continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
+        #         # cx = horzcat(*([x] + nlp.states.cx_intermediates_list))
+        #         continuity -= nlp.dynamics[0](x0=x, p=u, params=p)["xf"]
+        #         continuity = vertcat(continuity, nlp.dynamics[0](x0=x, p=u, params=p)["defects"])
         #         penalty.integrate = True
         #
         #     else:
-        #         continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+        #         continuity -= nlp.dynamics[0](x0=x, p=u, params=p)["xf"]
         #
         #     penalty.explicit_derivative = True
         #     penalty.multi_thread = True
         #
         #     return continuity
+
+        @staticmethod
+        def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list]):
+
+            nlp = all_pn.nlp
+            if nlp.control_type == ControlType.CONSTANT:
+                u = nlp.controls["unscaled"].cx
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                u = horzcat(nlp.controls["unscaled"].cx, nlp.controls["unscaled"].cx_end)
+            else:
+                raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
+
+            if isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
+                raise RuntimeError("continuity should be called one node at a time")
+
+            penalty.expand = all_pn.nlp.dynamics_type.expand
+
+            continuity = nlp.states["unscaled"].cx_end
+            if nlp.ode_solver.is_direct_collocation:
+                cx = horzcat(*([nlp.states["unscaled"].cx] + nlp.states["unscaled"].cx_intermediates_list))
+                continuity -= nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
+                continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
+                penalty.integrate = True
+
+            else:
+                continuity -= nlp.dynamics[0](x0=nlp.states["unscaled"].cx, p=u, params=nlp.parameters.cx)["xf"]
+
+            penalty.explicit_derivative = True
+            penalty.multi_thread = True
+
+            return continuity
 
         @staticmethod
         def custom(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], **parameters: Any):

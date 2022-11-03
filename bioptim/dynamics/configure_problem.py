@@ -22,7 +22,7 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
-
+from ..optimization.optimization_variable import VariableScaling
 
 class ConfigureProblem:
     """
@@ -545,17 +545,14 @@ class ConfigureProblem:
         """
 
         nlp.parameters = ocp.v.parameters_in_list
-
-        states_reduced_scaled = nlp.states.mx_reduced * np.reshape(nlp.x_scaling.scaling, (-1, 1))
-        controls_reduced_scaled = nlp.controls.mx_reduced * np.reshape(nlp.u_scaling.scaling, (-1, 1))
-        dynamics_eval = dyn_func(states_reduced_scaled, controls_reduced_scaled, nlp.parameters.mx, nlp, **extra_params)
+        dynamics_eval = dyn_func(nlp.states["unscaled"].mx_reduced, nlp.controls["unscaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
 
         nlp.dynamics_func = Function(
             "ForwardDyn",
-            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
             [dynamics_dxdt],
             ["x", "u", "p"],
             ["xdot"],
@@ -566,7 +563,7 @@ class ConfigureProblem:
         if dynamics_eval.defects is not None:
             nlp.implicit_dynamics_func = Function(
                 "DynamicsDefects",
-                [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp.states_dot.mx_reduced],
+                [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp.states_dot["scaled"].mx_reduced],
                 [dynamics_eval.defects],
                 ["x", "u", "p", "xdot"],
                 ["defects"],
@@ -589,8 +586,8 @@ class ConfigureProblem:
 
         nlp.contact_forces_func = Function(
             "contact_forces_func",
-            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
-            [dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)],
+            [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
+            [dyn_func(nlp.states["unscaled"].mx_reduced, nlp.controls["unscaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)],
             ["x", "u", "p"],
             ["contact_forces"],
         ).expand()
@@ -636,12 +633,12 @@ class ConfigureProblem:
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)
-                .computeForceAtOrigin(nlp.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
+                .computeForceAtOrigin(nlp.model, nlp.states["unscaled"].mx_reduced[:n], nlp.states["unscaled"].mx_reduced[n:])
                 .to_mx()
             )
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
-            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
             [global_soft_contact_force_func],
             ["x", "u", "p"],
             ["soft_contact_forces"],
@@ -740,7 +737,7 @@ class ConfigureProblem:
                     var_names_with_suffix[-1], name_elements, nlp, as_states, as_controls, skip_plot=True
                 )
                 nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                    lambda t, x, u, p, key: u[nlp.controls[key].index, :],
+                    lambda t, x, u, p, key: u[nlp.controls["unscaled"][key].index, :],
                     plot_type=PlotType.STEP,
                     combine_to=control_plot_name,
                     key=var_names_with_suffix[-1],
@@ -751,7 +748,7 @@ class ConfigureProblem:
                     f"{name}", name_elements, nlp, as_states, as_controls, skip_plot=True
                 )
                 nlp.plot[f"{name}_controls"] = CustomPlot(
-                    lambda t, x, u, p, key: u[nlp.controls[key].index, :],
+                    lambda t, x, u, p, key: u[nlp.controls["unscaled"][key].index, :],
                     plot_type=PlotType.STEP,
                     combine_to=control_plot_name,
                     key=f"{name}",
@@ -763,7 +760,7 @@ class ConfigureProblem:
                 ConfigureProblem._adjust_mapping(name_tp, [var_names_with_suffix[-1]], nlp)
                 ConfigureProblem.configure_new_variable(name_tp, name_elements, nlp, True, False, skip_plot=True)
                 nlp.plot[name_tp] = CustomPlot(
-                    lambda t, x, u, p, key, mod: mod * x[nlp.states[key].index, :],
+                    lambda t, x, u, p, key, mod: mod * x[nlp.states["unscaled"][key].index, :],
                     plot_type=PlotType.INTEGRATED,
                     combine_to=fatigue_plot_name,
                     key=name_tp,
@@ -773,10 +770,10 @@ class ConfigureProblem:
 
         # Create a fake accessor for the name of the controls so it can be directly called in nlp.controls
         if split_controls:
-            ConfigureProblem.append_faked_optim_var(name, nlp.controls, var_names_with_suffix)
+            ConfigureProblem.append_faked_optim_var(name, nlp.controls["scaled"], var_names_with_suffix)
         else:
             for meta_suffix in var_names_with_suffix:
-                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls, [name])
+                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls["scaled"], [name])
 
         return True
 
@@ -834,6 +831,12 @@ class ConfigureProblem:
                     _cx[j] = vertcat(_cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{j}", 1, 1))
             return _cx
 
+        def define_cx_unscaled(_cx: list, scaling: np.ndarray) -> list:
+            _cx_unscaled = [nlp.cx() for _ in range(len(_cx))]
+            for j in range(len(_cx)):
+                _cx_unscaled[j] = _cx[j] * scaling
+            return _cx_unscaled
+
         if ConfigureProblem._manage_fatigue_to_new_variable(name, name_elements, nlp, as_states, as_controls, fatigue):
             # If the element is fatigable, this function calls back configure_new_variable to fill everything.
             # Therefore, we can exist now
@@ -842,17 +845,42 @@ class ConfigureProblem:
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
+        if as_states:
+            if name not in nlp.x_scaling.scaling:
+                nlp.x_scaling.scaling[name] = np.ones(len(name_elements))
+        if as_states_dot:
+            if name not in nlp.xdot_scaling.scaling:
+                nlp.xdot_scaling.scaling[name] = np.ones(len(name_elements))
+        if as_controls:
+            if name not in nlp.u_scaling.scaling:
+                nlp.u_scaling.scaling[name] = np.ones(len(name_elements))
+
         mx_states = []
         mx_states_dot = []
         mx_controls = []
+        mx_states_unscaled = []
+        mx_states_dot_unscaled = []
+        mx_controls_unscaled = []
         for i in nlp.variable_mappings[name].to_second.map_idx:
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
             mx_states.append(MX.sym(var_name, 1, 1))
             mx_controls.append(MX.sym(var_name, 1, 1))
             mx_states_dot.append(MX.sym(var_name, 1, 1))
+            if as_states:
+                mx_states_unscaled.append(mx_states[i] * nlp.x_scaling.scaling[name][i])
+            if as_states_dot:
+                mx_states_dot_unscaled.append(mx_states_dot[i] * nlp.xdot_scaling.scaling[name][i])
+            if as_controls:
+                mx_controls_unscaled.append(mx_controls[i] * nlp.u_scaling.scaling[name][i])
         mx_states = vertcat(*mx_states)
-        mx_controls = vertcat(*mx_controls)
         mx_states_dot = vertcat(*mx_states_dot)
+        mx_controls = vertcat(*mx_controls)
+        if as_states:
+            mx_states_unscaled = vertcat(*mx_states_unscaled)
+        if as_states_dot:
+            mx_states_dot_unscaled = vertcat(*mx_states_dot_unscaled)
+        if as_controls:
+            mx_controls_unscaled = vertcat(*mx_controls_unscaled)
 
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
@@ -866,12 +894,12 @@ class ConfigureProblem:
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
             cx = define_cx(n_col=n_cx)
-
-            nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
-            ######### scaling ???
+            cx_unscaled = define_cx_unscaled(cx, nlp.x_scaling.scaling[name])
+            nlp.states["scaled"].append(name, cx, mx_states, nlp.variable_mappings[name])
+            nlp.states["unscaled"].copy_from_scaled(name, cx_unscaled, mx_states_unscaled, nlp.variable_mappings[name], nlp.states["scaled"], nlp.x_scaling.scaling[name])
             if not skip_plot:
                 nlp.plot[f"{name}_states"] = CustomPlot(
-                    lambda t, x, u, p: x[nlp.states[name].index, :],
+                    lambda t, x, u, p: x[nlp.states["unscaled"][name].index, :],
                     plot_type=PlotType.INTEGRATED,
                     axes_idx=axes_idx,
                     legend=legend,
@@ -880,13 +908,14 @@ class ConfigureProblem:
 
         if as_controls:
             cx = define_cx(n_col=2)
-
-            nlp.controls.append(name, cx, mx_controls, nlp.variable_mappings[name])
+            cx_unscaled = define_cx_unscaled(cx, nlp.u_scaling.scaling[name])
+            nlp.controls["scaled"].append(name, cx, mx_controls, nlp.variable_mappings[name])
+            nlp.controls["unscaled"].copy_from_scaled(name, cx_unscaled, mx_controls_unscaled, nlp.variable_mappings[name], nlp.controls["scaled"], nlp.u_scaling.scaling[name])
 
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             if not skip_plot:
                 nlp.plot[f"{name}_controls"] = CustomPlot(
-                    lambda t, x, u, p: u[nlp.controls[name].index, :],
+                    lambda t, x, u, p: u[nlp.controls["unscaled"][name].index, :],
                     plot_type=plot_type,
                     axes_idx=axes_idx,
                     legend=legend,
@@ -896,8 +925,9 @@ class ConfigureProblem:
         if as_states_dot:
             n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
             cx = define_cx(n_col=n_cx)
-
-            nlp.states_dot.append(name, cx, mx_states_dot, nlp.variable_mappings[name])
+            cx_unscaled = define_cx_unscaled(cx, nlp.xdot_scaling.scaling[name])
+            nlp.states_dot["scaled"].append(name, cx, mx_states_dot, nlp.variable_mappings[name])
+            nlp.states_dot["unscaled"].copy_from_scaled(name, cx_unscaled, mx_states_dot_unscaled, nlp.variable_mappings[name], nlp.states_dot["scaled"], nlp.xdot_scaling.scaling[name])
 
     @staticmethod
     def configure_q(nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
@@ -915,7 +945,7 @@ class ConfigureProblem:
         as_states_dot: bool
             If the generalized velocities should be a state_dot
         """
-        name = "q_scaled"
+        name = "q"
         name_q = [name.to_string() for name in nlp.model.nameDof()]
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
@@ -939,9 +969,9 @@ class ConfigureProblem:
             If the generalized velocities should be a state_dot
         """
 
-        name = "qdot_scaled"
+        name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q_scaled", "qdot_scaled", "taudot_scaled"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qdot, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
@@ -964,9 +994,9 @@ class ConfigureProblem:
             If the generalized accelerations should be a state_dot
         """
 
-        name = "qddot_scaled"
+        name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q_scaled", "qdot_scaled"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["q", "qdot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qddot, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
@@ -987,9 +1017,9 @@ class ConfigureProblem:
             If the generalized velocities should be a control
         """
 
-        name = "qdddot_scaled"
+        name = "qdddot"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q_scaled", "qdot_scaled", "qddot_scaled"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "qddot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qdddot, nlp, as_states, as_controls, axes_idx=axes_idx)
 
@@ -1010,9 +1040,9 @@ class ConfigureProblem:
             If the dynamics with fatigue should be declared
         """
 
-        name = "tau_scaled"
+        name = "tau"
         name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot_scaled", "taudot_scaled"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_tau, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
@@ -1058,9 +1088,9 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name = "taudot_scaled"
+        name = "taudot"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot_scaled", "tau_scaled"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["qdot", "tau"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(name, name_taudot, nlp, as_states, as_controls, axes_idx=axes_idx)
 

@@ -120,9 +120,9 @@ class OptimizationVector:
 
         v_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for phase, x_bound in enumerate(self.x_bounds):
-            v_bounds.concatenate(x_bound.scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states.shape, self.ocp.nlp[phase].ns+1))
+            v_bounds.concatenate(x_bound.scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1))
         for phase, u_bound in enumerate(self.u_bounds):
-            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling, self.ocp.nlp[phase].controls.shape, self.ocp.nlp[phase].ns))
+            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling, self.ocp.nlp[phase].controls["scaled"].shape, self.ocp.nlp[phase].ns))
         v_bounds.concatenate(self.parameters_in_list.bounds)
         return v_bounds
 
@@ -148,12 +148,12 @@ class OptimizationVector:
 
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
                 ####### attention je crois que ca devrait être 5*(ns+1)
-                v_init.concatenate(self._init_linear_interpolation(phase=phase).scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states.shape, self.ocp.nlp[phase].ns+1))
+                v_init.concatenate(self._init_linear_interpolation(phase=phase).scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1))
             else:
-                v_init.concatenate(x_init.scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states.shape, self.ocp.nlp[phase].ns+1))
+                v_init.concatenate(x_init.scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1))
 
         for u_init in self.u_init:
-            v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling, self.ocp.nlp[phase].controls.shape, self.ocp.nlp[phase].ns))
+            v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling, self.ocp.nlp[phase].controls["scaled"].shape, self.ocp.nlp[phase].ns))
         v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
 
@@ -174,7 +174,7 @@ class OptimizationVector:
         """
         nlp = self.ocp.nlp[phase]
         n_points = nlp.ode_solver.polynomial_degree + 1
-        x_init_vector = np.zeros((nlp.states.shape, self.n_phase_x[phase] // nlp.states.shape))
+        x_init_vector = np.zeros((nlp.states["scaled"].shape, self.n_phase_x[phase] // nlp.states["scaled"].shape))
         init_values = (
             self.ocp.original_values["x_init"][phase].init
             if isinstance(self.ocp.original_values["x_init"], InitialGuessList)
@@ -253,24 +253,24 @@ class OptimizationVector:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states.shape, -1), order="F")
+            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states["scaled"].shape, -1), order="F")
             data_states[p_idx]["all"] = x_array
             offset_var = 0
             for var in ocp.nlp[p].states:
-                data_states[p_idx][var] = x_array[offset_var : offset_var + len(ocp.nlp[p].states[var]), :]
-                offset_var += len(ocp.nlp[p].states[var])
+                data_states[p_idx][var] = x_array[offset_var : offset_var + len(ocp.nlp[p].states["scaled"][var]), :]
+                offset_var += len(ocp.nlp[p].states["scaled"][var])
             p_idx += 1
             offset += self.n_phase_x[p]
 
         offset = self.n_all_x
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].controls.shape, -1), order="F")
+            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].controls["scaled"].shape, -1), order="F")
             data_controls[p_idx]["all"] = u_array
             offset_var = 0
-            for var in ocp.nlp[p].controls:
-                data_controls[p_idx][var] = u_array[offset_var : offset_var + len(ocp.nlp[p].controls[var]), :]
-                offset_var += len(ocp.nlp[p].controls[var])
+            for var in ocp.nlp[p].controls["scaled"]:
+                data_controls[p_idx][var] = u_array[offset_var : offset_var + len(ocp.nlp[p].controls["scaled"][var]), :]
+                offset_var += len(ocp.nlp[p].controls["scaled"][var])
             p_idx += 1
             offset += self.n_phase_u[p]
 
@@ -304,17 +304,17 @@ class OptimizationVector:
                     x.append(
                         nlp.cx.sym(
                             "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
-                            nlp.states.shape,
+                            nlp.states["scaled"].shape,
                             nlp.ode_solver.polynomial_degree + 1,
                         )
                     )
                 else:
-                    x.append(nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, 1))
+                    x.append(nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states["scaled"].shape, 1))
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
-                    u.append(nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1))
+                    u.append(nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1))
 
             nlp.X = x
             self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x])
@@ -336,18 +336,18 @@ class OptimizationVector:
 
         # Sanity check
         for nlp in ocp.nlp:
-            nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
+            nlp.x_bounds.check_and_adjust_dimensions(nlp.states["scaled"].shape, nlp.ns)
             if nlp.control_type == ControlType.CONSTANT:
-                nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
+                nlp.u_bounds.check_and_adjust_dimensions(nlp.controls["scaled"].shape, nlp.ns - 1)
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
+                nlp.u_bounds.check_and_adjust_dimensions(nlp.controls["scaled"].shape, nlp.ns)
             else:
                 raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
-            nx = nlp.states.shape
+            nx = nlp.states["scaled"].shape
             if nlp.ode_solver.is_direct_collocation:
                 all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                 outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
@@ -371,7 +371,7 @@ class OptimizationVector:
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            nu = nlp.controls.shape
+            nu = nlp.controls["scaled"].shape
             all_nu = nu * ns
             u_bounds = Bounds([0] * all_nu, [0] * all_nu, interpolation=InterpolationType.CONSTANT)
             for k in range(ns):
@@ -453,18 +453,18 @@ class OptimizationVector:
                 if ocp.nlp[i].x_init.type == InterpolationType.ALL_POINTS:
                     raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
 
-            ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
+            ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states["scaled"].shape, ns)
             if ocp.nlp[i].control_type == ControlType.CONSTANT:
-                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns - 1)
+                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls["scaled"].shape, ocp.nlp[i].ns - 1)
             elif ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns)
+                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls["scaled"].shape, ocp.nlp[i].ns)
             else:
                 raise NotImplementedError(f"Plotting {ocp.nlp[i].control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
-            nx = nlp.states.shape
+            nx = nlp.states["scaled"].shape
             if nlp.ode_solver.is_direct_collocation and interpolation_type != InterpolationType.EACH_FRAME:
                 all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                 outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
@@ -493,7 +493,7 @@ class OptimizationVector:
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            nu = nlp.controls.shape
+            nu = nlp.controls["scaled"].shape
             all_nu = nu * ns
             u_init = InitialGuess([0] * all_nu, interpolation=InterpolationType.CONSTANT)
             for k in range(ns):
