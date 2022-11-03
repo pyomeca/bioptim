@@ -14,7 +14,6 @@ InterpolationType.SPLINE: The values are interpolated from the first to last nod
 InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
-from typing import Union
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -29,7 +28,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    NoisedInitialGuess,
     InterpolationType,
     OdeSolver,
     MagnitudeType,
@@ -67,7 +65,7 @@ def prepare_ocp(
     final_time: float,
     random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
-    ode_solver=OdeSolver.RK4(),
+    ode_solver=OdeSolver.COLLOCATION(),
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -196,9 +194,18 @@ def main():
     sol = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
-        ocp = prepare_ocp(
-            "models/cube.bioMod", n_shooting=30, final_time=2, random_init=True, initial_guess=initial_guess
-        )
+
+        ocp = None
+        try:
+            ocp = prepare_ocp(
+                "models/cube.bioMod", n_shooting=30, final_time=2, random_init=True, initial_guess=initial_guess
+            )
+        except ValueError as message:
+            if str(message) == "InterpolationType.ALL_POINTS must only be used with direct collocation":
+                # This is normal as ALL_POINTS cannot be used without collocations
+                pass
+            else:
+                raise ValueError(message)
 
         sol = ocp.solve()
         print(initial_guess)

@@ -869,6 +869,7 @@ class InitialGuess(OptionGeneric):
 
         return NoisedInitialGuess(
             initial_guess=self.init,
+            interpolation=self.type,
             bounds=bounds,
             n_shooting=n_shooting,
             bound_push=bound_push,
@@ -1022,14 +1023,15 @@ class NoisedInitialGuess(InitialGuess):
             tp = initial_guess
         else:
             tp = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
-        if tp.type == InterpolationType.EACH_FRAME:
-            n_shooting = self.n_shooting - 1
-        elif tp.type == InterpolationType.ALL_POINTS:
-            n_shooting = tp.shape[1] - 1
-        else:
-            n_shooting = self.n_shooting
 
-        ns = n_shooting + 1 if interpolation == InterpolationType.ALL_POINTS else self.n_shooting
+        if tp.type == InterpolationType.EACH_FRAME:
+            n_columns = self.n_shooting - 1  # As it will add 1 by itself later
+        elif tp.type == InterpolationType.ALL_POINTS:
+            n_columns = tp.shape[1] - 1  # As it will add 1 by itself later
+        else:
+            n_columns = self.n_shooting
+
+        ns = n_columns + 1 if interpolation == InterpolationType.ALL_POINTS else self.n_shooting
         bounds_min_matrix = np.zeros((self.n_elements, ns))
         bounds_max_matrix = np.zeros((self.n_elements, ns))
         self.bounds.min.n_shooting = ns
@@ -1055,7 +1057,7 @@ class NoisedInitialGuess(InitialGuess):
         if initial_guess is None:
             initial_guess_matrix = (bounds_min_matrix + bounds_max_matrix) / 2
         else:
-            tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
+            tp.check_and_adjust_dimensions(self.n_elements, n_columns)
             initial_guess_matrix = np.zeros((self.n_elements, ns))
             for shooting_point in range(ns):
                 initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point)
