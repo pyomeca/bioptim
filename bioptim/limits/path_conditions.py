@@ -876,6 +876,7 @@ class InitialGuess(OptionGeneric):
             seed=seed,
             magnitude=magnitude,
             magnitude_type=magnitude_type,
+            **self.params,
         )
 
 
@@ -1051,7 +1052,7 @@ class NoisedInitialGuess(InitialGuess):
             np.random.random((self.n_elements, ns)) * 2 - 1  # random noise
         ) * self.magnitude  # magnitude of the noise within the range defined by the bounds
         if magnitude_type == MagnitudeType.RELATIVE:
-            self.noise *= (bounds_max_matrix - bounds_min_matrix)
+            self.noise *= bounds_max_matrix - bounds_min_matrix
 
         # building the noised initial guess
         if initial_guess is None:
@@ -1302,10 +1303,12 @@ class InitialGuessList(UniquePerPhaseOptionList):
         for i in range(nb_phases):
             self.options[i][0] = NoisedInitialGuess(
                 self[i],
+                interpolation=self[i].type,
                 bounds=bounds[i],
                 n_shooting=n_shooting[i],
                 bound_push=bound_push[i],
                 seed=seed[i],
                 magnitude=magnitude[i],
                 magnitude_type=magnitude_type,
+                **self[i].params,
             )
