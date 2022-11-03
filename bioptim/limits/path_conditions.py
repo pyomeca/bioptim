@@ -1042,7 +1042,7 @@ class NoisedInitialGuess(InitialGuess):
                 bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
                 bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
 
-        if self.seed:
+        if self.seed is not None:
             np.random.seed(self.seed)
 
         self.noise = (
