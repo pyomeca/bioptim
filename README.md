@@ -882,13 +882,12 @@ Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be ca
 If someone wants to add noise to the initial guess, you can provide the following:
 ```python
 init = init.add_noise(
-  bounds,
-  magnitude,
-  magnitude_type,
-  n_shooting,
-  bound_push,
-  seed,
-)
+    bounds: Union[Bounds, BoundsList, QAndQDotBounds], 
+    magnitude: Union[list, int, float, np.ndarray],
+    magnitude_type: MagnitudeType, n_shooting: int, 
+    bound_push: Union[list, int, float], 
+    seed: int
+    )
 ```
 
 ### Class NoisedInitialGuess
@@ -908,15 +907,15 @@ init_list.add(init)
 If someone wants to add noise to the initial guess list, you can provide the following:
 ```python
 init_list.add_noise(
-  bounds,
-  magnitude,
-  magnitude_type,
-  n_shooting,
-  bound_push,
-  seed,
+  bounds: BoundList,
+  n_shooting: Union[int, List[int], Tuple[int]],
+  magnitude: Union[list, int, float, np.ndarray],
+  magnitude_type: magnitudeType,
+  bound_push: Union[int, float, List[int], List[float], ndarray],
+  seed: Union[int, List[int]],
 )
 ```
-The parameters, except `MagnitudeType` must be specified for each phase.
+The parameters, except `MagnitudeType` must be specified for each phase unless you want the same value for every phases.
 ## The constraints
 The constraints are hard penalties of the optimization program.
 That means the solution won't be considered optimal unless all the constraint set is fully respected.
@@ -1602,7 +1601,6 @@ The accepted values are:
 - CUSTOM: User defined interpolation function.
 
 ### Enum: MagnitudeType
-todo: for nicolas + sommaire
 The type of magnitude you want for the added noise. Either relative to the bounds (0 is no noise, 1 is the value of your bounds), or absolute
 
 The accepted values are:

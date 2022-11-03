@@ -208,7 +208,7 @@ def main():
                 raise ValueError(message)
 
         sol = ocp.solve()
-        print(initial_guess)
+        print("/n")
 
     # Print the last solution
     sol.animate()
