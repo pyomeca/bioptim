@@ -401,28 +401,40 @@ class PenaltyOption(OptionGeneric):
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
-            states_pre = nlp.states.cx_end
-            states_post = nlp_post.states.cx
-            controls_pre = nlp.controls.cx_end
-            controls_post = nlp_post.controls.cx
+            states_pre = nlp.states["scaled"].cx_end
+            states_pre_unscaled = nlp.states["unscaled"].cx_end
+            states_post = nlp_post.states["scaled"].cx
+            states_post_unscaled = nlp_post.states["unscaled"].cx
+            controls_pre = nlp.controls["scaled"].cx_end
+            controls_pre_unscaled = nlp.controls["unscaled"].cx_end
+            controls_post = nlp_post.controls["scaled"].cx
+            controls_post_unscaled = nlp_post.controls["unscaled"].cx
             state_cx = vertcat(states_pre, states_post)
+            state_cx_unscaled = vertcat(states_pre_unscaled, states_post_unscaled)
             control_cx = vertcat(controls_pre, controls_post)
+            control_cx_unscaled = vertcat(controls_pre_unscaled, controls_post_unscaled)
 
         else:
             ocp = all_pn.ocp
             nlp = all_pn.nlp
             name = self.name
             if self.integrate:
-                state_cx = horzcat(*([all_pn.nlp.states.cx] + all_pn.nlp.states.cx_intermediates_list))
-                control_cx = all_pn.nlp.controls.cx
+                state_cx = horzcat(*([all_pn.nlp.states["scaled"].cx] + all_pn.nlp.states["scaled"].cx_intermediates_list))
+                state_cx_unscaled = horzcat(*([all_pn.nlp.states["unscaled"].cx] + all_pn.nlp.states["unscaled"].cx_intermediates_list))
+                control_cx = all_pn.nlp.controls["scaled"].cx
+                control_cx_unscaled = all_pn.nlp.controls["unscaled"].cx
             else:
-                state_cx = all_pn.nlp.states.cx
-                control_cx = all_pn.nlp.controls.cx
+                state_cx = all_pn.nlp.states["scaled"].cx
+                state_cx_unscaled = all_pn.nlp.states["unscaled"].cx
+                control_cx = all_pn.nlp.controls["scaled"].cx
+                control_cx_unscaled = all_pn.nlp.controls["unscaled"].cx
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                state_cx = horzcat(state_cx, all_pn.nlp.states.cx_end)
-                control_cx = horzcat(control_cx, all_pn.nlp.controls.cx_end)
+                state_cx = horzcat(state_cx, all_pn.nlp.states["scaled"].cx_end)
+                state_cx_unscaled = horzcat(state_cx_unscaled, all_pn.nlp.states["unscaled"].cx_end)
+                control_cx = horzcat(control_cx, all_pn.nlp.controls["scaled"].cx_end)
+                control_cx_unscaled = horzcat(control_cx_unscaled, all_pn.nlp.controls["unscaled"].cx_end)
 
         param_cx = nlp.cx(nlp.parameters.cx)
 
@@ -432,12 +444,14 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded = self.function
 
         if self.derivative:
-            state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
-            control_cx = horzcat(all_pn.nlp.controls.cx_end, all_pn.nlp.controls.cx)
+            state_cx = horzcat(all_pn.nlp.states["scaled"].cx_end, all_pn.nlp.states["scaled"].cx)
+            state_cx_unscaled = horzcat(all_pn.nlp.states["unscaled"].cx_end, all_pn.nlp.states["unscaled"].cx)
+            control_cx = horzcat(all_pn.nlp.controls["scaled"].cx_end, all_pn.nlp.controls["scaled"].cx)
+            control_cx_unscaled = horzcat(all_pn.nlp.controls["unscaled"].cx_end, all_pn.nlp.controls["unscaled"].cx)
             self.function = biorbd.to_casadi_func(
                 f"{name}",
-                self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx)
-                - self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx),
+                self.function(all_pn.nlp.states["unscaled"].cx_end, all_pn.nlp.controls["unscaled"].cx_end, param_cx)
+                - self.function(all_pn.nlp.states["unscaled"].cx, all_pn.nlp.controls["unscaled"].cx, param_cx),
                 state_cx,
                 control_cx,
                 param_cx,
@@ -462,29 +476,40 @@ class PenaltyOption(OptionGeneric):
             # Hypothesis: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
             state_cx = (
-                horzcat(all_pn.nlp.states.cx, all_pn.nlp.states.cx_end)
+                horzcat(all_pn.nlp.states["scaled"].cx, all_pn.nlp.states["scaled"].cx_end)
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else all_pn.nlp.states.cx
+                else all_pn.nlp.states["scaled"].cx
+            )
+            state_cx_unscaled = (
+                horzcat(all_pn.nlp.states["unscaled"].cx, all_pn.nlp.states["unscaled"].cx_end)
+                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                else all_pn.nlp.states["unscaled"].cx
             )
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx = (
-                horzcat(all_pn.nlp.controls.cx)
+                horzcat(all_pn.nlp.controls["scaled"].cx)
                 if nlp.control_type == ControlType.CONSTANT
-                else horzcat(all_pn.nlp.controls.cx, all_pn.nlp.controls.cx_end)
+                else horzcat(all_pn.nlp.controls["scaled"].cx, all_pn.nlp.controls["scaled"].cx_end)
+            )
+            control_cx_unscaled = (
+                horzcat(all_pn.nlp.controls["unscaled"].cx)
+                if nlp.control_type == ControlType.CONSTANT
+                else horzcat(all_pn.nlp.controls["unscaled"].cx, all_pn.nlp.controls["unscaled"].cx_end)
             )
             control_cx_end = get_u(nlp, control_cx, dt_cx)
-            state_cx_end = (
-                all_pn.nlp.states.cx_end
+            control_cx_end_unscaled = get_u(nlp, control_cx_unscaled, dt_cx)
+            state_cx_end_unscaled = (
+                all_pn.nlp.states["scaled"].cx_end
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else nlp.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp.parameters.cx)["xf"]
+                else nlp.dynamics[0](x0=state_cx_unscaled, p=control_cx_end_unscaled, params=nlp.parameters.cx)["xf"]
             )
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
                 (
-                    (self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx[:, 0])
+                    (self.function(all_pn.nlp.states["unscaled"].cx, all_pn.nlp.controls["unscaled"].cx, param_cx) - target_cx[:, 0])
                     ** exponent
-                    + (self.function(state_cx_end, control_cx_end, param_cx) - target_cx[:, 1]) ** exponent
+                    + (self.function(state_cx_end_unscaled, control_cx_end_unscaled, param_cx) - target_cx[:, 1]) ** exponent
                 )
                 / 2,
                 state_cx,
@@ -493,9 +518,9 @@ class PenaltyOption(OptionGeneric):
                 target_cx,
                 dt_cx,
             )
-            modified_fcn = self.modified_function(state_cx, control_cx, param_cx, target_cx, dt_cx)
+            modified_fcn = self.modified_function(state_cx_unscaled, control_cx_unscaled, param_cx, target_cx, dt_cx)
         else:
-            modified_fcn = (self.function(state_cx, control_cx, param_cx) - target_cx) ** exponent
+            modified_fcn = (self.function(state_cx_unscaled, control_cx_unscaled, param_cx) - target_cx) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
         modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
@@ -573,38 +598,6 @@ class PenaltyOption(OptionGeneric):
                 node_idx=self.node_idx,
             )
 
-    def get_x_u_p(self, all_pn: PenaltyNodeList, **params):
-        """
-        Select the states, controls and parameters to be used in the penalty function
-
-        Returns
-        -------
-        The states, controls and parameters
-        """
-        # apply_key_to_controls = True /False ?
-
-        if "key" in params:
-            key = params["key"] + "_scaled"
-        else:
-            key = "all"
-
-        if all_pn.nlp.control_type == ControlType.CONSTANT:
-            u = all_pn.nlp.controls[key].cx
-        elif all_pn.nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-            u = horzcat(all_pn.nlp.controls[key].cx, all_pn.nlp.controls[key].cx_end)
-        else:
-            raise NotImplementedError(f"Dynamics with {all_pn.nlp.control_type} is not implemented yet")
-
-        if all_pn.nlp.ode_solver.is_direct_collocation:
-            x = horzcat(*([all_pn.nlp.states[key].cx * all_pn.nlp.x_scaling[key].scaling] + all_pn.nlp.states[key].cx_intermediates_list * all_pn.nlp.x_scaling[key].scaling))
-        else:
-            x = all_pn.nlp.states[key].cx * all_pn.nlp.x_scaling[key].scaling
-
-        x_end = all_pn.nlp.states[key].cx_end * all_pn.nlp.x_scaling[key].scaling
-        u = u * all_pn.nlp.u_scaling[key].scaling
-        p = all_pn.nlp.parameters[key].cx
-
-        return x, x_end, u, p
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         """
@@ -635,7 +628,7 @@ class PenaltyOption(OptionGeneric):
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
+                self.states_mapping = BiMapping(range(nlp.states["unscaled"].shape), range(nlp.states["unscaled"].shape))
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
@@ -659,7 +652,7 @@ class PenaltyOption(OptionGeneric):
             # self.phase_pre_idx
             # self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
+                self.states_mapping = BiMapping(range(nlp.states["unscaled"].shape), range(nlp.states["unscaled"].shape))
             self.node = self.node_list[0]
             nlp = ocp.nlp[self.phase_first_idx]
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
@@ -696,8 +689,8 @@ class PenaltyOption(OptionGeneric):
                 else all_pn.t
             )
 
-        x, x_end, u, p = self.select_x_u_p(all_pn, **self.params)
-        penalty_function = self.type(self, all_pn, x, x_end, u, p, **self.params)
+        # x, x_end, u, p = self.select_x_u_p(all_pn, **self.params)
+        penalty_function = self.type(self, all_pn, **self.params) # x, x_end, u, p,
         # penalty_function = self.type(self, all_pn, **self.params)
         self.set_penalty(penalty_function, all_pn)
 

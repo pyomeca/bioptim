@@ -143,12 +143,12 @@ class NonLinearProgram:
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
         self.U = None
-        self.controls = OptimizationVariableList()
+        self.controls = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
         self.X = None
-        self.states = OptimizationVariableList()
-        self.states_dot = OptimizationVariableList()
+        self.states = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
+        self.states_dot = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
 
     def initialize(self, cx: Callable = None):
         """
@@ -162,8 +162,10 @@ class NonLinearProgram:
         """
         self.plot = {}
         self.cx = cx
-        self.states._cx = self.cx()
-        self.controls._cx = self.cx()
+        self.states["scaled"]._cx = self.cx()
+        self.states["unscaled"]._cx = self.cx()
+        self.controls["scaled"]._cx = self.cx()
+        self.controls["unscaled"]._cx = self.cx()
         self.J = []
         self.g = []
         self.g_internal = []

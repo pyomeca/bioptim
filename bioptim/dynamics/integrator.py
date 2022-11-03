@@ -70,8 +70,10 @@ class Integrator:
         self.t_span = ode_opt["t0"], ode_opt["tf"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
-        self.x_sym = ode["x"]
-        self.u_sym = ode["p"]
+        self.x_sym = ode["x_scaled"]
+        self.x_unscaled = ode["x_unscaled"]
+        self.u_sym = ode["p_scaled"]
+        self.u_unscaled = ode["p_unscaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
@@ -152,7 +154,7 @@ class Integrator:
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
+            self.dxdt(self.h, self.x_unscaled, self.u_unscaled, self.param_sym * self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall"],
         )

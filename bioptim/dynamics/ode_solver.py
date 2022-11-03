@@ -126,10 +126,14 @@ class RK(OdeSolverBase):
             "defects_type": DefectType.NOT_APPLICABLE,
         }
         ode = {
-            "x": nlp.states.cx,
-            "p": nlp.controls.cx
+            "x_unscaled": nlp.states["unscaled"].cx,
+            "x_scaled": nlp.states["scaled"].cx,
+            "p_unscaled": nlp.controls["unscaled"].cx
             if nlp.control_type == ControlType.CONSTANT
-            else horzcat(nlp.controls.cx, nlp.controls.cx_end),
+            else horzcat(nlp.controls["unscaled"].cx, nlp.controls["unscaled"].cx_end),
+            "p_scaled": nlp.controls["scaled"].cx
+            if nlp.control_type == ControlType.CONSTANT
+            else horzcat(nlp.controls["scaled"].cx, nlp.controls["scaled"].cx_end),
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
@@ -283,8 +287,8 @@ class OdeSolver:
                 )
 
             ode = {
-                "x": [nlp.states.cx] + nlp.states.cx_intermediates_list,
-                "p": nlp.controls.cx,
+                "x": [nlp.states["unscaled"].cx] + nlp.states["unscaled"].cx_intermediates_list,
+                "p": nlp.controls["unscaled"].cx,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -401,9 +405,9 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "x": nlp.states.cx,
-                "p": nlp.controls.cx,
-                "ode": nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx),
+                "x": nlp.states["unscaled"].cx,
+                "p": nlp.controls["unscaled"].cx,
+                "ode": nlp.dynamics_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
 
@@ -412,8 +416,8 @@ class OdeSolver:
             return [
                 Function(
                     "integrator",
-                    [nlp.states.cx, nlp.controls.cx, nlp.parameters.cx],
-                    self._adapt_integrator_output(integrator_func, nlp.states.cx, nlp.controls.cx),
+                    [nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx],
+                    self._adapt_integrator_output(integrator_func, nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx),
                     ["x0", "p", "params"],
                     ["xf", "xall"],
                 )
