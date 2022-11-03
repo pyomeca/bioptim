@@ -72,7 +72,7 @@ def prepare_ocp(
     x_init = x_init.add_noise(
         bounds=x_bounds,
         magnitude=0.5,
-        MagnitudeType=MagnitudeType.RELATIVE,
+        magnitude_type=MagnitudeType.RELATIVE,
         n_shooting=n_shooting + 1,
         seed=seed,
     )
