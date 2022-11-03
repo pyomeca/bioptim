@@ -155,30 +155,22 @@ def prepare_ocp(
     else:
         raise RuntimeError("Initial guess not implemented yet")
 
+    x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
+    u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
     if random_init:
-        x_init = NoisedInitialGuess(
-            x,
-            t=t,
-            interpolation=initial_guess,
+        x_init.add_noise(
             bounds=x_bounds,
             magnitude=1,
             magnitude_type=MagnitudeType.RELATIVE,
             n_shooting=n_shooting + 1,
             bound_push=0.1,
-            **extra_params_x,
         )
-        u_init = NoisedInitialGuess(
-            u,
-            t=t,
+        u_init.add_noise(
             interpolation=initial_guess,
             bounds=u_bounds,
             n_shooting=n_shooting,
             bound_push=0.1,
-            **extra_params_u,
         )
-    else:
-        x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
-        u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
 
     # ------------- #
 
@@ -210,7 +202,7 @@ def main():
         )
 
         sol = ocp.solve()
-        print("\n")
+        print(initial_guess)
 
     # Print the last solution
     sol.animate()
