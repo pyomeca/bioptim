@@ -881,7 +881,7 @@ Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be ca
 
 If someone wants to add noise to the initial guess, you can provide the following:
 ```python
-init.add_noise(
+init = init.add_noise(
   bounds,
   magnitude,
   magnitude_type,
