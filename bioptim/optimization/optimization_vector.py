@@ -256,7 +256,7 @@ class OptimizationVector:
             x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states["scaled"].shape, -1), order="F")
             data_states[p_idx]["all"] = x_array
             offset_var = 0
-            for var in ocp.nlp[p].states:
+            for var in ocp.nlp[p].states["scaled"]:
                 data_states[p_idx][var] = x_array[offset_var : offset_var + len(ocp.nlp[p].states["scaled"][var]), :]
                 offset_var += len(ocp.nlp[p].states["scaled"][var])
             p_idx += 1

@@ -206,8 +206,10 @@ class Solution:
 
             self.phase_idx = nlp.phase_idx
             self.model = nlp.model
-            self.states = Solution.SimplifiedOptimizationVariableList(nlp.states)
-            self.controls = Solution.SimplifiedOptimizationVariableList(nlp.controls)
+            self.states = Solution.SimplifiedOptimizationVariableList(nlp.states["scaled"])
+            self.states_unscaled = Solution.SimplifiedOptimizationVariableList(nlp.states["unscaled"])
+            self.controls = Solution.SimplifiedOptimizationVariableList(nlp.controls["scaled"])
+            self.controls_unscaled = Solution.SimplifiedOptimizationVariableList(nlp.controls["unscaled"])
             self.dynamics = nlp.dynamics
             self.dynamics_func = nlp.dynamics_func
             self.ode_solver = nlp.ode_solver
@@ -220,6 +222,8 @@ class Solution:
             self.g_implicit = nlp.g_implicit
             self.ns = nlp.ns
             self.parameters = nlp.parameters
+            self.x_scaling = nlp.x_scaling
+            self.u_scaling = nlp.u_scaling
 
     class SimplifiedOCP:
         """
@@ -296,6 +300,7 @@ class Solution:
 
         # Extract the data now for further use
         self._states, self._controls, self.parameters = {}, {}, {}
+        self._states_unscaled, self._controls_unscaled, self.parameters = {}, {}, {}
         self.phase_time = []
 
         def init_from_dict(_sol: dict):
@@ -326,9 +331,12 @@ class Solution:
 
             # Extract the data now for further use
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states_unscaled, self._controls_unscaled = self.to_unscaled_values()
+            self._controls_unscaled, self.parameters = self.ocp.v
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
             self._time_vector = self._generate_time()
+
 
         def init_from_initial_guess(_sol: list):
             """
@@ -417,6 +425,74 @@ class Solution:
             self.ns = []
         else:
             raise ValueError("Solution called with unknown initializer")
+
+
+    def to_unscaled_values(self) -> tuple:
+        """
+        Convert values of scaled solution to unscaled values
+        """
+
+        ocp = self.ocp
+        states_scaled = self._states
+        controls_scaled = self._controls
+
+        states_unscaled = [{} for _ in range(len(states_scaled))]
+        controls_unscaled = [{} for _ in range(len(states_scaled))]
+        for phase in range(len(states_scaled)):
+            states_unscaled[phase] = {}
+            controls_unscaled[phase] = {}
+            for key, value in states_scaled[phase].items():
+                states_unscaled[phase][key] = value * ocp.nlp[phase].x_scaling.to_vector(key, states_scaled[phase][key].shape[0], states_scaled[phase][key].shape[1])
+            for key, value in controls_scaled[phase].items():
+                controls_unscaled[phase][key] = value * ocp.nlp[phase].u_scaling.scaling[key]
+
+        data_states = []
+        data_controls = []
+        for _ in range(self.ocp.n_phases):
+            data_states.append({})
+            data_controls.append({})
+        data_parameters = {}
+
+        offset = 0
+        p_idx = 0
+        for p in range(self.ocp.n_phases):
+            x_array = v_array[offset: offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states["scaled"].shape, -1),
+                                                                          order="F")
+            data_states[p_idx]["all"] = x_array
+            offset_var = 0
+            for var in ocp.nlp[p].states:
+                data_states[p_idx][var] = x_array[offset_var: offset_var + len(ocp.nlp[p].states["scaled"][var]), :]
+                offset_var += len(ocp.nlp[p].states["scaled"][var])
+            p_idx += 1
+            offset += self.n_phase_x[p]
+
+        offset = self.n_all_x
+        p_idx = 0
+        for p in range(self.ocp.n_phases):
+            u_array = v_array[offset: offset + self.n_phase_u[p]].reshape((ocp.nlp[p].controls["scaled"].shape, -1),
+                                                                          order="F")
+            data_controls[p_idx]["all"] = u_array
+            offset_var = 0
+            for var in ocp.nlp[p].controls["scaled"]:
+                data_controls[p_idx][var] = u_array[
+                                            offset_var: offset_var + len(ocp.nlp[p].controls["scaled"][var]), :]
+                offset_var += len(ocp.nlp[p].controls["scaled"][var])
+            p_idx += 1
+            offset += self.n_phase_u[p]
+
+        offset = self.n_all_x + self.n_all_u
+        scaling_offset = 0
+        data_parameters["all"] = v_array[offset:, np.newaxis] * ocp.nlp[0].parameters.scaling
+        if len(data_parameters["all"].shape) == 1:
+            data_parameters["all"] = data_parameters["all"][:, np.newaxis]
+        for param in self.parameters_in_list:
+            data_parameters[param.name] = v_array[offset: offset + param.size, np.newaxis] * param.scaling
+            offset += param.size
+            scaling_offset += param.size
+            if len(data_parameters[param.name].shape) == 1:
+                data_parameters[param.name] = data_parameters[param.name][:, np.newaxis]
+
+        return data_states, data_controls, data_parameters
 
     @property
     def cost(self):
