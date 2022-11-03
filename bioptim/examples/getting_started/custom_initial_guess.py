@@ -158,15 +158,14 @@ def prepare_ocp(
     x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
     u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
     if random_init:
-        x_init.add_noise(
+        x_init = x_init.add_noise(
             bounds=x_bounds,
             magnitude=1,
             magnitude_type=MagnitudeType.RELATIVE,
             n_shooting=n_shooting + 1,
             bound_push=0.1,
         )
-        u_init.add_noise(
-            interpolation=initial_guess,
+        u_init = u_init.add_noise(
             bounds=u_bounds,
             n_shooting=n_shooting,
             bound_push=0.1,
