@@ -82,8 +82,9 @@ def prepare_ocp(
     u_init = InitialGuess([tau_init] * n_tau)
 
     # Variable scaling
-    x_scaling = VariableScaling([1, 3, 100, 30])
-    u_scaling = VariableScaling([10, 0.0001])
+    x_scaling = VariableScaling(q=[1, 3], qdot=[100, 30])  # declare keys in order, so that they are concatenated in the right order
+    xdot_scaling = VariableScaling(qdot=[100, 30], qddot=[100, 30])
+    u_scaling = VariableScaling(tau=[10, 0.0001])
 
     return OptimalControlProgram(
         biorbd_model,
@@ -95,6 +96,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_scaling=x_scaling,
+        xdot_scaling=xdot_scaling,
         u_scaling=u_scaling,
         objective_functions=objective_functions,
         ode_solver=ode_solver,

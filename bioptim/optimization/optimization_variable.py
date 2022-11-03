@@ -7,6 +7,128 @@ from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric, UniquePerPhaseOptionList
 
 
+class VariableScaling(OptionGeneric):
+    def __init__(
+        self,
+        **kwargs
+    ):
+        """
+        Parameters
+        ----------
+        scaling: Union[np.ndarray, list]
+            The scaling of the variables
+        """
+        if "scaling" in kwargs:
+            self.scaling = kwargs["scaling"]
+        else:
+            for key in kwargs.keys():
+                if isinstance(kwargs[key], list):
+                    kwargs[key] = np.array(kwargs[key])
+            if len(kwargs) != 0:
+                kwargs['all'] = np.concatenate([kwargs[key] for key in kwargs.keys()])
+            self.scaling = kwargs
+            super(VariableScaling, self).__init__()
+
+    def __setitem__(self, key: str, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
+        """
+        Allows to set from square brackets
+
+        Parameters
+        ----------
+        _slice: Union[slice, list, tuple]
+            The slice where to put the data
+        value: Union[np.ndarray, float]
+            The value to set
+        """
+
+        self.scaling[key][_slice] = value
+
+    def to_vector(self, key: str, n_elements: int, n_shooting: int):
+        """
+        Sanity check if the dimension of the matrix are sounds when compare to the number
+        of required elements and time. If the function exit, then everything is okay
+
+        """
+
+        if self.scaling[key].shape[0] != n_elements:
+            raise RuntimeError(
+                f"The number of elements in the scaling ({self.scaling[key].shape[0]}) is not the same as the number of elements ({n_elements})"
+            )
+
+        scaling_vector = np.zeros((n_elements * n_shooting, 1))
+        for i in range(n_shooting):
+            scaling_vector[i * n_elements : (i + 1) * n_elements] = np.reshape(self.scaling[key], (n_elements, 1))
+
+        return scaling_vector
+
+
+class VariableScalingList(UniquePerPhaseOptionList):
+    """
+    A list of VariableScaling if more than one is required
+
+    Methods
+    -------
+    add(self, scaling: Union[np.ndarray, list] = None)
+        Add a new variable scaling to the list
+    __getitem__(self, item) -> Bounds
+        Get the ith option of the list
+    print(self)
+        Print the VariableScalingList to the console
+    """
+
+    def add(
+        self,
+        # scaling: Union[np.ndarray, list, VariableScaling] = None,
+        **kwargs
+    ):
+        """
+        Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
+
+        Parameters
+        ----------
+        min_bound: Union[PathCondition, np.ndarray, list, tuple]
+            The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
+        max_bound: [PathCondition, np.ndarray, list, tuple]
+            The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
+        bounds: Bounds
+            Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
+        extra_arguments: dict
+            Any parameters to pass to the Bounds
+        """
+
+        if "scaling" in kwargs:
+            if not isinstance(kwargs["scaling"], VariableScaling):
+                raise RuntimeError("The scaling must be a VariableScaling")
+            if kwargs["scaling"].phase == -1:
+                kwargs["scaling"].phase = len(self.options) if self.options[0] else 0
+            self.copy(kwargs["scaling"])
+        else:
+            super(VariableScalingList, self)._add(**kwargs, option_type=VariableScaling)
+
+    def __getitem__(self, item) -> VariableScaling:
+        """
+        Get the ith option of the list
+
+        Parameters
+        ----------
+        item: int
+            The index of the option to get
+
+        Returns
+        -------
+        The ith option of the list
+        """
+
+        return super(VariableScalingList, self).__getitem__(item)
+
+    def print(self):
+        """
+        Print the VariableScalingList to the console
+        """
+
+        raise NotImplementedError("Printing of VariableScalingList is not ready yet")
+
+
 class OptimizationVariable:
     """
     An optimization variable and the indices to find this variable in its state or control vector
@@ -213,6 +335,36 @@ class OptimizationVariableList:
 
         self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
 
+    def copy_from_scaled(self, name: str, cx: list, mx: MX, bimapping: BiMapping, scaled_optimization_variable: OptimizationVariable, scaling: VariableScaling):
+        """
+        Add a new variable to the list
+
+        Parameters
+        ----------
+        name: str
+            The name of the variable
+        cx: list
+            The list of SX or MX variable associated with this variable
+        mx: MX
+            The MX variable associated with this variable
+        bimapping: BiMapping
+            The Mapping of the MX against CX
+        """
+
+        index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
+        self._cx = vertcat(self._cx, cx[0])
+        self._cx_end = vertcat(self._cx_end, cx[-1])
+        for i, c in enumerate(cx[1:-1]):
+            if i >= len(self._cx_intermediates):
+                self._cx_intermediates.append(c)
+            else:
+                self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
+        mx_reduced_unscaled = MX()
+        mx_reduced_unscaled = vertcat(mx_reduced_unscaled, scaled_optimization_variable.mx_reduced[0] * scaling)
+        self.mx_reduced = vertcat(self.mx_reduced, mx_reduced_unscaled)
+
+        self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
+
     @property
     def cx(self):
         """
@@ -308,165 +460,3 @@ class OptimizationVariableList:
         if self._iter_idx > len(self):
             raise StopIteration
         return self[self._iter_idx - 1].name
-
-
-class VariableScaling(OptionGeneric):
-    def __init__(
-        self,
-        scaling: Union[np.ndarray, list] = None,
-    ):
-        """
-        Parameters
-        ----------
-        scaling: Union[np.ndarray, list]
-            The scaling of the variables
-        """
-        if isinstance(scaling, list):
-            scaling = np.array(scaling)
-        self.scaling = scaling
-        super(VariableScaling, self).__init__()
-
-    def __bool__(self) -> bool:
-        """
-        Get if the VariableScaling is empty
-
-        Returns
-        -------
-        If the VariableScaling is empty
-        """
-
-        return len(self.scaling) > 0
-
-    @property
-    def shape(self) -> int:
-        """
-        Get the size of the InitialGuess
-
-        Returns
-        -------
-        The size of the InitialGuess
-        """
-
-        return self.scaling.shape
-
-    def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
-        """
-        Allows to set from square brackets
-
-        Parameters
-        ----------
-        _slice: Union[slice, list, tuple]
-            The slice where to put the data
-        value: Union[np.ndarray, float]
-            The value to set
-        """
-
-        self.scaling[_slice] = value
-
-    def to_vector(self, n_elements: int, n_shooting: int):
-        """
-        Sanity check if the dimension of the matrix are sounds when compare to the number
-        of required elements and time. If the function exit, then everything is okay
-
-        """
-
-        if self.scaling.shape[0] != n_elements:
-            raise RuntimeError(
-                f"The number of elements in the scaling ({self.scaling.shape[0]}) is not the same as the number of elements ({n_elements})"
-            )
-
-        scaling_vector = np.zeros((n_elements * n_shooting, 1))
-        for i in range(n_shooting):
-            scaling_vector[i * n_elements : (i + 1) * n_elements] = np.reshape(self.scaling, (n_elements, 1))
-
-        return scaling_vector
-
-
-class VariableScalingList(UniquePerPhaseOptionList):
-    """
-    A list of VariableScaling if more than one is required
-
-    Methods
-    -------
-    add(self, scaling: Union[np.ndarray, list] = None)
-        Add a new variable scaling to the list
-    __getitem__(self, item) -> Bounds
-        Get the ith option of the list
-    print(self)
-        Print the VariableScalingList to the console
-    """
-
-    def add(
-        self,
-        scaling: Union[np.ndarray, list, VariableScaling] = None,
-    ):
-        """
-        Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
-
-        Parameters
-        ----------
-        min_bound: Union[PathCondition, np.ndarray, list, tuple]
-            The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
-        max_bound: [PathCondition, np.ndarray, list, tuple]
-            The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
-        bounds: Bounds
-            Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
-        extra_arguments: dict
-            Any parameters to pass to the Bounds
-        """
-
-        if isinstance(scaling, VariableScaling):
-            if scaling.phase == -1:
-                scaling.phase = len(self.options) if self.options[0] else 0
-            self.copy(scaling)
-        else:
-            super(VariableScalingList, self)._add(scaling=scaling, option_type=VariableScaling)
-
-    def add(
-        self,
-        scaling: Union[np.ndarray, list, VariableScaling] = None,
-    ):
-        """
-        Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
-
-        Parameters
-        ----------
-        min_bound: Union[PathCondition, np.ndarray, list, tuple]
-            The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
-        max_bound: [PathCondition, np.ndarray, list, tuple]
-            The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
-        bounds: Bounds
-            Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
-        extra_arguments: dict
-            Any parameters to pass to the Bounds
-        """
-
-        if isinstance(scaling, VariableScaling):
-            if scaling.phase == -1:
-                scaling.phase = len(self.options) if self.options[0] else 0
-            self.copy(scaling)
-        else:
-            super(VariableScalingList, self)._add(scaling=scaling, option_type=VariableScaling)
-
-    def __getitem__(self, item) -> VariableScaling:
-        """
-        Get the ith option of the list
-
-        Parameters
-        ----------
-        item: int
-            The index of the option to get
-
-        Returns
-        -------
-        The ith option of the list
-        """
-
-        return super(VariableScalingList, self).__getitem__(item)
-
-    def print(self):
-        """
-        Print the VariableScalingList to the console
-        """
-
-        raise NotImplementedError("Printing of VariableScalingList is not ready yet")
