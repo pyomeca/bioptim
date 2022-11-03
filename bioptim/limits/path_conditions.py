@@ -844,7 +844,6 @@ class InitialGuess(OptionGeneric):
         n_shooting: int = None,
         bound_push: Union[list, int, float] = 0.1,
         seed: int = None,
-        **parameters: Any,
     ):
         """
         An interface for NoisedInitialGuess class
@@ -866,8 +865,6 @@ class InitialGuess(OptionGeneric):
             initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push)
         seed: int
             The seed of the random generator
-        parameters: dict
-            Any extra parameters that is associated to the path condition
         """
 
         return NoisedInitialGuess(
@@ -878,7 +875,6 @@ class InitialGuess(OptionGeneric):
             seed=seed,
             magnitude=magnitude,
             magnitude_type=magnitude_type,
-            **parameters,
         )
 
 
@@ -1263,7 +1259,6 @@ class InitialGuessList(UniquePerPhaseOptionList):
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
         seed: Union[int, List[int]] = 1,
-        **parameters: any,
     ):
         """
         Add noise to each initial guesses from an InitialGuessList
@@ -1287,9 +1282,6 @@ class InitialGuessList(UniquePerPhaseOptionList):
         seed: Union[int, List[int]]
             The seed of the random generator
             If one value is given, applies this value to each initial guess
-
-        parameters: Union[dict, List[dict]]
-            Any extra parameters that is associated to the path condition
         """
 
         nb_phases = self.__len__()  # number of init guesses, i.e. number of phases
@@ -1314,5 +1306,4 @@ class InitialGuessList(UniquePerPhaseOptionList):
                 seed=seed[i],
                 magnitude=magnitude[i],
                 magnitude_type=magnitude_type,
-                **parameters,
             )
