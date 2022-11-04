@@ -211,7 +211,6 @@ class ConfigureProblem:
                     )
 
         # Declared rigidbody states and controls
-        ##### key_to_index ??? so that I can get the index of the state in the state vector and have the right index in the scaling ??
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False, True)
         ConfigureProblem.configure_tau(nlp, False, True, fatigue)

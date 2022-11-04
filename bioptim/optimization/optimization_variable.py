@@ -45,8 +45,7 @@ class VariableScaling(OptionGeneric):
 
     def to_vector(self, key: str, n_elements: int, n_shooting: int):
         """
-        Sanity check if the dimension of the matrix are sounds when compare to the number
-        of required elements and time. If the function exit, then everything is okay
+        Repeate the scaling to match the variables vector format
 
         """
 
@@ -60,6 +59,18 @@ class VariableScaling(OptionGeneric):
             scaling_vector[i * n_elements : (i + 1) * n_elements] = np.reshape(self.scaling[key], (n_elements, 1))
 
         return scaling_vector
+
+
+    def to_array(self, key: str, n_elements: int, n_shooting: int):
+        """
+        Repeate the scaling to match the variables array format
+        """
+
+        scaling_array = np.zeros((n_elements, n_shooting))
+        for i in range(n_shooting):
+            scaling_array[:, i] = self.scaling[key]
+
+        return scaling_array
 
 
 class VariableScalingList(UniquePerPhaseOptionList):
