@@ -421,7 +421,7 @@ class Solution:
             """
 
             self.vector = _sol
-            self._states["scaled"], self.controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self.to_unscaled_values()
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
@@ -761,7 +761,7 @@ class Solution:
                 out._time_vector = [concatenate_optimization_variables(out._time_vector)]
 
             else:
-                out._states_unscaled = concatenate_optimization_variables_dict(out._states["unscaled"], continuous=False)
+                out._states["unscaled"] = concatenate_optimization_variables_dict(out._states["unscaled"], continuous=False)
                 out._time_vector = [
                     concatenate_optimization_variables(
                         out._time_vector, continuous_phase=False, continuous_interval=False
