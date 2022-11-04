@@ -879,6 +879,17 @@ The main methods the user will be interested in is the `init` property that retu
 Unless it is a custom function, `init` is a numpy.ndarray and can be directly modified to change the initial guess. 
 Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be called to vertically concatenate multiple initial guesses.
 
+If someone wants to add noise to the initial guess, you can provide the following:
+```python
+init = init.add_noise(
+    bounds: Union[Bounds, BoundsList, QAndQDotBounds], 
+    magnitude: Union[list, int, float, np.ndarray],
+    magnitude_type: MagnitudeType, n_shooting: int, 
+    bound_push: Union[list, int, float], 
+    seed: int
+    )
+```
+
 ### Class NoisedInitialGuess
 The NoisedInitialGuess class is an alternative class to define initial guesses randomly noised (good for multi-start).
 The constructor can be called similarly to InitialGuess: `bounds = NoisedInitialGuess(init)`. 
@@ -893,8 +904,18 @@ So a minimal use is as follows:
 init_list = InitialGuessList()
 init_list.add(init)
 ```
-
-
+If someone wants to add noise to the initial guess list, you can provide the following:
+```python
+init_list.add_noise(
+  bounds: BoundList,
+  n_shooting: Union[int, List[int], Tuple[int]],
+  magnitude: Union[list, int, float, np.ndarray],
+  magnitude_type: magnitudeType,
+  bound_push: Union[int, float, List[int], List[float], ndarray],
+  seed: Union[int, List[int]],
+)
+```
+The parameters, except `MagnitudeType` must be specified for each phase unless you want the same value for every phases.
 ## The constraints
 The constraints are hard penalties of the optimization program.
 That means the solution won't be considered optimal unless all the constraint set is fully respected.
@@ -1577,14 +1598,20 @@ The accepted values are:
 - EACH_FRAME: Requires as many columns as there are nodes. It is not an interpolation per se, but it allows the user to specify all the nodes individually.
 - ALL_POINTS: Requires as many columns as there are collocation points. It is not an interpolation per se, but it allows the user to specify all the collocation points individually.
 - SPLINE: Requires five columns. It performs a cubic spline to interpolate between the nodes.
-- CUSTOM: User defined interpolation function
+- CUSTOM: User defined interpolation function.
+
+### Enum: MagnitudeType
+The type of magnitude you want for the added noise. Either relative to the bounds (0 is no noise, 1 is the value of your bounds), or absolute
+
+The accepted values are:
+- ABSOLUTE: Absolute noise of a chosen magnitude.
+- RELATIVE: Relative noise to the bounds (0 is no noise, 1 is the value of your bounds)
 
 ### Enum: Shooting
 The type of integration to perform
 - SINGLE: It re-integrate the solution as a single-phase optimal control problem
 - SINGLE_DISCONTINUOUS_PHASE: It re-integrate each phase of the solution as a single-phase optimal control problem. The phases are therefore not continuous.
 - MULTIPLE: The word `MULTIPLE` is used as a common terminology, to be able to execute DMS and COLLOCATION. It refers to the fact there are several points per intervals, shooting points in DMS and collocation points in COLLOCATION.
-
 
 ### Enum: CostType
 The type of cost

@@ -15,6 +15,7 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     OdeSolver,
+    MagnitudeType,
 )
 
 from .utils import TestUtils
@@ -254,8 +255,9 @@ def test_update_noised_init_rk4(interpolation):
         t=t,
         interpolation=interpolation,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         **extra_params_x,
     )
@@ -264,8 +266,9 @@ def test_update_noised_init_rk4(interpolation):
         t=t,
         interpolation=interpolation,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         **extra_params_u,
     )
@@ -545,8 +548,9 @@ def test_update_noised_init_collocation(interpolation):
         t=t,
         interpolation=interpolation,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         **extra_params_x,
     )
@@ -555,8 +559,9 @@ def test_update_noised_init_collocation(interpolation):
         t=t,
         interpolation=interpolation,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         **extra_params_u,
     )
@@ -983,8 +988,9 @@ def test_update_noised_initial_guess_rk4(interpolation):
     x_init = NoisedInitialGuess(
         initial_guess=x,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         seed=42,
         **extra_params_x,
@@ -992,8 +998,9 @@ def test_update_noised_initial_guess_rk4(interpolation):
     u_init = NoisedInitialGuess(
         initial_guess=u,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         seed=42,
         **extra_params_u,
@@ -1235,13 +1242,14 @@ def test_update_noised_initial_guess_rk4(n_extra):
     state_noise = np.array([0.01] * nq + [0.2] * nqdot + [0.1] * n_extra)
     if n_extra > 0:
         with pytest.raises(
-            ValueError, match="noise_magnitude must be a float or list of float of the size of states or controls"
+            ValueError, match="magnitude must be a float or list of float of the size of states or controls"
         ):
             NoisedInitialGuess(
                 initial_guess=x,
                 bounds=x_bounds,
-                noise_magnitude=state_noise,
-                n_shooting=ns,
+                magnitude=state_noise,
+                magnitude_type=MagnitudeType.RELATIVE,
+                n_shooting=ns + 1,
                 bound_push=0.1,
                 seed=42,
                 **extra_params_x,
@@ -1251,8 +1259,9 @@ def test_update_noised_initial_guess_rk4(n_extra):
         x_init = NoisedInitialGuess(
             initial_guess=x,
             bounds=x_bounds,
-            noise_magnitude=state_noise,
-            n_shooting=ns,
+            magnitude=state_noise,
+            magnitude_type=MagnitudeType.RELATIVE,
+            n_shooting=ns + 1,
             bound_push=0.1,
             seed=42,
             **extra_params_x,
@@ -1261,8 +1270,9 @@ def test_update_noised_initial_guess_rk4(n_extra):
     u_init = NoisedInitialGuess(
         initial_guess=u,
         bounds=u_bounds,
-        noise_magnitude=np.array([0.03] * ntau),
-        n_shooting=ns - 1,
+        magnitude=np.array([0.03] * ntau),
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         seed=42,
         **extra_params_u,
@@ -1387,8 +1397,9 @@ def test_update_noised_initial_guess_collocation(interpolation):
     x_init = NoisedInitialGuess(
         initial_guess=x,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         seed=42,
         **extra_params_x,
@@ -1396,8 +1407,9 @@ def test_update_noised_initial_guess_collocation(interpolation):
     u_init = NoisedInitialGuess(
         initial_guess=u,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         seed=42,
         **extra_params_u,
@@ -1784,8 +1796,9 @@ def test_update_noised_initial_guess_list(interpolation):
         initial_guess=[0] * (nq + nqdot),
         interpolation=InterpolationType.CONSTANT,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         seed=42,
     )
@@ -1793,8 +1806,9 @@ def test_update_noised_initial_guess_list(interpolation):
         initial_guess=[tau_init] * ntau,
         interpolation=InterpolationType.CONSTANT,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         seed=42,
     )
