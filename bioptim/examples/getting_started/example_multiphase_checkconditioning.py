@@ -203,11 +203,6 @@ def main():
         #verification jacobian rank
         rank = np.linalg.matrix_rank(jacobian_matrix)
         jacobian_rank.append(rank)
-        # if rank == len(ocp.nlp[phase].g): ############a corriger
-        #     print('Phase ' + str(phase) + ' : constraints ok')
-        # if rank != len(ocp.nlp[phase].g): ############a corriger
-        #     print('Phase ' + str(phase) + ' : constraints not ok')
-
 
         """"###############################################################
         ##verif contrainte egalité linéaire si norme hessian proche de 0##
@@ -223,11 +218,11 @@ def main():
 
                     #parameters
                     if (ocp.nlp[phase].parameters.shape == 0) == True :
-                        hessienne_cas = cas.hessian(
+                        hessian_cas = cas.hessian(
                             ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx)[axis],
                             cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, ocp.nlp[phase].parameters.cx))[0]
                     else:
-                        hessienne_cas = cas.hessian(
+                        hessian_cas = cas.hessian(
                                 ocp.nlp[phase].g[i].function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx,
                                 ocp.nlp[phase].parameters.cx)[axis], cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx]))[0]
                     tick_labels.append(ocp.nlp[phase].g[i].name)
@@ -236,11 +231,11 @@ def main():
                     if (ocp.nlp[phase].parameters.shape == 0) == True:
                         hes_func = cas.Function("hessian", [
                             cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, ocp.nlp[phase].parameters.cx)],
-                                                [hessienne_cas])
+                                                [hessian_cas])
                     else:
                         hes_func = cas.Function("hessian", [
                             cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx])],
-                                                [hessienne_cas])
+                                                [hessian_cas])
 
                     # evaluate hes_func en X_init, U_init, with parameters
 
@@ -277,29 +272,28 @@ def main():
             list_norm.append(norm)
         array_norm = np.array(list_norm).reshape(len(list_hessian), 1)
 
-        array_norm[0][0] = 65 ##################################################################################################TEST
+        array_norm[0][0] = 65 #############################################################################################################TEST
 
         hessian_norm_list.append(array_norm)
 
-    hessian_norm_list[0][2][0] = 80 #################################################################################################
-    jacobian_list[0][50][3] = 50#####################################################################################################
+    hessian_norm_list[0][2][0] = 80 ##########################################################################################################
+    jacobian_list[0][50][3] = 50###############################################################################################################
     jacobian_list[0][78][2] = 0.2
-
-
 
     max_norm = []
     min_norm = []
-    for i in range (0,len(hessian_norm_list)):
-        max_norm.append(np.ndarray.max(hessian_norm_list[i]))
-        min_norm.append(np.ndarray.min(hessian_norm_list[i]))
+    if len(list_hessian) != 0:
+        for i in range(0, len(hessian_norm_list)):
+            max_norm.append(np.ndarray.max(hessian_norm_list[i]))
+            min_norm.append(np.ndarray.min(hessian_norm_list[i]))
+        min_norm = min(min_norm)
+        max_norm = max(max_norm)
+
     max_jac = []
     min_jac = []
     for i in range(0, len(jacobian_list)):
         max_jac.append(np.ndarray.max(jacobian_list[i]))
         min_jac.append(np.ndarray.min(jacobian_list[i]))
-
-    min_norm = min(min_norm)
-    max_norm = max(max_norm)
     max_jac = max(max_jac)
     min_jac = min(min_jac)
 
@@ -314,8 +308,10 @@ def main():
         norm = mcolors.TwoSlopeNorm(vmin=min_jac-0.1, vmax=max_jac, vcenter=0)
         im = axis[ax].imshow(jacobian_list[ax], aspect='auto', cmap=current_cmap, norm=norm)#, vmin=min_jac, vmax=max_jac,
         axis[ax].set_title('Jacobian constraints \n Phase ' + str(ax), fontweight='bold', fontsize=8)
-        axis[ax].text(0, jacobian_list[ax].shape[0]*1.08, 'Matrix rank = ' + str(jacobian_rank[ax]) + '\n Number of constraints = ' + str(len(hessian_norm_list[ax])), horizontalalignment='center', fontweight='bold', fontsize=8)
+        axis[ax].text(0, jacobian_list[ax].shape[0]*1.08, 'Matrix rank = ' + str(jacobian_rank[ax]) + '\n Number of constraints = ' + str(jacobian_list[ax].shape[1]), horizontalalignment='center', fontweight='bold', fontsize=8)
         axis[ax].text(0, jacobian_list[ax].shape[0] * 1.1, 'The rank should be equal to the number of constraints',horizontalalignment='center', fontsize=6)
+        cbar_ax = fig.add_axes([0.02, 0.4, 0.015, 0.3])
+        fig.colorbar(im, cax=cbar_ax)
 
         #Hessian constraints plot
         hessian_norm_list[ax][~(hessian_norm_list[ax] != 0).astype(bool)] = np.nan
@@ -333,30 +329,135 @@ def main():
         axis[ax + len(ocp.nlp)].set_xticklabels(['Norms should be close to 0'], fontsize=8)
         axis[ax + len(ocp.nlp)].set_yticks(liste_ytick)
         axis[ax + len(ocp.nlp)].set_yticklabels(tick_labels_list[ax], fontsize=6, rotation=90)
+        cbar_ax2 = fig.add_axes([0.95, 0.4, 0.015, 0.3])
+        fig.colorbar(im2, cax=cbar_ax2)
 
-    cbar_ax = fig.add_axes([0.02, 0.4, 0.015, 0.3])
-    cbar_ax2 = fig.add_axes([0.95, 0.4, 0.015, 0.3])
-    fig.colorbar(im, cax=cbar_ax)
-    fig.colorbar(im2, cax=cbar_ax2)
     plt.suptitle('Check conditioning for constraints ', color='b', fontsize=15, fontweight='bold')
-    plt.show()
+    #plt.show()
 
 
     ################################################
     """"#########################################
     ####verif objectif convexe avec hessienne####
     ##########################################"""
-    # for phase in range(0, len(ocp.nlp)):
-    #     hessienne_obj = 0
-    #     ocp.nlp[0].J[0].function_non_threaded(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx, ocp.nlp[phase].parameters.cx)
+    hessian_obj_list = []
+    for phase in range(0, len(ocp.nlp)):
+        #hessian_obj = 0
+        for obj in range (0, len(ocp.nlp[phase].J)):
+            objective = 0
+            ########################
+            if ocp.nlp[phase].J[obj].multinode_constraint or ocp.nlp[phase].J[obj].transition:
+                nlp = ocp.nlp[phase-1]
+                nlp_post = ocp.nlp[phase]
+                states_pre = nlp.states.cx_end
+                states_post = nlp_post.states.cx
+                controls_pre = nlp.controls.cx_end
+                controls_post = nlp_post.controls.cx
+                state_cx = cas.vertcat(states_pre, states_post)
+                control_cx = cas.vertcat(controls_pre, controls_post)
 
-    # plt.subplot(1, 5, 5)
-    # plt.imshow(np.diag(np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])))
-    # plt.xlabel('H ⪰ 0 : oui/non')
-    # plt.title('Hessian objective', pad=15)
-    # plt.text(5, 13, 'Hessienne des objectifs', horizontalalignment='center', fontweight='bold')
-    # plt.text(5, 14, 'Si ⪰ 0, probleme convexe', horizontalalignment='center')
-    # '\n λmax/λmin = , le conditionement doit etre proche de 0'
+                if ocp.nlp[0].J[0].target == None:
+
+                    p = ocp.nlp[phase].J[obj].weighted_function(state_cx, control_cx,
+                                                                ocp.nlp[phase].parameters.cx,
+                                                                ocp.nlp[phase].J[obj].weight,
+                                                                [], ocp.nlp[phase].J[obj].dt)
+                else:
+                    p = ocp.nlp[phase].J[obj].weighted_function(state_cx, control_cx,
+                                                                ocp.nlp[phase].parameters.cx,
+                                                                ocp.nlp[phase].J[obj].weight,
+                                                                ocp.nlp[0].J[0].target, ocp.nlp[phase].J[obj].dt)
+
+
+            else:
+                if ocp.nlp[0].J[0].target == None:
+                    p = ocp.nlp[phase].J[obj].weighted_function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx,
+                                                                ocp.nlp[phase].parameters.cx, ocp.nlp[phase].J[obj].weight,
+                                                                [], ocp.nlp[phase].J[obj].dt)
+                else:
+                    p = ocp.nlp[phase].J[obj].weighted_function(ocp.nlp[phase].states.cx, ocp.nlp[phase].controls.cx,
+                                                                ocp.nlp[phase].parameters.cx, ocp.nlp[phase].J[obj].weight,
+                                                                ocp.nlp[0].J[0].target, ocp.nlp[phase].J[obj].dt)
+
+            for i in range (0, p.shape[0]):
+                objective +=p[i]**2
+
+        #create function to build the hessian
+        # parameters
+        if (ocp.nlp[phase].parameters.shape == 0) == True:
+            hessian_cas = cas.hessian(objective, cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, ocp.nlp[phase].parameters.cx))[0]
+        else:
+            hessian_cas = cas.hessian(objective, cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx]))[0]
+
+        # parameters
+        if (ocp.nlp[phase].parameters.shape == 0) == True:
+            hes_func = cas.Function("hessian", [cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, ocp.nlp[phase].parameters.cx)],[hessian_cas])
+        else:
+            hes_func = cas.Function("hessian", [cas.vertcat(*ocp.nlp[phase].X, *ocp.nlp[phase].U, *[ocp.nlp[phase].parameters.cx])],[hessian_cas])
+
+        #evaluate hes_func en X_init, U_init, with parameters
+
+        X_init = np.zeros((len(ocp.nlp[phase].X), ocp.nlp[phase].x_init.shape[0]))
+        U_init = np.zeros((len(ocp.nlp[phase].U), ocp.nlp[phase].u_init.shape[0]))
+        Param_init = np.array(ocp.nlp[phase].parameters.initial_guess.init)
+
+        for n_shooting in range(0, ocp.nlp[phase].ns + 1):
+            X_init[n_shooting, :] = np.array(ocp.nlp[phase].x_init.init.evaluate_at(n_shooting))
+        for n_shooting in range(0, ocp.nlp[phase].ns):
+            U_init[n_shooting, :] = np.array(ocp.nlp[phase].u_init.init.evaluate_at(n_shooting))
+
+        X_init = X_init.reshape((X_init.size, 1))
+        U_init = U_init.reshape((U_init.size, 1))
+        Param_init = Param_init.reshape((np.array(ocp.nlp[phase].parameters.initial_guess.init).size, 1))
+
+        hessian_obj_matrix = np.array(hes_func(np.vstack((X_init, U_init, Param_init))))
+        hessian_obj_list.append(hessian_obj_matrix)
+
+
+    ###Convexity checking (positive semi-definite hessian)###
+    #On R (convexe), the objective is convexe if and only if the hessian is positive semi definite (psd)
+    #And, as the hessian is symetric (Schwarz), the hessian is psd if and only if the eigenvalues are positive
+
+    convexity = []
+    condition_number = []
+    for matrix in range (0,len(hessian_obj_list)):
+        eigen_values = np.linalg.eigvals(hessian_obj_list[matrix])
+        ev_max = min(eigen_values)
+        ev_min = max(eigen_values)
+        if ev_min == 0:
+            condition_number.append(' /!\ Ev_min is 0')
+        if ev_min != 0:
+            condition_number.append(np.abs(ev_max)/np.abs(ev_min))
+        convexity.append('True')
+        for ev in range(0, eigen_values.size):
+            if eigen_values[ev] < 0 :
+                convexity[matrix]='False'
+                break
+
+    #global condition number
+    #a verifier car toutes les hessiennes n'ont pas la meme dimensions !
+
+    hessian_obj_list[0][15][98] = 15 #####################################################################################################################
+
+    # PLOT GENERAL
+    fig_obj, axis_obj = plt.subplots(1, len(ocp.nlp))
+    for ax in range(0, len(ocp.nlp)):
+        hessian_obj_list[ax][~(hessian_obj_list[ax] != 0).astype(bool)] = np.nan
+        cmap3 = plt.cm.seismic
+        current_cmap3 = mcm.get_cmap('seismic')
+        current_cmap3.set_bad(color='k')
+        norm = mcolors.TwoSlopeNorm(vmin=-10, vmax=10, vcenter=0)
+        im3 = axis_obj[ax].imshow(hessian_obj_list[ax], cmap=current_cmap3, norm=norm) #, aspect='auto'
+        axis_obj[ax].set_title('Hessian objective \n Phase ' + str(ax), fontweight='bold', fontsize=8)
+        axis_obj[ax].text(hessian_obj_list[ax].shape[0]/2, hessian_obj_list[ax].shape[0] * 1.1,'Convexity = ' + convexity[ax], horizontalalignment='center', fontweight='bold', fontsize=8)
+        axis_obj[ax].text(hessian_obj_list[ax].shape[0] / 2, hessian_obj_list[ax].shape[0] * 1.2,
+                          '|λmax|/|λmin| = Condition number = ' + condition_number[ax], horizontalalignment='center', fontweight='bold', fontsize=8)
+        cbar_ax3 = fig_obj.add_axes([0.02, 0.4, 0.015, 0.3])
+        fig_obj.colorbar(im3, cax=cbar_ax3)
+    fig_obj.text(0.5, 0.1, 'Every hessian should be convexe \n Condition numbers should be close to 0',horizontalalignment='center', fontsize=12, fontweight='bold')
+    plt.suptitle('Check conditioning for objectives', color='b', fontsize=15, fontweight='bold')
+
+    plt.show()
 
     ################################################
     ################################################
