@@ -140,7 +140,7 @@ class DynamicsFunctions:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
-        # todo: contacts and fatigue to be handled with implicit dynamics
+        # TODO: contacts and fatigue to be handled with implicit dynamics
         if not with_contact and fatigue is None:
             qddot = DynamicsFunctions.get(nlp.states_dot["unscaled"]["qddot"], nlp.states_dot["unscaled"].mx_reduced)
             tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
@@ -486,7 +486,25 @@ class DynamicsFunctions:
         if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
-        return DynamicsEvaluation(dxdt=dxdt, defects=None)
+        defects = None
+        # TODO: contacts and fatigue to be handled with implicit dynamics
+        if not with_contact and fatigue is None:
+            qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
+            tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
+            defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
+
+            dq_defects = []
+            for _ in range(tau_id.shape[1]):
+                dq_defects.append(
+                    dq
+                    - DynamicsFunctions.compute_qdot(
+                        nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced)
+                    )
+                )
+            defects[: dq.shape[0], :] = horzcat(*dq_defects)
+            defects[dq.shape[0] :, :] = tau - tau_id
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     @staticmethod
     def forces_from_muscle_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
@@ -694,10 +712,14 @@ class DynamicsFunctions:
         Torques in tau
         """
 
-        tau_var = nlp.states["unscaled"]["tau"] if "tau" in nlp.states["unscaled"] else nlp.controls["unscaled"]["tau"]
-
         if nlp.external_forces:
-            tau = MX(tau_var.mx.shape[0], nlp.ns)
+            if "tau" in nlp.states:
+                tau_shape = nlp.states["tau"].mx.shape[0]
+            elif "tau" in nlp.controls:
+                tau_shape = nlp.controls["tau"].mx.shape[0]
+            else:
+                tau_shape = nlp.model.nbGeneralizedTorque()
+            tau = MX(tau_shape, nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 tau[:, i] = nlp.model.InverseDynamics(q, qdot, qddot, f_ext).to_mx()
         else:

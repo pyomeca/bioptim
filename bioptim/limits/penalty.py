@@ -601,7 +601,7 @@ class PenaltyFunctionAbstract:
 
             r_seg = nlp.model.globalJCS(nlp.states["unscaled"]["q"].mx, segment_index).rot()
             r_rt = nlp.model.RT(nlp.states["unscaled"]["q"].mx, rt).rot()
-            angles_diff = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
+            angles_diff = biorbd.Rotation.toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
             angle_objective = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["unscaled"]["q"])
             return angle_objective
