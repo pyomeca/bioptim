@@ -19,6 +19,7 @@ from bioptim import (
     InterpolationType,
     MultiStart,
     Solution,
+    MagnitudeType,
 )
 
 
@@ -67,11 +68,11 @@ def prepare_ocp(
     # Initial guess
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
-    x_init = NoisedInitialGuess(
-        [0] * (n_q + n_qdot),
-        interpolation=InterpolationType.CONSTANT,
+    x_init = InitialGuess([0] * (n_q + n_qdot), interpolation=InterpolationType.CONSTANT)
+    x_init = x_init.add_noise(
         bounds=x_bounds,
-        noise_magnitude=0.1,
+        magnitude=0.5,
+        magnitude_type=MagnitudeType.RELATIVE,
         n_shooting=n_shooting + 1,
         seed=seed,
     )
@@ -82,11 +83,11 @@ def prepare_ocp(
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = NoisedInitialGuess(
-        [0] * n_tau,
-        interpolation=InterpolationType.CONSTANT,
+    u_init = InitialGuess([0] * n_tau, interpolation=InterpolationType.CONSTANT)
+    u_init = u_init.add_noise(
         bounds=u_bounds,
-        noise_magnitude=0.1,
+        magnitude=0.5,
+        magnitude_type=MagnitudeType.RELATIVE,
         n_shooting=n_shooting,
         seed=seed,
     )

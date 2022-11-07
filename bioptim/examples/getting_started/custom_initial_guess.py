@@ -14,10 +14,8 @@ InterpolationType.SPLINE: The values are interpolated from the first to last nod
 InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
-from typing import Union
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim.misc.enums import MagnitudeType
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -30,9 +28,9 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    NoisedInitialGuess,
     InterpolationType,
     OdeSolver,
+    MagnitudeType,
 )
 
 
@@ -67,7 +65,7 @@ def prepare_ocp(
     final_time: float,
     random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
-    ode_solver=OdeSolver.RK4(),
+    ode_solver=OdeSolver.COLLOCATION(),
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -155,30 +153,21 @@ def prepare_ocp(
     else:
         raise RuntimeError("Initial guess not implemented yet")
 
+    x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
+    u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
     if random_init:
-        x_init = NoisedInitialGuess(
-            x,
-            t=t,
-            interpolation=initial_guess,
+        x_init = x_init.add_noise(
             bounds=x_bounds,
             magnitude=1,
             magnitude_type=MagnitudeType.RELATIVE,
             n_shooting=n_shooting + 1,
             bound_push=0.1,
-            **extra_params_x,
         )
-        u_init = NoisedInitialGuess(
-            u,
-            t=t,
-            interpolation=initial_guess,
+        u_init = u_init.add_noise(
             bounds=u_bounds,
             n_shooting=n_shooting,
             bound_push=0.1,
-            **extra_params_u,
         )
-    else:
-        x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
-        u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
 
     # ------------- #
 
@@ -205,9 +194,18 @@ def main():
     sol = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
-        ocp = prepare_ocp(
-            "models/cube.bioMod", n_shooting=30, final_time=2, random_init=True, initial_guess=initial_guess
-        )
+
+        ocp = None
+        try:
+            ocp = prepare_ocp(
+                "models/cube.bioMod", n_shooting=30, final_time=2, random_init=True, initial_guess=initial_guess
+            )
+        except ValueError as message:
+            if str(message) == "InterpolationType.ALL_POINTS must only be used with direct collocation":
+                # This is normal as ALL_POINTS cannot be used without collocations
+                pass
+            else:
+                raise ValueError(message)
 
         sol = ocp.solve()
         print("\n")
