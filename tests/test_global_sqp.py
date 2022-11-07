@@ -1,6 +1,7 @@
 """
-Test for file IO
+Tests for SQP interface.
 """
+
 import os
 import numpy as np
 from bioptim import Solver
