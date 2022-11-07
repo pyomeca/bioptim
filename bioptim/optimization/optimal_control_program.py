@@ -8,7 +8,7 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, horzcat, vertcat, jacobian, hessian, Function, vcat
+from casadi import MX, SX, Function, sum1, horzcat, vertcat, jacobian, vcat, hessian
 from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.cm as mcm
@@ -1010,13 +1010,9 @@ class OptimalControlProgram:
 
                             #parameters
                             if (self.nlp[phase].parameters.shape == 0) == True :
-                                hessian_cas = hessian(
-                                    self.nlp[phase].g[i].function(self.nlp[phase].states.cx, self.nlp[phase].controls.cx, self.nlp[phase].parameters.cx)[axis],
-                                    vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx))[0]
+                                hessian_cas = hessian(self.nlp[phase].g[i].function(self.nlp[phase].states.cx, self.nlp[phase].controls.cx, self.nlp[phase].parameters.cx)[axis],vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx))[0]
                             else:
-                                hessian_cas = hessian(
-                                        self.nlp[phase].g[i].function(self.nlp[phase].states.cx, self.nlp[phase].controls.cx,
-                                        self.nlp[phase].parameters.cx)[axis], vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx]))[0]
+                                hessian_cas = hessian(self.nlp[phase].g[i].function(self.nlp[phase].states.cx, self.nlp[phase].controls.cx, self.nlp[phase].parameters.cx)[axis], vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx]))[0]
                             tick_labels.append(self.nlp[phase].g[i].name)
 
                             #parameters
@@ -1044,10 +1040,10 @@ class OptimalControlProgram:
                             U_init = U_init.reshape((U_init.size, 1))
                             Param_init = Param_init.reshape((np.array(self.nlp[phase].parameters.initial_guess.init).size, 1))
 
-                            hessian = np.array(hes_func(np.vstack((X_init, U_init, Param_init))))
+                            hessian_matrix = np.array(hes_func(np.vstack((X_init, U_init, Param_init))))
 
                             #append hessian list
-                            list_hessian.append(hessian)
+                            list_hessian.append(hessian_matrix)
 
                         else:
                             do = 'nothing'
@@ -1079,7 +1075,7 @@ class OptimalControlProgram:
 
             max_norm = []
             min_norm = []
-            if len(hessian_norm_list[0].shape[0]) != 0:
+            if hessian_norm_list[0].shape[0] != 0:
                 for i in range(0, len(hessian_norm_list)):
                     max_norm.append(np.ndarray.max(hessian_norm_list[i]))
                     min_norm.append(np.ndarray.min(hessian_norm_list[i]))
@@ -1101,7 +1097,7 @@ class OptimalControlProgram:
                 jacobian_list[ax][~(jacobian_list[ax] != 0).astype(bool)] = np.nan
                 current_cmap = mcm.get_cmap('seismic')
                 current_cmap.set_bad(color='k')
-                norm = mcolors.TwoSlopeNorm(vmin=min_jac-0.1, vmax=max_jac, vcenter=0)
+                norm = mcolors.TwoSlopeNorm(vmin=min_jac-0.01, vmax=max_jac+0.01, vcenter=0)
                 im = axis[ax].imshow(jacobian_list[ax], aspect='auto', cmap=current_cmap, norm=norm)
                 axis[ax].set_title('Jacobian constraints \n Phase ' + str(ax), fontweight='bold', fontsize=8)
                 axis[ax].text(0, jacobian_list[ax].shape[0]*1.08, 'Matrix rank = ' + str(jacobian_rank[ax]) + '\n Number of constraints = ' + str(jacobian_list[ax].shape[1]), horizontalalignment='center', fontweight='bold', fontsize=8)
@@ -1113,7 +1109,7 @@ class OptimalControlProgram:
                 hessian_norm_list[ax][~(hessian_norm_list[ax] != 0).astype(bool)] = np.nan
                 current_cmap2 = mcm.get_cmap('seismic')
                 current_cmap2.set_bad(color='k')
-                norm2 = mcolors.TwoSlopeNorm(vmin=min_norm - 0.1, vmax=max_norm, vcenter=0)
+                norm2 = mcolors.TwoSlopeNorm(vmin=min_norm - 0.01, vmax=max_norm + 0.01, vcenter=0)
                 liste_ytick = []
                 for i in range (0,len(hessian_norm_list[ax])):
                     liste_ytick.append(i)
@@ -1290,6 +1286,14 @@ class OptimalControlProgram:
 
             hessian_obj_list, condition_number, convexity = Hessian_objective()
 
+            max_hes = []
+            min_hes = []
+            for i in range(0, len(hessian_obj_list)):
+                max_hes.append(np.ndarray.max(hessian_obj_list[i]))
+                min_hes.append(np.ndarray.min(hessian_obj_list[i]))
+            min_hes = min(min_hes)
+            max_hes = max(max_hes)
+
             # PLOT GENERAL
             fig_obj, axis_obj = plt.subplots(1, len(self.nlp))
             for ax in range(0, len(self.nlp)):
@@ -1297,7 +1301,7 @@ class OptimalControlProgram:
                 cmap3 = plt.cm.seismic
                 current_cmap3 = mcm.get_cmap('seismic')
                 current_cmap3.set_bad(color='k')
-                norm = mcolors.TwoSlopeNorm(vmin=-10, vmax=10, vcenter=0)
+                norm = mcolors.TwoSlopeNorm(vmin=min_hes-0.01, vmax=max_hes+0.01, vcenter=0)
                 im3 = axis_obj[ax].imshow(hessian_obj_list[ax], cmap=current_cmap3, norm=norm) #, aspect='auto'
                 axis_obj[ax].set_title('Hessian objective \n Phase ' + str(ax), fontweight='bold', fontsize=8)
                 axis_obj[ax].text(hessian_obj_list[ax].shape[0]/2, hessian_obj_list[ax].shape[0] * 1.1,'Convexity = ' + convexity[ax], horizontalalignment='center', fontweight='bold', fontsize=8)
