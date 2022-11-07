@@ -495,33 +495,11 @@ def test_phase_transition_uneven_variable_number_by_bounds():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], -12379.556480476766)
 
     # Check constraints
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (170, 1))
     np.testing.assert_equal(sol.status, 1)  # Did not converge, therefore the constraints won't be zero
-
-    # Check some of the results
-    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
-
-    # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([0.0, 0.0, 3.14, -1.57067321]))
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([0.0, 0.0, 6.28, 0.34316469]))
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([0.0, 0.0, 1.50114412, 1.23761251]))
-    np.testing.assert_almost_equal(
-        states[1]["q"][:, -1], np.array([-2.88504464e-04, 9.98812691e00, 9.42000184e00, 5.65972497e-03])
-    )
-    # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.0, 0.0, 0.40116546, 1.06628003]))
-    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.0, 0.0, -0.03838854, 1.84797575]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.0, 0.0, 0.85605915, 2.74242353]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([8.3959539, 9.57505651, 8.25809291, -5.35394026]))
-    # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([0.15560668, 0.85047655, 0.22727616]))
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-0.7974553, 1.59225528, 0.71190245]))
-    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([0.46754525]))
-    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([-0.52392726]))
 
 
 def test_phase_transition_uneven_variable_number_by_mapping():
