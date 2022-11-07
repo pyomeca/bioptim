@@ -430,8 +430,8 @@ class Bounds(OptionGeneric):
             The scaling factor
         """
 
-        if 'all' in scaling.keys() and isinstance(scaling['all'], VariableScaling):
-            scaling = scaling['all'].to_vector(n_elements, n_shooting)
+        if isinstance(scaling, VariableScaling):
+            scaling = scaling.to_vector(n_elements, n_shooting)
         self.min /= scaling
         self.max /= scaling
         return self

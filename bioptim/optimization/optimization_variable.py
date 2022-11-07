@@ -142,25 +142,25 @@ class VariableScalingList(OptionDict):
         for phase in range(ocp.n_phases):
 
             nx = x_init[phase].shape[0]
-            if x_scaling[0] is None:
-                x_scaling_all = np.ones((nx, 1))
+            if len(x_scaling[phase]) == 0:
+                x_scaling_all = np.ones((nx, ))
             else:
                 x_scaling_all = np.array([])
                 for key in x_scaling[phase].keys():
                     x_scaling_all = np.concatenate((x_scaling_all, x_scaling[phase][key].scaling))
 
-            if xdot_scaling[0] is None:
-                nb_quaternions = ocp.nlp[0].model.nbQuat()
+            if len(xdot_scaling[phase]) == 0:
+                nb_quaternions = ocp.nlp[phase].model.nbQuat()
                 nxdot = nx - nb_quaternions
-                xdot_scaling_all = np.ones((nxdot, 1))
+                xdot_scaling_all = np.ones((nxdot, ))
             else:
                 xdot_scaling_all = np.array([])
                 for key in xdot_scaling[phase].keys():
                     xdot_scaling_all = np.concatenate((xdot_scaling_all, xdot_scaling[phase][key].scaling))
 
-            if u_scaling[0] is None:
+            if len(u_scaling[phase]) == 0:
                 nu = u_init[phase].shape[0]
-                u_scaling_all = np.ones((nu, 1))
+                u_scaling_all = np.ones((nu, ))
             else:
                 u_scaling_all = np.array([])
                 for key in u_scaling[phase].keys():

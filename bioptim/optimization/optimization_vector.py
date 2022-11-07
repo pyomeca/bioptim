@@ -120,9 +120,9 @@ class OptimizationVector:
 
         v_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for phase, x_bound in enumerate(self.x_bounds):
-            v_bounds.concatenate(x_bound.scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1))
+            v_bounds.concatenate(x_bound.scale(self.ocp.nlp[phase].x_scaling['all'], self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1))
         for phase, u_bound in enumerate(self.u_bounds):
-            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling, self.ocp.nlp[phase].controls["scaled"].shape, self.ocp.nlp[phase].ns))
+            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling['all'], self.ocp.nlp[phase].controls["scaled"].shape, self.ocp.nlp[phase].ns))
         v_bounds.concatenate(self.parameters_in_list.bounds)
         return v_bounds
 
