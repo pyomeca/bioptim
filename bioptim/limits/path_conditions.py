@@ -430,8 +430,8 @@ class Bounds(OptionGeneric):
             The scaling factor
         """
 
-        if isinstance(scaling, VariableScaling):
-            scaling = scaling.to_vector("all", n_elements, n_shooting)
+        if 'all' in scaling.keys() and isinstance(scaling['all'], VariableScaling):
+            scaling = scaling['all'].to_vector(n_elements, n_shooting)
         self.min /= scaling
         self.max /= scaling
         return self
@@ -800,7 +800,7 @@ class InitialGuess(OptionGeneric):
             The scaling factor
         """
         if isinstance(scaling, VariableScaling):
-            scaling = scaling.to_vector('all', n_elements, n_shooting)
+            scaling = scaling.to_vector(n_elements, n_shooting)
         self.init /= scaling
         return self
 

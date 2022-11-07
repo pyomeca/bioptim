@@ -150,10 +150,10 @@ class OptimizationVector:
                 ####### attention je crois que ca devrait être 5*(ns+1)
                 v_init.concatenate(self._init_linear_interpolation(phase=phase).scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1))
             else:
-                v_init.concatenate(x_init.scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1))
+                v_init.concatenate(x_init.scale(self.ocp.nlp[phase].x_scaling['all'], self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1))
 
         for u_init in self.u_init:
-            v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling, self.ocp.nlp[phase].controls["scaled"].shape, self.ocp.nlp[phase].ns))
+            v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling['all'], self.ocp.nlp[phase].controls["scaled"].shape, self.ocp.nlp[phase].ns))
         v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
 

@@ -306,7 +306,7 @@ class OptimalControlProgram:
 
         if x_scaling is None:
             x_scaling = VariableScalingList()
-        elif isinstance(x_scaling, VariableScaling):
+        elif x_scaling is None or isinstance(x_scaling, VariableScaling):
             x_scaling_tp = VariableScalingList()
             x_scaling_tp.add(scaling=x_scaling)
             x_scaling = x_scaling_tp
@@ -470,6 +470,7 @@ class OptimalControlProgram:
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
         # Add the scaling of the variables
+        x_scaling, xdot_scaling, u_scaling = x_scaling.scaling_fill_phases(self, x_scaling, xdot_scaling, u_scaling, x_init, u_init)
         NLP.add(self, "x_scaling", x_scaling, True)
         NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)

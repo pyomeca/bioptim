@@ -4,12 +4,13 @@ import numpy as np
 from casadi import MX, SX, vertcat, horzcat
 
 from ..misc.mapping import BiMapping
-from ..misc.options import OptionGeneric, UniquePerPhaseOptionList
+from ..misc.options import OptionGeneric, OptionDict, UniquePerPhaseOptionList
 
 
 class VariableScaling(OptionGeneric):
     def __init__(
         self,
+        scaling: Union[np.ndarray, list] = None,
         **kwargs
     ):
         """
@@ -18,62 +19,59 @@ class VariableScaling(OptionGeneric):
         scaling: Union[np.ndarray, list]
             The scaling of the variables
         """
-        if "scaling" in kwargs:
-            self.scaling = kwargs["scaling"]
-        else:
-            for key in kwargs.keys():
-                if isinstance(kwargs[key], list):
-                    kwargs[key] = np.array(kwargs[key])
-            if len(kwargs) != 0:
-                kwargs['all'] = np.concatenate([kwargs[key] for key in kwargs.keys()])
-            self.scaling = kwargs
-            super(VariableScaling, self).__init__()
 
-    def __setitem__(self, key: str, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
+        super(VariableScaling, self).__init__()
+
+        if isinstance(scaling, list):
+            scaling = np.array(scaling)
+        elif not (isinstance(scaling, np.ndarray) or isinstance(scaling, VariableScaling)):
+            raise RuntimeError(f"Scaling must be a list or a numpy array, not {type(scaling)}")
+
+        self.scaling = scaling
+
+
+    def scaling(self):
         """
-        Allows to set from square brackets
+        Get the scaling
 
-        Parameters
-        ----------
-        _slice: Union[slice, list, tuple]
-            The slice where to put the data
-        value: Union[np.ndarray, float]
-            The value to set
+        Returns
+        -------
+        The scaling
         """
 
-        self.scaling[key][_slice] = value
+        return self.scaling['all']
 
-    def to_vector(self, key: str, n_elements: int, n_shooting: int):
+    def to_vector(self, n_elements: int, n_shooting: int):
         """
         Repeate the scaling to match the variables vector format
 
         """
 
-        if self.scaling[key].shape[0] != n_elements:
+        if self.scaling.shape[0] != n_elements:
             raise RuntimeError(
-                f"The number of elements in the scaling ({self.scaling[key].shape[0]}) is not the same as the number of elements ({n_elements})"
+                f"The number of elements in the scaling ({self.scaling.shape[0]}) is not the same as the number of elements ({n_elements})"
             )
 
         scaling_vector = np.zeros((n_elements * n_shooting, 1))
         for i in range(n_shooting):
-            scaling_vector[i * n_elements : (i + 1) * n_elements] = np.reshape(self.scaling[key], (n_elements, 1))
+            scaling_vector[i * n_elements : (i + 1) * n_elements] = np.reshape(self.scaling, (n_elements, 1))
 
         return scaling_vector
 
 
-    def to_array(self, key: str, n_elements: int, n_shooting: int):
+    def to_array(self, n_elements: int, n_shooting: int):
         """
         Repeate the scaling to match the variables array format
         """
 
         scaling_array = np.zeros((n_elements, n_shooting))
         for i in range(n_shooting):
-            scaling_array[:, i] = self.scaling[key]
+            scaling_array[:, i] = self.scaling
 
         return scaling_array
 
 
-class VariableScalingList(UniquePerPhaseOptionList):
+class VariableScalingList(OptionDict):
     """
     A list of VariableScaling if more than one is required
 
@@ -86,11 +84,14 @@ class VariableScalingList(UniquePerPhaseOptionList):
     print(self)
         Print the VariableScalingList to the console
     """
+    def __init__(self):
+        super(VariableScalingList, self).__init__()
 
     def add(
         self,
-        # scaling: Union[np.ndarray, list, VariableScaling] = None,
-        **kwargs
+        name: str,
+        scaling: Union[np.ndarray, list, VariableScaling] = None,
+        phase: int = -1,
     ):
         """
         Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
@@ -107,14 +108,11 @@ class VariableScalingList(UniquePerPhaseOptionList):
             Any parameters to pass to the Bounds
         """
 
-        if "scaling" in kwargs:
-            if not isinstance(kwargs["scaling"], VariableScaling):
-                raise RuntimeError("The scaling must be a VariableScaling")
-            if kwargs["scaling"].phase == -1:
-                kwargs["scaling"].phase = len(self.options) if self.options[0] else 0
-            self.copy(kwargs["scaling"])
+        if isinstance(scaling, VariableScaling):
+            self.add(name, phase=phase)
+
         else:
-            super(VariableScalingList, self)._add(**kwargs, option_type=VariableScaling)
+            super(VariableScalingList, self)._add(key=name, phase=phase, scaling=scaling, option_type=VariableScaling)
 
     def __getitem__(self, item) -> VariableScaling:
         """
@@ -139,6 +137,40 @@ class VariableScalingList(UniquePerPhaseOptionList):
 
         raise NotImplementedError("Printing of VariableScalingList is not ready yet")
 
+    def scaling_fill_phases(self, ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
+
+        for phase in range(ocp.n_phases):
+
+            nx = x_init[phase].shape[0]
+            if x_scaling[0] is None:
+                x_scaling_all = np.ones((nx, 1))
+            else:
+                x_scaling_all = np.array([])
+                for key in x_scaling[phase].keys():
+                    x_scaling_all = np.concatenate((x_scaling_all, x_scaling[phase][key].scaling))
+
+            if xdot_scaling[0] is None:
+                nb_quaternions = ocp.nlp[0].model.nbQuat()
+                nxdot = nx - nb_quaternions
+                xdot_scaling_all = np.ones((nxdot, 1))
+            else:
+                xdot_scaling_all = np.array([])
+                for key in xdot_scaling[phase].keys():
+                    xdot_scaling_all = np.concatenate((xdot_scaling_all, xdot_scaling[phase][key].scaling))
+
+            if u_scaling[0] is None:
+                nu = u_init[phase].shape[0]
+                u_scaling_all = np.ones((nu, 1))
+            else:
+                u_scaling_all = np.array([])
+                for key in u_scaling[phase].keys():
+                    u_scaling_all = np.concatenate((u_scaling_all, u_scaling[phase][key].scaling))
+
+            x_scaling.add('all', scaling=x_scaling_all, phase=phase)
+            xdot_scaling.add('all', scaling=xdot_scaling_all, phase=phase)
+            u_scaling.add('all', scaling=u_scaling_all, phase=phase)
+
+        return x_scaling, xdot_scaling, u_scaling
 
 class OptimizationVariable:
     """
