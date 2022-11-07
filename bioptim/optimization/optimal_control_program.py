@@ -952,6 +952,11 @@ class OptimalControlProgram:
                 jacobian_cas = MX()
                 list_constraints = []
                 for i in range (0,len(self.nlp[phase].g)):
+
+                    #If no constraints then leave
+                    if (len(self.nlp[phase].g) == 0) == True:
+                        break
+
                     for axis in range (0, self.nlp[phase].g[i].function(self.nlp[phase].states.cx, self.nlp[phase].controls.cx, self.nlp[phase].parameters.cx).shape[0]):
 
                         #depends if there are parameters
@@ -993,8 +998,11 @@ class OptimalControlProgram:
                 jacobian_list.append(jacobian_matrix)
 
                 #caculate jacobian rank
-                rank = np.linalg.matrix_rank(jacobian_matrix)
-                jacobian_rank.append(rank)
+                if (jacobian_matrix.size == 0) == False:
+                    rank = np.linalg.matrix_rank(jacobian_matrix)
+                    jacobian_rank.append(rank)
+                else:
+                    jacobian_rank.append('No constraints')
 
 
                 ###-----HESSIAN-----###
@@ -1075,20 +1083,27 @@ class OptimalControlProgram:
 
             max_norm = []
             min_norm = []
-            if hessian_norm_list[0].shape[0] != 0:
+            if hessian_norm_list[0].size != 0:
                 for i in range(0, len(hessian_norm_list)):
                     max_norm.append(np.ndarray.max(hessian_norm_list[i]))
                     min_norm.append(np.ndarray.min(hessian_norm_list[i]))
                 min_norm = min(min_norm)
                 max_norm = max(max_norm)
+            else:
+                max_norm = 0
+                min_norm = 0
 
             max_jac = []
             min_jac = []
-            for i in range(0, len(jacobian_list)):
-                max_jac.append(np.ndarray.max(jacobian_list[i]))
-                min_jac.append(np.ndarray.min(jacobian_list[i]))
-            max_jac = max(max_jac)
-            min_jac = min(min_jac)
+            if jacobian_list[0].size != 0:
+                for i in range(0, len(jacobian_list)):
+                    max_jac.append(np.ndarray.max(jacobian_list[i]))
+                    min_jac.append(np.ndarray.min(jacobian_list[i]))
+                max_jac = max(max_jac)
+                min_jac = min(min_jac)
+            else:
+                max_jac = 0
+                min_jac = 0
 
             #PLOT GENERAL
             fig, axis = plt.subplots(1, 2*len(self.nlp))
@@ -1302,11 +1317,21 @@ class OptimalControlProgram:
                 current_cmap3 = mcm.get_cmap('seismic')
                 current_cmap3.set_bad(color='k')
                 norm = mcolors.TwoSlopeNorm(vmin=min_hes-0.01, vmax=max_hes+0.01, vcenter=0)
-                im3 = axis_obj[ax].imshow(hessian_obj_list[ax], cmap=current_cmap3, norm=norm) #, aspect='auto'
-                axis_obj[ax].set_title('Hessian objective \n Phase ' + str(ax), fontweight='bold', fontsize=8)
-                axis_obj[ax].text(hessian_obj_list[ax].shape[0]/2, hessian_obj_list[ax].shape[0] * 1.1,'Convexity = ' + convexity[ax], horizontalalignment='center', fontweight='bold', fontsize=8)
-                axis_obj[ax].text(hessian_obj_list[ax].shape[0] / 2, hessian_obj_list[ax].shape[0] * 1.2,
-                                  '|λmax|/|λmin| = Condition number = ' + condition_number[ax], horizontalalignment='center', fontweight='bold', fontsize=8)
+                if len(self.nlp) == 1:
+                    im3 = axis_obj.imshow(hessian_obj_list[ax], cmap=current_cmap3, norm=norm)
+                    axis_obj.set_title('Hessian objective \n Phase ' + str(ax), fontweight='bold', fontsize=8)
+                    axis_obj.text(hessian_obj_list[ax].shape[0] / 2, hessian_obj_list[ax].shape[0] * 1.1,
+                                      'Convexity = ' + convexity[ax], horizontalalignment='center', fontweight='bold',
+                                      fontsize=8)
+                    axis_obj.text(hessian_obj_list[ax].shape[0] / 2, hessian_obj_list[ax].shape[0] * 1.2,
+                                      '|λmax|/|λmin| = Condition number = ' + condition_number[ax],
+                                      horizontalalignment='center', fontweight='bold', fontsize=8)
+                else:
+                    im3 = axis_obj[ax].imshow(hessian_obj_list[ax], cmap=current_cmap3, norm=norm) #, aspect='auto'
+                    axis_obj[ax].set_title('Hessian objective \n Phase ' + str(ax), fontweight='bold', fontsize=8)
+                    axis_obj[ax].text(hessian_obj_list[ax].shape[0]/2, hessian_obj_list[ax].shape[0] * 1.1,'Convexity = ' + convexity[ax], horizontalalignment='center', fontweight='bold', fontsize=8)
+                    axis_obj[ax].text(hessian_obj_list[ax].shape[0] / 2, hessian_obj_list[ax].shape[0] * 1.2,
+                                      '|λmax|/|λmin| = Condition number = ' + condition_number[ax], horizontalalignment='center', fontweight='bold', fontsize=8)
                 cbar_ax3 = fig_obj.add_axes([0.02, 0.4, 0.015, 0.3])
                 fig_obj.colorbar(im3, cax=cbar_ax3)
             fig_obj.text(0.5, 0.1, 'Every hessian should be convexe \n Condition numbers should be close to 0',horizontalalignment='center', fontsize=12, fontweight='bold')
