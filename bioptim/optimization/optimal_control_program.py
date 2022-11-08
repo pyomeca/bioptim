@@ -908,7 +908,7 @@ class OptimalControlProgram:
         -------
         Visualisation of jacobian and hessian contraints and hessian objective for each phase at initial time
         """
-        
+
         def get_u(nlp, u: Union[MX, SX], dt: Union[MX, SX]):
             """
             Get the control at a given time
