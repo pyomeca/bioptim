@@ -12,7 +12,8 @@ from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_muscle_activations_and_states_tracking(ode_solver):
+@pytest.mark.parametrize("n_threads", [1, 2])
+def test_muscle_activations_and_states_tracking(ode_solver, n_threads):
     # Load muscle_activations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
 
@@ -42,6 +43,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
         ode_solver=ode_solver(),
+        n_threads=n_threads,
     )
     solver = Solver.IPOPT()
     # solver.set_maximum_iterations(10)

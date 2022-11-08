@@ -153,6 +153,7 @@ def prepare_ocp(
     kin_data_to_track: str = "markers",
     use_residual_torque: bool = True,
     ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    n_threads: int = 1,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp to solve
@@ -177,6 +178,8 @@ def prepare_ocp(
         If residual torque are present or not in the dynamics
     ode_solver: OdeSolver
         The ode solver to use
+    n_threads: int
+        The number of threads
 
     Returns
     -------
@@ -240,6 +243,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
+        n_threads=n_threads,
     )
 
 
