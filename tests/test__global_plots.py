@@ -32,6 +32,21 @@ def test_plot_graphs_one_phase():
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
+def test_plot_Check_Contioning():
+    # Load graphs check conditioning
+    from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        n_shooting=30,
+        final_time=2,
+    )
+    ocp.Check_Conditioning()
+    sol = ocp.solve()
+    sol.graphs(automatically_organize=False)
+
 
 def test_plot_merged_graphs():
     # Load graphs_one_phase
