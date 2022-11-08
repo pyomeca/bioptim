@@ -295,12 +295,15 @@ class OptimizationVector:
 
         for nlp in self.ocp.nlp:
             x = []
+            # x_scaled = []
             u = []
+            # u_scaled = []
             if nlp.control_type != ControlType.CONSTANT and nlp.control_type != ControlType.LINEAR_CONTINUOUS:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
                 if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
+                    # x_scaled.append(
                     x.append(
                         nlp.cx.sym(
                             "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
@@ -314,14 +317,21 @@ class OptimizationVector:
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
+                    # u_scaled.append(nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1))
                     u.append(nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1))
 
+            # nlp.X_scaled = x_scaled
             nlp.X = x
+            # self.x_scaled[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x])
             self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x])
+            # self.n_phase_x[nlp.phase_idx] = self.x_scaled[nlp.phase_idx].size()[0]
             self.n_phase_x[nlp.phase_idx] = self.x[nlp.phase_idx].size()[0]
 
+            # nlp.U_scaled = u_scaled
             nlp.U = u
+            # self.u_scaled[nlp.phase_idx] = vertcat(*u_scaled)
             self.u[nlp.phase_idx] = vertcat(*u)
+            # self.n_phase_u[nlp.phase_idx] = self.u_scaled[nlp.phase_idx].size()[0]
             self.n_phase_u[nlp.phase_idx] = self.u[nlp.phase_idx].size()[0]
 
         self.n_all_x = sum(self.n_phase_x)

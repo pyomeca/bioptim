@@ -112,25 +112,25 @@ class ConfigureProblem:
                     new_name += [nlp.model.nameDof()[i].to_string()]
                 else:
                     if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
-                        if type == "qdot_scaled":
+                        if type == "qdot":
                             new_name += [
                                 nlp.model.nameDof()[i].to_string()[:-5]
-                                + "omega_scaled"
+                                + "omega"
                                 + nlp.model.nameDof()[i].to_string()[-1]
                             ]
-                        elif type == "qddot_scaled":
+                        elif type == "qddot":
                             new_name += [
                                 nlp.model.nameDof()[i].to_string()[:-5]
-                                + "omegadot_scaled"
+                                + "omegadot"
                                 + nlp.model.nameDof()[i].to_string()[-1]
                             ]
-                        elif type == "qdddot_scaled":
+                        elif type == "qdddot":
                             new_name += [
                                 nlp.model.nameDof()[i].to_string()[:-5]
-                                + "omegaddot_scaled"
+                                + "omegaddot"
                                 + nlp.model.nameDof()[i].to_string()[-1]
                             ]
-                        elif type == "tau_scaled" or type == "taudot_scaled":
+                        elif type == "tau" or type == "taudot":
                             new_name += [nlp.model.nameDof()[i].to_string()]
 
         return new_name
@@ -488,7 +488,7 @@ class ConfigureProblem:
 
         """
 
-        if fatigue is not None and "tau_scaled" in fatigue and not with_torque:
+        if fatigue is not None and "tau" in fatigue and not with_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
@@ -1158,7 +1158,7 @@ class ConfigureProblem:
 
         muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
         ConfigureProblem.configure_new_variable(
-            "muscles_scaled",
+            "muscles",
             muscle_names,
             nlp,
             as_states,
@@ -1185,7 +1185,7 @@ class ConfigureProblem:
         if key_to_adjust not in nlp.variable_mappings:
             for n in reference_keys:
                 if n in nlp.variable_mappings:
-                    if n == "q_scaled":
+                    if n == "q":
                         q_map = list(nlp.variable_mappings[n].to_first.map_idx)
                         target = list(range(nlp.model.nbQ()))
                         if nlp.model.nbQuat() > 0:

@@ -653,30 +653,6 @@ class PenaltyFunctionAbstract:
             penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
 
             return marker_objective
-        #
-        # @staticmethod
-        # def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], x: Union[MX, SX], x_end: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
-        #
-        #     nlp = all_pn.nlp
-        #     if isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
-        #         raise RuntimeError("continuity should be called one node at a time")
-        #
-        #     penalty.expand = all_pn.nlp.dynamics_type.expand
-        #
-        #     continuity = x_end
-        #     if nlp.ode_solver.is_direct_collocation:
-        #         # cx = horzcat(*([x] + nlp.states.cx_intermediates_list))
-        #         continuity -= nlp.dynamics[0](x0=x, p=u, params=p)["xf"]
-        #         continuity = vertcat(continuity, nlp.dynamics[0](x0=x, p=u, params=p)["defects"])
-        #         penalty.integrate = True
-        #
-        #     else:
-        #         continuity -= nlp.dynamics[0](x0=x, p=u, params=p)["xf"]
-        #
-        #     penalty.explicit_derivative = True
-        #     penalty.multi_thread = True
-        #
-        #     return continuity
 
         @staticmethod
         def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list]):
