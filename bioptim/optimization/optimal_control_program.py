@@ -902,6 +902,13 @@ class OptimalControlProgram:
         )
 
     def Check_Conditioning(self):
+        """
+
+        Returns
+        -------
+        Visualisation of jacobian and hessian contraints and hessian objective for each phase at initial time
+        """
+        
         def get_u(nlp, u: Union[MX, SX], dt: Union[MX, SX]):
             """
             Get the control at a given time
@@ -945,7 +952,6 @@ class OptimalControlProgram:
             hessian_norm_list = []
 
             ###-----JACOBIAN-----###
-
             for phase in range(0, len(self.nlp)):
                 jacobian_cas = MX()
                 list_constraints = []
@@ -1008,7 +1014,6 @@ class OptimalControlProgram:
                     )
 
                 # evaluate jac_func at X_init, U_init, considering the parameters
-
                 X_init = np.zeros((len(self.nlp[phase].X), self.nlp[phase].x_init.shape[0]))
                 U_init = np.zeros((len(self.nlp[phase].U), self.nlp[phase].u_init.shape[0]))
                 Param_init = np.array(self.nlp[phase].parameters.initial_guess.init)
@@ -1034,7 +1039,6 @@ class OptimalControlProgram:
                     jacobian_rank.append("No constraints")
 
                 ###-----HESSIAN-----###
-
                 tick_labels = []
                 list_hessian = []
                 list_norm = []
@@ -1092,7 +1096,6 @@ class OptimalControlProgram:
                                 )
 
                             # evaluate hes_func en X_init, U_init, with parameters
-
                             X_init = np.zeros((len(self.nlp[phase].X), self.nlp[phase].x_init.shape[0]))
                             U_init = np.zeros((len(self.nlp[phase].U), self.nlp[phase].u_init.shape[0]))
                             Param_init = np.array(self.nlp[phase].parameters.initial_guess.init)
@@ -1136,7 +1139,7 @@ class OptimalControlProgram:
 
             Returns
             -------
-            Visualisation of jacobian and hessian norm matrix
+            Visualisation of jacobian matrix and hessian norm matrix
             """
             jacobian_list, jacobian_rank, tick_labels_list, hessian_norm_list = Jacobian_hessian_constraints()
 
@@ -1206,7 +1209,7 @@ class OptimalControlProgram:
 
                 im2 = axis[ax + len(self.nlp)].imshow(
                     hessian_norm_list[ax], aspect="auto", cmap=current_cmap2, norm=norm2
-                )  # , vmin=min_norm, vmax=max_norm)
+                )
                 axis[ax + len(self.nlp)].set_title(
                     "Hessian constraint norms \n Phase " + str(ax), fontweight="bold", fontsize=8
                 )
@@ -1234,7 +1237,6 @@ class OptimalControlProgram:
                 # hessian_obj = 0
                 for obj in range(0, len(self.nlp[phase].J)):
                     objective = 0
-                    ########################
                     state_cx = self.nlp[phase].states.cx
                     control_cx = self.nlp[phase].controls.cx
 
@@ -1281,8 +1283,6 @@ class OptimalControlProgram:
                             else len(self.nlp[phase].J[obj].cols),
                         ]
                     )
-                    # target_cx = self.nlp[phase].cx.sym("target", target_shape)
-                    # weight_cx = self.nlp[phase].cx.sym("weight", 1, 1)
 
                     if is_trapezoidal:
                         # Hypothesis: the function is continuous on states
@@ -1364,7 +1364,6 @@ class OptimalControlProgram:
                     )
 
                 # evaluate hes_func at X_init, U_init, with parameters
-
                 X_init = np.zeros((len(self.nlp[phase].X), self.nlp[phase].x_init.shape[0]))
                 U_init = np.zeros((len(self.nlp[phase].U), self.nlp[phase].u_init.shape[0]))
                 Param_init = np.array(self.nlp[phase].parameters.initial_guess.init)
@@ -1381,10 +1380,9 @@ class OptimalControlProgram:
                 hessian_obj_matrix = np.array(hes_func(np.vstack((X_init, U_init, Param_init))))
                 hessian_obj_list.append(hessian_obj_matrix)
 
-            ###Convexity checking (positive semi-definite hessian)###
+            ###---Convexity checking (positive semi-definite hessian)---###
             # On R (convexe), the objective is convexe if and only if the hessian is positive semi definite (psd)
             # And, as the hessian is symetric (Schwarz), the hessian is psd if and only if the eigenvalues are positive
-
             convexity = []
             condition_number = []
             for matrix in range(0, len(hessian_obj_list)):
