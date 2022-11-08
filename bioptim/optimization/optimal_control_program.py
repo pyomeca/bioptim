@@ -1069,7 +1069,6 @@ class OptimalControlProgram:
                 array_norm = np.array(list_norm).reshape(len(list_hessian), 1)
                 hessian_norm_list.append(array_norm)
 
-
             return jacobian_list, jacobian_rank, tick_labels_list, hessian_norm_list
 
         def Check_constraints_plot():
@@ -1137,7 +1136,7 @@ class OptimalControlProgram:
                 axis[ax + len(self.nlp)].set_yticklabels(tick_labels_list[ax], fontsize=6, rotation=90)
                 cbar_ax2 = fig.add_axes([0.95, 0.4, 0.015, 0.3])
                 fig.colorbar(im2, cax=cbar_ax2)
-
+            fig.legend(['Black = 0'], loc='upper left')
             plt.suptitle('Check conditioning for constraints ', color='b', fontsize=15, fontweight='bold')
 
 
@@ -1288,8 +1287,6 @@ class OptimalControlProgram:
                         break
 
             return hessian_obj_list, condition_number, convexity
-            #global condition number
-            #a verifier car toutes les hessiennes n'ont pas la meme dimensions !
 
         def Check_objective_plot():
             """
@@ -1327,13 +1324,14 @@ class OptimalControlProgram:
                                       '|λmax|/|λmin| = Condition number = ' + condition_number[ax],
                                       horizontalalignment='center', fontweight='bold', fontsize=8)
                 else:
-                    im3 = axis_obj[ax].imshow(hessian_obj_list[ax], cmap=current_cmap3, norm=norm) #, aspect='auto'
+                    im3 = axis_obj[ax].imshow(hessian_obj_list[ax], cmap=current_cmap3, norm=norm)
                     axis_obj[ax].set_title('Hessian objective \n Phase ' + str(ax), fontweight='bold', fontsize=8)
                     axis_obj[ax].text(hessian_obj_list[ax].shape[0]/2, hessian_obj_list[ax].shape[0] * 1.1,'Convexity = ' + convexity[ax], horizontalalignment='center', fontweight='bold', fontsize=8)
                     axis_obj[ax].text(hessian_obj_list[ax].shape[0] / 2, hessian_obj_list[ax].shape[0] * 1.2,
                                       '|λmax|/|λmin| = Condition number = ' + condition_number[ax], horizontalalignment='center', fontweight='bold', fontsize=8)
                 cbar_ax3 = fig_obj.add_axes([0.02, 0.4, 0.015, 0.3])
                 fig_obj.colorbar(im3, cax=cbar_ax3)
+            fig_obj.legend(['Black = 0'], loc='upper left')
             fig_obj.text(0.5, 0.1, 'Every hessian should be convexe \n Condition numbers should be close to 0',horizontalalignment='center', fontsize=12, fontweight='bold')
             plt.suptitle('Check conditioning for objectives', color='b', fontsize=15, fontweight='bold')
 
