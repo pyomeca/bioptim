@@ -453,9 +453,9 @@ class Solution:
             states_unscaled[phase] = {}
             controls_unscaled[phase] = {}
             for key, value in states_scaled[phase].items():
-                states_unscaled[phase][key] = value * ocp.nlp[phase].x_scaling.to_array(key, states_scaled[phase][key].shape[0], states_scaled[phase][key].shape[1])
+                states_unscaled[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(states_scaled[phase][key].shape[0], states_scaled[phase][key].shape[1])
             for key, value in controls_scaled[phase].items():
-                controls_unscaled[phase][key] = value * ocp.nlp[phase].u_scaling.to_array(key, controls_scaled[phase][key].shape[0], controls_scaled[phase][key].shape[1])
+                controls_unscaled[phase][key] = value * ocp.nlp[phase].u_scaling[key].to_array(controls_scaled[phase][key].shape[0], controls_scaled[phase][key].shape[1])
 
         return states_unscaled, controls_unscaled
 
@@ -535,7 +535,7 @@ class Solution:
         """
         states_scaled = self._states["scaled"][0] if len(self._states["scaled"]) == 1 else self._states["scaled"]
         states_unscaled = self._states["unscaled"][0] if len(self._states["unscaled"]) == 1 else self._states["unscaled"]
-        return states_scaled, states_unscaled
+        return {"scaled": states_scaled, "unscaled": states_unscaled}
 
     def no_intermediate(self, states) -> Union[list, dict]:
         """
@@ -652,7 +652,7 @@ class Solution:
         controls_unscaled = (
             self._controls["unscaled"][0] if len(self._controls["unscaled"]) == 1 else self._controls["unscaled"]
         )
-        return controls_scaled, controls_unscaled
+        return {"scaled": controls_scaled, "unscaled": controls_unscaled}
 
     @property
     def time(self) -> Union[list, dict]:
@@ -1292,7 +1292,8 @@ class Solution:
         elif n_frames > 0:
             data_to_animate = data_to_animate.interpolate(n_frames)
 
-        _, states_unscaled = data_to_animate.states
+        states = data_to_animate.states
+        states_unscaled = states["unscaled"]
         if not isinstance(states_unscaled, (list, tuple)):
             states_unscaled = [states_unscaled]
 

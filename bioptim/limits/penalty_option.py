@@ -450,8 +450,8 @@ class PenaltyOption(OptionGeneric):
             control_cx_unscaled = horzcat(all_pn.nlp.controls["unscaled"].cx_end, all_pn.nlp.controls["unscaled"].cx)
             self.function = biorbd.to_casadi_func(
                 f"{name}",
-                self.function(all_pn.nlp.states["unscaled"].cx_end, all_pn.nlp.controls["unscaled"].cx_end, param_cx)
-                - self.function(all_pn.nlp.states["unscaled"].cx, all_pn.nlp.controls["unscaled"].cx, param_cx),
+                self.function(all_pn.nlp.states["scaled"].cx_end, all_pn.nlp.controls["scaled"].cx_end, param_cx)
+                - self.function(all_pn.nlp.states["scaled"].cx, all_pn.nlp.controls["scaled"].cx, param_cx),
                 state_cx,
                 control_cx,
                 param_cx,
@@ -499,7 +499,7 @@ class PenaltyOption(OptionGeneric):
             )
             control_cx_end = get_u(nlp, control_cx, dt_cx)
             control_cx_end_unscaled = get_u(nlp, control_cx_unscaled, dt_cx)
-            state_cx_end_unscaled = (
+            state_cx_end = (
                 all_pn.nlp.states["scaled"].cx_end
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else nlp.dynamics[0](x0=state_cx_unscaled, p=control_cx_end_unscaled, params=nlp.parameters.cx)["xf"]
@@ -507,9 +507,9 @@ class PenaltyOption(OptionGeneric):
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
                 (
-                    (self.function(all_pn.nlp.states["unscaled"].cx, all_pn.nlp.controls["unscaled"].cx, param_cx) - target_cx[:, 0])
+                    (self.function(all_pn.nlp.states["scaled"].cx, all_pn.nlp.controls["scaled"].cx, param_cx) - target_cx[:, 0])
                     ** exponent
-                    + (self.function(state_cx_end_unscaled, control_cx_end_unscaled, param_cx) - target_cx[:, 1]) ** exponent
+                    + (self.function(state_cx_end, control_cx_end, param_cx) - target_cx[:, 1]) ** exponent
                 )
                 / 2,
                 state_cx,
@@ -518,9 +518,9 @@ class PenaltyOption(OptionGeneric):
                 target_cx,
                 dt_cx,
             )
-            modified_fcn = self.modified_function(state_cx_unscaled, control_cx_unscaled, param_cx, target_cx, dt_cx)
+            modified_fcn = self.modified_function(state_cx, control_cx, param_cx, target_cx, dt_cx)
         else:
-            modified_fcn = (self.function(state_cx_unscaled, control_cx_unscaled, param_cx) - target_cx) ** exponent
+            modified_fcn = (self.function(state_cx, control_cx, param_cx) - target_cx) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
         modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
@@ -689,9 +689,7 @@ class PenaltyOption(OptionGeneric):
                 else all_pn.t
             )
 
-        # x, x_end, u, p = self.select_x_u_p(all_pn, **self.params)
-        penalty_function = self.type(self, all_pn, **self.params) # x, x_end, u, p,
-        # penalty_function = self.type(self, all_pn, **self.params)
+        penalty_function = self.type(self, all_pn, **self.params)
         self.set_penalty(penalty_function, all_pn)
 
     def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
