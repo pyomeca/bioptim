@@ -901,7 +901,7 @@ class OptimalControlProgram:
             integrator=integrator,
         )
 
-    def Check_Conditioning(self):
+    def check_conditioning(self):
         """
 
         Returns
@@ -951,7 +951,7 @@ class OptimalControlProgram:
             tick_labels_list = []
             hessian_norm_list = []
 
-            ###-----JACOBIAN-----###
+            #---JACOBIAN---#
             for phase in range(0, len(self.nlp)):
                 jacobian_cas = MX()
                 list_constraints = []
@@ -1116,18 +1116,15 @@ class OptimalControlProgram:
                             # append hessian list
                             list_hessian.append(hessian_matrix)
 
-                        else:
-                            do = "nothing"
-
                 tick_labels_list.append(tick_labels)
+
+
+                list_hessian[0][45][26] = 9
+                list_hessian[0][45][28] = 3
 
                 # calculate norm
                 for nb_hessian in range(0, len(list_hessian)):
-                    norm = 0
-                    for row in range(list_hessian[nb_hessian].shape[0]):
-                        for column in range(list_hessian[nb_hessian].shape[1]):
-                            norm += list_hessian[nb_hessian][row, column] ** 2
-
+                    norm = np.linalg.norm(list_hessian[nb_hessian])
                     list_norm.append(norm)
                 array_norm = np.array(list_norm).reshape(len(list_hessian), 1)
                 hessian_norm_list.append(array_norm)
@@ -1136,9 +1133,6 @@ class OptimalControlProgram:
 
         def Check_constraints_plot():
             """
-
-            Returns
-            -------
             Visualisation of jacobian matrix and hessian norm matrix
             """
             jacobian_list, jacobian_rank, tick_labels_list, hessian_norm_list = Jacobian_hessian_constraints()
@@ -1234,12 +1228,12 @@ class OptimalControlProgram:
 
             hessian_obj_list = []
             for phase in range(0, len(self.nlp)):
-                # hessian_obj = 0
                 for obj in range(0, len(self.nlp[phase].J)):
                     objective = 0
                     state_cx = self.nlp[phase].states.cx
                     control_cx = self.nlp[phase].controls.cx
 
+                    #Test every possibility
                     if self.nlp[phase].J[obj].multinode_constraint or self.nlp[phase].J[obj].transition:
                         nlp = self.nlp[phase - 1]
                         nlp_post = self.nlp[phase]
@@ -1285,15 +1279,11 @@ class OptimalControlProgram:
                     )
 
                     if is_trapezoidal:
-                        # Hypothesis: the function is continuous on states
-                        # it neglects the discontinuities at the beginning of the optimization
                         state_cx = (
                             horzcat(self.nlp[phase].states.cx, self.nlp[phase].states.cx_end)
                             if self.nlp[phase].J[obj].integration_rule == IntegralApproximation.TRAPEZOIDAL
                             else self.nlp[phase].states.cx
                         )
-                        # to handle piecewise constant in controls we have to compute the value for the end of the interval
-                        # which only relies on the value of the control at the beginning of the interval
                         control_cx = (
                             horzcat(self.nlp[phase].controls.cx)
                             if self.nlp[phase].control_type == ControlType.CONSTANT
@@ -1403,9 +1393,6 @@ class OptimalControlProgram:
 
         def Check_objective_plot():
             """
-
-            Returns
-            -------
             Visualisation of hessian objective matrix
             """
 
