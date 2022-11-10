@@ -54,8 +54,6 @@ from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 from ..gui.check_conditioning import check_conditioning
 
-check_version(biorbd, "1.9.1", "1.10.0")
-
 
 class OptimalControlProgram:
     """
