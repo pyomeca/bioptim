@@ -71,25 +71,25 @@ class OptimizationVector:
 
         self.parameters_in_list = ParameterList()
 
-        self.x: Union[MX, SX, list] = []
+        self.x_scaled: Union[MX, SX, list] = []
         self.x_bounds = []
         self.x_init = []
         self.n_all_x = 0
         self.n_phase_x = []
 
-        self.u: Union[MX, SX, list] = []
+        self.u_scaled: Union[MX, SX, list] = []
         self.u_bounds = []
         self.u_init = []
         self.n_all_u = 0
         self.n_phase_u = []
 
         for _ in range(self.ocp.n_phases):
-            self.x.append([])
+            self.x_scaled.append([])
             self.x_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
             self.x_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
             self.n_phase_x.append(0)
 
-            self.u.append([])
+            self.u_scaled.append([])
             self.u_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
             self.u_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
             self.n_phase_u.append(0)
@@ -104,8 +104,8 @@ class OptimizationVector:
         The vector of all variables
         """
 
-        x = [x.reshape((-1, 1)) for x in self.x]
-        return vertcat(*x, *self.u, self.parameters_in_list.cx)
+        x_scaled = [x_scaled.reshape((-1, 1)) for x_scaled in self.x_scaled]
+        return vertcat(*x_scaled, *self.u_scaled, self.parameters_in_list.cx)
 
     @property
     def bounds(self):
@@ -294,17 +294,14 @@ class OptimizationVector:
         """
 
         for nlp in self.ocp.nlp:
-            x = []
-            # x_scaled = []
-            u = []
-            # u_scaled = []
+            x_scaled = []
+            u_scaled = []
             if nlp.control_type != ControlType.CONSTANT and nlp.control_type != ControlType.LINEAR_CONTINUOUS:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
                 if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
-                    # x_scaled.append(
-                    x.append(
+                    x_scaled.append(
                         nlp.cx.sym(
                             "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
                             nlp.states["scaled"].shape,
@@ -312,27 +309,19 @@ class OptimizationVector:
                         )
                     )
                 else:
-                    x.append(nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states["scaled"].shape, 1))
+                    x_scaled.append(nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states["scaled"].shape, 1))
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
-                    # u_scaled.append(nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1))
-                    u.append(nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1))
+                    u_scaled.append(nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1))
 
-            # nlp.X_scaled = x_scaled
-            nlp.X = x
-            # self.x_scaled[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x])
-            self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x])
-            # self.n_phase_x[nlp.phase_idx] = self.x_scaled[nlp.phase_idx].size()[0]
-            self.n_phase_x[nlp.phase_idx] = self.x[nlp.phase_idx].size()[0]
-
-            # nlp.U_scaled = u_scaled
-            nlp.U = u
-            # self.u_scaled[nlp.phase_idx] = vertcat(*u_scaled)
-            self.u[nlp.phase_idx] = vertcat(*u)
-            # self.n_phase_u[nlp.phase_idx] = self.u_scaled[nlp.phase_idx].size()[0]
-            self.n_phase_u[nlp.phase_idx] = self.u[nlp.phase_idx].size()[0]
+            nlp.X_scaled = x_scaled
+            self.x_scaled[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x_scaled])
+            self.n_phase_x[nlp.phase_idx] = self.x_scaled[nlp.phase_idx].size()[0]
+            nlp.U_scaled = u_scaled
+            self.u_scaled[nlp.phase_idx] = vertcat(*u_scaled)
+            self.n_phase_u[nlp.phase_idx] = self.u_scaled[nlp.phase_idx].size()[0]
 
         self.n_all_x = sum(self.n_phase_x)
         self.n_all_u = sum(self.n_phase_u)

@@ -764,6 +764,6 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise RuntimeError(" is not a valid node")
 
-        x = [nlp.X[idx] for idx in t]
-        u = [nlp.U[idx] for idx in t if idx != nlp.ns]
-        return PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx)
+        x_scaled = [nlp.X_scaled[idx] for idx in t]
+        u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
+        return PenaltyNodeList(ocp, nlp, t, x_scaled, u_scaled, nlp.parameters.cx)
