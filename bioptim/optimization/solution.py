@@ -1349,17 +1349,17 @@ class Solution:
             target = []
             if nlp is not None:
                 if penalty.transition:
-                    phase_post = (phase_idx + 1) % len(self._states["unscaled"])
-                    x = np.concatenate((self._states["unscaled"][phase_idx]["all"][:, -1], self._states["unscaled"][phase_post]["all"][:, 0]))
+                    phase_post = (phase_idx + 1) % len(self._states["scaled"])
+                    x = np.concatenate((self._states["scaled"][phase_idx]["all"][:, -1], self._states["scaled"][phase_post]["all"][:, 0]))
                     u = np.concatenate(
-                        (self._controls["unscaled"][phase_idx]["all"][:, -1], self._controls["unscaled"][phase_post]["all"][:, 0])
+                        (self._controls["scaled"][phase_idx]["all"][:, -1], self._controls["scaled"][phase_post]["all"][:, 0])
                     )
                 elif penalty.multinode_constraint:
 
                     x = np.concatenate(
                         (
-                            self._states["unscaled"][penalty.phase_first_idx]["all"][:, idx[0]],
-                            self._states["unscaled"][penalty.phase_second_idx]["all"][:, idx[1]],
+                            self._states["scaled"][penalty.phase_first_idx]["all"][:, idx[0]],
+                            self._states["scaled"][penalty.phase_second_idx]["all"][:, idx[1]],
                         )
                     )
                     # Make an exception to the fact that U is not available for the last node
@@ -1367,8 +1367,8 @@ class Solution:
                     mod_u1 = 1 if penalty.second_node == Node.END else 0
                     u = np.concatenate(
                         (
-                            self._controls["unscaled"][penalty.phase_first_idx]["all"][:, idx[0] - mod_u0],
-                            self._controls["unscaled"][penalty.phase_second_idx]["all"][:, idx[1] - mod_u1],
+                            self._controls["scaled"][penalty.phase_first_idx]["all"][:, idx[0] - mod_u0],
+                            self._controls["scaled"][penalty.phase_second_idx]["all"][:, idx[1] - mod_u1],
                         )
                     )
 
@@ -1398,9 +1398,9 @@ class Solution:
                             else self.states_unscaled_no_intermediate[phase_idx]["all"][:, col_x_idx]
                         )
                     else:
-                        x = self._states["unscaled"][phase_idx]["all"][:, col_x_idx]
+                        x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]
 
-                    u = self._controls["unscaled"][phase_idx]["all"][:, col_u_idx]
+                    u = self._controls["scaled"][phase_idx]["all"][:, col_u_idx]
                     if penalty.target is None:
                         target = []
                     elif (
