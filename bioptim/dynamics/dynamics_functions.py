@@ -108,10 +108,10 @@ class DynamicsFunctions:
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
-        q = DynamicsFunctions.get(nlp.states["unscaled"]["q"], states)
+        q = DynamicsFunctions.get(nlp.states["unscaled"]["q"], states) # OK unscaled
         qdot = DynamicsFunctions.get(nlp.states["unscaled"]["qdot"], states)
 
-        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) # OK unscaled
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
 
         if (
@@ -684,7 +684,7 @@ class DynamicsFunctions:
             if with_contact:
                 qddot = nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
             else:
-                qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+                qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()  # cas.jacobian(qddot, nlp.states['scaled'].mx) = MX(zeros(2x4,0nz))
             return qdot_var.mapping.to_first.map(qddot)
 
     @staticmethod

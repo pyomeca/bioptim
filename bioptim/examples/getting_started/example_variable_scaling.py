@@ -82,28 +82,28 @@ def prepare_ocp(
     u_init = InitialGuess([tau_init] * n_tau)
 
     # Variable scaling
+    x_scaling = VariableScalingList()
+    x_scaling.add("q", scaling=[1, 3])  # declare keys in order, so that they are concatenated in the right order
+    x_scaling.add("qdot", scaling=[100, 30])
+
+    xdot_scaling = VariableScalingList()
+    xdot_scaling.add("qdot", scaling=[100, 30])
+    xdot_scaling.add("qddot", scaling=[100, 30])
+
+    u_scaling = VariableScalingList()
+    u_scaling.add("tau", scaling=[10, 10])
+
+
     # x_scaling = VariableScalingList()
-    # x_scaling.add("q", scaling=[1, 3])  # declare keys in order, so that they are concatenated in the right order
-    # x_scaling.add("qdot", scaling=[100, 30])
+    # x_scaling.add("q", scaling=[1, 1])  # declare keys in order, so that they are concatenated in the right order
+    # x_scaling.add("qdot", scaling=[1, 1])
     #
     # xdot_scaling = VariableScalingList()
-    # xdot_scaling.add("qdot", scaling=[100, 30])
-    # xdot_scaling.add("qddot", scaling=[100, 30])
+    # xdot_scaling.add("qdot", scaling=[1, 1])
+    # xdot_scaling.add("qddot", scaling=[1, 1])
     #
     # u_scaling = VariableScalingList()
     # u_scaling.add("tau", scaling=[1, 1])
-
-
-    x_scaling = VariableScalingList()
-    x_scaling.add("q", scaling=[1, 1])  # declare keys in order, so that they are concatenated in the right order
-    x_scaling.add("qdot", scaling=[1, 1])
-
-    xdot_scaling = VariableScalingList()
-    xdot_scaling.add("qdot", scaling=[1, 1])
-    xdot_scaling.add("qddot", scaling=[1, 1])
-
-    u_scaling = VariableScalingList()
-    u_scaling.add("tau", scaling=[1, 1])
 
     return OptimalControlProgram(
         biorbd_model,
