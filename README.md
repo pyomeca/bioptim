@@ -331,7 +331,7 @@ Now you can check if the ocp is well defined for the initial values.
 This checking will help you to see if your constraints and objectives are ok.
 To visualize it, you can use
 ```python
-ocp.Check_Conditioning()
+ocp.check_conditioning()
 ```
 This will print two different plots !
 
@@ -340,7 +340,7 @@ There are one matrix for each phase.
 The first half of the plot can be used to verify if some constraints are redundant. It simply compare the rank of the jacobian with the numbers of contraints for each phase.
 The second half of the plot can be used to verify if the equlity constraints are linear.
 
-The second plot window shows the hessian of the objective for each phase. It calculates if the problem is convexe by checking if the matrix is semi-definite positive.
+The second plot window shows the hessian of the objective for each phase. It calculates if the problem is convexe by checking if the matrix is positive semi-definite.
 It also calculate the condition number for each phase thanks to the eigen values.
 
 If everything is ok, let's solve the ocp !
