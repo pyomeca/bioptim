@@ -230,16 +230,16 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties):
 
         if _penalty.derivative or _penalty.explicit_derivative:
             _x = horzcat(_x, nlp.X_scaled[_idx + 1][:, 0])
-            _u = horzcat(_u, nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+            _u = horzcat(_u, nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else [])
 
         if _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
             _x = horzcat(_x, nlp.X_scaled[_idx + 1][:, 0])
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                _u = horzcat(_u, nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+                _u = horzcat(_u, nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else [])
 
         if _penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+                _u = horzcat(_u, nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else [])
         return _x, _u
 
     param = interface.ocp.cx(interface.ocp.v.parameters_in_list.cx)
