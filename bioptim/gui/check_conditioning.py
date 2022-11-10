@@ -1,7 +1,6 @@
 from typing import Union
 
 import numpy as np
-import biorbd_casadi as biorbd
 from casadi import MX, SX, Function, horzcat, vertcat, jacobian, vcat, hessian
 from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
@@ -10,12 +9,9 @@ from ..misc.enums import (
     ControlType,
 )
 from ..misc.enums import IntegralApproximation
-from ..misc.utils import check_version
-
-check_version(biorbd, "1.9.1", "1.10.0")
 
 
-def check_conditioning(self):
+def check_conditioning(ocp):
     """
     Visualisation of jacobian and hessian contraints and hessian objective for each phase at initial time
     """
@@ -63,8 +59,7 @@ def check_conditioning(self):
         hessian_norm_list = []
 
         # JACOBIAN
-        for phase in self.nlp:
-            jacobian_cas = MX()
+        for phase in ocp.nlp:
             list_constraints = []
             for constraints in phase.g:
 
@@ -109,20 +104,20 @@ def check_conditioning(self):
             )
 
             # evaluate jac_func at X_init, U_init, considering the parameters
-            X_init = np.zeros((len(phase.X), phase.x_init.shape[0]))
+            x_init = np.zeros((len(phase.X), phase.x_init.shape[0]))
             U_init = np.zeros((len(phase.U), phase.u_init.shape[0]))
             Param_init = np.array(phase.parameters.initial_guess.init)
 
             for n_shooting in range(0, phase.ns + 1):
-                X_init[n_shooting, :] = np.array(phase.x_init.init.evaluate_at(n_shooting))
+                x_init[n_shooting, :] = np.array(phase.x_init.init.evaluate_at(n_shooting))
             for n_shooting in range(0, phase.ns):
                 U_init[n_shooting, :] = np.array(phase.u_init.init.evaluate_at(n_shooting))
 
-            X_init = X_init.reshape((X_init.size, 1))
+            x_init = x_init.reshape((x_init.size, 1))
             U_init = U_init.reshape((U_init.size, 1))
             Param_init = Param_init.reshape((np.array(phase.parameters.initial_guess.init).size, 1))
 
-            jacobian_matrix = np.array(jac_func(np.vstack((X_init, U_init, Param_init))))
+            jacobian_matrix = np.array(jac_func(np.vstack((x_init, U_init, Param_init))))
 
             jacobian_list.append(jacobian_matrix)
 
@@ -170,20 +165,20 @@ def check_conditioning(self):
                         )
 
                         # evaluate hes_func en X_init, U_init, with parameters
-                        X_init = np.zeros((len(phase.X), phase.x_init.shape[0]))
+                        x_init = np.zeros((len(phase.X), phase.x_init.shape[0]))
                         U_init = np.zeros((len(phase.U), phase.u_init.shape[0]))
                         Param_init = np.array(phase.parameters.initial_guess.init)
 
                         for n_shooting in range(0, phase.ns + 1):
-                            X_init[n_shooting, :] = np.array(phase.x_init.init.evaluate_at(n_shooting))
+                            x_init[n_shooting, :] = np.array(phase.x_init.init.evaluate_at(n_shooting))
                         for n_shooting in range(0, phase.ns):
                             U_init[n_shooting, :] = np.array(phase.u_init.init.evaluate_at(n_shooting))
 
-                        X_init = X_init.reshape((X_init.size, 1))
+                        x_init = x_init.reshape((x_init.size, 1))
                         U_init = U_init.reshape((U_init.size, 1))
                         Param_init = Param_init.reshape((np.array(phase.parameters.initial_guess.init).size, 1))
 
-                        hessian_matrix = np.array(hes_func(np.vstack((X_init, U_init, Param_init))))
+                        hessian_matrix = np.array(hes_func(np.vstack((x_init, U_init, Param_init))))
 
                         # append hessian list
                         list_hessian.append(hessian_matrix)
@@ -230,8 +225,8 @@ def check_conditioning(self):
             min_jac = 0
 
         # PLOT GENERAL
-        fig, axis = plt.subplots(1, 2 * self.n_phases)
-        for ax in range(0, self.n_phases):
+        fig, axis = plt.subplots(1, 2 * ocp.n_phases)
+        for ax in range(0, ocp.n_phases):
             # Jacobian plot
             jacobian_list[ax][(jacobian_list[ax] == 0)] = np.nan
             current_cmap = mcm.get_cmap("seismic")
@@ -269,14 +264,14 @@ def check_conditioning(self):
             for i in range(0, len(hessian_norm_list[ax])):
                 yticks.append(i)
 
-            im2 = axis[ax + self.n_phases].imshow(hessian_norm_list[ax], aspect="auto", cmap=current_cmap2, norm=norm2)
-            axis[ax + self.n_phases].set_title(
+            im2 = axis[ax + ocp.n_phases].imshow(hessian_norm_list[ax], aspect="auto", cmap=current_cmap2, norm=norm2)
+            axis[ax + ocp.n_phases].set_title(
                 "Hessian constraint norms \n Phase " + str(ax), fontweight="bold", fontsize=8
             )
-            axis[ax + self.n_phases].set_xticks([0])
-            axis[ax + self.n_phases].set_xticklabels(["Norms should be close to 0"], fontsize=8)
-            axis[ax + self.n_phases].set_yticks(yticks)
-            axis[ax + self.n_phases].set_yticklabels(tick_labels_list[ax], fontsize=6, rotation=90)
+            axis[ax + ocp.n_phases].set_xticks([0])
+            axis[ax + ocp.n_phases].set_xticklabels(["Norms should be close to 0"], fontsize=8)
+            axis[ax + ocp.n_phases].set_yticks(yticks)
+            axis[ax + ocp.n_phases].set_yticklabels(tick_labels_list[ax], fontsize=6, rotation=90)
             cbar_ax2 = fig.add_axes([0.95, 0.4, 0.015, 0.3])
             fig.colorbar(im2, cax=cbar_ax2)
         fig.legend(["Black = 0"], loc="upper left")
@@ -293,15 +288,13 @@ def check_conditioning(self):
         """
 
         hessian_obj_list = []
-        for phase, nlp_phase in enumerate(self.nlp):
+        for phase, nlp_phase in enumerate(ocp.nlp):
             for obj in nlp_phase.J:
                 objective = 0
-                state_cx = nlp_phase.states.cx
-                control_cx = nlp_phase.controls.cx
 
                 # Test every possibility
                 if obj.multinode_constraint or obj.transition:
-                    nlp = self.nlp[phase - 1]
+                    nlp = ocp.nlp[phase - 1]
                     nlp_post = nlp_phase
                     states_pre = nlp.states.cx_end
                     states_post = nlp_post.states.cx
@@ -311,7 +304,6 @@ def check_conditioning(self):
                     control_cx = vertcat(controls_pre, controls_post)
 
                 else:
-                    nlp = self.nlp
                     if obj.integrate:
                         state_cx = horzcat(*([nlp_phase.states.cx] + nlp_phase.states.cx_intermediates_list))
                         control_cx = nlp_phase.controls.cx
@@ -333,12 +325,6 @@ def check_conditioning(self):
                     obj.integration_rule == IntegralApproximation.TRAPEZOIDAL
                     or obj.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
                 )
-                target_shape = tuple(
-                    [
-                        len(obj.rows),
-                        len(obj.cols) + 1 if is_trapezoidal else len(obj.cols),
-                    ]
-                )
 
                 if is_trapezoidal:
                     state_cx = (
@@ -352,11 +338,6 @@ def check_conditioning(self):
                         else horzcat(nlp_phase.controls.cx, nlp_phase.controls.cx_end)
                     )
                     control_cx_end = get_u(nlp_phase, control_cx, dt_cx)
-                    state_cx_end = (
-                        nlp_phase.states.cx_end
-                        if obj.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                        else nlp_phase.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp_phase.parameters.cx)["xf"]
-                    )
 
                 if obj.target == None:
                     p = obj.weighted_function(
@@ -396,20 +377,20 @@ def check_conditioning(self):
             )
 
             # evaluate hes_func at X_init, U_init, with parameters
-            X_init = np.zeros((len(nlp_phase.X), nlp_phase.x_init.shape[0]))
+            x_init = np.zeros((len(nlp_phase.X), nlp_phase.x_init.shape[0]))
             U_init = np.zeros((len(nlp_phase.U), nlp_phase.u_init.shape[0]))
             Param_init = np.array(nlp_phase.parameters.initial_guess.init)
 
             for n_shooting in range(0, nlp_phase.ns + 1):
-                X_init[n_shooting, :] = np.array(nlp_phase.x_init.init.evaluate_at(n_shooting))
+                x_init[n_shooting, :] = np.array(nlp_phase.x_init.init.evaluate_at(n_shooting))
             for n_shooting in range(0, nlp_phase.ns):
                 U_init[n_shooting, :] = np.array(nlp_phase.u_init.init.evaluate_at(n_shooting))
 
-            X_init = X_init.reshape((X_init.size, 1))
+            x_init = x_init.reshape((x_init.size, 1))
             U_init = U_init.reshape((U_init.size, 1))
             Param_init = Param_init.reshape((np.array(nlp_phase.parameters.initial_guess.init).size, 1))
 
-            hessian_obj_matrix = np.array(hes_func(np.vstack((X_init, U_init, Param_init))))
+            hessian_obj_matrix = np.array(hes_func(np.vstack((x_init, U_init, Param_init))))
             hessian_obj_list.append(hessian_obj_matrix)
 
         # Convexity checking (positive semi-definite hessian)
@@ -449,13 +430,13 @@ def check_conditioning(self):
         max_hes = max(max_hes)
 
         # PLOT GENERAL
-        fig_obj, axis_obj = plt.subplots(1, self.n_phases)
-        for ax in range(0, self.n_phases):
+        fig_obj, axis_obj = plt.subplots(1, ocp.n_phases)
+        for ax in range(0, ocp.n_phases):
             hessian_obj_list[ax][~(hessian_obj_list[ax] != 0).astype(bool)] = np.nan
             current_cmap3 = mcm.get_cmap("seismic")
             current_cmap3.set_bad(color="k")
             norm = mcolors.TwoSlopeNorm(vmin=min_hes - 0.01, vmax=max_hes + 0.01, vcenter=0)
-            if self.n_phases == 1:
+            if ocp.n_phases == 1:
                 im3 = axis_obj.imshow(hessian_obj_list[ax], cmap=current_cmap3, norm=norm)
                 axis_obj.set_title("Hessian objective \n Phase " + str(ax), fontweight="bold", fontsize=8)
                 axis_obj.text(
