@@ -545,7 +545,9 @@ class ConfigureProblem:
         """
 
         nlp.parameters = ocp.v.parameters_in_list
-        dynamics_eval = dyn_func(nlp.states["unscaled"].mx_reduced, nlp.controls["unscaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)
+        # cas.jacobian(nlp.states["unscaled"].mx_reduced, nlp.states["scaled"].mx_reduced) = Identité OK
+        # dynamics_eval = dyn_func(nlp.states["unscaled"].mx_reduced, nlp.controls["unscaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)
+        dynamics_eval = dyn_func(nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
