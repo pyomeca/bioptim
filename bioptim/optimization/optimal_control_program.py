@@ -951,7 +951,7 @@ class OptimalControlProgram:
             tick_labels_list = []
             hessian_norm_list = []
 
-            #---JACOBIAN---#
+            # JACOBIAN
             for phase in range(0, len(self.nlp)):
                 jacobian_cas = MX()
                 list_constraints = []
@@ -971,47 +971,36 @@ class OptimalControlProgram:
 
                         # depends if there are parameters
                         if (self.nlp[phase].parameters.shape == 0) == True:
-                            list_constraints.append(
-                                jacobian(
-                                    self.nlp[phase]
-                                    .g[i]
-                                    .function(
-                                        self.nlp[phase].states.cx,
-                                        self.nlp[phase].controls.cx,
-                                        self.nlp[phase].parameters.cx,
-                                    )[axis],
-                                    vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx),
-                                )
-                            )
+                            vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx)
                         else:
-                            list_constraints.append(
-                                jacobian(
-                                    self.nlp[phase]
-                                    .g[i]
-                                    .function(
-                                        self.nlp[phase].states.cx,
-                                        self.nlp[phase].controls.cx,
-                                        self.nlp[phase].parameters.cx,
-                                    )[axis],
-                                    vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx]),
-                                )
+                            vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx])
+
+                        list_constraints.append(
+                            jacobian(
+                                self.nlp[phase]
+                                .g[i]
+                                .function(
+                                    self.nlp[phase].states.cx,
+                                    self.nlp[phase].controls.cx,
+                                    self.nlp[phase].parameters.cx,
+                                )[axis],
+                                vertcat_obj,
                             )
+                        )
 
                 jacobian_cas = vcat(list_constraints).T
 
                 # depends if there are parameters
                 if (self.nlp[phase].parameters.shape == 0) == True:
-                    jac_func = Function(
-                        "jacobian",
-                        [vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx)],
-                        [jacobian_cas],
-                    )
+                    vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx)
                 else:
-                    jac_func = Function(
-                        "jacobian",
-                        [vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx])],
-                        [jacobian_cas],
-                    )
+                    vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx])
+
+                jac_func = Function(
+                    "jacobian",
+                    [vertcat_obj],
+                    [jacobian_cas],
+                )
 
                 # evaluate jac_func at X_init, U_init, considering the parameters
                 X_init = np.zeros((len(self.nlp[phase].X), self.nlp[phase].x_init.shape[0]))
@@ -1031,14 +1020,14 @@ class OptimalControlProgram:
 
                 jacobian_list.append(jacobian_matrix)
 
-                # caculate jacobian rank
+                # calculate jacobian rank
                 if (jacobian_matrix.size == 0) == False:
                     rank = np.linalg.matrix_rank(jacobian_matrix)
                     jacobian_rank.append(rank)
                 else:
                     jacobian_rank.append("No constraints")
 
-                ###-----HESSIAN-----###
+                # HESSIAN
                 tick_labels = []
                 list_hessian = []
                 list_norm = []
@@ -1058,42 +1047,30 @@ class OptimalControlProgram:
 
                             # parameters
                             if (self.nlp[phase].parameters.shape == 0) == True:
-                                hessian_cas = hessian(
-                                    self.nlp[phase]
-                                    .g[i]
-                                    .function(
-                                        self.nlp[phase].states.cx,
-                                        self.nlp[phase].controls.cx,
-                                        self.nlp[phase].parameters.cx,
-                                    )[axis],
-                                    vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx),
-                                )[0]
+                                vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U,
+                                                      self.nlp[phase].parameters.cx)
                             else:
-                                hessian_cas = hessian(
-                                    self.nlp[phase]
-                                    .g[i]
-                                    .function(
-                                        self.nlp[phase].states.cx,
-                                        self.nlp[phase].controls.cx,
-                                        self.nlp[phase].parameters.cx,
-                                    )[axis],
-                                    vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx]),
-                                )[0]
+                                vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U,
+                                                      *[self.nlp[phase].parameters.cx])
+
+                            hessian_cas = hessian(
+                                self.nlp[phase]
+                                .g[i]
+                                .function(
+                                    self.nlp[phase].states.cx,
+                                    self.nlp[phase].controls.cx,
+                                    self.nlp[phase].parameters.cx,
+                                )[axis],
+                                vertcat_obj,
+                            )[0]
+
                             tick_labels.append(self.nlp[phase].g[i].name)
 
-                            # parameters
-                            if (self.nlp[phase].parameters.shape == 0) == True:
-                                hes_func = Function(
-                                    "hessian",
-                                    [vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx)],
-                                    [hessian_cas],
-                                )
-                            else:
-                                hes_func = Function(
-                                    "hessian",
-                                    [vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx])],
-                                    [hessian_cas],
-                                )
+                            hes_func = Function(
+                                "hessian",
+                                [vertcat_obj],
+                                [hessian_cas],
+                            )
 
                             # evaluate hes_func en X_init, U_init, with parameters
                             X_init = np.zeros((len(self.nlp[phase].X), self.nlp[phase].x_init.shape[0]))
@@ -1117,10 +1094,6 @@ class OptimalControlProgram:
                             list_hessian.append(hessian_matrix)
 
                 tick_labels_list.append(tick_labels)
-
-
-                list_hessian[0][45][26] = 9
-                list_hessian[0][45][28] = 3
 
                 # calculate norm
                 for nb_hessian in range(0, len(list_hessian)):
@@ -1331,27 +1304,19 @@ class OptimalControlProgram:
                 # create function to build the hessian
                 # parameters
                 if (self.nlp[phase].parameters.shape == 0) == True:
-                    hessian_cas = hessian(
-                        objective, vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx)
-                    )[0]
+                    vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx)
                 else:
-                    hessian_cas = hessian(
-                        objective, vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx])
-                    )[0]
+                    vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx])
 
-                # parameters
-                if (self.nlp[phase].parameters.shape == 0) == True:
-                    hes_func = Function(
-                        "hessian",
-                        [vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx)],
-                        [hessian_cas],
-                    )
-                else:
-                    hes_func = Function(
-                        "hessian",
-                        [vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx])],
-                        [hessian_cas],
-                    )
+                hessian_cas = hessian(
+                    objective, vertcat_obj
+                )[0]
+
+                hes_func = Function(
+                    "hessian",
+                    [vertcat_obj],
+                    [hessian_cas],
+                )
 
                 # evaluate hes_func at X_init, U_init, with parameters
                 X_init = np.zeros((len(self.nlp[phase].X), self.nlp[phase].x_init.shape[0]))
@@ -1370,7 +1335,7 @@ class OptimalControlProgram:
                 hessian_obj_matrix = np.array(hes_func(np.vstack((X_init, U_init, Param_init))))
                 hessian_obj_list.append(hessian_obj_matrix)
 
-            ###---Convexity checking (positive semi-definite hessian)---###
+            # Convexity checking (positive semi-definite hessian)
             # On R (convexe), the objective is convexe if and only if the hessian is positive semi definite (psd)
             # And, as the hessian is symetric (Schwarz), the hessian is psd if and only if the eigenvalues are positive
             convexity = []
