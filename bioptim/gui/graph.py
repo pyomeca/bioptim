@@ -328,8 +328,8 @@ class OcpToConsole(GraphAbstract):
                 phase_idx,
                 self.ocp.nlp[phase_idx].x_bounds,
                 [
-                    self.ocp.nlp[phase_idx].states["scaled"].cx[i].name()
-                    for i in range(self.ocp.nlp[phase_idx].states["scaled"].cx.shape[0])
+                    self.ocp.nlp[phase_idx].states["unscaled"].cx[i].name()
+                    for i in range(self.ocp.nlp[phase_idx].states["unscaled"].cx.shape[0])
                 ],
             )
             print(f"**********")
@@ -338,8 +338,8 @@ class OcpToConsole(GraphAbstract):
                 phase_idx,
                 self.ocp.nlp[phase_idx].u_bounds,
                 [
-                    self.ocp.nlp[phase_idx].controls["scaled"].cx[i].name()
-                    for i in range(self.ocp.nlp[phase_idx].controls["scaled"].cx.shape[0])
+                    self.ocp.nlp[phase_idx].controls["unscaled"].cx[i].name()
+                    for i in range(self.ocp.nlp[phase_idx].controls["unscaled"].cx.shape[0])
                 ],
             )
             print(f"**********")
