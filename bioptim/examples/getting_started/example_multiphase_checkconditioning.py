@@ -6,11 +6,7 @@ of the previous phase is the last shooting node (and not the node arrival).
 It is designed to show how one can define a multiphase optimal control program
 """
 
-import casadi as cas
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import matplotlib.cm as mcm
-import numpy as np
+
 import biorbd_casadi as biorbd
 from bioptim import (
     PenaltyNode,
@@ -28,8 +24,6 @@ from bioptim import (
     Node,
     Solver,
     CostType,
-    PlotType,
-    IntegralApproximation,
 )
 
 
@@ -42,7 +36,6 @@ def prepare_ocp(
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
-
     Parameters
     ----------
     biorbd_model_path: str
@@ -51,7 +44,6 @@ def prepare_ocp(
         The ode solve to use
     long_optim: bool
         If the solver should solve the precise optimization (500 shooting points) or the approximate (50 points)
-
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -69,13 +61,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
-        key="tau",
-        weight=100,
-        phase=0,
-        integration_rule=IntegralApproximation.TRAPEZOIDAL,
-    )
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
     objective_functions.add(
@@ -157,6 +143,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
+    sol.print_cost()
     sol.animate()
 
 
