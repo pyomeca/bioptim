@@ -143,10 +143,12 @@ class NonLinearProgram:
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
         self.U = None
+        self.U_unscaled = None
         self.controls = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
         self.X = None
+        self.X_unscaled = None
         self.states = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
         self.states_dot = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
 

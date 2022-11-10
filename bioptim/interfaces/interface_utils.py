@@ -167,7 +167,7 @@ def generic_dispatch_obj_func(interface):
     return all_objectives
 
 
-def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties):
+def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_unscaled=False):
     """
     Parse the penalties of the full ocp to a SQP-friendly one
 
@@ -300,7 +300,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties):
             x_unscaled = nlp.cx()
             u_unscaled = nlp.cx()
             for idx in penalty.node_idx:
-                x_tp, u_tp = get_x_and_u_at_idx(penalty, idx, is_unscaled=True)
+                x_tp, u_tp = get_x_and_u_at_idx(penalty, idx, is_unscaled)
                 x_unscaled = horzcat(x_unscaled, x_tp)
                 u_unscaled = horzcat(u_unscaled, u_tp)
             if (
@@ -332,7 +332,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties):
                     x_unscaled = []
                     u_unscaled = []
                 else:
-                    x_unscaled, u_unscaled = get_x_and_u_at_idx(penalty, idx, is_unscaled=True)
+                    x_unscaled, u_unscaled = get_x_and_u_at_idx(penalty, idx, is_unscaled)
                 p = vertcat(p, penalty.weighted_function(x_unscaled, u_unscaled, param, penalty.weight, target, penalty.dt))
         out = vertcat(out, sum2(p))
     return out
