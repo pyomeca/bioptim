@@ -973,7 +973,9 @@ class OptimalControlProgram:
                         if (self.nlp[phase].parameters.shape == 0) == True:
                             vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx)
                         else:
-                            vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx])
+                            vertcat_obj = vertcat(
+                                *self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx]
+                            )
 
                         list_constraints.append(
                             jacobian(
@@ -1047,11 +1049,13 @@ class OptimalControlProgram:
 
                             # parameters
                             if (self.nlp[phase].parameters.shape == 0) == True:
-                                vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U,
-                                                      self.nlp[phase].parameters.cx)
+                                vertcat_obj = vertcat(
+                                    *self.nlp[phase].X, *self.nlp[phase].U, self.nlp[phase].parameters.cx
+                                )
                             else:
-                                vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U,
-                                                      *[self.nlp[phase].parameters.cx])
+                                vertcat_obj = vertcat(
+                                    *self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx]
+                                )
 
                             hessian_cas = hessian(
                                 self.nlp[phase]
@@ -1206,7 +1210,7 @@ class OptimalControlProgram:
                     state_cx = self.nlp[phase].states.cx
                     control_cx = self.nlp[phase].controls.cx
 
-                    #Test every possibility
+                    # Test every possibility
                     if self.nlp[phase].J[obj].multinode_constraint or self.nlp[phase].J[obj].transition:
                         nlp = self.nlp[phase - 1]
                         nlp_post = self.nlp[phase]
@@ -1308,9 +1312,7 @@ class OptimalControlProgram:
                 else:
                     vertcat_obj = vertcat(*self.nlp[phase].X, *self.nlp[phase].U, *[self.nlp[phase].parameters.cx])
 
-                hessian_cas = hessian(
-                    objective, vertcat_obj
-                )[0]
+                hessian_cas = hessian(objective, vertcat_obj)[0]
 
                 hes_func = Function(
                     "hessian",
