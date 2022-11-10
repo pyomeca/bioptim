@@ -170,3 +170,8 @@ class DefectType(Enum):
 class CXStep(Enum):
     CX_START = "cx_start"
     CX_END = "cx_end"
+
+
+class MagnitudeType(Enum):
+    RELATIVE = "relative"
+    ABSOLUTE = "absolute"

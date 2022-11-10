@@ -202,6 +202,7 @@ from .misc.enums import (
     RigidBodyDynamics,
     SoftContactDynamics,
     DefectType,
+    MagnitudeType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList
 from .optimization.multi_start import MultiStart
