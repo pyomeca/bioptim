@@ -590,7 +590,7 @@ def test_multi_model_by_mapping():
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.14722436, 0.0]), decimal=4)
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.14722436, 0.0]), decimal=3)
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
     np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.15131268, 0.0]), decimal=6)
     # initial and final velocities
@@ -638,7 +638,7 @@ def test_multi_model_by_constraint():
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
     np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159263, 0.0]), decimal=6)
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.14267685, 0.0]), decimal=5)
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.14267685, 0.0]), decimal=4)
     # initial and final velocities
     np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.41541724, 0.27730616]), decimal=6)
     np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([3.03651582, -3.68060635]), decimal=6)
