@@ -475,7 +475,7 @@ def test_trampo_quaternions():
 
 
 def test_phase_transition_uneven_variable_number_by_bounds():
-    # Load multi_model_by_mapping
+    # Load phase_transition_uneven_variable_number_by_bounds
     from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_bounds as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -503,7 +503,7 @@ def test_phase_transition_uneven_variable_number_by_bounds():
 
 
 def test_phase_transition_uneven_variable_number_by_mapping():
-    # Load multi_model_by_constraint
+    # Load phase_transition_uneven_variable_number_by_mapping
     from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -590,7 +590,7 @@ def test_multi_model_by_mapping():
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.14722436, 0.0]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.14722436, 0.0]), decimal=5)
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
     np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.15131268, 0.0]), decimal=6)
     # initial and final velocities
@@ -638,7 +638,7 @@ def test_multi_model_by_constraint():
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
     np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159263, 0.0]), decimal=6)
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.14267685, 0.0]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.14267685, 0.0]), decimal=5)
     # initial and final velocities
     np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.41541724, 0.27730616]), decimal=6)
     np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([3.03651582, -3.68060635]), decimal=6)
