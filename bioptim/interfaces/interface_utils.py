@@ -297,18 +297,18 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 raise NotImplementedError("multi_thread penalty with target shape != [n x m] is not implemented yet")
             target = penalty.target if penalty.target is not None else []
 
-            x_unscaled = nlp.cx()
-            u_unscaled = nlp.cx()
+            x = nlp.cx()
+            u = nlp.cx()
             for idx in penalty.node_idx:
                 x_tp, u_tp = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                x_unscaled = horzcat(x_unscaled, x_tp)
-                u_unscaled = horzcat(u_unscaled, u_tp)
+                x = horzcat(x, x_tp)
+                u = horzcat(u, u_tp)
             if (
                 penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL
             ) and nlp.control_type == ControlType.CONSTANT:
-                u_unscaled = horzcat(u_unscaled, u_unscaled[:, -1])
+                u = horzcat(u, u[:, -1])
 
-            p = reshape(penalty.weighted_function(x_unscaled, u_unscaled, param, penalty.weight, target, penalty.dt), -1, 1)
+            p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)
 
         else:
             p = interface.ocp.cx()
@@ -329,10 +329,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     continue
 
                 if not nlp:
-                    x_unscaled = []
-                    u_unscaled = []
+                    x = []
+                    u = []
                 else:
-                    x_unscaled, u_unscaled = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                p = vertcat(p, penalty.weighted_function(x_unscaled, u_unscaled, param, penalty.weight, target, penalty.dt))
+                    x, u = get_x_and_u_at_idx(penalty, idx, is_unscaled)
+                p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
         out = vertcat(out, sum2(p))
     return out

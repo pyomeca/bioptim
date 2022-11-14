@@ -441,17 +441,17 @@ class Solution:
         states_scaled = self._states["scaled"]
         controls_scaled = self._controls["scaled"]
 
-        states_unscaled = [{} for _ in range(len(states_scaled))]
-        controls_unscaled = [{} for _ in range(len(states_scaled))]
+        states = [{} for _ in range(len(states_scaled))]
+        controls = [{} for _ in range(len(states_scaled))]
         for phase in range(len(states_scaled)):
-            states_unscaled[phase] = {}
-            controls_unscaled[phase] = {}
+            states[phase] = {}
+            controls[phase] = {}
             for key, value in states_scaled[phase].items():
-                states_unscaled[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(states_scaled[phase][key].shape[0], states_scaled[phase][key].shape[1])
+                states[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(states_scaled[phase][key].shape[0], states_scaled[phase][key].shape[1])
             for key, value in controls_scaled[phase].items():
-                controls_unscaled[phase][key] = value * ocp.nlp[phase].u_scaling[key].to_array(controls_scaled[phase][key].shape[0], controls_scaled[phase][key].shape[1])
+                controls[phase][key] = value * ocp.nlp[phase].u_scaling[key].to_array(controls_scaled[phase][key].shape[0], controls_scaled[phase][key].shape[1])
 
-        return states_unscaled, controls_unscaled
+        return states, controls
 
     @property
     def cost(self):
@@ -528,8 +528,8 @@ class Solution:
         The states data
         """
         states_scaled = self._states["scaled"][0] if len(self._states["scaled"]) == 1 else self._states["scaled"]
-        states_unscaled = self._states["unscaled"][0] if len(self._states["unscaled"]) == 1 else self._states["unscaled"]
-        return {"scaled": states_scaled, "unscaled": states_unscaled}
+        states = self._states["unscaled"][0] if len(self._states["unscaled"]) == 1 else self._states["unscaled"]
+        return {"scaled": states_scaled, "unscaled": states}
 
     def no_intermediate(self, states) -> Union[list, dict]:
         """
@@ -643,10 +643,10 @@ class Solution:
                 "previously integrated and interpolated structure"
             )
         controls_scaled = self._controls["scaled"][0] if len(self._controls["scaled"]) == 1 else self._controls["scaled"]
-        controls_unscaled = (
+        controls = (
             self._controls["unscaled"][0] if len(self._controls["unscaled"]) == 1 else self._controls["unscaled"]
         )
-        return {"scaled": controls_scaled, "unscaled": controls_unscaled}
+        return {"scaled": controls_scaled, "unscaled": controls}
 
     @property
     def time(self) -> Union[list, dict]:
@@ -1051,13 +1051,13 @@ class Solution:
                 t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), out.ns[p] + 1))
 
         if isinstance(n_frames, int):
-            _, data_states_unscaled, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
+            _, data_states, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
             t_all = [np.concatenate((np.concatenate([_t[:-1] for _t in t_all]), [t_all[-1][-1]]))]
 
             n_frames = [n_frames]
             out.is_merged = True
         elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states["unscaled"]):
-            data_states_unscaled = self._states["unscaled"]
+            data_states = self._states["unscaled"]
         else:
             raise ValueError(
                 "n_frames should either be a int to merge_phases phases "
@@ -1065,10 +1065,10 @@ class Solution:
             )
 
         out._states["unscaled"] = []
-        for _ in range(len(data_states_unscaled)):
+        for _ in range(len(data_states)):
             out._states["unscaled"].append({})
-        for p in range(len(data_states_unscaled)):
-            x_phase = data_states_unscaled[p]["all"]
+        for p in range(len(data_states)):
+            x_phase = data_states[p]["all"]
             n_elements = x_phase.shape[0]
 
             t_phase = t_all[p]
@@ -1082,10 +1082,10 @@ class Solution:
             out._states["unscaled"][p]["all"] = x_interpolate
 
             offset = 0
-            for key in data_states_unscaled[p]:
+            for key in data_states[p]:
                 if key == "all":
                     continue
-                n_elements = data_states_unscaled[p][key].shape[0]
+                n_elements = data_states[p][key].shape[0]
                 out._states["unscaled"][p][key] = out._states["unscaled"][p]["all"][offset : offset + n_elements]
                 offset += n_elements
 
@@ -1179,21 +1179,21 @@ class Solution:
 
         if len(self._states["scaled"]) == 1:
             out_states_scaled = deepcopy(self._states["scaled"])
-            out_states_unscaled = deepcopy(self._states["unscaled"])
+            out_states = deepcopy(self._states["unscaled"])
         else:
             out_states_scaled = _merge(self.states["scaled"], is_control=False) if not skip_states and self._states["scaled"] else None
-            out_states_unscaled = _merge(self.states["unscaled"], is_control=False) if not skip_states else None
+            out_states = _merge(self.states["unscaled"], is_control=False) if not skip_states else None
 
         if len(self._controls["scaled"]) == 1:
             out_controls_scaled = deepcopy(self._controls["scaled"])
-            out_controls_unscaled = deepcopy(self._controls["unscaled"])
+            out_controls = deepcopy(self._controls["unscaled"])
         else:
             out_controls_scaled = _merge(self.controls["scaled"], is_control=True) if not skip_controls and self._controls["scaled"] else None
-            out_controls_unscaled = _merge(self.controls["unscaled"], is_control=True) if not skip_controls else None
+            out_controls= _merge(self.controls["unscaled"], is_control=True) if not skip_controls else None
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
-        return out_states_scaled, out_states_unscaled, out_controls_scaled, out_controls_unscaled, phase_time, ns
+        return out_states_scaled, out_states, out_controls_scaled, out_controls, phase_time, ns
 
     def _complete_control(self):
         """
@@ -1286,13 +1286,13 @@ class Solution:
         elif n_frames > 0:
             data_to_animate = data_to_animate.interpolate(n_frames)
 
-        states = data_to_animate.states
-        states_unscaled = states["unscaled"]
-        if not isinstance(states_unscaled, (list, tuple)):
-            states_unscaled = [states_unscaled]
+        states_scaled = data_to_animate.states
+        states = states_scaled["unscaled"]
+        if not isinstance(states, (list, tuple)):
+            states = [states]
 
         all_bioviz = []
-        for idx_phase, data in enumerate(states_unscaled):
+        for idx_phase, data in enumerate(states):
             # Convert parameters to actual values
             nlp = self.ocp.nlp[idx_phase]
             for param in nlp.parameters:

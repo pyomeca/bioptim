@@ -611,7 +611,7 @@ class PlotOcp:
 
         if all([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]):
             # no need to integrate when using direct collocation
-            data_states_unscaled = sol.states['unscaled']
+            data_states = sol.states['unscaled']
             data_time = sol._generate_time()
         elif all([nlp.ode_solver.is_direct_shooting for nlp in self.ocp.nlp]):
             integrated = sol.integrate(
@@ -619,12 +619,12 @@ class PlotOcp:
                 keep_intermediate_points=True,
                 integrator=self.integrator,
             )
-            data_states_unscaled = integrated.states['unscaled']
+            data_states = integrated.states['unscaled']
             data_time = integrated._time_vector
         else:
             raise NotImplementedError("Graphs are not implemented when mixing direct collocation and direct shooting")
 
-        data_controls_unscaled = sol.controls['unscaled']
+        data_controls = sol.controls['unscaled']
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
 
@@ -644,16 +644,16 @@ class PlotOcp:
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
             for s in nlp.states["unscaled"]:
-                if isinstance(data_states_unscaled, (list, tuple)):
-                    state = np.concatenate((state, data_states_unscaled[i][s]))
+                if isinstance(data_states, (list, tuple)):
+                    state = np.concatenate((state, data_states[i][s]))
                 else:
-                    state = np.concatenate((state, data_states_unscaled[s]))
+                    state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
             for s in nlp.controls["unscaled"]:
-                if isinstance(data_controls_unscaled, (list, tuple)):
-                    control = np.concatenate((control, data_controls_unscaled[i][s]))
+                if isinstance(data_controls, (list, tuple)):
+                    control = np.concatenate((control, data_controls[i][s]))
                 else:
-                    control = np.concatenate((control, data_controls_unscaled[s]))
+                    control = np.concatenate((control, data_controls[s]))
 
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
@@ -724,10 +724,10 @@ class PlotOcp:
                             phase_2 = self.plot_func[key][i].parameters["penalty"].phase_first_idx
                             node_idx_1 = self.plot_func[key][i].node_idx[0]
                             node_idx_2 = self.plot_func[key][i].node_idx[1]
-                            x_phase_1 = data_states_unscaled[phase_1]["all"][:, node_idx_1 * step_size]
-                            x_phase_2 = data_states_unscaled[phase_2]["all"][:, node_idx_2 * step_size]
-                            u_phase_1 = data_controls_unscaled[phase_1]["all"][:, node_idx_1]
-                            u_phase_2 = data_controls_unscaled[phase_2]["all"][:, node_idx_2]
+                            x_phase_1 = data_states[phase_1]["all"][:, node_idx_1 * step_size]
+                            x_phase_2 = data_states[phase_2]["all"][:, node_idx_2 * step_size]
+                            u_phase_1 = data_controls[phase_1]["all"][:, node_idx_1]
+                            u_phase_2 = data_controls[phase_2]["all"][:, node_idx_2]
                             val = self.plot_func[key][i].function(
                                 self.plot_func[key][i].node_idx[0],
                                 np.hstack((x_phase_1, x_phase_2)),
@@ -751,14 +751,14 @@ class PlotOcp:
                                         node_idx,
                                         np.hstack(
                                             (
-                                                data_states_unscaled[node_idx]["all"][:, -1],
-                                                data_states_unscaled[node_idx + 1]["all"][:, 0],
+                                                data_states[node_idx]["all"][:, -1],
+                                                data_states[node_idx + 1]["all"][:, 0],
                                             )
                                         ),
                                         np.hstack(
                                             (
-                                                data_controls_unscaled[node_idx]["all"][:, -1],
-                                                data_controls_unscaled[node_idx + 1]["all"][:, 0],
+                                                data_controls[node_idx]["all"][:, -1],
+                                                data_controls[node_idx + 1]["all"][:, 0],
                                             )
                                         ),
                                         data_params_in_dyn,

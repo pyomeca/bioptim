@@ -406,9 +406,9 @@ class OptimizationVariableList:
                 self._cx_intermediates.append(c)
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
-        mx_reduced_unscaled = MX()
-        mx_reduced_unscaled = vertcat(mx_reduced_unscaled, scaled_optimization_variable.mx_reduced[0] * scaling)
-        self.mx_reduced = vertcat(self.mx_reduced, mx_reduced_unscaled)
+        mx_reduced = MX()
+        mx_reduced = vertcat(mx_reduced, scaled_optimization_variable.mx_reduced[0] * scaling)
+        self.mx_reduced = vertcat(self.mx_reduced, mx_reduced)
 
         self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
 

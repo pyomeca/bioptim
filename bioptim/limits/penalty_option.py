@@ -466,7 +466,7 @@ class PenaltyOption(OptionGeneric):
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else all_pn.nlp.states["scaled"].cx
             )
-            state_cx_unscaled = (
+            state_cx = (
                 horzcat(all_pn.nlp.states["unscaled"].cx, all_pn.nlp.states["unscaled"].cx_end)
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else all_pn.nlp.states["unscaled"].cx
@@ -478,17 +478,17 @@ class PenaltyOption(OptionGeneric):
                 if nlp.control_type == ControlType.CONSTANT
                 else horzcat(all_pn.nlp.controls["scaled"].cx, all_pn.nlp.controls["scaled"].cx_end)
             )
-            control_cx_unscaled = (
+            control_cx = (
                 horzcat(all_pn.nlp.controls["unscaled"].cx)
                 if nlp.control_type == ControlType.CONSTANT
                 else horzcat(all_pn.nlp.controls["unscaled"].cx, all_pn.nlp.controls["unscaled"].cx_end)
             )
             control_cx_end_scaled = get_u(nlp, control_cx_scaled, dt_cx)
-            control_cx_end_unscaled = get_u(nlp, control_cx_unscaled, dt_cx)
+            control_cx_end = get_u(nlp, control_cx, dt_cx)
             state_cx_end_scaled = (
                 all_pn.nlp.states["scaled"].cx_end
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else nlp.dynamics[0](x0=state_cx_unscaled, p=control_cx_end_unscaled, params=nlp.parameters.cx)["xf"]
+                else nlp.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp.parameters.cx)["xf"]
             )
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
