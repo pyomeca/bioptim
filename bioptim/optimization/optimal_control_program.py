@@ -819,6 +819,11 @@ class OptimalControlProgram:
                 else []
             )
 
+            x_scaling = np.vstack((self.nlp[penalty.phase].x_scaling['all'].scaling for _ in range(x.shape[1]))).T
+            u_scaling = np.vstack((self.nlp[penalty.phase].u_scaling['all'].scaling for _ in range(u.shape[1]))).T
+            x /= x_scaling
+            u /= u_scaling
+
             out = []
             if penalty.transition or penalty.multinode_constraint:
                 out.append(
