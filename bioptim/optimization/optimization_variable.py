@@ -108,6 +108,10 @@ class VariableScalingList(OptionDict):
             Any parameters to pass to the Bounds
         """
 
+        for i, elt in enumerate(scaling):
+            if elt <= 0:
+                raise RuntimeError(f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0.")
+
         if isinstance(scaling, VariableScaling):
             self.add(name, phase=phase)
 
@@ -378,7 +382,7 @@ class OptimizationVariableList:
 
         self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
 
-    def copy_from_scaled(self, name: str, cx: list, mx: MX, bimapping: BiMapping, scaled_optimization_variable: OptimizationVariable, scaling: VariableScaling):
+    def append_from_scaled(self, name: str, cx: list, mx: MX, bimapping: BiMapping, scaled_optimization_variable: OptimizationVariable, scaling: VariableScaling):
         """
         Add a new variable to the list
 

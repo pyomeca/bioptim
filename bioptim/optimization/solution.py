@@ -83,7 +83,7 @@ class Solution:
         Returns the state scaled in list if more than one phases, otherwise it returns the only dict
     @property
     states_unscaled(self) -> Union[list, dict]
-        Returns the state unsclaed in list if more than one phases, otherwise it returns the only dict
+        Returns the state unscsled in list if more than one phases, otherwise it returns the only dict
     @property
     states_scaled_no_intermediate(self) -> Union[list, dict]
         Returns the state scaled in list if more than one phases, otherwise it returns the only dict

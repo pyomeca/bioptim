@@ -402,17 +402,11 @@ class PenaltyOption(OptionGeneric):
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
             states_pre = nlp.states["scaled"].cx_end
-            states_pre_unscaled = nlp.states["unscaled"].cx_end
             states_post = nlp_post.states["scaled"].cx
-            states_post_unscaled = nlp_post.states["unscaled"].cx
             controls_pre = nlp.controls["scaled"].cx_end
-            controls_pre_unscaled = nlp.controls["unscaled"].cx_end
             controls_post = nlp_post.controls["scaled"].cx
-            controls_post_unscaled = nlp_post.controls["unscaled"].cx
             state_cx = vertcat(states_pre, states_post)
-            state_cx_unscaled = vertcat(states_pre_unscaled, states_post_unscaled)
             control_cx = vertcat(controls_pre, controls_post)
-            control_cx_unscaled = vertcat(controls_pre_unscaled, controls_post_unscaled)
 
         else:
             ocp = all_pn.ocp
@@ -420,21 +414,15 @@ class PenaltyOption(OptionGeneric):
             name = self.name
             if self.integrate:
                 state_cx = horzcat(*([all_pn.nlp.states["scaled"].cx] + all_pn.nlp.states["scaled"].cx_intermediates_list))
-                state_cx_unscaled = horzcat(*([all_pn.nlp.states["unscaled"].cx] + all_pn.nlp.states["unscaled"].cx_intermediates_list))
                 control_cx = all_pn.nlp.controls["scaled"].cx
-                control_cx_unscaled = all_pn.nlp.controls["unscaled"].cx
             else:
                 state_cx = all_pn.nlp.states["scaled"].cx
-                state_cx_unscaled = all_pn.nlp.states["unscaled"].cx
                 control_cx = all_pn.nlp.controls["scaled"].cx
-                control_cx_unscaled = all_pn.nlp.controls["unscaled"].cx
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                 state_cx = horzcat(state_cx, all_pn.nlp.states["scaled"].cx_end)
-                state_cx_unscaled = horzcat(state_cx_unscaled, all_pn.nlp.states["unscaled"].cx_end)
                 control_cx = horzcat(control_cx, all_pn.nlp.controls["scaled"].cx_end)
-                control_cx_unscaled = horzcat(control_cx_unscaled, all_pn.nlp.controls["unscaled"].cx_end)
 
         param_cx = nlp.cx(nlp.parameters.cx)
 
@@ -445,9 +433,7 @@ class PenaltyOption(OptionGeneric):
 
         if self.derivative:
             state_cx = horzcat(all_pn.nlp.states["scaled"].cx_end, all_pn.nlp.states["scaled"].cx)
-            state_cx_unscaled = horzcat(all_pn.nlp.states["unscaled"].cx_end, all_pn.nlp.states["unscaled"].cx)
             control_cx = horzcat(all_pn.nlp.controls["scaled"].cx_end, all_pn.nlp.controls["scaled"].cx)
-            control_cx_unscaled = horzcat(all_pn.nlp.controls["unscaled"].cx_end, all_pn.nlp.controls["unscaled"].cx)
             self.function = biorbd.to_casadi_func(
                 f"{name}",
                 self.function(all_pn.nlp.states["scaled"].cx_end, all_pn.nlp.controls["scaled"].cx_end, param_cx)
