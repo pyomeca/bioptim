@@ -84,26 +84,10 @@ def prepare_ocp(
     # Variable scaling
     x_scaling = VariableScalingList()
     x_scaling.add("q", scaling=[1, 3])  # declare keys in order, so that they are concatenated in the right order
-    x_scaling.add("qdot", scaling=[100, 30])
-
-    xdot_scaling = VariableScalingList()
-    xdot_scaling.add("qdot", scaling=[100, 30])
-    xdot_scaling.add("qddot", scaling=[100, 30])
+    x_scaling.add("qdot", scaling=[20, 20])
 
     u_scaling = VariableScalingList()
-    u_scaling.add("tau", scaling=[10, 10])
-
-
-    # x_scaling = VariableScalingList()
-    # x_scaling.add("q", scaling=[1, 1])  # declare keys in order, so that they are concatenated in the right order
-    # x_scaling.add("qdot", scaling=[1, 1])
-    #
-    # xdot_scaling = VariableScalingList()
-    # xdot_scaling.add("qdot", scaling=[1, 1])
-    # xdot_scaling.add("qddot", scaling=[1, 1])
-    #
-    # u_scaling = VariableScalingList()
-    # u_scaling.add("tau", scaling=[1, 1])
+    u_scaling.add("tau", scaling=[20, 1])
 
     return OptimalControlProgram(
         biorbd_model,
@@ -115,7 +99,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_scaling=x_scaling,
-        xdot_scaling=xdot_scaling,
         u_scaling=u_scaling,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
