@@ -401,45 +401,45 @@ class PenaltyOption(OptionGeneric):
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
-            states_pre = nlp.states["scaled"].cx_end
-            states_post = nlp_post.states["scaled"].cx
-            controls_pre = nlp.controls["scaled"].cx_end
-            controls_post = nlp_post.controls["scaled"].cx
-            state_cx = vertcat(states_pre, states_post)
-            control_cx = vertcat(controls_pre, controls_post)
+            states_pre_scaled = nlp.states["scaled"].cx_end
+            states_post_scaled = nlp_post.states["scaled"].cx
+            controls_pre_scaled = nlp.controls["scaled"].cx_end
+            controls_post_scaled = nlp_post.controls["scaled"].cx
+            state_cx_scaled = vertcat(states_pre_scaled, states_post_scaled)
+            control_cx_scaled = vertcat(controls_pre_scaled, controls_post_scaled)
 
         else:
             ocp = all_pn.ocp
             nlp = all_pn.nlp
             name = self.name
             if self.integrate:
-                state_cx = horzcat(*([all_pn.nlp.states["scaled"].cx] + all_pn.nlp.states["scaled"].cx_intermediates_list))
-                control_cx = all_pn.nlp.controls["scaled"].cx
+                state_cx_scaled = horzcat(*([all_pn.nlp.states["scaled"].cx] + all_pn.nlp.states["scaled"].cx_intermediates_list))
+                control_cx_scaled = all_pn.nlp.controls["scaled"].cx
             else:
-                state_cx = all_pn.nlp.states["scaled"].cx
-                control_cx = all_pn.nlp.controls["scaled"].cx
+                state_cx_scaled = all_pn.nlp.states["scaled"].cx
+                control_cx_scaled = all_pn.nlp.controls["scaled"].cx
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                state_cx = horzcat(state_cx, all_pn.nlp.states["scaled"].cx_end)
-                control_cx = horzcat(control_cx, all_pn.nlp.controls["scaled"].cx_end)
+                state_cx_scaled = horzcat(state_cx_scaled, all_pn.nlp.states["scaled"].cx_end)
+                control_cx_scaled = horzcat(control_cx_scaled, all_pn.nlp.controls["scaled"].cx_end)
 
         param_cx = nlp.cx(nlp.parameters.cx)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
-        self.function = biorbd.to_casadi_func(name, sub_fcn, state_cx, control_cx, param_cx, expand=self.expand)
+        self.function = biorbd.to_casadi_func(name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, expand=self.expand)
         self.function_non_threaded = self.function
 
         if self.derivative:
-            state_cx = horzcat(all_pn.nlp.states["scaled"].cx_end, all_pn.nlp.states["scaled"].cx)
-            control_cx = horzcat(all_pn.nlp.controls["scaled"].cx_end, all_pn.nlp.controls["scaled"].cx)
+            state_cx_scaled = horzcat(all_pn.nlp.states["scaled"].cx_end, all_pn.nlp.states["scaled"].cx)
+            control_cx_scaled = horzcat(all_pn.nlp.controls["scaled"].cx_end, all_pn.nlp.controls["scaled"].cx)
             self.function = biorbd.to_casadi_func(
                 f"{name}",
                 self.function(all_pn.nlp.states["scaled"].cx_end, all_pn.nlp.controls["scaled"].cx_end, param_cx)
                 - self.function(all_pn.nlp.states["scaled"].cx, all_pn.nlp.controls["scaled"].cx, param_cx),
-                state_cx,
-                control_cx,
+                state_cx_scaled,
+                control_cx_scaled,
                 param_cx,
             )
 
@@ -461,7 +461,7 @@ class PenaltyOption(OptionGeneric):
         if is_trapezoidal:
             # Hypothesis: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
-            state_cx = (
+            state_cx_scaled = (
                 horzcat(all_pn.nlp.states["scaled"].cx, all_pn.nlp.states["scaled"].cx_end)
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else all_pn.nlp.states["scaled"].cx
@@ -473,7 +473,7 @@ class PenaltyOption(OptionGeneric):
             )
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
-            control_cx = (
+            control_cx_scaled = (
                 horzcat(all_pn.nlp.controls["scaled"].cx)
                 if nlp.control_type == ControlType.CONSTANT
                 else horzcat(all_pn.nlp.controls["scaled"].cx, all_pn.nlp.controls["scaled"].cx_end)
@@ -483,9 +483,9 @@ class PenaltyOption(OptionGeneric):
                 if nlp.control_type == ControlType.CONSTANT
                 else horzcat(all_pn.nlp.controls["unscaled"].cx, all_pn.nlp.controls["unscaled"].cx_end)
             )
-            control_cx_end = get_u(nlp, control_cx, dt_cx)
+            control_cx_end_scaled = get_u(nlp, control_cx_scaled, dt_cx)
             control_cx_end_unscaled = get_u(nlp, control_cx_unscaled, dt_cx)
-            state_cx_end = (
+            state_cx_end_scaled = (
                 all_pn.nlp.states["scaled"].cx_end
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else nlp.dynamics[0](x0=state_cx_unscaled, p=control_cx_end_unscaled, params=nlp.parameters.cx)["xf"]
@@ -495,25 +495,25 @@ class PenaltyOption(OptionGeneric):
                 (
                     (self.function(all_pn.nlp.states["scaled"].cx, all_pn.nlp.controls["scaled"].cx, param_cx) - target_cx[:, 0])
                     ** exponent
-                    + (self.function(state_cx_end, control_cx_end, param_cx) - target_cx[:, 1]) ** exponent
+                    + (self.function(state_cx_end_scaled, control_cx_end_scaled, param_cx) - target_cx[:, 1]) ** exponent
                 )
                 / 2,
-                state_cx,
-                control_cx,
+                state_cx_scaled,
+                control_cx_scaled,
                 param_cx,
                 target_cx,
                 dt_cx,
             )
-            modified_fcn = self.modified_function(state_cx, control_cx, param_cx, target_cx, dt_cx)
+            modified_fcn = self.modified_function(state_cx_scaled, control_cx_scaled, param_cx, target_cx, dt_cx)
         else:
-            modified_fcn = (self.function(state_cx, control_cx, param_cx) - target_cx) ** exponent
+            modified_fcn = (self.function(state_cx_scaled, control_cx_scaled, param_cx) - target_cx) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
         modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
 
         # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function = Function(
-            name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
+            name, [state_cx_scaled, control_cx_scaled, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
         self.weighted_function_non_threaded = self.weighted_function
 

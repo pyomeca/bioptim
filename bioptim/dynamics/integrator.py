@@ -152,7 +152,6 @@ class Integrator:
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym],
-            # self.dxdt(self.h, self.x_unscaled, self.u_unscaled, self.param_sym * self.param_scaling),
             self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall"],

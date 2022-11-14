@@ -79,11 +79,8 @@ class Solution:
     copy(self, skip_data: bool = False) -> Any
         Create a deepcopy of the Solution
     @property
-    states_scaled(self) -> Union[list, dict]
-        Returns the state scaled in list if more than one phases, otherwise it returns the only dict
-    @property
-    states_unscaled(self) -> Union[list, dict]
-        Returns the state unscsled in list if more than one phases, otherwise it returns the only dict
+    states(self) -> Union[list, dict]
+        Returns the state scaled and unscaled in list if more than one phases, otherwise it returns the only dict
     @property
     states_scaled_no_intermediate(self) -> Union[list, dict]
         Returns the state scaled in list if more than one phases, otherwise it returns the only dict
@@ -93,11 +90,8 @@ class Solution:
         Returns the state unscaled in list if more than one phases, otherwise it returns the only dict
         and removes the intermediate states unscaled if Collocation solver is used
     @property
-    controls_scaled(self) -> Union[list, dict]
-        Returns the controls scaled in list if more than one phases, otherwise it returns the only dict
-    @property
-    controls_unscaled(self) -> Union[list, dict]
-        Returns the controls unscaled in list if more than one phases, otherwise it returns the only dict
+    controls(self) -> Union[list, dict]
+        Returns the controls scaled and unscaled in list if more than one phases, otherwise it returns the only dict
     integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keep_intermediate_points: bool = True,
               merge_phases: bool = False, continuous: bool = True) -> Solution
         Integrate the states unscaled

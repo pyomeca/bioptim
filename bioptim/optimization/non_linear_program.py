@@ -142,12 +142,12 @@ class NonLinearProgram:
         self.variable_mappings = {}
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
-        self.U = None
+        self.U_scaled = None
         self.U_unscaled = None
         self.controls = OptimizationVariableContainer()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
-        self.X = None
+        self.X_scaled = None
         self.X_unscaled = None
         self.states = OptimizationVariableContainer()
         self.states_dot = OptimizationVariableContainer()
