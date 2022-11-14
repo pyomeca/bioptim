@@ -503,3 +503,18 @@ class OptimizationVariableList:
         if self._iter_idx > len(self):
             raise StopIteration
         return self[self._iter_idx - 1].name
+
+
+class OptimizationVariableContainer:
+
+    def __init__(self):
+        self.optimization_variable = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
+
+    def __getitem__(self, item: str):
+        if item != "scaled" and item != "unscaled":
+            return self.optimization_variable['unscaled'][item]
+        else:
+            return self.optimization_variable[item]
+
+    def keys(self):
+        return self.optimization_variable['unscaled'].keys()

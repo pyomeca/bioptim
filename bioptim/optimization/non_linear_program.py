@@ -4,7 +4,7 @@ import biorbd_casadi as biorbd
 import casadi
 from casadi import SX, MX
 
-from .optimization_variable import OptimizationVariableList, OptimizationVariable
+from .optimization_variable import OptimizationVariableList, OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
@@ -144,13 +144,13 @@ class NonLinearProgram:
         self.u_init = InitialGuess()
         self.U = None
         self.U_unscaled = None
-        self.controls = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
+        self.controls = OptimizationVariableContainer()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
         self.X = None
         self.X_unscaled = None
-        self.states = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
-        self.states_dot = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
+        self.states = OptimizationVariableContainer()
+        self.states_dot = OptimizationVariableContainer()
 
     def initialize(self, cx: Callable = None):
         """
