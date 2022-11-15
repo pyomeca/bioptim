@@ -880,7 +880,7 @@ class ConfigureProblem:
         if as_states:
             mx_states = vertcat(*mx_states)
         if as_states_dot:
-            mx_states_dot= vertcat(*mx_states_dot)
+            mx_states_dot = vertcat(*mx_states_dot)
         if as_controls:
             mx_controls = vertcat(*mx_controls)
 
@@ -897,7 +897,7 @@ class ConfigureProblem:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
             cx_scaled = define_cx_scaled(n_col=n_cx)
             cx = define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
-            nlp.states["scaled"].append(name, cx_scaled, mx_states, nlp.variable_mappings[name])
+            nlp.states["scaled"].append(name, cx_scaled, mx_states_scaled, nlp.variable_mappings[name])
             nlp.states["unscaled"].append_from_scaled(name, cx, mx_states, nlp.variable_mappings[name], nlp.states["scaled"], nlp.x_scaling[name].scaling)
             if not skip_plot:
                 nlp.plot[f"{name}_states"] = CustomPlot(
@@ -911,7 +911,7 @@ class ConfigureProblem:
         if as_controls:
             cx_scaled = define_cx_scaled(n_col=2)
             cx = define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
-            nlp.controls["scaled"].append(name, cx, mx_controls, nlp.variable_mappings[name])
+            nlp.controls["scaled"].append(name, cx_scaled, mx_controls_scaled, nlp.variable_mappings[name])
             nlp.controls["unscaled"].append_from_scaled(name, cx, mx_controls, nlp.variable_mappings[name], nlp.controls["scaled"], nlp.u_scaling[name].scaling)
 
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
@@ -928,7 +928,7 @@ class ConfigureProblem:
             n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
             cx_scaled = define_cx_scaled(n_col=n_cx)
             cx = define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
-            nlp.states_dot["scaled"].append(name, cx, mx_states_dot, nlp.variable_mappings[name])
+            nlp.states_dot["scaled"].append(name, cx, mx_states_dot_scaled, nlp.variable_mappings[name])
             nlp.states_dot["unscaled"].append_from_scaled(name, cx, mx_states_dot, nlp.variable_mappings[name], nlp.states_dot["scaled"], nlp.xdot_scaling[name].scaling)
 
     @staticmethod

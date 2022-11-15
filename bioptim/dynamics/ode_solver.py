@@ -409,7 +409,7 @@ class OdeSolver:
             ode = {
                 "x_unscaled": nlp.states["unscaled"].cx,
                 "x_scaled": nlp.states["scaled"].cx,
-                "p_unscaled": nlp.controls["scaled"].cx,
+                "p_unscaled": nlp.controls["unscaled"].cx,
                 "p_scaled": nlp.controls["scaled"].cx,
                 "ode": nlp.dynamics_func(nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx),
             }
