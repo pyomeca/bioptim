@@ -804,6 +804,9 @@ class OptimalControlProgram:
             if len(x.shape) < 2:
                 x = x.reshape((-1, 1))
 
+            if len(u.shape) < 2:
+                u = u.reshape((-1, 1))
+
             # if time is parameter of the ocp, we need to evaluate with current parameters
             if isinstance(dt, Function):
                 dt = dt(p)
@@ -819,8 +822,20 @@ class OptimalControlProgram:
                 else []
             )
 
-            x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling['all'].scaling for _ in range(x.shape[1])]).T
-            u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling['all'].scaling for _ in range(u.shape[1])]).T
+            if x.shape[1] == 1:
+                x_shape = int(x.shape[0] / self.nlp[penalty.phase].x_scaling['all'].scaling.shape[0])
+                x_scaling = np.reshape(np.hstack([self.nlp[penalty.phase].x_scaling['all'].scaling for _ in range(x_shape)]).T, (-1, 1))
+            else:
+                x_shape = x.shape[1]
+                x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling['all'].scaling for _ in range(x_shape)]).T
+
+            if u.shape[1] == 1:
+                u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling['all'].scaling.shape[0])
+                u_scaling = np.reshape(np.hstack([self.nlp[penalty.phase].u_scaling['all'].scaling for _ in range(u_shape)]).T, (-1, 1))
+            else:
+                u_shape = u.shape[1]
+                u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling['all'].scaling for _ in range(u_shape)]).T
+
             x /= x_scaling
             u /= u_scaling
 

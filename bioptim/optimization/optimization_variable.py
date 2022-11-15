@@ -147,29 +147,29 @@ class VariableScalingList(OptionDict):
         for phase in range(ocp.n_phases):
 
             nx = x_init[phase].shape[0]
-            if len(x_scaling[phase]) == 0:
-                x_scaling_all = np.ones((nx, ))
-            else:
+            if len(x_scaling) > phase and len(x_scaling[phase].keys()) > 0:
                 x_scaling_all = np.array([])
                 for key in x_scaling[phase].keys():
                     x_scaling_all = np.concatenate((x_scaling_all, x_scaling[phase][key].scaling))
-
-            if len(xdot_scaling[phase]) == 0:
-                nb_quaternions = ocp.nlp[phase].model.nbQuat()
-                nxdot = nx - nb_quaternions
-                xdot_scaling_all = np.ones((nxdot, ))
             else:
+                x_scaling_all = np.ones((nx,))
+
+            if len(xdot_scaling) > phase and len(xdot_scaling[phase].keys()) > 0:
                 xdot_scaling_all = np.array([])
                 for key in xdot_scaling[phase].keys():
                     xdot_scaling_all = np.concatenate((xdot_scaling_all, xdot_scaling[phase][key].scaling))
-
-            if len(u_scaling[phase]) == 0:
-                nu = u_init[phase].shape[0]
-                u_scaling_all = np.ones((nu, ))
             else:
+                nb_quaternions = ocp.nlp[phase].model.nbQuat()
+                nxdot = nx - nb_quaternions
+                xdot_scaling_all = np.ones((nxdot,))
+
+            if len(u_scaling) > phase and len(u_scaling[phase].keys()) > 0:
                 u_scaling_all = np.array([])
                 for key in u_scaling[phase].keys():
                     u_scaling_all = np.concatenate((u_scaling_all, u_scaling[phase][key].scaling))
+            else:
+                nu = u_init[phase].shape[0]
+                u_scaling_all = np.ones((nu,))
 
             x_scaling.add('all', scaling=x_scaling_all, phase=phase)
             xdot_scaling.add('all', scaling=xdot_scaling_all, phase=phase)

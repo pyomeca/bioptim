@@ -159,7 +159,7 @@ class OptimizationVector:
             else:
                 v_init.concatenate(x_init.scale(self.ocp.nlp[phase].x_scaling['all'], self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1, n_colocation_steps))
 
-        for u_init in self.u_init:
+        for phase, u_init in enumerate(self.u_init):
             v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling['all'], self.ocp.nlp[phase].controls["scaled"].shape, self.ocp.nlp[phase].ns, 1))
         v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
