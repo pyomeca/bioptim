@@ -306,7 +306,7 @@ class OptimalControlProgram:
 
         if x_scaling is None:
             x_scaling = VariableScalingList()
-        elif x_scaling is None or isinstance(x_scaling, VariableScaling):
+        elif isinstance(x_scaling, VariableScaling):
             x_scaling_tp = VariableScalingList()
             x_scaling_tp.add(scaling=x_scaling)
             x_scaling = x_scaling_tp
