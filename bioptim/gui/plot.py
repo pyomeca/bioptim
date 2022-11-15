@@ -643,17 +643,15 @@ class PlotOcp:
 
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
-            for s in nlp.states["unscaled"]:
-                if isinstance(data_states, (list, tuple)):
-                    state = np.concatenate((state, data_states[i][s]))
-                else:
-                    state = np.concatenate((state, data_states[s]))
+            if isinstance(data_states, (list, tuple)):
+                state = np.concatenate((state, data_states[i]['all']))
+            else:
+                state = np.concatenate((state, data_states['all']))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.controls["unscaled"]:
-                if isinstance(data_controls, (list, tuple)):
-                    control = np.concatenate((control, data_controls[i][s]))
-                else:
-                    control = np.concatenate((control, data_controls[s]))
+            if isinstance(data_controls, (list, tuple)):
+                control = np.concatenate((control, data_controls[i]['all']))
+            else:
+                control = np.concatenate((control, data_controls['all']))
 
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
