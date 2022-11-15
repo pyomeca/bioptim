@@ -22,7 +22,7 @@ from ..misc.enums import (
 )
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
+from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
 
@@ -210,8 +210,8 @@ class Solution:
 
             self.phase_idx = nlp.phase_idx
             self.model = nlp.model
-            self.states = {"scaled": Solution.SimplifiedOptimizationVariableList(nlp.states["scaled"]), "unscaled": Solution.SimplifiedOptimizationVariableList(nlp.states["unscaled"])}
-            self.controls = {"scaled": Solution.SimplifiedOptimizationVariableList(nlp.controls["scaled"]), "unscaled": Solution.SimplifiedOptimizationVariableList(nlp.controls["unscaled"])}
+            self.states = OptimizationVariableContainer()
+            self.controls = OptimizationVariableContainer()
             self.dynamics = nlp.dynamics
             self.dynamics_func = nlp.dynamics_func
             self.ode_solver = nlp.ode_solver
@@ -303,8 +303,9 @@ class Solution:
         # Extract the data now for further use
         self._states = {}
         self._controls = {}
-        self._states["scaled"], self._controls["scaled"], self.parameters = {}, {}, {}
-        self._states["unscaled"], self._controls["unscaled"] = {}, {}
+        self._states = OptimizationVariableContainer()
+        self._controls = OptimizationVariableContainer()
+        self.parameters = {}
         self.phase_time = []
 
         def init_from_dict(_sol: dict):
@@ -527,9 +528,10 @@ class Solution:
         -------
         The states data
         """
-        states_scaled = self._states["scaled"][0] if len(self._states["scaled"]) == 1 else self._states["scaled"]
-        states = self._states["unscaled"][0] if len(self._states["unscaled"]) == 1 else self._states["unscaled"]
-        return {"scaled": states_scaled, "unscaled": states}
+        states_scaled = self._states["scaled"]
+        states_unscaled = self._states["unscaled"]
+        states = OptimizationVariableContainer(states_scaled, states_unscaled)
+        return states
 
     def no_intermediate(self, states) -> Union[list, dict]:
         """

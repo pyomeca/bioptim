@@ -512,14 +512,31 @@ class OptimizationVariableList:
 
 class OptimizationVariableContainer:
 
-    def __init__(self):
-        self.optimization_variable = {"scaled": OptimizationVariableList(), "unscaled": OptimizationVariableList()}
+    def __init__(self, variable_scaled=None, variables_unscaled=None):
+        if variable_scaled is None:
+            variable_scaled = OptimizationVariableList()
+        if variables_unscaled is None:
+            variables_unscaled = OptimizationVariableList()
+        self.optimization_variable = {"scaled": variable_scaled, "unscaled": variables_unscaled}
 
     def __getitem__(self, item: str):
-        if item != "scaled" and item != "unscaled":
-            return self.optimization_variable['unscaled'][item]
+        if isinstance(self.optimization_variable['unscaled'], list):
+            if item != "scaled" and item != "unscaled":
+                return [self.optimization_variable['unscaled'][i][item] for i in range(len(self.optimization_variable['unscaled']))]
+            else:
+                return self.optimization_variable[item]
         else:
-            return self.optimization_variable[item]
+            if item != "scaled" and item != "unscaled":
+                return self.optimization_variable['unscaled'][item]
+            else:
+                return self.optimization_variable[item]
+
+    def __setitem__(self, item: str, value: Union[OptimizationVariableList, np.ndarray]):
+
+        if item != "scaled" and item != "unscaled":
+            self.optimization_variable['unscaled'][item] = value
+        else:
+            self.optimization_variable[item] = value
 
     def keys(self):
         return self.optimization_variable['unscaled'].keys()
