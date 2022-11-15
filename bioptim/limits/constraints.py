@@ -348,8 +348,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
             var = []
-            var.extend([nlp.states['unscaled'][key] for key in nlp.states])
-            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls])
+            var.extend([nlp.states['unscaled'][key] for key in nlp.states['unscaled']])
+            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls['unscaled']])
             var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("ForwardDynamics", qddot - qddot_fd, *var)
@@ -399,8 +399,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
 
             var = []
-            var.extend([nlp.states['unscaled'][key] for key in nlp.states])
-            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls])
+            var.extend([nlp.states['unscaled'][key] for key in nlp.states['unscaled']])
+            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls['unscaled']])
             var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - tau, *var)
@@ -438,8 +438,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             contact_acceleration = nlp.model.rigidContactAcceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
 
             var = []
-            var.extend([nlp.states['unscaled'][key] for key in nlp.states])
-            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls])
+            var.extend([nlp.states['unscaled'][key] for key in nlp.states['unscaled']])
+            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls['unscaled']])
             var.extend([nlp.parameters[key] for key in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("contact_acceleration", contact_acceleration, *var)
@@ -480,8 +480,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
 
             var = []
-            var.extend([nlp.states['unscaled'][key] for key in nlp.states])
-            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls])
+            var.extend([nlp.states['unscaled'][key] for key in nlp.states['unscaled']])
+            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls['unscaled']])
             var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - muscle_tau, *var)
@@ -513,8 +513,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             soft_contact_force = soft_contact_all[force_idx]
 
             var = []
-            var.extend([nlp.states['unscaled'][key] for key in nlp.states])
-            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls])
+            var.extend([nlp.states['unscaled'][key] for key in nlp.states['unscaled']])
+            var.extend([nlp.controls['unscaled'][key] for key in nlp.controls['unscaled']])
             var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("ForwardDynamics", nlp.controls['unscaled']["fext"].mx - soft_contact_force, *var)
