@@ -287,8 +287,10 @@ class OdeSolver:
                 )
 
             ode = {
-                "x": [nlp.states["unscaled"].cx] + nlp.states["unscaled"].cx_intermediates_list,
-                "p": nlp.controls["unscaled"].cx,
+                "x_unscaled": [nlp.states["unscaled"].cx] + nlp.states["unscaled"].cx_intermediates_list,
+                "x_scaled": [nlp.states["scaled"].cx] + nlp.states["scaled"].cx_intermediates_list,
+                "p_unscaled": nlp.controls["unscaled"].cx,
+                "p_scaled": nlp.controls["scaled"].cx,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -405,9 +407,11 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "x": nlp.states["unscaled"].cx,
-                "p": nlp.controls["unscaled"].cx,
-                "ode": nlp.dynamics_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx),
+                "x_unscaled": nlp.states["unscaled"].cx,
+                "x_scaled": nlp.states["scaled"].cx,
+                "p_unscaled": nlp.controls["scaled"].cx,
+                "p_scaled": nlp.controls["scaled"].cx,
+                "ode": nlp.dynamics_func(nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
 

@@ -540,7 +540,7 @@ class Solution:
         -------
         The states data without intermediate states in the case of collocation
         """
-        states_no_intermediate = []
+
         if self.is_merged:
             idx_no_intermediate = []
             for i, nlp in enumerate(self.ocp.nlp):

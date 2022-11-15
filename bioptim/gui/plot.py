@@ -258,7 +258,7 @@ class PlotOcp:
         self.top_margin: Union[int, None] = None
         self.height_step: Union[int, None] = None
         self.width_step: Union[int, None] = None
-        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
+        self._organize_windows(len(self.ocp.nlp[0].states['unscaled']) + len(self.ocp.nlp[0].controls['unscaled']))
 
         self.plot_func = {}
         self.variable_sizes = []
