@@ -65,6 +65,8 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds.min[2:4, :] = -3.14 * 100
+    x_bounds.max[2:4, :] = 3.14 * 100
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
@@ -75,7 +77,7 @@ def prepare_ocp(
 
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max, tau_init = -1000, 1000, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0
 
@@ -84,10 +86,10 @@ def prepare_ocp(
     # Variable scaling
     x_scaling = VariableScalingList()
     x_scaling.add("q", scaling=[1, 3])  # declare keys in order, so that they are concatenated in the right order
-    x_scaling.add("qdot", scaling=[20, 20])
+    x_scaling.add("qdot", scaling=[85, 85])
 
     u_scaling = VariableScalingList()
-    u_scaling.add("tau", scaling=[20, 1])
+    u_scaling.add("tau", scaling=[900, 1])
 
     return OptimalControlProgram(
         biorbd_model,
@@ -113,7 +115,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1/10, n_shooting=30)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
@@ -123,7 +125,7 @@ def main():
 
     # --- Solve the ocp --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
-    # sol.graphs()
+    sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
     sol.detailed_cost_values()
