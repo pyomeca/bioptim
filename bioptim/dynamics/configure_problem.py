@@ -864,6 +864,8 @@ class ConfigureProblem:
         mx_states_dot = []
         mx_controls = []
         for i in nlp.variable_mappings[name].to_second.map_idx:
+            if i is None:
+                continue
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
             mx_states_scaled.append(MX.sym(var_name, 1, 1))
             mx_controls_scaled.append(MX.sym(var_name, 1, 1))
@@ -948,7 +950,12 @@ class ConfigureProblem:
             If the generalized velocities should be a state_dot
         """
         name = "q"
-        name_q = [name.to_string() for name in nlp.model.nameDof()]
+        name_q = []
+        for i in range(len(nlp.model.nameDof())):
+            name_i = nlp.model.nameDof()[i].to_string()
+            if i in nlp.variable_mappings[name].to_second.map_idx:
+                name_q.append(name_i)
+
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_q, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
