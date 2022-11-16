@@ -545,8 +545,6 @@ class ConfigureProblem:
         """
 
         nlp.parameters = ocp.v.parameters_in_list
-        # cas.jacobian(nlp.states["unscaled"].mx_reduced, nlp.states["scaled"].mx_reduced) = Identité OK
-        # dynamics_eval = dyn_func(nlp.states["unscaled"].mx_reduced, nlp.controls["unscaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)
         dynamics_eval = dyn_func(nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
@@ -826,8 +824,6 @@ class ConfigureProblem:
         def define_cx_scaled(n_col: int) -> list:
             _cx = [nlp.cx() for _ in range(n_col)]
             for idx in nlp.variable_mappings[name].to_first.map_idx:
-                if idx is None:
-                    continue
                 for j in range(len(_cx)):
                     sign = "-" if np.sign(idx) < 0 else ""
                     _cx[j] = vertcat(_cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{j}", 1, 1))
@@ -849,13 +845,13 @@ class ConfigureProblem:
 
         if as_states:
             if name not in nlp.x_scaling:
-                nlp.x_scaling[name] = VariableScaling(np.ones(len(name_elements)))
+                nlp.x_scaling[name] = VariableScaling(np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_states_dot:
             if name not in nlp.xdot_scaling:
-                nlp.xdot_scaling[name] = VariableScaling(np.ones(len(name_elements)))
+                nlp.xdot_scaling[name] = VariableScaling(np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls:
             if name not in nlp.u_scaling:
-                nlp.u_scaling[name] = VariableScaling(np.ones(len(name_elements)))
+                nlp.u_scaling[name] = VariableScaling(np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         mx_states_scaled = []
         mx_states_dot_scaled = []
@@ -864,18 +860,16 @@ class ConfigureProblem:
         mx_states_dot = []
         mx_controls = []
         for i in nlp.variable_mappings[name].to_second.map_idx:
-            if i is None:
-                continue
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
             mx_states_scaled.append(MX.sym(var_name, 1, 1))
             mx_controls_scaled.append(MX.sym(var_name, 1, 1))
             mx_states_dot_scaled.append(MX.sym(var_name, 1, 1))
             if as_states:
-                mx_states.append(mx_states_scaled[i] * nlp.x_scaling[name].scaling[i])
+                mx_states.append(mx_states_scaled[i] * nlp.x_scaling[name].scaling[i] if i is not None else mx_states_scaled[-1])
             if as_states_dot:
-                mx_states_dot.append(mx_states_dot_scaled[i] * nlp.xdot_scaling[name].scaling[i])
+                mx_states_dot.append(mx_states_dot_scaled[i] * nlp.xdot_scaling[name].scaling[i] if i is not None else mx_states_dot_scaled[-1])
             if as_controls:
-                mx_controls.append(mx_controls_scaled[i] * nlp.u_scaling[name].scaling[i])
+                mx_controls.append(mx_controls_scaled[i] * nlp.u_scaling[name].scaling[i] if i is not None else mx_controls_scaled[-1])
         mx_states_scaled = vertcat(*mx_states_scaled)
         mx_states_dot_scaled = vertcat(*mx_states_dot_scaled)
         mx_controls_scaled = vertcat(*mx_controls_scaled)
@@ -950,12 +944,7 @@ class ConfigureProblem:
             If the generalized velocities should be a state_dot
         """
         name = "q"
-        name_q = []
-        for i in range(len(nlp.model.nameDof())):
-            name_i = nlp.model.nameDof()[i].to_string()
-            if i in nlp.variable_mappings[name].to_second.map_idx:
-                name_q.append(name_i)
-
+        name_q = [name.to_string() for name in nlp.model.nameDof()]
         axes_idx = ConfigureProblem._apply_phase_mapping(nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_q, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
