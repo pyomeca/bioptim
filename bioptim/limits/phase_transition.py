@@ -226,7 +226,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             ocp = all_pn[0].ocp
-            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape:
+            if ocp.nlp[transition.phase_pre_idx].states['unscaled'].shape != ocp.nlp[transition.phase_post_idx].states['unscaled'].shape:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
@@ -248,7 +248,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             val = []
             cx_end = []
             cx = []
-            for key in nlp_pre.states:
+            for key in nlp_pre.states['unscaled']:
                 cx_end = vertcat(cx_end, nlp_pre.states['unscaled'][key].mapping.to_second.map(nlp_pre.states['unscaled'][key].cx_end))
                 cx = vertcat(cx, nlp_post.states['unscaled'][key].mapping.to_second.map(nlp_post.states['unscaled'][key].cx))
                 post_mx = nlp_post.states['scaled'][key].mx
