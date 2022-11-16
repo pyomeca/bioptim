@@ -101,9 +101,9 @@ class Parameter(PenaltyOption):
         else:
             raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
 
-        initial_guess.scale(self.scaling)
+        initial_guess.scale(self.scaling, 1, 1, 1)
         self.initial_guess = initial_guess
-        bounds.scale(self.scaling)
+        bounds.scale(self.scaling, 1, 1, 1)
         self.bounds = bounds
         self.quadratic = quadratic
         self.size = size
