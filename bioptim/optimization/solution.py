@@ -645,10 +645,11 @@ class Solution:
                 "previously integrated and interpolated structure"
             )
         controls_scaled = self._controls["scaled"][0] if len(self._controls["scaled"]) == 1 else self._controls["scaled"]
-        controls = (
+        controls_unscaled = (
             self._controls["unscaled"][0] if len(self._controls["unscaled"]) == 1 else self._controls["unscaled"]
         )
-        return {"scaled": controls_scaled, "unscaled": controls}
+        controls = OptimizationVariableContainer(controls_scaled, controls_unscaled)
+        return controls
 
     @property
     def time(self) -> Union[list, dict]:

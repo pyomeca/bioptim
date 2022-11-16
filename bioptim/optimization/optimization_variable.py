@@ -540,3 +540,6 @@ class OptimizationVariableContainer:
 
     def keys(self):
         return self.optimization_variable['unscaled'].keys()
+
+    def shape(self):
+        return self.optimization_variable['unscaled'].shape

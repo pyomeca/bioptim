@@ -126,11 +126,11 @@ class OptimizationVector:
         for phase, x_bound in enumerate(self.x_bounds):
             v_bounds.concatenate(x_bound.scale(self.ocp.nlp[phase].x_scaling['all'], self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1, n_collocation_steps))
 
-        if self.ocp.nlp[0].control_type == ControlType.LINEAR_CONTINUOUS:
-            ns = self.ocp.nlp[phase].ns + 1
-        else:
-            ns = self.ocp.nlp[phase].ns
         for phase, u_bound in enumerate(self.u_bounds):
+            if self.ocp.nlp[0].control_type == ControlType.LINEAR_CONTINUOUS:
+                ns = self.ocp.nlp[phase].ns + 1
+            else:
+                ns = self.ocp.nlp[phase].ns
             v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling['all'], self.ocp.nlp[phase].controls["scaled"].shape, ns, 1))
         v_bounds.concatenate(self.parameters_in_list.bounds)
         return v_bounds
