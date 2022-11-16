@@ -587,7 +587,7 @@ class ConfigureProblem:
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
-            [dyn_func(nlp.states["unscaled"].mx_reduced, nlp.controls["unscaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)],
+            [dyn_func(nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)],
             ["x", "u", "p"],
             ["contact_forces"],
         ).expand()
@@ -633,7 +633,7 @@ class ConfigureProblem:
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)
-                .computeForceAtOrigin(nlp.model, nlp.states["unscaled"].mx_reduced[:n], nlp.states["unscaled"].mx_reduced[n:])
+                .computeForceAtOrigin(nlp.model, nlp.states["scaled"].mx_reduced[:n], nlp.states["scaled"].mx_reduced[n:])
                 .to_mx()
             )
         nlp.soft_contact_forces_func = Function(
