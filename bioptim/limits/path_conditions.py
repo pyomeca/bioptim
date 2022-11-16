@@ -420,7 +420,7 @@ class Bounds(OptionGeneric):
         self.extra_params = self.min.extra_params
         self.n_shooting = self.min.n_shooting
 
-    def scale(self, scaling: Union[float, np.ndarray, VariableScaling], n_elements: int, n_shooting: int, n_colocation_steps: int):
+    def scale(self, scaling: Union[float, np.ndarray, VariableScaling], n_elements: int, n_shooting: int, n_collocation_steps: int):
         """
         Scaling a Bound
 
@@ -431,7 +431,7 @@ class Bounds(OptionGeneric):
         """
 
         if isinstance(scaling, VariableScaling):
-            scaling = scaling.to_vector(n_elements, n_shooting, n_colocation_steps)
+            scaling = scaling.to_vector(n_elements, n_shooting, n_collocation_steps)
         self.min /= scaling
         self.max /= scaling
         return self
@@ -790,7 +790,7 @@ class InitialGuess(OptionGeneric):
             interpolation=self.init.type,
         )
 
-    def scale(self, scaling: Union[float, np.ndarray, VariableScaling], n_elements: int, n_shooting: int, n_colocation_steps: int):
+    def scale(self, scaling: Union[float, np.ndarray, VariableScaling], n_elements: int, n_shooting: int, n_collocation_steps: int):
         """
         Scaling an InitialGuess
 
@@ -800,7 +800,7 @@ class InitialGuess(OptionGeneric):
             The scaling factor
         """
         if isinstance(scaling, VariableScaling):
-            scaling = scaling.to_vector(n_elements, n_shooting, n_colocation_steps)
+            scaling = scaling.to_vector(n_elements, n_shooting, n_collocation_steps)
         self.init /= scaling
         return self
 
