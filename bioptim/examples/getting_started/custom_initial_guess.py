@@ -32,6 +32,7 @@ from bioptim import (
     NoisedInitialGuess,
     InterpolationType,
     OdeSolver,
+    VariableScalingList,
 )
 
 
@@ -178,7 +179,17 @@ def prepare_ocp(
         x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
         u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
 
-    # ------------- #
+    # Variable scaling
+    x_scaling = VariableScalingList()
+    x_scaling.add("q", scaling=[1] * biorbd_model.nbQ())
+    x_scaling.add("qdot", scaling=[1] * biorbd_model.nbQdot())
+
+    xdot_scaling = VariableScalingList()
+    xdot_scaling.add("qdot", scaling=[1] * biorbd_model.nbQdot())
+    xdot_scaling.add("qddot", scaling=[1] * biorbd_model.nbQddot())
+
+    u_scaling = VariableScalingList()
+    u_scaling.add("tau", scaling=[1] * biorbd_model.nbGeneralizedTorque())
 
     return OptimalControlProgram(
         biorbd_model,
@@ -192,6 +203,9 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        x_scaling=x_scaling,
+        xdot_scaling=xdot_scaling,
+        u_scaling=u_scaling,
     )
 
 
@@ -201,14 +215,15 @@ def main():
     """
 
     sol = None
-    for initial_guess in InterpolationType:
-        print(f"Solving problem using {initial_guess} initial guess")
-        ocp = prepare_ocp(
-            "models/cube.bioMod", n_shooting=30, final_time=2, random_init=True, initial_guess=initial_guess
-        )
+    # for initial_guess in InterpolationType:
+    initial_guess = InterpolationType.CUSTOM
+    print(f"Solving problem using {initial_guess} initial guess")
+    ocp = prepare_ocp(
+        "models/cube.bioMod", n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess
+    )
 
-        sol = ocp.solve()
-        print("\n")
+    sol = ocp.solve()
+    print("\n")
 
     # Print the last solution
     sol.animate()

@@ -44,6 +44,7 @@ from ..misc.enums import (
     CostType,
     SolutionIntegrator,
     IntegralApproximation,
+    InterpolationType,
 )
 from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
@@ -304,6 +305,40 @@ class OptimalControlProgram:
         elif not isinstance(u_bounds, BoundsList):
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
+        if x_init is None:
+            x_init = InitialGuessList()
+        elif isinstance(x_init, InitialGuess):
+            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
+                raise RuntimeError("x_scaling should be provided with a custom x_init")
+            x_init_tp = InitialGuessList()
+            x_init_tp.add(x_init)
+            x_init = x_init_tp
+        elif isinstance(x_init, NoisedInitialGuess):
+            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
+                raise RuntimeError("x_scaling ans xdot_scaling should be provided with a custom x_init")
+            x_init_tp = InitialGuessList()
+            x_init_tp.add(x_init.init)
+            x_init = x_init_tp
+        elif not isinstance(x_init, InitialGuessList):
+            raise RuntimeError("x_scaling ans xdot_scaling should be built from a InitialGuess or InitialGuessList")
+
+        if u_init is None:
+            u_init = InitialGuessList()
+        elif isinstance(u_init, InitialGuess):
+            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
+                raise RuntimeError("u_scaling should be provided with a custom u_init")
+            u_init_tp = InitialGuessList()
+            u_init_tp.add(u_init)
+            u_init = u_init_tp
+        elif isinstance(u_init, NoisedInitialGuess):
+            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
+                raise RuntimeError("u_scaling should be provided with a custom u_init")
+            u_init_tp = InitialGuessList()
+            u_init_tp.add(u_init.init)
+            u_init = u_init_tp
+        elif not isinstance(u_init, InitialGuessList):
+            raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
+
         if x_scaling is None:
             x_scaling = VariableScalingList()
         elif isinstance(x_scaling, VariableScaling):
@@ -330,32 +365,6 @@ class OptimalControlProgram:
             u_scaling = u_scaling_tp
         elif not isinstance(u_scaling, VariableScalingList):
             raise RuntimeError("u_scaling should be built from a VariableScaling or a VariableScalingList")
-
-        if x_init is None:
-            x_init = InitialGuessList()
-        elif isinstance(x_init, InitialGuess):
-            x_init_tp = InitialGuessList()
-            x_init_tp.add(x_init)
-            x_init = x_init_tp
-        elif isinstance(x_init, NoisedInitialGuess):
-            x_init_tp = InitialGuessList()
-            x_init_tp.add(x_init.init)
-            x_init = x_init_tp
-        elif not isinstance(x_init, InitialGuessList):
-            raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
-
-        if u_init is None:
-            u_init = InitialGuessList()
-        elif isinstance(u_init, InitialGuess):
-            u_init_tp = InitialGuessList()
-            u_init_tp.add(u_init)
-            u_init = u_init_tp
-        elif isinstance(u_init, NoisedInitialGuess):
-            u_init_tp = InitialGuessList()
-            u_init_tp.add(u_init.init)
-            u_init = u_init_tp
-        elif not isinstance(u_init, InitialGuessList):
-            raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
         if objective_functions is None:
             objective_functions = ObjectiveList()
