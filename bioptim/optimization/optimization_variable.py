@@ -109,14 +109,13 @@ class VariableScalingList(OptionDict):
             Any parameters to pass to the Bounds
         """
 
-        for i, elt in enumerate(scaling):
-            if elt <= 0:
-                raise RuntimeError(f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0.")
-
         if isinstance(scaling, VariableScaling):
-            self.add(name, phase=phase)
-
+            self.add(name=name, scaling=scaling.scaling, phase=phase)
         else:
+            for i, elt in enumerate(scaling):
+                if elt <= 0:
+                    raise RuntimeError(
+                        f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0.")
             super(VariableScalingList, self)._add(key=name, phase=phase, scaling=scaling, option_type=VariableScaling)
 
     def __getitem__(self, item) -> VariableScaling:
@@ -144,38 +143,60 @@ class VariableScalingList(OptionDict):
 
     def scaling_fill_phases(self, ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
 
+        x_scaling_out = VariableScalingList()
+        xdot_scaling_out = VariableScalingList()
+        u_scaling_out = VariableScalingList()
+
         for phase in range(ocp.n_phases):
 
-            nx = x_init[phase].shape[0]
-            if len(x_scaling) > phase and len(x_scaling[phase].keys()) > 0:
-                x_scaling_all = np.array([])
-                for key in x_scaling[phase].keys():
-                    x_scaling_all = np.concatenate((x_scaling_all, x_scaling[phase][key].scaling))
+            if 'all' not in x_scaling.keys():
+                nx = x_init[phase].shape[0]
+                if len(x_scaling_out) > phase and len(x_scaling_out[phase].keys()) > 0:
+                    x_scaling_all = np.array([])
+                    for key in x_scaling_out[phase].keys():
+                        x_scaling_all = np.concatenate((x_scaling_all, x_scaling_out[phase][key].scaling))
+                else:
+                    x_scaling_all = np.ones((nx,))
             else:
-                x_scaling_all = np.ones((nx,))
+                if len(x_scaling) > 1:
+                    x_scaling_all = x_scaling_out[phase]['all'].scaling
+                else:
+                    x_scaling_all = x_scaling_out['all'].scaling
 
-            if len(xdot_scaling) > phase and len(xdot_scaling[phase].keys()) > 0:
-                xdot_scaling_all = np.array([])
-                for key in xdot_scaling[phase].keys():
-                    xdot_scaling_all = np.concatenate((xdot_scaling_all, xdot_scaling[phase][key].scaling))
+            if 'all' not in xdot_scaling.keys():
+                if len(xdot_scaling_out) > phase and len(xdot_scaling_out[phase].keys()) > 0:
+                    xdot_scaling_all = np.array([])
+                    for key in xdot_scaling_out[phase].keys():
+                        xdot_scaling_all = np.concatenate((xdot_scaling_all, xdot_scaling_out[phase][key].scaling))
+                else:
+                    nb_quaternions = ocp.nlp[phase].model.nbQuat()
+                    nxdot = nx - nb_quaternions
+                    xdot_scaling_all = np.ones((nxdot,))
             else:
-                nb_quaternions = ocp.nlp[phase].model.nbQuat()
-                nxdot = nx - nb_quaternions
-                xdot_scaling_all = np.ones((nxdot,))
+                if len(xdot_scaling) > 1:
+                    xdot_scaling_all = xdot_scaling_out[phase]['all'].scaling
+                else:
+                    xdot_scaling_all = xdot_scaling_out['all'].scaling
 
-            if len(u_scaling) > phase and len(u_scaling[phase].keys()) > 0:
-                u_scaling_all = np.array([])
-                for key in u_scaling[phase].keys():
-                    u_scaling_all = np.concatenate((u_scaling_all, u_scaling[phase][key].scaling))
+            if 'all' not in u_scaling.keys():
+                if len(u_scaling_out) > phase and len(u_scaling_out[phase].keys()) > 0:
+                    u_scaling_all = np.array([])
+                    for key in u_scaling_out[phase].keys():
+                        u_scaling_all = np.concatenate((u_scaling_all, u_scaling_out[phase][key].scaling))
+                else:
+                    nu = u_init[phase].shape[0]
+                    u_scaling_all = np.ones((nu,))
             else:
-                nu = u_init[phase].shape[0]
-                u_scaling_all = np.ones((nu,))
+                if len(u_scaling) > 1:
+                    u_scaling_all = u_scaling_out[phase]['all'].scaling
+                else:
+                    u_scaling_all = u_scaling_out['all'].scaling
 
-            x_scaling.add('all', scaling=x_scaling_all, phase=phase)
-            xdot_scaling.add('all', scaling=xdot_scaling_all, phase=phase)
-            u_scaling.add('all', scaling=u_scaling_all, phase=phase)
+            x_scaling_out.add('all', scaling=x_scaling_all, phase=phase)
+            xdot_scaling_out.add('all', scaling=xdot_scaling_all, phase=phase)
+            u_scaling_out.add('all', scaling=u_scaling_all, phase=phase)
 
-        return x_scaling, xdot_scaling, u_scaling
+        return x_scaling_out, xdot_scaling_out, u_scaling_out
 
 class OptimizationVariable:
     """

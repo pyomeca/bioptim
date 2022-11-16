@@ -117,7 +117,7 @@ class OptimizationVector:
         The vector of all bounds
         """
 
-        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION):
+        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.IRK):
             n_collocation_steps = self.ocp.nlp[0].ode_solver.steps + 1
         else:
             n_collocation_steps = 1
@@ -145,7 +145,7 @@ class OptimizationVector:
         The vector of all init
         """
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
-        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION):
+        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.IRK):
             n_collocation_steps = self.ocp.nlp[0].ode_solver.steps + 1
         else:
             n_collocation_steps = 1
@@ -161,7 +161,7 @@ class OptimizationVector:
             interpolation_type = None if original_x_init is None else original_x_init.type
 
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
-                v_init.concatenate(self._init_linear_interpolation(phase=phase).scale(self.ocp.nlp[phase].x_scaling, self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1, n_collocation_steps))
+                v_init.concatenate(self._init_linear_interpolation(phase=phase).scale(self.ocp.nlp[phase].x_scaling['all'], self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1, n_collocation_steps))
             else:
                 v_init.concatenate(x_init.scale(self.ocp.nlp[phase].x_scaling['all'], self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1, n_collocation_steps))
 
