@@ -407,10 +407,8 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "x_unscaled": nlp.states["unscaled"].cx,
-                "x_scaled": nlp.states["scaled"].cx,
-                "p_unscaled": nlp.controls["unscaled"].cx,
-                "p_scaled": nlp.controls["scaled"].cx,
+                "x": nlp.states["scaled"].cx,
+                "p": nlp.controls["scaled"].cx,
                 "ode": nlp.dynamics_func(nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
@@ -421,7 +419,7 @@ class OdeSolver:
                 Function(
                     "integrator",
                     [nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx],
-                    self._adapt_integrator_output(integrator_func, nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx),
+                    self._adapt_integrator_output(integrator_func, nlp.states["scaled"].cx, nlp.controls["scaled"].cx),
                     ["x0", "p", "params"],
                     ["xf", "xall"],
                 )

@@ -530,8 +530,7 @@ class Solution:
         """
         states_scaled = self._states["scaled"]
         states_unscaled = self._states["unscaled"]
-        states = OptimizationVariableContainer(states_scaled, states_unscaled)
-        return states
+        return OptimizationVariableContainer(states_scaled, states_unscaled)
 
     def no_intermediate(self, states) -> Union[list, dict]:
         """
@@ -644,12 +643,9 @@ class Solution:
                 "This may happen in "
                 "previously integrated and interpolated structure"
             )
-        controls_scaled = self._controls["scaled"][0] if len(self._controls["scaled"]) == 1 else self._controls["scaled"]
-        controls_unscaled = (
-            self._controls["unscaled"][0] if len(self._controls["unscaled"]) == 1 else self._controls["unscaled"]
-        )
-        controls = OptimizationVariableContainer(controls_scaled, controls_unscaled)
-        return controls
+        controls_scaled = self._controls["scaled"]
+        controls_unscaled = self._controls["unscaled"]
+        return OptimizationVariableContainer(controls_scaled, controls_unscaled)
 
     @property
     def time(self) -> Union[list, dict]:

@@ -306,6 +306,8 @@ class OptimalControlProgram:
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
         if x_init is None:
+            if x_scaling is None:
+                raise RuntimeError("At least x_scaling or x_init should be provided.")
             x_init = InitialGuessList()
         elif isinstance(x_init, InitialGuess):
             if x_init.type == InterpolationType.CUSTOM and x_scaling is None:

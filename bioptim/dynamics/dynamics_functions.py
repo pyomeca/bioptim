@@ -456,10 +456,10 @@ class DynamicsFunctions:
                         raise ValueError(f"{fatigue_name} must be of all same types")
 
             if n_state_only == 0:
-                mus_activations = DynamicsFunctions.get(nlp.states["unscaled"][f"muscles_scaled_{dyn_suffix}"], states)
+                mus_activations = DynamicsFunctions.get(nlp.states["unscaled"][f"muscles_{dyn_suffix}"], states)
 
             if apply_to_joint_dynamics > 0:
-                fatigue_states = DynamicsFunctions.get(nlp.states["unscaled"][f"muscles_scaled_{fatigue_suffix}"], states)
+                fatigue_states = DynamicsFunctions.get(nlp.states["unscaled"][f"muscles_{fatigue_suffix}"], states)
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau

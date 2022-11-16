@@ -38,7 +38,7 @@ def test_track_segment_on_rt(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((91, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.30543155, 0, -1.57, -1.57]))
@@ -85,7 +85,7 @@ def test_track_marker_on_segment(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((88, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0, 0.46364761]))
