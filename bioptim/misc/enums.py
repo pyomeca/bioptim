@@ -19,6 +19,7 @@ class SolverType(Enum):
 
     IPOPT = "Ipopt"
     ACADOS = "ACADOS"
+    SQP = "SqpMethod"
     NONE = None
 
 
@@ -164,3 +165,8 @@ class DefectType(Enum):
     EXPLICIT = "explicit"
     IMPLICIT = "implicit"
     NOT_APPLICABLE = "not_applicable"
+
+
+class MagnitudeType(Enum):
+    RELATIVE = "relative"
+    ABSOLUTE = "absolute"

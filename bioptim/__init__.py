@@ -198,8 +198,10 @@ from .misc.enums import (
     RigidBodyDynamics,
     SoftContactDynamics,
     DefectType,
+    MagnitudeType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping
+from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl

@@ -73,7 +73,9 @@ def test_plot_merged_graphs():
         use_residual_torque=True,
         kin_data_to_track="markers",
     )
-    sol = ocp.solve()
+    solver = Solver.IPOPT()
+    solver.set_maximum_iterations(1)
+    sol = ocp.solve(solver)
     sol.graphs(automatically_organize=False)
 
 
@@ -231,33 +233,33 @@ def test_console_objective_functions():
         "\n"
         "---- COST FUNCTION VALUES ----\n"
         "PHASE 0\n"
-        "MINIMIZE_CONTROL:  60.00 (weighted 120.0)\n"
+        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
         "\n"
         "PHASE 1\n"
-        "MINIMIZE_CONTROL:  90.00 (weighted 180.0)\n"
-        "minimize_difference:  6.00 (weighted 9.0)\n"
+        "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
+        "Mayer.CUSTOM: 9.0 (non weighted  6.00)\n"
         "\n"
         "PHASE 2\n"
-        "MINIMIZE_CONTROL:  60.00 (weighted 120.0)\n"
+        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
         "\n"
         "Sum cost functions: 429.0\n"
         "------------------------------\n"
         "\n"
         "--------- CONSTRAINTS ---------\n"
         "PHASE 0\n"
-        "CONTINUITY: 420.0\n"
-        "PHASE_TRANSITION 0->1: 27.0\n"
-        "SUPERIMPOSE_MARKERS: 6.0\n"
-        "SUPERIMPOSE_MARKERS: 9.0\n"
+        "ConstraintFcn.CONTINUITY: 420.0\n"
+        "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 9.0\n"
         "\n"
         "PHASE 1\n"
-        "CONTINUITY: 630.0\n"
-        "PHASE_TRANSITION 1->2: 27.0\n"
-        "SUPERIMPOSE_MARKERS: 6.0\n"
+        "ConstraintFcn.CONTINUITY: 630.0\n"
+        "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
         "\n"
         "PHASE 2\n"
-        "CONTINUITY: 420.0\n"
-        "SUPERIMPOSE_MARKERS: 6.0\n"
+        "ConstraintFcn.CONTINUITY: 420.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
         "\n"
         "------------------------------\n"
     )

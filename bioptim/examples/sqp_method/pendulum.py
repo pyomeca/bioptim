@@ -1,16 +1,10 @@
 """
-A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
-while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
-
-This simple example is a good place to start investigating bioptim as it describes the most common dynamics out there
-(the joint torque driven), it defines an objective function and some boundaries and initial guesses
-
-During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
-appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
+A very simple example to show how to use the SQP method.
+The example is taken from getting_started/pendulum.py.
+Note that this example is there for reference and unfortunately doest not converge.
 """
 
 import biorbd_casadi as biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
@@ -21,8 +15,8 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
-    CostType,
     Solver,
+    InterpolationType,
 )
 
 
@@ -79,7 +73,7 @@ def prepare_ocp(
     n_tau = biorbd_model.nbGeneralizedTorque()
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
+    u_bounds[1, :] = 0
 
     u_init = InitialGuess([tau_init] * n_tau)
 
@@ -107,21 +101,15 @@ def main():
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
 
-    # Custom plots
-    ocp.add_plot_penalty(CostType.ALL)
-    # ocp.check_conditioning()
-
-    # --- Print ocp structure --- #
-    ocp.print(to_console=False, to_graph=False)
-
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
-    # sol.graphs()
+    solver = Solver.SQP_METHOD(show_online_optim=False)
+    solver.set_tol_du(1e-1)
+    solver.set_tol_pr(1e-1)
+    sol = ocp.solve(solver)
 
     # --- Show the results in a bioviz animation --- #
-    sol.detailed_cost_values()
-    sol.print_cost()
     sol.animate(n_frames=100)
+    sol.graphs()
 
 
 if __name__ == "__main__":
