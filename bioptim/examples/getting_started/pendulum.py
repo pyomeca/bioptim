@@ -110,6 +110,8 @@ def main():
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
+
+    # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
     # ocp.check_conditioning()
 
     # --- Print ocp structure --- #
