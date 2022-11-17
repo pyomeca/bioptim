@@ -406,7 +406,7 @@ def check_conditioning(ocp):
                 condition_number.append(" /!\ Ev_min is 0")
             if ev_min != 0:
                 condition_number.append(np.abs(ev_max) / np.abs(ev_min))
-            convexity.append("True")
+            convexity.append("Possible")
             for ev in range(0, eigen_values.size):
                 if eigen_values[ev] < 0:
                     convexity[matrix] = "False"
