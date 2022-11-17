@@ -338,9 +338,9 @@ This will print two different plots !
 The first one shows the jacobian matrix of constraints and the norm of each hessian matrix of constraints.
 There are one matrix for each phase.
 The first half of the plot can be used to verify if some constraints are redundant. It simply compare the rank of the jacobian with the numbers of contraints for each phase.
-The second half of the plot can be used to verify if the equlity constraints are linear.
+The second half of the plot can be used to verify if the equality constraints are linear.
 
-The second plot window shows the hessian of the objective for each phase. It calculates if the problem is convexe by checking if the matrix is positive semi-definite.
+The second plot window shows the hessian of the objective for each phase. It calculates if the problem can be convexe by checking if the matrix is positive semi-definite.
 It also calculate the condition number for each phase thanks to the eigen values.
 
 If everything is ok, let's solve the ocp !
