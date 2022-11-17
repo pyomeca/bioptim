@@ -8,12 +8,7 @@ from ..misc.options import OptionGeneric, OptionDict, UniquePerPhaseOptionList
 
 
 class VariableScaling(OptionGeneric):
-    def __init__(
-        self,
-        key: str,
-        scaling: Union[np.ndarray, list] = None,
-        **kwargs
-    ):
+    def __init__(self, key: str, scaling: Union[np.ndarray, list] = None, **kwargs):
         """
         Parameters
         ----------
@@ -31,7 +26,6 @@ class VariableScaling(OptionGeneric):
         self.scaling = scaling
         self.key = key
 
-
     def scaling(self):
         """
         Get the scaling
@@ -41,7 +35,7 @@ class VariableScaling(OptionGeneric):
         The scaling
         """
 
-        return self.scaling['all']
+        return self.scaling["all"]
 
     def to_vector(self, n_elements: int, n_shooting: int, n_collocation_steps: int):
         """
@@ -54,13 +48,12 @@ class VariableScaling(OptionGeneric):
                 f"The number of elements in the scaling ({self.scaling.shape[0]}) is not the same as the number of elements ({n_elements})"
             )
 
-        n_repetition = (n_shooting-1) * n_collocation_steps + 1
+        n_repetition = (n_shooting - 1) * n_collocation_steps + 1
         scaling_vector = np.zeros((n_repetition * n_elements, 1))
         for i in range(n_repetition):
             scaling_vector[i * n_elements : (i + 1) * n_elements] = np.reshape(self.scaling, (n_elements, 1))
 
         return scaling_vector
-
 
     def to_array(self, n_elements: int, n_shooting: int):
         """
@@ -87,6 +80,7 @@ class VariableScalingList(OptionDict):
     print(self)
         Print the VariableScalingList to the console
     """
+
     def __init__(self):
         super(VariableScalingList, self).__init__()
 
@@ -117,7 +111,8 @@ class VariableScalingList(OptionDict):
             for i, elt in enumerate(scaling):
                 if elt <= 0:
                     raise RuntimeError(
-                        f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0.")
+                        f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0."
+                    )
             super(VariableScalingList, self)._add(key=key, phase=phase, scaling=scaling, option_type=VariableScaling)
 
     def __getitem__(self, item) -> VariableScaling:
@@ -151,7 +146,7 @@ class VariableScalingList(OptionDict):
 
         for phase in range(ocp.n_phases):
 
-            if 'all' not in x_scaling.keys():
+            if "all" not in x_scaling.keys():
                 nx = x_init[phase].shape[0]
                 if len(x_scaling.keys()) > 0:
                     x_scaling_all = np.array([])
@@ -165,9 +160,9 @@ class VariableScalingList(OptionDict):
 
             else:
                 if len(x_scaling) > 1:
-                    x_scaling_all = x_scaling[phase]['all'].scaling
+                    x_scaling_all = x_scaling[phase]["all"].scaling
                 else:
-                    x_scaling_all = x_scaling['all'].scaling
+                    x_scaling_all = x_scaling["all"].scaling
 
             if len(x_scaling.keys()) > 0:
                 for key in x_scaling.keys():
@@ -176,7 +171,7 @@ class VariableScalingList(OptionDict):
                     else:
                         x_scaling_out.add(key, scaling=x_scaling[key].scaling, phase=0)
 
-            if 'all' not in xdot_scaling.keys():
+            if "all" not in xdot_scaling.keys():
                 nx = x_init[phase].shape[0]
                 if len(xdot_scaling.keys()) > 0:
                     xdot_scaling_all = np.array([])
@@ -189,9 +184,9 @@ class VariableScalingList(OptionDict):
                     xdot_scaling_all = np.ones((nx,))
             else:
                 if len(xdot_scaling) > 1:
-                    xdot_scaling_all = xdot_scaling[phase]['all'].scaling
+                    xdot_scaling_all = xdot_scaling[phase]["all"].scaling
                 else:
-                    xdot_scaling_all = xdot_scaling['all'].scaling
+                    xdot_scaling_all = xdot_scaling["all"].scaling
 
             if len(xdot_scaling.keys()) > 0:
                 for key in xdot_scaling.keys():
@@ -200,7 +195,7 @@ class VariableScalingList(OptionDict):
                     else:
                         xdot_scaling_out.add(key, scaling=xdot_scaling[key].scaling, phase=0)
 
-            if 'all' not in u_scaling.keys():
+            if "all" not in u_scaling.keys():
                 nu = u_init[phase].shape[0]
                 if len(u_scaling.keys()) > 0:
                     u_scaling_all = np.array([])
@@ -213,9 +208,9 @@ class VariableScalingList(OptionDict):
                     u_scaling_all = np.ones((nu,))
             else:
                 if len(u_scaling) > 1:
-                    u_scaling_all = u_scaling[phase]['all'].scaling
+                    u_scaling_all = u_scaling[phase]["all"].scaling
                 else:
-                    u_scaling_all = u_scaling['all'].scaling
+                    u_scaling_all = u_scaling["all"].scaling
 
             if len(u_scaling.keys()) > 0:
                 for key in u_scaling.keys():
@@ -224,11 +219,12 @@ class VariableScalingList(OptionDict):
                     else:
                         u_scaling_out.add(key, scaling=u_scaling[key].scaling, phase=0)
 
-            x_scaling_out.add(key='all', scaling=x_scaling_all, phase=phase)
-            xdot_scaling_out.add(key='all', scaling=xdot_scaling_all, phase=phase)
-            u_scaling_out.add(key='all', scaling=u_scaling_all, phase=phase)
+            x_scaling_out.add(key="all", scaling=x_scaling_all, phase=phase)
+            xdot_scaling_out.add(key="all", scaling=xdot_scaling_all, phase=phase)
+            u_scaling_out.add(key="all", scaling=u_scaling_all, phase=phase)
 
         return x_scaling_out, xdot_scaling_out, u_scaling_out
+
 
 class OptimizationVariable:
     """
@@ -436,7 +432,15 @@ class OptimizationVariableList:
 
         self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
 
-    def append_from_scaled(self, name: str, cx: list, mx: MX, bimapping: BiMapping, scaled_optimization_variable: OptimizationVariable, scaling: VariableScaling):
+    def append_from_scaled(
+        self,
+        name: str,
+        cx: list,
+        mx: MX,
+        bimapping: BiMapping,
+        scaled_optimization_variable: OptimizationVariable,
+        scaling: VariableScaling,
+    ):
         """
         Add a new variable to the list
 
@@ -564,7 +568,6 @@ class OptimizationVariableList:
 
 
 class OptimizationVariableContainer:
-
     def __init__(self, variable_scaled=None, variables_unscaled=None):
         if variable_scaled is None:
             variable_scaled = OptimizationVariableList()
@@ -573,26 +576,29 @@ class OptimizationVariableContainer:
         self.optimization_variable = {"scaled": variable_scaled, "unscaled": variables_unscaled}
 
     def __getitem__(self, item: str):
-        if isinstance(self.optimization_variable['unscaled'], list):
+        if isinstance(self.optimization_variable["unscaled"], list):
             if item != "scaled" and item != "unscaled":
-                return [self.optimization_variable['unscaled'][i][item] for i in range(len(self.optimization_variable['unscaled']))]
+                return [
+                    self.optimization_variable["unscaled"][i][item]
+                    for i in range(len(self.optimization_variable["unscaled"]))
+                ]
             else:
                 return self.optimization_variable[item]
         else:
             if item != "scaled" and item != "unscaled":
-                return self.optimization_variable['unscaled'][item]
+                return self.optimization_variable["unscaled"][item]
             else:
                 return self.optimization_variable[item]
 
     def __setitem__(self, item: str, value: Union[OptimizationVariableList, np.ndarray]):
 
         if item != "scaled" and item != "unscaled":
-            self.optimization_variable['unscaled'][item] = value
+            self.optimization_variable["unscaled"][item] = value
         else:
             self.optimization_variable[item] = value
 
     def keys(self):
-        return self.optimization_variable['unscaled'].keys()
+        return self.optimization_variable["unscaled"].keys()
 
     def shape(self):
-        return self.optimization_variable['unscaled'].shape
+        return self.optimization_variable["unscaled"].shape

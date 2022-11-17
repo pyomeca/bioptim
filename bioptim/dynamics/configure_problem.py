@@ -24,6 +24,7 @@ from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
 from ..optimization.optimization_variable import VariableScaling
 
+
 class ConfigureProblem:
     """
     Dynamics configuration for the most common ocp
@@ -545,7 +546,9 @@ class ConfigureProblem:
         """
 
         nlp.parameters = ocp.v.parameters_in_list
-        dynamics_eval = dyn_func(nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)
+        dynamics_eval = dyn_func(
+            nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params
+        )
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
@@ -563,7 +566,12 @@ class ConfigureProblem:
         if dynamics_eval.defects is not None:
             nlp.implicit_dynamics_func = Function(
                 "DynamicsDefects",
-                [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp.states_dot["scaled"].mx_reduced],
+                [
+                    nlp.states["scaled"].mx_reduced,
+                    nlp.controls["scaled"].mx_reduced,
+                    nlp.parameters.mx,
+                    nlp.states_dot["scaled"].mx_reduced,
+                ],
                 [dynamics_eval.defects],
                 ["x", "u", "p", "xdot"],
                 ["defects"],
@@ -587,7 +595,15 @@ class ConfigureProblem:
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
-            [dyn_func(nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params)],
+            [
+                dyn_func(
+                    nlp.states["scaled"].mx_reduced,
+                    nlp.controls["scaled"].mx_reduced,
+                    nlp.parameters.mx,
+                    nlp,
+                    **extra_params,
+                )
+            ],
             ["x", "u", "p"],
             ["contact_forces"],
         ).expand()
@@ -633,7 +649,9 @@ class ConfigureProblem:
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)
-                .computeForceAtOrigin(nlp.model, nlp.states["scaled"].mx_reduced[:n], nlp.states["scaled"].mx_reduced[n:])
+                .computeForceAtOrigin(
+                    nlp.model, nlp.states["scaled"].mx_reduced[:n], nlp.states["scaled"].mx_reduced[n:]
+                )
                 .to_mx()
             )
         nlp.soft_contact_forces_func = Function(
@@ -845,13 +863,19 @@ class ConfigureProblem:
 
         if as_states:
             if name not in nlp.x_scaling:
-                nlp.x_scaling[name] = VariableScaling(key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
+                nlp.x_scaling[name] = VariableScaling(
+                    key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+                )
         if as_states_dot:
             if name not in nlp.xdot_scaling:
-                nlp.xdot_scaling[name] = VariableScaling(key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
+                nlp.xdot_scaling[name] = VariableScaling(
+                    key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+                )
         if as_controls:
             if name not in nlp.u_scaling:
-                nlp.u_scaling[name] = VariableScaling(key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
+                nlp.u_scaling[name] = VariableScaling(
+                    key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+                )
 
         mx_states_scaled = []
         mx_states_dot_scaled = []
@@ -865,11 +889,19 @@ class ConfigureProblem:
             mx_controls_scaled.append(MX.sym(var_name, 1, 1))
             mx_states_dot_scaled.append(MX.sym(var_name, 1, 1))
             if as_states:
-                mx_states.append(mx_states_scaled[i] * nlp.x_scaling[name].scaling[i] if i is not None else mx_states_scaled[-1])
+                mx_states.append(
+                    mx_states_scaled[i] * nlp.x_scaling[name].scaling[i] if i is not None else mx_states_scaled[-1]
+                )
             if as_states_dot:
-                mx_states_dot.append(mx_states_dot_scaled[i] * nlp.xdot_scaling[name].scaling[i] if i is not None else mx_states_dot_scaled[-1])
+                mx_states_dot.append(
+                    mx_states_dot_scaled[i] * nlp.xdot_scaling[name].scaling[i]
+                    if i is not None
+                    else mx_states_dot_scaled[-1]
+                )
             if as_controls:
-                mx_controls.append(mx_controls_scaled[i] * nlp.u_scaling[name].scaling[i] if i is not None else mx_controls_scaled[-1])
+                mx_controls.append(
+                    mx_controls_scaled[i] * nlp.u_scaling[name].scaling[i] if i is not None else mx_controls_scaled[-1]
+                )
         mx_states_scaled = vertcat(*mx_states_scaled)
         mx_states_dot_scaled = vertcat(*mx_states_dot_scaled)
         mx_controls_scaled = vertcat(*mx_controls_scaled)
@@ -894,7 +926,9 @@ class ConfigureProblem:
             cx_scaled = define_cx_scaled(n_col=n_cx)
             cx = define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
             nlp.states["scaled"].append(name, cx_scaled, mx_states_scaled, nlp.variable_mappings[name])
-            nlp.states["unscaled"].append_from_scaled(name, cx, mx_states, nlp.variable_mappings[name], nlp.states["scaled"], nlp.x_scaling[name].scaling)
+            nlp.states["unscaled"].append_from_scaled(
+                name, cx, mx_states, nlp.variable_mappings[name], nlp.states["scaled"], nlp.x_scaling[name].scaling
+            )
             if not skip_plot:
                 nlp.plot[f"{name}_states"] = CustomPlot(
                     lambda t, x, u, p: x[nlp.states["unscaled"][name].index, :],
@@ -908,7 +942,9 @@ class ConfigureProblem:
             cx_scaled = define_cx_scaled(n_col=2)
             cx = define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
             nlp.controls["scaled"].append(name, cx_scaled, mx_controls_scaled, nlp.variable_mappings[name])
-            nlp.controls["unscaled"].append_from_scaled(name, cx, mx_controls, nlp.variable_mappings[name], nlp.controls["scaled"], nlp.u_scaling[name].scaling)
+            nlp.controls["unscaled"].append_from_scaled(
+                name, cx, mx_controls, nlp.variable_mappings[name], nlp.controls["scaled"], nlp.u_scaling[name].scaling
+            )
 
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             if not skip_plot:
@@ -925,7 +961,14 @@ class ConfigureProblem:
             cx_scaled = define_cx_scaled(n_col=n_cx)
             cx = define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
             nlp.states_dot["scaled"].append(name, cx, mx_states_dot_scaled, nlp.variable_mappings[name])
-            nlp.states_dot["unscaled"].append_from_scaled(name, cx, mx_states_dot, nlp.variable_mappings[name], nlp.states_dot["scaled"], nlp.xdot_scaling[name].scaling)
+            nlp.states_dot["unscaled"].append_from_scaled(
+                name,
+                cx,
+                mx_states_dot,
+                nlp.variable_mappings[name],
+                nlp.states_dot["scaled"],
+                nlp.xdot_scaling[name].scaling,
+            )
 
     @staticmethod
     def configure_q(nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):

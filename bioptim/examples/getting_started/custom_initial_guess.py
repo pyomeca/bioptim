@@ -218,9 +218,7 @@ def main():
     # for initial_guess in InterpolationType:
     initial_guess = InterpolationType.CUSTOM
     print(f"Solving problem using {initial_guess} initial guess")
-    ocp = prepare_ocp(
-        "models/cube.bioMod", n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess
-    )
+    ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess)
 
     sol = ocp.solve()
     print("\n")

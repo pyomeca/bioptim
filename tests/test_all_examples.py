@@ -432,6 +432,7 @@ def test__track__track_segment_on_rt():
         final_time=1,
     )
 
+
 def test__getting_started__example_variable_scaling():
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
 
@@ -439,6 +440,6 @@ def test__getting_started__example_variable_scaling():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=1/10,
+        final_time=1 / 10,
         n_shooting=30,
     )

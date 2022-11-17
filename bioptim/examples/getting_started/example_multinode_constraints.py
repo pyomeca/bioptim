@@ -186,8 +186,8 @@ def custom_multinode_constraint(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states['unscaled'].cx_end)
-    states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states['unscaled'].cx)
+    states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states["unscaled"].cx_end)
+    states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states["unscaled"].cx)
 
     return states_pre * coef - states_post
 

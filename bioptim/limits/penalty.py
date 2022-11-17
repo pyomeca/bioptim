@@ -65,7 +65,6 @@ class PenaltyFunctionAbstract:
 
             return all_pn.nlp.states["unscaled"][key].cx
 
-
         @staticmethod
         def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
             """
@@ -201,7 +200,9 @@ class PenaltyFunctionAbstract:
             jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
             markers = horzcat(*[m.to_mx() for m in model.markersVelocity(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
 
-            markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["scaled"]["q"], nlp.states["scaled"]["qdot"])
+            markers_objective = BiorbdInterface.mx_to_cx(
+                "markersVel", markers, nlp.states["scaled"]["q"], nlp.states["scaled"]["qdot"]
+            )
             return markers_objective
 
         @staticmethod
@@ -336,7 +337,9 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             if "qddot" not in nlp.states["unscaled"].keys() and "qddot" not in nlp.controls["unscaled"].keys():
-                return nlp.dynamics_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx)[nlp.states["unscaled"]["qdot"].index, :]
+                return nlp.dynamics_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx)[
+                    nlp.states["unscaled"]["qdot"].index, :
+                ]
             elif "qddot" in nlp.states["unscaled"].keys():
                 return nlp.states["unscaled"]["qddot"].cx
             elif "qddot" in nlp.controls["unscaled"].keys():
@@ -362,7 +365,9 @@ class PenaltyFunctionAbstract:
             com = nlp.model.CoM(nlp.states["unscaled"]["q"].mx).to_mx()
             com_dot = nlp.model.CoMdot(nlp.states["unscaled"]["q"].mx, nlp.states["unscaled"]["qdot"].mx).to_mx()
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
-            com_height_cx = BiorbdInterface.mx_to_cx("com_height", com_height, nlp.states["scaled"]["q"], nlp.states["scaled"]["qdot"])
+            com_height_cx = BiorbdInterface.mx_to_cx(
+                "com_height", com_height, nlp.states["scaled"]["q"], nlp.states["scaled"]["qdot"]
+            )
             return com_height_cx
 
         @staticmethod
@@ -411,7 +416,9 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.CoMdot, nlp.states["scaled"]["q"], nlp.states["scaled"]["qdot"])
+            com_dot_cx = BiorbdInterface.mx_to_cx(
+                "com_dot", nlp.model.CoMdot, nlp.states["scaled"]["q"], nlp.states["scaled"]["qdot"]
+            )
             return com_dot_cx
 
         @staticmethod
@@ -440,7 +447,9 @@ class PenaltyFunctionAbstract:
                 com_ddot = nlp.model.CoMddot(
                     nlp.states["scaled"]["q"].mx,
                     nlp.states["scaled"]["qdot"].mx,
-                    nlp.dynamics_func(nlp.states["scaled"].mx, nlp.controls["scaled"].mx, nlp.parameters.mx)[nlp.states["scaled"]["qdot"].index, :],
+                    nlp.dynamics_func(nlp.states["scaled"].mx, nlp.controls["scaled"].mx, nlp.parameters.mx)[
+                        nlp.states["scaled"]["qdot"].index, :
+                    ],
                 ).to_mx()
                 var = []
                 var.extend([nlp.states["scaled"][key] for key in nlp.states["scaled"]])
@@ -448,7 +457,11 @@ class PenaltyFunctionAbstract:
                 var.extend([nlp.parameters[key] for key in nlp.parameters])
                 return BiorbdInterface.mx_to_cx("com_ddot", com_ddot, *var)
             else:
-                qddot = nlp.states["scaled"]["qddot"] if "qddot" in nlp.states["scaled"].keys() else nlp.controls["scaled"]["qddot"]
+                qddot = (
+                    nlp.states["scaled"]["qddot"]
+                    if "qddot" in nlp.states["scaled"].keys()
+                    else nlp.controls["scaled"]["qddot"]
+                )
                 return BiorbdInterface.mx_to_cx(
                     "com_ddot", nlp.model.CoMddot, nlp.states["scaled"]["q"], nlp.states["scaled"]["qdot"], qddot
                 )
@@ -536,7 +549,9 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            contact_force = nlp.contact_forces_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx)
+            contact_force = nlp.contact_forces_func(
+                nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx
+            )
             return contact_force
 
         @staticmethod
@@ -571,7 +586,9 @@ class PenaltyFunctionAbstract:
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
-            soft_contact_force = nlp.soft_contact_forces_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx)
+            soft_contact_force = nlp.soft_contact_forces_func(
+                nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx
+            )
             return soft_contact_force[force_idx]
 
         @staticmethod

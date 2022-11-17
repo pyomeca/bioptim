@@ -413,7 +413,9 @@ class PenaltyOption(OptionGeneric):
             nlp = all_pn.nlp
             name = self.name
             if self.integrate:
-                state_cx_scaled = horzcat(*([all_pn.nlp.states["scaled"].cx] + all_pn.nlp.states["scaled"].cx_intermediates_list))
+                state_cx_scaled = horzcat(
+                    *([all_pn.nlp.states["scaled"].cx] + all_pn.nlp.states["scaled"].cx_intermediates_list)
+                )
                 control_cx_scaled = all_pn.nlp.controls["scaled"].cx
             else:
                 state_cx_scaled = all_pn.nlp.states["scaled"].cx
@@ -428,7 +430,9 @@ class PenaltyOption(OptionGeneric):
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
-        self.function = biorbd.to_casadi_func(name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, expand=self.expand)
+        self.function = biorbd.to_casadi_func(
+            name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, expand=self.expand
+        )
         self.function_non_threaded = self.function
 
         if self.derivative:
@@ -493,9 +497,13 @@ class PenaltyOption(OptionGeneric):
             self.modified_function = biorbd.to_casadi_func(
                 f"{name}",
                 (
-                    (self.function(all_pn.nlp.states["scaled"].cx, all_pn.nlp.controls["scaled"].cx, param_cx) - target_cx[:, 0])
+                    (
+                        self.function(all_pn.nlp.states["scaled"].cx, all_pn.nlp.controls["scaled"].cx, param_cx)
+                        - target_cx[:, 0]
+                    )
                     ** exponent
-                    + (self.function(state_cx_end_scaled, control_cx_end_scaled, param_cx) - target_cx[:, 1]) ** exponent
+                    + (self.function(state_cx_end_scaled, control_cx_end_scaled, param_cx) - target_cx[:, 1])
+                    ** exponent
                 )
                 / 2,
                 state_cx_scaled,
@@ -584,7 +592,6 @@ class PenaltyOption(OptionGeneric):
                 node_idx=self.node_idx,
             )
 
-
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         """
         Doing some configuration on the penalty and add it to the list of penalty
@@ -614,7 +621,9 @@ class PenaltyOption(OptionGeneric):
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(range(nlp.states["unscaled"].shape), range(nlp.states["unscaled"].shape))
+                self.states_mapping = BiMapping(
+                    range(nlp.states["unscaled"].shape), range(nlp.states["unscaled"].shape)
+                )
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
@@ -638,7 +647,9 @@ class PenaltyOption(OptionGeneric):
             # self.phase_pre_idx
             # self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(range(nlp.states["unscaled"].shape), range(nlp.states["unscaled"].shape))
+                self.states_mapping = BiMapping(
+                    range(nlp.states["unscaled"].shape), range(nlp.states["unscaled"].shape)
+                )
             self.node = self.node_list[0]
             nlp = ocp.nlp[self.phase_first_idx]
             all_pn.append(self._get_penalty_node_list(ocp, nlp))

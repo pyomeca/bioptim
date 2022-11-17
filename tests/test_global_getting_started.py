@@ -120,7 +120,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
 
     # Check some of the results
     states, controls = sol.states, sol.controls
-    q, qdot, tau = states['unscaled'][0]["q"], states['unscaled'][0]["qdot"], controls['unscaled'][0]["tau"]
+    q, qdot, tau = states["unscaled"][0]["q"], states["unscaled"][0]["qdot"], controls["unscaled"][0]["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -199,7 +199,11 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
             # Check some of the results
-            q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+            q, qdot, tau = (
+                sol.states["unscaled"][0]["q"],
+                sol.states["unscaled"][0]["qdot"],
+                sol.controls["unscaled"][0]["tau"],
+            )
 
             # initial and final position
             np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -246,7 +250,11 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # Check some of the results
-        q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+        q, qdot, tau = (
+            sol.states["unscaled"][0]["q"],
+            sol.states["unscaled"][0]["qdot"],
+            sol.controls["unscaled"][0]["tau"],
+        )
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -290,7 +298,7 @@ def test_custom_constraint_track_markers(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+    q, qdot, tau = sol.states["unscaled"][0]["q"], sol.states["unscaled"][0]["qdot"], sol.controls["unscaled"][0]["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -328,7 +336,7 @@ def test_custom_constraint_track_markers(ode_solver):
 
 @pytest.mark.parametrize("random_init", [True, False])
 @pytest.mark.parametrize("interpolation", InterpolationType)
-@pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION]) # OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK,
+@pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])  # OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK,
 def test_initial_guesses(random_init, interpolation, ode_solver):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
@@ -375,7 +383,11 @@ def test_initial_guesses(random_init, interpolation, ode_solver):
             np.testing.assert_almost_equal(g, np.zeros((36, 1)))
 
         # Check some of the results
-        q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+        q, qdot, tau = (
+            sol.states["unscaled"][0]["q"],
+            sol.states["unscaled"][0]["qdot"],
+            sol.controls["unscaled"][0]["tau"],
+        )
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0]))
@@ -431,7 +443,7 @@ def test_cyclic_objective(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((67, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+    q, qdot, tau = sol.states["unscaled"][0]["q"], sol.states["unscaled"][0]["qdot"], sol.controls["unscaled"][0]["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1.60205103, -0.01069317, 0.62477988]))
@@ -483,7 +495,7 @@ def test_cyclic_constraint(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((73, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+    q, qdot, tau = sol.states["unscaled"][0]["q"], sol.states["unscaled"][0]["qdot"], sol.controls["unscaled"][0]["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 1.57]))
@@ -528,7 +540,7 @@ def test_phase_transitions(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((516, 1)))
 
     # Check some of the results
-    states, controls = sol.states['unscaled'], sol.controls['unscaled']
+    states, controls = sol.states["unscaled"], sol.controls["unscaled"]
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array((1, 0, 0)))
@@ -598,7 +610,12 @@ def test_parameter_optimization(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((320, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, gravity = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"], sol.parameters["gravity_xyz"]
+    q, qdot, tau, gravity = (
+        sol.states["unscaled"][0]["q"],
+        sol.states["unscaled"][0]["qdot"],
+        sol.controls["unscaled"][0]["tau"],
+        sol.parameters["gravity_xyz"],
+    )
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -696,7 +713,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+    q, qdot, tau = sol.states["unscaled"][0]["q"], sol.states["unscaled"][0]["qdot"], sol.controls["unscaled"][0]["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -740,7 +757,7 @@ def test_example_external_forces(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((246, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+    q, qdot, tau = sol.states["unscaled"][0]["q"], sol.states["unscaled"][0]["qdot"], sol.controls["unscaled"][0]["tau"]
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.71322593, 0, 0)))
@@ -806,7 +823,11 @@ def test_example_multiphase(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
     # Check some of the results
-    states, controls, states_unscaled_no_intermediate = sol.states['unscaled'], sol.controls['unscaled'], sol.states_unscaled_no_intermediate
+    states, controls, states_unscaled_no_intermediate = (
+        sol.states["unscaled"],
+        sol.controls["unscaled"],
+        sol.states_unscaled_no_intermediate,
+    )
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array((1, 0, 0)))
@@ -933,7 +954,9 @@ def test_example_multiphase(ode_solver):
 
     np.testing.assert_almost_equal(states_unscaled_no_intermediate["q"][:, 0], np.array((1, 0, 0)))
     np.testing.assert_almost_equal(states_unscaled_no_intermediate["q"][:, ocp.nlp[0].ns], np.array((2, 0, 0.0078695)))
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate["q"][:, ocp.nlp[0].ns + ocp.nlp[1].ns], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(
+        states_unscaled_no_intermediate["q"][:, ocp.nlp[0].ns + ocp.nlp[1].ns], np.array((1, 0, 0))
+    )
     np.testing.assert_almost_equal(states_unscaled_no_intermediate["q"][:, -1], np.array((2, 0, 1.57)))
 
     if ode_solver == OdeSolver.RK4:
@@ -1015,7 +1038,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
     np.testing.assert_array_less(-g[80:100], -min_bound)
 
     # Check some of the results
-    q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+    q, qdot, tau = sol.states["unscaled"][0]["q"], sol.states["unscaled"][0]["qdot"], sol.controls["unscaled"][0]["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
@@ -1070,7 +1093,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     np.testing.assert_array_less(g[80:100], max_bound)
 
     # Check some of the results
-    q, qdot, tau = sol.states['unscaled'][0]["q"], sol.states['unscaled'][0]["qdot"], sol.controls['unscaled'][0]["tau"]
+    q, qdot, tau = sol.states["unscaled"][0]["q"], sol.states["unscaled"][0]["qdot"], sol.controls["unscaled"][0]["tau"]
 
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
     np.testing.assert_almost_equal(q[:, -1], np.array((-0.00902682, 0.00820596, -0.72560094, 0.72560094)))
@@ -1115,7 +1138,7 @@ def test_multinode_constraints(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((3036, 1)))
 
     # Check some of the results
-    states, controls = sol.states['unscaled'], sol.controls['unscaled']
+    states, controls = sol.states["unscaled"], sol.controls["unscaled"]
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([1.0, 0.0, 0.0]))
@@ -1148,6 +1171,7 @@ def test_multistart():
     )
     multi_start.solve()
 
+
 def test_example_variable_scaling():
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
 
@@ -1163,7 +1187,7 @@ def test_example_variable_scaling():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0],  31609.83406760166)
+    np.testing.assert_almost_equal(f[0, 0], 31609.83406760166)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -1171,18 +1195,18 @@ def test_example_variable_scaling():
     np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states['unscaled'][0]['q'], sol.states['unscaled'][0]['qdot'], sol.controls['unscaled'][0]['tau']
+    q, qdot, tau = sol.states["unscaled"][0]["q"], sol.states["unscaled"][0]["qdot"], sol.controls["unscaled"][0]["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0., 0.]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.  , 3.14]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0., 0.]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0., 0.]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([-1000.00000999,     0.       ]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-1000.00000999,     0.        ]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([-1000.00000999, 0.0]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([-1000.00000999, 0.0]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)

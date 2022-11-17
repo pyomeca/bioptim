@@ -481,7 +481,9 @@ class OptimalControlProgram:
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
         # Add the scaling of the variables
-        x_scaling, xdot_scaling, u_scaling = x_scaling.scaling_fill_phases(self, x_scaling, xdot_scaling, u_scaling, x_init, u_init)
+        x_scaling, xdot_scaling, u_scaling = x_scaling.scaling_fill_phases(
+            self, x_scaling, xdot_scaling, u_scaling, x_init, u_init
+        )
         NLP.add(self, "x_scaling", x_scaling, True)
         NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
@@ -651,7 +653,7 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states['unscaled'].keys():
+            for key in nlp.states["unscaled"].keys():
                 if f"{key}_states" in nlp.plot:
                     nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
             for key in nlp.controls.keys():
@@ -834,18 +836,22 @@ class OptimalControlProgram:
             )
 
             if x.shape[1] == 1:
-                x_shape = int(x.shape[0] / self.nlp[penalty.phase].x_scaling['all'].scaling.shape[0])
-                x_scaling = np.reshape(np.hstack([self.nlp[penalty.phase].x_scaling['all'].scaling for _ in range(x_shape)]).T, (-1, 1))
+                x_shape = int(x.shape[0] / self.nlp[penalty.phase].x_scaling["all"].scaling.shape[0])
+                x_scaling = np.reshape(
+                    np.hstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T, (-1, 1)
+                )
             else:
                 x_shape = x.shape[1]
-                x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling['all'].scaling for _ in range(x_shape)]).T
+                x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T
 
             if u.shape[1] == 1:
-                u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling['all'].scaling.shape[0])
-                u_scaling = np.reshape(np.hstack([self.nlp[penalty.phase].u_scaling['all'].scaling for _ in range(u_shape)]).T, (-1, 1))
+                u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling["all"].scaling.shape[0])
+                u_scaling = np.reshape(
+                    np.hstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T, (-1, 1)
+                )
             else:
                 u_shape = u.shape[1]
-                u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling['all'].scaling for _ in range(u_shape)]).T
+                u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T
 
             x /= x_scaling
             u /= u_scaling

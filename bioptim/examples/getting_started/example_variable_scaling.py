@@ -115,7 +115,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1/10, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1 / 10, n_shooting=30)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)

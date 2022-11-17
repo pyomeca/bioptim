@@ -8,6 +8,7 @@ from ..limits.path_conditions import Bounds, InitialGuess, InitialGuessList, Noi
 from ..misc.enums import ControlType, InterpolationType
 from ..dynamics.ode_solver import OdeSolver
 
+
 class OptimizationVector:
     """
     Attributes
@@ -117,21 +118,32 @@ class OptimizationVector:
         The vector of all bounds
         """
 
-        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.IRK):
+        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(
+            self.ocp.nlp[0].ode_solver, OdeSolver.IRK
+        ):
             n_collocation_steps = self.ocp.nlp[0].ode_solver.steps + 1
         else:
             n_collocation_steps = 1
 
         v_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for phase, x_bound in enumerate(self.x_bounds):
-            v_bounds.concatenate(x_bound.scale(self.ocp.nlp[phase].x_scaling['all'], self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1, n_collocation_steps))
+            v_bounds.concatenate(
+                x_bound.scale(
+                    self.ocp.nlp[phase].x_scaling["all"],
+                    self.ocp.nlp[phase].states["scaled"].shape,
+                    self.ocp.nlp[phase].ns + 1,
+                    n_collocation_steps,
+                )
+            )
 
         for phase, u_bound in enumerate(self.u_bounds):
             if self.ocp.nlp[0].control_type == ControlType.LINEAR_CONTINUOUS:
                 ns = self.ocp.nlp[phase].ns + 1
             else:
                 ns = self.ocp.nlp[phase].ns
-            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling['all'], self.ocp.nlp[phase].controls["scaled"].shape, ns, 1))
+            v_bounds.concatenate(
+                u_bound.scale(self.ocp.nlp[phase].u_scaling["all"], self.ocp.nlp[phase].controls["scaled"].shape, ns, 1)
+            )
         v_bounds.concatenate(self.parameters_in_list.bounds)
         return v_bounds
 
@@ -145,7 +157,9 @@ class OptimizationVector:
         The vector of all init
         """
         v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
-        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.IRK):
+        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(
+            self.ocp.nlp[0].ode_solver, OdeSolver.IRK
+        ):
             n_collocation_steps = self.ocp.nlp[0].ode_solver.steps + 1
         else:
             n_collocation_steps = 1
@@ -161,16 +175,32 @@ class OptimizationVector:
             interpolation_type = None if original_x_init is None else original_x_init.type
 
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
-                v_init.concatenate(self._init_linear_interpolation(phase=phase).scale(self.ocp.nlp[phase].x_scaling['all'], self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1, n_collocation_steps))
+                v_init.concatenate(
+                    self._init_linear_interpolation(phase=phase).scale(
+                        self.ocp.nlp[phase].x_scaling["all"],
+                        self.ocp.nlp[phase].states["scaled"].shape,
+                        self.ocp.nlp[phase].ns + 1,
+                        n_collocation_steps,
+                    )
+                )
             else:
-                v_init.concatenate(x_init.scale(self.ocp.nlp[phase].x_scaling['all'], self.ocp.nlp[phase].states["scaled"].shape, self.ocp.nlp[phase].ns+1, n_collocation_steps))
+                v_init.concatenate(
+                    x_init.scale(
+                        self.ocp.nlp[phase].x_scaling["all"],
+                        self.ocp.nlp[phase].states["scaled"].shape,
+                        self.ocp.nlp[phase].ns + 1,
+                        n_collocation_steps,
+                    )
+                )
 
         for phase, u_init in enumerate(self.u_init):
             if self.ocp.nlp[0].control_type == ControlType.LINEAR_CONTINUOUS:
                 ns = self.ocp.nlp[phase].ns + 1
             else:
                 ns = self.ocp.nlp[phase].ns
-            v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling['all'], self.ocp.nlp[phase].controls["scaled"].shape, ns, 1))
+            v_init.concatenate(
+                u_init.scale(self.ocp.nlp[phase].u_scaling["all"], self.ocp.nlp[phase].controls["scaled"].shape, ns, 1)
+            )
         v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
 
@@ -270,7 +300,9 @@ class OptimizationVector:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states["scaled"].shape, -1), order="F")
+            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape(
+                (ocp.nlp[p].states["scaled"].shape, -1), order="F"
+            )
             data_states[p_idx]["all"] = x_array
             offset_var = 0
             for var in ocp.nlp[p].states["scaled"]:
@@ -282,11 +314,15 @@ class OptimizationVector:
         offset = self.n_all_x
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].controls["scaled"].shape, -1), order="F")
+            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape(
+                (ocp.nlp[p].controls["scaled"].shape, -1), order="F"
+            )
             data_controls[p_idx]["all"] = u_array
             offset_var = 0
             for var in ocp.nlp[p].controls["scaled"]:
-                data_controls[p_idx][var] = u_array[offset_var : offset_var + len(ocp.nlp[p].controls["scaled"][var]), :]
+                data_controls[p_idx][var] = u_array[
+                    offset_var : offset_var + len(ocp.nlp[p].controls["scaled"][var]), :
+                ]
                 offset_var += len(ocp.nlp[p].controls["scaled"][var])
             p_idx += 1
             offset += self.n_phase_u[p]
@@ -321,23 +357,23 @@ class OptimizationVector:
             for k in range(nlp.ns + 1):
                 if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
                     x_sym = nlp.cx.sym(
-                            "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
-                            nlp.states["scaled"].shape,
-                            nlp.ode_solver.polynomial_degree + 1,
-                        )
+                        "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
+                        nlp.states["scaled"].shape,
+                        nlp.ode_solver.polynomial_degree + 1,
+                    )
                     x_scaled.append(x_sym)
-                    x.append(x_scaled[0] * nlp.x_scaling['all'].scaling)
+                    x.append(x_scaled[0] * nlp.x_scaling["all"].scaling)
                 else:
                     x_sym = nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states["scaled"].shape, 1)
                     x_scaled.append(x_sym)
-                    x.append(x_scaled[0] * nlp.x_scaling['all'].scaling)
+                    x.append(x_scaled[0] * nlp.x_scaling["all"].scaling)
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
                     u_sym = nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1)
                     u_scaled.append(u_sym)
-                    u.append(u_scaled[0] * nlp.u_scaling['all'].scaling)
+                    u.append(u_scaled[0] * nlp.u_scaling["all"].scaling)
 
             nlp.X_scaled = x_scaled
             nlp.X = x

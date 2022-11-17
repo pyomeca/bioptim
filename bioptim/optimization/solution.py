@@ -22,7 +22,11 @@ from ..misc.enums import (
 )
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable, OptimizationVariableContainer
+from ..optimization.optimization_variable import (
+    OptimizationVariableList,
+    OptimizationVariable,
+    OptimizationVariableContainer,
+)
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
 
@@ -339,7 +343,6 @@ class Solution:
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
             self._time_vector = self._generate_time()
 
-
         def init_from_initial_guess(_sol: list):
             """
             Initialize all the attributes from a list of initial guesses (states, controls)
@@ -430,7 +433,6 @@ class Solution:
         else:
             raise ValueError("Solution called with unknown initializer")
 
-
     def to_unscaled_values(self) -> tuple:
         """
         Convert values of scaled solution to unscaled values
@@ -446,9 +448,13 @@ class Solution:
             states[phase] = {}
             controls[phase] = {}
             for key, value in states_scaled[phase].items():
-                states[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(states_scaled[phase][key].shape[0], states_scaled[phase][key].shape[1])
+                states[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(
+                    states_scaled[phase][key].shape[0], states_scaled[phase][key].shape[1]
+                )
             for key, value in controls_scaled[phase].items():
-                controls[phase][key] = value * ocp.nlp[phase].u_scaling[key].to_array(controls_scaled[phase][key].shape[0], controls_scaled[phase][key].shape[1])
+                controls[phase][key] = value * ocp.nlp[phase].u_scaling[key].to_array(
+                    controls_scaled[phase][key].shape[0], controls_scaled[phase][key].shape[1]
+                )
 
         return states, controls
 
@@ -593,9 +599,7 @@ class Solution:
                     states_no_intermediate.append(dict())
                     for key in states[i].keys():
                         # keep one value each five values
-                        states_no_intermediate[i][key] = states[i][key][
-                            :, :: nlp.ode_solver.polynomial_degree + 1
-                        ]
+                        states_no_intermediate[i][key] = states[i][key][:, :: nlp.ode_solver.polynomial_degree + 1]
                 else:
                     states_no_intermediate.append(states[i])
 
@@ -752,7 +756,9 @@ class Solution:
                 out._time_vector = [concatenate_optimization_variables(out._time_vector)]
 
             else:
-                out._states["unscaled"] = concatenate_optimization_variables_dict(out._states["unscaled"], continuous=False)
+                out._states["unscaled"] = concatenate_optimization_variables_dict(
+                    out._states["unscaled"], continuous=False
+                )
                 out._time_vector = [
                     concatenate_optimization_variables(
                         out._time_vector, continuous_phase=False, continuous_interval=False
@@ -1010,11 +1016,15 @@ class Solution:
 
             if shooting_type == Shooting.MULTIPLE:
                 # last node of the phase is not integrated but do exist as an independent node
-                out._states["unscaled"][p]["all"] = np.concatenate((out._states["unscaled"][p]["all"], self._states["unscaled"][p]["all"][:, -1:]), axis=1)
+                out._states["unscaled"][p]["all"] = np.concatenate(
+                    (out._states["unscaled"][p]["all"], self._states["unscaled"][p]["all"][:, -1:]), axis=1
+                )
 
             # Dispatch the integrated values to all the keys
-            for key in nlp.states['unscaled']:
-                out._states["unscaled"][p][key] = out._states["unscaled"][p]["all"][nlp.states['unscaled'][key].index, :]
+            for key in nlp.states["unscaled"]:
+                out._states["unscaled"][p][key] = out._states["unscaled"][p]["all"][
+                    nlp.states["unscaled"][key].index, :
+                ]
 
         return out
 
@@ -1100,7 +1110,14 @@ class Solution:
 
         new = self.copy(skip_data=True)
         new.parameters = deepcopy(self.parameters)
-        new._states["scaled"], new._states["unscaled"], new._controls["scaled"], new._controls["unscaled"], new.phase_time, new.ns = self._merge_phases()
+        (
+            new._states["scaled"],
+            new._states["unscaled"],
+            new._controls["scaled"],
+            new._controls["unscaled"],
+            new.phase_time,
+            new.ns,
+        ) = self._merge_phases()
         new._time_vector = [np.array(concatenate_optimization_variables(self._time_vector))]
         new.is_merged = True
         return new
@@ -1125,7 +1142,14 @@ class Solution:
         """
 
         if self.is_merged:
-            return deepcopy(self._states["scaled"]), deepcopy(self._states["unscaled"]), deepcopy(self._controls["scaled"]), deepcopy(self._controls["unscaled"]), deepcopy(self.phase_time), deepcopy(self.ns)
+            return (
+                deepcopy(self._states["scaled"]),
+                deepcopy(self._states["unscaled"]),
+                deepcopy(self._controls["scaled"]),
+                deepcopy(self._controls["unscaled"]),
+                deepcopy(self.phase_time),
+                deepcopy(self.ns),
+            )
 
         def _merge(data: list, is_control: bool) -> Union[list, dict]:
             """
@@ -1178,15 +1202,21 @@ class Solution:
             out_states_scaled = deepcopy(self._states["scaled"])
             out_states = deepcopy(self._states["unscaled"])
         else:
-            out_states_scaled = _merge(self.states["scaled"], is_control=False) if not skip_states and self._states["scaled"] else None
+            out_states_scaled = (
+                _merge(self.states["scaled"], is_control=False) if not skip_states and self._states["scaled"] else None
+            )
             out_states = _merge(self.states["unscaled"], is_control=False) if not skip_states else None
 
         if len(self._controls["scaled"]) == 1:
             out_controls_scaled = deepcopy(self._controls["scaled"])
             out_controls = deepcopy(self._controls["unscaled"])
         else:
-            out_controls_scaled = _merge(self.controls["scaled"], is_control=True) if not skip_controls and self._controls["scaled"] else None
-            out_controls= _merge(self.controls["unscaled"], is_control=True) if not skip_controls else None
+            out_controls_scaled = (
+                _merge(self.controls["scaled"], is_control=True)
+                if not skip_controls and self._controls["scaled"]
+                else None
+            )
+            out_controls = _merge(self.controls["unscaled"], is_control=True) if not skip_controls else None
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
@@ -1201,10 +1231,18 @@ class Solution:
             if nlp.control_type == ControlType.CONSTANT:
                 for key in self._controls["scaled"][p]:
                     self._controls["scaled"][p][key] = np.concatenate(
-                        (self._controls["scaled"][p][key], np.nan * np.zeros((self._controls["scaled"][p][key].shape[0], 1))), axis=1
+                        (
+                            self._controls["scaled"][p][key],
+                            np.nan * np.zeros((self._controls["scaled"][p][key].shape[0], 1)),
+                        ),
+                        axis=1,
                     )
                     self._controls["unscaled"][p][key] = np.concatenate(
-                        (self._controls["unscaled"][p][key], np.nan * np.zeros((self._controls["unscaled"][p][key].shape[0], 1))), axis=1
+                        (
+                            self._controls["unscaled"][p][key],
+                            np.nan * np.zeros((self._controls["unscaled"][p][key].shape[0], 1)),
+                        ),
+                        axis=1,
                     )
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 pass
@@ -1341,9 +1379,17 @@ class Solution:
             if nlp is not None:
                 if penalty.transition:
                     phase_post = (phase_idx + 1) % len(self._states["scaled"])
-                    x = np.concatenate((self._states["scaled"][phase_idx]["all"][:, -1], self._states["scaled"][phase_post]["all"][:, 0]))
+                    x = np.concatenate(
+                        (
+                            self._states["scaled"][phase_idx]["all"][:, -1],
+                            self._states["scaled"][phase_post]["all"][:, 0],
+                        )
+                    )
                     u = np.concatenate(
-                        (self._controls["scaled"][phase_idx]["all"][:, -1], self._controls["scaled"][phase_post]["all"][:, 0])
+                        (
+                            self._controls["scaled"][phase_idx]["all"][:, -1],
+                            self._controls["scaled"][phase_post]["all"][:, 0],
+                        )
                     )
                 elif penalty.multinode_constraint:
 

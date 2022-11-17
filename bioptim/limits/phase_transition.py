@@ -226,7 +226,10 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             ocp = all_pn[0].ocp
-            if ocp.nlp[transition.phase_pre_idx].states['unscaled'].shape != ocp.nlp[transition.phase_post_idx].states['unscaled'].shape:
+            if (
+                ocp.nlp[transition.phase_pre_idx].states["unscaled"].shape
+                != ocp.nlp[transition.phase_post_idx].states["unscaled"].shape
+            ):
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
@@ -241,24 +244,31 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
 
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
-            q_pre = nlp_pre.states['scaled']["q"].mx
-            qdot_pre = nlp_pre.states['scaled']["qdot"].mx
+            q_pre = nlp_pre.states["scaled"]["q"].mx
+            qdot_pre = nlp_pre.states["scaled"]["qdot"].mx
             qdot_impact = model.ComputeConstraintImpulsesDirect(q_pre, qdot_pre).to_mx()
 
             val = []
             cx_end = []
             cx = []
-            for key in nlp_pre.states['unscaled']:
-                cx_end = vertcat(cx_end, nlp_pre.states['unscaled'][key].mapping.to_second.map(nlp_pre.states['unscaled'][key].cx_end))
-                cx = vertcat(cx, nlp_post.states['unscaled'][key].mapping.to_second.map(nlp_post.states['unscaled'][key].cx))
-                post_mx = nlp_post.states['scaled'][key].mx
-                continuity = nlp_post.states['scaled']["qdot"].mapping.to_first.map(
-                    qdot_impact - post_mx if key == "qdot" else nlp_pre.states['scaled'][key].mx - post_mx
+            for key in nlp_pre.states["unscaled"]:
+                cx_end = vertcat(
+                    cx_end,
+                    nlp_pre.states["unscaled"][key].mapping.to_second.map(nlp_pre.states["unscaled"][key].cx_end),
+                )
+                cx = vertcat(
+                    cx, nlp_post.states["unscaled"][key].mapping.to_second.map(nlp_post.states["unscaled"][key].cx)
+                )
+                post_mx = nlp_post.states["scaled"][key].mx
+                continuity = nlp_post.states["scaled"]["qdot"].mapping.to_first.map(
+                    qdot_impact - post_mx if key == "qdot" else nlp_pre.states["scaled"][key].mx - post_mx
                 )
                 val = vertcat(val, continuity)
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = biorbd.to_casadi_func(name, val, nlp_pre.states['scaled'].mx, nlp_post.states['scaled'].mx)(cx_end, cx)
+            func = biorbd.to_casadi_func(name, val, nlp_pre.states["scaled"].mx, nlp_post.states["scaled"].mx)(
+                cx_end, cx
+            )
             return func
 
 
