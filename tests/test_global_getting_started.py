@@ -1147,3 +1147,42 @@ def test_multistart():
         seed=[0, 1],
     )
     multi_start.solve()
+
+def test_example_variable_scaling():
+    from bioptim.examples.getting_started import example_variable_scaling as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        final_time=1 / 10,
+        n_shooting=30,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0],  31609.83406760166)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (120, 1))
+    np.testing.assert_almost_equal(g, np.zeros((120, 1)))
+
+    # Check some of the results
+    q, qdot, tau = sol.states['unscaled'][0]['q'], sol.states['unscaled'][0]['qdot'], sol.controls['unscaled'][0]['tau']
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([0., 0.]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.  , 3.14]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0., 0.]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0., 0.]))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([-1000.00000999,     0.       ]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([-1000.00000999,     0.        ]))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
