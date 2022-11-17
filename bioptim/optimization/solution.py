@@ -301,8 +301,6 @@ class Solution:
         self._time_vector = None
 
         # Extract the data now for further use
-        self._states = {}
-        self._controls = {}
         self._states = OptimizationVariableContainer()
         self._controls = OptimizationVariableContainer()
         self.parameters = {}

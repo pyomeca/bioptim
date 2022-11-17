@@ -845,13 +845,13 @@ class ConfigureProblem:
 
         if as_states:
             if name not in nlp.x_scaling:
-                nlp.x_scaling[name] = VariableScaling(np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
+                nlp.x_scaling[name] = VariableScaling(key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_states_dot:
             if name not in nlp.xdot_scaling:
-                nlp.xdot_scaling[name] = VariableScaling(np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
+                nlp.xdot_scaling[name] = VariableScaling(key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls:
             if name not in nlp.u_scaling:
-                nlp.u_scaling[name] = VariableScaling(np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
+                nlp.u_scaling[name] = VariableScaling(key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         mx_states_scaled = []
         mx_states_dot_scaled = []

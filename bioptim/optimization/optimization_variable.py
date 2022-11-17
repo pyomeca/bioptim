@@ -10,6 +10,7 @@ from ..misc.options import OptionGeneric, OptionDict, UniquePerPhaseOptionList
 class VariableScaling(OptionGeneric):
     def __init__(
         self,
+        key: str,
         scaling: Union[np.ndarray, list] = None,
         **kwargs
     ):
@@ -28,6 +29,7 @@ class VariableScaling(OptionGeneric):
             raise RuntimeError(f"Scaling must be a list or a numpy array, not {type(scaling)}")
 
         self.scaling = scaling
+        self.key = key
 
 
     def scaling(self):
@@ -90,7 +92,7 @@ class VariableScalingList(OptionDict):
 
     def add(
         self,
-        name: str,
+        key: str = None,
         scaling: Union[np.ndarray, list, VariableScaling] = None,
         phase: int = -1,
     ):
@@ -110,13 +112,13 @@ class VariableScalingList(OptionDict):
         """
 
         if isinstance(scaling, VariableScaling):
-            self.add(name=name, scaling=scaling.scaling, phase=phase)
+            self.add(key=scaling.key, scaling=scaling.scaling, phase=phase)
         else:
             for i, elt in enumerate(scaling):
                 if elt <= 0:
                     raise RuntimeError(
                         f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0.")
-            super(VariableScalingList, self)._add(key=name, phase=phase, scaling=scaling, option_type=VariableScaling)
+            super(VariableScalingList, self)._add(key=key, phase=phase, scaling=scaling, option_type=VariableScaling)
 
     def __getitem__(self, item) -> VariableScaling:
         """
@@ -163,9 +165,9 @@ class VariableScalingList(OptionDict):
 
             else:
                 if len(x_scaling) > 1:
-                    x_scaling_all = x_scaling_out[phase]['all'].scaling
+                    x_scaling_all = x_scaling[phase]['all'].scaling
                 else:
-                    x_scaling_all = x_scaling_out['all'].scaling
+                    x_scaling_all = x_scaling['all'].scaling
 
             if len(x_scaling.keys()) > 0:
                 for key in x_scaling.keys():
@@ -187,9 +189,9 @@ class VariableScalingList(OptionDict):
                     xdot_scaling_all = np.ones((nx,))
             else:
                 if len(xdot_scaling) > 1:
-                    xdot_scaling_all = xdot_scaling_out[phase]['all'].scaling
+                    xdot_scaling_all = xdot_scaling[phase]['all'].scaling
                 else:
-                    xdot_scaling_all = xdot_scaling_out['all'].scaling
+                    xdot_scaling_all = xdot_scaling['all'].scaling
 
             if len(xdot_scaling.keys()) > 0:
                 for key in xdot_scaling.keys():
@@ -211,9 +213,9 @@ class VariableScalingList(OptionDict):
                     u_scaling_all = np.ones((nu,))
             else:
                 if len(u_scaling) > 1:
-                    u_scaling_all = u_scaling_out[phase]['all'].scaling
+                    u_scaling_all = u_scaling[phase]['all'].scaling
                 else:
-                    u_scaling_all = u_scaling_out['all'].scaling
+                    u_scaling_all = u_scaling['all'].scaling
 
             if len(u_scaling.keys()) > 0:
                 for key in u_scaling.keys():
@@ -222,9 +224,9 @@ class VariableScalingList(OptionDict):
                     else:
                         u_scaling_out.add(key, scaling=u_scaling[key].scaling, phase=0)
 
-            x_scaling_out.add('all', scaling=x_scaling_all, phase=phase)
-            xdot_scaling_out.add('all', scaling=xdot_scaling_all, phase=phase)
-            u_scaling_out.add('all', scaling=u_scaling_all, phase=phase)
+            x_scaling_out.add(key='all', scaling=x_scaling_all, phase=phase)
+            xdot_scaling_out.add(key='all', scaling=xdot_scaling_all, phase=phase)
+            u_scaling_out.add(key='all', scaling=u_scaling_all, phase=phase)
 
         return x_scaling_out, xdot_scaling_out, u_scaling_out
 

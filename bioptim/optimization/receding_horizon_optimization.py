@@ -14,6 +14,7 @@ from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import SolverType, InterpolationType
 from ..interfaces.solver_options import Solver
+from ..optimization.optimization_variable import VariableScaling
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):
@@ -368,9 +369,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run * self.nlp[0].ns - 1,
             phase_time=self.total_optimization_run * self.nlp[0].ns * self.nlp[0].dt,
-            x_scaling=InitialGuess('all', scaling=np.ones((states.shape, ))),
-            xdot_scaling=self.original_values["xdot_scaling"][0],
-            u_scaling=self.original_values["u_scaling"][0],
+            x_scaling=VariableScaling(key='all', scaling=np.ones((states[0][0].shape[0], ))),
+            xdot_scaling=VariableScaling(key='all', scaling=np.ones((states[0][0].shape[0], ))),
+            u_scaling=VariableScaling(key='all', scaling=np.ones((controls[0][0].shape[0], ))),
             skip_continuity=True,
         )
         return Solution(solution_ocp, [_states, _controls])
