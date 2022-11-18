@@ -624,7 +624,7 @@ def test_multi_model_by_constraint():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 2.8232730955008725)
+    np.testing.assert_almost_equal(f[0, 0], 0.512418)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -636,16 +636,16 @@ def test_multi_model_by_constraint():
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159263, 0.0]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159276, 0.0]), decimal=6)
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.14267685, 0.0]), decimal=4)
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.04159811, 0.0]), decimal=4)
     # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.41541724, 0.27730616]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([3.03651582, -3.68060635]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.92515377, 1.1095279]), decimal=5)
-    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([1.06740301, 0.10475334]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([-0.00633747, -0.12756957]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.34507652, 0.59111588]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([-0.00659825, -0.13014626]), decimal=5)
+    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([0.34576491, 0.58886914]), decimal=6)
     # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([0.06752773]), decimal=6)
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-0.68139465]), decimal=6)
-    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([0.06752773]), decimal=6)
-    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([-0.68139465]), decimal=6)
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([0.00146709]), decimal=6)
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([0.01132175]), decimal=6)
+    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([0.00146709]), decimal=6)
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([0.01132175]), decimal=6)
