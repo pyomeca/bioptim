@@ -438,7 +438,7 @@ class ConfigureProblem:
             raise NotImplementedError("Implicit dynamics not implemented yet.")
 
         ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False, as_states_dot=True)
         # Configure qddot joints
         nb_root = nlp.model.nbRoot()
         if not nb_root > 0:
@@ -446,7 +446,11 @@ class ConfigureProblem:
 
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nbQddot() - nb_root)]
         ConfigureProblem.configure_new_variable(
-            "qddot_joints", name_qddot_joints, nlp, as_states=False, as_controls=True
+            "qddot_joints", name_qddot_joints, nlp, as_states=False, as_controls=True, as_states_dot=True
+        )
+        name_qddot_roots = [str(i) for i in range(nb_root)]
+        ConfigureProblem.configure_new_variable(
+            "qddot_roots", name_qddot_roots, nlp, as_states=False, as_controls=False, as_states_dot=True
         )
         ConfigureProblem.configure_dynamics_function(
             ocp, nlp, DynamicsFunctions.joints_acceleration_driven, expand=False
