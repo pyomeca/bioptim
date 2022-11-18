@@ -624,7 +624,7 @@ def test_multi_model_by_constraint():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.512418)
+    np.testing.assert_almost_equal(f[0, 0], 0.51241813)
 
     # Check constraints
     g = np.array(sol.constraints)
