@@ -540,16 +540,16 @@ def test_phase_transition_uneven_variable_number_by_mapping():
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([3.14, 0.  ]))
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([3.14, 0.0]))
     np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([7.93025703, 0.31520724]))
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([0.        , 0.        , 7.93025703, 0.31520724]))
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([-0.2593021 , 10.0000001 ,  9.49212256, -0.1382893 ]))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([0.0, 0.0, 7.93025703, 0.31520724]))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([-0.2593021, 10.0000001, 9.49212256, -0.1382893]))
     # initial and final velocities
     np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([1.89770078, 18.62453707]))
     np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([16.56293494, -16.83711551]))
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([ 0.        ,   0.        ,  16.56293494, -16.83711551]))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.0, 0.0, 16.56293494, -16.83711551]))
     np.testing.assert_almost_equal(
-        states[1]["qdot"][:, -1], np.array([-1.28658849,  6.05426872, -0.20069993,  1.56293712])
+        states[1]["qdot"][:, -1], np.array([-1.28658849, 6.05426872, -0.20069993, 1.56293712])
     )
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([-0.01975067]))
@@ -559,6 +559,9 @@ def test_phase_transition_uneven_variable_number_by_mapping():
 
 
 def test_multi_model_by_mapping():
+    """
+    This test is highly sensible, do not change anything please.
+    """
     # Load multi_model_by_mapping
     from bioptim.examples.torque_driven_ocp import multi_model_by_mapping as ocp_module
 
@@ -578,7 +581,7 @@ def test_multi_model_by_mapping():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.030162900981003483)
+    np.testing.assert_almost_equal(f[0, 0], 2.07020992)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -590,17 +593,17 @@ def test_multi_model_by_mapping():
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.24156376, 0.0]), decimal=3)
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159296, 0.0]), decimal=3)
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.14531199, 0.0]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.04159271, 0.0]), decimal=6)
     # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.48436891, 2.21999013]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.79704325, 0.06126902]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.46868981, 2.21939836]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([0.51263444, 0.19844398]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([11.47768245, 26.16790572]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([11.52232512, 26.06343438]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([10.54030594, 28.30202101]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([10.594124, 28.17553337]), decimal=6)
     # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([-0.00024194]), decimal=6)
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-2.18059982e-05]), decimal=6)
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([0.01906557]), decimal=6)
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-0.00619146]), decimal=6)
     np.testing.assert_equal(controls[1], {})
 
 
