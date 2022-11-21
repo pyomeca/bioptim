@@ -15,7 +15,7 @@ from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
-from ..dynamics.configure_problem import ConfigureProblem
+from ..dynamics.configure_problem import ConfigureProblem, DynamicsFcn
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
@@ -45,7 +45,7 @@ from ..misc.enums import (
     SolutionIntegrator,
     IntegralApproximation,
 )
-from ..misc.mapping import BiMappingList, Mapping
+from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
@@ -155,6 +155,8 @@ class OptimalControlProgram:
         ode_solver: Union[list, OdeSolverBase, OdeSolver] = None,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
+        parameter_mappings: BiMappingList = None,
+        node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
@@ -196,6 +198,10 @@ class OptimalControlProgram:
             The type of controls for each phase
         variable_mappings: BiMappingList
             The mapping to apply on variables
+        parameter_mappings: BiMappingList
+            The mapping to apply on parameters
+        node_mappings: NodeMappingList
+            The mapping to apply between the variables associated with the nodes
         plot_mappings: Mapping
             The mapping to apply on the plots
         phase_mappings: Mapping
@@ -246,6 +252,8 @@ class OptimalControlProgram:
             "ode_solver": ode_solver,
             "control_type": control_type,
             "variable_mappings": variable_mappings,
+            "parameter_mappings": parameter_mappings,
+            "node_mappings": node_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "multinode_constraints": multinode_constraints,
@@ -414,6 +422,13 @@ class OptimalControlProgram:
         if len(parameters) > 0:
             self.update_parameters(parameters)
 
+        # Prepare the parameter mappings
+        if parameter_mappings is None:
+            parameter_mappings = BiMappingList()
+        if "time" not in parameter_mappings.keys():
+            parameter_mappings.add("time", [i for i in range(self.n_phases)], [i for i in range(self.n_phases)])
+        self.parameter_mappings = parameter_mappings
+
         # Declare the time to optimize
         self._define_time(phase_time, objective_functions, constraints)
 
@@ -428,6 +443,18 @@ class OptimalControlProgram:
 
         variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
+
+        # Prepare the node mappings
+        if node_mappings is None:
+            node_mappings = NodeMappingList()
+        (
+            use_states_from_phase_idx,
+            use_states_dot_from_phase_idx,
+            use_controls_from_phase_idx,
+        ) = node_mappings.get_variable_from_phase_idx(self, NLP)
+        self._check_variable_mapping_consistency_with_node_mapping(
+            use_states_from_phase_idx, use_controls_from_phase_idx
+        )
 
         # Prepare the dynamics
         for i in range(self.n_phases):
@@ -466,6 +493,39 @@ class OptimalControlProgram:
 
         # Prepare objectives
         self.update_objectives(objective_functions)
+
+    def _check_variable_mapping_consistency_with_node_mapping(
+        self, use_states_from_phase_idx, use_controls_from_phase_idx
+    ):
+        for i in range(self.n_phases):
+            for j in [idx for idx, x in enumerate(use_states_from_phase_idx) if x == i]:
+                for key in self.nlp[i].variable_mappings.keys():
+                    if key in self.nlp[j].variable_mappings.keys():
+                        if (
+                            self.nlp[i].variable_mappings[key].to_first.map_idx
+                            != self.nlp[j].variable_mappings[key].to_first.map_idx
+                            or self.nlp[i].variable_mappings[key].to_second.map_idx
+                            != self.nlp[j].variable_mappings[key].to_second.map_idx
+                        ):
+                            raise RuntimeError(
+                                f"The variable mappings must be the same for the mapped phases."
+                                f"Mapping on {key} is different between phases {i} and {j}."
+                            )
+        for i in range(self.n_phases):
+            for j in [idx for idx, x in enumerate(use_controls_from_phase_idx) if x == i]:
+                for key in self.nlp[i].variable_mappings.keys():
+                    if key in self.nlp[j].variable_mappings.keys():
+                        if (
+                            self.nlp[i].variable_mappings[key].to_first.map_idx
+                            != self.nlp[j].variable_mappings[key].to_first.map_idx
+                            or self.nlp[i].variable_mappings[key].to_second.map_idx
+                            != self.nlp[j].variable_mappings[key].to_second.map_idx
+                        ):
+                            raise RuntimeError(
+                                f"The variable mappings must be the same for the mapped phases."
+                                f"Mapping on {key} is different between phases {i} and {j}."
+                            )
+        return
 
     def _set_kinematic_phase_mapping(self):
         """
@@ -1161,14 +1221,17 @@ class OptimalControlProgram:
                             raise RuntimeError("Time constraint/objective cannot declare more than once")
                         _has_penalty[i] = True
 
-                        _initial_time_guess.append(_phase_time[i])
-                        _phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
-                        if pen_fun.type.get_type() == ConstraintFunction:
-                            _time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
-                            _time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
+                        if i in ocp.parameter_mappings["time"].to_first.map_idx:
+                            _initial_time_guess.append(_phase_time[i])
+                            _phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
+                            if pen_fun.type.get_type() == ConstraintFunction:
+                                _time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
+                                _time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
+                            else:
+                                _time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
+                                _time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
                         else:
-                            _time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
-                            _time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
+                            _phase_time[i] = _phase_time[ocp.parameter_mappings["time"].to_second.map_idx[i]]
             return _has_penalty
 
         NLP.add(self, "t_initial_guess", phase_time, False)
@@ -1194,14 +1257,15 @@ class OptimalControlProgram:
         time_param_phases_idx = []
         for nlp in self.nlp:
             if isinstance(nlp.tf, self.cx):
-                time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
-                time_init = InitialGuess(initial_time_guess[i])
-                time_param = Parameter(
-                    cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
-                )
-                self.v.add_parameter(time_param)
-                time_param_phases_idx += [i]
-                i += 1
+                if nlp.phase_idx in self.parameter_mappings["time"].to_first.map_idx:
+                    time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
+                    time_init = InitialGuess(initial_time_guess[i])
+                    time_param = Parameter(
+                        cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
+                    )
+                    self.v.add_parameter(time_param)
+                    time_param_phases_idx += [i]
+                    i += 1
 
         self.time_param_phases_idx = time_param_phases_idx
 
