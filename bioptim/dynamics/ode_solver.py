@@ -2,7 +2,7 @@ from typing import Union, Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
-from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES
+from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES, YO4, LF, YO
 from ..misc.enums import ControlType, DefectType
 
 
@@ -204,6 +204,55 @@ class OdeSolver:
             super(OdeSolver.RK4, self).__init__(n_integration_steps)
             self.rk_integrator = RK4
 
+    class LF(RK):
+        """
+        A LeapFrog solver
+        """
+
+        def __init__(self, n_integration_steps: int = 5):
+            """
+            Parameters
+            ----------
+            n_integration_steps: int
+                The number of steps for the integration
+            """
+
+            super(OdeSolver.LF, self).__init__(n_integration_steps)
+            self.rk_integrator = LF
+
+
+    class YO4(RK):
+        """
+        A Yoshida 4th order solver
+        """
+
+        def __init__(self, n_integration_steps: int = 5):
+            """
+            Parameters
+            ----------
+            n_integration_steps: int
+                The number of steps for the integration
+            """
+
+            super(OdeSolver.YO4, self).__init__(n_integration_steps)
+            self.rk_integrator = YO4
+
+    class YO(RK):
+        """
+        A Yoshida 4th order solver
+        """
+
+        def __init__(self, n_integration_steps: int = 5):
+            """
+            Parameters
+            ----------
+            n_integration_steps: int
+                The number of steps for the integration
+            """
+
+            super(OdeSolver.YO, self).__init__(n_integration_steps)
+            self.rk_integrator = YO
+
     class RK8(RK):
         """
         A Runge-Kutta 8 solver
@@ -240,7 +289,8 @@ class OdeSolver:
         """
 
         def __init__(
-            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+                self, polynomial_degree: int = 4, method: str = "legendre",
+                defects_type: DefectType = DefectType.EXPLICIT
         ):
             """
             Parameters
@@ -325,7 +375,8 @@ class OdeSolver:
         """
 
         def __init__(
-            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+                self, polynomial_degree: int = 4, method: str = "legendre",
+                defects_type: DefectType = DefectType.EXPLICIT
         ):
             """
             Parameters

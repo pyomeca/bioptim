@@ -261,7 +261,7 @@ class RK(Integrator):
                     x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
                 )
                 quaternion /= norm_fro(quaternion)
-                x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
+                x[quat_idx[j][0]: quat_idx[j][2] + 1, i] = quaternion[1:4]
                 x[quat_idx[j][3], i] = quaternion[0]
 
         return x[:, -1], x
@@ -413,6 +413,233 @@ class RK4(RK):
         k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
         k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p)[:, self.idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+
+class LF(RK):
+    """
+    Numerical integration using LeapFrog method.
+
+    Methods
+    -------
+    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+        Compute the next integrated state (abstract)
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
+        super(LF, self).__init__(ode, ode_opt)
+        self._finish_init()
+
+    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+        """
+        Implements the 4th-order Yoshida integrator to compute the predicted next state.
+
+        Parameters
+        ----------
+        u_k : array
+            Current state vector u_k
+        delta_t : float_like
+            Time step size where delta_t = t_{k+1} - t_k
+        n : integer
+            # of bodies in the simulation
+
+        Returns
+        -------
+        u_kplus1 : array
+            1 x N array of the predicted next state vector u_{k+1}
+
+        """
+
+        q0 = x_prev[0:self.model.nbQ()]
+        qdot0 = x_prev[self.model.nbQ():]
+
+        q1 = q0 + h * qdot0 + 0.5 * h**2 * self.fun(x_prev, self.get_u(u, t), p)[self.model.nbQ():, self.idx]
+        qddot1 = self.fun(vertcat(q1, qdot0), self.get_u(u, t), p)[self.model.nbQ():, self.idx]
+        qdot1 = qdot0 + h * 0.5 * (self.fun(x_prev, self.get_u(u, t), p)[self.model.nbQ():, self.idx] + qddot1)
+
+        return vertcat(q1, qdot1)
+
+
+class YO4(RK):
+    """
+    Numerical integration using fourth order Runge-Kutta method.
+
+    Methods
+    -------
+    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+        Compute the next integrated state (abstract)
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
+        super(YO4, self).__init__(ode, ode_opt)
+        self._finish_init()
+
+    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+        """
+        Implements the 4th-order Yoshida integrator to compute the predicted next state.
+
+        Parameters
+        ----------
+        u_k : array
+            Current state vector u_k
+        delta_t : float_like
+            Time step size where delta_t = t_{k+1} - t_k
+        n : integer
+            # of bodies in the simulation
+
+        Returns
+        -------
+        u_kplus1 : array
+            1 x N array of the predicted next state vector u_{k+1}
+
+        """
+
+        # gather initial position and velocity vectors
+        q_prev = x_prev[0:self.model.nbQ()]
+        qdot_prev = x_prev[self.model.nbQ():]
+
+        # define constants
+        w0 = -2 ** (1 / 3) / (2 - 2 ** (1 / 3))
+        w1 = 1 / (2 - 2 ** (1 / 3))
+        c1 = w1 / 2
+        c4 = c1
+        c2 = (w0 + w1) / 2
+        c3 = c2
+        d1 = w1
+        d3 = d1
+        d2 = w0
+
+        # compute first position equation
+        q_k1 = q_prev + c1 * qdot_prev * h  # TODO check if tspan or step_time
+
+        # compute acceleration at q_k1
+        xdot_k1 = self.fun(vertcat(q_k1, qdot_prev), self.get_u(u, t + c1*self.h_norm), p)[:, self.idx]  # TODO check index : was with qdot index
+
+        # compute first velocity equation
+        qdot_k1 = qdot_prev + d1 * xdot_k1[self.model.nbQ():] * h
+
+        # compute second position equation
+        q_k2 = q_k1 + c2 * qdot_k1 * h
+
+        # compute acceleration at q_k2
+        a_k2 = self.fun(vertcat(q_k2, qdot_prev), self.get_u(u, t + (c1+c2)*self.h_norm), p)[self.model.nbQ():, self.idx]
+        # TODO check qdot: qdot_prev or qdot_k1
+
+        # compute second velocity equation
+        qdot_k2 = qdot_k1 + d2 * a_k2 * h
+
+        # compute third position equation
+        q_k3 = q_k2 + c3 * qdot_k2 * h
+
+        # compute acceleration at q_k3
+        x_k3_temp = vertcat(q_k3, qdot_prev)
+        a_k3 = self.fun(x_k3_temp, self.get_u(u, t + (c1+c2+c3)*self.h_norm), p)[self.model.nbQ():, self.idx]  # TODO check index : was with qdot index
+
+        # compute third velocity equation
+        qdot_k3 = qdot_k2 + d3 * a_k3 * h
+
+        q_k4 = q_k3 + c4 * qdot_k3 * h
+
+        return vertcat(q_k4, qdot_k3)
+
+
+class YO(RK):
+    """
+    Numerical integration using fourth order Runge-Kutta method.
+
+    Methods
+    -------
+    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+        Compute the next integrated state (abstract)
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
+        super(YO, self).__init__(ode, ode_opt)
+        self._finish_init()
+
+    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+        """
+        Implements the 4th-order Yoshida integrator to compute the predicted next state.
+https://github.com/ajaguirreguzman/netSim/blob/f7fa08700d78e5998d7ccbba177f797a8117ddd5/iterative_methods.py
+
+        Parameters
+        ----------
+        u_k : array
+            Current state vector u_k
+        delta_t : float_like
+            Time step size where delta_t = t_{k+1} - t_k
+        n : integer
+            # of bodies in the simulation
+
+        Returns
+        -------
+        u_kplus1 : array
+            1 x N array of the predicted next state vector u_{k+1}
+
+        """
+
+        q0 = x_prev[0:self.model.nbQ()]
+        qdot0 = x_prev[self.model.nbQ():]
+
+        # define constants
+        cbrt2 = 2.0 ** (1.0 / 3.0)
+        w0 = -cbrt2 / (2 - cbrt2)
+        w1 = 1 / (2 - cbrt2)
+        c1 = w1 / 2.0
+        c4 = c1
+        c2 = (w0 + w1) / 2
+        c3 = c2
+        d1 = w1
+        d3 = d1
+        d2 = w0
+
+        # compute first state equations
+        qddot0 = self.fun(vertcat(q0, qdot0), self.get_u(u, t), p)[self.model.nbQ():, self.idx]
+        q1 = q0 + c1 * h * qdot0
+        qdot1 = qdot0 + c1 * h * qddot0
+        qddot1 = self.fun(vertcat(q1, qdot1), self.get_u(u, t + c1 * self.h_norm), p)[self.model.nbQ():, self.idx]
+        qdot1 = qdot0 + d1 * h * qddot1
+
+
+        q2 = q1 + c2 * h * qdot1
+        qdot2 = qdot1 + c2 * h * qddot1
+        qddot2 = self.fun(vertcat(q2, qdot2), self.get_u(u, t + (c1+c2) * self.h_norm), p)[self.model.nbQ():, self.idx]
+        qdot2 = qdot1 + d2 * h * qddot2
+
+        q3 = q2 + c3 * h * qdot2
+        qdot3 = qdot2 + c3 * h * qddot2
+        qddot3 = self.fun(vertcat(q3, qdot3), self.get_u(u, t + (c1+c2+c3) * self.h_norm), p)[self.model.nbQ():, self.idx]
+        qdot3 = qdot2 + d3 * h * qddot3
+
+        q4 = q3 + c4 * h * qdot3
+
+        return vertcat(q4, qdot3)
 
 
 class RK8(RK4):
@@ -699,7 +926,7 @@ class IRK(COLLOCATION):
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
         x_irk_points = ifcn(self.cx(), states[0], controls, params)
-        x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
+        x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx: r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
         xf = self.cx.zeros(nx, self.degree + 1)  # 0 #
