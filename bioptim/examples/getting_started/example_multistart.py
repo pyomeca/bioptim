@@ -128,7 +128,7 @@ def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_sho
     """
     # OptimalControlProgram.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
     states = sol.states["all"]
-    with open(f"pendulum_multi_start_random_states_{seed}.pkl", "wb") as file:
+    with open(f"pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl", "wb") as file:
         pickle.dump(states, file)
 
 
