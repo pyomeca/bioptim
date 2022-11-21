@@ -560,7 +560,7 @@ def test_phase_transition_uneven_variable_number_by_mapping():
 
 def test_multi_model_by_mapping():
     """
-    This test is highly sensible, do not change anything please.
+    This test is highly sensitive, do not change anything please.
     """
     # Load multi_model_by_mapping
     from bioptim.examples.torque_driven_ocp import multi_model_by_mapping as ocp_module
