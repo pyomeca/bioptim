@@ -12,7 +12,7 @@ class Integrator:
 
     Attributes
     ----------
-    model: biorbd.Model
+    model: Union[biorbd.Model, Model]
         The biorbd model to integrate
     t_span = tuple[float, float]
         The initial and final time

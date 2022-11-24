@@ -142,7 +142,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        biorbd_model: Union[str, biorbd.Model, list, tuple, Model],
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
@@ -170,7 +170,7 @@ class OptimalControlProgram:
         """
         Parameters
         ----------
-        biorbd_model: Union[str, biorbd.Model, list, tuple]
+        biorbd_model: Union[str, biorbd.Model, list, tuple, Model]
             The biorbd model. If biorbd_model is an str, a new model is loaded. Otherwise, the references are used
         dynamics: Union[Dynamics, DynamicsList]
             The dynamics of the phases
@@ -220,14 +220,12 @@ class OptimalControlProgram:
 
         if isinstance(biorbd_model, str):
             biorbd_model = [biorbd.Model(biorbd_model)]
-        elif isinstance(biorbd_model, biorbd.biorbd.Model):
+        elif isinstance(biorbd_model, (biorbd.biorbd.Model, BiorbdModel, Model)):
             biorbd_model = [biorbd_model]
         elif isinstance(biorbd_model, (list, tuple)):
             biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
-        elif isinstance(biorbd_model, (BiorbdModel, Model)):
-            biorbd_model = [biorbd_model]
         else:
-            raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
+            raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model(), or a subclass object of Model")
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(biorbd_model)
 

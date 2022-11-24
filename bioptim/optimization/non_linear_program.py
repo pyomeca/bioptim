@@ -51,7 +51,7 @@ class NonLinearProgram:
         All the objectives at each of the node of the phase
     J_internal: list[list[Objective]]
         All the objectives internally defined by the phase at each of the node of the phase
-    model: biorbd.Model
+    model: Union[biorbd.Model, Model]
         The biorbd model associated with the phase
     n_threads: int
         The number of thread to use

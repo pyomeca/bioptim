@@ -9,6 +9,7 @@ from numpy import array, ndarray
 from ..misc.enums import InterpolationType, MagnitudeType
 from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
+from ..interfaces.model import Model
 
 
 class PathCondition(np.ndarray):
@@ -605,13 +606,13 @@ class QAndQDotBounds(Bounds):
 
     def __init__(
         self,
-        biorbd_model,
+        biorbd_model: Union[biorbd.Model, Model],
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: biorbd.Model
+        biorbd_model: Union[biorbd.Model, Model]
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
@@ -662,13 +663,13 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
 
     def __init__(
         self,
-        biorbd_model,
+        biorbd_model: Union[biorbd.Model, Model],
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: biorbd.Model
+        biorbd_model: Union[biorbd.Model, Model]
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)

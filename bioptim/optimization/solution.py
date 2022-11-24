@@ -186,7 +186,7 @@ class Solution:
             All the constraints at each of the node of the phase
         J: list[list[Objective]]
             All the objectives at each of the node of the phase
-        model: biorbd.Model
+        model: Union[biorbd.Model, Model]
             A reference to the biorbd Model
         variable_mappings: dict
             All the BiMapping of the states and controls
