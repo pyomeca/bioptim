@@ -4,6 +4,8 @@ from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tan
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
+from ..interfaces.model import BiorbdModel
+import biorbd_casadi as biorbd
 
 
 class Integrator:
@@ -243,26 +245,27 @@ class RK(Integrator):
         p = params
         x[:, 0] = states
 
-        n_dof = 0
-        quat_idx = []
-        quat_number = 0
-        for j in range(self.model.nbSegment()):
-            if self.model.segment(j).isRotationAQuaternion():
-                quat_idx.append([n_dof, n_dof + 1, n_dof + 2, self.model.nbDof() + quat_number])
-                quat_number += 1
-            n_dof += self.model.segment(j).nbDof()
+        if self.model.nbQuat() > 0:
+            n_dof = 0
+            quat_idx = []
+            quat_number = 0
+            for j in range(self.model.nbSegment()):
+                if isinstance(self.model, (biorbd.Model, BiorbdModel)) and self.model.segment(j).isRotationAQuaternion():
+                    quat_idx.append([n_dof, n_dof + 1, n_dof + 2, self.model.nbDof() + quat_number])
+                    quat_number += 1
+                n_dof += self.model.segment(j).nbDof() # todo: handle this with Model ?
 
-        for i in range(1, self.n_step + 1):
-            t_norm_init = (i - 1) / self.n_step  # normalized time
-            x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
+            for i in range(1, self.n_step + 1):
+                t_norm_init = (i - 1) / self.n_step  # normalized time
+                x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
 
-            for j in range(self.model.nbQuat()):
-                quaternion = vertcat(
-                    x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
-                )
-                quaternion /= norm_fro(quaternion)
-                x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
-                x[quat_idx[j][3], i] = quaternion[0]
+                for j in range(self.model.nbQuat()):
+                    quaternion = vertcat(
+                        x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
+                    )
+                    quaternion /= norm_fro(quaternion)
+                    x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
+                    x[quat_idx[j][3], i] = quaternion[0]
 
         return x[:, -1], x
 

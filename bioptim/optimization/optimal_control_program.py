@@ -231,7 +231,12 @@ class OptimalControlProgram:
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(biorbd_model)
 
-        biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
+        biorbd_model_path = []
+        for m in biorbd_model:
+            if isinstance(m, (biorbd.Model, BiorbdModel)):
+                biorbd_model_path.append(m)
+            else:
+                biorbd_model_path.append(None)
 
         if isinstance(dynamics, Dynamics):
             dynamics_type_tp = DynamicsList()
@@ -541,7 +546,8 @@ class OptimalControlProgram:
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
             for j in range(nlp.model.nbQ()):
-                legend = nlp.model.nameDof()[j].to_string()
+                legend = nlp.model.nameDof()[j]
+                # legend = nlp.model.nameDof()[j].to_string()
                 if legend in dof_names_all_phases:
                     current_dof_mapping += [dof_names_all_phases.index(legend)]
                 else:
