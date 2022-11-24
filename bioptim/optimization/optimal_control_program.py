@@ -225,7 +225,9 @@ class OptimalControlProgram:
         elif isinstance(biorbd_model, (list, tuple)):
             biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
         else:
-            raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model(), or a subclass object of Model")
+            raise RuntimeError(
+                "biorbd_model must either be a string or an instance of biorbd.Model(), or a subclass object of Model"
+            )
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(biorbd_model)
 
