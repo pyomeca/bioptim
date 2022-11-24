@@ -584,16 +584,17 @@ class DynamicsFunctions:
         qddot_root = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
         qddot = vertcat(qddot_root, qddot_joints)
 
-        floating_base_constraint = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()[:nlp.model.nbRoot()]
+        floating_base_constraint = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()[: nlp.model.nbRoot()]
 
         defects = MX(qdot.shape[0] + qddot.shape[0], 1)
 
         defects[: qdot.shape[0], :] = qdot - DynamicsFunctions.compute_qdot(
-                    nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced)
-                )
-        defects[qdot.shape[0]:(qdot.shape[0] + qddot_root.shape[0]), :] = floating_base_constraint
-        defects[(qdot.shape[0] + qddot_root.shape[0]):, :] = \
-            qddot_joints - DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced)
+            nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced)
+        )
+        defects[qdot.shape[0] : (qdot.shape[0] + qddot_root.shape[0]), :] = floating_base_constraint
+        defects[(qdot.shape[0] + qddot_root.shape[0]) :, :] = qddot_joints - DynamicsFunctions.get(
+            nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced
+        )
 
         return DynamicsEvaluation(
             dxdt=vertcat(qdot, qddot_root_func(q, qdot, qddot_joints), qddot_joints), defects=defects
