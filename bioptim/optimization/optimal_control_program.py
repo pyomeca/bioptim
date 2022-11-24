@@ -8,10 +8,8 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, horzcat, vertcat, jacobian, vcat, hessian
+from casadi import MX, SX, Function, sum1, horzcat
 from matplotlib import pyplot as plt
-import matplotlib.colors as mcolors
-import matplotlib.cm as mcm
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
@@ -21,7 +19,7 @@ from ..dynamics.configure_problem import ConfigureProblem, DynamicsFcn
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.model import BiorbdModel
+from ..interfaces.model import BiorbdModel, Model
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -226,7 +224,7 @@ class OptimalControlProgram:
             biorbd_model = [biorbd_model]
         elif isinstance(biorbd_model, (list, tuple)):
             biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
-        elif isinstance(biorbd_model, BiorbdModel):
+        elif isinstance(biorbd_model, (BiorbdModel, Model)):
             biorbd_model = [biorbd_model]
         else:
             raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
