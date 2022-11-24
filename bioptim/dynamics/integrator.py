@@ -250,10 +250,13 @@ class RK(Integrator):
             quat_idx = []
             quat_number = 0
             for j in range(self.model.nbSegment()):
-                if isinstance(self.model, (biorbd.Model, BiorbdModel)) and self.model.segment(j).isRotationAQuaternion():
+                if (
+                    isinstance(self.model, (biorbd.Model, BiorbdModel))
+                    and self.model.segment(j).isRotationAQuaternion()
+                ):
                     quat_idx.append([n_dof, n_dof + 1, n_dof + 2, self.model.nbDof() + quat_number])
                     quat_number += 1
-                n_dof += self.model.segment(j).nbDof() # todo: handle this with Model ?
+                n_dof += self.model.segment(j).nbDof()  # todo: handle this with Model ?
 
             for i in range(1, self.n_step + 1):
                 t_norm_init = (i - 1) / self.n_step  # normalized time

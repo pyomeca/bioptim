@@ -27,7 +27,8 @@ from bioptim import (
 
 
 class MyModel(Model):
-    """ This is a custom model that inherits from bioptim.Model """
+    """This is a custom model that inherits from bioptim.Model"""
+
     def __init__(self):
         self.com = MX(np.array([-0.0005, 0.0688, -0.9542]))
 
@@ -188,7 +189,7 @@ class MyModel(Model):
         raise NotImplementedError("CalcPotentialEnergy is not implemented")
 
     def nameDof(self):
-        return ['rotx']
+        return ["rotx"]
 
     def contactNames(self):
         raise NotImplementedError("contactNames is not implemented")
@@ -255,10 +256,10 @@ class MyModel(Model):
 
 
 def custom_dynamics(
-        states: MX,
-        controls: MX,
-        parameters: MX,
-        nlp: NonLinearProgram,
+    states: MX,
+    controls: MX,
+    parameters: MX,
+    nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
     Parameters
@@ -276,8 +277,9 @@ def custom_dynamics(
     The derivative of the states in the tuple[Union[MX, SX]] format
     """
 
-    return DynamicsEvaluation(dxdt=vertcat(states[0], nlp.model.ForwardDynamics(states[0], states[1], controls[0])),
-                              defects=None)
+    return DynamicsEvaluation(
+        dxdt=vertcat(states[0], nlp.model.ForwardDynamics(states[0], states[1], controls[0])), defects=None
+    )
 
 
 def custom_configure_my_dynamics(ocp: OptimalControlProgram, nlp: NonLinearProgram):
@@ -343,7 +345,7 @@ def prepare_ocp(
     x_bounds = Bounds(
         min_bound=np.array([[0, -6.28, 3.14], [0, -20, 0]]),
         max_bound=np.array([[0, 6.28, 3.14], [0, 20, 0]]),
-        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
     )
     # x_bounds[:, [0, -1]] = 0
     # x_bounds[0, -1] = 3.14
