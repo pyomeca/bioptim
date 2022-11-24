@@ -8,8 +8,10 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, horzcat
+from casadi import MX, SX, Function, sum1, horzcat, vertcat, jacobian, vcat, hessian
 from matplotlib import pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.cm as mcm
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
@@ -49,8 +51,9 @@ from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
+from ..gui.check_conditioning import check_conditioning
 
-check_version(biorbd, "1.9.5", "1.10.0")
+check_version(biorbd, "1.9.8", "1.10.0")
 
 
 class OptimalControlProgram:
@@ -957,6 +960,12 @@ class OptimalControlProgram:
             shooting_type=shooting_type,
             integrator=integrator,
         )
+
+    def check_conditioning(self):
+        """
+        Visualisation of jacobian and hessian contraints and hessian objective for each phase at initial time
+        """
+        check_conditioning(self)
 
     def solve(
         self,
