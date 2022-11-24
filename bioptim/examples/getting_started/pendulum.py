@@ -23,6 +23,7 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
+    BiorbdModel,
 )
 
 
@@ -57,7 +58,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")

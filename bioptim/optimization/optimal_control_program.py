@@ -21,6 +21,7 @@ from ..dynamics.configure_problem import ConfigureProblem, DynamicsFcn
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
+from ..interfaces.model import BiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -225,6 +226,8 @@ class OptimalControlProgram:
             biorbd_model = [biorbd_model]
         elif isinstance(biorbd_model, (list, tuple)):
             biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
+        elif isinstance(biorbd_model, BiorbdModel):
+            biorbd_model = [biorbd_model]
         else:
             raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
