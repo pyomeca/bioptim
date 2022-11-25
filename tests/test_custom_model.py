@@ -3,7 +3,7 @@ import numpy as np
 from bioptim import (
     BiorbdModel,
     Solver,
-    )
+)
 
 
 def test_custom_model():
@@ -34,14 +34,7 @@ def test_custom_model():
     solver.set_maximum_iterations(2)
     sol = ocp.solve(solver=solver)
 
-    np.testing.assert_almost_equal(sol.states["q"][0,0], np.array([0]))
-    np.testing.assert_almost_equal(sol.states["q"][0,-1], np.array([3.14]))
-    np.testing.assert_almost_equal(sol.states["qdot"][0,0], np.array([0]))
-    np.testing.assert_almost_equal(sol.states["qdot"][0,-1], np.array([0]))
-
-
-
-
-
-
-
+    np.testing.assert_almost_equal(sol.states["q"][0, 0], np.array([0]))
+    np.testing.assert_almost_equal(sol.states["q"][0, -1], np.array([3.14]))
+    np.testing.assert_almost_equal(sol.states["qdot"][0, 0], np.array([0]))
+    np.testing.assert_almost_equal(sol.states["qdot"][0, -1], np.array([0]))

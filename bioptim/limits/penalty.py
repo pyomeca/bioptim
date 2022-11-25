@@ -230,9 +230,7 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = all_pn.nlp
-            first_marker_idx = (
-                nlp.model.marker_index(first_marker) if isinstance(first_marker, str) else first_marker
-            )
+            first_marker_idx = nlp.model.marker_index(first_marker) if isinstance(first_marker, str) else first_marker
             second_marker_idx = (
                 nlp.model.marker_index(second_marker) if isinstance(second_marker, str) else second_marker
             )

@@ -123,7 +123,9 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add(
+        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+    )
     if n_phases == 3:
         u_bounds.add(
             [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()

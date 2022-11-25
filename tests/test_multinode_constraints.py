@@ -78,9 +78,15 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2) -> OptimalControlProgram:
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
-    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
-    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add(
+        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+    )
+    u_bounds.add(
+        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+    )
+    u_bounds.add(
+        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+    )
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())

@@ -18,6 +18,7 @@ from bioptim import (
     DynamicsList,
 )
 
+
 def prepare_ocp(
     model: Model,
     final_time: float,
@@ -100,6 +101,7 @@ def main():
     """
     # import the custom model
     from my_model import MyModel
+
     # import the custom dynamics and configuration
     from custom_dynamics import custom_dynamics, custom_configure_my_dynamics
 

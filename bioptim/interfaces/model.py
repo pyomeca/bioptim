@@ -611,4 +611,3 @@ class BiorbdModel(Model):
 
     def rigid_contact_acceleration(self, Q, Qdot, Qddot, idx=None, updateKin=True):
         return self.model.rigidContactAcceleration(Q, Qdot, Qddot, idx, updateKin)
-

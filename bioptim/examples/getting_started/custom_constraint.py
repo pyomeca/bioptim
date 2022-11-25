@@ -114,7 +114,9 @@ def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.IRK())
     x_init = InitialGuess([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()))
 
     # Define control path constraint
-    u_bounds = Bounds([tau_min] * biorbd_model.nb_generalized_torque(), [tau_max] * biorbd_model.nb_generalized_torque())
+    u_bounds = Bounds(
+        [tau_min] * biorbd_model.nb_generalized_torque(), [tau_max] * biorbd_model.nb_generalized_torque()
+    )
 
     u_init = InitialGuess([tau_init] * biorbd_model.nb_generalized_torque())
 

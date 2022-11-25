@@ -227,9 +227,13 @@ def prepare_ocp(
             [tau_min] * biorbd_model.nb_generalized_torque() + [activation_min] * biorbd_model.nb_muscle_total(),
             [tau_max] * biorbd_model.nb_generalized_torque() + [activation_max] * biorbd_model.nb_muscle_total(),
         )
-        u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [activation_init] * biorbd_model.nb_muscle_total())
+        u_init.add(
+            [tau_init] * biorbd_model.nb_generalized_torque() + [activation_init] * biorbd_model.nb_muscle_total()
+        )
     else:
-        u_bounds.add([activation_min] * biorbd_model.nb_muscle_total(), [activation_max] * biorbd_model.nb_muscle_total())
+        u_bounds.add(
+            [activation_min] * biorbd_model.nb_muscle_total(), [activation_max] * biorbd_model.nb_muscle_total()
+        )
         u_init.add([activation_init] * biorbd_model.nb_muscle_total())
     # ------------- #
 

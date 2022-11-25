@@ -646,7 +646,9 @@ def partial_ocp_parameters(n_phases):
         x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
 
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add(
+        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+    )
     if n_phases > 1:
         u_bounds.add(
             [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()

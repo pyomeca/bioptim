@@ -104,7 +104,7 @@ class ConfigureProblem:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
                 if (
-                        _to_string(nlp.model.name_dof()[i])[-4:-1] == "Rot"
+                    _to_string(nlp.model.name_dof()[i])[-4:-1] == "Rot"
                     or _to_string(nlp.model.name_dof()[i])[-6:-1] == "Trans"
                 ):
                     new_name += [_to_string(nlp.model.name_dof()[i])]

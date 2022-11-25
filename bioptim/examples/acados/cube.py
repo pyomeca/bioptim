@@ -35,7 +35,9 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * biorbd_model.nb_generalized_torque(), [tau_max] * biorbd_model.nb_generalized_torque())
+    u_bounds = Bounds(
+        [tau_min] * biorbd_model.nb_generalized_torque(), [tau_max] * biorbd_model.nb_generalized_torque()
+    )
     u_init = InitialGuess([tau_init] * biorbd_model.nb_generalized_torque())
 
     return OptimalControlProgram(
