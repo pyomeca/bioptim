@@ -63,11 +63,10 @@ class MyModel(Model):
     def ForwardDynamics(self, q, qdot, tau, fext=None, f_contacts=None):
         d = 0  # damping
         L = self.com[2]
-        I  = self.inertia
+        I = self.inertia
         m = self.mass()
         g = 9.81
-        return 1/(I + m * L ** 2) \
-               * (- qdot[0] * d - g * m * L * sin(q[0]) + tau[0])
+        return 1 / (I + m * L**2) * (-qdot[0] * d - g * m * L * sin(q[0]) + tau[0])
 
     def InverseDynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None):
         return self.mass() * self.com[2] ** 2 * qddot[0] + self.mass() * -9.81 * self.com[2] * sin(q[0])
@@ -248,4 +247,3 @@ class MyModel(Model):
 
     def markers(self, Q, updateKin=True):
         raise NotImplementedError("markers is not implemented")
-

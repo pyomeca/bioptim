@@ -547,6 +547,7 @@ class OptimalControlProgram:
             current_dof_mapping = []
             for j in range(nlp.model.nbQ()):
                 from ..dynamics.configure_problem import _to_string
+
                 legend = _to_string(nlp.model.nameDof()[j])
                 # legend = nlp.model.nameDof()[j].to_string()
                 if legend in dof_names_all_phases:
