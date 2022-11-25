@@ -232,6 +232,10 @@ class Model(ABC):
         """Get the soft contact names"""
 
     @abstractmethod
+    def soft_contact(self, *args):
+        """Get the soft contact"""
+
+    @abstractmethod
     def muscle_names(self):
         """Get the muscle names"""
 
@@ -326,6 +330,10 @@ class Model(ABC):
     @abstractmethod
     def torque_max(self):
         """Get the maximum torque"""
+
+    @abstractmethod
+    def rigid_contact_acceleration(self, Q, Qdot, Qddot, updateKin=True):
+        """Get the rigid contact acceleration"""
 
 
 class BiorbdModel(Model):
@@ -506,6 +514,9 @@ class BiorbdModel(Model):
     def soft_contact_names(self):
         return self.model.softContactNames()
 
+    def soft_contact(self, *args):
+        return self.model.softContact(*args)
+
     def muscle_names(self):
         return self.model.muscleNames()
 
@@ -566,8 +577,10 @@ class BiorbdModel(Model):
     def marker_index(self, name):
         return biorbd.marker_index(self.model, name)
 
-    def marker(self, i=None):
-        if i is None:
+    def marker(self, *args):
+        if len(args) > 1:
+            return self.model.marker(*args)
+        else:
             return self.model.marker
         # hard to interface with c++ code
         # because sometimes it used as :
@@ -575,8 +588,8 @@ class BiorbdModel(Model):
         #     f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx
         # )
         # it will change the way we call it by model.marker()
-        else:
-            return self.model.marker(i)
+        # else:
+        #     return self.model.marker(i)
 
     def nb_rigid_contacts(self):
         return self.model.nbRigidContacts()
@@ -595,4 +608,7 @@ class BiorbdModel(Model):
 
     def torque_max(self):
         return self.model.torqueMax()
+
+    def rigid_contact_acceleration(self, Q, Qdot, Qddot, idx=None, updateKin=True):
+        return self.model.rigidContactAcceleration(Q, Qdot, Qddot, idx, updateKin)
 

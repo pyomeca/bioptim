@@ -1062,7 +1062,7 @@ This constraint assumes that the normal forces is positive (that is having an ad
 The extra parameters `tangential_component_idx: int`, `normal_component_idx: int` and `static_friction_coefficient: float` must be passed to the `Constraint` constructor
 
 #### TORQUE_MAX_FROM_ACTUATORS
-Adds a constraint of maximal torque to the generalized forces controls such that the maximal *tau* are computed from the `biorbd` method `biorbd_model.torqueMax(q, qdot).`
+Adds a constraint of maximal torque to the generalized forces controls such that the maximal *tau* are computed from the `biorbd` method `biorbd_model.torque_max(q, qdot).`
 This is an efficient alternative to the torque activation dynamics. 
 The extra parameter `min_torque` can be passed to ensure that the model is never too weak
 

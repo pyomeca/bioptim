@@ -275,3 +275,9 @@ class MyModel(Model):
 
     def torque_max(self):
         raise NotImplementedError("torque_max is not implemented")
+
+    def rigid_contact_acceleration(self, Q, Qdot, Qddot, updateKin=True):
+        raise NotImplementedError("rigid_contact_acceleration is not implemented")
+
+    def soft_contact(self, *args):
+        raise NotImplementedError("soft_contact is not implemented")

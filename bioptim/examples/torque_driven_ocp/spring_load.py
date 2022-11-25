@@ -78,7 +78,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
     # Model path
     m = BiorbdModel(biorbd_model_path)
-    m.setGravity(np.array((0, 0, 0)))
+    m.set_gravity(np.array((0, 0, 0)))
 
     # Add objective functions (high upward velocity at end point)
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", index=0, weight=-1)
