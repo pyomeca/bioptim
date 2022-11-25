@@ -88,14 +88,14 @@ def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
 
     # Path constraint
     x_bounds = QAndQDotBounds(m)
-    x_bounds[:, 0] = [0] * m.nbQ() + [0] * m.nbQdot()
-    x_bounds.min[:, 1] = [-1] * m.nbQ() + [-100] * m.nbQdot()
-    x_bounds.max[:, 1] = [1] * m.nbQ() + [100] * m.nbQdot()
-    x_bounds.min[:, 2] = [-1] * m.nbQ() + [-100] * m.nbQdot()
-    x_bounds.max[:, 2] = [1] * m.nbQ() + [100] * m.nbQdot()
+    x_bounds[:, 0] = [0] * m.nb_q() + [0] * m.nb_qdot()
+    x_bounds.min[:, 1] = [-1] * m.nb_q() + [-100] * m.nb_qdot()
+    x_bounds.max[:, 1] = [1] * m.nb_q() + [100] * m.nb_qdot()
+    x_bounds.min[:, 2] = [-1] * m.nb_q() + [-100] * m.nb_qdot()
+    x_bounds.max[:, 2] = [1] * m.nb_q() + [100] * m.nb_qdot()
 
     # Initial guess
-    x_init = InitialGuess([0] * (m.nbQ() + m.nbQdot()))
+    x_init = InitialGuess([0] * (m.nb_q() + m.nb_qdot()))
 
     # Define control path constraint
     u_bounds = Bounds([-100] * m.nb_generalized_torque(), [0] * m.nb_generalized_torque())

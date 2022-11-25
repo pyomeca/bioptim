@@ -38,7 +38,7 @@ from bioptim import (
 
 def states_to_markers(biorbd_model, states):
     nq = biorbd_model.nb_q()
-    n_mark = biorbd_model.nbMarkers()
+    n_mark = biorbd_model.nb_markers()
     q = cas.MX.sym("q", nq)
     markers_func = biorbd.to_casadi_func("makers", biorbd_model.markers, q)
     return np.array(markers_func(states[:nq, :])).reshape((3, n_mark, -1), order="F")
@@ -69,7 +69,7 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
 
     # Simulated noise
     np.random.seed(42)
-    noise = (np.random.randn(3, biorbd_model.nbMarkers(), n_shoot) - 0.5) * noise_std
+    noise = (np.random.randn(3, biorbd_model.nb_markers(), n_shoot) - 0.5) * noise_std
     markers_noised = markers + noise
 
     if show_plots:

@@ -41,8 +41,8 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -62,7 +62,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
+        external_forces = [np.random.rand(6, nlp.model.nb_segment(), nlp.ns)]
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
@@ -174,8 +174,8 @@ def test_torque_driven_implicit(with_contact, cx):
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q() * 2, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -235,8 +235,8 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * (2 + 3), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * (2 + 3), 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q() * 2, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -293,8 +293,8 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -313,7 +313,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
+        external_forces = [np.random.rand(6, nlp.model.nb_segment(), nlp.ns)]
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
@@ -415,8 +415,8 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 2))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q(), 2))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -508,8 +508,8 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * (2 + 3), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * (2 + 3), 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q() * 4, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -595,7 +595,7 @@ def test_soft_contacts_dynamics_errors(dynamics):
     nlp.ns = 5
     nlp.cx = MX
 
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q() * 4, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -634,7 +634,7 @@ def test_implicit_dynamics_errors(dynamics):
     nlp.ns = 5
     nlp.cx = MX
 
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q() * 4, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -671,8 +671,8 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * 2, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -689,7 +689,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
+        external_forces = [np.random.rand(6, nlp.model.nb_segment(), nlp.ns)]
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
@@ -766,8 +766,8 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2 + nlp.model.nbMuscles(), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbMuscles(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * 2 + nlp.model.nb_muscles(), 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_muscles(), 1))
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -794,7 +794,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
+        external_forces = [np.random.rand(6, nlp.model.nb_segment(), nlp.ns)]
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
@@ -1269,8 +1269,8 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -1337,8 +1337,8 @@ def test_custom_dynamics(with_contact):
     nlp.ns = 5
     nlp.cx = MX
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q() * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(

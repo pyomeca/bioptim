@@ -387,7 +387,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 count = 0
                 f_contact_vec = biorbd.VecBiorbdVector()
                 for ii in range(nlp.model.nb_rigid_contacts()):
-                    n_f_contact = len(nlp.model.rigidContactAxisIdx(ii))
+                    n_f_contact = len(nlp.model.rigid_contact_axis_idx(ii))
                     idx = [i + count for i in range(n_f_contact)]
                     f_contact_vec.append(f_contact[idx])
                     count = count + n_f_contact

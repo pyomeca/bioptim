@@ -48,16 +48,16 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n
     x_bound = QAndQDotBounds(model)
     x_bound.min[0, :] = -2 * np.pi * n_cycles_simultaneous  # Allow the wheel to spin as much as needed
     x_bound.max[0, :] = 0
-    u_bound = Bounds([-max_torque] * model.nbQ(), [max_torque] * model.nbQ())
+    u_bound = Bounds([-max_torque] * model.nb_q(), [max_torque] * model.nb_q())
 
     x_init = InitialGuess(
         np.zeros(
-            model.nbQ() * 2,
+            model.nb_q() * 2,
         )
     )
     u_init = InitialGuess(
         np.zeros(
-            model.nbQ(),
+            model.nb_q(),
         )
     )
 

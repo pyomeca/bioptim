@@ -130,7 +130,7 @@ def generate_data(
 
     # Integrate and collect the position of the markers accordingly
     X = np.ndarray((n_q + n_qdot + n_mus, n_shooting + 1))
-    markers = np.ndarray((3, biorbd_model.nbMarkers(), n_shooting + 1))
+    markers = np.ndarray((3, biorbd_model.nb_markers(), n_shooting + 1))
 
     def add_to_data(i, q):
         X[:, i] = q
@@ -220,13 +220,13 @@ def prepare_ocp(
     # Add muscle to the bounds
     activation_min, activation_max, activation_init = 0, 1, 0.5
     x_bounds[0].concatenate(
-        Bounds([activation_min] * biorbd_model.nbMuscles(), [activation_max] * biorbd_model.nbMuscles())
+        Bounds([activation_min] * biorbd_model.nb_muscles(), [activation_max] * biorbd_model.nb_muscles())
     )
     x_bounds[0][(biorbd_model.nb_q() + biorbd_model.nb_qdot()) :, 0] = excitations_ref[:, 0]
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()) + [0] * biorbd_model.nbMuscles())
+    x_init.add([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()) + [0] * biorbd_model.nb_muscles())
 
     # Define control path constraint
     excitation_min, excitation_max, excitation_init = 0, 1, 0.5
@@ -235,13 +235,13 @@ def prepare_ocp(
     if use_residual_torque:
         tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
-            [tau_min] * biorbd_model.nb_generalized_torque() + [excitation_min] * biorbd_model.nbMuscles(),
-            [tau_max] * biorbd_model.nb_generalized_torque() + [excitation_max] * biorbd_model.nbMuscles(),
+            [tau_min] * biorbd_model.nb_generalized_torque() + [excitation_min] * biorbd_model.nb_muscles(),
+            [tau_max] * biorbd_model.nb_generalized_torque() + [excitation_max] * biorbd_model.nb_muscles(),
         )
-        u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [excitation_init] * biorbd_model.nbMuscles())
+        u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [excitation_init] * biorbd_model.nb_muscles())
     else:
-        u_bounds.add([excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles())
-        u_init.add([excitation_init] * biorbd_model.nbMuscles())
+        u_bounds.add([excitation_min] * biorbd_model.nb_muscles(), [excitation_max] * biorbd_model.nb_muscles())
+        u_init.add([excitation_init] * biorbd_model.nb_muscles())
     # ------------- #
 
     return OptimalControlProgram(

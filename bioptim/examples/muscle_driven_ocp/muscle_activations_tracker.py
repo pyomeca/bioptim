@@ -126,7 +126,7 @@ def generate_data(
 
     # Integrate and collect the position of the markers accordingly
     X = np.ndarray((n_q + n_qdot, n_shooting + 1))
-    markers = np.ndarray((3, biorbd_model.nbMarkers(), n_shooting + 1))
+    markers = np.ndarray((3, biorbd_model.nb_markers(), n_shooting + 1))
 
     def add_to_data(i, q):
         X[:, i] = q

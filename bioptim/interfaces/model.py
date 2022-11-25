@@ -156,11 +156,11 @@ class Model(ABC):
         """Get the mesh points of the model"""
 
     @abstractmethod
-    def meshPointsInMatrix(self, Q, updateKin=True):
+    def mesh_points_in_matrix(self, Q, updateKin=True):
         """Get the mesh points of the model"""
 
     @abstractmethod
-    def meshFaces(self, *args):
+    def mesh_faces(self, *args):
         """Get the mesh faces of the model"""
 
     @abstractmethod
@@ -315,6 +315,18 @@ class Model(ABC):
     def path(self):
         """Get the path of the model"""
 
+    @abstractmethod
+    def markers_velocity(self, Q, Qdot):
+        """Get the marker velocities of the model"""
+
+    @abstractmethod
+    def rigid_contact_axis_idx(self, idx):
+        """Get the rigid contact axis index"""
+
+    @abstractmethod
+    def torque_max(self):
+        """Get the maximum torque"""
+
 
 class BiorbdModel(Model):
     def __init__(self, biorbd_model: str | biorbd.Model):
@@ -437,10 +449,10 @@ class BiorbdModel(Model):
     def mesh_points(self, *args):
         return self.model.meshPoints(*args)
 
-    def meshPointsInMatrix(self, Q, updateKin=True):
+    def mesh_points_in_matrix(self, Q, updateKin=True):
         return self.model.meshPointsInMatrix(Q, updateKin)
 
-    def meshFaces(self, *args):
+    def mesh_faces(self, *args):
         return self.model.meshFaces(*args)
 
     def mesh(self, *args):
@@ -496,6 +508,12 @@ class BiorbdModel(Model):
 
     def muscle_names(self):
         return self.model.muscleNames()
+
+    def nb_muscles(self):
+        return self.model.nbMuscles()
+
+    def nb_muscle_total(self):
+        return self.model.nbMuscleTotal()
 
     def torque(self, tau_activations, q, qdot):
         return self.model.torque(tau_activations, q, qdot)
@@ -557,5 +575,18 @@ class BiorbdModel(Model):
     def nb_rigid_contacts(self):
         return self.model.nbRigidContacts()
 
+    def nb_contacts(self):
+        return self.model.nbContacts()
+
     def path(self):
         return self.model.path()
+
+    def markers_velocity(self, Q, Qdot, updateKin=True):
+        return self.model.markerVelocity(Q, Qdot, updateKin)
+
+    def rigid_contact_axis_idx(self, idx):
+        return self.model.rigidContactAxisIdx(idx)
+
+    def torque_max(self):
+        return self.model.torqueMax()
+

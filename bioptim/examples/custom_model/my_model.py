@@ -168,11 +168,11 @@ class MyModel(Model):
     def mesh_points(self, *args):
         raise NotImplementedError("mesh_points is not implemented")
 
-    def meshPointsInMatrix(self, Q, updateKin=True):
-        raise NotImplementedError("meshPointsInMatrix is not implemented")
+    def mesh_points_in_matrix(self, Q, updateKin=True):
+        raise NotImplementedError("mesh_points_in_matrix is not implemented")
 
-    def meshFaces(self, *args):
-        raise NotImplementedError("meshFaces is not implemented")
+    def mesh_faces(self, *args):
+        raise NotImplementedError("mesh_faces is not implemented")
 
     def mesh(self, *args):
         raise NotImplementedError("mesh is not implemented")
@@ -257,3 +257,21 @@ class MyModel(Model):
 
     def markers(self, Q, updateKin=True):
         raise NotImplementedError("markers is not implemented")
+
+    def marker(self, i=None):
+        raise NotImplementedError("marker is not implemented")
+
+    def marker_index(self, name):
+        raise NotImplementedError("marker_index is not implemented")
+
+    def nb_markers(self):
+        raise NotImplementedError("nb_markers is not implemented")
+
+    def segment_index(self, name):
+        raise NotImplementedError("segment_index is not implemented")
+
+    def markers_velocity(self, Q, Qdot):
+        raise NotImplementedError("marker_velocity is not implemented")
+
+    def torque_max(self):
+        raise NotImplementedError("torque_max is not implemented")

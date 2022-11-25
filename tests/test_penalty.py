@@ -37,7 +37,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True)
         nx = biorbd_model.nb_q() + biorbd_model.nb_qdot()
-        nu = biorbd_model.nb_generalized_torque() + biorbd_model.nbMuscles()
+        nu = biorbd_model.nb_generalized_torque() + biorbd_model.nb_muscles()
     elif with_contact:
         biorbd_model = BiorbdModel(
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
