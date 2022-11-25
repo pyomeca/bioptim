@@ -60,6 +60,10 @@ class Model(ABC):
         """Get the number of quaternion"""
 
     @abstractmethod
+    def nb_dof(self):
+        """Get the number of dof"""
+
+    @abstractmethod
     def nb_q(self):
         """Get the number of Q"""
 
@@ -335,6 +339,18 @@ class Model(ABC):
     def rigid_contact_acceleration(self, Q, Qdot, Qddot, updateKin=True):
         """Get the rigid contact acceleration"""
 
+    @abstractmethod
+    def rt(self, *args):
+        """Get the rototranslation matrix"""
+
+    @abstractmethod
+    def marker_names(self):
+        """Get the marker names"""
+
+    @abstractmethod
+    def soft_contact_name(self, i):
+        """Get the soft contact name"""
+
 
 class BiorbdModel(Model):
     def __init__(self, biorbd_model: str | biorbd.Model):
@@ -568,8 +584,11 @@ class BiorbdModel(Model):
     def get_constraints(self):
         return self.model.getConstraints()
 
-    def markers(self, Q, updateKin=True):
-        return self.model.markers(Q, updateKin)
+    def markers(self, *args):
+        if len(args) == 0:
+            return self.model.markers
+        else:
+            return self.model.markers(*args)
 
     def nb_markers(self):
         return self.model.nbMarkers()
@@ -601,13 +620,28 @@ class BiorbdModel(Model):
         return self.model.path()
 
     def markers_velocity(self, Q, Qdot, updateKin=True):
-        return self.model.markerVelocity(Q, Qdot, updateKin)
+        return self.model.markersVelocity(Q, Qdot, updateKin)
 
     def rigid_contact_axis_idx(self, idx):
         return self.model.rigidContactAxisIdx(idx)
 
-    def torque_max(self):
-        return self.model.torqueMax()
+    def torque_max(self, *args):
+        return self.model.torqueMax(*args)
 
     def rigid_contact_acceleration(self, Q, Qdot, Qddot, idx=None, updateKin=True):
         return self.model.rigidContactAcceleration(Q, Qdot, Qddot, idx, updateKin)
+
+    def rt(self, *args):
+        return self.model.RT(*args)
+
+    def nb_dof(self):
+        return self.model.nbDof()
+
+    def marker_names(self):
+        return self.model.markerNames()
+
+    def soft_contact_name(self, i):
+        return self.model.softContactName(i)
+
+    def apply_rt(self, *args):
+        return self.model.applyRT(*args)

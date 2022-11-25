@@ -43,11 +43,11 @@ def minimize_difference(all_pn: PenaltyNodeList):
 
 def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str) -> MX:
     # Get the index of the markers from their name
-    marker_0_idx = biorbd.marker_index(all_pn.nlp.model, first_marker)
-    marker_1_idx = biorbd.marker_index(all_pn.nlp.model, second_marker)
+    marker_0_idx = all_pn.nlp.model.marker_index(first_marker)
+    marker_1_idx = all_pn.nlp.model.marker_index(second_marker)
 
     # Convert the function to the required format and then subtract
-    markers = BiorbdInterface.mx_to_cx("markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
+    markers = BiorbdInterface.mx_to_cx("markers", all_pn.nlp.model.markers(), all_pn.nlp.states["q"])
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 

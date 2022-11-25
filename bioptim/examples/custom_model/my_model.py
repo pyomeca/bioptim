@@ -281,3 +281,18 @@ class MyModel(Model):
 
     def soft_contact(self, *args):
         raise NotImplementedError("soft_contact is not implemented")
+
+    def rigid_contact_axis_idx(self, *args):
+        raise NotImplementedError("rigid_contact_axis_idx is not implemented")
+
+    def rt(self, *args):
+        raise NotImplementedError("rt is not implemented")
+
+    def nb_dof(self):
+        raise NotImplementedError("nb_dof is not implemented")
+
+    def marker_names(self):
+        raise NotImplementedError("marker_names is not implemented")
+
+    def soft_contact_name(self, i):
+        raise NotImplementedError("soft_contact_name is not implemented")

@@ -594,10 +594,10 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            segment_index = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
+            segment_index = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             r_seg = nlp.model.global_jcs(nlp.states["q"].mx, segment_index).rot()
-            r_rt = nlp.model.RT(nlp.states["q"].mx, rt).rot()
+            r_rt = nlp.model.rt(nlp.states["q"].mx, rt).rot()
             angles_diff = biorbd.Rotation.toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
             angle_objective = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])

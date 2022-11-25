@@ -632,7 +632,7 @@ class ConfigureProblem:
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)
-                .computeForceAtOrigin(nlp.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
+                .computeForceAtOrigin(nlp.model.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
                 .to_mx()
             )
         nlp.soft_contact_forces_func = Function(

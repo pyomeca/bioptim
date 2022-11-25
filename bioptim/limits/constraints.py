@@ -7,6 +7,7 @@ import biorbd_casadi as biorbd
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
+from ..interfaces.model import BiorbdModel
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -342,7 +343,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 model = BiorbdModel(
                     nlp.model.path().absolutePath().to_string()
                 )  # TODO: find a better solution if possible
-                qddot_fd = model.ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
+                qddot_fd = model.forward_dynamics_constraints_direct(q, qdot, tau).to_mx()
             else:
                 qddot_fd = nlp.model.forward_dynamics(q, qdot, tau).to_mx()
 
@@ -434,7 +435,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 idx_dir = 1
             elif "_Z" in nlp.model.contact_names()[contact_index].to_string():
                 idx_dir = 2
-            contact_acceleration = nlp.model.rigidContactAcceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
+            contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
