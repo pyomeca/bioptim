@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     Solver,
     )
 
@@ -20,13 +21,13 @@ def test_custom_model():
         dynamics=dynamics.custom_dynamics,
     )
 
-    np.testing.assert_almost_equal(ocp.nlp[0].model.nbQ(), 1)
-    np.testing.assert_almost_equal(ocp.nlp[0].model.nbQdot(), 1)
-    np.testing.assert_almost_equal(ocp.nlp[0].model.nbQddot(), 1)
-    np.testing.assert_almost_equal(ocp.nlp[0].model.nbGeneralizedTorque(), 1)
-    assert ocp.nlp[0].model.nbQuat() == 0
+    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_q(), 1)
+    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_qdot(), 1)
+    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_qddot(), 1)
+    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_generalized_torque(), 1)
+    assert ocp.nlp[0].model.nb_quat() == 0
     np.testing.assert_almost_equal(ocp.nlp[0].model.mass(), 1)
-    assert ocp.nlp[0].model.nameDof() == ["rotx"]
+    assert ocp.nlp[0].model.name_dof() == ["rotx"]
     assert ocp.nlp[0].model.path() is None
 
     solver = Solver.IPOPT(show_online_optim=False)

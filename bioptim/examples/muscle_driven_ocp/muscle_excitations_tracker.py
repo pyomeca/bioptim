@@ -14,6 +14,7 @@ import biorbd_casadi as biorbd
 from casadi import MX, vertcat
 from matplotlib import pyplot as plt
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     NonLinearProgram,
     BiMapping,
@@ -34,14 +35,14 @@ from bioptim import (
 
 
 def generate_data(
-    biorbd_model: biorbd.Model, final_time: float, n_shooting: int, use_residual_torque: bool = True
+    biorbd_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
 
     Parameters
     ----------
-    biorbd_model: biorbd.Model
+    biorbd_model: BiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -56,10 +57,10 @@ def generate_data(
     """
 
     # Aliases
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
-    n_qddot = biorbd_model.nbQddot()
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_q = biorbd_model.nb_q()
+    n_qdot = biorbd_model.nb_qdot()
+    n_qddot = biorbd_model.nb_qddot()
+    n_tau = biorbd_model.nb_generalized_torque()
     n_mus = biorbd_model.nbMuscleTotal()
     dt = final_time / n_shooting
 
@@ -147,7 +148,7 @@ def generate_data(
 
 
 def prepare_ocp(
-    biorbd_model: biorbd.Model,
+    biorbd_model: BiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -162,7 +163,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    biorbd_model: biorbd.Model
+    biorbd_model: BiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -200,7 +201,7 @@ def prepare_ocp(
             weight=100,
             node=Node.ALL,
             target=q_ref,
-            index=range(biorbd_model.nbQ()),
+            index=range(biorbd_model.nb_q()),
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
@@ -221,11 +222,11 @@ def prepare_ocp(
     x_bounds[0].concatenate(
         Bounds([activation_min] * biorbd_model.nbMuscles(), [activation_max] * biorbd_model.nbMuscles())
     )
-    x_bounds[0][(biorbd_model.nbQ() + biorbd_model.nbQdot()) :, 0] = excitations_ref[:, 0]
+    x_bounds[0][(biorbd_model.nb_q() + biorbd_model.nb_qdot()) :, 0] = excitations_ref[:, 0]
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()) + [0] * biorbd_model.nbMuscles())
+    x_init.add([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()) + [0] * biorbd_model.nbMuscles())
 
     # Define control path constraint
     excitation_min, excitation_max, excitation_init = 0, 1, 0.5
@@ -234,10 +235,10 @@ def prepare_ocp(
     if use_residual_torque:
         tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
-            [tau_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscles(),
-            [tau_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscles(),
+            [tau_min] * biorbd_model.nb_generalized_torque() + [excitation_min] * biorbd_model.nbMuscles(),
+            [tau_max] * biorbd_model.nb_generalized_torque() + [excitation_max] * biorbd_model.nbMuscles(),
         )
-        u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscles())
+        u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [excitation_init] * biorbd_model.nbMuscles())
     else:
         u_bounds.add([excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles())
         u_init.add([excitation_init] * biorbd_model.nbMuscles())
@@ -263,7 +264,7 @@ def main():
     """
 
     # Define the problem
-    biorbd_model = biorbd.Model("models/arm26.bioMod")
+    biorbd_model = BiorbdModel("models/arm26.bioMod")
     final_time = 0.5
     n_shooting_points = 30
     use_residual_torque = True
@@ -272,14 +273,14 @@ def main():
     t, markers_ref, x_ref, muscle_excitations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
 
     # Track these data
-    biorbd_model = biorbd.Model("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
+    biorbd_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         biorbd_model,
         final_time,
         n_shooting_points,
         markers_ref,
         muscle_excitations_ref,
-        x_ref[: biorbd_model.nbQ(), :],
+        x_ref[: biorbd_model.nb_q(), :],
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
     )
@@ -290,7 +291,7 @@ def main():
     # --- Show the results --- #
     q = sol.states["q"]
 
-    n_q = ocp.nlp[0].model.nbQ()
+    n_q = ocp.nlp[0].model.nb_q()
     n_mark = ocp.nlp[0].model.nbMarkers()
     n_frames = q.shape[1]
 

@@ -17,6 +17,7 @@ from casadi import sqrt
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     Node,
     DynamicsFcn,
@@ -81,7 +82,7 @@ def prepare_ocp_first_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -96,12 +97,12 @@ def prepare_ocp_first_pass(
     x_bounds[:, 0] = 0
 
     # Initial guess
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
+    n_q = biorbd_model.nb_q()
+    n_qdot = biorbd_model.nb_qdot()
     x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, magnitude=0.001, n_shooting=n_shooting + 1)
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = biorbd_model.nb_generalized_torque()
     tau_min, tau_max, tau_init = -300, 300, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
@@ -162,7 +163,7 @@ def prepare_ocp_second_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -181,7 +182,7 @@ def prepare_ocp_second_pass(
     x_init = InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = biorbd_model.nb_generalized_torque()
     tau_min, tau_max, tau_init = -300, 300, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate

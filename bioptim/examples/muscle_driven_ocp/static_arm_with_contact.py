@@ -9,6 +9,7 @@ mesh points.
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
@@ -51,7 +52,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -73,19 +74,19 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
+    x_init.add([1.57] * biorbd_model.nb_q() + [0] * biorbd_model.nb_qdot())
 
     # Define control path constraint
     muscle_min, muscle_max, muscle_init = 0, 1, 0.5
     tau_min, tau_max, tau_init = -1, 1, 0
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
-        [tau_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
+        [tau_min] * biorbd_model.nb_generalized_torque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
+        [tau_max] * biorbd_model.nb_generalized_torque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [muscle_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
     return OptimalControlProgram(

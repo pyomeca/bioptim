@@ -9,7 +9,7 @@ from numpy import array, ndarray
 from ..misc.enums import InterpolationType, MagnitudeType
 from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..interfaces.model import Model
+from ..interfaces.model import Model, BiorbdModel
 
 
 class PathCondition(np.ndarray):
@@ -606,13 +606,13 @@ class QAndQDotBounds(Bounds):
 
     def __init__(
         self,
-        biorbd_model: Union[biorbd.Model, Model],
+        biorbd_model: Union[BiorbdModel, Model],
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: Union[biorbd.Model, Model]
+        biorbd_model: Union[BiorbdModel, Model]
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
@@ -620,7 +620,7 @@ class QAndQDotBounds(Bounds):
         if dof_mappings is None:
             dof_mappings = {}
 
-        if biorbd_model.nbQuat() > 0:
+        if biorbd_model.nb_quat() > 0:
             if "q" in dof_mappings and "qdot" not in dof_mappings:
                 raise RuntimeError(
                     "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
@@ -631,17 +631,17 @@ class QAndQDotBounds(Bounds):
                 )
 
         if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+            dof_mappings["q"] = BiMapping(range(biorbd_model.nb_q()), range(biorbd_model.nb_q()))
 
         if "qdot" not in dof_mappings:
-            if biorbd_model.nbQuat() > 0:
-                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+            if biorbd_model.nb_quat() > 0:
+                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nb_qdot()), range(biorbd_model.nb_qdot()))
             else:
                 dof_mappings["qdot"] = dof_mappings["q"]
 
         q_ranges = []
         qdot_ranges = []
-        for i in range(biorbd_model.nbSegment()):
+        for i in range(biorbd_model.nb_segment()):
             segment = biorbd_model.segment(i)
             q_ranges += [q_range for q_range in segment.QRanges()]
             qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
@@ -663,13 +663,13 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
 
     def __init__(
         self,
-        biorbd_model: Union[biorbd.Model, Model],
+        biorbd_model: Union[BiorbdModel, Model],
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: Union[biorbd.Model, Model]
+        biorbd_model: Union[BiorbdModel, Model]
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
@@ -681,22 +681,22 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
             dof_mappings = {}
 
         if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+            dof_mappings["q"] = BiMapping(range(biorbd_model.nb_q()), range(biorbd_model.nb_q()))
 
         if "qdot" not in dof_mappings:
-            if biorbd_model.nbQuat() > 0:
-                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+            if biorbd_model.nb_quat() > 0:
+                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nb_qdot()), range(biorbd_model.nb_qdot()))
             else:
                 dof_mappings["qdot"] = dof_mappings["q"]
 
         if "qddot" not in dof_mappings:
-            if biorbd_model.nbQuat() > 0:
-                dof_mappings["qddot"] = BiMapping(range(biorbd_model.nbQddot()), range(biorbd_model.nbQddot()))
+            if biorbd_model.nb_quat() > 0:
+                dof_mappings["qddot"] = BiMapping(range(biorbd_model.nb_qddot()), range(biorbd_model.nb_qddot()))
             else:
                 dof_mappings["qddot"] = dof_mappings["qdot"]
 
         qddot_ranges = []
-        for i in range(biorbd_model.nbSegment()):
+        for i in range(biorbd_model.nb_segment()):
             segment = biorbd_model.segment(i)
             qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
 

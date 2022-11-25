@@ -1,5 +1,6 @@
 import pytest
 from bioptim import (
+    BiorbdModel,
     MultinodeConstraintList,
     MultinodeConstraintFcn,
     Node,
@@ -17,7 +18,7 @@ from .utils import TestUtils
 
 
 def prepare_ocp(biorbd_model_path, phase_1, phase_2) -> OptimalControlProgram:
-    biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
+    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
     n_shooting = (100, 300, 100)
@@ -71,20 +72,20 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2) -> OptimalControlProgram:
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
 
     return OptimalControlProgram(
         biorbd_model,

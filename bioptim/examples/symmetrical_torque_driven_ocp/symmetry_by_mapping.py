@@ -26,6 +26,7 @@ applications one can do with the Mappings
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsList,
@@ -61,7 +62,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30

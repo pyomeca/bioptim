@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -35,7 +36,7 @@ def prepare_ocp(
     biorbd_model_path, phase_time, n_shooting, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4()
 ):
     # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
 
@@ -53,7 +54,7 @@ def prepare_ocp(
     dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True, with_contact=True)
 
     # Path constraint
-    n_q = biorbd_model.nbQ()
+    n_q = biorbd_model.nb_q()
     n_qdot = n_q
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
@@ -69,12 +70,12 @@ def prepare_ocp(
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(),
-        [tau_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal(),
+        [tau_min] * biorbd_model.nb_generalized_torque() + [activation_min] * biorbd_model.nbMuscleTotal(),
+        [tau_max] * biorbd_model.nb_generalized_torque() + [activation_max] * biorbd_model.nbMuscleTotal(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [activation_init] * biorbd_model.nbMuscleTotal())
 
     # ------------- #
 

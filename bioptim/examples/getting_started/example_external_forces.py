@@ -16,6 +16,7 @@ np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz]
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsList,
@@ -50,7 +51,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -83,15 +84,15 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init.add([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()))
 
     # Define control path constraint
     u_bounds = BoundsList()
     tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+    u_bounds.add([tau_min] * biorbd_model.nb_generalized_torque(), [tau_max] * biorbd_model.nb_generalized_torque())
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model.nb_generalized_torque())
 
     return OptimalControlProgram(
         biorbd_model,

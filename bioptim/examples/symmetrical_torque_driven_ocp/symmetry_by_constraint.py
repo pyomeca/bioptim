@@ -15,6 +15,7 @@ solving with IPOPT.
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsList,
@@ -49,7 +50,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -77,19 +78,19 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][2, :] = 0  # Third dof is set to zero
-    x_bounds[0][biorbd_model.nbQ() :, [0, -1]] = 0  # Velocity is 0 at start and end
+    x_bounds[0][biorbd_model.nb_q() :, [0, -1]] = 0  # Velocity is 0 at start and end
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init.add([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model.nbQ(), [tau_max] * biorbd_model.nbQ())
+    u_bounds.add([tau_min] * biorbd_model.nb_q(), [tau_max] * biorbd_model.nb_q())
     u_bounds[0][2, :] = 0  # Third dof is left uncontrolled
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbQ())
+    u_init.add([tau_init] * biorbd_model.nb_q())
 
     # ------------- #
 

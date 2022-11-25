@@ -14,7 +14,7 @@ class Integrator:
 
     Attributes
     ----------
-    model: Union[biorbd.Model, Model]
+    model: Union[BiorbdModel, Model]
         The biorbd model to integrate
     t_span = tuple[float, float]
         The initial and final time
@@ -248,7 +248,7 @@ class RK(Integrator):
         for i in range(1, self.n_step + 1):
             t_norm_init = (i - 1) / self.n_step  # normalized time
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
-            if self.model.nbQuat() > 0:
+            if self.model.nb_quat() > 0:
                 self.quaternion_post_normalization(self.model, x[:, i])
 
         return x[:, -1], x
@@ -258,7 +258,7 @@ class RK(Integrator):
         n_dof = 0
         quat_idx = []
         quat_number = 0
-        for j in range(model.nbSegment()):
+        for j in range(model.nb_segment()):
             if model.segment(j).isRotationAQuaternion():
                 quat_idx.append([n_dof, n_dof + 1, n_dof + 2, model.nbDof() + quat_number])
                 quat_number += 1
@@ -268,7 +268,7 @@ class RK(Integrator):
     @staticmethod
     def quaternion_post_normalization(model: Model, x: Union[MX, SX]) -> Union[MX, SX]:
         quat_idx = RK.get_quaternion_idx(model)
-        for j in range(model.nbQuat()):
+        for j in range(model.nb_quat()):
             quaternion = vertcat(x[quat_idx[j][3]], x[quat_idx[j][0]], x[quat_idx[j][1]], x[quat_idx[j][2]])
             quaternion /= norm_fro(quaternion)
             x[quat_idx[j][0] : quat_idx[j][2] + 1] = quaternion[1:4]

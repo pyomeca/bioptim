@@ -14,6 +14,7 @@ of equality constraints, which can be used with any ConstraintFcn
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     ConstraintList,
@@ -34,7 +35,7 @@ from bioptim import (
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound, mu, ode_solver=OdeSolver.RK4()):
     # --- Options --- #
     # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     dof_mapping = BiMappingList()
     dof_mapping.add("tau", [None, None, None, 0], [3])
@@ -72,7 +73,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     )
 
     # Path constraint
-    n_q = biorbd_model.nbQ()
+    n_q = biorbd_model.nb_q()
     n_qdot = n_q
     pose_at_first_node = [0, 0, -0.75, 0.75]
 

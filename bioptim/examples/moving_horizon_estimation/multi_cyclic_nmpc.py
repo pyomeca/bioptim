@@ -8,6 +8,7 @@ the latter has more cycle at a time giving the knowledge to the solver that 'som
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     MultiCyclicNonlinearModelPredictiveControl,
     Dynamics,
     DynamicsFcn,
@@ -41,7 +42,7 @@ class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
 
 
 def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n_cycles_to_advance, max_torque):
-    model = biorbd.Model(model_path)
+    model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     x_bound = QAndQDotBounds(model)

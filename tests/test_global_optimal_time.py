@@ -8,6 +8,7 @@ import re
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     ConstraintList,
     ConstraintFcn,
     QAndQDotBounds,
@@ -356,7 +357,7 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/pendulum.bioMod",)
 
     # --- Options --- #
-    biorbd_model = biorbd.Model(biorbd_model_path[0])
+    biorbd_model = BiorbdModel(biorbd_model_path[0])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -377,7 +378,7 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
     biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/pendulum.bioMod",)
 
     # --- Options --- #
-    biorbd_model = biorbd.Model(biorbd_model_path[0])
+    biorbd_model = BiorbdModel(biorbd_model_path[0])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -611,7 +612,7 @@ def partial_ocp_parameters(n_phases):
         raise RuntimeError("n_phases should be 1 or 3")
 
     biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/cube.bioMod"
-    biorbd_model = biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path)
     n_shooting = (2, 2, 2)
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]
@@ -639,26 +640,26 @@ def partial_ocp_parameters(n_phases):
         x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
 
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
     if n_phases > 1:
-        x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-        x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+        x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+        x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
 
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
     if n_phases > 1:
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
+            [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
         )
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
+            [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
         )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
     if n_phases > 1:
-        u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-        u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+        u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+        u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
 
     return (
         biorbd_model[:n_phases],

@@ -13,6 +13,7 @@ import numpy as np
 from casadi import MX
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     Dynamics,
     DynamicsFcn,
@@ -28,14 +29,14 @@ from bioptim import (
 )
 
 
-def my_parameter_function(biorbd_model: biorbd.Model, value: MX, extra_value: Any):
+def my_parameter_function(biorbd_model: BiorbdModel, value: MX, extra_value: Any):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to
     modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it.
 
     Parameters
     ----------
-    biorbd_model: biorbd.Model
+    biorbd_model: BiorbdModel
         The model to modify by the parameters
     value: MX
         The CasADi variables to modify the model
@@ -47,14 +48,14 @@ def my_parameter_function(biorbd_model: biorbd.Model, value: MX, extra_value: An
     biorbd_model.setGravity(value)
 
 
-def set_mass(biorbd_model: biorbd.Model, value: MX):
+def set_mass(biorbd_model: BiorbdModel, value: MX):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to
     modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it.
 
     Parameters
     ----------
-    biorbd_model: biorbd.Model
+    biorbd_model: BiorbdModel
         The model to modify by the parameters
     value: MX
         The CasADi variables to modify the model
@@ -135,8 +136,8 @@ def prepare_ocp(
     """
 
     # --- Options --- #
-    biorbd_model = biorbd.Model(biorbd_model_path)
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    biorbd_model = BiorbdModel(biorbd_model_path)
+    n_tau = biorbd_model.nb_generalized_torque()
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10)
@@ -150,8 +151,8 @@ def prepare_ocp(
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
+    n_q = biorbd_model.nb_q()
+    n_qdot = biorbd_model.nb_qdot()
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint

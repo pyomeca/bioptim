@@ -1,5 +1,6 @@
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     Bounds,
     InterpolationType,
 )

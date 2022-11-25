@@ -36,7 +36,7 @@ def custom_dynamics(
     """
 
     return DynamicsEvaluation(
-        dxdt=vertcat(states[1], nlp.model.ForwardDynamics(states[0], states[1], controls[0])), defects=None
+        dxdt=vertcat(states[1], nlp.model.forward_dynamics(states[0], states[1], controls[0])), defects=None
     )
 
 

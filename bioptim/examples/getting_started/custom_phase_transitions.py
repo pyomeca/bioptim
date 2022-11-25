@@ -9,6 +9,7 @@ More specifically, this example mimics the behaviour of the most common PhaseTra
 from casadi import MX
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsFcn,
@@ -83,10 +84,10 @@ def prepare_ocp(
 
     # Model path
     biorbd_model = (
-        biorbd.Model(biorbd_model_path),
-        biorbd.Model(biorbd_model_path),
-        biorbd.Model(biorbd_model_path),
-        biorbd.Model(biorbd_model_path),
+        BiorbdModel(biorbd_model_path),
+        BiorbdModel(biorbd_model_path),
+        BiorbdModel(biorbd_model_path),
+        BiorbdModel(biorbd_model_path),
     )
 
     # Problem parameters
@@ -132,23 +133,23 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
 
     """
     By default, all phase transitions (here phase 0 to phase 1, phase 1 to phase 2 and phase 2 to phase 3)

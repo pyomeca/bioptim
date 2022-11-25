@@ -4,6 +4,7 @@ import pytest
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     BoundsList,
     Bounds,
     ConstraintFcn,
@@ -40,7 +41,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     n_phases = len(ns)
 
     # Model path
-    biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
+    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -86,20 +87,20 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
 
     parameters = ParameterList()
     if use_parameter:
@@ -110,7 +111,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
         def my_parameter_function(biorbd_model, value, extra_value):
             new_gravity = MX.zeros(3, 1)
             new_gravity[2] = value + extra_value
-            biorbd_model.setGravity(new_gravity)
+            biorbd_model.set_gravity(new_gravity)
 
         min_g = -10
         max_g = -6

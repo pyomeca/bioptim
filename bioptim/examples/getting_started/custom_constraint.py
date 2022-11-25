@@ -10,6 +10,7 @@ More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKER
 import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     Dynamics,
@@ -85,7 +86,7 @@ def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.IRK())
 
     # --- Options --- #
     # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -110,12 +111,12 @@ def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.IRK())
     x_bounds[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuess([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()))
 
     # Define control path constraint
-    u_bounds = Bounds([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+    u_bounds = Bounds([tau_min] * biorbd_model.nb_generalized_torque(), [tau_max] * biorbd_model.nb_generalized_torque())
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init = InitialGuess([tau_init] * biorbd_model.nb_generalized_torque())
 
     # ------------- #
 

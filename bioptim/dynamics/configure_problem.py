@@ -96,40 +96,40 @@ class ConfigureProblem:
             The list of str to display on figures
         """
 
-        idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nbQ())
+        idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nb_q())
 
-        if nlp.model.nbQuat() == 0:
-            new_name = _to_string_list(nlp.model.nameDof())[idx[0]]
+        if nlp.model.nb_quat() == 0:
+            new_name = _to_string_list(nlp.model.name_dof())[idx[0]]
         else:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
                 if (
-                    _to_string(nlp.model.nameDof()[i])[-4:-1] == "Rot"
-                    or _to_string(nlp.model.nameDof()[i])[-6:-1] == "Trans"
+                        _to_string(nlp.model.name_dof()[i])[-4:-1] == "Rot"
+                    or _to_string(nlp.model.name_dof()[i])[-6:-1] == "Trans"
                 ):
-                    new_name += [_to_string(nlp.model.nameDof()[i])]
+                    new_name += [_to_string(nlp.model.name_dof()[i])]
                 else:
-                    if _to_string(nlp.model.nameDof()[i])[-5:] != "QuatW":
+                    if _to_string(nlp.model.name_dof()[i])[-5:] != "QuatW":
                         if var_str == "qdot":
                             new_name += [
-                                _to_string(nlp.model.nameDof()[i])[:-5]
+                                _to_string(nlp.model.name_dof()[i])[:-5]
                                 + "omega"
-                                + _to_string(nlp.model.nameDof()[i])[-1]
+                                + _to_string(nlp.model.name_dof()[i])[-1]
                             ]
                         elif var_str == "qddot":
                             new_name += [
-                                _to_string(nlp.model.nameDof()[i])[:-5]
+                                _to_string(nlp.model.name_dof()[i])[:-5]
                                 + "omegadot"
-                                + _to_string(nlp.model.nameDof()[i])[-1]
+                                + _to_string(nlp.model.name_dof()[i])[-1]
                             ]
                         elif var_str == "qdddot":
                             new_name += [
-                                _to_string(nlp.model.nameDof()[i])[:-5]
+                                _to_string(nlp.model.name_dof()[i])[:-5]
                                 + "omegaddot"
-                                + _to_string(nlp.model.nameDof()[i])[-1]
+                                + _to_string(nlp.model.name_dof()[i])[-1]
                             ]
                         elif var_str == "tau" or var_str == "taudot":
-                            new_name += [_to_string(nlp.model.nameDof()[i])]
+                            new_name += [_to_string(nlp.model.name_dof()[i])]
 
         return new_name
 
@@ -191,7 +191,7 @@ class ConfigureProblem:
             A list of fatigue elements
         """
 
-        if nlp.model.nbSoftContacts() != 0:
+        if nlp.model.nb_soft_contacts() != 0:
             if (
                 soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
                 and soft_contacts_dynamics != SoftContactDynamics.ODE
@@ -325,7 +325,7 @@ class ConfigureProblem:
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
-        if nlp.model.nbSoftContacts() != 0:
+        if nlp.model.nb_soft_contacts() != 0:
             if (
                 soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
                 and soft_contacts_dynamics != SoftContactDynamics.ODE
@@ -438,11 +438,11 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         # Configure qddot joints
-        nb_root = nlp.model.nbRoot()
+        nb_root = nlp.model.nb_root()
         if not nb_root > 0:
             raise RuntimeError("Model must have at least one DoF on root.")
 
-        name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nbQddot() - nb_root)]
+        name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot() - nb_root)]
         ConfigureProblem.configure_new_variable(
             "qddot_joints", name_qddot_joints, ocp, nlp, as_states=False, as_controls=True
         )
@@ -594,13 +594,13 @@ class ConfigureProblem:
         all_contact_names = []
         for elt in ocp.nlp:
             all_contact_names.extend(
-                [name.to_string() for name in elt.model.contactNames() if name.to_string() not in all_contact_names]
+                [name.to_string() for name in elt.model.contact_names() if name.to_string() not in all_contact_names]
             )
 
         if "contact_forces" in nlp.plot_mapping:
             phase_mappings = nlp.plot_mapping["contact_forces"]
         else:
-            contact_names_in_phase = [name.to_string() for name in nlp.model.contactNames()]
+            contact_names_in_phase = [name.to_string() for name in nlp.model.contact_names()]
             phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
 
         nlp.plot["contact_forces"] = CustomPlot(
@@ -623,11 +623,11 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        global_soft_contact_force_func = MX.zeros(nlp.model.nbSoftContacts() * 6, 1)
-        n = nlp.model.nbQ()
+        global_soft_contact_force_func = MX.zeros(nlp.model.nb_soft_contacts() * 6, 1)
+        n = nlp.model.nb_q()
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
-        for i_sc in range(nlp.model.nbSoftContacts()):
+        for i_sc in range(nlp.model.nb_soft_contacts()):
             soft_contact = nlp.model.softContact(i_sc)
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
@@ -643,7 +643,7 @@ class ConfigureProblem:
             ["soft_contact_forces"],
         ).expand()
 
-        for i_sc in range(nlp.model.nbSoftContacts()):
+        for i_sc in range(nlp.model.nb_soft_contacts()):
             all_soft_contact_names = []
             all_soft_contact_names.extend(
                 [
@@ -963,7 +963,7 @@ class ConfigureProblem:
         """
 
         name = "q"
-        name_q = [name if isinstance(name, str) else name.to_string() for name in nlp.model.nameDof()]
+        name_q = [name if isinstance(name, str) else name.to_string() for name in nlp.model.name_dof()]
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name,
@@ -1133,7 +1133,7 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_contact_forces = [name.to_string() for name in nlp.model.contactNames()]
+        name_contact_forces = [name.to_string() for name in nlp.model.contact_names()]
         ConfigureProblem.configure_new_variable("fext", name_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
@@ -1152,7 +1152,7 @@ class ConfigureProblem:
         """
         name_soft_contact_forces = []
         component_list = ["fx", "fy", "fz"]  # TODO: find a better place to hold this or define it in biorbd ?
-        for ii in range(nlp.model.nbSoftContacts()):
+        for ii in range(nlp.model.nb_soft_contacts()):
             name_soft_contact_forces.extend(
                 [
                     f"{nlp.model.softContactName(ii).to_string()}_{name}"
@@ -1180,7 +1180,7 @@ class ConfigureProblem:
             The list of fatigue parameters
         """
 
-        muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
+        muscle_names = [names.to_string() for names in nlp.model.muscle_names()]
         ConfigureProblem.configure_new_variable(
             "muscles",
             muscle_names,
@@ -1212,14 +1212,14 @@ class ConfigureProblem:
                 if n in nlp.variable_mappings:
                     if n == "q":
                         q_map = list(nlp.variable_mappings[n].to_first.map_idx)
-                        target = list(range(nlp.model.nbQ()))
-                        if nlp.model.nbQuat() > 0:
+                        target = list(range(nlp.model.nb_q()))
+                        if nlp.model.nb_quat() > 0:
                             if q_map != target:
                                 raise RuntimeError(
                                     "It is not possible to define a q mapping without a qdot or tau mapping"
                                     "while the model has quaternions"
                                 )
-                            target = list(range(nlp.model.nbQdot()))
+                            target = list(range(nlp.model.nb_qdot()))
                         nlp.variable_mappings[key_to_adjust] = BiMapping(target, target)
                     else:
                         nlp.variable_mappings[key_to_adjust] = nlp.variable_mappings[n]

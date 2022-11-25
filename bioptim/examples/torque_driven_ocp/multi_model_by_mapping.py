@@ -1,6 +1,7 @@
 import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -22,7 +23,7 @@ def prepare_ocp(
     n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
 
-    biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path_modified_inertia))
+    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_modified_inertia))
 
     # Problem parameters
     final_time = (1.5, 1.5)
@@ -76,8 +77,8 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[1].nbQ() + biorbd_model[1].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+    x_init.add([0] * (biorbd_model[1].nb_q() + biorbd_model[1].nb_qdot()))
 
     # Define control path constraint
     u_bounds = BoundsList()

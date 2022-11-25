@@ -142,7 +142,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        biorbd_model: Union[str, biorbd.Model, list, tuple, Model],
+        biorbd_model: Union[str, BiorbdModel, list, tuple, Model],
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
@@ -170,7 +170,7 @@ class OptimalControlProgram:
         """
         Parameters
         ----------
-        biorbd_model: Union[str, biorbd.Model, list, tuple, Model]
+        biorbd_model: Union[str, BiorbdModel, list, tuple, Model]
             The biorbd model. If biorbd_model is an str, a new model is loaded. Otherwise, the references are used
         dynamics: Union[Dynamics, DynamicsList]
             The dynamics of the phases
@@ -219,21 +219,21 @@ class OptimalControlProgram:
         """
 
         if isinstance(biorbd_model, str):
-            biorbd_model = [biorbd.Model(biorbd_model)]
-        elif isinstance(biorbd_model, (biorbd.biorbd.Model, BiorbdModel, Model)):
+            biorbd_model = [BiorbdModel(biorbd_model)]
+        elif isinstance(biorbd_model, (BiorbdModel, Model)):
             biorbd_model = [biorbd_model]
         elif isinstance(biorbd_model, (list, tuple)):
-            biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
+            biorbd_model = [BiorbdModel(m) if isinstance(m, str) else m for m in biorbd_model]
         else:
             raise RuntimeError(
-                "biorbd_model must either be a string or an instance of biorbd.Model(), or a subclass object of Model"
+                "biorbd_model must either be a string or an instance of BiorbdModel(), or a subclass object of Model"
             )
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(biorbd_model)
 
         biorbd_model_path = []
         for m in biorbd_model:
-            if isinstance(m, (biorbd.Model, BiorbdModel)):
+            if isinstance(m, (BiorbdModel, BiorbdModel)):
                 biorbd_model_path.append(m)
             else:
                 biorbd_model_path.append(None)
@@ -545,11 +545,11 @@ class OptimalControlProgram:
         dof_names = []  # [[] for _ in range(len(self.nlp))]
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
-            for j in range(nlp.model.nbQ()):
+            for j in range(nlp.model.nb_q()):
                 from ..dynamics.configure_problem import _to_string
 
-                legend = _to_string(nlp.model.nameDof()[j])
-                # legend = nlp.model.nameDof()[j].to_string()
+                legend = _to_string(nlp.model.name_dof()[j])
+                # legend = nlp.model.name_dof()[j].to_string()
                 if legend in dof_names_all_phases:
                     current_dof_mapping += [dof_names_all_phases.index(legend)]
                 else:

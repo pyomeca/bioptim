@@ -8,6 +8,7 @@ from casadi import MX, vertcat
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     Dynamics,
     ConfigureProblem,
@@ -52,7 +53,7 @@ def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgr
 
     f_ext = biorbd.VecBiorbdSpatialVector()
     f_ext.append(biorbd.SpatialVector(force_vector))
-    qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
+    qddot = nlp.model.forward_dynamics(q, qdot, tau, f_ext).to_mx()
 
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
@@ -76,7 +77,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 
 def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
     # Model path
-    m = biorbd.Model(biorbd_model_path)
+    m = BiorbdModel(biorbd_model_path)
     m.setGravity(np.array((0, 0, 0)))
 
     # Add objective functions (high upward velocity at end point)
@@ -97,9 +98,9 @@ def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
     x_init = InitialGuess([0] * (m.nbQ() + m.nbQdot()))
 
     # Define control path constraint
-    u_bounds = Bounds([-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque())
+    u_bounds = Bounds([-100] * m.nb_generalized_torque(), [0] * m.nb_generalized_torque())
 
-    u_init = InitialGuess([0] * m.nbGeneralizedTorque())
+    u_init = InitialGuess([0] * m.nb_generalized_torque())
     return OptimalControlProgram(
         m,
         dynamics,

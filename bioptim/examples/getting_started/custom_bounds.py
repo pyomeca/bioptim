@@ -18,6 +18,7 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     Dynamics,
@@ -154,10 +155,10 @@ def prepare_ocp(
     """
 
     # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    biorbd_model = BiorbdModel(biorbd_model_path)
+    nq = biorbd_model.nb_q()
+    nqdot = biorbd_model.nb_qdot()
+    ntau = biorbd_model.nb_generalized_torque()
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions

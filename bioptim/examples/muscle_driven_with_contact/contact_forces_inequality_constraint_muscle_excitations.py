@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     ConstraintList,
@@ -27,7 +28,7 @@ from bioptim import (
 
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4()):
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
     dof_mapping = BiMappingList()
@@ -59,7 +60,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     )
 
     # Path constraint
-    n_q = biorbd_model.nbQ()
+    n_q = biorbd_model.nb_q()
     n_qdot = n_q
     n_mus = biorbd_model.nbMuscleTotal()
     pose_at_first_node = [0, 0, -0.75, 0.75]
@@ -111,7 +112,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     nlp = ocp.nlp[0]
-    nlp.model = biorbd.Model(biorbd_model_path)
+    nlp.model = BiorbdModel(biorbd_model_path)
 
     q = sol.states["q"]
     qdot = sol.states["qdot"]
@@ -123,7 +124,7 @@ def main():
     u = np.concatenate((tau, excitations))
     contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))
 
-    names_contact_forces = ocp.nlp[0].model.contactNames()
+    names_contact_forces = ocp.nlp[0].model.contact_names()
     for i, elt in enumerate(contact_forces):
         plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i].to_string()}")
     plt.legend()

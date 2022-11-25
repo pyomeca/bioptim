@@ -292,6 +292,18 @@ class Model(ABC):
         """Get the markers of the model"""
 
     @abstractmethod
+    def nb_markers(self):
+        """Get the number of markers of the model"""
+
+    @abstractmethod
+    def marker_index(self, name):
+        """Get the index of a marker"""
+
+    @abstractmethod
+    def marker(self, i=None):
+        """Get the marker index i of the model as function of coordinates"""
+
+    @abstractmethod
     def nb_rigid_contacts(self):
         """Get the number of rigid contacts"""
 
@@ -522,6 +534,18 @@ class BiorbdModel(Model):
 
     def markers(self, Q, updateKin=True):
         return self.model.markers(Q, updateKin)
+
+    def nb_markers(self):
+        return self.model.nbMarkers()
+
+    def marker_index(self, name):
+        return biorbd.marker_index(self.model, name)
+
+    def marker(self, i=None):
+        if i is None:
+            return self.model.marker
+        else:
+            return self.model.marker(i)
 
     def nb_rigid_contacts(self):
         return self.model.nbRigidContacts()

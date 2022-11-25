@@ -3,6 +3,7 @@ import numpy as np
 import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     DynamicsList,
@@ -23,8 +24,8 @@ from .utils import TestUtils
 
 def test_double_update_bounds_and_init():
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
-    nq = biorbd_model.nbQ()
+    biorbd_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+    nq = biorbd_model.nb_q()
     ns = 10
 
     dynamics = DynamicsList()
@@ -72,13 +73,13 @@ def test_update_bounds_and_init_with_param():
     def my_parameter_function(biorbd_model, value, extra_value):
         new_gravity = MX.zeros(3, 1)
         new_gravity[2] = value + extra_value
-        biorbd_model.setGravity(new_gravity)
+        biorbd_model.set_gravity(new_gravity)
 
     def my_target_function(ocp, value, target_value):
         return value + target_value
 
-    biorbd_model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod")
-    nq = biorbd_model.nbQ()
+    biorbd_model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod")
+    nq = biorbd_model.nb_q()
     ns = 10
     g_min, g_max, g_init = -10, -6, -8
 
@@ -123,7 +124,7 @@ def test_add_wrong_param():
     g_min, g_max, g_init = -10, -6, -8
 
     def my_parameter_function(biorbd_model, value, extra_value):
-        biorbd_model.setGravity(biorbd.Vector3d(0, 0, value + extra_value))
+        biorbd_model.set_gravity(biorbd.Vector3d(0, 0, value + extra_value))
 
     def my_target_function(ocp, value, target_value):
         return value + target_value
@@ -200,10 +201,10 @@ def test_add_wrong_param():
 )
 def test_update_noised_init_rk4(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = biorbd_model.nb_q()
+    nqdot = biorbd_model.nb_qdot()
+    ntau = biorbd_model.nb_generalized_torque()
     ns = 3
     phase_time = 1.0
 
@@ -494,10 +495,10 @@ def test_update_noised_init_rk4(interpolation):
 )
 def test_update_noised_init_collocation(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = biorbd_model.nb_q()
+    nqdot = biorbd_model.nb_qdot()
+    ntau = biorbd_model.nb_generalized_torque()
     ns = 3
     phase_time = 1.0
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
@@ -929,10 +930,10 @@ def test_update_noised_init_collocation(interpolation):
 )
 def test_update_noised_initial_guess_rk4(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = biorbd_model.nb_q()
+    nqdot = biorbd_model.nb_qdot()
+    ntau = biorbd_model.nb_generalized_torque()
     ns = 3
     phase_time = 1.0
 
@@ -1213,10 +1214,10 @@ def test_update_noised_initial_guess_rk4(interpolation):
 @pytest.mark.parametrize("n_extra", [0, 1])
 def test_update_noised_initial_guess_rk4(n_extra):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = biorbd_model.nb_q()
+    nqdot = biorbd_model.nb_qdot()
+    ntau = biorbd_model.nb_generalized_torque()
     ns = 3
     phase_time = 1.0
 
@@ -1337,10 +1338,10 @@ def test_update_noised_initial_guess_rk4(n_extra):
 )
 def test_update_noised_initial_guess_collocation(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = biorbd_model.nb_q()
+    nqdot = biorbd_model.nb_qdot()
+    ntau = biorbd_model.nb_generalized_torque()
     ns = 3
     phase_time = 1.0
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
@@ -1772,10 +1773,10 @@ def test_update_noised_initial_guess_collocation(interpolation):
 )
 def test_update_noised_initial_guess_list(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = biorbd_model.nb_q()
+    nqdot = biorbd_model.nb_qdot()
+    ntau = biorbd_model.nb_generalized_torque()
     ns = 3
     phase_time = 1.0
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)

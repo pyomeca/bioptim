@@ -6,6 +6,7 @@ from sys import platform
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Solver,
     MovingHorizonEstimator,
     Dynamics,
@@ -30,8 +31,8 @@ def test_mhe(solver):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cart_pendulum.bioMod")
-    nq = biorbd_model.nbQ()
+    biorbd_model = BiorbdModel(bioptim_folder + "/models/cart_pendulum.bioMod")
+    nq = biorbd_model.nb_q()
     torque_max = 5  # Give a bit of slack on the max torque
 
     n_cycles = 5 if solver.type == SolverType.ACADOS else 1
@@ -55,7 +56,7 @@ def test_mhe(solver):
         mhe.update_objectives_target(target=target_func(t), list_index=0)
         return t < n_frame_by_cycle * n_cycles - window_len - 1
 
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cart_pendulum.bioMod")
+    biorbd_model = BiorbdModel(bioptim_folder + "/models/cart_pendulum.bioMod")
     sol = ocp_module.prepare_mhe(
         biorbd_model=biorbd_model,
         window_len=window_len,
@@ -77,10 +78,10 @@ def test_mhe(solver):
 
 def test_mhe_redim_xbounds_and_init():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
+    biorbd_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
-    nq = biorbd_model.nbQ()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    nq = biorbd_model.nb_q()
+    ntau = biorbd_model.nb_generalized_torque()
 
     n_cycles = 3
     window_len = 5
@@ -110,9 +111,9 @@ def test_mhe_redim_xbounds_and_init():
 
 def test_mhe_redim_xbounds_not_implemented():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
-    nq = biorbd_model.nbQ()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    biorbd_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
+    nq = biorbd_model.nb_q()
+    ntau = biorbd_model.nb_generalized_torque()
 
     n_cycles = 3
     window_len = 5

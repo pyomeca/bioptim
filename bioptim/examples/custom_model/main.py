@@ -67,12 +67,12 @@ def prepare_ocp(
     )
 
     # Initial guess
-    n_q = model.nbQ()
-    n_qdot = model.nbQdot()
+    n_q = model.nb_q()
+    n_qdot = model.nb_qdot()
     x_init = InitialGuess([20] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = model.nbGeneralizedTorque()
+    n_tau = model.nb_generalized_torque()
     tau_min, tau_max, tau_init = -20, 20, 10
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
 

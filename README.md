@@ -231,6 +231,7 @@ We won't spend time explaining the import, since every one of them will be expla
 ```python
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
@@ -245,9 +246,9 @@ from bioptim import (
 ## Building the ocp
 First of all, let's load a bioMod file using `biorbd`:
 ```python
-biorbd_model = biorbd.Model("pendulum.bioMod")
+biorbd_model = BiorbdModel("pendulum.bioMod")
 ```
-It is convenient since it will provide interesting functions such as the number of degrees of freedom (`biorbd_model.nbQ()`). 
+It is convenient since it will provide interesting functions such as the number of degrees of freedom (`biorbd_model.nb_q()`).
 Please note that a copy of `pendulum.bioMod` is available at the end of the *Getting started* section.
 In brief, the pendulum consists of two degrees of freedom (sideways movement and rotation) with the center of mass near the head.
 
@@ -406,6 +407,7 @@ You will find that the file is a bit different from the `example/getting_started
 ```python
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
@@ -416,7 +418,7 @@ from bioptim import (
     Objective,
 )
 
-biorbd_model = biorbd.Model("pendulum.bioMod")
+biorbd_model = BiorbdModel("pendulum.bioMod")
 dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 x_bounds = QAndQDotBounds(biorbd_model)
 x_bounds[:, [0, -1]] = 0
@@ -525,7 +527,7 @@ The full signature of the `OptimalControlProgram` can be scary at first, but sho
 Here it is:
 ```python
 OptimalControlProgram(
-    biorbd_model: [str, biorbd.Model, list],
+    biorbd_model: [str, BiorbdModel, list],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
@@ -580,7 +582,7 @@ SX will tend to solve much faster than MX graphs, however they can necessitate a
 Please note that a common ocp will usually define only these parameters:
 ```python
 ocp = OptimalControlProgram(
-    biorbd_model: [str, biorbd.Model, list],
+    biorbd_model: [str, BiorbdModel, list],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
@@ -1275,7 +1277,7 @@ ParameterList.add(parameter_name: str, function: Callable, initial_guess: Initia
 The `parameter_name` is the name of the parameter. 
 This is how it will be referred to in the output data as well.
 The `function` is the function that modifies the biorbd model, it will be called just prior to applying the dynamics
-The signature of the custom function is: `custom_function(biorbd.Model, MX, **extra_parameters)`, where biorbd.Model is the model to apply the parameter to, the MX is the value the parameter will take, and the `**extra_parameters` are those sent to the add() method.
+The signature of the custom function is: `custom_function(BiorbdModel, MX, **extra_parameters)`, where BiorbdModel is the model to apply the parameter to, the MX is the value the parameter will take, and the `**extra_parameters` are those sent to the add() method.
 This function is expected to modify the biorbd_model, and not return anything.
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom parameters should be at least familiar with this type beforehand.

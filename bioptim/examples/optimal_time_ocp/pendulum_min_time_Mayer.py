@@ -10,6 +10,7 @@ the values, while the latter is the most common way to define optimal time
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -59,11 +60,11 @@ def prepare_ocp(
     """
 
     # --- Options --- #
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -100, 100, 0
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_q = biorbd_model.nb_q()
+    n_qdot = biorbd_model.nb_qdot()
+    n_tau = biorbd_model.nb_generalized_torque()
 
     # Add objective functions
     objective_functions = ObjectiveList()

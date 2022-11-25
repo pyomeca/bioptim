@@ -217,7 +217,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
     # Define the problem
     model_path = bioptim_folder + "/models/pendulum.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    biorbd_model = BiorbdModel(model_path)
 
     final_time = 2
     n_shooting = 30
@@ -299,7 +299,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type):
 
     # Define the problem
     model_path = bioptim_folder + "/models/pendulum.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    biorbd_model = BiorbdModel(model_path)
 
     final_time = 2
     n_shooting = 30

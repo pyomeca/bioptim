@@ -14,6 +14,7 @@ import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, horzcat, DM
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -62,7 +63,7 @@ def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable, n_
 
 
 def prepare_ocp(
-    biorbd_model: biorbd.Model,
+    biorbd_model: BiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -74,7 +75,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    biorbd_model: biorbd.Model
+    biorbd_model: BiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -114,13 +115,13 @@ def prepare_ocp(
     x_bounds[0][:, 0] = 0
 
     # Initial guess
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
+    n_q = biorbd_model.nb_q()
+    n_qdot = biorbd_model.nb_qdot()
     x_init = InitialGuessList()
     x_init.add([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = biorbd_model.nb_generalized_torque()
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
@@ -151,7 +152,7 @@ def main():
     """
 
     biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/models/pendulum.bioMod"
-    biorbd_model = biorbd.Model(biorbd_path)
+    biorbd_model = BiorbdModel(biorbd_path)
     final_time = 1
     n_shooting = 20
 
@@ -160,7 +161,7 @@ def main():
     )
     sol = ocp_to_track.solve()
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    n_q = biorbd_model.nbQ()
+    n_q = biorbd_model.nb_q()
     n_marker = biorbd_model.nbMarkers()
     x = np.concatenate((q, qdot))
 

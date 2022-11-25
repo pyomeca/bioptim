@@ -6,6 +6,7 @@ to show how one can use the tracking function to track a marker with a body segm
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     Axis,
     OptimalControlProgram,
@@ -57,7 +58,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -90,7 +91,7 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init.add([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()))
     if initialize_near_solution:
         for i in range(2):
             x_init[0].init[i] = 1.5
@@ -102,10 +103,10 @@ def prepare_ocp(
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+    u_bounds.add([tau_min] * biorbd_model.nb_generalized_torque(), [tau_max] * biorbd_model.nb_generalized_torque())
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model.nb_generalized_torque())
 
     # ------------- #
 

@@ -6,6 +6,7 @@ It is designed to show how one can define a multi-phase ocp problem with free ti
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Solver,
     OptimalControlProgram,
     DynamicsList,
@@ -60,7 +61,7 @@ def prepare_ocp(
         raise RuntimeError("Number of phases must be 1 to 3")
 
     # Model path
-    biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
+    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -115,27 +116,27 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
     if n_phases == 3:
-        x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-        x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+        x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+        x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds.add([tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque())
     if n_phases == 3:
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
+            [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
         )
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
+            [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
         )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
     if n_phases == 3:
-        u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-        u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+        u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+        u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
 
     # ------------- #
 

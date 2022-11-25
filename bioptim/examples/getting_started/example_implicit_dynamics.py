@@ -4,13 +4,14 @@ while requiring the minimum of generalized forces. The solver is only allowed to
 
 This simple example is a good place to start investigating explicit and implicit dynamics. There are extra controls in
 implicit dynamics which are joint acceleration qddot thus, u=[tau, qddot]^T. Also a dynamic constraints is enforced at
-each shooting nodes such that InverseDynamics(q,qdot,qddot) - tau = 0.
+each shooting nodes such that inverse_dynamics(q,qdot,qddot) - tau = 0.
 
 Finally, once it finished optimizing, it animates the model using the optimal solution.
 """
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
@@ -63,7 +64,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -87,10 +88,10 @@ def prepare_ocp(
     x_bounds[0][1, -1] = 3.14
 
     # Initial guess
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
-    n_qddot = biorbd_model.nbQddot()
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_q = biorbd_model.nb_q()
+    n_qdot = biorbd_model.nb_qdot()
+    n_qddot = biorbd_model.nb_qddot()
+    n_tau = biorbd_model.nb_generalized_torque()
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint

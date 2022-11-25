@@ -53,7 +53,7 @@ def test_plot_merged_graphs():
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    biorbd_model = BiorbdModel(model_path)
     final_time = 0.1
     n_shooting = 5
 
@@ -61,14 +61,14 @@ def test_plot_merged_graphs():
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(biorbd_model, final_time, n_shooting)
 
-    biorbd_model = biorbd.Model(model_path)  # To prevent from free variable, the model must be reloaded
+    biorbd_model = BiorbdModel(model_path)  # To prevent from free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
         biorbd_model,
         final_time,
         n_shooting,
         markers_ref,
         muscle_excitations_ref,
-        x_ref[: biorbd_model.nbQ(), :].T,
+        x_ref[: biorbd_model.nb_q(), :].T,
         ode_solver=OdeSolver.RK4(),
         use_residual_torque=True,
         kin_data_to_track="markers",
