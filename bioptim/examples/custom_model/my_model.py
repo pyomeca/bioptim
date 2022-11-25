@@ -1,66 +1,28 @@
 """
-This script doesn't use biorbd
-This an example of how to use bioptim to solve a simple pendulum problem
+This script implements a custom model to work with bioptim. Bioptim has a deep connection with biorbd,
+but it is possible to use bioptim without biorbd. This is an example of how to use bioptim with a custom model.
 """
 import numpy as np
-from casadi import sin, MX, vertcat
+from casadi import sin, MX
 
 from bioptim import (
-    OptimalControlProgram,
-    DynamicsFcn,
-    Dynamics,
-    Bounds,
-    InterpolationType,
-    InitialGuess,
-    ObjectiveFcn,
-    Objective,
-    OdeSolver,
-    CostType,
-    Solver,
-    BiorbdModel,
     Model,
-    NonLinearProgram,
-    ConfigureProblem,
-    DynamicsList,
-    DynamicsEvaluation,
 )
 
 
 class MyModel(Model):
-    """This is a custom model that inherits from bioptim.Model"""
+    """
+    This is a custom model that inherits from bioptim.Model
+    As Model is an abstract class, we need to implement all the following methods,
+    otherwise it will raise an error
+    """
 
     def __init__(self):
         self.com = MX(np.array([-0.0005, 0.0688, -0.9542]))
-
-    def DeepCopy(self, *args):
-        raise NotImplementedError("DeepCopy is not implemented")
-
-    def AddSegment(self, *args):
-        raise NotImplementedError("AddSegment is not implemented")
+        self.inertia = MX(0.0391)
 
     def getGravity(self):
         raise -9.81
-
-    def setGravity(self, newGravity):
-        raise NotImplementedError("setGravity is not implemented")
-
-    def getBodyBiorbdId(self, segmentName):
-        raise NotImplementedError("getBodyBiorbdId is not implemented")
-
-    def getBodyRbdlId(self, segmentName):
-        raise NotImplementedError("getBodyRbdlId is not implemented")
-
-    def getBodyRbdlIdToBiorbdId(self, idx):
-        raise NotImplementedError("getBodyRbdlIdToBiorbdId is not implemented")
-
-    def getBodyBiorbdIdToRbdlId(self, idx):
-        raise NotImplementedError("getBodyBiorbdIdToRbdlId is not implemented")
-
-    def getDofSubTrees(self):
-        raise NotImplementedError("getDofSubTrees is not implemented")
-
-    def getDofIndex(self, SegmentName, dofName):
-        raise NotImplementedError("getDofIndex is not implemented")
 
     def nbGeneralizedTorque(self):
         return 1
@@ -83,6 +45,63 @@ class MyModel(Model):
     def nbRoot(self):
         return 0
 
+    def mass(self):
+        return 1
+
+    def massMatrix(self, Q, updateKin=True):
+        return self.mass() * self.com[2] ** 2
+
+    def nameDof(self):
+        return ["rotx"]
+
+    def nbRigidContacts(self):
+        return 0
+
+    def path(self):
+        return None
+
+    def ForwardDynamics(self, q, qdot, tau, fext=None, f_contacts=None):
+        d = 0  # damping
+        L = self.com[2]
+        I  = self.inertia
+        m = self.mass()
+        g = 9.81
+        return 1/(I + m * L ** 2) \
+               * (- qdot[0] * d - g * m * L * sin(q[0]) + tau[0])
+
+    def InverseDynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None):
+        return self.mass() * self.com[2] ** 2 * qddot[0] + self.mass() * -9.81 * self.com[2] * sin(q[0])
+
+    def computeQdot(self, Q, QDot, k_stab=1):
+        raise NotImplementedError("computeQdot is not implemented")
+
+    def DeepCopy(self, *args):
+        raise NotImplementedError("DeepCopy is not implemented")
+
+    def AddSegment(self, *args):
+        raise NotImplementedError("AddSegment is not implemented")
+
+    def setGravity(self, newGravity):
+        raise NotImplementedError("setGravity is not implemented")
+
+    def getBodyBiorbdId(self, segmentName):
+        raise NotImplementedError("getBodyBiorbdId is not implemented")
+
+    def getBodyRbdlId(self, segmentName):
+        raise NotImplementedError("getBodyRbdlId is not implemented")
+
+    def getBodyRbdlIdToBiorbdId(self, idx):
+        raise NotImplementedError("getBodyRbdlIdToBiorbdId is not implemented")
+
+    def getBodyBiorbdIdToRbdlId(self, idx):
+        raise NotImplementedError("getBodyBiorbdIdToRbdlId is not implemented")
+
+    def getDofSubTrees(self):
+        raise NotImplementedError("getDofSubTrees is not implemented")
+
+    def getDofIndex(self, SegmentName, dofName):
+        raise NotImplementedError("getDofIndex is not implemented")
+
     def updateSegmentCharacteristics(self, idx, characteristics):
         raise NotImplementedError("updateSegmentCharacteristics is not implemented")
 
@@ -90,19 +109,19 @@ class MyModel(Model):
         raise NotImplementedError("segment is not implemented")
 
     def segments(self, i):
-        raise NotImplementedError("updateSegmentCharacteristics is not implemented")
+        raise NotImplementedError("segments is not implemented")
 
     def dispatchedForce(self, *args):
-        raise NotImplementedError("updateSegmentCharacteristics is not implemented")
+        raise NotImplementedError("dispatchedForce is not implemented")
 
     def UpdateKinematicsCustom(self, Q=None, Qdot=None, Qddot=None):
-        raise NotImplementedError("updateSegmentCharacteristics is not implemented")
+        raise NotImplementedError("UpdateKinematicsCustom is not implemented")
 
     def allGlobalJCS(self, *args):
-        raise NotImplementedError("updateSegmentCharacteristics is not implemented")
+        raise NotImplementedError("allGlobalJCS is not implemented")
 
     def globalJCS(self, *args):
-        raise NotImplementedError("updateSegmentCharacteristics is not implemented")
+        raise NotImplementedError("globalJCS is not implemented")
 
     def localJCS(self, *args):
         raise NotImplementedError("localJCS is not implemented")
@@ -112,9 +131,6 @@ class MyModel(Model):
 
     def projectPointJacobian(self, *args):
         raise NotImplementedError("projectPointJacobian is not implemented")
-
-    def mass(self):
-        return 1
 
     def CoM(self, Q, updateKin=True):
         raise NotImplementedError("CoM is not implemented")
@@ -155,9 +171,6 @@ class MyModel(Model):
     def angularMomentum(self, Q, Qdot, updateKin=True):
         raise NotImplementedError("angularMomentum is not implemented")
 
-    def massMatrix(self, Q, updateKin=True):
-        return self.mass() * self.com[2] ** 2
-
     def massMatrixInverse(self, Q, updateKin=True):
         raise NotImplementedError("massMatrixInverse is not implemented")
 
@@ -176,9 +189,6 @@ class MyModel(Model):
     def JacobianSegmentRotMat(self, Q, segmentIdx, updateKin):
         raise NotImplementedError("JacobianSegmentRotMat is not implemented")
 
-    def computeQdot(self, Q, QDot, k_stab=1):
-        return QDot
-
     def segmentAngularVelocity(self, Q, Qdot, idx, updateKin=True):
         raise NotImplementedError("segmentAngularVelocity is not implemented")
 
@@ -187,9 +197,6 @@ class MyModel(Model):
 
     def CalcPotentialEnergy(self, Q, updateKin=True):
         raise NotImplementedError("CalcPotentialEnergy is not implemented")
-
-    def nameDof(self):
-        return ["rotx"]
 
     def contactNames(self):
         raise NotImplementedError("contactNames is not implemented")
@@ -209,14 +216,8 @@ class MyModel(Model):
     def ForwardDynamicsFreeFloatingBase(self, q, qdot, qddot_joints):
         raise NotImplementedError("ForwardDynamicsFreeFloatingBase is not implemented")
 
-    def ForwardDynamics(self, q, qdot, tau, fext=None, f_contacts=None):
-        return (tau - self.mass() * -9.81 * self.com[2] * sin(q)) / (self.mass() * self.com[2] ** 2)
-
     def ForwardDynamicsConstraintsDirect(self, *args):
         raise NotImplementedError("ForwardDynamicsConstraintsDirect is not implemented")
-
-    def InverseDynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None):
-        return self.mass() * self.com[2] ** 2 * qddot[0] + self.mass() * -9.81 * self.com[2] * sin(q[0])
 
     def NonLinearEffect(self, Q, QDot, f_ext=None, f_contacts=None):
         raise NotImplementedError("NonLinearEffect is not implemented")
@@ -248,164 +249,3 @@ class MyModel(Model):
     def markers(self, Q, updateKin=True):
         raise NotImplementedError("markers is not implemented")
 
-    def nbRigidContacts(self):
-        return 0
-
-    def path(self):
-        return self.model.path()
-
-
-def custom_dynamics(
-    states: MX,
-    controls: MX,
-    parameters: MX,
-    nlp: NonLinearProgram,
-) -> DynamicsEvaluation:
-    """
-    Parameters
-    ----------
-    states: Union[MX, SX]
-        The state of the system
-    controls: Union[MX, SX]
-        The controls of the system
-    parameters: Union[MX, SX]
-        The parameters acting on the system
-    nlp: NonLinearProgram
-        A reference to the phase
-    Returns
-    -------
-    The derivative of the states in the tuple[Union[MX, SX]] format
-    """
-
-    return DynamicsEvaluation(
-        dxdt=vertcat(states[0], nlp.model.ForwardDynamics(states[0], states[1], controls[0])), defects=None
-    )
-
-
-def custom_configure_my_dynamics(ocp: OptimalControlProgram, nlp: NonLinearProgram):
-    """
-    Tell the program which variables are states and controls.
-    The user is expected to use the ConfigureProblem.configure_xxx functions.
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    """
-
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, expand=True)
-
-
-def prepare_ocp(
-    model: Model,
-    final_time: float,
-    n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK4(n_integration_steps=1),
-    use_sx: bool = True,
-    n_threads: int = 1,
-) -> OptimalControlProgram:
-    """
-    The initialization of an ocp
-
-    Parameters
-    ----------
-    model: Model
-        The path to the biorbd model
-    final_time: float
-        The time in second required to perform the task
-    n_shooting: int
-        The number of shooting points to define int the direct multiple shooting program
-    ode_solver: OdeSolver = OdeSolver.RK4()
-        Which type of OdeSolver to use
-    use_sx: bool
-        If the SX variable should be used instead of MX (can be extensive on RAM)
-    n_threads: int
-        The number of threads to use in the paralleling (1 = no parallel computing)
-
-    Returns
-    -------
-    The OptimalControlProgram ready to be solved
-    """
-
-    # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
-
-    # Dynamics
-    # dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
-    # Declare the dynamics
-    dynamics = DynamicsList()
-    dynamics.add(custom_configure_my_dynamics, dynamic_function=custom_dynamics)
-
-    # Path constraint
-    x_bounds = Bounds(
-        min_bound=np.array([[0, -6.28, 3.14], [0, -20, 0]]),
-        max_bound=np.array([[0, 6.28, 3.14], [0, 20, 0]]),
-        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-    )
-    # x_bounds[:, [0, -1]] = 0
-    # x_bounds[0, -1] = 3.14
-    # x_bounds[0, 0] = 1
-    # x_bounds[0, -1] = 1
-
-    # Initial guess
-    n_q = model.nbQ()
-    n_qdot = model.nbQdot()
-    x_init = InitialGuess([20] * (n_q + n_qdot))
-
-    # Define control path constraint
-    n_tau = model.nbGeneralizedTorque()
-    tau_min, tau_max, tau_init = -100, 100, 20
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-
-    u_init = InitialGuess([tau_init] * n_tau)
-
-    return OptimalControlProgram(
-        model,
-        dynamics,
-        n_shooting,
-        final_time,
-        x_init=x_init,
-        u_init=u_init,
-        x_bounds=x_bounds,
-        u_bounds=u_bounds,
-        objective_functions=objective_functions,
-        ode_solver=ode_solver,
-        use_sx=use_sx,
-        n_threads=n_threads,
-    )
-
-
-def main():
-    """
-    If pendulum is run as a script, it will perform the optimization and animates it
-    """
-
-    # --- Prepare the ocp --- #
-    ocp = prepare_ocp(model=MyModel(), final_time=1, n_shooting=30)
-
-    # Custom plots
-    ocp.add_plot_penalty(CostType.ALL)
-
-    # --- Print ocp structure --- #
-    ocp.print(to_console=True, to_graph=False)
-
-    # --- Solve the ocp --- #
-    solver = Solver.IPOPT(show_online_optim=False)
-    solver.set_maximum_iterations(100)
-
-    sol = ocp.solve(solver=solver)
-    sol.graphs(show_bounds=True)
-
-    # --- Show the results in a bioviz animation --- #
-    sol.detailed_cost_values()
-    sol.print_cost()
-    # sol.animate(n_frames=100)
-
-
-if __name__ == "__main__":
-    main()
