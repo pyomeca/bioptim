@@ -209,7 +209,7 @@ def prepare_ocp_phase_transitions(
 
 def my_parameter_function(biorbd_model: BiorbdModel, value: MX, extra_value: Any):
     value[2] *= extra_value
-    biorbd_model.setGravity(value)
+    biorbd_model.set_gravity(value)
 
 
 def set_mass(biorbd_model: BiorbdModel, value: MX):

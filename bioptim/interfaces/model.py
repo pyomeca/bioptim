@@ -569,6 +569,12 @@ class BiorbdModel(Model):
     def marker(self, i=None):
         if i is None:
             return self.model.marker
+        # hard to interface with c++ code
+        # because sometimes it used as :
+        # BiorbdInterface.mx_to_cx(
+        #     f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx
+        # )
+        # it will change the way we call it by model.marker()
         else:
             return self.model.marker(i)
 

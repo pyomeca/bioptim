@@ -6,7 +6,7 @@ import pytest
 
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver
+from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver, BiorbdModel
 
 from .utils import TestUtils
 

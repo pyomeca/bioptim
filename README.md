@@ -1374,7 +1374,7 @@ Since this is an Enum, it is possible to use tab key on the keyboard to dynamica
 The states at the end of the phase_pre equals the states at the beginning of the phase_post
 
 #### IMPACT
-The impulse function of `biorbd`: `qdot_post = biorbd_model.ComputeConstraintImpulsesDirect, q_pre, qdot_pre)` is apply to compute the velocities of the joint post impact.
+The impulse function of `biorbd`: `qdot_post = biorbd_model.compute_constraint_impulses_direct, q_pre, qdot_pre)` is apply to compute the velocities of the joint post impact.
 These computed states at the end of the phase_pre equals the states at the beginning of the phase_post.
 
 If a bioMod with more contact points than the phase before is used, then the IMPACT transition phase should be used as well
