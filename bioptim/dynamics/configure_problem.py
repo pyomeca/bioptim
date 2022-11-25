@@ -628,7 +628,7 @@ class ConfigureProblem:
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
         for i_sc in range(nlp.model.nb_soft_contacts()):
-            soft_contact = nlp.model.softContact(i_sc)
+            soft_contact = nlp.model.soft_contact(i_sc)
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)
@@ -647,9 +647,9 @@ class ConfigureProblem:
             all_soft_contact_names = []
             all_soft_contact_names.extend(
                 [
-                    f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
+                    f"{nlp.model.soft_contact_name(i_sc).to_string()}_{name}"
                     for name in component_list
-                    if nlp.model.softContactName(i_sc).to_string() not in all_soft_contact_names
+                    if nlp.model.soft_contact_name(i_sc).to_string() not in all_soft_contact_names
                 ]
             )
 
@@ -657,14 +657,14 @@ class ConfigureProblem:
                 phase_mappings = nlp.plot_mapping["soft_contact_forces"]
             else:
                 soft_contact_names_in_phase = [
-                    f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
+                    f"{nlp.model.soft_contact_name(i_sc).to_string()}_{name}"
                     for name in component_list
-                    if nlp.model.softContactName(i_sc).to_string() not in all_soft_contact_names
+                    if nlp.model.soft_contact_name(i_sc).to_string() not in all_soft_contact_names
                 ]
                 phase_mappings = Mapping(
                     [i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase]
                 )
-            nlp.plot[f"soft_contact_forces_{nlp.model.softContactName(i_sc).to_string()}"] = CustomPlot(
+            nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_name(i_sc).to_string()}"] = CustomPlot(
                 lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
@@ -1155,9 +1155,9 @@ class ConfigureProblem:
         for ii in range(nlp.model.nb_soft_contacts()):
             name_soft_contact_forces.extend(
                 [
-                    f"{nlp.model.softContactName(ii).to_string()}_{name}"
+                    f"{nlp.model.soft_contact_name(ii).to_string()}_{name}"
                     for name in component_list
-                    if nlp.model.softContactName(ii).to_string() not in name_soft_contact_forces
+                    if nlp.model.soft_contact_name(ii).to_string() not in name_soft_contact_forces
                 ]
             )
 
