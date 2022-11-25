@@ -52,6 +52,10 @@ class Model(ABC):
         """Get the number of segment"""
 
     @abstractmethod
+    def segment_index(self, segmentName):
+        """Get the segment index"""
+
+    @abstractmethod
     def nb_quat(self):
         """Get the number of quaternion"""
 
@@ -354,6 +358,9 @@ class BiorbdModel(Model):
 
     def nb_segment(self):
         return self.model.nbSegment()
+
+    def segment_index(self, name):
+        return biorbd.segment_index(self.model, name)
 
     def nb_quat(self):
         return self.model.nbQuat()

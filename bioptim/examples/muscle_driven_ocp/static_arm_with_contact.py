@@ -81,12 +81,12 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -1, 1, 0
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nb_generalized_torque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
-        [tau_max] * biorbd_model.nb_generalized_torque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
+        [tau_min] * biorbd_model.nb_generalized_torque() + [muscle_min] * biorbd_model.nb_muscle_total(),
+        [tau_max] * biorbd_model.nb_generalized_torque() + [muscle_max] * biorbd_model.nb_muscle_total(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [muscle_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [muscle_init] * biorbd_model.nb_muscle_total())
     # ------------- #
 
     return OptimalControlProgram(

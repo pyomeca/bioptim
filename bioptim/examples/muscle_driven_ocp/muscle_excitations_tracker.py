@@ -61,7 +61,7 @@ def generate_data(
     n_qdot = biorbd_model.nb_qdot()
     n_qddot = biorbd_model.nb_qddot()
     n_tau = biorbd_model.nb_generalized_torque()
-    n_mus = biorbd_model.nbMuscleTotal()
+    n_mus = biorbd_model.nb_muscle_total()
     dt = final_time / n_shooting
 
     # Casadi related stuff

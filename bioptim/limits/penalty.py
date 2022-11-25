@@ -637,7 +637,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            marker_idx = biorbd.marker_index(nlp.model, marker) if isinstance(marker, str) else marker
+            marker_idx = nlp.model.marker_index(marker) if isinstance(marker, str) else marker
             segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
 
             # Get the marker in rt reference frame

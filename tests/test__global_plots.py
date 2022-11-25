@@ -9,7 +9,7 @@ import pytest
 from casadi import Function, MX
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, RigidBodyDynamics
+from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel
 from bioptim.limits.penalty import PenaltyOption
 
 import matplotlib

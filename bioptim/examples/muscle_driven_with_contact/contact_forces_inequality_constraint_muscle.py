@@ -76,12 +76,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * len(dof_mapping["tau"].to_first) + [activation_min] * biorbd_model.nbMuscleTotal(),
-        [tau_max] * len(dof_mapping["tau"].to_first) + [activation_max] * biorbd_model.nbMuscleTotal(),
+        [tau_min] * len(dof_mapping["tau"].to_first) + [activation_min] * biorbd_model.nb_muscle_total(),
+        [tau_max] * len(dof_mapping["tau"].to_first) + [activation_max] * biorbd_model.nb_muscle_total(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * len(dof_mapping["tau"].to_first) + [activation_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([tau_init] * len(dof_mapping["tau"].to_first) + [activation_init] * biorbd_model.nb_muscle_total())
     # ------------- #
 
     return OptimalControlProgram(
