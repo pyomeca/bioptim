@@ -79,7 +79,7 @@ class ConfigureProblem:
     """
 
     @staticmethod
-    def _get_kinematics_based_names(nlp, type: str) -> list[str]:
+    def _get_kinematics_based_names(nlp, var_str: str) -> list[str]:
         """
         To modify the names of the variables added to the plots if there is quaternions
 
@@ -87,7 +87,7 @@ class ConfigureProblem:
         ----------
         nlp: NonLinearProgram
             A reference to the phase
-        type: str
+        var_str: str
             A string that refers to the decision variable such as (q, qdot, qddot, tau, etc...)
 
         Returns
@@ -96,13 +96,11 @@ class ConfigureProblem:
             The list of str to display on figures
         """
 
-        if nlp.phase_mapping:
-            idx = nlp.phase_mapping.map_idx
-        else:
-            idx = range(nlp.model.nbQ())
+        idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nbQ())
 
         if nlp.model.nbQuat() == 0:
-            new_name = _to_string_list(nlp.model.nameDof())[idx[0]]
+            # new_name = _to_string_list(nlp.model.nameDof())[idx[0]]
+            new_name = [nlp.model.nameDof()[i].to_string() for i in idx]
         else:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
@@ -113,25 +111,25 @@ class ConfigureProblem:
                     new_name += [_to_string(nlp.model.nameDof()[i])]
                 else:
                     if _to_string(nlp.model.nameDof()[i])[-5:] != "QuatW":
-                        if type == "qdot":
+                        if var_str == "qdot":
                             new_name += [
                                 _to_string(nlp.model.nameDof()[i])[:-5]
                                 + "omega"
                                 + _to_string(nlp.model.nameDof()[i])[-1]
                             ]
-                        elif type == "qddot":
+                        elif var_str == "qddot":
                             new_name += [
                                 _to_string(nlp.model.nameDof()[i])[:-5]
                                 + "omegadot"
                                 + _to_string(nlp.model.nameDof()[i])[-1]
                             ]
-                        elif type == "qdddot":
+                        elif var_str == "qdddot":
                             new_name += [
                                 _to_string(nlp.model.nameDof()[i])[:-5]
                                 + "omegaddot"
                                 + _to_string(nlp.model.nameDof()[i])[-1]
                             ]
-                        elif type == "tau" or type == "taudot":
+                        elif var_str == "tau" or var_str == "taudot":
                             new_name += [_to_string(nlp.model.nameDof()[i])]
 
         return new_name
