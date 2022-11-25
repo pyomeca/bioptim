@@ -25,6 +25,7 @@ from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
+from ..interfaces.model import BiorbdModel
 
 
 class Solution:
@@ -1228,6 +1229,10 @@ class Solution:
 
         all_bioviz = []
         for idx_phase, data in enumerate(states):
+
+            if not isinstance(self.ocp.nlp[idx_phase].model, (biorbd.Model, BiorbdModel)):
+                raise NotImplementedError("Animation is only implemented for biorbd models")
+
             # Convert parameters to actual values
             nlp = self.ocp.nlp[idx_phase]
             for param in nlp.parameters:
