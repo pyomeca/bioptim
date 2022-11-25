@@ -18,17 +18,12 @@ from bioptim import (
     DynamicsList,
 )
 
-# import the custom model
-from .my_model import MyModel
-
-# import the custom dynamics and configuration
-from .custom_dynamics import custom_dynamics, custom_configure_my_dynamics
-
-
 def prepare_ocp(
     model: Model,
     final_time: float,
     n_shooting: int,
+    configure_dynamics: callable = None,
+    dynamics: callable = None,
     ode_solver: OdeSolver = OdeSolver.RK4(n_integration_steps=5),
 ) -> OptimalControlProgram:
     """
@@ -42,6 +37,10 @@ def prepare_ocp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
+    configure_dynamics: callable
+        The function to configure the dynamics
+    dynamics: callable
+        The function to define the dynamics
     ode_solver: OdeSolver = OdeSolver.RK4()
         Which type of OdeSolver to use
 
@@ -55,7 +54,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(custom_configure_my_dynamics, dynamic_function=custom_dynamics)
+    dynamics.add(configure_dynamics, dynamic_function=dynamics)
 
     # Path constraint
     # the pendulum is constrained to point down with zero velocity at the beginning
@@ -99,9 +98,19 @@ def main():
     """
     If main.py is run as a script, it will perform the optimization
     """
+    # import the custom model
+    from my_model import MyModel
+    # import the custom dynamics and configuration
+    from custom_dynamics import custom_dynamics, custom_configure_my_dynamics
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(model=MyModel(), final_time=1, n_shooting=30)
+    ocp = prepare_ocp(
+        model=MyModel(),
+        final_time=1,
+        n_shooting=30,
+        configure_dynamics=custom_configure_my_dynamics,
+        dynamics=custom_dynamics,
+    )
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)

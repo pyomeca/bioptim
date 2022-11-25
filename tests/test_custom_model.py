@@ -8,10 +8,17 @@ from bioptim import (
 def test_custom_model():
     from bioptim.examples.custom_model import main as ocp_module
     from bioptim.examples.custom_model import my_model as model
+    from bioptim.examples.custom_model import custom_dynamics as dynamics
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(model=model.MyModel(), final_time=1, n_shooting=30)
+    ocp = ocp_module.prepare_ocp(
+        model=model.MyModel(),
+        final_time=1,
+        n_shooting=30,
+        configure_dynamics=dynamics.custom_configure_my_dynamics,
+        dynamics=dynamics.custom_dynamics,
+    )
 
     np.testing.assert_almost_equal(ocp.nlp[0].model.nbQ(), 1)
     np.testing.assert_almost_equal(ocp.nlp[0].model.nbQdot(), 1)
