@@ -31,7 +31,7 @@ class NonLinearProgram:
         The delta time of the current phase
     dynamics: list[ODE_SOLVER]
         All the dynamics for each of the node of the phase
-    dynamics_sym: DynamicsEvaluation
+    dynamics_evaluation: DynamicsEvaluation
         The dynamic MX or SX used during the current phase
     dynamics_func: Callable
         The dynamic function used during the current phase dxdt = f(x,u,p)
