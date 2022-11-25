@@ -41,6 +41,8 @@ def prepare_ocp(
         The number of shooting points for each phase
     phase_time: tuple
         The time of each phase
+    control_type: ControlType
+        The type of control to use
 
     Returns
     -------
