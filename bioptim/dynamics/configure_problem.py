@@ -99,8 +99,7 @@ class ConfigureProblem:
         idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nbQ())
 
         if nlp.model.nbQuat() == 0:
-            # new_name = _to_string_list(nlp.model.nameDof())[idx[0]]
-            new_name = [nlp.model.nameDof()[i].to_string() for i in idx]
+            new_name = _to_string_list(nlp.model.nameDof())[idx[0]]
         else:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
