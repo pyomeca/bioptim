@@ -1,4 +1,4 @@
-from typing import Union, Callable, Any
+from typing import Union, Callable, Any, Type
 import os
 import sys
 import pickle
@@ -233,8 +233,8 @@ class OptimalControlProgram:
 
         biorbd_model_path = []
         for m in biorbd_model:
-            if isinstance(m, (BiorbdModel, BiorbdModel)):
-                biorbd_model_path.append(m)
+            if isinstance(m, BiorbdModel):
+                biorbd_model_path.append(m.path().relativePath().to_string())
             else:
                 biorbd_model_path.append(None)
 
