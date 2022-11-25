@@ -241,10 +241,10 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             marker_0 = BiorbdInterface.mx_to_cx(
-                f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx
+                f"markers_{first_marker}", nlp.model.marker(), nlp.states["q"], first_marker_idx
             )
             marker_1 = BiorbdInterface.mx_to_cx(
-                f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker_idx
+                f"markers_{second_marker}", nlp.model.marker(), nlp.states["q"], second_marker_idx
             )
             return marker_1 - marker_0
 
@@ -638,7 +638,7 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             marker_idx = nlp.model.marker_index(marker) if isinstance(marker, str) else marker
-            segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
+            segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             # Get the marker in rt reference frame
             jcs = nlp.model.global_jcs(nlp.states["q"].mx, segment_idx)
