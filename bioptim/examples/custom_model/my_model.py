@@ -18,20 +18,18 @@ class MyModel(Model):
     """
 
     def __init__(self):
+        # custom values for the example
         self.com = MX(np.array([-0.0005, 0.0688, -0.9542]))
         self.inertia = MX(0.0391)
 
-    def getGravity(self):
-        raise -9.81
+    # ---- absolutely needed to be implemented ---- #
+    def nbQuat(self):
+        """Number of quaternion in the model"""
+        return 0
 
+    # ---- Needed for the example ---- #
     def nbGeneralizedTorque(self):
         return 1
-
-    def nbSegment(self):
-        return 1
-
-    def nbQuat(self):
-        return 0
 
     def nbQ(self):
         return 1
@@ -42,25 +40,18 @@ class MyModel(Model):
     def nbQddot(self):
         return 1
 
-    def nbRoot(self):
-        return 0
-
     def mass(self):
         return 1
-
-    def massMatrix(self, Q, updateKin=True):
-        return self.mass() * self.com[2] ** 2
 
     def nameDof(self):
         return ["rotx"]
 
-    def nbRigidContacts(self):
-        return 0
-
     def path(self):
+        # note: can we do something with this?
         return None
 
     def ForwardDynamics(self, q, qdot, tau, fext=None, f_contacts=None):
+        # This is where you can implement your own forward dynamics with casadi it your are dealing with mechanical systems
         d = 0  # damping
         L = self.com[2]
         I = self.inertia
@@ -68,8 +59,27 @@ class MyModel(Model):
         g = 9.81
         return 1 / (I + m * L**2) * (-qdot[0] * d - g * m * L * sin(q[0]) + tau[0])
 
+    # def system_dynamics(self, *args):
+    # This is where you can implement your system dynamics with casadi if you are dealing with other systems
+
+    # ---- The rest can raise NotImplementedError ---- #
+    def getGravity(self):
+        raise NotImplementedError("getGravity is not implemented")
+
+    def nbSegment(self):
+        raise NotImplementedError("nbSegment is not implemented")
+
+    def nbRoot(self):
+        raise NotImplementedError("nbRoot is not implemented")
+
+    def nbRigidContacts(self):
+        raise NotImplementedError("nbRigidContacts is not implemented")
+
+    def massMatrix(self, Q, updateKin=True):
+        raise NotImplementedError("massMatrix is not implemented")
+
     def InverseDynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None):
-        return self.mass() * self.com[2] ** 2 * qddot[0] + self.mass() * -9.81 * self.com[2] * sin(q[0])
+        raise NotImplementedError("InverseDynamics is not implemented")
 
     def computeQdot(self, Q, QDot, k_stab=1):
         raise NotImplementedError("computeQdot is not implemented")
