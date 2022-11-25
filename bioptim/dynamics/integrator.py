@@ -245,7 +245,8 @@ class RK(Integrator):
         p = params
         x[:, 0] = states
 
-        quat_idx = self.get_quaternion_idx(self.model)
+        if self.model.nb_quat() > 0:
+            quat_idx = self.get_quaternion_idx(self.model)
 
         for i in range(1, self.n_step + 1):
             t_norm_init = (i - 1) / self.n_step  # normalized time
