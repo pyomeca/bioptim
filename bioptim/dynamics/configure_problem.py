@@ -103,31 +103,16 @@ class ConfigureProblem:
         else:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
-                if (
-                    nlp.model.name_dof()[i][-4:-1] == "Rot"
-                    or nlp.model.name_dof()[i][-6:-1] == "Trans"
-                ):
+                if nlp.model.name_dof()[i][-4:-1] == "Rot" or nlp.model.name_dof()[i][-6:-1] == "Trans":
                     new_name += [nlp.model.name_dof()[i]]
                 else:
                     if nlp.model.name_dof()[i][-5:] != "QuatW":
                         if var_str == "qdot":
-                            new_name += [
-                                nlp.model.name_dof()[i][:-5]
-                                + "omega"
-                                + nlp.model.name_dof()[i][-1]
-                            ]
+                            new_name += [nlp.model.name_dof()[i][:-5] + "omega" + nlp.model.name_dof()[i][-1]]
                         elif var_str == "qddot":
-                            new_name += [
-                                nlp.model.name_dof()[i][:-5]
-                                + "omegadot"
-                                + nlp.model.name_dof()[i][-1]
-                            ]
+                            new_name += [nlp.model.name_dof()[i][:-5] + "omegadot" + nlp.model.name_dof()[i][-1]]
                         elif var_str == "qdddot":
-                            new_name += [
-                                nlp.model.name_dof()[i][:-5]
-                                + "omegaddot"
-                                + nlp.model.name_dof()[i][-1]
-                            ]
+                            new_name += [nlp.model.name_dof()[i][:-5] + "omegaddot" + nlp.model.name_dof()[i][-1]]
                         elif var_str == "tau" or var_str == "taudot":
                             new_name += [nlp.model.name_dof()[i]]
 
@@ -593,9 +578,7 @@ class ConfigureProblem:
 
         all_contact_names = []
         for elt in ocp.nlp:
-            all_contact_names.extend(
-                [name for name in elt.model.contact_names() if name not in all_contact_names]
-            )
+            all_contact_names.extend([name for name in elt.model.contact_names() if name not in all_contact_names])
 
         if "contact_forces" in nlp.plot_mapping:
             phase_mappings = nlp.plot_mapping["contact_forces"]
