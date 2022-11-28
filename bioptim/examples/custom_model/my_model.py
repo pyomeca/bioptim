@@ -201,10 +201,10 @@ class MyModel(Model):
     def segment_angular_velocity(self, Q, Qdot, idx, updateKin=True):
         raise NotImplementedError("segment_angular_velocity is not implemented")
 
-    def calc_kinetic_energy(self, Q, QDot, updateKin=True):
+    def kinetic_energy(self, Q, QDot, updateKin=True):
         raise NotImplementedError("calc_kinetic_energy is not implemented")
 
-    def calc_potential_energy(self, Q, updateKin=True):
+    def potential_energy(self, Q, updateKin=True):
         raise NotImplementedError("calc_potential_energy is not implemented")
 
     def contact_names(self):

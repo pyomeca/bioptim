@@ -213,11 +213,11 @@ class Model(ABC):
         """Get the body angular velocity of the model"""
 
     @abstractmethod
-    def calc_kinetic_energy(self, Q, QDot, updateKin=True):
+    def kinetic_energy(self, Q, QDot, updateKin=True):
         """Get the kinetic energy of the model"""
 
     @abstractmethod
-    def calc_potential_energy(self, Q, updateKin=True):
+    def potential_energy(self, Q, updateKin=True):
         """Get the potential energy of the model"""
 
     @abstractmethod
@@ -513,11 +513,11 @@ class BiorbdModel(Model):
     def segment_angular_velocity(self, Q, Qdot, idx, updateKin=True):
         return self.model.segmentAngularVelocity(Q, Qdot, idx, updateKin)
 
-    def calc_kinetic_energy(self, Q, QDot, updateKin=True):
-        return self.model.CalcKineticEnergy(Q, QDot, updateKin)
+    def kinetic_energy(self, Q, QDot, updateKin=True):
+        return self.model.KineticEnergy(Q, QDot, updateKin)
 
-    def calc_potential_energy(self, Q, updateKin=True):
-        return self.model.CalcPotentialEnergy(Q, updateKin)
+    def potential_energy(self, Q, updateKin=True):
+        return self.model.PotentialEnergy(Q, updateKin)
 
     def name_dof(self):
         return [s.to_string() for s in self.model.nameDof()]
