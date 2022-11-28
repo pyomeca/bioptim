@@ -75,13 +75,13 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
     if show_plots:
         q_plot = plt.plot(states[:nq, :].T)
         dq_plot = plt.plot(states[nq:, :].T, "--")
-        name_dof = [name.to_string() for name in biorbd_model.name_dof()]
+        name_dof = biorbd_model.name_dof()
         plt.legend(q_plot + dq_plot, name_dof + ["d" + name for name in name_dof])
         plt.title("Real position and velocity trajectories")
 
         plt.figure()
         marker_plot = plt.plot(markers[1, :, :].T, markers[2, :, :].T)
-        plt.legend(marker_plot, [i.to_string() for i in biorbd_model.marker_names()])
+        plt.legend(marker_plot, biorbd_model.marker_names())
         plt.gca().set_prop_cycle(None)
         plt.plot(markers_noised[1, :, :].T, markers_noised[2, :, :].T, "x")
         plt.title("2D plot of markers trajectories + noise")

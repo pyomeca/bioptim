@@ -1,5 +1,6 @@
 import biorbd_casadi as biorbd
 from abc import ABC, abstractmethod
+from typing import List
 
 
 class Model(ABC):
@@ -220,12 +221,12 @@ class Model(ABC):
         """Get the potential energy of the model"""
 
     @abstractmethod
-    def name_dof(self):
+    def name_dof(self) -> List[str]:
         """Get the name of the dof"""
 
     @abstractmethod
-    def contact_names(self):
-        """Get the contact names"""
+    def contact_names(self) -> List[str]:
+        """Get the name of the contacts"""
 
     @abstractmethod
     def nb_soft_contacts(self):
@@ -240,7 +241,7 @@ class Model(ABC):
         """Get the soft contact"""
 
     @abstractmethod
-    def muscle_names(self):
+    def muscle_names(self) -> List[str]:
         """Get the muscle names"""
 
     @abstractmethod
@@ -344,11 +345,11 @@ class Model(ABC):
         """Get the rototranslation matrix"""
 
     @abstractmethod
-    def marker_names(self):
+    def marker_names(self) -> List[str]:
         """Get the marker names"""
 
     @abstractmethod
-    def soft_contact_name(self, i):
+    def soft_contact_name(self, i) -> str:
         """Get the soft contact name"""
 
 
@@ -519,22 +520,22 @@ class BiorbdModel(Model):
         return self.model.CalcPotentialEnergy(Q, updateKin)
 
     def name_dof(self):
-        return self.model.nameDof()
+        return [s.to_string() for s in self.model.nameDof()]
 
     def contact_names(self):
-        return self.model.contactNames()
+        return [s.to_string() for s in self.model.contactNames()]
 
     def nb_soft_contacts(self):
         return self.model.nbSoftContacts()
 
     def soft_contact_names(self):
-        return self.model.softContactNames()
+        return [s.to_string() for s in self.model.softContactNames()]
 
     def soft_contact(self, *args):
         return self.model.softContact(*args)
 
     def muscle_names(self):
-        return self.model.muscleNames()
+        return [s.to_string() for s in self.model.muscleNames()]
 
     def nb_muscles(self):
         return self.model.nbMuscles()
@@ -638,10 +639,10 @@ class BiorbdModel(Model):
         return self.model.nbDof()
 
     def marker_names(self):
-        return self.model.markerNames()
+        return [s.to_string() for s in self.model.markerNames()]
 
     def soft_contact_name(self, i):
-        return self.model.softContactName(i)
+        return self.model.softContactName(i).to_string()
 
     def apply_rt(self, *args):
         return self.model.applyRT(*args)

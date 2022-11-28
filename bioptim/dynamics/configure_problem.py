@@ -99,37 +99,37 @@ class ConfigureProblem:
         idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nb_q())
 
         if nlp.model.nb_quat() == 0:
-            new_name = _to_string_list(nlp.model.name_dof())[idx[0]]
+            new_name = nlp.model.name_dof()[idx[0]]
         else:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
                 if (
-                    _to_string(nlp.model.name_dof()[i])[-4:-1] == "Rot"
-                    or _to_string(nlp.model.name_dof()[i])[-6:-1] == "Trans"
+                    nlp.model.name_dof()[i][-4:-1] == "Rot"
+                    or nlp.model.name_dof()[i][-6:-1] == "Trans"
                 ):
-                    new_name += [_to_string(nlp.model.name_dof()[i])]
+                    new_name += [nlp.model.name_dof()[i]]
                 else:
-                    if _to_string(nlp.model.name_dof()[i])[-5:] != "QuatW":
+                    if nlp.model.name_dof()[i][-5:] != "QuatW":
                         if var_str == "qdot":
                             new_name += [
-                                _to_string(nlp.model.name_dof()[i])[:-5]
+                                nlp.model.name_dof()[i][:-5]
                                 + "omega"
-                                + _to_string(nlp.model.name_dof()[i])[-1]
+                                + nlp.model.name_dof()[i][-1]
                             ]
                         elif var_str == "qddot":
                             new_name += [
-                                _to_string(nlp.model.name_dof()[i])[:-5]
+                                nlp.model.name_dof()[i][:-5]
                                 + "omegadot"
-                                + _to_string(nlp.model.name_dof()[i])[-1]
+                                + nlp.model.name_dof()[i][-1]
                             ]
                         elif var_str == "qdddot":
                             new_name += [
-                                _to_string(nlp.model.name_dof()[i])[:-5]
+                                nlp.model.name_dof()[i][:-5]
                                 + "omegaddot"
-                                + _to_string(nlp.model.name_dof()[i])[-1]
+                                + nlp.model.name_dof()[i][-1]
                             ]
                         elif var_str == "tau" or var_str == "taudot":
-                            new_name += [_to_string(nlp.model.name_dof()[i])]
+                            new_name += [nlp.model.name_dof()[i]]
 
         return new_name
 
@@ -594,13 +594,13 @@ class ConfigureProblem:
         all_contact_names = []
         for elt in ocp.nlp:
             all_contact_names.extend(
-                [name.to_string() for name in elt.model.contact_names() if name.to_string() not in all_contact_names]
+                [name for name in elt.model.contact_names() if name not in all_contact_names]
             )
 
         if "contact_forces" in nlp.plot_mapping:
             phase_mappings = nlp.plot_mapping["contact_forces"]
         else:
-            contact_names_in_phase = [name.to_string() for name in nlp.model.contact_names()]
+            contact_names_in_phase = [name for name in nlp.model.contact_names()]
             phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
 
         nlp.plot["contact_forces"] = CustomPlot(
@@ -647,9 +647,9 @@ class ConfigureProblem:
             all_soft_contact_names = []
             all_soft_contact_names.extend(
                 [
-                    f"{nlp.model.soft_contact_name(i_sc).to_string()}_{name}"
+                    f"{nlp.model.soft_contact_name(i_sc)}_{name}"
                     for name in component_list
-                    if nlp.model.soft_contact_name(i_sc).to_string() not in all_soft_contact_names
+                    if nlp.model.soft_contact_name(i_sc) not in all_soft_contact_names
                 ]
             )
 
@@ -657,14 +657,14 @@ class ConfigureProblem:
                 phase_mappings = nlp.plot_mapping["soft_contact_forces"]
             else:
                 soft_contact_names_in_phase = [
-                    f"{nlp.model.soft_contact_name(i_sc).to_string()}_{name}"
+                    f"{nlp.model.soft_contact_name(i_sc)}_{name}"
                     for name in component_list
-                    if nlp.model.soft_contact_name(i_sc).to_string() not in all_soft_contact_names
+                    if nlp.model.soft_contact_name(i_sc) not in all_soft_contact_names
                 ]
                 phase_mappings = Mapping(
                     [i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase]
                 )
-            nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_name(i_sc).to_string()}"] = CustomPlot(
+            nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_name(i_sc)}"] = CustomPlot(
                 lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
@@ -963,7 +963,7 @@ class ConfigureProblem:
         """
 
         name = "q"
-        name_q = [name if isinstance(name, str) else name.to_string() for name in nlp.model.name_dof()]
+        name_q = nlp.model.name_dof()
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name,
@@ -1133,7 +1133,7 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_contact_forces = [name.to_string() for name in nlp.model.contact_names()]
+        name_contact_forces = [name for name in nlp.model.contact_names()]
         ConfigureProblem.configure_new_variable("fext", name_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
@@ -1155,9 +1155,9 @@ class ConfigureProblem:
         for ii in range(nlp.model.nb_soft_contacts()):
             name_soft_contact_forces.extend(
                 [
-                    f"{nlp.model.soft_contact_name(ii).to_string()}_{name}"
+                    f"{nlp.model.soft_contact_name(ii)}_{name}"
                     for name in component_list
-                    if nlp.model.soft_contact_name(ii).to_string() not in name_soft_contact_forces
+                    if nlp.model.soft_contact_name(ii) not in name_soft_contact_forces
                 ]
             )
 
@@ -1180,7 +1180,7 @@ class ConfigureProblem:
             The list of fatigue parameters
         """
 
-        muscle_names = [names.to_string() for names in nlp.model.muscle_names()]
+        muscle_names = nlp.model.muscle_names()
         ConfigureProblem.configure_new_variable(
             "muscles",
             muscle_names,
@@ -1341,11 +1341,3 @@ class DynamicsList(UniquePerPhaseOptionList):
         Print the DynamicsList to the console
         """
         raise NotImplementedError("Printing of DynamicsList is not ready yet")
-
-
-def _to_string_list(string_list: list | tuple) -> list:
-    return [s if isinstance(s, str) else s.to_string() for s in string_list]
-
-
-def _to_string(string: str | Any) -> str:
-    return string if isinstance(string, str) else string.to_string()
