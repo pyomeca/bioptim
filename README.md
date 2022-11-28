@@ -527,7 +527,7 @@ The full signature of the `OptimalControlProgram` can be scary at first, but sho
 Here it is:
 ```python
 OptimalControlProgram(
-    biorbd_model: [str, BiorbdModel, list],
+    biorbd_model: [str, BiorbdModel, list, Model],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
@@ -552,7 +552,7 @@ OptimalControlProgram(
 )
 ```
 Of these, only the first 4 are mandatory.
-`biorbd_model` is the `biorbd` model to use. If the model is not loaded, a string can be passed. 
+`biorbd_model` is the `biorbd` model to use loaded with the BiorbdModel class or a custom model, that inherits from the Model class.
 In the case of a multiphase optimization, one model per phase should be passed in a list.
 `dynamics` is the dynamics of the system during each phase (see The dynamics section).
 `n_shooting` is the number of shooting point of the direct multiple shooting (method) for each phase.
@@ -582,7 +582,7 @@ SX will tend to solve much faster than MX graphs, however they can necessitate a
 Please note that a common ocp will usually define only these parameters:
 ```python
 ocp = OptimalControlProgram(
-    biorbd_model: [str, BiorbdModel, list],
+    biorbd_model: [str, BiorbdModel, list, Model],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
@@ -649,6 +649,42 @@ Another important value stored in nlp is the shape of the states and controls: `
 
 It would be tedious, and probably not much useful, to list all the elements of nlp here.   
 The interested user is invited to have a look at the docstrings for this particular class to get a detailed overview of it.
+
+## The model
+
+Bioptim is designed to work with any model, as long as it inherits from the class `bioptim.Model`. Models built with `biorbd` are already compatible with `bioptim`.
+They can be used as is, or can be modified to add new features.
+
+### Class: BiorbdModel
+
+The `BiorbdModel` class is a wrapper around the `biorbd.Model` class. Some methods may not be interfaced yet, it is accessible through:
+```python
+biorbd_model = BiorbdModel("path/to/model.bioMod")
+biorbd_model.marker_names()  # for example returns the marker names
+# if the methods is not interfaced, it can be accessed through
+biorbd_model.model.markerNames()
+```
+
+### Class: Model
+
+The `Model` class is the base class for BiorbdModel and any custom models.
+The methods are abstracted and must be implemented in the child class,
+or at least raise a `NotImplementedError` if they are not implemented. For example:
+```python
+from bioptim import Model
+
+class MyModel(Model):
+    def __init__(self, *args, **kwargs):
+        ...
+
+    def name_dof(self):
+        return ["dof1", "dof2", "dof3"]
+
+    def marker_names(self):
+        raise NotImplementedError
+```
+
+see the example [examples/custom_model/](https://github.com/pyomeca/bioptim/tree/master/bioptim/examples/custom_model) for more details.
 
 ## The dynamics
 By essence, an optimal control program (ocp) links two types of variables: the states (x) and the controls (u). 
