@@ -665,7 +665,7 @@ biorbd_model.marker_names()  # for example returns the marker names
 biorbd_model.model.markerNames()
 ```
 
-### Class: Model
+### Class: CustomModel
 
 The `Model` class is the base class for BiorbdModel and any custom models.
 The methods are abstracted and must be implemented in the child class,
@@ -673,7 +673,7 @@ or at least raise a `NotImplementedError` if they are not implemented. For examp
 ```python
 from bioptim import Model
 
-class MyModel(Model):
+class MyModel(CustomModel, metaclass=ABCMeta):
     def __init__(self, *args, **kwargs):
         ...
 
