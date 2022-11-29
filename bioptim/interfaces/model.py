@@ -653,6 +653,7 @@ class CustomModel(Model):
     This is a custom model that inherits from bioptim.Model
     This class is made for the user to help him create his own model
     """
+
     # ---- absolutely needed to be implemented ---- #
     def nb_quat(self):
         """Number of quaternion in the model"""

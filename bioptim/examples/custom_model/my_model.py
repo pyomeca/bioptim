@@ -17,6 +17,7 @@ class MyModel(CustomModel, metaclass=ABCMeta):
     This is a custom model that inherits from bioptim.CustomModel
     As CustomModel is an abstract class, some methods must be implemented.
     """
+
     def __init__(self):
         # custom values for the example
         self.com = MX(np.array([-0.0005, 0.0688, -0.9542]))
@@ -62,4 +63,3 @@ class MyModel(CustomModel, metaclass=ABCMeta):
 
     # def system_dynamics(self, *args):
     # This is where you can implement your system dynamics with casadi if you are dealing with other systems
-
