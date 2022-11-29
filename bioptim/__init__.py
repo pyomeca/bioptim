@@ -173,7 +173,7 @@ from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerce
 from .dynamics.ode_solver import OdeSolver
 from .interfaces.biorbd_interface import BiorbdInterface
 from .interfaces.solver_options import Solver
-from .interfaces.model import BiorbdModel, Model
+from .interfaces.model import BiorbdModel, CustomModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint

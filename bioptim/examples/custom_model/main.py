@@ -14,13 +14,13 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
-    Model,
+    CustomModel,
     DynamicsList,
 )
 
 
 def prepare_ocp(
-    model: Model,
+    model: CustomModel,
     final_time: float,
     n_shooting: int,
     configure_dynamics: callable = None,
