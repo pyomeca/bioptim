@@ -62,7 +62,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nb_segment(), nlp.ns)]
+        external_forces = [np.random.rand(6, nlp.model.nb_segments(), nlp.ns)]
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
@@ -313,7 +313,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nb_segment(), nlp.ns)]
+        external_forces = [np.random.rand(6, nlp.model.nb_segments(), nlp.ns)]
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
@@ -689,7 +689,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nb_segment(), nlp.ns)]
+        external_forces = [np.random.rand(6, nlp.model.nb_segments(), nlp.ns)]
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
@@ -792,7 +792,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nb_segment(), nlp.ns)]
+        external_forces = [np.random.rand(6, nlp.model.nb_segments(), nlp.ns)]
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics

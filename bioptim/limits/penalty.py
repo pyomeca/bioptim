@@ -148,7 +148,7 @@ class PenaltyFunctionAbstract:
             nlp = all_pn.nlp
             q_mx = nlp.states["q"].mx
             model = nlp.model
-            jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.global_jcs(q_mx, reference_jcs).transpose()
+            jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.global_homogeneous_matrices(q_mx, reference_jcs).transpose()
 
             markers = []
             for m in model.markers(q_mx):
@@ -197,7 +197,7 @@ class PenaltyFunctionAbstract:
             q_mx = nlp.states["q"].mx
             qdot_mx = nlp.states["qdot"].mx
             model = nlp.model
-            jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.global_jcs(q_mx, reference_jcs).transpose()
+            jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.global_homogeneous_matrices(q_mx, reference_jcs).transpose()
             markers = horzcat(*[m.to_mx() for m in model.markers_velocity(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
 
             markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
@@ -355,9 +355,9 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = all_pn.nlp
-            g = nlp.model.get_gravity().to_mx()[2]
-            com = nlp.model.com(nlp.states["q"].mx).to_mx()
-            com_dot = nlp.model.comdot(nlp.states["q"].mx, nlp.states["qdot"].mx).to_mx()
+            g = nlp.model.gravity().to_mx()[2]
+            com = nlp.model.center_of_mass(nlp.states["q"].mx).to_mx()
+            com_dot = nlp.model.center_of_mass_velocity(nlp.states["q"].mx, nlp.states["qdot"].mx).to_mx()
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
             com_height_cx = BiorbdInterface.mx_to_cx("com_height", com_height, nlp.states["q"], nlp.states["qdot"])
             return com_height_cx
@@ -366,8 +366,8 @@ class PenaltyFunctionAbstract:
         def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
-            If no axes is specified, the squared-norm of the com's position is minimized.
-            Otherwise, the projection of the com's position on the specified axes are minimized.
+            If no axes is specified, the squared-norm of the center_of_mass's position is minimized.
+            Otherwise, the projection of the center_of_mass's position on the specified axes are minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
 
             Parameters
@@ -383,15 +383,15 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            com_cx = BiorbdInterface.mx_to_cx("com", all_pn.nlp.model.com, all_pn.nlp.states["q"])
+            com_cx = BiorbdInterface.mx_to_cx("com", all_pn.nlp.model.center_of_mass, all_pn.nlp.states["q"])
             return com_cx
 
         @staticmethod
         def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
-            If no axis is specified, the squared-norm of the com's velocity is minimized.
-            Otherwise, the projection of the com's velocity on the specified axis is minimized.
+            If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
+            Otherwise, the projection of the center_of_mass's velocity on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
 
             Parameters
@@ -408,15 +408,15 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.comdot, nlp.states["q"], nlp.states["qdot"])
+            com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"])
             return com_dot_cx
 
         @staticmethod
         def minimize_com_acceleration(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
-            If no axis is specified, the squared-norm of the com's velocity is minimized.
-            Otherwise, the projection of the com's velocity on the specified axis is minimized.
+            If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
+            Otherwise, the projection of the center_of_mass's velocity on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
 
             Parameters
@@ -496,7 +496,7 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             com_velocity = BiorbdInterface.mx_to_cx(
-                "com_velocity", nlp.model.comdot, nlp.states["q"], nlp.states["qdot"]
+                "com_velocity", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"]
             )
             if isinstance(com_velocity, SX):
                 mass = Function("mass", [], [nlp.model.mass().to_mx()]).expand()
@@ -596,7 +596,7 @@ class PenaltyFunctionAbstract:
             nlp = all_pn.nlp
             segment_index = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
-            r_seg = nlp.model.global_jcs(nlp.states["q"].mx, segment_index).rot()
+            r_seg = nlp.model.global_homogeneous_matrices(nlp.states["q"].mx, segment_index).rot()
             r_rt = nlp.model.rt(nlp.states["q"].mx, rt).rot()
             angles_diff = biorbd.Rotation.toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
@@ -639,7 +639,7 @@ class PenaltyFunctionAbstract:
             segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             # Get the marker in rt reference frame
-            jcs = nlp.model.global_jcs(nlp.states["q"].mx, segment_idx)
+            jcs = nlp.model.global_homogeneous_matrices(nlp.states["q"].mx, segment_idx)
             marker = nlp.model.marker(nlp.states["q"].mx, marker_idx)
             marker.applyRT(jcs.transpose())
             marker_objective = BiorbdInterface.mx_to_cx("marker", marker.to_mx(), nlp.states["q"])

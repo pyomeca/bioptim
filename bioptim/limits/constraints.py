@@ -343,7 +343,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 model = BiorbdModel(
                     nlp.model.path().absolutePath().to_string()
                 )  # TODO: find a better solution if possible
-                qddot_fd = model.forward_dynamics_constraints_direct(q, qdot, tau).to_mx()
+                qddot_fd = model.constrained_forward_dynamics(q, qdot, tau).to_mx()
             else:
                 qddot_fd = nlp.model.forward_dynamics(q, qdot, tau).to_mx()
 

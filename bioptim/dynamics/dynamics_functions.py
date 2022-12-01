@@ -33,7 +33,7 @@ class DynamicsFunctions:
         Main accessor to a variable in states or controls (cx)
     apply_parameters(parameters: MX.sym, nlp: NonLinearProgram)
         Apply the parameter variables to the model. This should be called before calling the dynamics
-    compute_qdot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX]):
+    reshape_qdot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX]):
         Easy accessor to derivative of q
     forward_dynamics(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], tau: Union[MX, SX], with_contact: bool):
         Easy accessor to derivative of qdot
@@ -643,7 +643,7 @@ class DynamicsFunctions:
         """
 
         q_nlp = nlp.states["q"] if "q" in nlp.states else nlp.controls["q"]
-        return q_nlp.mapping.to_first.map(nlp.model.compute_qdot(q, qdot).to_mx())
+        return q_nlp.mapping.to_first.map(nlp.model.reshape_qdot(q, qdot).to_mx())
 
     @staticmethod
     def forward_dynamics(
@@ -675,14 +675,14 @@ class DynamicsFunctions:
             dxdt = MX(len(qdot_var.mapping.to_first), nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 if with_contact:
-                    qddot = nlp.model.forward_dynamics_constraints_direct(q, qdot, tau, f_ext).to_mx()
+                    qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, f_ext).to_mx()
                 else:
                     qddot = nlp.model.forward_dynamics(q, qdot, tau, f_ext).to_mx()
                 dxdt[:, i] = qdot_var.mapping.to_first.map(qddot)
             return dxdt
         else:
             if with_contact:
-                qddot = nlp.model.forward_dynamics_constraints_direct(q, qdot, tau).to_mx()
+                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau).to_mx()
             else:
                 qddot = nlp.model.forward_dynamics(q, qdot, tau).to_mx()
             return qdot_var.mapping.to_first.map(qddot)
@@ -810,9 +810,9 @@ class DynamicsFunctions:
         if nlp.external_forces:
             all_cs = MX()
             for i, f_ext in enumerate(nlp.external_forces):
-                nlp.model.forward_dynamics_constraints_direct(q, qdot, tau, cs, f_ext).to_mx()
+                nlp.model.constrained_forward_dynamics(q, qdot, tau, cs, f_ext).to_mx()
                 all_cs = horzcat(all_cs, cs.getForce().to_mx())
             return all_cs
         else:
-            nlp.model.forward_dynamics_constraints_direct(q, qdot, tau, cs).to_mx()
+            nlp.model.constrained_forward_dynamics(q, qdot, tau, cs).to_mx()
             return cs.getForce().to_mx()

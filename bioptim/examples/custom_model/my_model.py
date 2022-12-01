@@ -24,7 +24,7 @@ class MyModel(CustomModel, metaclass=ABCMeta):
         self.inertia = MX(0.0391)
 
     # ---- absolutely needed to be implemented ---- #
-    def nb_quat(self):
+    def nb_quaternions(self):
         """Number of quaternion in the model"""
         return 0
 

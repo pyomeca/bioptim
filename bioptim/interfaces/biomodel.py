@@ -1,354 +1,168 @@
+from casadi import MX
 import biorbd_casadi as biorbd
-from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Protocol
 
 
-class BioModel(ABC):
-    @abstractmethod
-    def deep_copy(self, *args):
-        """Deep copy of the model"""
+class BioModel(Protocol):
 
-    @abstractmethod
-    def add_segment(self, *args):
-        """Add a segment to the model"""
 
-    @abstractmethod
-    def get_gravity(self):
-        """Get the gravity vector"""
+    gravity: MX
+    """Get the gravity vector"""
 
-    @abstractmethod
     def set_gravity(self, newGravity):
         """Set the gravity vector"""
 
-    @abstractmethod
-    def get_body_biorbd_id(self, segmentName):
-        """Get the biorbd id of a body"""
+    nb_tau: int
+    """Get the number of generalized forces"""
 
-    @abstractmethod
-    def get_body_rbdl_id(self, segmentName):
-        """Get the rbdl id of a body"""
+    nb_segments: int
+    """Get the number of segment"""
 
-    @abstractmethod
-    def get_body_rbdl_id_to_biorbd_id(self, idx):
-        """Get the biorbd id of a body from its rbdl id"""
-
-    @abstractmethod
-    def get_body_biorbd_id_to_rbdl_id(self, idx):
-        """Get the rbdl id of a body from its biorbd id"""
-
-    @abstractmethod
-    def get_dof_subtrees(self):
-        """Get the dof sub trees"""
-
-    @abstractmethod
-    def get_dof_index(self, SegmentName, dofName):
-        """Get the dof index"""
-
-    @abstractmethod
-    def nb_tau(self):
-        """Get the number of generalized torque"""
-
-    @abstractmethod
-    def nb_segment(self):
-        """Get the number of segment"""
-
-    @abstractmethod
-    def segment_index(self, segmentName):
+    def segment_index(self, segmentName) -> int:
         """Get the segment index"""
 
-    @abstractmethod
-    def nb_quat(self):
-        """Get the number of quaternion"""
+    nb_quaternions: int
+    """Get the number of quaternion"""
 
-    @abstractmethod
-    def nb_dof(self):
-        """Get the number of dof"""
+    nb_dof: int
+    """Get the number of dof"""
 
-    @abstractmethod
-    def nb_q(self):
-        """Get the number of Q"""
+    nb_q: int
+    """Get the number of Q"""
 
-    @abstractmethod
-    def nb_qdot(self):
-        """Get the number of Qdot"""
+    nb_qdot: int
+    """Get the number of Qdot"""
 
-    @abstractmethod
-    def nb_qddot(self):
-        """Get the number of Qddot"""
+    nb_qddot: int
+    """Get the number of Qddot"""
 
-    @abstractmethod
-    def nb_root(self):
-        """Get the number of root Dof"""
+    nb_root: int
+    """Get the number of root Dof"""
 
-    @abstractmethod
-    def update_segment_characteristics(self, idx, characteristics):
-        """Update the segment characteristics"""
+    segments: tuple
+    """Get all segments"""
 
-    @abstractmethod
-    def segment(self, *args):
-        """Get a segment"""
+    global_homogeneous_matrices: tuple
+    """Get the homogeneous matrices of all segments in the world frame"""
 
-    @abstractmethod
-    def segments(self, i):
-        """Get a segment"""
+    child_homogeneous_matrices: tuple
+    """Get the homogeneous matrices of all segments in their parent frame"""
 
-    @abstractmethod
-    def dispatched_force(self, *args):
-        """Get the dispatched force"""
+    mass: MX
+    """Get the mass of the model"""
 
-    @abstractmethod
-    def update_kinematics_custom(self, Q=None, Qdot=None, Qddot=None):
-        """Update the kinematics of the model"""
-
-    @abstractmethod
-    def all_global_jcs(self, *args):
-        """Get all the Rototranslation matrix"""
-
-    @abstractmethod
-    def global_jcs(self, *args):
-        """Get the Rototranslation matrix"""
-
-    @abstractmethod
-    def local_jcs(self, *args):
-        """Get the Rototranslation matrix"""
-
-    @abstractmethod
-    def project_point(self, *args):
-        """Project a point on the segment"""
-
-    @abstractmethod
-    def project_point_jacobian(self, *args):
-        """Project a point on the segment"""
-
-    @abstractmethod
-    def mass(self):
-        """Get the mass of the model"""
-
-    @abstractmethod
-    def com(self, Q, updateKin=True):
+    def center_of_mass(self, q) -> MX:
         """Get the center of mass of the model"""
 
-    @abstractmethod
-    def CoMbySegmentInMatrix(self, Q, updateKin=True):
-        """Get the center of mass of the model"""
-
-    @abstractmethod
-    def CoMbySegment(self, *args):
-        """Get the center of mass of the model"""
-
-    @abstractmethod
-    def comdot(self, Q, Qdot, updateKin=True):
+    def center_of_mass_velocity(self, q, qdot) -> MX:
         """Get the center of mass velocity of the model"""
 
-    @abstractmethod
-    def comddot(self, Q, Qdot, Qddot, updateKin=True):
+    def center_of_mass_acceleration(self, q, qdot, qddot) -> MX:
         """Get the center of mass acceleration of the model"""
 
-    @abstractmethod
-    def comdot_by_segment(self, *args):
-        """Get the center of mass velocity of the model"""
-
-    @abstractmethod
-    def comddot_by_segment(self, *args):
-        """Get the center of mass acceleration of the model"""
-
-    @abstractmethod
-    def com_jacobian(self, Q, updateKin=True):
-        """Get the center of mass Jacobian of the model"""
-
-    @abstractmethod
-    def mesh_points(self, *args):
-        """Get the mesh points of the model"""
-
-    @abstractmethod
-    def mesh_points_in_matrix(self, Q, updateKin=True):
-        """Get the mesh points of the model"""
-
-    @abstractmethod
-    def mesh_faces(self, *args):
-        """Get the mesh faces of the model"""
-
-    @abstractmethod
-    def mesh(self, *args):
-        """Get the mesh of the model"""
-
-    @abstractmethod
-    def angular_momentum(self, Q, Qdot, updateKin=True):
+    def angular_momentum(self, q, qdot) -> MX:
         """Get the angular momentum of the model"""
 
-    @abstractmethod
-    def mass_matrix(self, Q, updateKin=True):
-        """Get the mass matrix of the model"""
+    def reshape_qdot(self, q, qdot):
+        """
+        In case, qdot need to be reshaped, such as if one want to get velocities from quaternions.
+        Since we don't know if this is the case, this function is always called
+        """
 
-    @abstractmethod
-    def mass_matrix_inverse(self, Q, updateKin=True):
-        """Get the inverse of the mass matrix of the model"""
+    name_dof: tuple[str]
+    """Get the name of the degrees of freedom"""
 
-    @abstractmethod
-    def calc_angular_momentum(self, *args):
-        """Get the angular momentum of the model"""
+    contact_names: tuple[str]
+    """Get the name of the contacts"""
 
-    @abstractmethod
-    def calc_segments_angular_momentum(self, *args):
-        """Get the angular momentum of the model"""
+    nb_soft_contacts: int
+    """Get the number of soft contacts"""
 
-    @abstractmethod
-    def body_angular_velocity(self, Q, Qdot, updateKin=True):
-        """Get the body angular velocity of the model"""
+    soft_contact_names: tuple[str]
+    """Get the soft contact names"""
 
-    @abstractmethod
-    def calc_mat_rot_jacobian(self, Q, segmentIdx, rotation, G, updateKin):
-        """Get the body angular velocity of the model"""
-
-    @abstractmethod
-    def jacobian_segment_rot_mat(self, Q, segmentIdx, updateKin):
-        """Get the body angular velocity of the model"""
-
-    @abstractmethod
-    def compute_qdot(self, Q, QDot, k_stab=1):
-        """Get the body angular velocity of the model"""
-
-    @abstractmethod
-    def segment_angular_velocity(self, Q, Qdot, idx, updateKin=True):
-        """Get the body angular velocity of the model"""
-
-    @abstractmethod
-    def kinetic_energy(self, Q, QDot, updateKin=True):
-        """Get the kinetic energy of the model"""
-
-    @abstractmethod
-    def potential_energy(self, Q, updateKin=True):
-        """Get the potential energy of the model"""
-
-    @abstractmethod
-    def name_dof(self) -> List[str]:
-        """Get the name of the dof"""
-
-    @abstractmethod
-    def contact_names(self) -> List[str]:
-        """Get the name of the contacts"""
-
-    @abstractmethod
-    def nb_soft_contacts(self):
-        """Get the number of soft contacts"""
-
-    @abstractmethod
-    def soft_contact_names(self):
-        """Get the soft contact names"""
-
-    @abstractmethod
-    def soft_contact(self, *args):
+    def soft_contacts(self, *args):
+        # todo: forces from soft contact ?
         """Get the soft contact"""
 
-    @abstractmethod
-    def muscle_names(self) -> List[str]:
-        """Get the muscle names"""
+    muscle_names: tuple[str]
+    """Get the muscle names"""
 
-    @abstractmethod
-    def torque(self, tau_activations, q, qdot):
+    def torque(self, q, qdot, activation) -> MX:
         """Get the muscle torque"""
 
-    @abstractmethod
-    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints):
+    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
         """compute the free floating base forward dynamics"""
 
-    @abstractmethod
-    def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None):
+    def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
         """compute the forward dynamics"""
 
-    @abstractmethod
-    def forward_dynamics_constraints_direct(self, *args):
+    def constrained_forward_dynamics(self, *args) -> MX:
         """compute the forward dynamics with constraints"""
 
-    @abstractmethod
-    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None):
+    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None) -> MX:
         """compute the inverse dynamics"""
 
-    @abstractmethod
-    def non_linear_effect(self, Q, QDot, f_ext=None, f_contacts=None):
-        """compute the non linear effect"""
-
-    @abstractmethod
-    def contact_forces_from_forward_dynamics_constraints_direct(self, Q, QDot, Tau, f_ext=None):
+    def contact_forces_from_constrained_forward_dynamics(self, Q, QDot, Tau, f_ext=None):
         """compute the contact forces"""
 
-    @abstractmethod
     def body_inertia(self, Q, updateKin=True):
         """Get the inertia of the model"""
 
-    @abstractmethod
     def compute_constraint_impulses_direct(self, Q, QDotPre):
         """compute the constraint impulses"""
 
-    @abstractmethod
     def check_generalized_dimensions(self, Q=None, Qdot=None, Qddot=None, torque=None):
         """check the dimensions of the generalized coordinates"""
 
-    @abstractmethod
     def state_set(self):
         """Get the state set of the model"""
 
-    @abstractmethod
     def activation_dot(self, muscle_states):
         """Get the activation derivative"""
 
-    @abstractmethod
     def muscular_joint_torque(self, muscle_states, q, qdot):
         """Get the muscular joint torque"""
 
-    @abstractmethod
     def get_constraints(self):
         """Get the constraints of the model"""
 
-    @abstractmethod
     def markers(self, Q, updateKin=True):
         """Get the markers of the model"""
 
-    @abstractmethod
     def nb_markers(self):
         """Get the number of markers of the model"""
 
-    @abstractmethod
     def marker_index(self, name):
         """Get the index of a marker"""
 
-    @abstractmethod
     def marker(self, i=None):
         """Get the marker index i of the model as function of coordinates"""
 
-    @abstractmethod
     def nb_rigid_contacts(self):
         """Get the number of rigid contacts"""
 
-    @abstractmethod
     def path(self):
         """Get the path of the model"""
 
-    @abstractmethod
     def markers_velocity(self, Q, Qdot):
         """Get the marker velocities of the model"""
 
-    @abstractmethod
     def rigid_contact_axis_idx(self, idx):
         """Get the rigid contact axis index"""
 
-    @abstractmethod
     def torque_max(self):
         """Get the maximum torque"""
 
-    @abstractmethod
     def rigid_contact_acceleration(self, Q, Qdot, Qddot, updateKin=True):
         """Get the rigid contact acceleration"""
 
-    @abstractmethod
     def rt(self, *args):
         """Get the rototranslation matrix"""
 
-    @abstractmethod
     def marker_names(self) -> List[str]:
         """Get the marker names"""
 
-    @abstractmethod
     def soft_contact_name(self, i) -> str:
         """Get the soft contact name"""
 
@@ -366,7 +180,7 @@ class BiorbdModel(BioModel):
     def add_segment(self, *args):
         return self.model.AddSegment(self, *args)
 
-    def get_gravity(self):
+    def gravity(self):
         return self.model.getGravity()
 
     def set_gravity(self, newGravity):
@@ -393,13 +207,13 @@ class BiorbdModel(BioModel):
     def nb_tau(self):
         return self.model.nbGeneralizedTorque()
 
-    def nb_segment(self):
+    def nb_segments(self):
         return self.model.nbSegment()
 
     def segment_index(self, name):
         return biorbd.segment_index(self.model, name)
 
-    def nb_quat(self):
+    def nb_quaternions(self):
         return self.model.nbQuat()
 
     def nb_q(self):
@@ -420,7 +234,7 @@ class BiorbdModel(BioModel):
     def segment(self, *args):
         return self.model.segment(*args)
 
-    def segments(self, i):
+    def segments(self):
         return self.model.segments()
 
     def dispatched_force(self, *args):
@@ -432,10 +246,10 @@ class BiorbdModel(BioModel):
     def all_global_jcs(self, *args):
         return self.model.allGlobalJCS(*args)
 
-    def global_jcs(self, *args):
+    def global_homogeneous_matrices(self, *args):
         return self.model.globalJCS(*args)
 
-    def local_jcs(self, *args):
+    def child_homogeneous_matrices(self, *args):
         return self.model.localJCS(*args)
 
     def project_point(self, *args):
@@ -447,7 +261,7 @@ class BiorbdModel(BioModel):
     def mass(self):
         return self.model.mass()
 
-    def com(self, Q, updateKin=True):
+    def center_of_mass(self, Q, updateKin=True):
         return self.model.CoM(Q, updateKin)
 
     def CoMbySegmentInMatrix(self, Q, updateKin=True):
@@ -456,10 +270,10 @@ class BiorbdModel(BioModel):
     def CoMbySegment(self, *args):
         return self.model.CoMbySegment(*args)
 
-    def comdot(self, Q, Qdot, updateKin=True):
+    def center_of_mass_velocity(self, Q, Qdot, updateKin=True):
         return self.model.CoMdot(Q, Qdot, updateKin)
 
-    def comddot(self, Q, Qdot, Qddot, updateKin=True):
+    def center_of_mass_acceleration(self, Q, Qdot, Qddot, updateKin=True):
         return self.model.CoMddot(Q, Qdot, Qddot, updateKin)
 
     def comdot_by_segment(self, *args):
@@ -507,7 +321,7 @@ class BiorbdModel(BioModel):
     def jacobian_segment_rot_mat(self, Q, segmentIdx, updateKin):
         return self.model.JacobianSegmentRotMat(Q, segmentIdx, updateKin)
 
-    def compute_qdot(self, Q, QDot, k_stab=1):
+    def reshape_qdot(self, Q, QDot, k_stab=1):
         return self.model.computeQdot(Q, QDot, k_stab)
 
     def segment_angular_velocity(self, Q, Qdot, idx, updateKin=True):
@@ -549,7 +363,7 @@ class BiorbdModel(BioModel):
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None):
         return self.model.ForwardDynamics(q, qdot, tau, fext, f_contacts)
 
-    def forward_dynamics_constraints_direct(self, *args):
+    def constrained_forward_dynamics(self, *args):
         return self.model.ForwardDynamicsConstraintsDirect(*args)
 
     def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None):
@@ -558,7 +372,7 @@ class BiorbdModel(BioModel):
     def non_linear_effect(self, Q, QDot, f_ext=None, f_contacts=None):
         return self.model.NonLinearEffect(Q, QDot, f_ext, f_contacts)
 
-    def contact_forces_from_forward_dynamics_constraints_direct(self, Q, QDot, Tau, f_ext=None):
+    def contact_forces_from_constrained_forward_dynamics(self, Q, QDot, Tau, f_ext=None):
         return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(Q, QDot, Tau, f_ext)
 
     def body_inertia(self, Q, updateKin=True):
@@ -652,7 +466,7 @@ class CustomModel(BioModel):
     """
 
     # ---- absolutely needed to be implemented ---- #
-    def nb_quat(self):
+    def nb_quaternions(self):
         """Number of quaternion in the model"""
         return 0
 
@@ -681,11 +495,11 @@ class CustomModel(BioModel):
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None):
         return NotImplementedError("forward_dynamics is not implemented")
 
-    def get_gravity(self):
-        raise NotImplementedError("get_gravity is not implemented")
+    def gravity(self):
+        raise NotImplementedError("gravity is not implemented")
 
-    def nb_segment(self):
-        raise NotImplementedError("nb_segment is not implemented")
+    def nb_segments(self):
+        raise NotImplementedError("nb_segments is not implemented")
 
     def nb_root(self):
         raise NotImplementedError("nb_root is not implemented")
@@ -699,8 +513,8 @@ class CustomModel(BioModel):
     def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None):
         raise NotImplementedError("inverse_dynamics is not implemented")
 
-    def compute_qdot(self, Q, QDot, k_stab=1):
-        raise NotImplementedError("compute_qdot is not implemented")
+    def reshape_qdot(self, Q, QDot, k_stab=1):
+        raise NotImplementedError("reshape_qdot is not implemented")
 
     def deep_copy(self, *args):
         raise NotImplementedError("deep_copy is not implemented")
@@ -747,11 +561,11 @@ class CustomModel(BioModel):
     def all_global_jcs(self, *args):
         raise NotImplementedError("all_global_jcs is not implemented")
 
-    def global_jcs(self, *args):
-        raise NotImplementedError("global_jcs is not implemented")
+    def global_homogeneous_matrices(self, *args):
+        raise NotImplementedError("global_homogeneous_matrices is not implemented")
 
-    def local_jcs(self, *args):
-        raise NotImplementedError("local_jcs is not implemented")
+    def child_homogeneous_matrices(self, *args):
+        raise NotImplementedError("child_homogeneous_matrices is not implemented")
 
     def project_point(self, *args):
         raise NotImplementedError("project_point is not implemented")
@@ -759,8 +573,8 @@ class CustomModel(BioModel):
     def project_point_jacobian(self, *args):
         raise NotImplementedError("project_point_jacobian is not implemented")
 
-    def com(self, Q, updateKin=True):
-        raise NotImplementedError("com is not implemented")
+    def center_of_mass(self, Q, updateKin=True):
+        raise NotImplementedError("center_of_mass is not implemented")
 
     def CoMbySegmentInMatrix(self, Q, updateKin=True):
         raise NotImplementedError("CoMbySegmentInMatrix is not implemented")
@@ -768,10 +582,10 @@ class CustomModel(BioModel):
     def CoMbySegment(self, *args):
         raise NotImplementedError("CoMbySegment is not implemented")
 
-    def comdot(self, Q, Qdot, updateKin=True):
-        raise NotImplementedError("comdot is not implemented")
+    def center_of_mass_velocity(self, Q, Qdot, updateKin=True):
+        raise NotImplementedError("center_of_mass_velocity is not implemented")
 
-    def comddot(self, Q, Qdot, Qddot, updateKin=True):
+    def center_of_mass_acceleration(self, Q, Qdot, Qddot, updateKin=True):
         raise NotImplementedError("comddot is not implemented")
 
     def comdot_by_segment(self, *args):
@@ -843,13 +657,13 @@ class CustomModel(BioModel):
     def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints):
         raise NotImplementedError("forward_dynamics_free_floating_base is not implemented")
 
-    def forward_dynamics_constraints_direct(self, *args):
-        raise NotImplementedError("forward_dynamics_constraints_direct is not implemented")
+    def constrained_forward_dynamics(self, *args):
+        raise NotImplementedError("constrained_forward_dynamics is not implemented")
 
     def non_linear_effect(self, Q, QDot, f_ext=None, f_contacts=None):
         raise NotImplementedError("non_linear_effect is not implemented")
 
-    def contact_forces_from_forward_dynamics_constraints_direct(self, Q, QDot, Tau, f_ext=None):
+    def contact_forces_from_constrained_forward_dynamics(self, Q, QDot, Tau, f_ext=None):
         raise NotImplementedError("contact_forces_from_forward_dynamics_constraints_direct is not implemented")
 
     def body_inertia(self, Q, updateKin=True):

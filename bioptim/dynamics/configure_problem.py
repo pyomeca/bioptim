@@ -98,7 +98,7 @@ class ConfigureProblem:
 
         idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nb_q())
 
-        if nlp.model.nb_quat() == 0:
+        if nlp.model.nb_quaternions() == 0:
             new_name = nlp.model.name_dof()[idx[0]]
         else:
             new_name = []
@@ -611,7 +611,7 @@ class ConfigureProblem:
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
         for i_sc in range(nlp.model.nb_soft_contacts()):
-            soft_contact = nlp.model.soft_contact(i_sc)
+            soft_contact = nlp.model.soft_contacts[i_sc] # todo: in the BiorbdModel
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)
@@ -1196,7 +1196,7 @@ class ConfigureProblem:
                     if n == "q":
                         q_map = list(nlp.variable_mappings[n].to_first.map_idx)
                         target = list(range(nlp.model.nb_q()))
-                        if nlp.model.nb_quat() > 0:
+                        if nlp.model.nb_quaternions() > 0:
                             if q_map != target:
                                 raise RuntimeError(
                                     "It is not possible to define a q mapping without a qdot or tau mapping"
