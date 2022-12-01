@@ -597,7 +597,7 @@ class PenaltyFunctionAbstract:
             segment_index = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             r_seg = nlp.model.global_homogeneous_matrices(nlp.states["q"].mx, segment_index).rot()
-            r_rt = nlp.model.rt(nlp.states["q"].mx, rt).rot()
+            r_rt = nlp.model.object_homogeneous_matrix(nlp.states["q"].mx, rt).rot()
             angles_diff = biorbd.Rotation.toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
             angle_objective = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])

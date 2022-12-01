@@ -1,10 +1,10 @@
 from casadi import MX
 import biorbd_casadi as biorbd
-from typing import List, Protocol
+from typing import Protocol
+from pathlib import Path
 
 
 class BioModel(Protocol):
-
 
     gravity: MX
     """Get the gravity vector"""
@@ -103,360 +103,56 @@ class BioModel(Protocol):
     def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None) -> MX:
         """compute the inverse dynamics"""
 
-    def contact_forces_from_constrained_forward_dynamics(self, Q, QDot, Tau, f_ext=None):
+    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, f_ext=None) -> MX:
         """compute the contact forces"""
 
-    def body_inertia(self, Q, updateKin=True):
-        """Get the inertia of the model"""
-
-    def compute_constraint_impulses_direct(self, Q, QDotPre):
+    def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
         """compute the constraint impulses"""
 
-    def check_generalized_dimensions(self, Q=None, Qdot=None, Qddot=None, torque=None):
-        """check the dimensions of the generalized coordinates"""
-
     def state_set(self):
-        """Get the state set of the model"""
+        """Get the state set of the model #todo: to be deleted but get muscle excitations"""
 
-    def activation_dot(self, muscle_states):
-        """Get the activation derivative"""
+    def muscle_activation_dot(self, muscle_states) -> MX:
+        """Get the activation derivative of the muscles states"""
 
-    def muscular_joint_torque(self, muscle_states, q, qdot):
+    def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
         """Get the muscular joint torque"""
 
     def get_constraints(self):
-        """Get the constraints of the model"""
+        """Get the constraints of the model #todo: return constraint forces instead"""
 
-    def markers(self, Q, updateKin=True):
+    def markers(self, q) -> MX:
         """Get the markers of the model"""
 
-    def nb_markers(self):
-        """Get the number of markers of the model"""
+    nb_markers: int
+    """Get the number of markers of the model"""
 
-    def marker_index(self, name):
+    def marker_index(self, name) -> int:
         """Get the index of a marker"""
 
-    def marker(self, i=None):
-        """Get the marker index i of the model as function of coordinates"""
+    nb_rigid_contacts: int
+    """Get the number of rigid contacts"""
 
-    def nb_rigid_contacts(self):
-        """Get the number of rigid contacts"""
+    path: Path
+    """Get the path of the model"""
 
-    def path(self):
-        """Get the path of the model"""
-
-    def markers_velocity(self, Q, Qdot):
+    def marker_velocities(self, q, qdot) -> MX:
         """Get the marker velocities of the model"""
 
-    def rigid_contact_axis_idx(self, idx):
-        """Get the rigid contact axis index"""
+    def rigid_contact_axis_idx(self, idx) -> int:
+        """Get the rigid contact axis index, todo: to remove"""
 
-    def torque_max(self):
+    def tau_max(self) -> MX:
         """Get the maximum torque"""
 
-    def rigid_contact_acceleration(self, Q, Qdot, Qddot, updateKin=True):
+    def rigid_contact_acceleration(self, q, qdot, qddot) -> MX:
         """Get the rigid contact acceleration"""
 
-    def rt(self, *args):
-        """Get the rototranslation matrix"""
-
-    def marker_names(self) -> List[str]:
-        """Get the marker names"""
-
-    def soft_contact_name(self, i) -> str:
-        """Get the soft contact name"""
-
-
-class BiorbdModel(BioModel):
-    def __init__(self, biorbd_model: str | biorbd.Model):
-        if isinstance(biorbd_model, str):
-            self.model = biorbd.Model(biorbd_model)
-        else:
-            self.model = biorbd_model
-
-    def deep_copy(self, *args):
-        return self.model.DeepCopy(*args)
-
-    def add_segment(self, *args):
-        return self.model.AddSegment(self, *args)
-
-    def gravity(self):
-        return self.model.getGravity()
-
-    def set_gravity(self, newGravity):
-        return self.model.setGravity(newGravity)
-
-    def get_body_biorbd_id(self, segmentName):
-        return self.model.getBodyBiorbdId(segmentName)
-
-    def get_body_rbdl_id(self, segmentName):
-        return self.model.getBodyRbdlId(segmentName)
-
-    def get_body_rbdl_id_to_biorbd_id(self, idx):
-        return self.model.getBodyRbdlIdToBiorbdId(idx)
-
-    def get_body_biorbd_id_to_rbdl_id(self, idx):
-        return self.model.getBodyBiorbdIdToRbdlId(idx)
-
-    def get_dof_subtrees(self):
-        return self.model.getDofSubTrees()
-
-    def get_dof_index(self, SegmentName, dofName):
-        return self.model.getDofIndex(SegmentName, dofName)
-
-    def nb_tau(self):
-        return self.model.nbGeneralizedTorque()
-
-    def nb_segments(self):
-        return self.model.nbSegment()
-
-    def segment_index(self, name):
-        return biorbd.segment_index(self.model, name)
-
-    def nb_quaternions(self):
-        return self.model.nbQuat()
-
-    def nb_q(self):
-        return self.model.nbQ()
-
-    def nb_qdot(self):
-        return self.model.nbQdot()
-
-    def nb_qddot(self):
-        return self.model.nbQddot()
-
-    def nb_root(self):
-        return self.model.nbRoot()
-
-    def update_segment_characteristics(self, idx, characteristics):
-        return self.model.updateSegmentCharacteristics(idx, characteristics)
-
-    def segment(self, *args):
-        return self.model.segment(*args)
-
-    def segments(self):
-        return self.model.segments()
-
-    def dispatched_force(self, *args):
-        return self.model.dispatchedForce(*args)
-
-    def update_kinematics_custom(self, Q=None, Qdot=None, Qddot=None):
-        return self.model.UpdateKinematicsCustom(Q, Qdot, Qddot)
-
-    def all_global_jcs(self, *args):
-        return self.model.allGlobalJCS(*args)
-
-    def global_homogeneous_matrices(self, *args):
-        return self.model.globalJCS(*args)
-
-    def child_homogeneous_matrices(self, *args):
-        return self.model.localJCS(*args)
-
-    def project_point(self, *args):
-        return self.model.projectPoint(*args)
-
-    def project_point_jacobian(self, *args):
-        return self.model.projectPointJacobian(*args)
-
-    def mass(self):
-        return self.model.mass()
-
-    def center_of_mass(self, Q, updateKin=True):
-        return self.model.CoM(Q, updateKin)
-
-    def CoMbySegmentInMatrix(self, Q, updateKin=True):
-        return self.model.CoMbySegmentInMatrix(Q, updateKin)
-
-    def CoMbySegment(self, *args):
-        return self.model.CoMbySegment(*args)
-
-    def center_of_mass_velocity(self, Q, Qdot, updateKin=True):
-        return self.model.CoMdot(Q, Qdot, updateKin)
-
-    def center_of_mass_acceleration(self, Q, Qdot, Qddot, updateKin=True):
-        return self.model.CoMddot(Q, Qdot, Qddot, updateKin)
-
-    def comdot_by_segment(self, *args):
-        return self.model.CoMdotBySegment(*args)
-
-    def comddot_by_segment(self, *args):
-        return self.model.CoMddotBySegment(*args)
-
-    def com_jacobian(self, Q, updateKin=True):
-        return self.model.CoMJacobian(Q, updateKin)
-
-    def mesh_points(self, *args):
-        return self.model.meshPoints(*args)
-
-    def mesh_points_in_matrix(self, Q, updateKin=True):
-        return self.model.meshPointsInMatrix(Q, updateKin)
-
-    def mesh_faces(self, *args):
-        return self.model.meshFaces(*args)
-
-    def mesh(self, *args):
-        return self.model.mesh(*args)
-
-    def angular_momentum(self, Q, Qdot, updateKin=True):
-        return self.model.angularMomentum(Q, Qdot, updateKin)
-
-    def mass_matrix(self, Q, updateKin=True):
-        return self.model.massMatrix(Q, updateKin)
-
-    def mass_matrix_inverse(self, Q, updateKin=True):
-        return self.model.massMatrixInverse(Q, updateKin)
-
-    def calc_angular_momentum(self, *args):
-        return self.model.CalcAngularMomentum(*args)
-
-    def calc_segments_angular_momentum(self, *args):
-        return self.model.CalcSegmentsAngularMomentum(*args)
-
-    def body_angular_velocity(self, Q, Qdot, updateKin=True):
-        return self.model.bodyAngularVelocity(Q, Qdot, updateKin)
-
-    def calc_mat_rot_jacobian(self, Q, segmentIdx, rotation, G, updateKin):
-        return self.model.CalcMatRotJacobian(Q, segmentIdx, rotation, G, updateKin)
-
-    def jacobian_segment_rot_mat(self, Q, segmentIdx, updateKin):
-        return self.model.JacobianSegmentRotMat(Q, segmentIdx, updateKin)
-
-    def reshape_qdot(self, Q, QDot, k_stab=1):
-        return self.model.computeQdot(Q, QDot, k_stab)
-
-    def segment_angular_velocity(self, Q, Qdot, idx, updateKin=True):
-        return self.model.segmentAngularVelocity(Q, Qdot, idx, updateKin)
-
-    def kinetic_energy(self, Q, QDot, updateKin=True):
-        return self.model.KineticEnergy(Q, QDot, updateKin)
-
-    def potential_energy(self, Q, updateKin=True):
-        return self.model.PotentialEnergy(Q, updateKin)
-
-    def name_dof(self):
-        return [s.to_string() for s in self.model.nameDof()]
-
-    def contact_names(self):
-        return [s.to_string() for s in self.model.contactNames()]
-
-    def nb_soft_contacts(self):
-        return self.model.nbSoftContacts()
-
-    def soft_contact_names(self):
-        return [s.to_string() for s in self.model.softContactNames()]
-
-    def soft_contact(self, *args):
-        return self.model.softContact(*args)
-
-    def muscle_names(self):
-        return [s.to_string() for s in self.model.muscleNames()]
-
-    def nb_muscles(self):
-        return self.model.nbMuscles()
-
-    def torque(self, tau_activations, q, qdot):
-        return self.model.torque(tau_activations, q, qdot)
-
-    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints):
-        return self.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)
-
-    def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None):
-        return self.model.ForwardDynamics(q, qdot, tau, fext, f_contacts)
-
-    def constrained_forward_dynamics(self, *args):
-        return self.model.ForwardDynamicsConstraintsDirect(*args)
-
-    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None):
-        return self.model.InverseDynamics(q, qdot, qddot, f_ext, f_contacts)
-
-    def non_linear_effect(self, Q, QDot, f_ext=None, f_contacts=None):
-        return self.model.NonLinearEffect(Q, QDot, f_ext, f_contacts)
-
-    def contact_forces_from_constrained_forward_dynamics(self, Q, QDot, Tau, f_ext=None):
-        return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(Q, QDot, Tau, f_ext)
-
-    def body_inertia(self, Q, updateKin=True):
-        return self.model.bodyInertia(Q, updateKin)
-
-    def compute_constraint_impulses_direct(self, Q, QDotPre):
-        return self.model.ComputeConstraintImpulsesDirect(Q, QDotPre)
-
-    def check_generalized_dimensions(self, Q=None, Qdot=None, Qddot=None, torque=None):
-        return self.model.checkGeneralizedDimensions(Q, Qdot, Qddot, torque)
-
-    def state_set(self):
-        return self.model.stateSet()
-
-    def activation_dot(self, muscle_states):
-        return self.model.activationDot(muscle_states)
-
-    def muscular_joint_torque(self, muscle_states, q, qdot):
-        return self.model.muscularJointTorque(muscle_states, q, qdot)
-
-    def get_constraints(self):
-        return self.model.getConstraints()
-
-    def markers(self, *args):
-        if len(args) == 0:
-            return self.model.markers
-        else:
-            return self.model.markers(*args)
-
-    def nb_markers(self):
-        return self.model.nbMarkers()
-
-    def marker_index(self, name):
-        return biorbd.marker_index(self.model, name)
-
-    def marker(self, *args):
-        if len(args) > 1:
-            return self.model.marker(*args)
-        else:
-            return self.model.marker
-        # hard to interface with c++ code
-        # because sometimes it used as :
-        # BiorbdInterface.mx_to_cx(
-        #     f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx
-        # )
-        # it will change the way we call it by model.marker()
-        # else:
-        #     return self.model.marker(i)
-
-    def nb_rigid_contacts(self):
-        return self.model.nbRigidContacts()
-
-    def nb_contacts(self):
-        return self.model.nbContacts()
-
-    def path(self):
-        return self.model.path()
-
-    def markers_velocity(self, Q, Qdot, updateKin=True):
-        return self.model.markersVelocity(Q, Qdot, updateKin)
-
-    def rigid_contact_axis_idx(self, idx):
-        return self.model.rigidContactAxisIdx(idx)
-
-    def torque_max(self, *args):
-        return self.model.torqueMax(*args)
-
-    def rigid_contact_acceleration(self, Q, Qdot, Qddot, idx=None, updateKin=True):
-        return self.model.rigidContactAcceleration(Q, Qdot, Qddot, idx, updateKin)
-
-    def rt(self, *args):
-        return self.model.RT(*args)
-
-    def nb_dof(self):
-        return self.model.nbDof()
-
-    def marker_names(self):
-        return [s.to_string() for s in self.model.markerNames()]
-
-    def soft_contact_name(self, i):
-        return self.model.softContactName(i).to_string()
-
-    def apply_rt(self, *args):
-        return self.model.applyRT(*args)
+    def object_homogeneous_matrices(self, q) -> tuple:
+        """Get homogeneous matrices of all objects stored in the model"""
+
+    marker_names: tuple[str]
+    """Get the marker names"""
 
 
 class CustomModel(BioModel):
@@ -669,7 +365,7 @@ class CustomModel(BioModel):
     def body_inertia(self, Q, updateKin=True):
         raise NotImplementedError("body_inertia is not implemented")
 
-    def compute_constraint_impulses_direct(self, Q, QDotPre):
+    def qdot_from_impact(self, Q, QDotPre):
         raise NotImplementedError("compute_constraint_impulses_direct is not implemented")
 
     def check_generalized_dimensions(self, Q=None, Qdot=None, Qddot=None, torque=None):
@@ -678,10 +374,10 @@ class CustomModel(BioModel):
     def state_set(self):
         raise NotImplementedError("state_set is not implemented")
 
-    def activation_dot(self, muscle_states):
+    def muscle_activation_dot(self, muscle_states):
         raise NotImplementedError("activation_dot is not implemented")
 
-    def muscular_joint_torque(self, muscle_states, q, qdot):
+    def muscle_joint_torque(self, muscle_states, q, qdot):
         raise NotImplementedError("muscular_joint_torque is not implemented")
 
     def get_constraints(self):
@@ -702,10 +398,10 @@ class CustomModel(BioModel):
     def segment_index(self, name):
         raise NotImplementedError("segment_index is not implemented")
 
-    def markers_velocity(self, Q, Qdot):
+    def marker_velocities(self, Q, Qdot):
         raise NotImplementedError("marker_velocity is not implemented")
 
-    def torque_max(self):
+    def tau_max(self):
         raise NotImplementedError("torque_max is not implemented")
 
     def rigid_contact_acceleration(self, Q, Qdot, Qddot, updateKin=True):
@@ -717,7 +413,7 @@ class CustomModel(BioModel):
     def rigid_contact_axis_idx(self, *args):
         raise NotImplementedError("rigid_contact_axis_idx is not implemented")
 
-    def rt(self, *args):
+    def object_homogeneous_matrix(self, *args):
         raise NotImplementedError("rt is not implemented")
 
     def nb_dof(self):
