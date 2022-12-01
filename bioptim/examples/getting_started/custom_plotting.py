@@ -62,13 +62,13 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    n_q = biorbd_model.nb_q()
-    n_qdot = biorbd_model.nb_qdot()
+    n_q = biorbd_model.nb_q
+    n_qdot = biorbd_model.nb_qdot
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
     torque_min, torque_max, torque_init = -100, 100, 0
-    n_tau = biorbd_model.nb_tau()
+    n_tau = biorbd_model.nb_tau
     u_bounds = Bounds([torque_min] * n_tau, [torque_max] * n_tau)
     u_bounds[n_tau - 1, :] = 0
 

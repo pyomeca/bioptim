@@ -96,25 +96,25 @@ class ConfigureProblem:
             The list of str to display on figures
         """
 
-        idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nb_q())
+        idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nb_q)
 
         if nlp.model.nb_quaternions() == 0:
-            new_name = nlp.model.name_dof()[idx[0]]
+            new_name = nlp.model.name_dof[idx[0]]
         else:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
-                if nlp.model.name_dof()[i][-4:-1] == "Rot" or nlp.model.name_dof()[i][-6:-1] == "Trans":
-                    new_name += [nlp.model.name_dof()[i]]
+                if nlp.model.name_dof[i][-4:-1] == "Rot" or nlp.model.name_dof[i][-6:-1] == "Trans":
+                    new_name += [nlp.model.name_dof[i]]
                 else:
-                    if nlp.model.name_dof()[i][-5:] != "QuatW":
+                    if nlp.model.name_dof[i][-5:] != "QuatW":
                         if var_str == "qdot":
-                            new_name += [nlp.model.name_dof()[i][:-5] + "omega" + nlp.model.name_dof()[i][-1]]
+                            new_name += [nlp.model.name_dof[i][:-5] + "omega" + nlp.model.name_dof[i][-1]]
                         elif var_str == "qddot":
-                            new_name += [nlp.model.name_dof()[i][:-5] + "omegadot" + nlp.model.name_dof()[i][-1]]
+                            new_name += [nlp.model.name_dof[i][:-5] + "omegadot" + nlp.model.name_dof[i][-1]]
                         elif var_str == "qdddot":
-                            new_name += [nlp.model.name_dof()[i][:-5] + "omegaddot" + nlp.model.name_dof()[i][-1]]
+                            new_name += [nlp.model.name_dof[i][:-5] + "omegaddot" + nlp.model.name_dof[i][-1]]
                         elif var_str == "tau" or var_str == "taudot":
-                            new_name += [nlp.model.name_dof()[i]]
+                            new_name += [nlp.model.name_dof[i]]
 
         return new_name
 
@@ -427,7 +427,7 @@ class ConfigureProblem:
         if not nb_root > 0:
             raise RuntimeError("BioModel must have at least one DoF on root.")
 
-        name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot() - nb_root)]
+        name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
         ConfigureProblem.configure_new_variable(
             "qddot_joints", name_qddot_joints, ocp, nlp, as_states=False, as_controls=True
         )
@@ -607,7 +607,7 @@ class ConfigureProblem:
         """
 
         global_soft_contact_force_func = MX.zeros(nlp.model.nb_soft_contacts() * 6, 1)
-        n = nlp.model.nb_q()
+        n = nlp.model.nb_q
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
         for i_sc in range(nlp.model.nb_soft_contacts()):
@@ -946,7 +946,7 @@ class ConfigureProblem:
         """
 
         name = "q"
-        name_q = nlp.model.name_dof()
+        name_q = nlp.model.name_dof
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name,
@@ -1195,14 +1195,14 @@ class ConfigureProblem:
                 if n in nlp.variable_mappings:
                     if n == "q":
                         q_map = list(nlp.variable_mappings[n].to_first.map_idx)
-                        target = list(range(nlp.model.nb_q()))
+                        target = list(range(nlp.model.nb_q))
                         if nlp.model.nb_quaternions() > 0:
                             if q_map != target:
                                 raise RuntimeError(
                                     "It is not possible to define a q mapping without a qdot or tau mapping"
                                     "while the model has quaternions"
                                 )
-                            target = list(range(nlp.model.nb_qdot()))
+                            target = list(range(nlp.model.nb_qdot))
                         nlp.variable_mappings[key_to_adjust] = BiMapping(target, target)
                     else:
                         nlp.variable_mappings[key_to_adjust] = nlp.variable_mappings[n]

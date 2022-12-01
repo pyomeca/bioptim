@@ -36,8 +36,8 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         biorbd_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True)
-        nx = biorbd_model.nb_q() + biorbd_model.nb_qdot()
-        nu = biorbd_model.nb_tau() + biorbd_model.nb_muscles()
+        nx = biorbd_model.nb_q + biorbd_model.nb_qdot
+        nu = biorbd_model.nb_tau + biorbd_model.nb_muscles()
     elif with_contact:
         biorbd_model = BiorbdModel(
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
@@ -45,20 +45,20 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         dynamics = DynamicsList()
         rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, rigidbody_dynamics=rigidbody_dynamics)
-        nx = biorbd_model.nb_q() + biorbd_model.nb_qdot()
-        nu = biorbd_model.nb_tau()
+        nx = biorbd_model.nb_q + biorbd_model.nb_qdot
+        nu = biorbd_model.nb_tau
     elif with_actuator:
         biorbd_model = BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-        nx = biorbd_model.nb_q() + biorbd_model.nb_qdot()
-        nu = biorbd_model.nb_tau()
+        nx = biorbd_model.nb_q + biorbd_model.nb_qdot
+        nu = biorbd_model.nb_tau
     else:
         biorbd_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-        nx = biorbd_model.nb_q() + biorbd_model.nb_qdot()
-        nu = biorbd_model.nb_tau()
+        nx = biorbd_model.nb_q + biorbd_model.nb_qdot
+        nu = biorbd_model.nb_tau
     x_init = InitialGuess(np.zeros((nx, 1)))
 
     if implicit:

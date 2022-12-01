@@ -80,15 +80,15 @@ def prepare_ocp(
     x_bounds[2:6, -1] = [1.57, 0, 0, 0]
 
     # Initial guess
-    x_init = InitialGuess([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()))
+    x_init = InitialGuess([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds(
-        [tau_min] * biorbd_model.nb_tau(), [tau_max] * biorbd_model.nb_tau()
+        [tau_min] * biorbd_model.nb_tau, [tau_max] * biorbd_model.nb_tau
     )
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nb_tau())
+    u_init = InitialGuess([tau_init] * biorbd_model.nb_tau)
 
     # ------------- #
     # A phase transition loop constraint is treated as

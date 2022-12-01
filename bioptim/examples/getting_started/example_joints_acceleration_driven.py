@@ -70,12 +70,12 @@ def prepare_ocp(
     x_bounds[1, -1] = 0
 
     # Initial guess
-    n_q = biorbd_model.nb_q()
-    n_qdot = biorbd_model.nb_qdot()
+    n_q = biorbd_model.nb_q
+    n_qdot = biorbd_model.nb_qdot
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_qddot_joints = biorbd_model.nb_qddot() - biorbd_model.nbRoot()  # 2 - 1 = 1 in this example
+    n_qddot_joints = biorbd_model.nb_qddot - biorbd_model.nbRoot()  # 2 - 1 = 1 in this example
     qddot_joints_min, qddot_joints_max, qddot_joints_init = -100, 100, 0
     u_bounds = Bounds([qddot_joints_min] * n_qddot_joints, [qddot_joints_max] * n_qddot_joints)
 

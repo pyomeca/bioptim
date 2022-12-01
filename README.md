@@ -246,9 +246,9 @@ from bioptim import (
 ## Building the ocp
 First of all, let's load a bioMod file using `biorbd`:
 ```python
-biorbd_model = BiorbdModel("pendulum.bioMod")
+bio_model = BiorbdModel("pendulum.bioMod")
 ```
-It is convenient since it will provide interesting functions such as the number of degrees of freedom (`biorbd_model.nb_q()`).
+It is convenient since it will provide interesting functions such as the number of degrees of freedom (`bio_model.nb_q`).
 Please note that a copy of `pendulum.bioMod` is available at the end of the *Getting started* section.
 In brief, the pendulum consists of two degrees of freedom (sideways movement and rotation) with the center of mass near the head.
 
@@ -269,7 +269,7 @@ Finally, the index 2 and 3 are respectively the velocity of translation y and ro
 QAndQDotBounds waits for a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
 How convenient!
 ```python
-x_bounds = QAndQDotBounds(biorbd_model)
+x_bounds = QAndQDotBounds(bio_model)
 ```
 The first dimension of x_bounds is the degrees of freedom (*q*) `and` their velocities (*qdot*) that match those `in` the bioMod `file`. The time `is` discretized `in` nodes wich `is` the second dimension declared `in` x_bounds.
 If you have more than one phase, we would have x_bound[*phase*][*q `and` qdot*, *nodes*]
@@ -317,7 +317,7 @@ Thereafter, you just have to send everything to the `OptimalControlProgram` clas
 For simplicity's sake, I copy all the piece of code previously visited in the building of the ocp section here:
 ```python
 ocp = OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting=25,
         phase_time=3,
@@ -418,9 +418,9 @@ from bioptim import (
     Objective,
 )
 
-biorbd_model = BiorbdModel("pendulum.bioMod")
+bio_model = BiorbdModel("pendulum.bioMod")
 dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
-x_bounds = QAndQDotBounds(biorbd_model)
+x_bounds = QAndQDotBounds(bio_model)
 x_bounds[:, [0, -1]] = 0
 x_bounds[1, -1] = 3.14
 u_bounds = Bounds([-100, 0], [100, 0])
@@ -429,7 +429,7 @@ x_init = InitialGuess([0, 0, 0, 0])
 u_init = InitialGuess([0, 0])
 
 ocp = OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting=25,
         phase_time=3,
@@ -527,7 +527,7 @@ The full signature of the `OptimalControlProgram` can be scary at first, but sho
 Here it is:
 ```python
 OptimalControlProgram(
-    biorbd_model: [str, list, Model],
+    bio_model: [str, list, Model],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
@@ -552,7 +552,7 @@ OptimalControlProgram(
 )
 ```
 Of these, only the first 4 are mandatory.
-`biorbd_model` is the `biorbd` model to use loaded with the BiorbdModel class or a custom model, that inherits from the Model class.
+`bio_model` is the `biorbd` model to use loaded with the BiorbdModel class or a custom model, that inherits from the Model class.
 In the case of a multiphase optimization, one model per phase should be passed in a list.
 `dynamics` is the dynamics of the system during each phase (see The dynamics section).
 `n_shooting` is the number of shooting point of the direct multiple shooting (method) for each phase.
@@ -582,7 +582,7 @@ SX will tend to solve much faster than MX graphs, however they can necessitate a
 Please note that a common ocp will usually define only these parameters:
 ```python
 ocp = OptimalControlProgram(
-    biorbd_model: [str, list, Model],
+    bio_model: [str, list, Model],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
@@ -644,7 +644,7 @@ The interested user can have a look at the `examples/getting_started/custom_plot
 The NonLinearProgram is by essence the phase of an ocp. 
 The user is expected not to change anything from this class, but can retrieve useful information from it.
 
-One of the main use of nlp is to get a reference to the biorbd_model for the current phase: `nlp.model`.
+One of the main use of nlp is to get a reference to the bio_model for the current phase: `nlp.model`.
 Another important value stored in nlp is the shape of the states and controls: `nlp.shape`, which is a dictionary where the keys are the names of the elements (for instance, *q* for the generalized coordinates)
 
 It would be tedious, and probably not much useful, to list all the elements of nlp here.   
@@ -659,10 +659,10 @@ They can be used as is, or can be modified to add new features.
 
 The `BiorbdModel` class is a wrapper around the `biorbd.Model` class. Some methods may not be interfaced yet, it is accessible through:
 ```python
-biorbd_model = BiorbdModel("path/to/model.bioMod")
-biorbd_model.marker_names()  # for example returns the marker names
+bio_model = BiorbdModel("path/to/model.bioMod")
+bio_model.marker_names()  # for example returns the marker names
 # if the methods is not interfaced, it can be accessed through
-biorbd_model.model.markerNames()
+bio_model.model.markerNames()
 ```
 
 ### Class: CustomModel

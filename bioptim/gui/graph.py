@@ -360,7 +360,7 @@ class OcpToConsole(GraphAbstract):
                 print("")
             print("")
             print(f"**********")
-            print(f"MODEL: {self.ocp.original_values['biorbd_model'][phase_idx]}")
+            print(f"MODEL: {self.ocp.original_values['bio_model'][phase_idx]}")
             print(f"PHASE DURATION: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s")
             print(f"SHOOTING NODES : {self.ocp.nlp[phase_idx].ns}")
             print(f"DYNAMICS: {self.ocp.nlp[phase_idx].dynamics_type.type.name}")
@@ -623,8 +623,8 @@ class OcpToGraph(GraphAbstract):
         """
 
         node_str = (
-            f"<b>BioModel</b>: {self.ocp.nlp[phase_idx].model.path().filename().to_string()}"
-            f".{self.ocp.nlp[phase_idx].model.path().extension().to_string()}<br/>"
+            f"<b>BioModel</b>: {self.ocp.nlp[phase_idx].model.path.filename().to_string()}"
+            f".{self.ocp.nlp[phase_idx].model.path.extension().to_string()}<br/>"
         )
         node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"

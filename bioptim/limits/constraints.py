@@ -7,7 +7,7 @@ import biorbd_casadi as biorbd
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.biomodel import BiorbdModel
+from ..interfaces.biorbd_model import BiorbdModel
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -341,7 +341,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls.keys() else nlp.states["qddot"].mx
             if with_contact:
                 model = BiorbdModel(
-                    nlp.model.path().absolutePath().to_string()
+                    nlp.model.path.absolutePath().to_string()
                 )  # TODO: find a better solution if possible
                 qddot_fd = model.constrained_forward_dynamics(q, qdot, tau).to_mx()
             else:

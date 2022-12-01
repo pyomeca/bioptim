@@ -69,7 +69,7 @@ def prepare_ocp(
 
     biorbd_model = BiorbdModel(biorbd_model_path)
 
-    n_tau = biorbd_model.nb_tau()
+    n_tau = biorbd_model.nb_tau
     n_muscles = biorbd_model.nb_muscles()
     tau_min, tau_max = -10, 10
 
@@ -160,7 +160,7 @@ def prepare_ocp(
     x_bounds[:, 0] = (0.07, 1.4, 0, 0)
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
 
-    x_init = InitialGuess([1.57] * biorbd_model.nb_q() + [0] * biorbd_model.nb_qdot())
+    x_init = InitialGuess([1.57] * biorbd_model.nb_q + [0] * biorbd_model.nb_qdot)
     x_init.concatenate(FatigueInitialGuess(fatigue_dynamics))
 
     # Define control path constraint

@@ -432,7 +432,7 @@ def test_acados_one_parameter():
     # Path constraint
     x_bounds = QAndQDotBounds(model)
     x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nb_q(), [300] * model.nb_q())
+    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
@@ -496,7 +496,7 @@ def test_acados_several_parameter():
     # Path constraint
     x_bounds = QAndQDotBounds(model)
     x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nb_q(), [300] * model.nb_q())
+    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
@@ -666,8 +666,8 @@ def test_acados_bounds_not_implemented(failing):
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     biorbd_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
-    nq = biorbd_model.nb_q()
-    ntau = biorbd_model.nb_tau()
+    nq = biorbd_model.nb_q
+    ntau = biorbd_model.nb_tau
 
     n_cycles = 3
     window_len = 5

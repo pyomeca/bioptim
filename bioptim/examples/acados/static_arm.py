@@ -51,19 +51,19 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
 
     # Initial guess
     if x_warm is None:
-        x_init = InitialGuess([1.57] * biorbd_model.nb_q() + [0] * biorbd_model.nb_qdot())
+        x_init = InitialGuess([1.57] * biorbd_model.nb_q + [0] * biorbd_model.nb_qdot)
     else:
         x_init = InitialGuess(x_warm, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nb_tau() + [muscle_min] * biorbd_model.nb_muscles(),
-        [tau_max] * biorbd_model.nb_tau() + [muscle_max] * biorbd_model.nb_muscles(),
+        [tau_min] * biorbd_model.nb_tau + [muscle_min] * biorbd_model.nb_muscles(),
+        [tau_max] * biorbd_model.nb_tau + [muscle_max] * biorbd_model.nb_muscles(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_tau() + [muscle_init] * biorbd_model.nb_muscles())
+    u_init.add([tau_init] * biorbd_model.nb_tau + [muscle_init] * biorbd_model.nb_muscles())
     # ------------- #
 
     return OptimalControlProgram(

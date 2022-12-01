@@ -3,6 +3,8 @@ This script doesn't use biorbd
 This an example of how to use bioptim to solve a simple pendulum problem
 """
 import numpy as np
+# import the custom model
+from my_model import MyModel
 
 from bioptim import (
     OptimalControlProgram,
@@ -14,13 +16,12 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
-    CustomModel,
     DynamicsList,
 )
 
 
 def prepare_ocp(
-    model: CustomModel,
+    model: MyModel,
     final_time: float,
     n_shooting: int,
     configure_dynamics: callable = None,
@@ -68,12 +69,12 @@ def prepare_ocp(
     )
 
     # Initial guess
-    n_q = model.nb_q()
-    n_qdot = model.nb_qdot()
+    n_q = model.nb_q
+    n_qdot = model.nb_qdot
     x_init = InitialGuess([20] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = model.nb_tau()
+    n_tau = model.nb_tau
     tau_min, tau_max, tau_init = -20, 20, 10
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
 
@@ -99,8 +100,6 @@ def main():
     """
     If main.py is run as a script, it will perform the optimization
     """
-    # import the custom model
-    from my_model import MyModel
 
     # import the custom dynamics and configuration
     from custom_dynamics import custom_dynamics, custom_configure_my_dynamics

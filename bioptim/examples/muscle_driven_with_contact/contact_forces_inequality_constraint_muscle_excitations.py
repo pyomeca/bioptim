@@ -60,7 +60,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     )
 
     # Path constraint
-    n_q = biorbd_model.nb_q()
+    n_q = biorbd_model.nb_q
     n_qdot = n_q
     n_mus = biorbd_model.nb_muscles()
     pose_at_first_node = [0, 0, -0.75, 0.75]

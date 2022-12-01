@@ -62,7 +62,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment="seg_rt", rt=0)
 
     # Path constraint
-    nq = biorbd_model.nb_q()
+    nq = biorbd_model.nb_q
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][2, [0, -1]] = [-1.57, 1.57]
@@ -70,15 +70,15 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()))
+    x_init.add([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model.nb_tau(), [tau_max] * biorbd_model.nb_tau())
+    u_bounds.add([tau_min] * biorbd_model.nb_tau, [tau_max] * biorbd_model.nb_tau)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_tau())
+    u_init.add([tau_init] * biorbd_model.nb_tau)
 
     # ------------- #
 

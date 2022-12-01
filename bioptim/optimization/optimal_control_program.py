@@ -19,7 +19,8 @@ from ..dynamics.configure_problem import ConfigureProblem, DynamicsFcn
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.biomodel import BiorbdModel, BioModel
+from ..interfaces.biomodel import BioModel
+from ..interfaces.biorbd_model import BiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -142,7 +143,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        biorbd_model: Union[str, BiorbdModel, list, tuple, BioModel],
+        bio_model: Union[str, BiorbdModel, list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
@@ -170,8 +171,8 @@ class OptimalControlProgram:
         """
         Parameters
         ----------
-        biorbd_model: Union[str, BiorbdModel, list, tuple, BioModel]
-            The biorbd model. If biorbd_model is an str, a new model is loaded. Otherwise, the references are used
+        bio_model: Union[str, BiorbdModel, list, tuple, BioModel]
+            The biorbd model. If bio_model is an str, a new model is loaded. Otherwise, the references are used
         dynamics: Union[Dynamics, DynamicsList]
             The dynamics of the phases
         n_shooting: Union[int, list[int]]
@@ -218,23 +219,30 @@ class OptimalControlProgram:
             This is mainly for internal purposes when creating an OCP not destined to be solved
         """
 
-        if isinstance(biorbd_model, str):
-            biorbd_model = [BiorbdModel(biorbd_model)]
-        elif isinstance(biorbd_model, (BiorbdModel, BioModel)):
-            biorbd_model = [biorbd_model]
-        elif isinstance(biorbd_model, (list, tuple)):
-            biorbd_model = [BiorbdModel(m) if isinstance(m, str) else m for m in biorbd_model]
-        else:
-            raise RuntimeError(
-                "biorbd_model must either be a string or an instance of BiorbdModel(), or a subclass object of BioModel"
-            )
+        # protocols cannot be tested as instance of a class
+        if isinstance(bio_model, str):
+            raise ValueError(
+                        "bio_model must either be BiorbdModel, "
+                        "or a custom model object, respecting the protocol BioModel."
+                    )
+        if not isinstance(bio_model, (list, tuple)):
+            bio_model = [bio_model]
+
+        if not isinstance(bio_model, (list, tuple)):
+            for model in bio_model:
+                if isinstance(model, str):
+                    raise ValueError(
+                        "bio_model elements must either be BiorbdModel, "
+                        "or a custom model object, respecting the protocol BioModel."
+                    )
+
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
-        self.n_phases = len(biorbd_model)
+        self.n_phases = len(bio_model)
 
         biorbd_model_path = []
-        for m in biorbd_model:
+        for m in bio_model:
             if isinstance(m, BiorbdModel):
-                biorbd_model_path.append(m.path().relativePath().to_string())
+                biorbd_model_path.append(m.path.relativePath().to_string())
             else:
                 biorbd_model_path.append(None)
 
@@ -246,7 +254,7 @@ class OptimalControlProgram:
             raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
 
         self.original_values = {
-            "biorbd_model": biorbd_model_path,
+            "bio_model": biorbd_model_path,
             "dynamics": dynamics,
             "n_shooting": n_shooting,
             "phase_time": phase_time,
@@ -395,7 +403,7 @@ class OptimalControlProgram:
 
         # nlp is the core of a phase
         self.nlp = [NLP() for _ in range(self.n_phases)]
-        NLP.add(self, "model", biorbd_model, False)
+        NLP.add(self, "model", bio_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
         # Define some aliases
@@ -545,9 +553,9 @@ class OptimalControlProgram:
         dof_names = []  # [[] for _ in range(len(self.nlp))]
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
-            for j in range(nlp.model.nb_q()):
+            for j in range(nlp.model.nb_q):
 
-                legend = nlp.model.name_dof()[j]
+                legend = nlp.model.name_dof[j]
                 if legend in dof_names_all_phases:
                     current_dof_mapping += [dof_names_all_phases.index(legend)]
                 else:

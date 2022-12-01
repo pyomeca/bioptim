@@ -217,7 +217,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
     # Define the problem
     model_path = bioptim_folder + "/models/pendulum.bioMod"
-    biorbd_model = BiorbdModel(model_path)
+    bio_model = BiorbdModel(model_path)
 
     final_time = 2
     n_shooting = 30
@@ -230,7 +230,7 @@ def test_track_marker_2D_pendulum(ode_solver):
     if isinstance(ode_solver, OdeSolver.IRK):
         tau_ref = tau_ref * 5
 
-    ocp = ocp_module.prepare_ocp(biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(bio_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check constraints
@@ -299,7 +299,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type):
 
     # Define the problem
     model_path = bioptim_folder + "/models/pendulum.bioMod"
-    biorbd_model = BiorbdModel(model_path)
+    bio_model = BiorbdModel(model_path)
 
     final_time = 2
     n_shooting = 30
@@ -312,7 +312,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type):
     if isinstance(ode_solver, OdeSolver.IRK):
         tau_ref = tau_ref * 5
 
-    ocp = ocp_module.prepare_ocp(biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(bio_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check constraints

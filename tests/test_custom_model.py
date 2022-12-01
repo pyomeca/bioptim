@@ -21,14 +21,14 @@ def test_custom_model():
         dynamics=dynamics.custom_dynamics,
     )
 
-    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_q(), 1)
-    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_qdot(), 1)
-    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_qddot(), 1)
-    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_tau(), 1)
+    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_q, 1)
+    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_qdot, 1)
+    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_qddot, 1)
+    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_tau, 1)
     assert ocp.nlp[0].model.nb_quaternions() == 0
     np.testing.assert_almost_equal(ocp.nlp[0].model.mass(), 1)
-    assert ocp.nlp[0].model.name_dof() == ["rotx"]
-    assert ocp.nlp[0].model.path() is None
+    assert ocp.nlp[0].model.name_dof == ["rotx"]
+    assert ocp.nlp[0].model.path is None
 
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_maximum_iterations(2)

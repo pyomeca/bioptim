@@ -62,9 +62,9 @@ def prepare_ocp(
     # --- Options --- #
     biorbd_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -100, 100, 0
-    n_q = biorbd_model.nb_q()
-    n_qdot = biorbd_model.nb_qdot()
-    n_tau = biorbd_model.nb_tau()
+    n_q = biorbd_model.nb_q
+    n_qdot = biorbd_model.nb_qdot
+    n_tau = biorbd_model.nb_tau
 
     # Add objective functions
     objective_functions = ObjectiveList()

@@ -116,29 +116,29 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
     if n_phases == 3:
-        x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
-        x_init.add([0] * (biorbd_model[0].nb_q() + biorbd_model[0].nb_qdot()))
+        x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
+        x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
+        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
     )
     if n_phases == 3:
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
+            [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
         )
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
+            [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
         )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nb_tau())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau)
     if n_phases == 3:
-        u_init.add([tau_init] * biorbd_model[0].nb_tau())
-        u_init.add([tau_init] * biorbd_model[0].nb_tau())
+        u_init.add([tau_init] * biorbd_model[0].nb_tau)
+        u_init.add([tau_init] * biorbd_model[0].nb_tau)
 
     # ------------- #
 

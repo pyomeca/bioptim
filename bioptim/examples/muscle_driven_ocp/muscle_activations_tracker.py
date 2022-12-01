@@ -56,10 +56,10 @@ def generate_data(
     """
 
     # Aliases
-    n_q = biorbd_model.nb_q()
-    n_qdot = biorbd_model.nb_qdot()
-    n_qddot = biorbd_model.nb_qddot()
-    n_tau = biorbd_model.nb_tau()
+    n_q = biorbd_model.nb_q
+    n_qdot = biorbd_model.nb_qdot
+    n_qddot = biorbd_model.nb_qddot
+    n_tau = biorbd_model.nb_tau
     n_mus = biorbd_model.nb_muscles()
     dt = final_time / n_shooting
 
@@ -209,13 +209,13 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    nq = biorbd_model.nb_q()
+    nq = biorbd_model.nb_q
     x_bounds[0].min[:nq, :] = -2 * np.pi
     x_bounds[0].max[:nq, :] = 2 * np.pi
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nb_q() + biorbd_model.nb_qdot()))
+    x_init.add([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
 
     # Define control path constraint
     activation_min, activation_max, activation_init = 0, 1, 0.5
@@ -224,11 +224,11 @@ def prepare_ocp(
     if use_residual_torque:
         tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
-            [tau_min] * biorbd_model.nb_tau() + [activation_min] * biorbd_model.nb_muscles(),
-            [tau_max] * biorbd_model.nb_tau() + [activation_max] * biorbd_model.nb_muscles(),
+            [tau_min] * biorbd_model.nb_tau + [activation_min] * biorbd_model.nb_muscles(),
+            [tau_max] * biorbd_model.nb_tau + [activation_max] * biorbd_model.nb_muscles(),
         )
         u_init.add(
-            [tau_init] * biorbd_model.nb_tau() + [activation_init] * biorbd_model.nb_muscles()
+            [tau_init] * biorbd_model.nb_tau + [activation_init] * biorbd_model.nb_muscles()
         )
     else:
         u_bounds.add(
@@ -276,7 +276,7 @@ def main():
         n_shooting_points,
         markers_ref,
         muscle_activations_ref,
-        x_ref[: biorbd_model.nb_q(), :],
+        x_ref[: biorbd_model.nb_q, :],
         kin_data_to_track="q",
         use_residual_torque=use_residual_torque,
     )
@@ -286,7 +286,7 @@ def main():
 
     # --- Show the results --- #
     q = sol.states["q"]
-    n_q = ocp.nlp[0].model.nb_q()
+    n_q = ocp.nlp[0].model.nb_q
     n_mark = ocp.nlp[0].model.nbMarkers()
     n_frames = q.shape[1]
 

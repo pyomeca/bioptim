@@ -32,7 +32,7 @@ def test_mhe(solver):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     biorbd_model = BiorbdModel(bioptim_folder + "/models/cart_pendulum.bioMod")
-    nq = biorbd_model.nb_q()
+    nq = biorbd_model.nb_q
     torque_max = 5  # Give a bit of slack on the max torque
 
     n_cycles = 5 if solver.type == SolverType.ACADOS else 1
@@ -80,8 +80,8 @@ def test_mhe_redim_xbounds_and_init():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     biorbd_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
-    nq = biorbd_model.nb_q()
-    ntau = biorbd_model.nb_tau()
+    nq = biorbd_model.nb_q
+    ntau = biorbd_model.nb_tau
 
     n_cycles = 3
     window_len = 5
@@ -112,8 +112,8 @@ def test_mhe_redim_xbounds_and_init():
 def test_mhe_redim_xbounds_not_implemented():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     biorbd_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
-    nq = biorbd_model.nb_q()
-    ntau = biorbd_model.nb_tau()
+    nq = biorbd_model.nb_q
+    ntau = biorbd_model.nb_tau
 
     n_cycles = 3
     window_len = 5

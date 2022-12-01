@@ -54,7 +54,7 @@ def prepare_ocp(
     dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True, with_contact=True)
 
     # Path constraint
-    n_q = biorbd_model.nb_q()
+    n_q = biorbd_model.nb_q
     n_qdot = n_q
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
@@ -70,12 +70,12 @@ def prepare_ocp(
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nb_tau() + [activation_min] * biorbd_model.nb_muscles(),
-        [tau_max] * biorbd_model.nb_tau() + [activation_max] * biorbd_model.nb_muscles(),
+        [tau_min] * biorbd_model.nb_tau + [activation_min] * biorbd_model.nb_muscles(),
+        [tau_max] * biorbd_model.nb_tau + [activation_max] * biorbd_model.nb_muscles(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_tau() + [activation_init] * biorbd_model.nb_muscles())
+    u_init.add([tau_init] * biorbd_model.nb_tau + [activation_init] * biorbd_model.nb_muscles())
 
     # ------------- #
 

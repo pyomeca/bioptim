@@ -25,7 +25,7 @@ from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
-from ..interfaces.biomodel import BiorbdModel
+from ..interfaces.biorbd_model import BiorbdModel
 
 
 class Solution:
@@ -1239,7 +1239,7 @@ class Solution:
                 if param.function:
                     param.function(nlp.model, self.parameters[param.name], **param.params)
 
-            all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path().absolutePath().to_string(), **kwargs))
+            all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path.absolutePath().to_string(), **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
             for objective in self.ocp.nlp[idx_phase].J:
                 if objective.target is not None:

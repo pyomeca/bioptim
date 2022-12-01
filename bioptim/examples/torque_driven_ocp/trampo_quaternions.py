@@ -77,14 +77,14 @@ def prepare_ocp(
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Define control path constraint
-    n_tau = biorbd_model.nb_tau()  # biorbd_model.nb_tau()
+    n_tau = biorbd_model.nb_tau  # bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
 
     # Initial guesses
     # TODO put this in a function defined before and explain what it does, and what are the variables
-    x = np.vstack((np.zeros((biorbd_model.nb_q(), 2)), np.ones((biorbd_model.nb_qdot(), 2))))
+    x = np.vstack((np.zeros((biorbd_model.nb_q, 2)), np.ones((biorbd_model.nb_qdot, 2))))
     Arm_init_D = np.zeros((3, 2))
     Arm_init_D[1, 0] = 0
     Arm_init_D[1, 1] = -np.pi + 0.01
@@ -104,8 +104,8 @@ def prepare_ocp(
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[: biorbd_model.nb_q(), 0] = x[: biorbd_model.nb_q(), 0]
-    x_bounds[0].max[: biorbd_model.nb_q(), 0] = x[: biorbd_model.nb_q(), 0]
+    x_bounds[0].min[: biorbd_model.nb_q, 0] = x[: biorbd_model.nb_q, 0]
+    x_bounds[0].max[: biorbd_model.nb_q, 0] = x[: biorbd_model.nb_q, 0]
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * n_tau)

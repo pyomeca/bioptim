@@ -5,11 +5,11 @@ from pathlib import Path
 
 
 class BiorbdModel:
-    def __init__(self, biorbd_model: str | biorbd.Model):
-        if isinstance(biorbd_model, str):
-            self.model = biorbd.Model(biorbd_model)
+    def __init__(self, bio_model: str | biorbd.Model):
+        if isinstance(bio_model, str):
+            self.model = biorbd.Model(bio_model)
         else:
-            self.model = biorbd_model
+            self.model = bio_model
 
     def deep_copy(self, *args):
         return BiorbdModel(self.model.DeepCopy(*args))

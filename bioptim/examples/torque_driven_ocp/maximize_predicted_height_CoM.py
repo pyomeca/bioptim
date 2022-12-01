@@ -109,7 +109,7 @@ def prepare_ocp(
         )
 
     # Path constraint
-    n_q = biorbd_model.nb_q()
+    n_q = biorbd_model.nb_q
     n_qdot = n_q
     pose_at_first_node = [0, 0, -0.5, 0.5]
 
@@ -124,9 +124,9 @@ def prepare_ocp(
 
     # Define control path constraint
     if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
-        nu_sup = biorbd_model.nb_qddot()
+        nu_sup = biorbd_model.nb_qddot
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        nu_sup = biorbd_model.nb_qddot() + biorbd_model.nb_contacts()
+        nu_sup = biorbd_model.nb_qddot + biorbd_model.nb_contacts()
     else:
         nu_sup = 0
 

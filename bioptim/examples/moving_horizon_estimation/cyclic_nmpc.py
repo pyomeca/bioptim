@@ -38,16 +38,16 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque):
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     x_bound = QAndQDotBounds(model)
-    u_bound = Bounds([-max_torque] * model.nb_q(), [max_torque] * model.nb_q())
+    u_bound = Bounds([-max_torque] * model.nb_q, [max_torque] * model.nb_q)
 
     x_init = InitialGuess(
         np.zeros(
-            model.nb_q() * 2,
+            model.nb_q * 2,
         )
     )
     u_init = InitialGuess(
         np.zeros(
-            model.nb_q(),
+            model.nb_q,
         )
     )
 

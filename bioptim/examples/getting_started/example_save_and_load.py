@@ -93,12 +93,12 @@ def prepare_ocp(
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    n_q = biorbd_model.nb_q()
-    n_qdot = biorbd_model.nb_qdot()
+    n_q = biorbd_model.nb_q
+    n_qdot = biorbd_model.nb_qdot
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nb_tau()
+    n_tau = biorbd_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[n_tau - 1, :] = 0

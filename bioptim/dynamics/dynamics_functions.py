@@ -718,7 +718,7 @@ class DynamicsFunctions:
             elif "tau" in nlp.controls:
                 tau_shape = nlp.controls["tau"].mx.shape[0]
             else:
-                tau_shape = nlp.model.nb_tau()
+                tau_shape = nlp.model.nb_tau
             tau = MX(tau_shape, nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, f_ext).to_mx()

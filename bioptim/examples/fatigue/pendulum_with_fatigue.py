@@ -68,7 +68,7 @@ def prepare_ocp(
     """
 
     biorbd_model = BiorbdModel(biorbd_model_path)
-    n_tau = biorbd_model.nb_tau()
+    n_tau = biorbd_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
@@ -147,8 +147,8 @@ def prepare_ocp(
             x_bounds[[7, 13], 0] = 1  # The rotation dof is passive (fatigue_mr = 1)
 
     # Initial guess
-    n_q = biorbd_model.nb_q()
-    n_qdot = biorbd_model.nb_qdot()
+    n_q = biorbd_model.nb_q
+    n_qdot = biorbd_model.nb_qdot
     x_init = InitialGuess([0] * (n_q + n_qdot))
     x_init.concatenate(FatigueInitialGuess(fatigue_dynamics))
 
