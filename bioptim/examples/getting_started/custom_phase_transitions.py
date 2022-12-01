@@ -82,7 +82,7 @@ def prepare_ocp(
     The ocp ready to be solved
     """
 
-    # Model path
+    # BioModel path
     biorbd_model = (
         BiorbdModel(biorbd_model_path),
         BiorbdModel(biorbd_model_path),

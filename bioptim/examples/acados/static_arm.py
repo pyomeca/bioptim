@@ -25,7 +25,7 @@ from bioptim import (
 
 def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=False, n_threads=1):
     # --- Options --- #
-    # Model path
+    # BioModel path
     biorbd_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -50, 50, 0
     muscle_min, muscle_max, muscle_init = 0, 1, 0.5

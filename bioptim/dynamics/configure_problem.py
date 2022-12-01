@@ -425,7 +425,7 @@ class ConfigureProblem:
         # Configure qddot joints
         nb_root = nlp.model.nb_root()
         if not nb_root > 0:
-            raise RuntimeError("Model must have at least one DoF on root.")
+            raise RuntimeError("BioModel must have at least one DoF on root.")
 
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot() - nb_root)]
         ConfigureProblem.configure_new_variable(

@@ -68,7 +68,7 @@ def prepare_ocp_phase_transitions(
     The ocp ready to be solved
     """
 
-    # Model path
+    # BioModel path
     biorbd_model = (
         BiorbdModel(biorbd_model_path),
         BiorbdModel(biorbd_model_path),
@@ -381,7 +381,7 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
     """
 
     # --- Options --- #
-    # Model path
+    # BioModel path
     biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters

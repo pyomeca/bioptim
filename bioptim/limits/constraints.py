@@ -7,7 +7,7 @@ import biorbd_casadi as biorbd
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.model import BiorbdModel
+from ..interfaces.biomodel import BiorbdModel
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList

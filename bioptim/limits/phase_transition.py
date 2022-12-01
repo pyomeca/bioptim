@@ -11,7 +11,7 @@ from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
-from ..interfaces.model import BiorbdModel
+from ..interfaces.biomodel import BiorbdModel
 
 
 class PhaseTransition(MultinodeConstraint):

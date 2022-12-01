@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 
-class Model(ABC):
+class BioModel(ABC):
     @abstractmethod
     def deep_copy(self, *args):
         """Deep copy of the model"""
@@ -353,7 +353,7 @@ class Model(ABC):
         """Get the soft contact name"""
 
 
-class BiorbdModel(Model):
+class BiorbdModel(BioModel):
     def __init__(self, biorbd_model: str | biorbd.Model):
         if isinstance(biorbd_model, str):
             self.model = biorbd.Model(biorbd_model)
@@ -645,9 +645,9 @@ class BiorbdModel(Model):
         return self.model.applyRT(*args)
 
 
-class CustomModel(Model):
+class CustomModel(BioModel):
     """
-    This is a custom model that inherits from bioptim.Model
+    This is a custom model that inherits from bioptim.BioModel
     This class is made for the user to help him create his own model
     """
 

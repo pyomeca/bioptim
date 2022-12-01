@@ -7,7 +7,7 @@ import biorbd_casadi as biorbd
 from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
 from bioptim.interfaces.biorbd_interface import BiorbdInterface
-from bioptim.interfaces.model import BiorbdModel
+from bioptim.interfaces.biomodel import BiorbdModel
 from bioptim.misc.enums import ControlType, RigidBodyDynamics, SoftContactDynamics
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector

@@ -60,7 +60,7 @@ def prepare_ocp(
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("Number of phases must be 1 to 3")
 
-    # Model path
+    # BioModel path
     biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters

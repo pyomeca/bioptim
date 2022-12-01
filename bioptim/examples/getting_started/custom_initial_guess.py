@@ -92,7 +92,7 @@ def prepare_ocp(
     """
 
     # --- Options --- #
-    # Model path
+    # BioModel path
     biorbd_model = BiorbdModel(biorbd_model_path)
     nq = biorbd_model.nb_q()
     nqdot = biorbd_model.nb_qdot()

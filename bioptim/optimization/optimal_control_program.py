@@ -19,7 +19,7 @@ from ..dynamics.configure_problem import ConfigureProblem, DynamicsFcn
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.model import BiorbdModel, Model
+from ..interfaces.biomodel import BiorbdModel, BioModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -142,7 +142,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        biorbd_model: Union[str, BiorbdModel, list, tuple, Model],
+        biorbd_model: Union[str, BiorbdModel, list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
@@ -170,7 +170,7 @@ class OptimalControlProgram:
         """
         Parameters
         ----------
-        biorbd_model: Union[str, BiorbdModel, list, tuple, Model]
+        biorbd_model: Union[str, BiorbdModel, list, tuple, BioModel]
             The biorbd model. If biorbd_model is an str, a new model is loaded. Otherwise, the references are used
         dynamics: Union[Dynamics, DynamicsList]
             The dynamics of the phases
@@ -220,13 +220,13 @@ class OptimalControlProgram:
 
         if isinstance(biorbd_model, str):
             biorbd_model = [BiorbdModel(biorbd_model)]
-        elif isinstance(biorbd_model, (BiorbdModel, Model)):
+        elif isinstance(biorbd_model, (BiorbdModel, BioModel)):
             biorbd_model = [biorbd_model]
         elif isinstance(biorbd_model, (list, tuple)):
             biorbd_model = [BiorbdModel(m) if isinstance(m, str) else m for m in biorbd_model]
         else:
             raise RuntimeError(
-                "biorbd_model must either be a string or an instance of BiorbdModel(), or a subclass object of Model"
+                "biorbd_model must either be a string or an instance of BiorbdModel(), or a subclass object of BioModel"
             )
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(biorbd_model)

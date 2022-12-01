@@ -125,7 +125,7 @@ def prepare_ocp(
     """
 
     # --- Options --- #
-    # Model path
+    # BioModel path
     biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters

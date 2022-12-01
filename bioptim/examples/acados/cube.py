@@ -23,7 +23,7 @@ from bioptim import (
 
 
 def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), use_sx=True):
-    # Model path
+    # BioModel path
     biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Dynamics

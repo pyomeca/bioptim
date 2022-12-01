@@ -34,7 +34,7 @@ from bioptim import (
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound, mu, ode_solver=OdeSolver.RK4()):
     # --- Options --- #
-    # Model path
+    # BioModel path
     biorbd_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     dof_mapping = BiMappingList()

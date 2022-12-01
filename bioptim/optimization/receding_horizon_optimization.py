@@ -14,7 +14,7 @@ from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import SolverType, InterpolationType
 from ..interfaces.solver_options import Solver
-from ..interfaces.model import Model, BiorbdModel
+from ..interfaces.biomodel import BioModel, BiorbdModel
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):
@@ -30,7 +30,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
     def __init__(
         self,
-        biorbd_model: Union[str, BiorbdModel, list, tuple, Model],
+        biorbd_model: Union[str, BiorbdModel, list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         window_len: Union[int, list, tuple],
         window_duration: Union[int, float, list, tuple],

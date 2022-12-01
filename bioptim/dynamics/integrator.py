@@ -4,7 +4,7 @@ from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tan
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
-from ..interfaces.model import Model
+from ..interfaces.biomodel import BioModel
 import biorbd_casadi as biorbd
 
 
@@ -14,7 +14,7 @@ class Integrator:
 
     Attributes
     ----------
-    model: Union[BiorbdModel, Model]
+    model: Union[BiorbdModel, BioModel]
         The biorbd model to integrate
     t_span = tuple[float, float]
         The initial and final time
@@ -264,7 +264,7 @@ class RK(Integrator):
         return x[:, -1], x
 
     @staticmethod
-    def get_quaternion_idx(model: Model) -> list[list[int]]:
+    def get_quaternion_idx(model: BioModel) -> list[list[int]]:
         n_dof = 0
         quat_idx = []
         quat_number = 0

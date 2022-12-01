@@ -25,7 +25,7 @@ from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
-from ..interfaces.model import BiorbdModel
+from ..interfaces.biomodel import BiorbdModel
 
 
 class Solution:
@@ -187,8 +187,8 @@ class Solution:
             All the constraints at each of the node of the phase
         J: list[list[Objective]]
             All the objectives at each of the node of the phase
-        model: Union[BiorbdModel, Model]
-            A reference to the biorbd Model
+        model: Union[BiorbdModel, BioModel]
+            A reference to the biorbd BioModel
         variable_mappings: dict
             All the BiMapping of the states and controls
         ode_solver: OdeSolverBase

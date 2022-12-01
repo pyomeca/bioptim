@@ -40,7 +40,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     # --- Options --- #
     n_phases = len(ns)
 
-    # Model path
+    # BioModel path
     biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters

@@ -32,7 +32,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    model: Model
+    model: BioModel
         The object of the custom model
     final_time: float
         The time in second required to perform the task

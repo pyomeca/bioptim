@@ -76,7 +76,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 
 
 def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
-    # Model path
+    # BioModel path
     m = BiorbdModel(biorbd_model_path)
     m.set_gravity(np.array((0, 0, 0)))
 
