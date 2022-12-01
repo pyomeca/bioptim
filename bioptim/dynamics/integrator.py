@@ -245,7 +245,7 @@ class RK(Integrator):
         p = params
         x[:, 0] = states
 
-        if self.model.nb_quaternions() > 0:
+        if self.model.nb_quaternions > 0:
             quat_idx = self.get_quaternion_idx(self.model)
 
         for i in range(1, self.n_step + 1):
@@ -253,7 +253,7 @@ class RK(Integrator):
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
 
             # Normalize quaternion, if needed
-            for j in range(self.model.nb_quaternions()):
+            for j in range(self.model.nb_quaternions):
                 quaternion = vertcat(
                     x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
                 )
@@ -269,9 +269,9 @@ class RK(Integrator):
         quat_idx = []
         quat_number = 0
         print(model)
-        for j in range(model.nb_segments()):
+        for j in range(model.nb_segments):
             if model.segment(j).isRotationAQuaternion():
-                quat_idx.append([n_dof, n_dof + 1, n_dof + 2, model.nb_dof() + quat_number])
+                quat_idx.append([n_dof, n_dof + 1, n_dof + 2, model.nb_dof + quat_number])
                 quat_number += 1
             n_dof += model.segment(j).nbDof()
         return quat_idx

@@ -98,7 +98,7 @@ class ConfigureProblem:
 
         idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nb_q)
 
-        if nlp.model.nb_quaternions() == 0:
+        if nlp.model.nb_quaternions == 0:
             new_name = nlp.model.name_dof[idx[0]]
         else:
             new_name = []
@@ -176,7 +176,7 @@ class ConfigureProblem:
             A list of fatigue elements
         """
 
-        if nlp.model.nb_soft_contacts() != 0:
+        if nlp.model.nb_soft_contacts != 0:
             if (
                 soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
                 and soft_contacts_dynamics != SoftContactDynamics.ODE
@@ -310,7 +310,7 @@ class ConfigureProblem:
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
-        if nlp.model.nb_soft_contacts() != 0:
+        if nlp.model.nb_soft_contacts != 0:
             if (
                 soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
                 and soft_contacts_dynamics != SoftContactDynamics.ODE
@@ -578,12 +578,12 @@ class ConfigureProblem:
 
         all_contact_names = []
         for elt in ocp.nlp:
-            all_contact_names.extend([name for name in elt.model.contact_names() if name not in all_contact_names])
+            all_contact_names.extend([name for name in elt.model.contact_names if name not in all_contact_names])
 
         if "contact_forces" in nlp.plot_mapping:
             phase_mappings = nlp.plot_mapping["contact_forces"]
         else:
-            contact_names_in_phase = [name for name in nlp.model.contact_names()]
+            contact_names_in_phase = [name for name in nlp.model.contact_names]
             phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
 
         nlp.plot["contact_forces"] = CustomPlot(
@@ -606,7 +606,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        global_soft_contact_force_func = MX.zeros(nlp.model.nb_soft_contacts() * 6, 1)
+        global_soft_contact_force_func = MX.zeros(nlp.model.nb_soft_contacts * 6, 1)
         n = nlp.model.nb_q
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
@@ -1116,7 +1116,7 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_contact_forces = [name for name in nlp.model.contact_names()]
+        name_contact_forces = [name for name in nlp.model.contact_names]
         ConfigureProblem.configure_new_variable("fext", name_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
@@ -1163,7 +1163,7 @@ class ConfigureProblem:
             The list of fatigue parameters
         """
 
-        muscle_names = nlp.model.muscle_names()
+        muscle_names = nlp.model.muscle_names
         ConfigureProblem.configure_new_variable(
             "muscles",
             muscle_names,
@@ -1196,7 +1196,7 @@ class ConfigureProblem:
                     if n == "q":
                         q_map = list(nlp.variable_mappings[n].to_first.map_idx)
                         target = list(range(nlp.model.nb_q))
-                        if nlp.model.nb_quaternions() > 0:
+                        if nlp.model.nb_quaternions > 0:
                             if q_map != target:
                                 raise RuntimeError(
                                     "It is not possible to define a q mapping without a qdot or tau mapping"

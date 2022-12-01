@@ -355,7 +355,7 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = all_pn.nlp
-            g = nlp.model.gravity().to_mx()[2]
+            g = nlp.model.gravity.to_mx()[2]
             com = nlp.model.center_of_mass(nlp.states["q"].mx).to_mx()
             com_dot = nlp.model.center_of_mass_velocity(nlp.states["q"].mx, nlp.states["qdot"].mx).to_mx()
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]

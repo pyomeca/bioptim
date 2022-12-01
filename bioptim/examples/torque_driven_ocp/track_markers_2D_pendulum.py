@@ -162,7 +162,7 @@ def main():
     sol = ocp_to_track.solve()
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     n_q = biorbd_model.nb_q
-    n_marker = biorbd_model.nb_markers()
+    n_marker = biorbd_model.nb_markers
     x = np.concatenate((q, qdot))
 
     symbolic_states = MX.sym("q", n_q, 1)

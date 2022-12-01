@@ -107,6 +107,7 @@ class BiorbdModel:
     def muscle_names(self) -> tuple[str]:
         return tuple(s.to_string() for s in self.model.muscleNames())
 
+    @property
     def nb_muscles(self) -> int:
         return self.model.nbMuscles()
 

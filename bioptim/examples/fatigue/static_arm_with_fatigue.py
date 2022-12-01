@@ -70,7 +70,7 @@ def prepare_ocp(
     biorbd_model = BiorbdModel(biorbd_model_path)
 
     n_tau = biorbd_model.nb_tau
-    n_muscles = biorbd_model.nb_muscles()
+    n_muscles = biorbd_model.nb_muscles
     tau_min, tau_max = -10, 10
 
     # Define fatigue parameters for each muscle and residual torque

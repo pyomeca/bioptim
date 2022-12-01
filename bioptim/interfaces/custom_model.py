@@ -4,6 +4,7 @@ class CustomModel:
     """
 
     # ---- absolutely needed to be implemented ---- #
+    @property
     def nb_quaternions(self):
         """Number of quaternion in the model"""
         return 0

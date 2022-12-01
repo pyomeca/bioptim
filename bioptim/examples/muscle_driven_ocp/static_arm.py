@@ -79,8 +79,8 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -1, 1, 0
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nb_tau + [muscle_min] * biorbd_model.nb_muscles(),
-        [tau_max] * biorbd_model.nb_tau + [muscle_max] * biorbd_model.nb_muscles(),
+        [tau_min] * biorbd_model.nb_tau + [muscle_min] * biorbd_model.nb_muscles,
+        [tau_max] * biorbd_model.nb_tau + [muscle_max] * biorbd_model.nb_muscles,
     )
 
     u_init = InitialGuessList()

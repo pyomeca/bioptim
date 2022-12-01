@@ -60,7 +60,7 @@ def generate_data(
     n_qdot = biorbd_model.nb_qdot
     n_qddot = biorbd_model.nb_qddot
     n_tau = biorbd_model.nb_tau
-    n_mus = biorbd_model.nb_muscles()
+    n_mus = biorbd_model.nb_muscles
     dt = final_time / n_shooting
 
     nlp = NonLinearProgram()
@@ -126,7 +126,7 @@ def generate_data(
 
     # Integrate and collect the position of the markers accordingly
     X = np.ndarray((n_q + n_qdot, n_shooting + 1))
-    markers = np.ndarray((3, biorbd_model.nb_markers(), n_shooting + 1))
+    markers = np.ndarray((3, biorbd_model.nb_markers, n_shooting + 1))
 
     def add_to_data(i, q):
         X[:, i] = q
@@ -224,15 +224,15 @@ def prepare_ocp(
     if use_residual_torque:
         tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
-            [tau_min] * biorbd_model.nb_tau + [activation_min] * biorbd_model.nb_muscles(),
-            [tau_max] * biorbd_model.nb_tau + [activation_max] * biorbd_model.nb_muscles(),
+            [tau_min] * biorbd_model.nb_tau + [activation_min] * biorbd_model.nb_muscles,
+            [tau_max] * biorbd_model.nb_tau + [activation_max] * biorbd_model.nb_muscles,
         )
         u_init.add(
-            [tau_init] * biorbd_model.nb_tau + [activation_init] * biorbd_model.nb_muscles()
+            [tau_init] * biorbd_model.nb_tau + [activation_init] * biorbd_model.nb_muscles
         )
     else:
         u_bounds.add(
-            [activation_min] * biorbd_model.nb_muscles(), [activation_max] * biorbd_model.nb_muscles()
+            [activation_min] * biorbd_model.nb_muscles, [activation_max] * biorbd_model.nb_muscles
         )
         u_init.add([activation_init] * biorbd_model.nb_muscles())
     # ------------- #

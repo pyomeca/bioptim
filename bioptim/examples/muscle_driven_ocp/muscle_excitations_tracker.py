@@ -61,7 +61,7 @@ def generate_data(
     n_qdot = bio_model.nb_qdot
     n_qddot = bio_model.nb_qddot
     n_tau = bio_model.nb_tau
-    n_mus = bio_model.nb_muscles()
+    n_mus = bio_model.nb_muscles
     dt = final_time / n_shooting
 
     # Casadi related stuff
@@ -130,7 +130,7 @@ def generate_data(
 
     # Integrate and collect the position of the markers accordingly
     X = np.ndarray((n_q + n_qdot + n_mus, n_shooting + 1))
-    markers = np.ndarray((3, bio_model.nb_markers(), n_shooting + 1))
+    markers = np.ndarray((3, bio_model.nb_markers, n_shooting + 1))
 
     def add_to_data(i, q):
         X[:, i] = q
@@ -220,7 +220,7 @@ def prepare_ocp(
     # Add muscle to the bounds
     activation_min, activation_max, activation_init = 0, 1, 0.5
     x_bounds[0].concatenate(
-        Bounds([activation_min] * bio_model.nb_muscles(), [activation_max] * bio_model.nb_muscles())
+        Bounds([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles())
     )
     x_bounds[0][(bio_model.nb_q + bio_model.nb_qdot) :, 0] = excitations_ref[:, 0]
 
@@ -235,12 +235,12 @@ def prepare_ocp(
     if use_residual_torque:
         tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
-            [tau_min] * bio_model.nb_tau + [excitation_min] * bio_model.nb_muscles(),
-            [tau_max] * bio_model.nb_tau + [excitation_max] * bio_model.nb_muscles(),
+            [tau_min] * bio_model.nb_tau + [excitation_min] * bio_model.nb_muscles,
+            [tau_max] * bio_model.nb_tau + [excitation_max] * bio_model.nb_muscles,
         )
         u_init.add([tau_init] * bio_model.nb_tau + [excitation_init] * bio_model.nb_muscles())
     else:
-        u_bounds.add([excitation_min] * bio_model.nb_muscles(), [excitation_max] * biorbd_model.nb_muscles())
+        u_bounds.add([excitation_min] * bio_model.nb_muscles, [excitation_max] * biorbd_model.nb_muscles())
         u_init.add([excitation_init] * biorbd_model.nb_muscles())
     # ------------- #
 

@@ -126,7 +126,7 @@ def prepare_ocp(
     if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         nu_sup = biorbd_model.nb_qddot
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        nu_sup = biorbd_model.nb_qddot + biorbd_model.nb_contacts()
+        nu_sup = biorbd_model.nb_qddot + biorbd_model.nb_contacts
     else:
         nu_sup = 0
 

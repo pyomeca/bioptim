@@ -428,12 +428,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
             # TODO get the index of the marker
-            contact_name = nlp.model.contact_names()[contact_index]
-            if "_X" in nlp.model.contact_names()[contact_index]:
+            contact_name = nlp.model.contact_names[contact_index]
+            if "_X" in nlp.model.contact_names[contact_index]:
                 idx_dir = 0
-            elif "_Y" in nlp.model.contact_names()[contact_index]:
+            elif "_Y" in nlp.model.contact_names[contact_index]:
                 idx_dir = 1
-            elif "_Z" in nlp.model.contact_names()[contact_index]:
+            elif "_Z" in nlp.model.contact_names[contact_index]:
                 idx_dir = 2
             contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
 

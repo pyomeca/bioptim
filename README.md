@@ -660,7 +660,7 @@ They can be used as is, or can be modified to add new features.
 The `BiorbdModel` class is a wrapper around the `biorbd.Model` class. Some methods may not be interfaced yet, it is accessible through:
 ```python
 bio_model = BiorbdModel("path/to/model.bioMod")
-bio_model.marker_names()  # for example returns the marker names
+bio_model.marker_names  # for example returns the marker names
 # if the methods is not interfaced, it can be accessed through
 bio_model.model.markerNames()
 ```

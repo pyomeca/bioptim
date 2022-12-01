@@ -261,7 +261,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = BiorbdModel(nlp_post.model.path.absolutePath().to_string())
 
-            if nlp_post.model.nb_contacts() == 0:
+            if nlp_post.model.nb_contacts == 0:
                 warn("The chosen model does not have any contact")
             q_pre = nlp_pre.states["q"].mx
             qdot_pre = nlp_pre.states["qdot"].mx

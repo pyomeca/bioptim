@@ -62,7 +62,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # Path constraint
     n_q = biorbd_model.nb_q
     n_qdot = n_q
-    n_mus = biorbd_model.nb_muscles()
+    n_mus = biorbd_model.nb_muscles
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize x_bounds
@@ -78,8 +78,8 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [torque_min] * len(dof_mapping["tau"].to_first) + [activation_min] * biorbd_model.nb_muscles(),
-        [torque_max] * len(dof_mapping["tau"].to_first) + [activation_max] * biorbd_model.nb_muscles(),
+        [torque_min] * len(dof_mapping["tau"].to_first) + [activation_min] * biorbd_model.nb_muscles,
+        [torque_max] * len(dof_mapping["tau"].to_first) + [activation_max] * biorbd_model.nb_muscles,
     )
 
     u_init = InitialGuessList()
@@ -124,7 +124,7 @@ def main():
     u = np.concatenate((tau, excitations))
     contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))
 
-    names_contact_forces = ocp.nlp[0].model.contact_names()
+    names_contact_forces = ocp.nlp[0].model.contact_names
     for i, elt in enumerate(contact_forces):
         plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i]}")
     plt.legend()
