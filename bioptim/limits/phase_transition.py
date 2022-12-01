@@ -140,9 +140,11 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         existing_phases = []
         for pt in self:
-            if pt.phase_pre_idx is None and pt.type == PhaseTransitionFcn.CYCLIC:
-                pt.phase_pre_idx = ocp.n_phases - 1
-            pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
+            if pt.phase_pre_idx is None:
+                if pt.type == PhaseTransitionFcn.CYCLIC:
+                    pt.phase_pre_idx = ocp.n_phases - 1
+            else:
+                pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
             idx_phase = pt.phase_pre_idx
             if idx_phase >= ocp.n_phases:
@@ -187,7 +189,26 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
+            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
+
+        @staticmethod
+        def discontinuous(transition, all_pn):
+            """
+            There is no continuity constraints on the states
+
+            Parameters
+            ----------
+            transition : PhaseTransition
+                A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the state after and before
+            """
+
+            return MX.zeros(0, 0)
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:
@@ -206,7 +227,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
+            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
 
         @staticmethod
         def impact(transition, all_pn):
@@ -268,6 +289,7 @@ class PhaseTransitionFcn(FcnEnum):
     """
 
     CONTINUOUS = (PhaseTransitionFunctions.Functions.continuous,)
+    DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)

@@ -33,6 +33,18 @@ def test_plot_graphs_one_phase():
     sol.graphs(automatically_organize=False)
 
 
+def test_plot_check_contioning():
+    # Load graphs check conditioning
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=False)
+    ocp.check_conditioning()
+    sol = ocp.solve()
+    sol.graphs(automatically_organize=False)
+
+
 def test_plot_merged_graphs():
     # Load graphs_one_phase
     from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module

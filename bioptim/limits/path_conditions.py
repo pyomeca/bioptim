@@ -1110,7 +1110,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Add noise to each initial guesses from an InitialGuessList
     """
 
-    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple], **extra_arguments: Any):
+    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple] = None, **extra_arguments: Any):
         """
         Add a new initial guess to the list
 
