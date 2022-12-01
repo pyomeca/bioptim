@@ -68,7 +68,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
 
     # Define control path constraint
     torque_min, torque_max, torque_init = -100, 100, 0
-    n_tau = biorbd_model.nb_generalized_torque()
+    n_tau = biorbd_model.nb_tau()
     u_bounds = Bounds([torque_min] * n_tau, [torque_max] * n_tau)
     u_bounds[n_tau - 1, :] = 0
 

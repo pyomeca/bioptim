@@ -77,7 +77,7 @@ def prepare_ocp(
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Define control path constraint
-    n_tau = biorbd_model.nb_generalized_torque()  # biorbd_model.nb_generalized_torque()
+    n_tau = biorbd_model.nb_tau()  # biorbd_model.nb_tau()
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)

@@ -91,7 +91,7 @@ def prepare_ocp(
     n_q = biorbd_model.nb_q()
     n_qdot = biorbd_model.nb_qdot()
     n_qddot = biorbd_model.nb_qddot()
-    n_tau = biorbd_model.nb_generalized_torque()
+    n_tau = biorbd_model.nb_tau()
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint

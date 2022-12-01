@@ -81,7 +81,7 @@ def test_mhe_redim_xbounds_and_init():
     biorbd_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
     nq = biorbd_model.nb_q()
-    ntau = biorbd_model.nb_generalized_torque()
+    ntau = biorbd_model.nb_tau()
 
     n_cycles = 3
     window_len = 5
@@ -113,7 +113,7 @@ def test_mhe_redim_xbounds_not_implemented():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     biorbd_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
     nq = biorbd_model.nb_q()
-    ntau = biorbd_model.nb_generalized_torque()
+    ntau = biorbd_model.nb_tau()
 
     n_cycles = 3
     window_len = 5

@@ -24,7 +24,7 @@ def test_custom_model():
     np.testing.assert_almost_equal(ocp.nlp[0].model.nb_q(), 1)
     np.testing.assert_almost_equal(ocp.nlp[0].model.nb_qdot(), 1)
     np.testing.assert_almost_equal(ocp.nlp[0].model.nb_qddot(), 1)
-    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_generalized_torque(), 1)
+    np.testing.assert_almost_equal(ocp.nlp[0].model.nb_tau(), 1)
     assert ocp.nlp[0].model.nb_quat() == 0
     np.testing.assert_almost_equal(ocp.nlp[0].model.mass(), 1)
     assert ocp.nlp[0].model.name_dof() == ["rotx"]

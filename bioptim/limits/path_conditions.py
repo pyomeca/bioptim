@@ -606,13 +606,13 @@ class QAndQDotBounds(Bounds):
 
     def __init__(
         self,
-        biorbd_model: Union[BiorbdModel, Model],
+        biorbd_model: Model,
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: Union[BiorbdModel, Model]
+        biorbd_model: Model
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
@@ -663,13 +663,13 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
 
     def __init__(
         self,
-        biorbd_model: Union[BiorbdModel, Model],
+        biorbd_model: Model,
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: Union[BiorbdModel, Model]
+        biorbd_model: Model
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)

@@ -56,7 +56,7 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
 
     # Simulated data
     dt = tf / n_shoot
-    controls = np.zeros((biorbd_model.nb_generalized_torque(), n_shoot))  # Control trajectory
+    controls = np.zeros((biorbd_model.nb_tau(), n_shoot))  # Control trajectory
     controls[0, :] = (-np.ones(n_shoot) + np.sin(np.linspace(0, tf, num=n_shoot))) * t_max
     states = np.zeros((biorbd_model.nb_q() + biorbd_model.nb_qdot(), n_shoot))  # State trajectory
 

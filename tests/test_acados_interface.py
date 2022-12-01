@@ -667,7 +667,7 @@ def test_acados_bounds_not_implemented(failing):
     biorbd_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
     nq = biorbd_model.nb_q()
-    ntau = biorbd_model.nb_generalized_torque()
+    ntau = biorbd_model.nb_tau()
 
     n_cycles = 3
     window_len = 5

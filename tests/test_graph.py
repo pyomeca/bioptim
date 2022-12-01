@@ -176,23 +176,23 @@ def prepare_ocp_phase_transitions(
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
-    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
-    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
-    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau())
 
     # Define phase transitions
     phase_transitions = PhaseTransitionList()
@@ -282,7 +282,7 @@ def prepare_ocp_parameters(
 
     # --- Options --- #
     biorbd_model = BiorbdModel(biorbd_model_path)
-    n_tau = biorbd_model.nb_generalized_torque()
+    n_tau = biorbd_model.nb_tau()
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -431,10 +431,10 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
 
     # Define control path constraint
     u_bounds = Bounds(
-        [tau_min] * biorbd_model.nb_generalized_torque(), [tau_max] * biorbd_model.nb_generalized_torque()
+        [tau_min] * biorbd_model.nb_tau(), [tau_max] * biorbd_model.nb_tau()
     )
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nb_generalized_torque())
+    u_init = InitialGuess([tau_init] * biorbd_model.nb_tau())
 
     # ------------- #
 

@@ -45,7 +45,7 @@ class Model(ABC):
         """Get the dof index"""
 
     @abstractmethod
-    def nb_generalized_torque(self):
+    def nb_tau(self):
         """Get the number of generalized torque"""
 
     @abstractmethod
@@ -390,7 +390,7 @@ class BiorbdModel(Model):
     def get_dof_index(self, SegmentName, dofName):
         return self.model.getDofIndex(SegmentName, dofName)
 
-    def nb_generalized_torque(self):
+    def nb_tau(self):
         return self.model.nbGeneralizedTorque()
 
     def nb_segment(self):
@@ -540,9 +540,6 @@ class BiorbdModel(Model):
     def nb_muscles(self):
         return self.model.nbMuscles()
 
-    def nb_muscle_total(self):
-        return self.model.nbMuscleTotal()
-
     def torque(self, tau_activations, q, qdot):
         return self.model.torque(tau_activations, q, qdot)
 
@@ -660,8 +657,8 @@ class CustomModel(Model):
         return 0
 
     # ---- The rest can raise NotImplementedError ---- #
-    def nb_generalized_torque(self):
-        raise NotImplementedError("nb_generalized_torque is not implemented")
+    def nb_tau(self):
+        raise NotImplementedError("nb_tau is not implemented")
 
     def nb_q(self):
         raise NotImplementedError("nb_q is not implemented")

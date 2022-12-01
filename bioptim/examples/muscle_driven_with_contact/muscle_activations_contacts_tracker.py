@@ -70,12 +70,12 @@ def prepare_ocp(
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nb_generalized_torque() + [activation_min] * biorbd_model.nb_muscle_total(),
-        [tau_max] * biorbd_model.nb_generalized_torque() + [activation_max] * biorbd_model.nb_muscle_total(),
+        [tau_min] * biorbd_model.nb_tau() + [activation_min] * biorbd_model.nb_muscles(),
+        [tau_max] * biorbd_model.nb_tau() + [activation_max] * biorbd_model.nb_muscles(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [activation_init] * biorbd_model.nb_muscle_total())
+    u_init.add([tau_init] * biorbd_model.nb_tau() + [activation_init] * biorbd_model.nb_muscles())
 
     # ------------- #
 

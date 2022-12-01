@@ -62,7 +62,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # Path constraint
     n_q = biorbd_model.nb_q()
     n_qdot = n_q
-    n_mus = biorbd_model.nb_muscle_total()
+    n_mus = biorbd_model.nb_muscles()
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize x_bounds
@@ -78,12 +78,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [torque_min] * len(dof_mapping["tau"].to_first) + [activation_min] * biorbd_model.nb_muscle_total(),
-        [torque_max] * len(dof_mapping["tau"].to_first) + [activation_max] * biorbd_model.nb_muscle_total(),
+        [torque_min] * len(dof_mapping["tau"].to_first) + [activation_min] * biorbd_model.nb_muscles(),
+        [torque_max] * len(dof_mapping["tau"].to_first) + [activation_max] * biorbd_model.nb_muscles(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([torque_init] * len(dof_mapping["tau"].to_first) + [activation_init] * biorbd_model.nb_muscle_total())
+    u_init.add([torque_init] * len(dof_mapping["tau"].to_first) + [activation_init] * biorbd_model.nb_muscles())
     # ------------- #
 
     return OptimalControlProgram(

@@ -60,8 +60,8 @@ def generate_data(
     n_q = biorbd_model.nb_q()
     n_qdot = biorbd_model.nb_qdot()
     n_qddot = biorbd_model.nb_qddot()
-    n_tau = biorbd_model.nb_generalized_torque()
-    n_mus = biorbd_model.nb_muscle_total()
+    n_tau = biorbd_model.nb_tau()
+    n_mus = biorbd_model.nb_muscles()
     dt = final_time / n_shooting
 
     # Casadi related stuff
@@ -235,10 +235,10 @@ def prepare_ocp(
     if use_residual_torque:
         tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
-            [tau_min] * biorbd_model.nb_generalized_torque() + [excitation_min] * biorbd_model.nb_muscles(),
-            [tau_max] * biorbd_model.nb_generalized_torque() + [excitation_max] * biorbd_model.nb_muscles(),
+            [tau_min] * biorbd_model.nb_tau() + [excitation_min] * biorbd_model.nb_muscles(),
+            [tau_max] * biorbd_model.nb_tau() + [excitation_max] * biorbd_model.nb_muscles(),
         )
-        u_init.add([tau_init] * biorbd_model.nb_generalized_torque() + [excitation_init] * biorbd_model.nb_muscles())
+        u_init.add([tau_init] * biorbd_model.nb_tau() + [excitation_init] * biorbd_model.nb_muscles())
     else:
         u_bounds.add([excitation_min] * biorbd_model.nb_muscles(), [excitation_max] * biorbd_model.nb_muscles())
         u_init.add([excitation_init] * biorbd_model.nb_muscles())

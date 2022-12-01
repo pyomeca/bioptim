@@ -204,7 +204,7 @@ def test_update_noised_init_rk4(interpolation):
     biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = biorbd_model.nb_q()
     nqdot = biorbd_model.nb_qdot()
-    ntau = biorbd_model.nb_generalized_torque()
+    ntau = biorbd_model.nb_tau()
     ns = 3
     phase_time = 1.0
 
@@ -498,7 +498,7 @@ def test_update_noised_init_collocation(interpolation):
     biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = biorbd_model.nb_q()
     nqdot = biorbd_model.nb_qdot()
-    ntau = biorbd_model.nb_generalized_torque()
+    ntau = biorbd_model.nb_tau()
     ns = 3
     phase_time = 1.0
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
@@ -933,7 +933,7 @@ def test_update_noised_initial_guess_rk4(interpolation):
     biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = biorbd_model.nb_q()
     nqdot = biorbd_model.nb_qdot()
-    ntau = biorbd_model.nb_generalized_torque()
+    ntau = biorbd_model.nb_tau()
     ns = 3
     phase_time = 1.0
 
@@ -1217,7 +1217,7 @@ def test_update_noised_initial_guess_rk4(n_extra):
     biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = biorbd_model.nb_q()
     nqdot = biorbd_model.nb_qdot()
-    ntau = biorbd_model.nb_generalized_torque()
+    ntau = biorbd_model.nb_tau()
     ns = 3
     phase_time = 1.0
 
@@ -1341,7 +1341,7 @@ def test_update_noised_initial_guess_collocation(interpolation):
     biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = biorbd_model.nb_q()
     nqdot = biorbd_model.nb_qdot()
-    ntau = biorbd_model.nb_generalized_torque()
+    ntau = biorbd_model.nb_tau()
     ns = 3
     phase_time = 1.0
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
@@ -1776,7 +1776,7 @@ def test_update_noised_initial_guess_list(interpolation):
     biorbd_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = biorbd_model.nb_q()
     nqdot = biorbd_model.nb_qdot()
-    ntau = biorbd_model.nb_generalized_torque()
+    ntau = biorbd_model.nb_tau()
     ns = 3
     phase_time = 1.0
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)

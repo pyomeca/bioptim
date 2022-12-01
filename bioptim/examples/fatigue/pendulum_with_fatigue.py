@@ -68,7 +68,7 @@ def prepare_ocp(
     """
 
     biorbd_model = BiorbdModel(biorbd_model_path)
-    n_tau = biorbd_model.nb_generalized_torque()
+    n_tau = biorbd_model.nb_tau()
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions

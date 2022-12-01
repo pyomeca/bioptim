@@ -137,7 +137,7 @@ def prepare_ocp(
 
     # --- Options --- #
     biorbd_model = BiorbdModel(biorbd_model_path)
-    n_tau = biorbd_model.nb_generalized_torque()
+    n_tau = biorbd_model.nb_tau()
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10)

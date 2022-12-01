@@ -29,7 +29,7 @@ class MyModel(CustomModel, metaclass=ABCMeta):
         return 0
 
     # ---- Needed for the example ---- #
-    def nb_generalized_torque(self):
+    def nb_tau(self):
         return 1
 
     def nb_q(self):

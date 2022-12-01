@@ -647,21 +647,21 @@ def partial_ocp_parameters(n_phases):
 
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
     )
     if n_phases > 1:
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+            [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
         )
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+            [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
         )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau())
     if n_phases > 1:
-        u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
-        u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+        u_init.add([tau_init] * biorbd_model[0].nb_tau())
+        u_init.add([tau_init] * biorbd_model[0].nb_tau())
 
     return (
         biorbd_model[:n_phases],

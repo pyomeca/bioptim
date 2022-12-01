@@ -141,23 +141,23 @@ def prepare_ocp(
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_generalized_torque(), [tau_max] * biorbd_model[0].nb_generalized_torque()
+        [tau_min] * biorbd_model[0].nb_tau(), [tau_max] * biorbd_model[0].nb_tau()
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
-    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
-    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
-    u_init.add([tau_init] * biorbd_model[0].nb_generalized_torque())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau())
+    u_init.add([tau_init] * biorbd_model[0].nb_tau())
 
     """
     By default, all phase transitions (here phase 0 to phase 1, phase 1 to phase 2 and phase 2 to phase 3)
