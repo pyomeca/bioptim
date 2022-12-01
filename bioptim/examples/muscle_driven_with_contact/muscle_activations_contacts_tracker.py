@@ -75,7 +75,7 @@ def prepare_ocp(
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_tau + [activation_init] * biorbd_model.nb_muscles())
+    u_init.add([tau_init] * biorbd_model.nb_tau + [activation_init] * biorbd_model.nb_muscles)
 
     # ------------- #
 

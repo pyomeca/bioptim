@@ -642,7 +642,7 @@ class QAndQDotBounds(Bounds):
         q_ranges = []
         qdot_ranges = []
         for i in range(bio_model.nb_segments):
-            segment = bio_model.segment(i)
+            segment = bio_model.segments[i]
             q_ranges += [q_range for q_range in segment.QRanges()]
             qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
 
@@ -697,7 +697,7 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
 
         qddot_ranges = []
         for i in range(biorbd_model.nb_segments):
-            segment = biorbd_model.segment(i)
+            segment = biorbd_model.segments[i]
             qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
 
         x_min = [qddot_ranges[i].min() for i in dof_mappings["qddot"].to_first.map_idx]

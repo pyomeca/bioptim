@@ -183,7 +183,8 @@ class BiorbdModel:
 
     @property
     def path(self):
-        return Path(self.model.path())
+        return self.model.path()
+        # return Path(self.model.path())
 
     def marker_velocities(self, q, qdot, update_kin=True) -> MX:
         return self.model.markersVelocity(q, qdot, update_kin)

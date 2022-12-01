@@ -746,7 +746,7 @@ class DynamicsFunctions:
         muscles_states = nlp.model.state_set()
         for k in range(len(nlp.controls["muscles"])):
             muscles_states[k].setExcitation(muscle_excitations[k])
-        return nlp.model.activation_dot(muscles_states).to_mx()
+        return nlp.model.muscle_activation_dot(muscles_states).to_mx()
 
     @staticmethod
     def compute_tau_from_muscle(
@@ -783,7 +783,7 @@ class DynamicsFunctions:
                 muscles_states[k].setActivation(muscle_activations[k] * (1 - fatigue_states[k]))
             else:
                 muscles_states[k].setActivation(muscle_activations[k])
-        return nlp.model.muscular_joint_torque(muscles_states, q, qdot).to_mx()
+        return nlp.model.muscle_joint_torque(muscles_states, q, qdot).to_mx()
 
     @staticmethod
     def contact_forces(nlp: NonLinearProgram, q, qdot, tau):

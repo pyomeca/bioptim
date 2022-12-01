@@ -220,13 +220,13 @@ def prepare_ocp(
     # Add muscle to the bounds
     activation_min, activation_max, activation_init = 0, 1, 0.5
     x_bounds[0].concatenate(
-        Bounds([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles())
+        Bounds([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles)
     )
     x_bounds[0][(bio_model.nb_q + bio_model.nb_qdot) :, 0] = excitations_ref[:, 0]
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot) + [0] * bio_model.nb_muscles())
+    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot) + [0] * bio_model.nb_muscles)
 
     # Define control path constraint
     excitation_min, excitation_max, excitation_init = 0, 1, 0.5
@@ -238,14 +238,14 @@ def prepare_ocp(
             [tau_min] * bio_model.nb_tau + [excitation_min] * bio_model.nb_muscles,
             [tau_max] * bio_model.nb_tau + [excitation_max] * bio_model.nb_muscles,
         )
-        u_init.add([tau_init] * bio_model.nb_tau + [excitation_init] * bio_model.nb_muscles())
+        u_init.add([tau_init] * bio_model.nb_tau + [excitation_init] * bio_model.nb_muscles)
     else:
-        u_bounds.add([excitation_min] * bio_model.nb_muscles, [excitation_max] * biorbd_model.nb_muscles())
-        u_init.add([excitation_init] * biorbd_model.nb_muscles())
+        u_bounds.add([excitation_min] * bio_model.nb_muscles, [excitation_max] * bio_model.nb_muscles)
+        u_init.add([excitation_init] * bio_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

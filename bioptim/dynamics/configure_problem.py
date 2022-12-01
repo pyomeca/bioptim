@@ -610,7 +610,7 @@ class ConfigureProblem:
         n = nlp.model.nb_q
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
-        for i_sc in range(nlp.model.nb_soft_contacts()):
+        for i_sc in range(nlp.model.nb_soft_contacts):
             soft_contact = nlp.model.soft_contacts[i_sc] # todo: in the BiorbdModel
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
@@ -626,7 +626,7 @@ class ConfigureProblem:
             ["soft_contact_forces"],
         ).expand()
 
-        for i_sc in range(nlp.model.nb_soft_contacts()):
+        for i_sc in range(nlp.model.nb_soft_contacts):
             all_soft_contact_names = []
             all_soft_contact_names.extend(
                 [
@@ -1135,7 +1135,7 @@ class ConfigureProblem:
         """
         name_soft_contact_forces = []
         component_list = ["fx", "fy", "fz"]  # TODO: find a better place to hold this or define it in biorbd ?
-        for ii in range(nlp.model.nb_soft_contacts()):
+        for ii in range(nlp.model.nb_soft_contacts):
             name_soft_contact_forces.extend(
                 [
                     f"{nlp.model.soft_contact_name(ii)}_{name}"

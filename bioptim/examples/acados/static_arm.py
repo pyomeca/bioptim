@@ -63,7 +63,7 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_tau + [muscle_init] * biorbd_model.nb_muscles())
+    u_init.add([tau_init] * biorbd_model.nb_tau + [muscle_init] * biorbd_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(

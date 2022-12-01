@@ -467,7 +467,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             muscles_states = nlp.model.state_set()
             for k in range(len(nlp.controls["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
-            muscle_tau = nlp.model.muscular_joint_torque(muscles_states, q, qdot).to_mx()
+            muscle_tau = nlp.model.muscle_joint_torque(muscles_states, q, qdot).to_mx()
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
             if nlp.external_forces:
@@ -504,7 +504,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
 
             force_idx = []
-            for i_sc in range(nlp.model.nb_soft_contacts()):
+            for i_sc in range(nlp.model.nb_soft_contacts):
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))

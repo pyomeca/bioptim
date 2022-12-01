@@ -234,7 +234,7 @@ def prepare_ocp(
         u_bounds.add(
             [activation_min] * biorbd_model.nb_muscles, [activation_max] * biorbd_model.nb_muscles
         )
-        u_init.add([activation_init] * biorbd_model.nb_muscles())
+        u_init.add([activation_init] * biorbd_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(

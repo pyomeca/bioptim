@@ -234,7 +234,7 @@ class PenaltyFunctionAbstract:
             second_marker_idx = (
                 nlp.model.marker_index(second_marker) if isinstance(second_marker, str) else second_marker
             )
-            PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nb_markers())
+            PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nb_markers)
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
@@ -564,7 +564,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             force_idx = []
-            for i_sc in range(nlp.model.nb_soft_contacts()):
+            for i_sc in range(nlp.model.nb_soft_contacts):
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
