@@ -62,8 +62,8 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[1]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[1]))
 
     # Phase 0
     # bound constraining the model not to use the two first DoFs
@@ -82,8 +82,8 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-    x_init.add([1] * (biorbd_model[1].nb_q + biorbd_model[1].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([1] * (bio_model[1].nb_q + bio_model[1].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()

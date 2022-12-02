@@ -102,7 +102,7 @@ def prepare_ocp_first_pass(
     x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, magnitude=0.001, n_shooting=n_shooting + 1)
 
     # Define control path constraint
-    n_tau = biorbd_model.nb_tau
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -300, 300, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
@@ -182,7 +182,7 @@ def prepare_ocp_second_pass(
     x_init = InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
-    n_tau = biorbd_model.nb_tau
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -300, 300, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate

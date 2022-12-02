@@ -60,12 +60,12 @@ def prepare_single_shooting(
     )
 
     # Initial guess
-    x_init = InitialGuess([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nb_tau)
+    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
 
     return OptimalControlProgram(
         bio_model,
@@ -165,7 +165,7 @@ def prepare_ocp(
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    nQ = biorbd_model.nb_q
+    nQ = bio_model.nb_q
     X0 = initial_states_from_single_shooting(biorbd_model_path, 100, 1, ode_solver)
     x_bounds[0].min[:nQ, 0] = X0[:nQ] - slack
     x_bounds[0].max[:nQ, 0] = X0[:nQ] + slack
@@ -178,12 +178,12 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model.nb_tau, [tau_max] * biorbd_model.nb_tau)
+    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
-    u_bounds.add([tau_min] * biorbd_model.nb_tau, [tau_max] * biorbd_model.nb_tau)
+    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_tau)
+    u_init.add([tau_init] * bio_model.nb_tau)
 
     return OptimalControlProgram(
         bio_model,

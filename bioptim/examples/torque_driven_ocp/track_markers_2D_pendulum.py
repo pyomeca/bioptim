@@ -115,13 +115,13 @@ def prepare_ocp(
     x_bounds[0][:, 0] = 0
 
     # Initial guess
-    n_q = biorbd_model.nb_q
-    n_qdot = biorbd_model.nb_qdot
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
     x_init = InitialGuessList()
     x_init.add([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nb_tau
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
@@ -161,12 +161,12 @@ def main():
     )
     sol = ocp_to_track.solve()
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    n_q = biorbd_model.nb_q
-    n_marker = biorbd_model.nb_markers
+    n_q = bio_model.nb_q
+    n_marker = bio_model.nb_markers
     x = np.concatenate((q, qdot))
 
     symbolic_states = MX.sym("q", n_q, 1)
-    markers_fun = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_states)
+    markers_fun = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
     markers_ref = np.zeros((3, n_marker, n_shooting + 1))
     for i in range(n_shooting + 1):
         markers_ref[:, :, i] = markers_fun(x[:n_q, i])

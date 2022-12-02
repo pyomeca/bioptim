@@ -126,7 +126,7 @@ def generate_data(
 
     # Integrate and collect the position of the markers accordingly
     X = np.ndarray((n_q + n_qdot, n_shooting + 1))
-    markers = np.ndarray((3, biorbd_model.nb_markers, n_shooting + 1))
+    markers = np.ndarray((3, bio_model.nb_markers, n_shooting + 1))
 
     def add_to_data(i, q):
         X[:, i] = q
@@ -209,13 +209,13 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(bio_model))
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    nq = biorbd_model.nb_q
+    nq = bio_model.nb_q
     x_bounds[0].min[:nq, :] = -2 * np.pi
     x_bounds[0].max[:nq, :] = 2 * np.pi
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
+    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
     activation_min, activation_max, activation_init = 0, 1, 0.5
@@ -224,17 +224,17 @@ def prepare_ocp(
     if use_residual_torque:
         tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
-            [tau_min] * biorbd_model.nb_tau + [activation_min] * biorbd_model.nb_muscles,
-            [tau_max] * biorbd_model.nb_tau + [activation_max] * biorbd_model.nb_muscles,
+            [tau_min] * bio_model.nb_tau + [activation_min] * bio_model.nb_muscles,
+            [tau_max] * bio_model.nb_tau + [activation_max] * bio_model.nb_muscles,
         )
         u_init.add(
-            [tau_init] * biorbd_model.nb_tau + [activation_init] * biorbd_model.nb_muscles
+            [tau_init] * bio_model.nb_tau + [activation_init] * bio_model.nb_muscles
         )
     else:
         u_bounds.add(
-            [activation_min] * biorbd_model.nb_muscles, [activation_max] * biorbd_model.nb_muscles
+            [activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles
         )
-        u_init.add([activation_init] * biorbd_model.nb_muscles)
+        u_init.add([activation_init] * bio_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(
@@ -276,7 +276,7 @@ def main():
         n_shooting_points,
         markers_ref,
         muscle_activations_ref,
-        x_ref[: biorbd_model.nb_q, :],
+        x_ref[: bio_model.nb_q, :],
         kin_data_to_track="q",
         use_residual_torque=use_residual_torque,
     )
@@ -292,7 +292,7 @@ def main():
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
-    markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_states)
+    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
 
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])

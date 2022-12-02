@@ -37,10 +37,10 @@ from bioptim import (
 
 
 def states_to_markers(bio_model, states):
-    nq = biorbd_model.nb_q
-    n_mark = biorbd_model.nb_markers
+    nq = bio_model.nb_q
+    n_mark = bio_model.nb_markers
     q = cas.MX.sym("q", nq)
-    markers_func = biorbd.to_casadi_func("makers", biorbd_model.markers, q)
+    markers_func = biorbd.to_casadi_func("makers", bio_model.markers, q)
     return np.array(markers_func(states[:nq, :])).reshape((3, n_mark, -1), order="F")
 
 
@@ -48,40 +48,40 @@ def generate_data(bio_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False
     def pendulum_ode(t, x, u):
         return np.concatenate((x[nq:, np.newaxis], qddot_func(x[:nq], x[nq:], u)))[:, 0]
 
-    nq = biorbd_model.nb_q
+    nq = bio_model.nb_q
     q = cas.MX.sym("q", nq)
     qdot = cas.MX.sym("qdot", nq)
     tau = cas.MX.sym("tau", nq)
-    qddot_func = biorbd.to_casadi_func("forw_dyn", biorbd_model.forward_dynamics, q, qdot, tau)
+    qddot_func = biorbd.to_casadi_func("forw_dyn", bio_model.forward_dynamics, q, qdot, tau)
 
     # Simulated data
     dt = tf / n_shoot
-    controls = np.zeros((biorbd_model.nb_tau, n_shoot))  # Control trajectory
+    controls = np.zeros((bio_model.nb_tau, n_shoot))  # Control trajectory
     controls[0, :] = (-np.ones(n_shoot) + np.sin(np.linspace(0, tf, num=n_shoot))) * t_max
-    states = np.zeros((biorbd_model.nb_q + biorbd_model.nb_qdot, n_shoot))  # State trajectory
+    states = np.zeros((bio_model.nb_q + bio_model.nb_qdot, n_shoot))  # State trajectory
 
     for n in range(n_shoot):
         sol = solve_ivp(pendulum_ode, [0, dt], x0, args=(controls[:, n],))
         states[:, n] = x0
         x0 = sol["y"][:, -1]
     states[:, -1] = x0
-    markers = states_to_markers(bio_model, states[: biorbd_model.nb_q, :])
+    markers = states_to_markers(bio_model, states[: bio_model.nb_q, :])
 
     # Simulated noise
     np.random.seed(42)
-    noise = (np.random.randn(3, biorbd_model.nb_markers, n_shoot) - 0.5) * noise_std
+    noise = (np.random.randn(3, bio_model.nb_markers, n_shoot) - 0.5) * noise_std
     markers_noised = markers + noise
 
     if show_plots:
         q_plot = plt.plot(states[:nq, :].T)
         dq_plot = plt.plot(states[nq:, :].T, "--")
-        name_dof = biorbd_model.name_dof
+        name_dof = bio_model.name_dof
         plt.legend(q_plot + dq_plot, name_dof + ["d" + name for name in name_dof])
         plt.title("Real position and velocity trajectories")
 
         plt.figure()
         marker_plot = plt.plot(markers[1, :, :].T, markers[2, :, :].T)
-        plt.legend(marker_plot, biorbd_model.marker_names())
+        plt.legend(marker_plot, bio_model.marker_names())
         plt.gca().set_prop_cycle(None)
         plt.plot(markers_noised[1, :, :].T, markers_noised[2, :, :].T, "x")
         plt.title("2D plot of markers trajectories + noise")
@@ -149,8 +149,8 @@ def main():
         biorbd_model, final_time, x0, torque_max, n_shoot_per_second * final_time, noise_std, show_plots=False
     )
 
-    x_init = np.zeros((biorbd_model.nb_q * 2, window_len + 1))
-    u_init = np.zeros((biorbd_model.nb_q, window_len))
+    x_init = np.zeros((bio_model.nb_q * 2, window_len + 1))
+    u_init = np.zeros((bio_model.nb_q, window_len))
     torque_max = 5  # Give a bit of slack on the max torque
 
     bio_model = BiorbdModel(biorbd_model_path)

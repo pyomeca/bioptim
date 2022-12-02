@@ -230,7 +230,7 @@ class ConfigureProblem:
                 # at the first shooting node
                 node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
                 ConfigureProblem.configure_contact_forces(ocp, nlp, False, True)
-                for ii in range(nlp.model.nb_contacts()):
+                for ii in range(nlp.model.nb_contacts):
                     ocp.implicit_constraints.add(
                         ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
                         with_contact=with_contact,
@@ -423,7 +423,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         # Configure qddot joints
-        nb_root = nlp.model.nb_root()
+        nb_root = nlp.model.nb_root
         if not nb_root > 0:
             raise RuntimeError("BioModel must have at least one DoF on root.")
 

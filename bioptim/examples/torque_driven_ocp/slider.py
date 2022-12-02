@@ -74,8 +74,8 @@ def prepare_ocp(
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
     x_bounds[0].min[:, 0] = 0
     x_bounds[0].max[:, 0] = 0
     x_bounds[1].min[0, -1] = 0.5
@@ -85,26 +85,26 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nb_tau)
-    u_init.add([tau_init] * biorbd_model[0].nb_tau)
-    u_init.add([tau_init] * biorbd_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
 
     return OptimalControlProgram(
         bio_model,

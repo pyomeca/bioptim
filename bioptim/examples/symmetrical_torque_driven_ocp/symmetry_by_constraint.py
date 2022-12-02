@@ -78,19 +78,19 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][2, :] = 0  # Third dof is set to zero
-    x_bounds[0][biorbd_model.nb_q :, [0, -1]] = 0  # Velocity is 0 at start and end
+    x_bounds[0][bio_model.nb_q :, [0, -1]] = 0  # Velocity is 0 at start and end
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
+    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model.nb_q, [tau_max] * biorbd_model.nb_q)
+    u_bounds.add([tau_min] * bio_model.nb_q, [tau_max] * bio_model.nb_q)
     u_bounds[0][2, :] = 0  # Third dof is left uncontrolled
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_q)
+    u_init.add([tau_init] * bio_model.nb_q)
 
     # ------------- #
 

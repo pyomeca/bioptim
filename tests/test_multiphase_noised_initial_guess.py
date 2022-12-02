@@ -38,9 +38,9 @@ def test_noisy_multiphase():
     x_init.add([1, 2, 1, 2, 1, 2])
 
     u_bounds = BoundsList()
-    u_bounds.add([-100] * biorbd_model.nb_tau, [100] * biorbd_model.nb_tau)
-    u_bounds.add([-100] * biorbd_model.nb_tau, [100] * biorbd_model.nb_tau)
-    u_bounds.add([-100] * biorbd_model.nb_tau, [100] * biorbd_model.nb_tau)
+    u_bounds.add([-100] * bio_model.nb_tau, [100] * bio_model.nb_tau)
+    u_bounds.add([-100] * bio_model.nb_tau, [100] * bio_model.nb_tau)
+    u_bounds.add([-100] * bio_model.nb_tau, [100] * bio_model.nb_tau)
 
     u_init = InitialGuessList()
     u_init.add([1, 2, 1])

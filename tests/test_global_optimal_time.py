@@ -628,7 +628,7 @@ def partial_ocp_parameters(n_phases):
     x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
     if n_phases > 1:
         x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+        x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
             bounds.min[i, [0, -1]] = 0
@@ -640,31 +640,31 @@ def partial_ocp_parameters(n_phases):
         x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
 
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
     if n_phases > 1:
-        x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-        x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
+        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
 
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     )
     if n_phases > 1:
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+            [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
         )
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+            [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
         )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
     if n_phases > 1:
-        u_init.add([tau_init] * biorbd_model[0].nb_tau)
-        u_init.add([tau_init] * biorbd_model[0].nb_tau)
+        u_init.add([tau_init] * bio_model[0].nb_tau)
+        u_init.add([tau_init] * bio_model[0].nb_tau)
 
     return (
-        biorbd_model[:n_phases],
+        bio_model[:n_phases],
         n_shooting[:n_phases],
         final_time[:n_phases],
         time_min[:n_phases],
