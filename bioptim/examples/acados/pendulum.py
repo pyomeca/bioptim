@@ -45,9 +45,9 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
-    nq = biorbd_model.nb_q
-    nqdot = biorbd_model.nb_qdot
+    bio_model = BiorbdModel(biorbd_model_path)
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
 
     target = np.zeros((nq + nqdot, 1))
     target[1, 0] = 3.14
@@ -70,7 +70,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][:, 0] = 0
 
     # Initial guess
@@ -78,7 +78,7 @@ def prepare_ocp(
     x_init.add([0] * (nq + nqdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nb_tau
+    n_tau = bio_model.nb_tau
     torque_min, torque_max, torque_init = -300, 300, 0
     u_bounds = BoundsList()
     u_bounds.add([torque_min] * n_tau, [torque_max] * n_tau)
@@ -90,7 +90,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

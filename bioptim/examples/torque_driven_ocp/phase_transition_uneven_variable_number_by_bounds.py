@@ -26,7 +26,7 @@ def prepare_ocp(
     n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
 
-    biorbd_model = (BiorbdModel(biorbd_model_path_withTranslations), BiorbdModel(biorbd_model_path_withTranslations))
+    bio_model = (BiorbdModel(biorbd_model_path_withTranslations), BiorbdModel(biorbd_model_path_withTranslations))
 
     # Problem parameters
     final_time = (1.5, 2.5)
@@ -96,7 +96,7 @@ def prepare_ocp(
     u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

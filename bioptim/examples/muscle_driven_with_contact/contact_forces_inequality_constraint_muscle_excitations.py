@@ -28,7 +28,7 @@ from bioptim import (
 
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4()):
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
     dof_mapping = BiMappingList()
@@ -67,7 +67,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0].concatenate(Bounds([activation_min] * n_mus, [activation_max] * n_mus))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot + [0.5] * n_mus
 

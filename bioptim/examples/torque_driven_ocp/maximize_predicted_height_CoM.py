@@ -65,7 +65,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     if use_actuators:
         tau_min, tau_max, tau_init = -1, 1, 0
@@ -115,7 +115,7 @@ def prepare_ocp(
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess
@@ -140,7 +140,7 @@ def prepare_ocp(
     u_init.add([tau_init] * (len(dof_mapping["tau"].to_first) + nu_sup))
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,

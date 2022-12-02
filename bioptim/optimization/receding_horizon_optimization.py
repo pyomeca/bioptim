@@ -49,7 +49,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             raise ValueError("Receding horizon optimization must be defined using only one bio_model")
 
         super(RecedingHorizonOptimization, self).__init__(
-            biorbd_model=bio_model,
+            bio_model=bio_model,
             dynamics=dynamics,
             n_shooting=window_len,
             phase_time=window_duration,
@@ -198,7 +198,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
 
         solution_ocp = OptimalControlProgram(
-            biorbd_model=self.original_values["bio_model"][0],
+            bio_model=self.original_values["bio_model"][0],
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run - 1,
             phase_time=self.total_optimization_run * self.nlp[0].dt,
@@ -364,7 +364,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
 
         solution_ocp = OptimalControlProgram(
-            biorbd_model=self.original_values["bio_model"][0],
+            bio_model=self.original_values["bio_model"][0],
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run * self.nlp[0].ns - 1,
             phase_time=self.total_optimization_run * self.nlp[0].ns * self.nlp[0].dt,
@@ -504,7 +504,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
 
         solution_ocp = OptimalControlProgram(
-            biorbd_model=self.original_values["bio_model"][0],
+            bio_model=self.original_values["bio_model"][0],
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
             phase_time=self.cycle_len * self.total_optimization_run * self.nlp[0].dt,

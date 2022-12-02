@@ -34,14 +34,14 @@ from bioptim import (
 
 
 def generate_data(
-    biorbd_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
+    bio_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
 
     Parameters
     ----------
-    biorbd_model: BiorbdModel
+    bio_model: BiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -56,11 +56,11 @@ def generate_data(
     """
 
     # Aliases
-    n_q = biorbd_model.nb_q
-    n_qdot = biorbd_model.nb_qdot
-    n_qddot = biorbd_model.nb_qddot
-    n_tau = biorbd_model.nb_tau
-    n_mus = biorbd_model.nb_muscles
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
+    n_qddot = bio_model.nb_qddot
+    n_tau = bio_model.nb_tau
+    n_mus = bio_model.nb_muscles
     dt = final_time / n_shooting
 
     nlp = NonLinearProgram()
@@ -80,7 +80,7 @@ def generate_data(
     symbolic_tau = MX.sym("tau", n_tau, 1)
     symbolic_mus = MX.sym("muscles", n_mus, 1)
     symbolic_parameters = MX.sym("params", 0, 0)
-    markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
+    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
     nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
     nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
@@ -145,7 +145,7 @@ def generate_data(
 
 
 def prepare_ocp(
-    biorbd_model: BiorbdModel,
+    bio_model: BiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -161,7 +161,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    biorbd_model: BiorbdModel
+    bio_model: BiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -207,7 +207,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
     nq = biorbd_model.nb_q
     x_bounds[0].min[:nq, :] = -2 * np.pi
@@ -238,7 +238,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -258,20 +258,20 @@ def main():
     """
 
     # Define the problem
-    biorbd_model = BiorbdModel("models/arm26.bioMod")
+    bio_model = BiorbdModel("models/arm26.bioMod")
     final_time = 0.5
     n_shooting_points = 50
     use_residual_torque = True
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(
-        biorbd_model, final_time, n_shooting_points, use_residual_torque=use_residual_torque
+        bio_model, final_time, n_shooting_points, use_residual_torque=use_residual_torque
     )
 
     # Track these data
-    biorbd_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time,
         n_shooting_points,
         markers_ref,

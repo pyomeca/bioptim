@@ -58,7 +58,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -82,7 +82,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
 
     for i in range(1, 8):
         if i != 3:
@@ -91,7 +91,7 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
+    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
     if initialize_near_solution:
         for i in range(2):
             x_init[0].init[i] = 1.5
@@ -103,15 +103,15 @@ def prepare_ocp(
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model.nb_tau, [tau_max] * biorbd_model.nb_tau)
+    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nb_tau)
+    u_init.add([tau_init] * bio_model.nb_tau)
 
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

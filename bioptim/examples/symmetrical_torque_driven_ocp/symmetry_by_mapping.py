@@ -62,7 +62,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30

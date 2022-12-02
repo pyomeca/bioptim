@@ -58,7 +58,7 @@ def prepare_ocp(
     The ocp ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
@@ -74,21 +74,21 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1")
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     # First node is free but mid and last are constrained to be exactly at a certain point.
     # The cyclic penalty ensures that the first node and the last node are the same.
     x_bounds[2:6, -1] = [1.57, 0, 0, 0]
 
     # Initial guess
-    x_init = InitialGuess([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds(
-        [tau_min] * biorbd_model.nb_tau, [tau_max] * biorbd_model.nb_tau
+        [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
     )
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nb_tau)
+    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
 
     # ------------- #
     # A phase transition loop constraint is treated as
@@ -101,7 +101,7 @@ def prepare_ocp(
         phase_transitions.add(PhaseTransitionFcn.CYCLIC, weight=10000)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

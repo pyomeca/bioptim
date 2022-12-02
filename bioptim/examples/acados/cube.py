@@ -24,24 +24,24 @@ from bioptim import (
 
 def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), use_sx=True):
     # BioModel path
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
-    x_init = InitialGuess([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
+    x_bounds = QAndQDotBounds(bio_model)
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds(
-        [tau_min] * biorbd_model.nb_tau, [tau_max] * biorbd_model.nb_tau
+        [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
     )
-    u_init = InitialGuess([tau_init] * biorbd_model.nb_tau)
+    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         tf,

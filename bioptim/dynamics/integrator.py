@@ -270,10 +270,10 @@ class RK(Integrator):
         quat_number = 0
         print(model)
         for j in range(model.nb_segments):
-            if model.segment(j).isRotationAQuaternion():
+            if model.segments[j].isRotationAQuaternion():
                 quat_idx.append([n_dof, n_dof + 1, n_dof + 2, model.nb_dof + quat_number])
                 quat_number += 1
-            n_dof += model.segment(j).nbDof()
+            n_dof += model.segments[j].nbDof()
         return quat_idx
 
 

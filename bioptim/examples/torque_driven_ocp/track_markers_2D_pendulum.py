@@ -63,7 +63,7 @@ def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable, n_
 
 
 def prepare_ocp(
-    biorbd_model: BiorbdModel,
+    bio_model: BiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -75,7 +75,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    biorbd_model: BiorbdModel
+    bio_model: BiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -111,7 +111,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][:, 0] = 0
 
     # Initial guess
@@ -132,7 +132,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -152,7 +152,7 @@ def main():
     """
 
     biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/models/pendulum.bioMod"
-    biorbd_model = BiorbdModel(biorbd_path)
+    bio_model = BiorbdModel(biorbd_path)
     final_time = 1
     n_shooting = 20
 
@@ -173,7 +173,7 @@ def main():
     tau_ref = tau[:, :-1]
 
     ocp = prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time=final_time,
         n_shooting=n_shooting,
         markers_ref=markers_ref,

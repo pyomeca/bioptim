@@ -664,10 +664,10 @@ def test_acados_bounds_not_implemented(failing):
         print("Test for ACADOS on Windows is skipped")
         return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
+    bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
-    nq = biorbd_model.nb_q
-    ntau = biorbd_model.nb_tau
+    nq = bio_model.nb_q
+    ntau = bio_model.nb_tau
 
     n_cycles = 3
     window_len = 5
@@ -684,7 +684,7 @@ def test_acados_bounds_not_implemented(failing):
         raise ValueError("Wrong value for failing")
 
     mhe = MovingHorizonEstimator(
-        biorbd_model,
+        bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,

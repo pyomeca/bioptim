@@ -264,23 +264,23 @@ def main():
     """
 
     # Define the problem
-    biorbd_model = BiorbdModel("models/arm26.bioMod")
+    bio_model = BiorbdModel("models/arm26.bioMod")
     final_time = 0.5
     n_shooting_points = 30
     use_residual_torque = True
 
     # Generate random data to fit
-    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
+    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(bio_model, final_time, n_shooting_points)
 
     # Track these data
-    biorbd_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time,
         n_shooting_points,
         markers_ref,
         muscle_excitations_ref,
-        x_ref[: biorbd_model.nb_q, :],
+        x_ref[: bio_model.nb_q, :],
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
     )
@@ -297,7 +297,7 @@ def main():
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
-    markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_states)
+    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])
 

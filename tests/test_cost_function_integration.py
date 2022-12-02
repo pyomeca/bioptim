@@ -84,11 +84,11 @@ def prepare_ocp(
 
     # Initial guess
     n_q = bio_model.nb_q
-    n_qdot = biorbd_model.nb_qdot
+    n_qdot = bio_model.nb_qdot
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nb_tau
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
@@ -96,7 +96,7 @@ def prepare_ocp(
     u_init = InitialGuess([tau_init] * n_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         1,

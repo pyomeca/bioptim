@@ -67,10 +67,10 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
-    n_tau = biorbd_model.nb_tau
-    n_muscles = biorbd_model.nb_muscles
+    n_tau = bio_model.nb_tau
+    n_muscles = bio_model.nb_muscles
     tau_min, tau_max = -10, 10
 
     # Define fatigue parameters for each muscle and residual torque
@@ -156,11 +156,11 @@ def prepare_ocp(
         axes=[Axis.X, Axis.Y],
     )
 
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[:, 0] = (0.07, 1.4, 0, 0)
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
 
-    x_init = InitialGuess([1.57] * biorbd_model.nb_q + [0] * biorbd_model.nb_qdot)
+    x_init = InitialGuess([1.57] * bio_model.nb_q + [0] * bio_model.nb_qdot)
     x_init.concatenate(FatigueInitialGuess(fatigue_dynamics))
 
     # Define control path constraint
@@ -170,7 +170,7 @@ def prepare_ocp(
     u_init.concatenate(FatigueInitialGuess(fatigue_dynamics, variable_type=VariableType.CONTROLS))
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

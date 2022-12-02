@@ -82,7 +82,7 @@ def prepare_ocp_first_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -93,12 +93,12 @@ def prepare_ocp_first_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[:, 0] = 0
 
     # Initial guess
-    n_q = biorbd_model.nb_q
-    n_qdot = biorbd_model.nb_qdot
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
     x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, magnitude=0.001, n_shooting=n_shooting + 1)
 
     # Define control path constraint
@@ -120,7 +120,7 @@ def prepare_ocp_first_pass(
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -163,7 +163,7 @@ def prepare_ocp_second_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -174,7 +174,7 @@ def prepare_ocp_second_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[:, 0] = 0
 
     # Initial guess
@@ -200,7 +200,7 @@ def prepare_ocp_second_pass(
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         solution.ns,
         solution.phase_time[-1],

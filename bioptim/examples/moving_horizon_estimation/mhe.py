@@ -36,7 +36,7 @@ from bioptim import (
 )
 
 
-def states_to_markers(biorbd_model, states):
+def states_to_markers(bio_model, states):
     nq = biorbd_model.nb_q
     n_mark = biorbd_model.nb_markers
     q = cas.MX.sym("q", nq)
@@ -44,7 +44,7 @@ def states_to_markers(biorbd_model, states):
     return np.array(markers_func(states[:nq, :])).reshape((3, n_mark, -1), order="F")
 
 
-def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False):
+def generate_data(bio_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False):
     def pendulum_ode(t, x, u):
         return np.concatenate((x[nq:, np.newaxis], qddot_func(x[:nq], x[nq:], u)))[:, 0]
 
@@ -65,7 +65,7 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
         states[:, n] = x0
         x0 = sol["y"][:, -1]
     states[:, -1] = x0
-    markers = states_to_markers(biorbd_model, states[: biorbd_model.nb_q, :])
+    markers = states_to_markers(bio_model, states[: biorbd_model.nb_q, :])
 
     # Simulated noise
     np.random.seed(42)
@@ -101,7 +101,7 @@ def prepare_mhe(biorbd_model, window_len, window_duration, max_torque, x_init, u
         objective_functions=new_objectives,
         x_init=InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME),
         u_init=InitialGuess(u_init, interpolation=InterpolationType.EACH_FRAME),
-        x_bounds=QAndQDotBounds(biorbd_model),
+        x_bounds=QAndQDotBounds(bio_model),
         u_bounds=Bounds([-max_torque, 0.0], [max_torque, 0.0]),
         n_threads=4,
     )
@@ -133,7 +133,7 @@ def get_solver_options(solver):
 
 def main():
     biorbd_model_path = "models/cart_pendulum.bioMod"
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     solver = Solver.ACADOS()  # or Solver.IPOPT()
     final_time = 5
@@ -153,7 +153,7 @@ def main():
     u_init = np.zeros((biorbd_model.nb_q, window_len))
     torque_max = 5  # Give a bit of slack on the max torque
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
     mhe = prepare_mhe(
         biorbd_model,
         window_len=window_len,

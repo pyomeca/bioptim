@@ -126,7 +126,7 @@ def prepare_ocp(
 
     # --- Options --- #
     # BioModel path
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -149,25 +149,25 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialGuess([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds(
-        [tau_min] * biorbd_model.nb_tau, [tau_max] * biorbd_model.nb_tau
+        [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
     )
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nb_tau)
+    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
 
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

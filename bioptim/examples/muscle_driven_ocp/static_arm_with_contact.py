@@ -52,7 +52,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -69,12 +69,12 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][:, 0] = (0, 0.07, 1.4, 0, 0, 0)
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([1.57] * biorbd_model.nb_q + [0] * biorbd_model.nb_qdot)
+    x_init.add([1.57] * bio_model.nb_q + [0] * biorbd_model.nb_qdot)
 
     # Define control path constraint
     muscle_min, muscle_max, muscle_init = 0, 1, 0.5
@@ -90,7 +90,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

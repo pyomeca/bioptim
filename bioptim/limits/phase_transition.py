@@ -265,7 +265,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 warn("The chosen model does not have any contact")
             q_pre = nlp_pre.states["q"].mx
             qdot_pre = nlp_pre.states["qdot"].mx
-            qdot_impact = model.compute_constraint_impulses_direct(q_pre, qdot_pre).to_mx()
+            qdot_impact = model.qdot_from_impact(q_pre, qdot_pre).to_mx()
 
             val = []
             cx_end = []

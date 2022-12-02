@@ -64,7 +64,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -83,15 +83,15 @@ def prepare_ocp(
         qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][:, [0, -1]] = 0
     x_bounds[0][1, -1] = 3.14
 
     # Initial guess
-    n_q = biorbd_model.nb_q
-    n_qdot = biorbd_model.nb_qdot
-    n_qddot = biorbd_model.nb_qddot
-    n_tau = biorbd_model.nb_tau
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
+    n_qddot = bio_model.nb_qddot
+    n_tau = bio_model.nb_tau
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
@@ -115,7 +115,7 @@ def prepare_ocp(
         u_init = InitialGuess([0] * n_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

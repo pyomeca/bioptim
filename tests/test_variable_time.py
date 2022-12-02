@@ -41,7 +41,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     n_phases = len(ns)
 
     # BioModel path
-    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
+    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -75,9 +75,9 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 0
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 1
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 2
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 0
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 1
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 2
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -87,26 +87,26 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     )
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nb_tau)
-    u_init.add([tau_init] * biorbd_model[0].nb_tau)
-    u_init.add([tau_init] * biorbd_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
 
     parameters = ParameterList()
     if use_parameter:
@@ -114,10 +114,10 @@ def prepare_ocp(phase_time_constraint, use_parameter):
         def my_target_function(ocp, value, target_value):
             return value - target_value
 
-        def my_parameter_function(biorbd_model, value, extra_value):
+        def my_parameter_function(bio_model, value, extra_value):
             new_gravity = MX.zeros(3, 1)
             new_gravity[2] = value + extra_value
-            biorbd_model.set_gravity(new_gravity)
+            bio_model.set_gravity(new_gravity)
 
         min_g = -10
         max_g = -6
@@ -140,7 +140,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model[:n_phases],
+        bio_model[:n_phases],
         dynamics,
         ns,
         final_time[:n_phases],

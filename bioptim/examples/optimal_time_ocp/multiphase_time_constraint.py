@@ -61,7 +61,7 @@ def prepare_ocp(
         raise RuntimeError("Number of phases must be 1 to 3")
 
     # BioModel path
-    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
+    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -102,10 +102,10 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 0
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 0
     if n_phases == 3:
-        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 1
-        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 2
+        x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 1
+        x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 2
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -116,34 +116,34 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
     if n_phases == 3:
-        x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-        x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
+        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     )
     if n_phases == 3:
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+            [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
         )
         u_bounds.add(
-            [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+            [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
         )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
     if n_phases == 3:
-        u_init.add([tau_init] * biorbd_model[0].nb_tau)
-        u_init.add([tau_init] * biorbd_model[0].nb_tau)
+        u_init.add([tau_init] * bio_model[0].nb_tau)
+        u_init.add([tau_init] * bio_model[0].nb_tau)
 
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model[:n_phases],
+        bio_model[:n_phases],
         dynamics,
         n_shooting,
         final_time[:n_phases],

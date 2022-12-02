@@ -35,7 +35,7 @@ from bioptim import (
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound, mu, ode_solver=OdeSolver.RK4()):
     # --- Options --- #
     # BioModel path
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     dof_mapping = BiMappingList()
     dof_mapping.add("tau", [None, None, None, 0], [3])
@@ -73,13 +73,13 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     )
 
     # Path constraint
-    n_q = biorbd_model.nb_q
+    n_q = bio_model.nb_q
     n_qdot = n_q
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess
@@ -94,7 +94,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     u_init.add([tau_init] * len(dof_mapping["tau"].to_first))
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,

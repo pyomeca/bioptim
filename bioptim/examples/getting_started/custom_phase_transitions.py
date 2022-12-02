@@ -83,7 +83,7 @@ def prepare_ocp(
     """
 
     # BioModel path
-    biorbd_model = (
+    bio_model = (
         BiorbdModel(biorbd_model_path),
         BiorbdModel(biorbd_model_path),
         BiorbdModel(biorbd_model_path),
@@ -120,10 +120,10 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
 
     x_bounds[0][[1, 3, 4, 5], 0] = 0
     x_bounds[-1][[1, 3, 4, 5], -1] = 0
@@ -179,7 +179,7 @@ def prepare_ocp(
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

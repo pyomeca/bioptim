@@ -50,7 +50,7 @@ def prepare_single_shooting(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Dynamics
     dynamics = Dynamics(
@@ -68,7 +68,7 @@ def prepare_single_shooting(
     u_init = InitialGuess([tau_init] * biorbd_model.nb_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -121,7 +121,7 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
 
@@ -164,7 +164,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     nQ = biorbd_model.nb_q
     X0 = initial_states_from_single_shooting(biorbd_model_path, 100, 1, ode_solver)
     x_bounds[0].min[:nQ, 0] = X0[:nQ] - slack
@@ -186,7 +186,7 @@ def prepare_ocp(
     u_init.add([tau_init] * biorbd_model.nb_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

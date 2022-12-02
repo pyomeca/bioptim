@@ -93,8 +93,8 @@ def prepare_ocp(
 
     # --- Options --- #
     # BioModel path
-    biorbd_model = BiorbdModel(biorbd_model_path)
-    nq = biorbd_model.nb_q
+    bio_model = BiorbdModel(biorbd_model_path)
+    nq = bio_model.nb_q
     nqdot = biorbd_model.nb_qdot
     ntau = biorbd_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -112,7 +112,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
     u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
@@ -173,7 +173,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

@@ -26,7 +26,7 @@ def prepare_ocp(
     n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
 
-    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_withTranslations))
+    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_withTranslations))
 
     # Problem parameters
     final_time = (1.5, 2.5)
@@ -62,7 +62,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model[1]))
 
     # Phase 0
@@ -95,7 +95,7 @@ def prepare_ocp(
     )
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

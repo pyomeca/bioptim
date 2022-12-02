@@ -67,8 +67,8 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = BiorbdModel(biorbd_model_path)
-    n_tau = biorbd_model.nb_tau
+    bio_model = BiorbdModel(biorbd_model_path)
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
@@ -137,7 +137,7 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics, expand=True)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
@@ -147,8 +147,8 @@ def prepare_ocp(
             x_bounds[[7, 13], 0] = 1  # The rotation dof is passive (fatigue_mr = 1)
 
     # Initial guess
-    n_q = biorbd_model.nb_q
-    n_qdot = biorbd_model.nb_qdot
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
     x_init = InitialGuess([0] * (n_q + n_qdot))
     x_init.concatenate(FatigueInitialGuess(fatigue_dynamics))
 
@@ -161,7 +161,7 @@ def prepare_ocp(
     u_init = FatigueInitialGuess(fatigue_dynamics, variable_type=VariableType.CONTROLS)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

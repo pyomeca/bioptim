@@ -69,7 +69,7 @@ def prepare_ocp_phase_transitions(
     """
 
     # BioModel path
-    biorbd_model = (
+    bio_model = (
         BiorbdModel(biorbd_model_path),
         BiorbdModel(biorbd_model_path),
         BiorbdModel(biorbd_model_path),
@@ -155,10 +155,10 @@ def prepare_ocp_phase_transitions(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
 
     x_bounds[0][[1, 3, 4, 5], 0] = 0
     x_bounds[-1][[1, 3, 4, 5], -1] = 0
@@ -168,15 +168,15 @@ def prepare_ocp_phase_transitions(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
+        [tau_min] * bio_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
     )
     u_bounds.add(
         [tau_min] * biorbd_model[0].nb_tau, [tau_max] * biorbd_model[0].nb_tau
@@ -201,7 +201,7 @@ def prepare_ocp_phase_transitions(
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -215,13 +215,13 @@ def prepare_ocp_phase_transitions(
     )
 
 
-def my_parameter_function(biorbd_model: BiorbdModel, value: MX, extra_value: Any):
+def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
     value[2] *= extra_value
-    biorbd_model.set_gravity(value)
+    bio_model.set_gravity(value)
 
 
-def set_mass(biorbd_model: BiorbdModel, value: MX):
-    biorbd_model.segment(0).characteristics().setMass(value)
+def set_mass(bio_model: BiorbdModel, value: MX):
+    bio_model.segment(0).characteristics().setMass(value)
 
 
 def my_target_function(ocp: OptimalControlProgram, value: MX) -> MX:
@@ -281,8 +281,8 @@ def prepare_ocp_parameters(
     """
 
     # --- Options --- #
-    biorbd_model = BiorbdModel(biorbd_model_path)
-    n_tau = biorbd_model.nb_tau
+    bio_model = BiorbdModel(biorbd_model_path)
+    n_tau = bio_model.nb_tau
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -293,13 +293,13 @@ def prepare_ocp_parameters(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    n_q = biorbd_model.nb_q
-    n_qdot = biorbd_model.nb_qdot
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
@@ -349,7 +349,7 @@ def prepare_ocp_parameters(
         )
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -382,7 +382,7 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
 
     # --- Options --- #
     # BioModel path
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -422,24 +422,24 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialGuess([0] * (biorbd_model.nb_q + biorbd_model.nb_qdot))
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
     u_bounds = Bounds(
-        [tau_min] * biorbd_model.nb_tau, [tau_max] * biorbd_model.nb_tau
+        [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
     )
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nb_tau)
+    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
 
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

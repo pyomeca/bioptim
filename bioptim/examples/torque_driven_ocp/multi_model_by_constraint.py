@@ -25,7 +25,7 @@ def prepare_ocp(
     n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
 
-    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_modified_inertia))
+    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_modified_inertia))
 
     # Problem parameters
     final_time = (1.5, 1.5)
