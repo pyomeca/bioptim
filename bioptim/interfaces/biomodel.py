@@ -153,4 +153,3 @@ class BioModel(Protocol):
 
     marker_names: tuple[str]
     """Get the marker names"""
-

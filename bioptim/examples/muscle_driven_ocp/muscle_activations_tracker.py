@@ -227,13 +227,9 @@ def prepare_ocp(
             [tau_min] * bio_model.nb_tau + [activation_min] * bio_model.nb_muscles,
             [tau_max] * bio_model.nb_tau + [activation_max] * bio_model.nb_muscles,
         )
-        u_init.add(
-            [tau_init] * bio_model.nb_tau + [activation_init] * bio_model.nb_muscles
-        )
+        u_init.add([tau_init] * bio_model.nb_tau + [activation_init] * bio_model.nb_muscles)
     else:
-        u_bounds.add(
-            [activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles
-        )
+        u_bounds.add([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles)
         u_init.add([activation_init] * bio_model.nb_muscles)
     # ------------- #
 

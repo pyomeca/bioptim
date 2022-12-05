@@ -137,15 +137,9 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
-    )
-    u_bounds.add(
-        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
-    )
-    u_bounds.add(
-        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
-    )
+    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * bio_model[0].nb_tau)

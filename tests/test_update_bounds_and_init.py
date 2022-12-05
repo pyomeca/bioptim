@@ -210,9 +210,7 @@ def test_update_noised_init_rk4(interpolation):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(
-        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=OdeSolver.RK4()
-    )
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=OdeSolver.RK4())
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)

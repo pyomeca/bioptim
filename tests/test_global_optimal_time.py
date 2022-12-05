@@ -646,16 +646,10 @@ def partial_ocp_parameters(n_phases):
         x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
 
     u_bounds = BoundsList()
-    u_bounds.add(
-        [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
-    )
+    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
     if n_phases > 1:
-        u_bounds.add(
-            [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
-        )
-        u_bounds.add(
-            [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
-        )
+        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * bio_model[0].nb_tau)

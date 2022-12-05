@@ -219,9 +219,7 @@ def prepare_ocp(
 
     # Add muscle to the bounds
     activation_min, activation_max, activation_init = 0, 1, 0.5
-    x_bounds[0].concatenate(
-        Bounds([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles)
-    )
+    x_bounds[0].concatenate(Bounds([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles))
     x_bounds[0][(bio_model.nb_q + bio_model.nb_qdot) :, 0] = excitations_ref[:, 0]
 
     # Initial guess

@@ -56,6 +56,21 @@ from ..gui.check_conditioning import check_conditioning
 check_version(biorbd, "1.9.8", "1.10.0")
 
 
+import types
+
+
+def contains_swig_py_object(obj):
+    if isinstance(obj, types.ModuleType):
+        # Check if the module contains a SwigPyObject class
+        return hasattr(obj, "SwigPyObject")
+    elif isinstance(obj, types.ObjectType):
+        # Check if the object is a SwigPyObject instance
+        return isinstance(obj, obj.__class__.SwigPyObject)
+    else:
+        # The object is not a module or an object, so it cannot contain a SwigPyObject
+        return False
+
+
 class OptimalControlProgram:
     """
     The main class to define an ocp. This class prepares the full program and gives all
@@ -143,7 +158,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: Union[str, BiorbdModel, list, tuple, BioModel],
+        bio_model: Union[list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
@@ -171,8 +186,8 @@ class OptimalControlProgram:
         """
         Parameters
         ----------
-        bio_model: Union[str, BiorbdModel, list, tuple, BioModel]
-            The biorbd model. If bio_model is an str, a new model is loaded. Otherwise, the references are used
+        bio_model: Union[list, tuple, BioModel]
+            The bio_model to use for the optimization
         dynamics: Union[Dynamics, DynamicsList]
             The dynamics of the phases
         n_shooting: Union[int, list[int]]
@@ -222,9 +237,8 @@ class OptimalControlProgram:
         # protocols cannot be tested as instance of a class
         if isinstance(bio_model, str):
             raise ValueError(
-                        "bio_model must either be BiorbdModel, "
-                        "or a custom model object, respecting the protocol BioModel."
-                    )
+                "bio_model must either be BiorbdModel, " "or a custom model object, respecting the protocol BioModel."
+            )
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
 
@@ -254,7 +268,10 @@ class OptimalControlProgram:
             raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
 
         self.original_values = {
-            "bio_model": biorbd_model_path,
+            "bio_model": [
+                m if not isinstance(m, BiorbdModel) else m.path.relativePath().to_string() for m in bio_model
+            ],
+            "bio_model_class": [type(m) for m in bio_model],
             "dynamics": dynamics,
             "n_shooting": n_shooting,
             "phase_time": phase_time,
@@ -510,6 +527,29 @@ class OptimalControlProgram:
 
         # Prepare objectives
         self.update_objectives(objective_functions)
+
+    @classmethod
+    def from_loaded_data(cls, data):
+        """
+        Loads an OCP from a dictionary ("ocp_initializer")
+
+        Parameters
+        ----------
+        data: dict
+            A dictionary containing the data to load
+
+        Returns
+        -------
+        OptimalControlProgram
+        """
+        for i, model in enumerate(data["bio_model"]):
+            if isinstance(model, str):
+                data["bio_model"][i] = data["bio_model_class"][i](model)
+
+        # delete field bio_model_class
+        del data["bio_model_class"]
+
+        return cls(**data)
 
     def _check_variable_mapping_consistency_with_node_mapping(
         self, use_states_from_phase_idx, use_controls_from_phase_idx
@@ -1145,7 +1185,7 @@ class OptimalControlProgram:
                     "please refer to the original error message below\n\n"
                     f"{type(error_message).__name__}: {error_message}"
                 )
-            ocp = OptimalControlProgram(**data["ocp_initializer"])
+            ocp = OptimalControlProgram.from_loaded_data(data["ocp_initializer"])
             for key in data["versions"].keys():
                 key_module = "biorbd_casadi" if key == "biorbd" else key
                 try:

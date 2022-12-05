@@ -209,6 +209,3 @@ class BiorbdModel:
     @property
     def marker_names(self) -> tuple[str]:
         return tuple(s.to_string() for s in self.model.markerNames())
-
-
-

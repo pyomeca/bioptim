@@ -611,7 +611,7 @@ class ConfigureProblem:
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
         for i_sc in range(nlp.model.nb_soft_contacts):
-            soft_contact = nlp.model.soft_contacts[i_sc] # todo: in the BiorbdModel
+            soft_contact = nlp.model.soft_contacts[i_sc]  # todo: in the BiorbdModel
 
             global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact)

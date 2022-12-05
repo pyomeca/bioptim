@@ -158,9 +158,7 @@ def prepare_ocp(
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds(
-        [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
-    )
+    u_bounds = Bounds([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
     u_init = InitialGuess([tau_init] * bio_model.nb_tau)
 
