@@ -103,7 +103,10 @@ def main():
     """
 
     # import the custom dynamics and configuration
-    from bioptim.examples.custom_model.custom_package.custom_dynamics import custom_dynamics, custom_configure_my_dynamics
+    from bioptim.examples.custom_model.custom_package.custom_dynamics import (
+        custom_dynamics,
+        custom_configure_my_dynamics,
+    )
 
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(

@@ -215,9 +215,7 @@ class BiorbdModel:
         for i_sc in range(self.nb_soft_contacts):
             soft_contact = self.soft_contact(i_sc)
 
-            soft_contact_forces[i_sc * 6: (i_sc + 1) * 6, :] = (
-                biorbd.SoftContactSphere(soft_contact)
-                .computeForceAtOrigin(self.model, q, qdot)
-                .to_mx()
+            soft_contact_forces[i_sc * 6 : (i_sc + 1) * 6, :] = (
+                biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(self.model, q, qdot).to_mx()
             )
         return soft_contact_forces

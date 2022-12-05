@@ -8,7 +8,10 @@ from bioptim import (
 def test_custom_model():
     from bioptim.examples.custom_model import main as ocp_module
     from bioptim.examples.custom_model.custom_package import my_model as model
-    from bioptim.examples.custom_model.custom_package import custom_dynamics as dynamics, custom_configure_my_dynamics as configure_dynamics
+    from bioptim.examples.custom_model.custom_package import (
+        custom_dynamics as dynamics,
+        custom_configure_my_dynamics as configure_dynamics,
+    )
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
