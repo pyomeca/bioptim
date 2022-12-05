@@ -41,7 +41,7 @@ from bioptim import (
 
 def out_of_sphere(all_pn, y, z):
     q = all_pn.nlp.states["q"].mx
-    marker_q = all_pn.nlp.model.markers(q)[1].to_mx()
+    marker_q = all_pn.nlp.model.markers(q)[1]
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 

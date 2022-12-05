@@ -53,7 +53,7 @@ def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgr
 
     f_ext = biorbd.VecBiorbdSpatialVector()
     f_ext.append(biorbd.SpatialVector(force_vector))
-    qddot = nlp.model.forward_dynamics(q, qdot, tau, f_ext).to_mx()
+    qddot = nlp.model.forward_dynamics(q, qdot, tau, f_ext)
 
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 

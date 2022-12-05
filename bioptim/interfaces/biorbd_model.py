@@ -1,6 +1,6 @@
 from casadi import MX
 import biorbd_casadi as biorbd
-from typing import Protocol
+from typing import Protocol, Any
 from pathlib import Path
 
 
@@ -79,7 +79,7 @@ class BiorbdModel:
         return self.model.angularMomentum(Q, Qdot, updateKin)
 
     def reshape_qdot(self, q, qdot, k_stab=1) -> MX:
-        return self.model.computeQdot(q, qdot, k_stab)
+        return self.model.computeQdot(q, qdot, k_stab).to_mx()
 
     def segment_angular_velocity(self, Q, Qdot, idx, updateKin=True) -> MX:
         return self.model.segmentAngularVelocity(Q, Qdot, idx, updateKin)
@@ -112,19 +112,19 @@ class BiorbdModel:
         return self.model.nbMuscles()
 
     def torque(self, tau_activations, q, qdot) -> MX:
-        return self.model.torque(tau_activations, q, qdot)
+        return self.model.torque(tau_activations, q, qdot).to_mx()
 
     def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
-        return self.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)
+        return self.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
 
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
-        return self.model.ForwardDynamics(q, qdot, tau, fext, f_contacts)
+        return self.model.ForwardDynamics(q, qdot, tau, fext, f_contacts).to_mx()
 
     def constrained_forward_dynamics(self, *args) -> MX:
-        return self.model.ForwardDynamicsConstraintsDirect(*args)
+        return self.model.ForwardDynamicsConstraintsDirect(*args).to_mx()
 
     def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None) -> MX:
-        return self.model.InverseDynamics(q, qdot, qddot, f_ext, f_contacts)
+        return self.model.InverseDynamics(q, qdot, qddot, f_ext, f_contacts).to_mx()
 
     def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, fext=None):
         return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(q, qdot, tau, fext)
@@ -137,20 +137,20 @@ class BiorbdModel:
         return self.model.stateSet()
 
     def muscle_activation_dot(self, muscle_states) -> MX:
-        return self.model.activationDot(muscle_states)
+        return self.model.activationDot(muscle_states).to_mx()
 
     def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
-        return self.model.muscularJointTorque(muscle_states, q, qdot)
+        return self.model.muscularJointTorque(muscle_states, q, qdot).to_mx()
 
     def get_constraints(self):
         # todo: to be removed
         return self.model.getConstraints()
 
-    def markers(self, *args) -> MX:
+    def markers(self, *args) -> Any | list[MX]:
         if len(args) == 0:
             return self.model.markers
         else:
-            return self.model.markers(*args)
+            return [m.to_mx() for m in self.model.markers(*args)]
 
     @property
     def nb_markers(self) -> int:

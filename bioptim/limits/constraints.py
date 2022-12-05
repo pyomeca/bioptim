@@ -343,9 +343,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 model = BiorbdModel(
                     nlp.model.path.absolutePath().to_string()
                 )  # TODO: find a better solution if possible
-                qddot_fd = model.constrained_forward_dynamics(q, qdot, tau).to_mx()
+                qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
             else:
-                qddot_fd = nlp.model.forward_dynamics(q, qdot, tau).to_mx()
+                qddot_fd = nlp.model.forward_dynamics(q, qdot, tau)
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
@@ -396,7 +396,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec).to_mx()
 
             else:
-                tau_id = nlp.model.inverse_dynamics(q, qdot, qddot).to_mx()
+                tau_id = nlp.model.inverse_dynamics(q, qdot, qddot)
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
@@ -467,7 +467,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             muscles_states = nlp.model.state_set()
             for k in range(len(nlp.controls["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
-            muscle_tau = nlp.model.muscle_joint_torque(muscles_states, q, qdot).to_mx()
+            muscle_tau = nlp.model.muscle_joint_torque(muscles_states, q, qdot)
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
             if nlp.external_forces:
@@ -477,7 +477,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
                 # fext need to be a mx
 
-            tau_id = nlp.model.inverse_dynamics(q, qdot, qddot).to_mx()
+            tau_id = nlp.model.inverse_dynamics(q, qdot, qddot)
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
