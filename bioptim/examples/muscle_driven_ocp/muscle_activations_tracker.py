@@ -64,7 +64,7 @@ def generate_data(
     dt = final_time / n_shooting
 
     nlp = NonLinearProgram()
-    nlp.model = biorbd_model
+    nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
         "qdot": BiMapping(range(n_qdot), range(n_qdot)),

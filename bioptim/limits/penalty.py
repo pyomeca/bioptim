@@ -457,7 +457,7 @@ class PenaltyFunctionAbstract:
             else:
                 qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
                 return BiorbdInterface.mx_to_cx(
-                    "com_ddot", nlp.model.comddot, nlp.states["q"], nlp.states["qdot"], qddot
+                    "com_ddot", nlp.model.center_of_mass_acceleration, nlp.states["q"], nlp.states["qdot"], qddot
                 )
 
         @staticmethod
