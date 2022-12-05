@@ -1,4 +1,4 @@
-from casadi import MX
+from casadi import MX, horzcat
 import biorbd_casadi as biorbd
 from typing import Protocol, Any
 from pathlib import Path
@@ -186,8 +186,18 @@ class BiorbdModel:
         return self.model.path()
         # return Path(self.model.path())
 
-    def marker_velocities(self, q, qdot, update_kin=True) -> list[MX]:
-        return [m.to_mx() for m in self.model.markersVelocity(q, qdot, update_kin)]
+    def marker_velocities(self, q, qdot, update_kin=True, reference_jcs=None) -> MX:
+        if reference_jcs is None:
+            return horzcat(*[m.to_mx() for m in self.model.markersVelocity(q, qdot, update_kin)])
+        else:
+            jcs_t = (
+                biorbd.RotoTrans()
+                if reference_jcs is None
+                else self.global_homogeneous_matrices(q, reference_jcs).transpose()
+            )
+        return horzcat(
+            *[m.to_mx() for m in self.model.markersVelocity(q, qdot, update_kin) if m.applyRT(jcs_t) is None]
+        )
 
     def rigid_contact_axis_idx(self, idx) -> int:
         # todo: to be removed

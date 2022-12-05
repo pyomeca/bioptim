@@ -200,13 +200,9 @@ class PenaltyFunctionAbstract:
             nlp = all_pn.nlp
             q_mx = nlp.states["q"].mx
             qdot_mx = nlp.states["qdot"].mx
-            model = nlp.model
-            jcs_t = (
-                biorbd.RotoTrans()
-                if reference_jcs is None
-                else model.global_homogeneous_matrices(q_mx, reference_jcs).transpose()
-            )
-            markers = horzcat(*[m for m in model.marker_velocities(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
+
+            # todo: return all MX, shouldn't it be a list of MX, I think there is an inconsistency here
+            markers = nlp.model.marker_velocities(q_mx, qdot_mx, reference_jcs=reference_jcs)
 
             markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
             return markers_objective
