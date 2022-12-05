@@ -353,9 +353,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             pre_com_dot = nlp_pre.model.center_of_mass_velocity(
                 states_pre[nlp_pre.states["q"].index, :], states_pre[nlp_pre.states["qdot"].index, :]
             )
-            post_com_dot = nlp_post.model.center_of_mass_velocity(
-                states_post_sym_list[0], states_post_sym_list[1]
-            )
+            post_com_dot = nlp_post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
             pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
