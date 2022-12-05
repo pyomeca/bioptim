@@ -90,11 +90,11 @@ def generate_data(bio_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False
     return states, markers, markers_noised, controls
 
 
-def prepare_mhe(biorbd_model, window_len, window_duration, max_torque, x_init, u_init):
+def prepare_mhe(bio_model, window_len, window_duration, max_torque, x_init, u_init):
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, node=Node.ALL, weight=1000, list_index=0)
 
     return MovingHorizonEstimator(
-        biorbd_model,
+        bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,

@@ -147,7 +147,7 @@ def prepare_ocp(
     u_init.add([tau_init] * bio_model[0].nb_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

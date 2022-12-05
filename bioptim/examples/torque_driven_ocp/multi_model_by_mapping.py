@@ -97,7 +97,7 @@ def prepare_ocp(
     )
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

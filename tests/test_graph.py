@@ -213,7 +213,7 @@ def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
 
 
 def set_mass(bio_model: BiorbdModel, value: MX):
-    bio_model.segment(0).characteristics().setMass(value)
+    bio_model.segments[0].characteristics().setMass(value)
 
 
 def my_target_function(ocp: OptimalControlProgram, value: MX) -> MX:

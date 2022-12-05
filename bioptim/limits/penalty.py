@@ -206,7 +206,7 @@ class PenaltyFunctionAbstract:
                 if reference_jcs is None
                 else model.global_homogeneous_matrices(q_mx, reference_jcs).transpose()
             )
-            markers = horzcat(*[m.to_mx() for m in model.markers_velocity(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
+            markers = horzcat(*[m.to_mx() for m in model.marker_velocities(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
 
             markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
             return markers_objective
@@ -444,7 +444,7 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
-                com_ddot = nlp.model.comddot(
+                com_ddot = nlp.model.center_of_mass_acceleration(
                     nlp.states["q"].mx,
                     nlp.states["qdot"].mx,
                     nlp.dynamics_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)[nlp.states["qdot"].index, :],
@@ -509,10 +509,10 @@ class PenaltyFunctionAbstract:
                 "com_velocity", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"]
             )
             if isinstance(com_velocity, SX):
-                mass = Function("mass", [], [nlp.model.mass().to_mx()]).expand()
+                mass = Function("mass", [], [nlp.model.mass.to_mx()]).expand()
                 mass = mass()["o0"]
             else:
-                mass = nlp.model.mass().to_mx()
+                mass = nlp.model.mass.to_mx()
             linear_momentum_cx = com_velocity * mass
             return linear_momentum_cx
 
