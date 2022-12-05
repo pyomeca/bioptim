@@ -5,7 +5,7 @@ This an example of how to use bioptim to solve a simple pendulum problem
 import numpy as np
 
 # import the custom model
-from my_model import MyModel
+from bioptim.examples.custom_model.custom_package import MyModel
 
 from bioptim import (
     OptimalControlProgram,
@@ -103,7 +103,7 @@ def main():
     """
 
     # import the custom dynamics and configuration
-    from custom_dynamics import custom_dynamics, custom_configure_my_dynamics
+    from bioptim.examples.custom_model.custom_package.custom_dynamics import custom_dynamics, custom_configure_my_dynamics
 
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(

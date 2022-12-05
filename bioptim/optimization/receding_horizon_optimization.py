@@ -198,7 +198,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
 
         solution_ocp = OptimalControlProgram(
-            bio_model=self.original_values["bio_model"][0],
+            bio_model=self.original_values["bio_model_class"][0](self.original_values["bio_model"][0]),
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run - 1,
             phase_time=self.total_optimization_run * self.nlp[0].dt,

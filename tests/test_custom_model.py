@@ -1,15 +1,14 @@
 import os
 import numpy as np
 from bioptim import (
-    BiorbdModel,
     Solver,
 )
 
 
 def test_custom_model():
     from bioptim.examples.custom_model import main as ocp_module
-    from bioptim.examples.custom_model import my_model as model
-    from bioptim.examples.custom_model import custom_dynamics as dynamics
+    from bioptim.examples.custom_model.custom_package import my_model as model
+    from bioptim.examples.custom_model.custom_package import custom_dynamics as dynamics, custom_configure_my_dynamics as configure_dynamics
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -17,8 +16,8 @@ def test_custom_model():
         model=model.MyModel(),
         final_time=1,
         n_shooting=30,
-        configure_dynamics=dynamics.custom_configure_my_dynamics,
-        dynamics=dynamics.custom_dynamics,
+        configure_dynamics=configure_dynamics,
+        dynamics=dynamics,
     )
 
     np.testing.assert_almost_equal(ocp.nlp[0].model.nb_q, 1)
@@ -26,7 +25,7 @@ def test_custom_model():
     np.testing.assert_almost_equal(ocp.nlp[0].model.nb_qddot, 1)
     np.testing.assert_almost_equal(ocp.nlp[0].model.nb_tau, 1)
     assert ocp.nlp[0].model.nb_quaternions == 0
-    np.testing.assert_almost_equal(ocp.nlp[0].model.mass(), 1)
+    np.testing.assert_almost_equal(ocp.nlp[0].model.mass, 1)
     assert ocp.nlp[0].model.name_dof == ["rotx"]
     assert ocp.nlp[0].model.path is None
 
