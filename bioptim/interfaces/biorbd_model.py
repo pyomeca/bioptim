@@ -197,7 +197,7 @@ class BiorbdModel:
         return self.model.torqueMax(*args)
 
     def rigid_contact_acceleration(self, q, qdot, qddot, idx=None, updateKin=True) -> MX:
-        return self.model.rigidContactAcceleration(q, qdot, qddot, idx, updateKin)
+        return self.model.rigidContactAcceleration(q, qdot, qddot, idx, updateKin).to_mx()
 
     def object_homogeneous_matrix(self, *args) -> MX:
         return self.model.RT(*args)

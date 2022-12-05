@@ -435,7 +435,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 idx_dir = 1
             elif "_Z" in nlp.model.contact_names[contact_index]:
                 idx_dir = 2
-            contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
+            contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, 0)[idx_dir]
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
