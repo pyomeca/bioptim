@@ -277,13 +277,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             bound = nlp.model.tau_max(nlp.states["q"].mx, nlp.states["qdot"].mx)
             min_bound = BiorbdInterface.mx_to_cx(
                 "min_bound",
-                nlp.controls["tau"].mapping.to_first.map(bound[1].to_mx()),
+                nlp.controls["tau"].mapping.to_first.map(bound[1]),
                 nlp.states["q"],
                 nlp.states["qdot"],
             )
             max_bound = BiorbdInterface.mx_to_cx(
                 "max_bound",
-                nlp.controls["tau"].mapping.to_first.map(bound[0].to_mx()),
+                nlp.controls["tau"].mapping.to_first.map(bound[0]),
                 nlp.states["q"],
                 nlp.states["qdot"],
             )

@@ -193,8 +193,9 @@ class BiorbdModel:
         # todo: to be removed
         return self.model.rigidContactAxisIdx(idx)
 
-    def tau_max(self, *args) -> MX:
-        return self.model.torqueMax(*args)
+    def tau_max(self, *args) -> tuple[MX, MX]:
+        torque_max, torque_min = self.model.torqueMax(*args)
+        return torque_max.to_mx(), torque_min.to_mx()
 
     def rigid_contact_acceleration(self, q, qdot, qddot, idx=None, updateKin=True) -> MX:
         return self.model.rigidContactAcceleration(q, qdot, qddot, idx, updateKin).to_mx()

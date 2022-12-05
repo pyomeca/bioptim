@@ -142,7 +142,7 @@ class BioModel(Protocol):
     def rigid_contact_axis_idx(self, idx) -> int:
         """Get the rigid contact axis index, todo: to remove"""
 
-    def tau_max(self) -> MX:
+    def tau_max(self) -> tuple[MX, MX]:
         """Get the maximum torque"""
 
     def rigid_contact_acceleration(self, q, qdot, qddot) -> MX:
