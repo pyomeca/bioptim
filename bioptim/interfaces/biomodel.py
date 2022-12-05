@@ -153,3 +153,6 @@ class BioModel(Protocol):
 
     marker_names: tuple[str]
     """Get the marker names"""
+
+    def soft_contact_forces(self, q, qdot) -> MX:
+        """Get the soft contact forces in the global frame"""

@@ -209,3 +209,15 @@ class BiorbdModel:
     @property
     def marker_names(self) -> tuple[str]:
         return tuple(s.to_string() for s in self.model.markerNames())
+
+    def soft_contact_forces(self, q: MX, qdot: MX) -> MX:
+        soft_contact_forces = MX.zeros(self.nb_soft_contacts * 6, 1)
+        for i_sc in range(self.nb_soft_contacts):
+            soft_contact = self.soft_contact(i_sc)
+
+            soft_contact_forces[i_sc * 6: (i_sc + 1) * 6, :] = (
+                biorbd.SoftContactSphere(soft_contact)
+                .computeForceAtOrigin(self.model, q, qdot)
+                .to_mx()
+            )
+        return soft_contact_forces

@@ -605,19 +605,13 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
-
-        global_soft_contact_force_func = MX.zeros(nlp.model.nb_soft_contacts * 6, 1)
-        n = nlp.model.nb_q
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
-        for i_sc in range(nlp.model.nb_soft_contacts):
-            soft_contact = nlp.model.soft_contacts[i_sc]  # todo: in the BiorbdModel
+        global_soft_contact_force_func = nlp.model.soft_contact_forces(
+            nlp.states.mx_reduced[nlp.states["q"].index],
+            nlp.states.mx_reduced[nlp.states["qdot"].index],
+        )
 
-            global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
-                biorbd.SoftContactSphere(soft_contact)
-                .computeForceAtOrigin(nlp.model.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
-                .to_mx()
-            )
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
             [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
@@ -630,9 +624,9 @@ class ConfigureProblem:
             all_soft_contact_names = []
             all_soft_contact_names.extend(
                 [
-                    f"{nlp.model.soft_contact_name(i_sc)}_{name}"
+                    f"{nlp.model.soft_contact_names[i_sc]}_{name}"
                     for name in component_list
-                    if nlp.model.soft_contact_name(i_sc) not in all_soft_contact_names
+                    if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
                 ]
             )
 
@@ -640,14 +634,14 @@ class ConfigureProblem:
                 phase_mappings = nlp.plot_mapping["soft_contact_forces"]
             else:
                 soft_contact_names_in_phase = [
-                    f"{nlp.model.soft_contact_name(i_sc)}_{name}"
+                    f"{nlp.model.soft_contact_names[i_sc]}_{name}"
                     for name in component_list
-                    if nlp.model.soft_contact_name(i_sc) not in all_soft_contact_names
+                    if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
                 ]
                 phase_mappings = Mapping(
                     [i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase]
                 )
-            nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_name(i_sc)}"] = CustomPlot(
+            nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
                 lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
