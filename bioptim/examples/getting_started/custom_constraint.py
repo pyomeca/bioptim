@@ -62,7 +62,7 @@ def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second
     else:
         # Do the calculation in biorbd API and then convert to the required format
         markers = all_pn.nlp.model.markers(all_pn.nlp.states["q"].mx)
-        markers_diff = markers[marker_1_idx].to_mx() - markers[marker_0_idx].to_mx()
+        markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
         markers_diff = BiorbdInterface.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
 
     return markers_diff

@@ -16,7 +16,7 @@ class BiorbdModel:
 
     @property
     def gravity(self) -> MX:
-        return self.model.getGravity()
+        return self.model.getGravity().to_mx()
 
     def set_gravity(self, newGravity) -> None:
         return self.model.setGravity(newGravity)
@@ -64,16 +64,16 @@ class BiorbdModel:
 
     @property
     def mass(self) -> MX:
-        return self.model.mass()
+        return self.model.mass().to_mx()
 
     def center_of_mass(self, q, updateKin=True) -> MX:
-        return self.model.CoM(q, updateKin)
+        return self.model.CoM(q, updateKin).to_mx()
 
     def center_of_mass_velocity(self, q, qdot, updateKin=True) -> MX:
-        return self.model.CoMdot(q, qdot, updateKin)
+        return self.model.CoMdot(q, qdot, updateKin).to_mx()
 
     def center_of_mass_acceleration(self, q, qdot, qddot, updateKin=True) -> MX:
-        return self.model.CoMddot(q, qdot, qddot, updateKin)
+        return self.model.CoMddot(q, qdot, qddot, updateKin).to_mx()
 
     def angular_momentum(self, Q, Qdot, updateKin=True) -> MX:
         return self.model.angularMomentum(Q, Qdot, updateKin)
@@ -130,7 +130,7 @@ class BiorbdModel:
         return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(q, qdot, tau, fext)
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
-        return self.model.ComputeConstraintImpulsesDirect(q, qdot_pre_impact)
+        return self.model.ComputeConstraintImpulsesDirect(q, qdot_pre_impact).to_mx()
 
     def state_set(self):
         # todo to remove
@@ -186,8 +186,8 @@ class BiorbdModel:
         return self.model.path()
         # return Path(self.model.path())
 
-    def marker_velocities(self, q, qdot, update_kin=True) -> MX:
-        return self.model.markersVelocity(q, qdot, update_kin)
+    def marker_velocities(self, q, qdot, update_kin=True) -> list[MX]:
+        return [m.to_mx() for m in self.model.markersVelocity(q, qdot, update_kin)]
 
     def rigid_contact_axis_idx(self, idx) -> int:
         # todo: to be removed

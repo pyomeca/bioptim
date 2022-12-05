@@ -206,7 +206,7 @@ class PenaltyFunctionAbstract:
                 if reference_jcs is None
                 else model.global_homogeneous_matrices(q_mx, reference_jcs).transpose()
             )
-            markers = horzcat(*[m.to_mx() for m in model.marker_velocities(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
+            markers = horzcat(*[m for m in model.marker_velocities(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
 
             markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
             return markers_objective
@@ -363,9 +363,9 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = all_pn.nlp
-            g = nlp.model.gravity.to_mx()[2]
-            com = nlp.model.center_of_mass(nlp.states["q"].mx).to_mx()
-            com_dot = nlp.model.center_of_mass_velocity(nlp.states["q"].mx, nlp.states["qdot"].mx).to_mx()
+            g = nlp.model.gravity[2]
+            com = nlp.model.center_of_mass(nlp.states["q"].mx)
+            com_dot = nlp.model.center_of_mass_velocity(nlp.states["q"].mx, nlp.states["qdot"].mx)
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
             com_height_cx = BiorbdInterface.mx_to_cx("com_height", com_height, nlp.states["q"], nlp.states["qdot"])
             return com_height_cx
@@ -448,7 +448,7 @@ class PenaltyFunctionAbstract:
                     nlp.states["q"].mx,
                     nlp.states["qdot"].mx,
                     nlp.dynamics_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)[nlp.states["qdot"].index, :],
-                ).to_mx()
+                )
                 var = []
                 var.extend([nlp.states[key] for key in nlp.states])
                 var.extend([nlp.controls[key] for key in nlp.controls])
@@ -509,10 +509,10 @@ class PenaltyFunctionAbstract:
                 "com_velocity", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"]
             )
             if isinstance(com_velocity, SX):
-                mass = Function("mass", [], [nlp.model.mass.to_mx()]).expand()
+                mass = Function("mass", [], [nlp.model.mass]).expand()
                 mass = mass()["o0"]
             else:
-                mass = nlp.model.mass.to_mx()
+                mass = nlp.model.mass
             linear_momentum_cx = com_velocity * mass
             return linear_momentum_cx
 

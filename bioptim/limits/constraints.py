@@ -393,7 +393,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     f_contact_vec.append(f_contact[idx])
                     count = count + n_f_contact
 
-                tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec).to_mx()
+                tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)
 
             else:
                 tau_id = nlp.model.inverse_dynamics(q, qdot, qddot)
