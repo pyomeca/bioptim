@@ -136,8 +136,8 @@ class BioModel(Protocol):
     def marker_velocities(self, q, qdot) -> MX:
         """Get the marker velocities of the model"""
 
-    def rigid_contact_axis_idx(self, idx) -> int:
-        """Get the rigid contact axis index, todo: to remove"""
+    def reshape_fext_to_fcontact(self, fext: MX) -> biorbd.VecBiorbdVector:
+        """Reshape the external forces to contact forces"""
 
     def tau_max(self) -> tuple[MX, MX]:
         """Get the maximum torque"""

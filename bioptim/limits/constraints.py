@@ -385,13 +385,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
             if with_contact:
                 f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls.keys() else nlp.states["fext"].mx
-                count = 0
-                f_contact_vec = biorbd.VecBiorbdVector()
-                for ii in range(nlp.model.nb_rigid_contacts):
-                    n_f_contact = len(nlp.model.rigid_contact_axis_idx(ii))
-                    idx = [i + count for i in range(n_f_contact)]
-                    f_contact_vec.append(f_contact[idx])
-                    count = count + n_f_contact
+                f_contact_vec = nlp.model.reshape_fext_to_fcontact(f_contact)
 
                 tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)
 

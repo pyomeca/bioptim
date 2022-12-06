@@ -123,7 +123,7 @@ class BiorbdModel:
     def constrained_forward_dynamics(self, *args) -> MX:
         return self.model.ForwardDynamicsConstraintsDirect(*args).to_mx()
 
-    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None) -> MX:
+    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts: biorbd.VecBiorbdVector = None) -> MX:
         return self.model.InverseDynamics(q, qdot, qddot, f_ext, f_contacts).to_mx()
 
     def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, fext=None) -> MX:
@@ -195,10 +195,6 @@ class BiorbdModel:
             *[m.to_mx() for m in self.model.markersVelocity(q, qdot, update_kin) if m.applyRT(jcs_t) is None]
         )
 
-    def rigid_contact_axis_idx(self, idx) -> int:
-        # todo: to be removed
-        return self.model.rigidContactAxisIdx(idx)
-
     def tau_max(self, *args) -> tuple[MX, MX]:
         torque_max, torque_min = self.model.torqueMax(*args)
         return torque_max.to_mx(), torque_min.to_mx()
@@ -226,3 +222,15 @@ class BiorbdModel:
                 biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(self.model, q, qdot).to_mx()
             )
         return soft_contact_forces
+
+    def reshape_fext_to_fcontact(self, fext: MX) -> biorbd.VecBiorbdVector:
+        count = 0
+        f_contact_vec = biorbd.VecBiorbdVector()
+        for ii in range(self.nb_rigid_contacts):
+            n_f_contact = len(self.model.rigidContactAxisIdx(ii))
+            idx = [i + count for i in range(n_f_contact)]
+            f_contact_vec.append(fext[idx])
+            count = count + n_f_contact
+
+        return f_contact_vec
+
