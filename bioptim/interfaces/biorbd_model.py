@@ -233,4 +233,3 @@ class BiorbdModel:
             count = count + n_f_contact
 
         return f_contact_vec
-
