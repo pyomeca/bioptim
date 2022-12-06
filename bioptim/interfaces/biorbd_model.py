@@ -126,8 +126,8 @@ class BiorbdModel:
     def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None) -> MX:
         return self.model.InverseDynamics(q, qdot, qddot, f_ext, f_contacts).to_mx()
 
-    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, fext=None):
-        return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(q, qdot, tau, fext)
+    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, fext=None) -> MX:
+        return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(q, qdot, tau, fext).to_mx()
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
         return self.model.ComputeConstraintImpulsesDirect(q, qdot_pre_impact).to_mx()
@@ -141,10 +141,6 @@ class BiorbdModel:
 
     def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
         return self.model.muscularJointTorque(muscle_states, q, qdot).to_mx()
-
-    def get_constraints(self):
-        # todo: to be removed
-        return self.model.getConstraints()
 
     def markers(self, *args) -> Any | list[MX]:
         if len(args) == 0:

@@ -806,13 +806,11 @@ class DynamicsFunctions:
         The contact forces
         """
 
-        cs = nlp.model.get_constraints()
         if nlp.external_forces:
-            all_cs = MX()
+            all_forces = MX()
             for i, f_ext in enumerate(nlp.external_forces):
-                nlp.model.constrained_forward_dynamics(q, qdot, tau, cs, f_ext)
-                all_cs = horzcat(all_cs, cs.getForce().to_mx())
-            return all_cs
+                force = nlp.model.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, f_ext)
+                all_forces = horzcat(all_forces, force)
+            return all_forces
         else:
-            nlp.model.constrained_forward_dynamics(q, qdot, tau, cs)
-            return cs.getForce().to_mx()
+            return nlp.model.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, fext=None)

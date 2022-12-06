@@ -118,9 +118,6 @@ class BioModel(Protocol):
     def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
         """Get the muscular joint torque"""
 
-    def get_constraints(self):
-        """Get the constraints of the model #todo: return constraint forces instead"""
-
     def markers(self, q) -> MX:
         """Get the markers of the model"""
 
