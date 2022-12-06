@@ -80,6 +80,7 @@ class DynamicsFunctions:
         with_contact: bool,
         rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
+        with_passive_torque: bool = False,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -100,6 +101,8 @@ class DynamicsFunctions:
             which rigidbody dynamics should be used
         fatigue : FatigueList
             A list of fatigue elements
+        with_passive_torque : bool
+            If the dynamic with passive torque should be used
 
         Returns
         ----------
@@ -112,7 +115,10 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+
+        passive_torque = nlp.model.passiveJointTorque(q, qdot)
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
+        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -217,7 +223,12 @@ class DynamicsFunctions:
         return tau
 
     @staticmethod
-    def torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact):
+    def torque_activations_driven(states: MX.sym,
+                                  controls: MX.sym,
+                                  parameters: MX.sym,
+                                  nlp,
+                                  with_contact,
+                                  with_passive_torque: bool = False):
         """
         Forward dynamics driven by joint torques activations.
 
@@ -233,6 +244,9 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
+
 
         Returns
         ----------
@@ -245,7 +259,10 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau_activations = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
+        passive_torque = nlp.model.passiveJointTorque(q, qdot)
         tau = nlp.model.torque(tau_activations, q, qdot).to_mx()
+        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
+
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
@@ -261,6 +278,7 @@ class DynamicsFunctions:
         nlp,
         rigidbody_dynamics: RigidBodyDynamics,
         with_contact: bool,
+        with_passive_torque: bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -279,6 +297,8 @@ class DynamicsFunctions:
             which rigidbody dynamics should be used
         with_contact: bool
             If the dynamic with contact should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
 
         Returns
         ----------
@@ -289,7 +309,10 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
+        passive_torque = nlp.model.passiveJointTorque(q, qdot)
+        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
@@ -392,6 +415,7 @@ class DynamicsFunctions:
         with_contact: bool,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         with_torque: bool = False,
+        with_passive_torque: bool = False,
         fatigue=None,
     ) -> DynamicsEvaluation:
         """
@@ -415,6 +439,8 @@ class DynamicsFunctions:
             To define fatigue elements
         with_torque: bool
             If the dynamic should be added with residual torques
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
 
         Returns
         ----------
@@ -463,7 +489,13 @@ class DynamicsFunctions:
                 fatigue_states = DynamicsFunctions.get(nlp.states[f"muscles_{fatigue_suffix}"], states)
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
-        tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
+        if with_passive_torque:
+            tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
+            passive_torque = nlp.model.passiveJointTorque(q, qdot)
+            tau = tau + passive_torque.to_mx()
+        else:
+            tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
+
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
