@@ -173,6 +173,7 @@ class ConfigureProblem:
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
+        with_passive_torque: bool = False,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -191,6 +192,8 @@ class ConfigureProblem:
             which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
+        with_passive_torque : bool
+            If the dynamic with passive torque should be used
         """
 
         if nlp.model.nbSoftContacts() != 0:
@@ -284,6 +287,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 fatigue=fatigue,
                 rigidbody_dynamics=rigidbody_dynamics,
+                with_passive_torque=with_passive_torque,
             )
 
         # Configure the contact forces
@@ -307,6 +311,7 @@ class ConfigureProblem:
         with_contact=False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
+        with_passive_torque: bool = False,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -323,6 +328,8 @@ class ConfigureProblem:
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
         """
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
@@ -370,6 +377,7 @@ class ConfigureProblem:
                 DynamicsFunctions.torque_derivative_driven,
                 with_contact=with_contact,
                 rigidbody_dynamics=rigidbody_dynamics,
+                with_passive_torque=with_passive_torque,
             )
 
         if with_contact:
@@ -385,7 +393,7 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def torque_activations_driven(ocp, nlp, with_contact=False):
+    def torque_activations_driven(ocp, nlp, with_contact=False, with_passive_torque: bool = False):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
@@ -399,6 +407,8 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
         """
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
@@ -409,7 +419,11 @@ class ConfigureProblem:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             ConfigureProblem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.torque_activations_driven, with_contact=with_contact
+                ocp,
+                nlp,
+                DynamicsFunctions.torque_activations_driven,
+                with_contact=with_contact,
+                with_passive_torque=with_passive_torque
             )
 
         if with_contact:
@@ -430,6 +444,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
 
@@ -449,7 +465,10 @@ class ConfigureProblem:
             "qddot_joints", name_qddot_joints, ocp, nlp, as_states=False, as_controls=True
         )
         ConfigureProblem.configure_dynamics_function(
-            ocp, nlp, DynamicsFunctions.joints_acceleration_driven, expand=False
+            ocp,
+            nlp,
+            DynamicsFunctions.joints_acceleration_driven,
+            expand=False,
         )
 
     @staticmethod
@@ -460,6 +479,7 @@ class ConfigureProblem:
         fatigue: FatigueList = None,
         with_torque: bool = False,
         with_contact: bool = False,
+        with_passive_torque: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ):
         """
@@ -483,6 +503,8 @@ class ConfigureProblem:
             If the dynamic should be added with residual torques
         with_contact: bool
             If the dynamic with contact should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
 
@@ -520,6 +542,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 fatigue=fatigue,
                 with_torque=with_torque,
+                with_passive_torque=with_passive_torque,
                 rigidbody_dynamics=rigidbody_dynamics,
             )
 
