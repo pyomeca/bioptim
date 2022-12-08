@@ -337,9 +337,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
-            passive_torque = nlp.model.passiveJointTorque(q, qdot)
+            passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
-            tau = tau + passive_torque.to_mx() if with_passive_torque else tau
+            tau = tau + passive_torque if with_passive_torque else tau
 
             qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls.keys() else nlp.states["qddot"].mx
             if with_contact:
@@ -382,8 +382,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
-            passive_torque = nlp.model.passiveJointTorque(q, qdot)
-            tau = tau + passive_torque.to_mx() if with_passive_torque else tau
+            passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
+            tau = tau + passive_torque if with_passive_torque else tau
 
             if nlp.external_forces:
                 raise NotImplementedError(
@@ -474,11 +474,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             muscle_activations = nlp.controls["muscles"].mx
             muscles_states = nlp.model.stateSet()
-            passive_torque = nlp.model.passiveJointTorque(q, qdot)
+            passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
             for k in range(len(nlp.controls["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
             muscle_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-            muscle_tau = muscle_tau + passive_torque.to_mx() if with_passive_torque else muscle_tau
+            muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
             if nlp.external_forces:

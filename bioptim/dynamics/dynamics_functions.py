@@ -116,9 +116,9 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        passive_torque = nlp.model.passiveJointTorque(q, qdot)
+        passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
+        tau = tau + passive_torque if with_passive_torque else tau
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -259,9 +259,9 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau_activations = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        passive_torque = nlp.model.passiveJointTorque(q, qdot)
+        passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
         tau = nlp.model.torque(tau_activations, q, qdot).to_mx()
-        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
+        tau = tau + passive_torque if with_passive_torque else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
@@ -311,8 +311,8 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
 
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
-        passive_torque = nlp.model.passiveJointTorque(q, qdot)
-        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
+        passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
+        tau = tau + passive_torque if with_passive_torque else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
@@ -375,8 +375,8 @@ class DynamicsFunctions:
         q = DynamicsFunctions.get(q_nlp, q_var)
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau = DynamicsFunctions.get(tau_nlp, tau_var)
-        passive_torque = nlp.model.passiveJointTorque(q, qdot)
-        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
+        passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
+        tau = tau + passive_torque if with_passive_torque else tau
 
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 
@@ -417,8 +417,8 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau_activations = DynamicsFunctions.get(tau_nlp, tau_var)
         tau = nlp.model.torque(tau_activations, q, qdot).to_mx()
-        passive_torque = nlp.model.passiveJointTorque(q, qdot)
-        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
+        passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
+        tau = tau + passive_torque if with_passive_torque else tau
 
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 
@@ -506,8 +506,8 @@ class DynamicsFunctions:
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        passive_torque = nlp.model.passiveJointTorque(q, qdot)
-        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
+        passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
+        tau = tau + passive_torque if with_passive_torque else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
@@ -588,7 +588,7 @@ class DynamicsFunctions:
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
-        passive_torque = nlp.model.passiveJointTorque(q, qdot)
+        passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         tau = tau + passive_torque if with_passive_torque else tau
 
@@ -706,7 +706,6 @@ class DynamicsFunctions:
             qdot: Union[MX, SX],
             tau: Union[MX, SX],
             with_contact: bool,
-            with_passive_torque: bool = False,
     ):
         """
         Easy accessor to derivative of qdot
@@ -731,8 +730,6 @@ class DynamicsFunctions:
         The derivative of qdot
         """
         qdot_var = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
-        passive_torque = nlp.model.passiveJointTorque(q, qdot)
-        tau = tau + passive_torque.to_mx() if with_passive_torque else tau
         if nlp.external_forces:
             dxdt = MX(len(qdot_var.mapping.to_first), nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
@@ -751,7 +748,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def inverse_dynamics(
-        nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], qddot: Union[MX, SX], with_contact: bool, with_passive_torque: bool=False
+        nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], qddot: Union[MX, SX], with_contact: bool
     ):
         """
         Easy accessor to torques from inverse dynamics
@@ -775,7 +772,7 @@ class DynamicsFunctions:
         -------
         Torques in tau
         """
-        passive_torque = nlp.model.passiveJointTorque(q, qdot)
+
         if nlp.external_forces:
             if "tau" in nlp.states:
                 tau_shape = nlp.states["tau"].mx.shape[0]
@@ -786,11 +783,9 @@ class DynamicsFunctions:
             tau = MX(tau_shape, nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 tau[:, i] = nlp.model.InverseDynamics(q, qdot, qddot, f_ext).to_mx()
-            tau = tau + passive_torque.to_mx() if with_passive_torque else tau
 
         else:
             tau = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
-            tau = tau + passive_torque.to_mx() if with_passive_torque else tau
 
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 

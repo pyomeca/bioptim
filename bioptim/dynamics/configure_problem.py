@@ -170,10 +170,10 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact: bool = False,
+        with_passive_torque: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
-        with_passive_torque: bool = False,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -186,14 +186,15 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
+        with_passive_torque : bool
+            If the dynamic with passive torque should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
-        with_passive_torque : bool
-            If the dynamic with passive torque should be used
+
         """
 
         if nlp.model.nbSoftContacts() != 0:
@@ -243,6 +244,7 @@ class ConfigureProblem:
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
                 with_contact=with_contact,
+                with_passive_torque=with_passive_torque,
             )
             if with_contact:
                 # qddot is continuous with RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
@@ -270,6 +272,7 @@ class ConfigureProblem:
                 constraint_type=ConstraintType.IMPLICIT,
                 with_contact=with_contact,
                 phase=nlp.phase_idx,
+                with_passive_torque=with_passive_torque,
             )
 
         # Declared soft contacts controls
@@ -309,9 +312,9 @@ class ConfigureProblem:
         ocp,
         nlp,
         with_contact=False,
+        with_passive_torque: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
-        with_passive_torque: bool = False,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -324,12 +327,13 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
+
         """
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
@@ -444,8 +448,6 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
 
@@ -530,6 +532,7 @@ class ConfigureProblem:
                 node=Node.ALL_SHOOTING,
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
+                with_passive_torque=with_passive_torque
             )
 
         if nlp.dynamics_type.dynamic_function:
