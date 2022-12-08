@@ -1,4 +1,4 @@
-from casadi import MX
+from casadi import MX, SX
 import biorbd_casadi as biorbd
 from typing import Protocol
 from pathlib import Path
@@ -153,3 +153,17 @@ class BioModel(Protocol):
 
     def soft_contact_forces(self, q, qdot) -> MX:
         """Get the soft contact forces in the global frame"""
+
+    def normalize_state_quaternions(self, x: MX | SX) -> MX | SX:
+        """
+        Normalize the quaternions of the state
+
+        Parameters
+        ----------
+        x: Union[MX, SX]
+            The state to normalize
+
+        Returns
+        -------
+        The normalized states
+        """

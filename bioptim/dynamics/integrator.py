@@ -245,36 +245,14 @@ class RK(Integrator):
         p = params
         x[:, 0] = states
 
-        if self.model.nb_quaternions > 0:
-            quat_idx = self.get_quaternion_idx(self.model)
-
         for i in range(1, self.n_step + 1):
             t_norm_init = (i - 1) / self.n_step  # normalized time
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
 
-            # Normalize quaternion, if needed
-            for j in range(self.model.nb_quaternions):
-                quaternion = vertcat(
-                    x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
-                )
-                quaternion /= norm_fro(quaternion)
-                x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
-                x[quat_idx[j][3], i] = quaternion[0]
+            if self.model.nb_quaternions > 0:
+                x[:, i] = self.model.normalize_state_quaternions(x[:, i])
 
         return x[:, -1], x
-
-    @staticmethod
-    def get_quaternion_idx(model: BioModel) -> list[list[int]]:
-        n_dof = 0
-        quat_idx = []
-        quat_number = 0
-        print(model)
-        for j in range(model.nb_segments):
-            if model.segments[j].isRotationAQuaternion():
-                quat_idx.append([n_dof, n_dof + 1, n_dof + 2, model.nb_dof + quat_number])
-                quat_number += 1
-            n_dof += model.segments[j].nbDof()
-        return quat_idx
 
 
 class RK1(RK):

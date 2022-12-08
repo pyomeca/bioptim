@@ -1,6 +1,6 @@
-from casadi import MX, horzcat
+from casadi import MX, horzcat, vertcat, SX, norm_fro
 import biorbd_casadi as biorbd
-from typing import Protocol, Any
+from typing import Any
 from pathlib import Path
 
 
@@ -233,3 +233,29 @@ class BiorbdModel:
             count = count + n_f_contact
 
         return f_contact_vec
+
+    def normalize_state_quaternions(self, x: MX | SX) -> MX | SX:
+
+        quat_idx = self.get_quaternion_idx()
+
+        # Normalize quaternion, if needed
+        for j in range(self.nb_quaternions):
+            quaternion = vertcat(
+                x[quat_idx[j][3]], x[quat_idx[j][0]], x[quat_idx[j][1]], x[quat_idx[j][2]]
+            )
+            quaternion /= norm_fro(quaternion)
+            x[quat_idx[j][0]: quat_idx[j][2] + 1] = quaternion[1:4]
+            x[quat_idx[j][3]] = quaternion[0]
+
+        return x
+
+    def get_quaternion_idx(self) -> list[list[int]]:
+        n_dof = 0
+        quat_idx = []
+        quat_number = 0
+        for j in range(self.nb_segments):
+            if self.segments[j].isRotationAQuaternion():
+                quat_idx.append([n_dof, n_dof + 1, n_dof + 2, self.nb_dof + quat_number])
+                quat_number += 1
+            n_dof += self.segments[j].nbDof()
+        return quat_idx
