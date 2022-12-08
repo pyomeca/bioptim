@@ -1,6 +1,5 @@
 from typing import Callable, Union, Any
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
 import biorbd_casadi as biorbd
@@ -545,7 +544,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
+        from ..limits.phase_transition import PhaseTransitionFcn
+
         for pt in ocp.phase_transitions:
+            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                continue
             # Dynamics must be respected between phases
             pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
             pt.list_index = -1

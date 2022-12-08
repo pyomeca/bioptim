@@ -1,9 +1,10 @@
 from typing import Union
 
 import numpy as np
-from casadi import MX, SX, vertcat, horzcat
+from casadi import MX, SX, vertcat
 
 from ..misc.mapping import BiMapping
+from ..misc.enums import CXStep
 
 
 class OptimizationVariable:
@@ -33,7 +34,15 @@ class OptimizationVariable:
         The CX of the variable (ending point)
     """
 
-    def __init__(self, name: str, mx: MX, index: [range, list], mapping: BiMapping = None, parent_list=None):
+    def __init__(
+        self,
+        name: str,
+        mx: MX,
+        cx: Union[list, None],
+        index: [range, list],
+        mapping: BiMapping = None,
+        parent_list=None,
+    ):
         """
         Parameters
         ----------
@@ -48,6 +57,7 @@ class OptimizationVariable:
         """
         self.name: str = name
         self.mx: MX = mx
+        self.original_cx: list = cx
         self.index: [range, list] = index
         self.mapping: BiMapping = mapping
         self.parent_list: OptimizationVariableList = parent_list
@@ -147,7 +157,7 @@ class OptimizationVariableList:
                 index = []
                 for elt in self.elements:
                     index.extend(list(elt.index))
-                return OptimizationVariable("all", self.mx, index)
+                return OptimizationVariable("all", self.mx, self.cx, index, None)
 
             for elt in self.elements:
                 if item == elt.name:
@@ -162,9 +172,18 @@ class OptimizationVariableList:
             for elt in self.elements:
                 if elt.name in item:
                     index.extend(list(elt.index))
-            return OptimizationVariable("some", mx, index)
+            return OptimizationVariable("some", mx, None, index)
         else:
             raise ValueError("OptimizationVariableList can be sliced with int, list, range or str only")
+
+    def __setitem__(self, key, value: OptimizationVariable):
+        self.elements.append(value)
+
+    def get_cx(self, key, cx_type):
+        if key == "all":
+            return self.cx if cx_type == CXStep.CX_START else self.cx_end
+        else:
+            return self[key].cx if cx_type == CXStep.CX_START else self[key].cx_end
 
     def append_fake(self, name: str, index: Union[MX, SX, list], mx: MX, bimapping: BiMapping):
         """
@@ -182,7 +201,7 @@ class OptimizationVariableList:
             The Mapping of the MX against CX
         """
 
-        self.fake_elements.append(OptimizationVariable(name, mx, index, bimapping, self))
+        self.fake_elements.append(OptimizationVariable(name, mx, None, index, bimapping, self))
 
     def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
         """
@@ -210,7 +229,7 @@ class OptimizationVariableList:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape))
 
-        self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
+        self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, self))
 
     @property
     def cx(self):

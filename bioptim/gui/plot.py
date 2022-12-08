@@ -392,7 +392,7 @@ class PlotOcp:
                 for ctr, _ in enumerate(mapping):
                     ax = axes[ctr]
                     if ctr < len(nlp.plot[variable].legend):
-                        axes[ctr].set_title(nlp.plot[variable].legend[ctr])
+                        ax.set_title(nlp.plot[variable].legend[ctr])
                     ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp.plot[variable].ylim:
@@ -409,6 +409,10 @@ class PlotOcp:
                             y_min_all[var_idx][ctr] = y_min
                         if y_max.__array__()[0] > y_max_all[var_idx][ctr]:
                             y_max_all[var_idx][ctr] = y_max
+
+                        y_range, _ = self.__compute_ylim(y_min_all[var_idx][ctr], y_max_all[var_idx][ctr], 1.25)
+                        ax.set_ylim(y_range)
+
                     plot_type = self.plot_func[variable][i].type
 
                     t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
@@ -454,6 +458,7 @@ class PlotOcp:
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
+
                     elif plot_type == PlotType.STEP:
                         zero = np.zeros((t.shape[0], 1))
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
@@ -485,7 +490,6 @@ class PlotOcp:
 
                     legend_without_duplicate_labels(ax)
 
-                mapping_idx = 0
                 for j, ax in enumerate(axes):
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
@@ -497,30 +501,17 @@ class PlotOcp:
                         else:
                             ns = nlp.ns
                         nlp.plot[variable].bounds.check_and_adjust_dimensions(n_elements=len(mapping), n_shooting=ns)
-                        if j in mapping:
-                            bounds_min = np.array(
-                                [nlp.plot[variable].bounds.min.evaluate_at(k)[mapping_idx] for k in range(ns + 1)]
-                            )
-                            bounds_max = np.array(
-                                [nlp.plot[variable].bounds.max.evaluate_at(k)[mapping_idx] for k in range(ns + 1)]
-                            )
-                            if bounds_min.shape[0] == nlp.ns:
-                                bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
-                                bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
-
-                            self.plots_bounds.append(
-                                [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
-                            )
-                            self.plots_bounds.append(
-                                [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
-                            )
-                            mapping_idx += 1
-
-        if self.show_bounds and nlp.plot[variable].bounds:
-            for var_idx, variable in enumerate(self.variable_sizes[0]):
-                for j, ax in enumerate(axes):
-                    y_range, _ = self.__compute_ylim(y_min_all[var_idx][j], y_max_all[var_idx][j], 1.25)
-                    ax.set_ylim(y_range)
+                        bounds_min = np.array([nlp.plot[variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)])
+                        bounds_max = np.array([nlp.plot[variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)])
+                        if bounds_min.shape[0] == nlp.ns:
+                            bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
+                            bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
+                        self.plots_bounds.append(
+                            [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
+                        )
+                        self.plots_bounds.append(
+                            [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
+                        )
 
     def __add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
         """
@@ -644,16 +635,18 @@ class PlotOcp:
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
             for s in nlp.states:
-                if isinstance(data_states, (list, tuple)):
-                    state = np.concatenate((state, data_states[i][s]))
-                else:
-                    state = np.concatenate((state, data_states[s]))
+                if nlp.use_states_from_phase_idx == nlp.phase_idx:
+                    if isinstance(data_states, (list, tuple)):
+                        state = np.concatenate((state, data_states[i][s]))
+                    else:
+                        state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
             for s in nlp.controls:
-                if isinstance(data_controls, (list, tuple)):
-                    control = np.concatenate((control, data_controls[i][s]))
-                else:
-                    control = np.concatenate((control, data_controls[s]))
+                if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+                    if isinstance(data_controls, (list, tuple)):
+                        control = np.concatenate((control, data_controls[i][s]))
+                    else:
+                        control = np.concatenate((control, data_controls[s]))
 
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
@@ -904,7 +897,6 @@ class PlotOcp:
                                 step=data_range / 4,
                             )
                         )
-
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
 

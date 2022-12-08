@@ -36,7 +36,7 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2) -> OptimalControlProgram:
     multinode_constraints = MultinodeConstraintList()
     # hard constraint
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=phase_1,
         phase_second_idx=phase_2,
         first_node=Node.START,
@@ -111,7 +111,7 @@ def test_multinode_fail_first_node(node):
         match="Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
     ):
         multinode_constraints.add(
-            MultinodeConstraintFcn.EQUALITY,
+            MultinodeConstraintFcn.STATES_EQUALITY,
             phase_first_idx=0,
             phase_second_idx=2,
             first_node=node,
@@ -129,7 +129,7 @@ def test_multinode_fail_second_node(node):
         match="Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
     ):
         multinode_constraints.add(
-            MultinodeConstraintFcn.EQUALITY,
+            MultinodeConstraintFcn.STATES_EQUALITY,
             phase_first_idx=0,
             phase_second_idx=2,
             first_node=Node.START,

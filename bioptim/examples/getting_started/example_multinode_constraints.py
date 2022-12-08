@@ -78,29 +78,32 @@ def prepare_ocp(
     multinode_constraints = MultinodeConstraintList()
     # hard constraint
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=Node.START,
         second_node=Node.START,
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=2,
         second_node=Node.MID,
         weight=2,
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.MID,
         second_node=Node.END,
         weight=0.1,
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(

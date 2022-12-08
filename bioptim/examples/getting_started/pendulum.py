@@ -10,6 +10,7 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 """
 
 import biorbd_casadi as biorbd
+
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
@@ -108,6 +109,9 @@ def main():
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
+
+    # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
+    # ocp.check_conditioning()
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
