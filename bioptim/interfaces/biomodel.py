@@ -18,7 +18,7 @@ class BioModel(Protocol):
     nb_segments: int
     """Get the number of segment"""
 
-    def segment_index(self, segmentName) -> int:
+    def segment_index(self, segment_name) -> int:
         """Get the segment index"""
 
     nb_quaternions: int
@@ -69,23 +69,23 @@ class BioModel(Protocol):
         Since we don't know if this is the case, this function is always called
         """
 
-    name_dof: tuple[str]
+    name_dof: tuple[str, ...]
     """Get the name of the degrees of freedom"""
 
-    contact_names: tuple[str]
+    contact_names: tuple[str, ...]
     """Get the name of the contacts"""
 
     nb_soft_contacts: int
     """Get the number of soft contacts"""
 
-    soft_contact_names: tuple[str]
+    soft_contact_names: tuple[str, ...]
     """Get the soft contact names"""
 
     def soft_contacts(self, *args):
         # todo: forces from soft contact ?
         """Get the soft contact"""
 
-    muscle_names: tuple[str]
+    muscle_names: tuple[str, ...]
     """Get the muscle names"""
 
     def torque(self, q, qdot, activation) -> MX:
@@ -118,6 +118,9 @@ class BioModel(Protocol):
     def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
         """Get the muscular joint torque"""
 
+    def marker(self, q, marker_index: int, reference_frame_idx: int = None) -> MX:
+        """Get the position of a marker"""
+
     def markers(self, q) -> MX:
         """Get the markers of the model"""
 
@@ -148,7 +151,7 @@ class BioModel(Protocol):
     def object_homogeneous_matrices(self, q) -> tuple:
         """Get homogeneous matrices of all objects stored in the model"""
 
-    marker_names: tuple[str]
+    marker_names: tuple[str, ...]
     """Get the marker names"""
 
     def soft_contact_forces(self, q, qdot) -> MX:

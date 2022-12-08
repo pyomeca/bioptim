@@ -7,7 +7,6 @@ sufficient.
 More specifically this example reproduces the behavior of the Mayer.SUPERIMPOSE_MARKERS objective function.
 """
 
-import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     BiorbdModel,
@@ -22,7 +21,6 @@ from bioptim import (
     InitialGuess,
     OdeSolver,
     PenaltyNodeList,
-    BiorbdInterface,
     Solver,
 )
 
@@ -55,14 +53,14 @@ def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second
 
     if method == 0:
         # Convert the function to the required format and then subtract
-        markers = BiorbdInterface.mx_to_cx("markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
+        markers = all_pn.nlp.mx_to_cx("markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
         markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     else:
         # Do the calculation in biorbd API and then convert to the required format
         markers = all_pn.nlp.model.markers(all_pn.nlp.states["q"].mx)
         markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
-        markers_diff = BiorbdInterface.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
+        markers_diff = all_pn.nlp.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
 
     return markers_diff
 

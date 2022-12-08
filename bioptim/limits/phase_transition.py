@@ -280,7 +280,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 val = vertcat(val, continuity)
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = biorbd.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
+            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
             return func
 
 

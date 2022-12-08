@@ -3,12 +3,10 @@ import re
 
 import numpy as np
 from casadi import MX, SX, vertcat
-import biorbd_casadi as biorbd
 from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
-from bioptim.interfaces.biorbd_interface import BiorbdInterface
 from bioptim.interfaces.biorbd_model import BiorbdModel
-from bioptim.misc.enums import ControlType, RigidBodyDynamics, SoftContactDynamics
+from bioptim.misc.enums import ControlType, RigidBodyDynamics
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector
 from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
@@ -62,8 +60,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nb_segments, nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        nlp.external_forces = [np.random.rand(6, nlp.model.nb_segments, nlp.ns)]
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -313,8 +310,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nb_segments, nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        nlp.external_forces = [np.random.rand(6, nlp.model.nb_segments, nlp.ns)]
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -689,8 +685,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nb_segments, nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        nlp.external_forces = [np.random.rand(6, nlp.model.nb_segments, nlp.ns)]
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -792,8 +787,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nb_segments, nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        nlp.external_forces = [np.random.rand(6, nlp.model.nb_segments, nlp.ns)]
 
     # Prepare the dynamics
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:

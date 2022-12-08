@@ -15,7 +15,6 @@ User might want to start reading the script by the `main` function to get a bett
 
 from casadi import sqrt
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -34,7 +33,6 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
-    BiorbdInterface,
     Solution,
 )
 
@@ -45,7 +43,7 @@ def out_of_sphere(all_pn, y, z):
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 
-    return BiorbdInterface.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states["q"])
+    return all_pn.nlp.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states["q"])
 
 
 def prepare_ocp_first_pass(

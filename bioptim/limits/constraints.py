@@ -2,11 +2,9 @@ from typing import Callable, Union, Any
 
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
-import biorbd_casadi as biorbd
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
-from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.biorbd_model import BiorbdModel
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
@@ -275,13 +273,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
 
             bound = nlp.model.tau_max(nlp.states["q"].mx, nlp.states["qdot"].mx)
-            min_bound = BiorbdInterface.mx_to_cx(
+            min_bound = nlp.mx_to_cx(
                 "min_bound",
                 nlp.controls["tau"].mapping.to_first.map(bound[1]),
                 nlp.states["q"],
                 nlp.states["qdot"],
             )
-            max_bound = BiorbdInterface.mx_to_cx(
+            max_bound = nlp.mx_to_cx(
                 "max_bound",
                 nlp.controls["tau"].mapping.to_first.map(bound[0]),
                 nlp.states["q"],
@@ -352,7 +350,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("forward_dynamics", qddot - qddot_fd, *var)
+            return nlp.mx_to_cx("forward_dynamics", qddot - qddot_fd, *var)
 
         @staticmethod
         def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, **unused_param):
@@ -397,7 +395,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("inverse_dynamics", tau_id - tau, *var)
+            return nlp.mx_to_cx("inverse_dynamics", tau_id - tau, *var)
 
         @staticmethod
         def implicit_marker_acceleration(_: Constraint, all_pn: PenaltyNodeList, contact_index: int, **unused_param):
@@ -436,7 +434,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([nlp.parameters[key] for key in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("contact_acceleration", contact_acceleration, *var)
+            return nlp.mx_to_cx("contact_acceleration", contact_acceleration, *var)
 
         @staticmethod
         def tau_from_muscle_equal_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
@@ -478,7 +476,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
+            return nlp.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
 
         @staticmethod
         def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
@@ -511,7 +509,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("forward_dynamics", nlp.controls["fext"].mx - soft_contact_force, *var)
+            return nlp.mx_to_cx("forward_dynamics", nlp.controls["fext"].mx - soft_contact_force, *var)
 
     @staticmethod
     def inner_phase_continuity(ocp):

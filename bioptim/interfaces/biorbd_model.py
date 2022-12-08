@@ -1,7 +1,9 @@
-from casadi import MX, horzcat, vertcat, SX, norm_fro
-import biorbd_casadi as biorbd
-from typing import Any
 from pathlib import Path
+from typing import Any, Callable
+
+import biorbd_casadi as biorbd
+from casadi import MX, horzcat, vertcat, SX, norm_fro, Function
+import numpy as np
 
 
 class BiorbdModel:
@@ -85,11 +87,11 @@ class BiorbdModel:
         return self.model.segmentAngularVelocity(Q, Qdot, idx, updateKin)
 
     @property
-    def name_dof(self) -> tuple[str]:
+    def name_dof(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.nameDof())
 
     @property
-    def contact_names(self) -> tuple[str]:
+    def contact_names(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.contactNames())
 
     @property
@@ -97,14 +99,14 @@ class BiorbdModel:
         return self.model.nbSoftContacts()
 
     @property
-    def soft_contact_names(self) -> tuple[str]:
+    def soft_contact_names(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.softContactNames())
 
     def soft_contact(self, *args):
         return self.model.softContact(*args)
 
     @property
-    def muscle_names(self) -> tuple[str]:
+    def muscle_names(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.muscleNames())
 
     @property
@@ -155,19 +157,14 @@ class BiorbdModel:
     def marker_index(self, name):
         return biorbd.marker_index(self.model, name)
 
-    def marker(self, *args):
-        if len(args) > 1:
-            return self.model.marker(*args)
-        else:
-            return self.model.marker
-        # hard to interface with c++ code
-        # because sometimes it used as :
-        # BiorbdInterface.mx_to_cx(
-        #     f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx
-        # )
-        # it will change the way we call it by model.marker()
-        # else:
-        #     return self.model.marker(i)
+    def marker(self, q, index, reference_segment_index=None) -> MX:
+        marker = self.model.marker(q, index)
+
+        if reference_segment_index is not None:
+            global_homogeneous_matrix = self.model.globalJCS(q, reference_segment_index)
+            marker.applyRT(global_homogeneous_matrix.transpose())
+
+        return marker.to_mx()
 
     @property
     def nb_rigid_contacts(self) -> int:
@@ -210,7 +207,7 @@ class BiorbdModel:
         return self.model.nbDof()
 
     @property
-    def marker_names(self) -> tuple[str]:
+    def marker_names(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.markerNames())
 
     def soft_contact_forces(self, q: MX, qdot: MX) -> MX:

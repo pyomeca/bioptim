@@ -1,8 +1,7 @@
 from typing import Callable, Any, Union
 
-import biorbd_casadi as biorbd
 import casadi
-from casadi import SX, MX
+from casadi import SX, MX, Function, horzcat
 
 from .optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
@@ -11,6 +10,7 @@ from ..misc.enums import ControlType
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
+from ..interfaces.biomodel import BioModel
 
 
 class NonLinearProgram:
@@ -127,7 +127,7 @@ class NonLinearProgram:
         self.g_implicit = []
         self.J = []
         self.J_internal = []
-        self.model = None
+        self.model: BioModel = None
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()
@@ -302,5 +302,70 @@ class NonLinearProgram:
             return self.casadi_func[name]
         else:
             mx = [var.mx if isinstance(var, OptimizationVariable) else var for var in all_param]
-            self.casadi_func[name] = biorbd.to_casadi_func(name, function, *mx)
+            self.casadi_func[name] = self.to_casadi_func(name, function, *mx)
         return self.casadi_func[name]
+
+    @staticmethod
+    def mx_to_cx(name: str, symbolic_expression: SX | MX | Callable, *all_param: Any) -> Function:
+        """
+        Add to the pool of declared casadi function. If the function already exists, it is skipped
+
+        Parameters
+        ----------
+        name: str
+            The unique name of the function to add to the casadi functions pool
+        symbolic_expression: Union[SX, MX, Callable]
+            The symbolic expression to be converted, also support Callables
+        all_param: Any
+            Any parameters to pass to the biorbd function
+        """
+
+        from ..optimization.optimization_variable import OptimizationVariable, OptimizationVariableList
+        from ..optimization.parameters import Parameter, ParameterList
+
+        cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
+        mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
+        cx = [
+            var.mapping.to_second.map(var.cx) if hasattr(var, "mapping") else var.cx
+            for var in all_param
+            if isinstance(var, cx_types)
+        ]
+        return NonLinearProgram.to_casadi_func(name, symbolic_expression, *mx)(*cx)
+
+    @staticmethod
+    def to_casadi_func(name, symbolic_expression: MX | SX | Callable, *all_param, expand=True) -> Function:
+        """
+        Converts a symbolic expression into a casadi function
+
+        Parameters
+        ----------
+        name: str
+            The name of the function
+        symbolic_expression: Union[SX, MX, Callable]
+            The symbolic expression to be converted, also support Callables
+        all_param: Any
+            Any parameters to pass to the biorbd function
+        expand: bool
+            If the function should be expanded
+
+        Returns
+        -------
+        The converted function
+
+        """
+        cx_param = []
+        for p in all_param:
+            if isinstance(p, (MX, SX)):
+                cx_param.append(p)
+
+        if isinstance(symbolic_expression, (MX, SX, Function)):
+            func_evaluated = symbolic_expression
+        else:
+            func_evaluated = symbolic_expression(*all_param)
+            if isinstance(func_evaluated, (list, tuple)):
+                func_evaluated = horzcat(*[val if isinstance(val, MX) else val.to_mx() for val in func_evaluated])
+            elif not isinstance(func_evaluated, MX):
+                func_evaluated = func_evaluated.to_mx()
+        func = Function(name, cx_param, [func_evaluated])
+        return func.expand() if expand else func
+

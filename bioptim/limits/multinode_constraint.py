@@ -312,7 +312,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
 
-            return biorbd.to_casadi_func(
+            return nlp_pre.to_casadi_func(
                 "com_equality",
                 pre_com - post_com,
                 states_pre,
@@ -358,7 +358,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
 
-            return biorbd.to_casadi_func(
+            return nlp_pre.to_casadi_func(
                 "com_dot_equality",
                 pre_com_dot - post_com_dot,
                 states_pre,
