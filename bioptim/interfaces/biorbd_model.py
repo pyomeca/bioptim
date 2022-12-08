@@ -125,8 +125,10 @@ class BiorbdModel:
             external_forces = biorbd.to_spatial_vector(external_forces)
         return self.model.ForwardDynamics(q, qdot, tau, external_forces, f_contacts).to_mx()
 
-    def constrained_forward_dynamics(self, *args) -> MX:
-        return self.model.ForwardDynamicsConstraintsDirect(*args).to_mx()
+    def constrained_forward_dynamics(self, q, qdot, qddot, external_forces=None) -> MX:
+        if external_forces is not None:
+            external_forces = biorbd.to_spatial_vector(external_forces)
+        return self.model.ForwardDynamicsConstraintsDirect(q, qdot, qddot, external_forces).to_mx()
 
     def inverse_dynamics(self, q, qdot, qddot, external_forces=None, f_contacts: biorbd.VecBiorbdVector = None) -> MX:
         # external_forces = self.convert_array_to_external_forces(external_forces)
@@ -269,7 +271,6 @@ class BiorbdModel:
     def contact_forces(self, q, qdot, tau, external_forces: list = None) -> MX:
 
         if external_forces is not None and len(external_forces) != 0:
-            external_forces = np.ndarray(external_forces)
             all_forces = MX()
             for i, f_ext in enumerate(np.transpose(external_forces, axes=[2, 0, 1])):
                 force = self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=f_ext)
