@@ -119,17 +119,26 @@ class BiorbdModel:
     def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
         return self.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
 
-    def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
-        return self.model.ForwardDynamics(q, qdot, tau, fext, f_contacts).to_mx()
+    def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
+        # external_forces = self.convert_array_to_external_forces(external_forces)
+        if external_forces is not None:
+            external_forces = biorbd.to_spatial_vector(external_forces)
+        return self.model.ForwardDynamics(q, qdot, tau, external_forces, f_contacts).to_mx()
 
     def constrained_forward_dynamics(self, *args) -> MX:
         return self.model.ForwardDynamicsConstraintsDirect(*args).to_mx()
 
-    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts: biorbd.VecBiorbdVector = None) -> MX:
-        return self.model.InverseDynamics(q, qdot, qddot, f_ext, f_contacts).to_mx()
+    def inverse_dynamics(self, q, qdot, qddot, external_forces=None, f_contacts: biorbd.VecBiorbdVector = None) -> MX:
+        # external_forces = self.convert_array_to_external_forces(external_forces)
+        if external_forces is not None:
+            external_forces = biorbd.to_spatial_vector(external_forces)
+        return self.model.InverseDynamics(q, qdot, qddot, external_forces, f_contacts).to_mx()
 
-    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, fext=None) -> MX:
-        return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(q, qdot, tau, fext).to_mx()
+    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, external_forces=None) -> MX:
+        # external_forces = self.convert_array_to_external_forces(external_forces)
+        if external_forces is not None:
+            external_forces = biorbd.to_spatial_vector(external_forces)
+        return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(q, qdot, tau, external_forces).to_mx()
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
         return self.model.ComputeConstraintImpulsesDirect(q, qdot_pre_impact).to_mx()
@@ -258,11 +267,72 @@ class BiorbdModel:
         return quat_idx
 
     def contact_forces(self, q, qdot, tau, external_forces: list = None) -> MX:
-        if external_forces:
+
+        if external_forces is not None and len(external_forces) != 0:
+            external_forces = np.ndarray(external_forces)
             all_forces = MX()
-            for i, f_ext in enumerate(external_forces):
-                force = self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, f_ext)
+            for i, f_ext in enumerate(np.transpose(external_forces, axes=[2, 0, 1])):
+                force = self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=f_ext)
                 all_forces = horzcat(all_forces, force)
             return all_forces
         else:
-            return self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, fext=None)
+            return self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=None)
+
+    @staticmethod
+    def convert_array_to_external_forces(all_f_ext: list | tuple) -> list | None:
+        """
+        Convert external forces np.ndarray lists of external forces to values understood by biorbd
+
+        Parameters
+        ----------
+        all_f_ext: Union[list, tuple]
+            The external forces that acts on the model (the size of the matrix should be
+            6 x number of external forces x number of shooting nodes OR 6 x number of shooting nodes)
+
+        Returns
+        -------
+        The same forces in a biorbd-friendly format
+        """
+        if all_f_ext is None or len(all_f_ext) == 0:
+            return None
+
+        # if not isinstance(all_f_ext, (list, tuple, np.ndarray)):
+        #     raise RuntimeError(
+        #         "f_ext should be a list of (6 x n_external_forces x n_shooting) or (6 x n_shooting) matrix"
+        #     )
+
+        if all_f_ext.shape[0] != 6:
+            raise RuntimeError("f_ext should be a list of (6 x n_external_forces x n_shooting) or (6 x n_shooting) matrix")
+        if all_f_ext.n_dims == 2:
+            all_f_ext = all_f_ext[:, :, np.newaxis]
+
+        if isinstance(all_f_ext, np.ndarray):
+            spatial_vectors_over_phase = []
+            for i, f_ext_phase in enumerate(np.transpose(all_f_ext, axes=[3, 1, 2])):
+                spatial_vector = biorbd.to_spatial_vector(f_ext_phase)
+                spatial_vectors_over_phase.append(spatial_vector)
+
+        # sv_over_all_phases = []
+        # for f_ext in all_f_ext:
+        #     f_ext = np.array(f_ext)
+        #     if len(f_ext.shape) < 2 or len(f_ext.shape) > 3:
+        #         raise RuntimeError(
+        #             "f_ext should be a list of (6 x n_external_forces x n_shooting) or (6 x n_shooting) matrix"
+        #         )
+        #     if len(f_ext.shape) == 2:
+        #         f_ext = f_ext[:, :, np.newaxis]
+        #
+        #     if f_ext.shape[0] != 6:
+        #         raise RuntimeError(
+        #             "f_ext should be a list of (6 x n_external_forces x n_shooting) or (6 x n_shooting) matrix"
+        #         )
+        #
+        #     sv_over_phase = []
+        #     for node in range(f_ext.shape[2]):
+        #         sv = biorbd.VecBiorbdSpatialVector()
+        #         for idx in range(f_ext.shape[1]):
+        #             sv.append(biorbd.SpatialVector(MX(f_ext[:, idx, node])))
+        #         sv_over_phase.append(sv)
+        #     sv_over_all_phases.append(sv_over_phase)
+
+        return spatial_vectors_over_phase

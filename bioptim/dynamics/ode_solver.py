@@ -134,7 +134,7 @@ class RK(OdeSolverBase):
             "implicit_ode": nlp.implicit_dynamics_func,
         }
 
-        if nlp.external_forces:
+        if len(nlp.external_forces) != 0:
             dynamics_out = []
             for idx in range(len(nlp.external_forces)):
                 ode_opt["idx"] = idx

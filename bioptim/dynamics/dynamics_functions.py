@@ -1,6 +1,7 @@
 from typing import Union
 
 from casadi import horzcat, vertcat, MX, SX, Function
+import numpy as np
 
 from ..misc.enums import RigidBodyDynamics
 from .fatigue.fatigue_dynamics import FatigueList
@@ -669,9 +670,9 @@ class DynamicsFunctions:
         """
         qdot_var = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
 
-        if nlp.external_forces:
+        if len(nlp.external_forces) != 0:
             dxdt = MX(len(qdot_var.mapping.to_first), nlp.ns)
-            for i, f_ext in enumerate(nlp.external_forces):
+            for i, f_ext in enumerate(np.transpose(nlp.external_forces,  axes=[2, 0, 1])):
                 if with_contact:
                     qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, f_ext)
                 else:
@@ -710,7 +711,7 @@ class DynamicsFunctions:
         Torques in tau
         """
 
-        if nlp.external_forces:
+        if len(nlp.external_forces) != 0:
             if "tau" in nlp.states:
                 tau_shape = nlp.states["tau"].mx.shape[0]
             elif "tau" in nlp.controls:
@@ -718,7 +719,7 @@ class DynamicsFunctions:
             else:
                 tau_shape = nlp.model.nb_tau
             tau = MX(tau_shape, nlp.ns)
-            for i, f_ext in enumerate(nlp.external_forces):
+            for i, f_ext in enumerate(np.transpose(nlp.external_forces, axes=[2, 0, 1])):
                 tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, f_ext)
         else:
             tau = nlp.model.inverse_dynamics(q, qdot, qddot)

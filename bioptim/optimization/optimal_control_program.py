@@ -18,7 +18,7 @@ from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem, DynamicsFcn
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
-from ..interfaces.biorbd_interface import BiorbdInterface
+
 from ..interfaces.biomodel import BioModel
 from ..interfaces.biorbd_model import BiorbdModel
 from ..interfaces.solver_options import Solver
@@ -436,7 +436,6 @@ class OptimalControlProgram:
 
         # External forces
         if external_forces is not None:
-            external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)
             NLP.add(self, "external_forces", external_forces, False)
 
         plot_mappings = plot_mappings if plot_mappings is not None else {}
