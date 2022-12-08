@@ -191,7 +191,6 @@ class BiMappingList(OptionDict):
         bimapping: BiMapping
             The BiMapping to copy
         """
-
         if isinstance(bimapping, BiMapping):
             if to_second is not None or to_first is not None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
@@ -255,6 +254,7 @@ class NodeMapping(OptionGeneric):
         map_controls: bool = False,
         phase_pre: int = None,
         phase_post: int = None,
+        index : list = [],
         **params
     ):
 
@@ -276,6 +276,7 @@ class NodeMapping(OptionGeneric):
         self.map_controls = map_controls
         self.phase_pre = phase_pre
         self.phase_post = phase_post
+        self.index = index
 
 
 class NodeMappingList(OptionDict):
@@ -289,6 +290,7 @@ class NodeMappingList(OptionDict):
         map_controls: bool = False,
         phase_pre: int = None,
         phase_post: int = None,
+        index : list = [],
     ):
         """
         Add a new NodeMapping to the list
@@ -324,9 +326,16 @@ class NodeMappingList(OptionDict):
             option_type=NodeMapping,
             phase_pre=phase_pre,
             phase_post=phase_post,
+            index=index,
         )
 
     def get_variable_from_phase_idx(self, ocp, NLP):
+
+        index_x = self[0].get('q').index
+        index_u = self[0].get('qddot_joints').index
+        if index_u == []:
+           #index_u = [i in range(ocp.nlp.controls.shape)]
+           index_u = [i for i in range(10)]
 
         use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
@@ -341,8 +350,12 @@ class NodeMappingList(OptionDict):
                     use_controls_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
 
         NLP.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+        NLP.add(ocp, "index_x", [index_x], True, _type = list)
         NLP.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
         NLP.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+        NLP.add(ocp, 'index_u', [index_u], True, _type = list)
+
+
 
         return use_states_from_phase_idx, use_states_dot_from_phase_idx, use_controls_from_phase_idx
 
