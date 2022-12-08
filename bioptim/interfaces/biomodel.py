@@ -167,3 +167,23 @@ class BioModel(Protocol):
         -------
         The normalized states
         """
+
+    def contact_forces(self, q, qdot, tau, external_forces: list = None) -> MX:
+        """
+        Easy accessor for the contact forces in contact dynamics
+
+        Parameters
+        ----------
+        q: Union[MX, SX]
+            The value of q from "get"
+        qdot: Union[MX, SX]
+            The value of qdot from "get"
+        tau: Union[MX, SX]
+            The value of tau from "get"
+        external_forces: list[np.ndarray]
+            The value of external_forces, one for each frame
+
+        Returns
+        -------
+        The contact forces MX of size [nb_contacts, 1], or [nb_contacts, n_frames] if external_forces is not None
+        """

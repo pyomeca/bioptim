@@ -41,8 +41,6 @@ class DynamicsFunctions:
         Easy accessor to derivative of muscle activations
     compute_tau_from_muscle(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], muscle_activations: Union[MX, SX]):
         Easy accessor to tau computed from muscles
-    contact_forces(nlp: NonLinearProgram, q, qdot, tau):
-        Easy accessor for the contact forces in contact dynamics
     """
 
     @staticmethod
@@ -347,7 +345,7 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau = DynamicsFunctions.get(tau_nlp, tau_var)
 
-        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+        return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
     @staticmethod
     def forces_from_torque_activation_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
@@ -381,7 +379,7 @@ class DynamicsFunctions:
         tau_activations = DynamicsFunctions.get(tau_nlp, tau_var)
         tau = nlp.model.torque(tau_activations, q, qdot)
 
-        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+        return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
     @staticmethod
     def muscles_driven(
@@ -538,7 +536,7 @@ class DynamicsFunctions:
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+        return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
     @staticmethod
     def joints_acceleration_driven(
@@ -784,33 +782,3 @@ class DynamicsFunctions:
             else:
                 muscles_states[k].setActivation(muscle_activations[k])
         return nlp.model.muscle_joint_torque(muscles_states, q, qdot)
-
-    @staticmethod
-    def contact_forces(nlp: NonLinearProgram, q, qdot, tau):
-        """
-        Easy accessor for the contact forces in contact dynamics
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            The phase of the program
-        q: Union[MX, SX]
-            The value of q from "get"
-        qdot: Union[MX, SX]
-            The value of qdot from "get"
-        tau: Union[MX, SX]
-            The value of tau from "get"
-
-        Returns
-        -------
-        The contact forces
-        """
-
-        if nlp.external_forces:
-            all_forces = MX()
-            for i, f_ext in enumerate(nlp.external_forces):
-                force = nlp.model.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, f_ext)
-                all_forces = horzcat(all_forces, force)
-            return all_forces
-        else:
-            return nlp.model.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, fext=None)
