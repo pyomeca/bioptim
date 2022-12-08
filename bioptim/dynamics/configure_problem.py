@@ -79,7 +79,7 @@ class ConfigureProblem:
     """
 
     @staticmethod
-    def _get_kinematics_based_names(nlp, var_str: str) -> list[str]:
+    def _get_kinematics_based_names(nlp, var_type: str) -> list[str]:
         """
         To modify the names of the variables added to the plots if there is quaternions
 
@@ -87,7 +87,7 @@ class ConfigureProblem:
         ----------
         nlp: NonLinearProgram
             A reference to the phase
-        var_str: str
+        var_type: str
             A string that refers to the decision variable such as (q, qdot, qddot, tau, etc...)
 
         Returns
@@ -107,13 +107,13 @@ class ConfigureProblem:
                     new_name += [nlp.model.name_dof[i]]
                 else:
                     if nlp.model.name_dof[i][-5:] != "QuatW":
-                        if var_str == "qdot":
+                        if var_type == "qdot":
                             new_name += [nlp.model.name_dof[i][:-5] + "omega" + nlp.model.name_dof[i][-1]]
-                        elif var_str == "qddot":
+                        elif var_type == "qddot":
                             new_name += [nlp.model.name_dof[i][:-5] + "omegadot" + nlp.model.name_dof[i][-1]]
-                        elif var_str == "qdddot":
+                        elif var_type == "qdddot":
                             new_name += [nlp.model.name_dof[i][:-5] + "omegaddot" + nlp.model.name_dof[i][-1]]
-                        elif var_str == "tau" or var_str == "taudot":
+                        elif var_type == "tau" or var_type == "taudot":
                             new_name += [nlp.model.name_dof[i]]
 
         return new_name
