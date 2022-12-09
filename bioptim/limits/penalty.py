@@ -144,16 +144,16 @@ class PenaltyFunctionAbstract:
 
             # Compute the position of the marker in the requested reference frame (None for global)
             nlp = all_pn.nlp
-            q_mx = nlp.states["q"].mx
+            q = nlp.states["q"].mx
             model = nlp.model
             jcs_t = (
                 biorbd.RotoTrans()
                 if reference_jcs is None
-                else model.homogeneous_matrices_in_global(q_mx, reference_jcs).transpose()
+                else model.homogeneous_matrices_in_global(q, reference_jcs, inverse=True)
             )
 
             markers = []
-            for m in model.markers(q_mx):
+            for m in model.markers(q):
                 markers_in_jcs = jcs_t.to_mx() @ vertcat(m, 1)
                 markers = horzcat(markers, markers_in_jcs[:3])
 
@@ -592,15 +592,19 @@ class PenaltyFunctionAbstract:
             rt: int
                 The index of the RT in the bioMod
             """
+            from ..interfaces.biorbd_model import BiorbdModel
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
             segment_index = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
-            r_seg = nlp.model.homogeneous_matrices_in_global(nlp.states["q"].mx, segment_index).rot()
-            r_rt = nlp.model.object_homogeneous_matrix(nlp.states["q"].mx, rt).rot()
-            angles_diff = biorbd.Rotation.toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
+            if not isinstance(nlp.model, BiorbdModel):
+                raise NotImplementedError("The track_segment_with_custom_rt penalty can only be called with a BiorbdModel")
+            model: BiorbdModel = nlp.model
+            r_seg_transposed = model.model.globalJCS(nlp.states["q"].mx, segment_index).rot().transpose()
+            r_rt = model.model.RT(nlp.states["q"].mx, rt).rot()
+            angles_diff = biorbd.Rotation.toEulerAngles(r_seg_transposed * r_rt, "zyx").to_mx()
 
             angle_objective = nlp.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
             return angle_objective
