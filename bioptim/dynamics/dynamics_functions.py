@@ -534,7 +534,7 @@ class DynamicsFunctions:
 
         mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
-        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
+        muscles_tau = nlp.model.compute_tau_from_muscle(q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
@@ -776,10 +776,10 @@ class DynamicsFunctions:
         The generalized forces computed from the muscles
         """
 
-        muscles_states = nlp.model.state_set()
+        activations = []
         for k in range(len(nlp.controls["muscles"])):
             if fatigue_states is not None:
-                muscles_states[k].setActivation(muscle_activations[k] * (1 - fatigue_states[k]))
+                activations.append(muscle_activations[k] * (1 - fatigue_states[k]))
             else:
-                muscles_states[k].setActivation(muscle_activations[k])
-        return nlp.model.muscle_joint_torque(muscles_states, q, qdot)
+                activations.append(muscle_activations[k])
+        return nlp.model.muscle_joint_torque(activations, q, qdot)

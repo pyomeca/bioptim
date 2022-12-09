@@ -125,9 +125,6 @@ class BioModel(Protocol):
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
         """compute the constraint impulses"""
 
-    def state_set(self):
-        """Get the state set of the model #todo: to be deleted but get muscle excitations"""
-
     def muscle_activation_dot(self, muscle_states) -> MX:
         """Get the activation derivative of the muscles states"""
 

@@ -158,15 +158,15 @@ class BiorbdModel:
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
         return self.model.ComputeConstraintImpulsesDirect(q, qdot_pre_impact).to_mx()
 
-    def state_set(self):
-        # todo to remove
-        return self.model.stateSet()
-
     def muscle_activation_dot(self, muscle_states) -> MX:
         return self.model.activationDot(muscle_states).to_mx()
 
-    def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
-        return self.model.muscularJointTorque(muscle_states, q, qdot).to_mx()
+    def muscle_joint_torque(self, activations, q, qdot) -> MX:
+        muscles_states = self.model.stateSet()
+        for k in range(len(self.model.nbMuscles())):
+            muscles_states[k].setActivation(activations[k])
+
+        return self.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
 
     def markers(self, q) -> Any | list[MX]:
         return [m.to_mx() for m in self.model.markers(q)]
@@ -222,7 +222,7 @@ class BiorbdModel:
             index_direction = 2
         else:
             raise ValueError("Wrong index")
-        return self.model.rigidContactAcceleration(q, qdot, qddot, 0, True)[index_direction].to_mx()
+        return self.model.rigidContactAcceleration(q, qdot, qddot, 0, True).to_mx()[index_direction]
 
     @property
     def nb_dof(self) -> int:

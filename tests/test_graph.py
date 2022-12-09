@@ -45,7 +45,10 @@ def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second
     marker_1_idx = all_pn.nlp.model.marker_index(second_marker)
 
     # Convert the function to the required format and then subtract
-    markers = all_pn.nlp.mx_to_cx("markers", all_pn.nlp.model.markers(), all_pn.nlp.states["q"])
+    from bioptim import BiorbdModel
+    # noinspection PyTypeChecker
+    model: BiorbdModel = all_pn.nlp.model
+    markers = all_pn.nlp.mx_to_cx("markers", model.model.markers, all_pn.nlp.states["q"])
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 
