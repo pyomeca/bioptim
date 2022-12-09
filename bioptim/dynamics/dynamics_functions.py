@@ -534,7 +534,7 @@ class DynamicsFunctions:
 
         mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
-        muscles_tau = nlp.model.compute_tau_from_muscle(q, qdot, mus_activations)
+        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
