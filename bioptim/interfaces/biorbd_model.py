@@ -163,7 +163,7 @@ class BiorbdModel:
 
     def muscle_joint_torque(self, activations, q, qdot) -> MX:
         muscles_states = self.model.stateSet()
-        for k in range(len(self.model.nbMuscles())):
+        for k in range(self.model.nbMuscles()):
             muscles_states[k].setActivation(activations[k])
 
         return self.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
