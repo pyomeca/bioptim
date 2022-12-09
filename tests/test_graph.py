@@ -46,6 +46,7 @@ def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second
 
     # Convert the function to the required format and then subtract
     from bioptim import BiorbdModel
+
     # noinspection PyTypeChecker
     model: BiorbdModel = all_pn.nlp.model
     markers = all_pn.nlp.mx_to_cx("markers", model.model.markers, all_pn.nlp.states["q"])

@@ -369,4 +369,3 @@ class NonLinearProgram:
                 func_evaluated = func_evaluated.to_mx()
         func = Function(name, cx_param, [func_evaluated])
         return func.expand() if expand else func
-

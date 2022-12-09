@@ -240,10 +240,14 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            diff_markers = nlp.model.marker(nlp.states["q"].mx, second_marker_idx) - nlp.model.marker(nlp.states["q"].mx, first_marker_idx)
+            diff_markers = nlp.model.marker(nlp.states["q"].mx, second_marker_idx) - nlp.model.marker(
+                nlp.states["q"].mx, first_marker_idx
+            )
 
             return nlp.mx_to_cx(
-                f"diff_markers", diff_markers, nlp.states["q"],
+                f"diff_markers",
+                diff_markers,
+                nlp.states["q"],
             )
 
         @staticmethod
@@ -408,9 +412,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            com_dot_cx = nlp.mx_to_cx(
-                "com_dot", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"]
-            )
+            com_dot_cx = nlp.mx_to_cx("com_dot", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"])
             return com_dot_cx
 
         @staticmethod
@@ -600,7 +602,9 @@ class PenaltyFunctionAbstract:
             segment_index = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             if not isinstance(nlp.model, BiorbdModel):
-                raise NotImplementedError("The track_segment_with_custom_rt penalty can only be called with a BiorbdModel")
+                raise NotImplementedError(
+                    "The track_segment_with_custom_rt penalty can only be called with a BiorbdModel"
+                )
             model: BiorbdModel = nlp.model
             r_seg_transposed = model.model.globalJCS(nlp.states["q"].mx, segment_index).rot().transpose()
             r_rt = model.model.RT(nlp.states["q"].mx, rt).rot()

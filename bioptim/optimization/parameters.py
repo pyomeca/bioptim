@@ -8,7 +8,7 @@ from ..limits.objective_functions import ObjectiveFcn, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
 from ..limits.penalty_node import PenaltyNodeList
 from ..limits.penalty import PenaltyOption
-from ..misc.enums import InterpolationType,Node
+from ..misc.enums import InterpolationType, Node
 from ..misc.options import UniquePerProblemOptionList
 from ..optimization.non_linear_program import NonLinearProgram
 

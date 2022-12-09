@@ -3,7 +3,6 @@ from typing import Protocol, Callable
 
 
 class BioModel(Protocol):
-
     def copy(self):
         """copy the model by reloading one"""
 

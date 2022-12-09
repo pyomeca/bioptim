@@ -204,10 +204,14 @@ class BiorbdModel:
         else:
             homogeneous_matrix_transposed = (
                 biorbd.RotoTrans(),
-                self.homogeneous_matrices_in_global(q, reference_index, inverse=True)
+                self.homogeneous_matrices_in_global(q, reference_index, inverse=True),
             )
         return horzcat(
-            *[m.to_mx() for m in self.model.markersVelocity(q, qdot, True) if m.applyRT(homogeneous_matrix_transposed) is None]
+            *[
+                m.to_mx()
+                for m in self.model.markersVelocity(q, qdot, True)
+                if m.applyRT(homogeneous_matrix_transposed) is None
+            ]
         )
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
@@ -262,11 +266,9 @@ class BiorbdModel:
 
         # Normalize quaternion, if needed
         for j in range(self.nb_quaternions):
-            quaternion = vertcat(
-                x[quat_idx[j][3]], x[quat_idx[j][0]], x[quat_idx[j][1]], x[quat_idx[j][2]]
-            )
+            quaternion = vertcat(x[quat_idx[j][3]], x[quat_idx[j][0]], x[quat_idx[j][1]], x[quat_idx[j][2]])
             quaternion /= norm_fro(quaternion)
-            x[quat_idx[j][0]: quat_idx[j][2] + 1] = quaternion[1:4]
+            x[quat_idx[j][0] : quat_idx[j][2] + 1] = quaternion[1:4]
             x[quat_idx[j][3]] = quaternion[0]
 
         return x
