@@ -200,7 +200,7 @@ class PenaltyFunctionAbstract:
             qdot_mx = nlp.states["qdot"].mx
 
             # todo: return all MX, shouldn't it be a list of MX, I think there is an inconsistency here
-            markers = nlp.model.marker_velocities(q_mx, qdot_mx, reference_jcs=reference_jcs)
+            markers = nlp.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs)
 
             markers_objective = nlp.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
             return markers_objective
