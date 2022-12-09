@@ -382,6 +382,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
             if with_contact:
+                # todo: this should be done internally in BiorbdModel
                 f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls.keys() else nlp.states["fext"].mx
                 f_contact_vec = nlp.model.reshape_fext_to_fcontact(f_contact)
 

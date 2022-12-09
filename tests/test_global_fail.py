@@ -1,6 +1,5 @@
 import pytest
 
-import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     BiorbdModel,

@@ -149,7 +149,7 @@ class PenaltyFunctionAbstract:
             jcs_t = (
                 biorbd.RotoTrans()
                 if reference_jcs is None
-                else model.global_homogeneous_matrices(q_mx, reference_jcs).transpose()
+                else model.homogeneous_matrices_in_global(q_mx, reference_jcs).transpose()
             )
 
             markers = []
@@ -598,7 +598,7 @@ class PenaltyFunctionAbstract:
             nlp = all_pn.nlp
             segment_index = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
-            r_seg = nlp.model.global_homogeneous_matrices(nlp.states["q"].mx, segment_index).rot()
+            r_seg = nlp.model.homogeneous_matrices_in_global(nlp.states["q"].mx, segment_index).rot()
             r_rt = nlp.model.object_homogeneous_matrix(nlp.states["q"].mx, rt).rot()
             angles_diff = biorbd.Rotation.toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 

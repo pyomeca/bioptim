@@ -219,21 +219,8 @@ class OptimalControlProgram:
             This is mainly for internal purposes when creating an OCP not destined to be solved
         """
 
-        # protocols cannot be tested as instance of a class
-        if isinstance(bio_model, str):
-            raise ValueError(
-                "bio_model must either be BiorbdModel, " "or a custom model object, respecting the protocol BioModel."
-            )
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
-
-        if not isinstance(bio_model, (list, tuple)):
-            for model in bio_model:
-                if isinstance(model, str):
-                    raise ValueError(
-                        "bio_model elements must either be BiorbdModel, "
-                        "or a custom model object, respecting the protocol BioModel."
-                    )
 
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(bio_model)

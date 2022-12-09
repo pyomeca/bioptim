@@ -527,7 +527,7 @@ The full signature of the `OptimalControlProgram` can be scary at first, but sho
 Here it is:
 ```python
 OptimalControlProgram(
-    bio_model: [str, list, Model],
+    bio_model: [str, list, BioModel],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
@@ -552,7 +552,7 @@ OptimalControlProgram(
 )
 ```
 Of these, only the first 4 are mandatory.
-`bio_model` is the `biorbd` model to use loaded with the BiorbdModel class or a custom model, that inherits from the Model class.
+`bio_model` is the model loaded such with class such as BiorbdModel or a custom class.
 In the case of a multiphase optimization, one model per phase should be passed in a list.
 `dynamics` is the dynamics of the system during each phase (see The dynamics section).
 `n_shooting` is the number of shooting point of the direct multiple shooting (method) for each phase.
@@ -582,7 +582,7 @@ SX will tend to solve much faster than MX graphs, however they can necessitate a
 Please note that a common ocp will usually define only these parameters:
 ```python
 ocp = OptimalControlProgram(
-    bio_model: [str, list, Model],
+    bio_model: [str, list, BioModel],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
@@ -657,7 +657,7 @@ They can be used as is, or can be modified to add new features.
 
 ### Class: BiorbdModel
 
-The `BiorbdModel` class is a wrapper around the `biorbd.Model` class. Some methods may not be interfaced yet, it is accessible through:
+The `BiorbdModel` class is implementating a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
 ```python
 bio_model = BiorbdModel("path/to/model.bioMod")
 bio_model.marker_names  # for example returns the marker names
@@ -667,7 +667,7 @@ bio_model.model.markerNames()
 
 ### Class: CustomModel
 
-The `Model` class is the base class for BiorbdModel and any custom models.
+The `BioModel` class is the base class for BiorbdModel and any custom models.
 The methods are abstracted and must be implemented in the child class,
 or at least raise a `NotImplementedError` if they are not implemented. For example:
 ```python
@@ -1313,7 +1313,7 @@ ParameterList.add(parameter_name: str, function: Callable, initial_guess: Initia
 The `parameter_name` is the name of the parameter. 
 This is how it will be referred to in the output data as well.
 The `function` is the function that modifies the biorbd model, it will be called just prior to applying the dynamics
-The signature of the custom function is: `custom_function(BiorbdModel, MX, **extra_parameters)`, where BiorbdModel is the model to apply the parameter to, the MX is the value the parameter will take, and the `**extra_parameters` are those sent to the add() method.
+The signature of the custom function is: `custom_function(BioModel, MX, **extra_parameters)`, where BiorbdModel is the model to apply the parameter to, the MX is the value the parameter will take, and the `**extra_parameters` are those sent to the add() method.
 This function is expected to modify the bio_model, and not return anything.
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom parameters should be at least familiar with this type beforehand.

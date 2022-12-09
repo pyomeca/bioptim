@@ -4,7 +4,6 @@ from typing import Union, Callable
 from time import perf_counter
 
 import numpy as np
-import biorbd_casadi as biorbd
 
 from .optimal_control_program import OptimalControlProgram
 from .solution import Solution
@@ -15,7 +14,6 @@ from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import SolverType, InterpolationType
 from ..interfaces.solver_options import Solver
 from ..interfaces.biomodel import BioModel
-from ..interfaces.biorbd_model import BiorbdModel
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):
@@ -31,7 +29,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
     def __init__(
         self,
-        bio_model: Union[str, BiorbdModel, list, tuple, BioModel],
+        bio_model: Union[list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         window_len: Union[int, list, tuple],
         window_duration: Union[int, float, list, tuple],
@@ -313,7 +311,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def __init__(
         self,
-        bio_model: Union[str, BiorbdModel, list, tuple],
+        bio_model: Union[list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         cycle_len: Union[int, list, tuple],
         cycle_duration: Union[int, float, list, tuple],
@@ -439,7 +437,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def __init__(
         self,
-        bio_model: Union[str, BiorbdModel, list, tuple],
+        bio_model: Union[list, tuple],
         dynamics: Union[Dynamics, DynamicsList],
         cycle_len: Union[int, list, tuple],
         cycle_duration: Union[int, float, list, tuple],

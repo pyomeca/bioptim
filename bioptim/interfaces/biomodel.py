@@ -19,7 +19,7 @@ class BioModel(Protocol):
     """Get the number of segment"""
 
     def segment_index(self, segment_name) -> int:
-        """Get the segment index"""
+        """Get the segment index from its name"""
 
     nb_quaternions: int
     """Get the number of quaternion"""
@@ -42,11 +42,23 @@ class BioModel(Protocol):
     segments: tuple
     """Get all segments"""
 
-    global_homogeneous_matrices: tuple
-    """Get the homogeneous matrices of all segments in the world frame"""
+    homogeneous_matrices_in_global: tuple
+    """
+    Get the homogeneous matrices of all segments in the world frame,
+    such as: P_R0 = T_R0_R1 * P_R1 
+    with P_R0 the position of any point P in the world frame,
+    T_R0_R1 the homogeneous matrix that transform any point in R1 frame to R0.
+    P_R1 the position of any point P in the segment R1 frame.
+    """
 
-    child_homogeneous_matrices: tuple
-    """Get the homogeneous matrices of all segments in their parent frame"""
+    homogeneous_matrices_in_child: tuple
+    """
+    Get the homogeneous matrices of all segments in their parent frame,
+    such as: P_R1 = T_R1_R2 * P_R2
+    with P_R1 the position of any point P in the segment R1 frame,
+    with P_R2 the position of any point P in the segment R2 frame,
+    T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
+    """
 
     mass: MX
     """Get the mass of the model"""
@@ -97,7 +109,7 @@ class BioModel(Protocol):
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
         """compute the forward dynamics"""
 
-    def constrained_forward_dynamics(self, *args) -> MX:
+    def constrained_forward_dynamics(self, q, qdot, qddot, external_forces=None) -> MX:
         """compute the forward dynamics with constraints"""
 
     def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None) -> MX:
@@ -138,9 +150,6 @@ class BioModel(Protocol):
 
     def marker_velocities(self, q, qdot) -> MX:
         """Get the marker velocities of the model"""
-
-    def reshape_fext_to_fcontact(self, fext: MX) -> biorbd.VecBiorbdVector:
-        """Reshape the external forces to contact forces"""
 
     def tau_max(self) -> tuple[MX, MX]:
         """Get the maximum torque"""

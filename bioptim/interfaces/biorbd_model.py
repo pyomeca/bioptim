@@ -58,10 +58,10 @@ class BiorbdModel:
     def segments(self) -> list[biorbd.Segment]:
         return self.model.segments()
 
-    def global_homogeneous_matrices(self, *args):
+    def homogeneous_matrices_in_global(self, *args):
         return self.model.globalJCS(*args)
 
-    def child_homogeneous_matrices(self, *args):
+    def homogeneous_matrices_in_child(self, *args):
         return self.model.localJCS(*args)
 
     @property
@@ -197,7 +197,7 @@ class BiorbdModel:
             jcs_t = (
                 biorbd.RotoTrans()
                 if reference_jcs is None
-                else self.global_homogeneous_matrices(q, reference_jcs).transpose()
+                else self.homogeneous_matrices_in_global(q, reference_jcs).transpose()
             )
         return horzcat(
             *[m.to_mx() for m in self.model.markersVelocity(q, qdot, update_kin) if m.applyRT(jcs_t) is None]

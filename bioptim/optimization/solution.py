@@ -25,7 +25,6 @@ from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
-from ..interfaces.biorbd_model import BiorbdModel
 
 
 class Solution:
@@ -181,13 +180,13 @@ class Solution:
         ----------
         control_type: ControlType
             The control type for the current nlp
-        dynamics: list[ODE_SOLVER]
+        dynamics: list[OdeSolver]
             All the dynamics for each of the node of the phase
         g: list[list[Constraint]]
             All the constraints at each of the node of the phase
         J: list[list[Objective]]
             All the objectives at each of the node of the phase
-        model: Union[BiorbdModel, BioModel]
+        model: BioModel
             A reference to the biorbd BioModel
         variable_mappings: dict
             All the BiMapping of the states and controls
@@ -1211,6 +1210,9 @@ class Solution:
             import bioviz
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
+
+        from ..interfaces.biorbd_model import BiorbdModel
+
         check_version(bioviz, "2.1.0", "2.3.0")
 
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
@@ -1230,7 +1232,7 @@ class Solution:
         all_bioviz = []
         for idx_phase, data in enumerate(states):
 
-            if not isinstance(self.ocp.nlp[idx_phase].model, (BiorbdModel, BiorbdModel)):
+            if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
                 raise NotImplementedError("Animation is only implemented for biorbd models")
 
             # Convert parameters to actual values
