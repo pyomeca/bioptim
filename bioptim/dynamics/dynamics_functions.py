@@ -1,7 +1,6 @@
 from typing import Union
 
 from casadi import horzcat, vertcat, MX, SX, Function
-import numpy as np
 
 from ..misc.enums import RigidBodyDynamics
 from .fatigue.fatigue_dynamics import FatigueList

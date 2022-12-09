@@ -122,7 +122,7 @@ class NonLinearProgram:
         self.dynamics_func = None
         self.implicit_dynamics_func = None
         self.dynamics_type = None
-        self.external_forces: np.ndarray = np.array([])
+        self.external_forces: list[Any] = []
         self.g = []
         self.g_internal = []
         self.g_implicit = []
