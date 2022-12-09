@@ -17,14 +17,14 @@ class BiorbdModel:
         return BiorbdModel(self.model.DeepCopy(*args))
 
     @property
-    def _path(self) -> str:
+    def path(self) -> str:
         return self.model.path().relativePath().to_string()
 
     def copy(self):
-        return BiorbdModel(self._path)
+        return BiorbdModel(self.path)
 
     def serialize(self) -> tuple[Callable, dict]:
-        return BiorbdModel, dict(bio_model=self._path)
+        return BiorbdModel, dict(bio_model=self.path)
 
     @property
     def gravity(self) -> MX:
@@ -277,7 +277,7 @@ class BiorbdModel:
 
         if external_forces is not None and len(external_forces) != 0:
             all_forces = MX()
-            for i, f_ext in enumerate(np.transpose(external_forces, axes=[2, 0, 1])):
+            for i, f_ext in enumerate(external_forces):
                 force = self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=f_ext)
                 all_forces = horzcat(all_forces, force)
             return all_forces

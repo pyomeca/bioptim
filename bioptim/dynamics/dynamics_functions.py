@@ -672,7 +672,7 @@ class DynamicsFunctions:
 
         if len(nlp.external_forces) != 0:
             dxdt = MX(len(qdot_var.mapping.to_first), nlp.ns)
-            for i, f_ext in enumerate(np.transpose(nlp.external_forces,  axes=[2, 0, 1])):
+            for i, f_ext in enumerate(nlp.external_forces):
                 if with_contact:
                     qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, f_ext)
                 else:
@@ -719,7 +719,7 @@ class DynamicsFunctions:
             else:
                 tau_shape = nlp.model.nb_tau
             tau = MX(tau_shape, nlp.ns)
-            for i, f_ext in enumerate(np.transpose(nlp.external_forces, axes=[2, 0, 1])):
+            for i, f_ext in enumerate(nlp.external_forces):
                 tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, f_ext)
         else:
             tau = nlp.model.inverse_dynamics(q, qdot, qddot)
