@@ -2,6 +2,8 @@
 This script implements a custom model to work with bioptim. Bioptim has a deep connection with biorbd,
 but it is possible to use bioptim without biorbd. This is an example of how to use bioptim with a custom model.
 """
+from typing import Callable
+
 import numpy as np
 from casadi import sin, MX
 
@@ -16,6 +18,11 @@ class MyModel:
         # custom values for the example
         self.com = MX(np.array([-0.0005, 0.0688, -0.9542]))
         self.inertia = MX(0.0391)
+
+    def serialize(self) -> tuple[Callable, dict]:
+        # This is where you can serialize your model
+        # This is useful if you want to save your model and load it later
+        return MyModel, dict(com=self.com, inertia=self.inertia)
 
     # ---- Needed for the example ---- #
     @property
