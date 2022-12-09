@@ -1,4 +1,4 @@
-from typing import Union, Callable, Any, Type
+from typing import Union, Callable, Any
 import os
 import sys
 import pickle
@@ -154,7 +154,7 @@ class OptimalControlProgram:
         objective_functions: Union[Objective, ObjectiveList] = None,
         constraints: Union[Constraint, ConstraintList] = None,
         parameters: Union[Parameter, ParameterList] = None,
-        external_forces: list[np.ndarray, ...] | tuple[np.ndarray, ...] = None,
+        external_forces: list[list[Any], ...] | tuple[list[Any], ...] = None,
         ode_solver: Union[list, OdeSolverBase, OdeSolver] = None,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
@@ -193,7 +193,7 @@ class OptimalControlProgram:
             All the constraints of the program
         parameters: Union[Parameter, ParameterList]
             All the parameters to optimize of the program
-        external_forces: list[np.ndarray, ...] | tuple[np.ndarray, ...]
+        external_forces: list[list, ...] | tuple[list, ...]
             The external forces acting on the center of mass of the segments specified in the bioMod
         ode_solver: OdeSolverBase
             The solver for the ordinary differential equations
@@ -398,10 +398,6 @@ class OptimalControlProgram:
 
         # External forces
         if external_forces is not None:
-            # todo:
-            # external_forces = [[pwetpwet(1, 2), ..., pwetpwet(1, 2)], ...]
-            # external_forces = [[frame0(1,2), ..., framen(1,2)], ...]
-            # external_force = [np.array(1,2,3), np.array(...)]
             NLP.add(self, "external_forces", external_forces, False)
 
         plot_mappings = plot_mappings if plot_mappings is not None else {}

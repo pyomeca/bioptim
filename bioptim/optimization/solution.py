@@ -1241,7 +1241,10 @@ class Solution:
                 if param.function:
                     param.function(nlp.model, self.parameters[param.name], **param.params)
 
-            all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path.absolutePath().to_string(), **kwargs))
+            # noinspection PyTypeChecker
+            biorbd_model: BiorbdModel = nlp.model
+
+            all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
             for objective in self.ocp.nlp[idx_phase].J:
                 if objective.target is not None:

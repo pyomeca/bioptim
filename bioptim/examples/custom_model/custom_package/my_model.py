@@ -19,6 +19,7 @@ class MyModel:
         self.com = MX(np.array([-0.0005, 0.0688, -0.9542]))
         self.inertia = MX(0.0391)
 
+    # ---- Absolutely needed methods ---- #
     def serialize(self) -> tuple[Callable, dict]:
         # This is where you can serialize your model
         # This is useful if you want to save your model and load it later
