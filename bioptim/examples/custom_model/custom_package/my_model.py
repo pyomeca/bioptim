@@ -50,11 +50,6 @@ class MyModel:
     def name_dof(self):
         return ["rotx"]
 
-    @property
-    def path(self):
-        # note: can we do something with this?
-        return None
-
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None):
         # This is where you can implement your own forward dynamics
         # with casadi it your are dealing with mechanical systems

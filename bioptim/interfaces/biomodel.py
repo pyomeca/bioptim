@@ -97,10 +97,6 @@ class BioModel(Protocol):
     soft_contact_names: tuple[str, ...]
     """Get the soft contact names"""
 
-    def soft_contacts(self, *args):
-        # todo: forces from soft contact ?
-        """Get the soft contact"""
-
     muscle_names: tuple[str, ...]
     """Get the muscle names"""
 
