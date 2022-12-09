@@ -2,17 +2,11 @@
 This script implements a custom model to work with bioptim. Bioptim has a deep connection with biorbd,
 but it is possible to use bioptim without biorbd. This is an example of how to use bioptim with a custom model.
 """
-from abc import ABCMeta
-
 import numpy as np
 from casadi import sin, MX
 
-from bioptim import (
-    CustomModel,
-)
 
-
-class MyModel(CustomModel):
+class MyModel:
     """
     This is a custom model that inherits from bioptim.CustomModel
     As CustomModel is an abstract class, some methods must be implemented.
@@ -24,7 +18,6 @@ class MyModel(CustomModel):
         self.inertia = MX(0.0391)
 
     # ---- Needed for the example ---- #
-
     @property
     def nb_tau(self):
         return 1

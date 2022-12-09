@@ -1,11 +1,10 @@
 from typing import Union
 
-from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tangent, rootfinder, MX, SX
+from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
 from ..interfaces.biomodel import BioModel
-import biorbd_casadi as biorbd
 
 
 class Integrator:

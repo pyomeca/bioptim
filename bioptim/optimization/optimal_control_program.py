@@ -207,8 +207,6 @@ class OptimalControlProgram:
             The mapping to apply between the variables associated with the nodes
         plot_mappings: Mapping
             The mapping to apply on the plots
-        phase_mappings: Mapping
-            The mapping to apply on the phases
         phase_transitions: PhaseTransitionList
             The transition types between the phases
         n_threads: int
@@ -221,6 +219,8 @@ class OptimalControlProgram:
 
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
+
+        bio_model = self.check_quaternions_hasattr(bio_model)
 
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(bio_model)
@@ -575,6 +575,30 @@ class OptimalControlProgram:
             phase_mappings.append(Mapping(current_dof_mapping))
             dof_names.append([dof_names_all_phases[i] for i in phase_mappings[i].map_idx])
         return phase_mappings, dof_names
+
+    @staticmethod
+    def check_quaternions_hasattr(biomodels: list[BioModel]) -> list[BioModel]:
+        """
+        This functions checks if the biomodels have quaternions and if not we set an attribute to nb_quaternion to 0
+
+        Note: this need to be checked as this information is of importance for ODE solvers
+
+        Parameters
+        ----------
+        biomodels: list[BioModel]
+            The list of biomodels to check
+
+        Returns
+        -------
+        biomodels: list[BioModel]
+            The list of biomodels with the attribute nb_quaternion set to 0 if no quaternion is present
+        """
+
+        for i, model in enumerate(biomodels):
+            if not hasattr(model, "nb_quaternions"):
+                setattr(model, "nb_quaternions", 0)
+
+        return biomodels
 
     def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
         """
