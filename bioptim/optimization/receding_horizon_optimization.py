@@ -194,9 +194,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-
+        model_class = self.original_values["bio_model"][0]
+        model_initializer = self.original_values["bio_model"][1]
         solution_ocp = OptimalControlProgram(
-            bio_model=self.original_values["bio_model_class"][0](self.original_values["bio_model"][0]),
+            bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run - 1,
             phase_time=self.total_optimization_run * self.nlp[0].dt,
@@ -360,9 +361,10 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-
+        model_class = self.original_values["bio_model"][0]
+        model_initializer = self.original_values["bio_model"][1]
         solution_ocp = OptimalControlProgram(
-            bio_model=self.original_values["bio_model_class"][0](self.original_values["bio_model"][0]),
+            bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run * self.nlp[0].ns - 1,
             phase_time=self.total_optimization_run * self.nlp[0].ns * self.nlp[0].dt,
@@ -500,9 +502,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-
+        model_class = self.original_values["bio_model"][0]
+        model_initializer = self.original_values["bio_model"][1]
         solution_ocp = OptimalControlProgram(
-            bio_model=self.original_values["bio_model_class"][0](self.original_values["bio_model"][0]),
+            bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
             phase_time=self.cycle_len * self.total_optimization_run * self.nlp[0].dt,

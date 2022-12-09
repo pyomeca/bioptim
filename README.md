@@ -527,7 +527,7 @@ The full signature of the `OptimalControlProgram` can be scary at first, but sho
 Here it is:
 ```python
 OptimalControlProgram(
-    bio_model: [str, list, BioModel],
+    bio_model: [list, BioModel],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
@@ -582,7 +582,7 @@ SX will tend to solve much faster than MX graphs, however they can necessitate a
 Please note that a common ocp will usually define only these parameters:
 ```python
 ocp = OptimalControlProgram(
-    bio_model: [str, list, BioModel],
+    bio_model: [list, BioModel],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],

@@ -17,6 +17,16 @@ class BiorbdModel:
         return BiorbdModel(self.model.DeepCopy(*args))
 
     @property
+    def _path(self) -> str:
+        return self.model.path().relativePath().to_string()
+
+    def copy(self):
+        return BiorbdModel(self._path)
+
+    def serialize(self) -> tuple[Callable, dict]:
+        return BiorbdModel, dict(bio_model=self._path)
+
+    @property
     def gravity(self) -> MX:
         return self.model.getGravity().to_mx()
 
@@ -184,11 +194,6 @@ class BiorbdModel:
     @property
     def nb_contacts(self) -> int:
         return self.model.nbContacts()
-
-    @property
-    def path(self):
-        return self.model.path()
-        # return Path(self.model.path())
 
     def marker_velocities(self, q, qdot, update_kin=True, reference_jcs=None) -> MX:
         if reference_jcs is None:

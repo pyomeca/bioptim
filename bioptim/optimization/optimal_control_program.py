@@ -225,13 +225,6 @@ class OptimalControlProgram:
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(bio_model)
 
-        biorbd_model_path = []
-        for m in bio_model:
-            if isinstance(m, BiorbdModel):
-                biorbd_model_path.append(m.path.relativePath().to_string())
-            else:
-                biorbd_model_path.append(None)
-
         if isinstance(dynamics, Dynamics):
             dynamics_type_tp = DynamicsList()
             dynamics_type_tp.add(dynamics)
@@ -240,10 +233,7 @@ class OptimalControlProgram:
             raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
 
         self.original_values = {
-            "bio_model": [
-                m if not isinstance(m, BiorbdModel) else m.path.relativePath().to_string() for m in bio_model
-            ],
-            "bio_model_class": [type(m) for m in bio_model],
+            "bio_model": [m.serialize() for m in bio_model],
             "dynamics": dynamics,
             "n_shooting": n_shooting,
             "phase_time": phase_time,
@@ -408,6 +398,10 @@ class OptimalControlProgram:
 
         # External forces
         if external_forces is not None:
+            # todo:
+            # external_forces = [[pwetpwet(1, 2), ..., pwetpwet(1, 2)], ...]
+            # external_forces = [[frame0(1,2), ..., framen(1,2)], ...]
+            # external_force = [np.array(1,2,3), np.array(...)]
             NLP.add(self, "external_forces", external_forces, False)
 
         plot_mappings = plot_mappings if plot_mappings is not None else {}
@@ -514,11 +508,9 @@ class OptimalControlProgram:
         OptimalControlProgram
         """
         for i, model in enumerate(data["bio_model"]):
-            if isinstance(model, str):
-                data["bio_model"][i] = data["bio_model_class"][i](model)
-
-        # delete field bio_model_class
-        del data["bio_model_class"]
+            model_class = model[0]
+            model_initializer = model[1]
+            data["bio_model"][i] = model_class(**model_initializer)
 
         return cls(**data)
 

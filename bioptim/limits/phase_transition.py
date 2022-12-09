@@ -259,7 +259,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
             # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
-            model = BiorbdModel(nlp_post.model.path.absolutePath().to_string())
+            model = nlp_post.model.copy()
 
             if nlp_post.model.nb_contacts == 0:
                 warn("The chosen model does not have any contact")

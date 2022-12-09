@@ -1,10 +1,14 @@
 from casadi import MX, SX
-import biorbd_casadi as biorbd
-from typing import Protocol
-from pathlib import Path
+from typing import Protocol, Callable
 
 
 class BioModel(Protocol):
+
+    def copy(self):
+        """copy the model by reloading one"""
+
+    def serialize(self) -> tuple[Callable, dict]:
+        """transform the class into a save and load format"""
 
     gravity: MX
     """Get the gravity vector"""
@@ -144,9 +148,6 @@ class BioModel(Protocol):
 
     nb_rigid_contacts: int
     """Get the number of rigid contacts"""
-
-    path: Path
-    """Get the path of the model"""
 
     def marker_velocities(self, q, qdot) -> MX:
         """Get the marker velocities of the model"""
