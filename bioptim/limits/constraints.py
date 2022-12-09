@@ -338,9 +338,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls.keys() else nlp.states["qddot"].mx
             if with_contact:
-                model = BiorbdModel(
-                    nlp.model.path.absolutePath().to_string()
-                )  # TODO: find a better solution if possible
+                model = nlp.model.copy()
                 qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
             else:
                 qddot_fd = nlp.model.forward_dynamics(q, qdot, tau)

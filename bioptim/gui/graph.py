@@ -623,8 +623,7 @@ class OcpToGraph(GraphAbstract):
         """
 
         node_str = (
-            f"<b>BioModel</b>: {self.ocp.nlp[phase_idx].model.path.filename().to_string()}"
-            f".{self.ocp.nlp[phase_idx].model.path.extension().to_string()}<br/>"
+            f"<b>BioModel</b>: {type(self.ocp.nlp[phase_idx].model)}<br/>"
         )
         node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
