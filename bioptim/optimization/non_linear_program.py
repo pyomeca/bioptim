@@ -1,6 +1,7 @@
 from typing import Callable, Any, Union
 
 import casadi
+import numpy as np
 from casadi import SX, MX, Function, horzcat
 
 from .optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -121,7 +122,7 @@ class NonLinearProgram:
         self.dynamics_func = None
         self.implicit_dynamics_func = None
         self.dynamics_type = None
-        self.external_forces = []
+        self.external_forces: np.ndarray = np.array([])
         self.g = []
         self.g_internal = []
         self.g_implicit = []

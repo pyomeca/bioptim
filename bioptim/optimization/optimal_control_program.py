@@ -56,21 +56,6 @@ from ..gui.check_conditioning import check_conditioning
 check_version(biorbd, "1.9.8", "1.10.0")
 
 
-import types
-
-
-def contains_swig_py_object(obj):
-    if isinstance(obj, types.ModuleType):
-        # Check if the module contains a SwigPyObject class
-        return hasattr(obj, "SwigPyObject")
-    elif isinstance(obj, types.ObjectType):
-        # Check if the object is a SwigPyObject instance
-        return isinstance(obj, obj.__class__.SwigPyObject)
-    else:
-        # The object is not a module or an object, so it cannot contain a SwigPyObject
-        return False
-
-
 class OptimalControlProgram:
     """
     The main class to define an ocp. This class prepares the full program and gives all
@@ -169,7 +154,7 @@ class OptimalControlProgram:
         objective_functions: Union[Objective, ObjectiveList] = None,
         constraints: Union[Constraint, ConstraintList] = None,
         parameters: Union[Parameter, ParameterList] = None,
-        external_forces: Union[list, tuple] = None,
+        external_forces: list[np.ndarray, ...] | tuple[np.ndarray, ...] = None,
         ode_solver: Union[list, OdeSolverBase, OdeSolver] = None,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
@@ -208,7 +193,7 @@ class OptimalControlProgram:
             All the constraints of the program
         parameters: Union[Parameter, ParameterList]
             All the parameters to optimize of the program
-        external_forces: Union[list, tuple]
+        external_forces: list[np.ndarray, ...] | tuple[np.ndarray, ...]
             The external forces acting on the center of mass of the segments specified in the bioMod
         ode_solver: OdeSolverBase
             The solver for the ordinary differential equations
