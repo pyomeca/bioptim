@@ -194,8 +194,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        model_class = self.original_values["bio_model"][0]
-        model_initializer = self.original_values["bio_model"][1]
+        model_class = self.original_values["bio_model"][0][0]
+        model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
@@ -361,8 +361,8 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        model_class = self.original_values["bio_model"][0]
-        model_initializer = self.original_values["bio_model"][1]
+        model_class = self.original_values["bio_model"][0][0]
+        model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
@@ -502,8 +502,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        model_class = self.original_values["bio_model"][0]
-        model_initializer = self.original_values["bio_model"][1]
+        model_class = self.original_values["bio_model"][0][0]
+        model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
