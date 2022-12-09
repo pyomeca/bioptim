@@ -121,7 +121,7 @@ class BioModel(Protocol):
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
         """compute the constraint impulses"""
 
-    def muscle_activation_dot(self, muscle_states) -> MX:
+    def muscle_activation_dot(self, muscle_excitations) -> MX:
         """Get the activation derivative of the muscles states"""
 
     def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:

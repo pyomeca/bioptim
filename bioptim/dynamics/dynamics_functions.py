@@ -742,10 +742,7 @@ class DynamicsFunctions:
         The derivative of muscle activations
         """
 
-        muscles_states = nlp.model.state_set()
-        for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setExcitation(muscle_excitations[k])
-        return nlp.model.muscle_activation_dot(muscles_states)
+        return nlp.model.muscle_activation_dot(muscle_excitations)
 
     @staticmethod
     def compute_tau_from_muscle(

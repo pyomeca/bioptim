@@ -158,7 +158,10 @@ class BiorbdModel:
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
         return self.model.ComputeConstraintImpulsesDirect(q, qdot_pre_impact).to_mx()
 
-    def muscle_activation_dot(self, muscle_states) -> MX:
+    def muscle_activation_dot(self, muscle_excitations) -> MX:
+        muscle_states = self.model.stateSet()
+        for k in range(self.model.nbMuscles()):
+            muscle_states[k].setExcitation(muscle_excitations[k])
         return self.model.activationDot(muscle_states).to_mx()
 
     def muscle_joint_torque(self, activations, q, qdot) -> MX:
