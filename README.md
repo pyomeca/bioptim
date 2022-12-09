@@ -538,7 +538,7 @@ OptimalControlProgram(
     objective_functions: [Objective, ObjectiveList],
     constraints: [Constraint, ConstraintList],
     parameters: ParameterList,
-    external_forces: list,
+    external_forces: list[list[Any | np.ndarray]],
     ode_solver: OdeSolver,
     control_type: [ControlType, list],
     all_generalized_mapping: BiMapping,
@@ -1858,16 +1858,15 @@ this segment must have at least one degree of freedom defined (translations and/
 external_force is silently ignored. 
 
 `Bioptim` expects `external_forces` to be a list (one element for each phase) of
-np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
+list (for each shooting node) of np.ndarray [6 x n], where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
 (defined by the `externalforceindex`) for each node n. Let's take a look at the definition of the external forces in 
 this example :
 
 ```python
-external_forces = [
-    np.repeat(np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], n_shooting, axis=2)]
+external_forces = external_forces = [[np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T for _ in range(n_shooting)]]
 ```
 
-`external_forces` is of len 1 because there is only one phase. The array inside it is 6x2x30 since there 
+`external_forces` is of len 1 because there is only one phase. The list is 30 element long and each array are 6x2 since there
 is [Mx, My, Mz, Fx, Fy, Fz] for the two `externalforceindex` for each node (in this example, we take 30 shooting nodes).
 
 ### The example_inequality_constraint.py file
