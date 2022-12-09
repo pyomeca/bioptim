@@ -1,8 +1,7 @@
-from pathlib import Path
 from typing import Any, Callable
 
 import biorbd_casadi as biorbd
-from casadi import MX, horzcat, vertcat, SX, norm_fro, Function
+from casadi import MX, horzcat, vertcat, SX, norm_fro
 import numpy as np
 
 
@@ -30,8 +29,8 @@ class BiorbdModel:
     def gravity(self) -> MX:
         return self.model.getGravity().to_mx()
 
-    def set_gravity(self, newGravity) -> None:
-        return self.model.setGravity(newGravity)
+    def set_gravity(self, new_gravity) -> None:
+        return self.model.setGravity(new_gravity)
 
     @property
     def nb_tau(self) -> int:
@@ -68,8 +67,12 @@ class BiorbdModel:
     def segments(self) -> list[biorbd.Segment]:
         return self.model.segments()
 
-    def homogeneous_matrices_in_global(self, *args):
-        return self.model.globalJCS(*args)
+    def homogeneous_matrices_in_global(self, q, reference_index, inverse=False):
+        val = self.model.globalJCS(q, reference_index)
+        if inverse:
+            return val.transpose()
+        else:
+            return val
 
     def homogeneous_matrices_in_child(self, *args):
         return self.model.localJCS(*args)
@@ -78,23 +81,23 @@ class BiorbdModel:
     def mass(self) -> MX:
         return self.model.mass().to_mx()
 
-    def center_of_mass(self, q, updateKin=True) -> MX:
-        return self.model.CoM(q, updateKin).to_mx()
+    def center_of_mass(self, q) -> MX:
+        return self.model.CoM(q, True).to_mx()
 
-    def center_of_mass_velocity(self, q, qdot, updateKin=True) -> MX:
-        return self.model.CoMdot(q, qdot, updateKin).to_mx()
+    def center_of_mass_velocity(self, q, qdot) -> MX:
+        return self.model.CoMdot(q, qdot, True).to_mx()
 
-    def center_of_mass_acceleration(self, q, qdot, qddot, updateKin=True) -> MX:
-        return self.model.CoMddot(q, qdot, qddot, updateKin).to_mx()
+    def center_of_mass_acceleration(self, q, qdot, qddot) -> MX:
+        return self.model.CoMddot(q, qdot, qddot, True).to_mx()
 
-    def angular_momentum(self, Q, Qdot, updateKin=True) -> MX:
-        return self.model.angularMomentum(Q, Qdot, updateKin)
+    def angular_momentum(self, q, qdot) -> MX:
+        return self.model.angularMomentum(q, qdot, True)
 
     def reshape_qdot(self, q, qdot, k_stab=1) -> MX:
         return self.model.computeQdot(q, qdot, k_stab).to_mx()
 
-    def segment_angular_velocity(self, Q, Qdot, idx, updateKin=True) -> MX:
-        return self.model.segmentAngularVelocity(Q, Qdot, idx, updateKin)
+    def segment_angular_velocity(self, q, qdot, idx) -> MX:
+        return self.model.segmentAngularVelocity(q, qdot, idx, True)
 
     @property
     def name_dof(self) -> tuple[str, ...]:
@@ -165,11 +168,8 @@ class BiorbdModel:
     def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
         return self.model.muscularJointTorque(muscle_states, q, qdot).to_mx()
 
-    def markers(self, *args) -> Any | list[MX]:
-        if len(args) == 0:
-            return self.model.markers
-        else:
-            return [m.to_mx() for m in self.model.markers(*args)]
+    def markers(self, q) -> Any | list[MX]:
+        return [m.to_mx() for m in self.model.markers(q)]
 
     @property
     def nb_markers(self) -> int:
@@ -195,28 +195,34 @@ class BiorbdModel:
     def nb_contacts(self) -> int:
         return self.model.nbContacts()
 
-    def marker_velocities(self, q, qdot, update_kin=True, reference_jcs=None) -> MX:
-        if reference_jcs is None:
-            return horzcat(*[m.to_mx() for m in self.model.markersVelocity(q, qdot, update_kin)])
+    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
+        if reference_index is None:
+            return horzcat(*[m.to_mx() for m in self.model.markersVelocity(q, qdot, True)])
         else:
-            jcs_t = (
-                biorbd.RotoTrans()
-                if reference_jcs is None
-                else self.homogeneous_matrices_in_global(q, reference_jcs).transpose()
+            homogeneous_matrix_transposed = (
+                biorbd.RotoTrans(),
+                self.homogeneous_matrices_in_global(q, reference_index, inverse=True)
             )
         return horzcat(
-            *[m.to_mx() for m in self.model.markersVelocity(q, qdot, update_kin) if m.applyRT(jcs_t) is None]
+            *[m.to_mx() for m in self.model.markersVelocity(q, qdot, True) if m.applyRT(homogeneous_matrix_transposed) is None]
         )
 
-    def tau_max(self, *args) -> tuple[MX, MX]:
-        torque_max, torque_min = self.model.torqueMax(*args)
+    def tau_max(self, q, qdot) -> tuple[MX, MX]:
+        torque_max, torque_min = self.model.torqueMax(q, qdot)
         return torque_max.to_mx(), torque_min.to_mx()
 
-    def rigid_contact_acceleration(self, q, qdot, qddot, idx=None, updateKin=True) -> MX:
-        return self.model.rigidContactAcceleration(q, qdot, qddot, idx, updateKin).to_mx()
+    def rigid_contact_acceleration(self, q, qdot, qddot, index) -> MX:
+        # TODO: There is a bug here since only index 0 is call.
 
-    def object_homogeneous_matrix(self, *args) -> MX:
-        return self.model.RT(*args)
+        if "_X" in self.contact_names[index]:
+            index_direction = 0
+        elif "_Y" in self.contact_names[index]:
+            index_direction = 1
+        elif "_Z" in self.contact_names[index]:
+            index_direction = 2
+        else:
+            raise ValueError("Wrong index")
+        return self.model.rigidContactAcceleration(q, qdot, qddot, 0, True)[index_direction].to_mx()
 
     @property
     def nb_dof(self) -> int:
@@ -226,7 +232,7 @@ class BiorbdModel:
     def marker_names(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.markerNames())
 
-    def soft_contact_forces(self, q: MX, qdot: MX) -> MX:
+    def soft_contact_forces(self, q, qdot) -> MX:
         soft_contact_forces = MX.zeros(self.nb_soft_contacts * 6, 1)
         for i_sc in range(self.nb_soft_contacts):
             soft_contact = self.soft_contact(i_sc)

@@ -13,7 +13,7 @@ class BioModel(Protocol):
     gravity: MX
     """Get the gravity vector"""
 
-    def set_gravity(self, newGravity):
+    def set_gravity(self, new_gravity):
         """Set the gravity vector"""
 
     nb_tau: int
@@ -46,14 +46,14 @@ class BioModel(Protocol):
     segments: tuple
     """Get all segments"""
 
-    homogeneous_matrices_in_global: tuple
-    """
-    Get the homogeneous matrices of all segments in the world frame,
-    such as: P_R0 = T_R0_R1 * P_R1 
-    with P_R0 the position of any point P in the world frame,
-    T_R0_R1 the homogeneous matrix that transform any point in R1 frame to R0.
-    P_R1 the position of any point P in the segment R1 frame.
-    """
+    def homogeneous_matrices_in_global(self, q, reference_idx, inverse=False) -> tuple:
+        """
+        Get the homogeneous matrices of all segments in the world frame,
+        such as: P_R0 = T_R0_R1 * P_R1
+        with P_R0 the position of any point P in the world frame,
+        T_R0_R1 the homogeneous matrix that transform any point in R1 frame to R0.
+        P_R1 the position of any point P in the segment R1 frame.
+        """
 
     homogeneous_matrices_in_child: tuple
     """
@@ -149,17 +149,14 @@ class BioModel(Protocol):
     nb_rigid_contacts: int
     """Get the number of rigid contacts"""
 
-    def marker_velocities(self, q, qdot) -> MX:
+    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
         """Get the marker velocities of the model"""
 
-    def tau_max(self) -> tuple[MX, MX]:
+    def tau_max(self, q, qdot) -> tuple[MX, MX]:
         """Get the maximum torque"""
 
-    def rigid_contact_acceleration(self, q, qdot, qddot) -> MX:
+    def rigid_contact_acceleration(self, q, qdot, qddot, index) -> MX:
         """Get the rigid contact acceleration"""
-
-    def object_homogeneous_matrices(self, q) -> tuple:
-        """Get homogeneous matrices of all objects stored in the model"""
 
     marker_names: tuple[str, ...]
     """Get the marker names"""
