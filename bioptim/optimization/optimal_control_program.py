@@ -8,10 +8,8 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, horzcat, vertcat, jacobian, vcat, hessian
+from casadi import MX, SX, Function, sum1, horzcat
 from matplotlib import pyplot as plt
-import matplotlib.colors as mcolors
-import matplotlib.cm as mcm
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
@@ -20,7 +18,9 @@ from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem, DynamicsFcn
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
-from ..interfaces.biorbd_interface import BiorbdInterface
+
+from ..interfaces.biomodel import BioModel
+from ..interfaces.biorbd_model import BiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -143,7 +143,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        bio_model: Union[list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
@@ -154,7 +154,7 @@ class OptimalControlProgram:
         objective_functions: Union[Objective, ObjectiveList] = None,
         constraints: Union[Constraint, ConstraintList] = None,
         parameters: Union[Parameter, ParameterList] = None,
-        external_forces: Union[list, tuple] = None,
+        external_forces: list[list[Any], ...] | tuple[list[Any], ...] = None,
         ode_solver: Union[list, OdeSolverBase, OdeSolver] = None,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
@@ -171,8 +171,8 @@ class OptimalControlProgram:
         """
         Parameters
         ----------
-        biorbd_model: Union[str, biorbd.Model, list, tuple]
-            The biorbd model. If biorbd_model is an str, a new model is loaded. Otherwise, the references are used
+        bio_model: Union[list, tuple, BioModel]
+            The bio_model to use for the optimization
         dynamics: Union[Dynamics, DynamicsList]
             The dynamics of the phases
         n_shooting: Union[int, list[int]]
@@ -193,7 +193,7 @@ class OptimalControlProgram:
             All the constraints of the program
         parameters: Union[Parameter, ParameterList]
             All the parameters to optimize of the program
-        external_forces: Union[list, tuple]
+        external_forces: list[list, ...] | tuple[list, ...]
             The external forces acting on the center of mass of the segments specified in the bioMod
         ode_solver: OdeSolverBase
             The solver for the ordinary differential equations
@@ -207,8 +207,6 @@ class OptimalControlProgram:
             The mapping to apply between the variables associated with the nodes
         plot_mappings: Mapping
             The mapping to apply on the plots
-        phase_mappings: Mapping
-            The mapping to apply on the phases
         phase_transitions: PhaseTransitionList
             The transition types between the phases
         n_threads: int
@@ -219,18 +217,13 @@ class OptimalControlProgram:
             This is mainly for internal purposes when creating an OCP not destined to be solved
         """
 
-        if isinstance(biorbd_model, str):
-            biorbd_model = [biorbd.Model(biorbd_model)]
-        elif isinstance(biorbd_model, biorbd.biorbd.Model):
-            biorbd_model = [biorbd_model]
-        elif isinstance(biorbd_model, (list, tuple)):
-            biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
-        else:
-            raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
-        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
-        self.n_phases = len(biorbd_model)
+        if not isinstance(bio_model, (list, tuple)):
+            bio_model = [bio_model]
 
-        biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
+        bio_model = self.check_quaternions_hasattr(bio_model)
+
+        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
+        self.n_phases = len(bio_model)
 
         if isinstance(dynamics, Dynamics):
             dynamics_type_tp = DynamicsList()
@@ -240,7 +233,7 @@ class OptimalControlProgram:
             raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
 
         self.original_values = {
-            "biorbd_model": biorbd_model_path,
+            "bio_model": [m.serialize() for m in bio_model],
             "dynamics": dynamics,
             "n_shooting": n_shooting,
             "phase_time": phase_time,
@@ -389,7 +382,7 @@ class OptimalControlProgram:
 
         # nlp is the core of a phase
         self.nlp = [NLP() for _ in range(self.n_phases)]
-        NLP.add(self, "model", biorbd_model, False)
+        NLP.add(self, "model", bio_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
         # Define some aliases
@@ -405,7 +398,6 @@ class OptimalControlProgram:
 
         # External forces
         if external_forces is not None:
-            external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)
             NLP.add(self, "external_forces", external_forces, False)
 
         plot_mappings = plot_mappings if plot_mappings is not None else {}
@@ -497,6 +489,27 @@ class OptimalControlProgram:
         # Prepare objectives
         self.update_objectives(objective_functions)
 
+    @classmethod
+    def from_loaded_data(cls, data):
+        """
+        Loads an OCP from a dictionary ("ocp_initializer")
+
+        Parameters
+        ----------
+        data: dict
+            A dictionary containing the data to load
+
+        Returns
+        -------
+        OptimalControlProgram
+        """
+        for i, model in enumerate(data["bio_model"]):
+            model_class = model[0]
+            model_initializer = model[1]
+            data["bio_model"][i] = model_class(**model_initializer)
+
+        return cls(**data)
+
     def _check_variable_mapping_consistency_with_node_mapping(
         self, use_states_from_phase_idx, use_controls_from_phase_idx
     ):
@@ -539,8 +552,9 @@ class OptimalControlProgram:
         dof_names = []  # [[] for _ in range(len(self.nlp))]
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
-            for j in range(nlp.model.nbQ()):
-                legend = nlp.model.nameDof()[j].to_string()
+            for j in range(nlp.model.nb_q):
+
+                legend = nlp.model.name_dof[j]
                 if legend in dof_names_all_phases:
                     current_dof_mapping += [dof_names_all_phases.index(legend)]
                 else:
@@ -549,6 +563,30 @@ class OptimalControlProgram:
             phase_mappings.append(Mapping(current_dof_mapping))
             dof_names.append([dof_names_all_phases[i] for i in phase_mappings[i].map_idx])
         return phase_mappings, dof_names
+
+    @staticmethod
+    def check_quaternions_hasattr(biomodels: list[BioModel]) -> list[BioModel]:
+        """
+        This functions checks if the biomodels have quaternions and if not we set an attribute to nb_quaternion to 0
+
+        Note: this need to be checked as this information is of importance for ODE solvers
+
+        Parameters
+        ----------
+        biomodels: list[BioModel]
+            The list of biomodels to check
+
+        Returns
+        -------
+        biomodels: list[BioModel]
+            The list of biomodels with the attribute nb_quaternion set to 0 if no quaternion is present
+        """
+
+        for i, model in enumerate(biomodels):
+            if not hasattr(model, "nb_quaternions"):
+                setattr(model, "nb_quaternions", 0)
+
+        return biomodels
 
     def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
         """
@@ -1130,7 +1168,7 @@ class OptimalControlProgram:
                     "please refer to the original error message below\n\n"
                     f"{type(error_message).__name__}: {error_message}"
                 )
-            ocp = OptimalControlProgram(**data["ocp_initializer"])
+            ocp = OptimalControlProgram.from_loaded_data(data["ocp_initializer"])
             for key in data["versions"].keys():
                 key_module = "biorbd_casadi" if key == "biorbd" else key
                 try:

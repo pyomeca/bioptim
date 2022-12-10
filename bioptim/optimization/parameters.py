@@ -4,13 +4,13 @@ import biorbd_casadi as biorbd
 from casadi import MX, SX, vertcat, Function
 import numpy as np
 
-from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
 from ..limits.penalty_node import PenaltyNodeList
 from ..limits.penalty import PenaltyOption
-from ..misc.enums import InterpolationType
+from ..misc.enums import InterpolationType, Node
 from ..misc.options import UniquePerProblemOptionList
+from ..optimization.non_linear_program import NonLinearProgram
 
 
 class Parameter(PenaltyOption):
@@ -214,7 +214,7 @@ class Parameter(PenaltyOption):
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.v.parameters_in_list.cx
 
-        objective.function = biorbd.to_casadi_func(
+        objective.function = NonLinearProgram.to_casadi_func(
             f"{self.name}", fcn[objective.rows, objective.cols], state_cx, control_cx, param_cx, expand=expand
         )
 

@@ -171,8 +171,9 @@ from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueS
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver
-from .interfaces.biorbd_interface import BiorbdInterface
 from .interfaces.solver_options import Solver
+from .interfaces.biorbd_model import BiorbdModel
+from .interfaces.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint

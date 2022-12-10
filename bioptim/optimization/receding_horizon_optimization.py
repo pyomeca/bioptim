@@ -4,7 +4,6 @@ from typing import Union, Callable
 from time import perf_counter
 
 import numpy as np
-import biorbd_casadi as biorbd
 
 from .optimal_control_program import OptimalControlProgram
 from .solution import Solution
@@ -14,6 +13,7 @@ from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import SolverType, InterpolationType
 from ..interfaces.solver_options import Solver
+from ..interfaces.biomodel import BioModel
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):
@@ -29,7 +29,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
     def __init__(
         self,
-        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        bio_model: Union[list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         window_len: Union[int, list, tuple],
         window_duration: Union[int, float, list, tuple],
@@ -43,11 +43,11 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             The number of shooting point of the moving window
         """
 
-        if isinstance(biorbd_model, (list, tuple)) and len(biorbd_model) > 1:
-            raise ValueError("Receding horizon optimization must be defined using only one biorbd_model")
+        if isinstance(bio_model, (list, tuple)) and len(bio_model) > 1:
+            raise ValueError("Receding horizon optimization must be defined using only one bio_model")
 
         super(RecedingHorizonOptimization, self).__init__(
-            biorbd_model=biorbd_model,
+            bio_model=bio_model,
             dynamics=dynamics,
             n_shooting=window_len,
             phase_time=window_duration,
@@ -194,9 +194,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-
+        model_class = self.original_values["bio_model"][0][0]
+        model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
-            biorbd_model=self.original_values["biorbd_model"][0],
+            bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run - 1,
             phase_time=self.total_optimization_run * self.nlp[0].dt,
@@ -311,7 +312,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def __init__(
         self,
-        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        bio_model: Union[list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         cycle_len: Union[int, list, tuple],
         cycle_duration: Union[int, float, list, tuple],
@@ -319,7 +320,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         **kwargs,
     ):
         super(CyclicRecedingHorizonOptimization, self).__init__(
-            biorbd_model=biorbd_model,
+            bio_model=bio_model,
             dynamics=dynamics,
             window_len=cycle_len,
             window_duration=cycle_duration,
@@ -360,9 +361,10 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-
+        model_class = self.original_values["bio_model"][0][0]
+        model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
-            biorbd_model=self.original_values["biorbd_model"][0],
+            bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run * self.nlp[0].ns - 1,
             phase_time=self.total_optimization_run * self.nlp[0].ns * self.nlp[0].dt,
@@ -437,7 +439,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def __init__(
         self,
-        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        bio_model: Union[list, tuple],
         dynamics: Union[Dynamics, DynamicsList],
         cycle_len: Union[int, list, tuple],
         cycle_duration: Union[int, float, list, tuple],
@@ -457,8 +459,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             The number of cycles to skip while advancing
         """
 
-        if isinstance(biorbd_model, (list, tuple)) and len(biorbd_model) > 1:
-            raise ValueError("Receding horizon optimization must be defined using only one biorbd_model")
+        if isinstance(bio_model, (list, tuple)) and len(bio_model) > 1:
+            raise ValueError("Receding horizon optimization must be defined using only one bio_model")
 
         self.cycle_len = cycle_len
         self.n_cycles = n_cycles_simultaneous
@@ -472,7 +474,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         self.initial_guess_frames.append((self.n_cycles_to_advance + 1) * self.cycle_len)
 
         super(MultiCyclicRecedingHorizonOptimization, self).__init__(
-            biorbd_model=biorbd_model,
+            bio_model=bio_model,
             dynamics=dynamics,
             cycle_len=cycle_len * self.n_cycles,
             cycle_duration=cycle_duration * self.n_cycles,
@@ -500,9 +502,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-
+        model_class = self.original_values["bio_model"][0][0]
+        model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
-            biorbd_model=self.original_values["biorbd_model"][0],
+            bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
             phase_time=self.cycle_len * self.total_optimization_run * self.nlp[0].dt,

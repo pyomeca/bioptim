@@ -1,8 +1,8 @@
 import pytest
 
-import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     Dynamics,
@@ -27,7 +27,7 @@ def test_custom_constraint_mx_fail():
     constraints.add(custom_mx_fail, node=Node.ALL)
 
     ocp = OptimalControlProgram(
-        biorbd.Model(model_path), Dynamics(DynamicsFcn.TORQUE_DRIVEN), 30, 2, constraints=constraints
+        BiorbdModel(model_path), Dynamics(DynamicsFcn.TORQUE_DRIVEN), 30, 2, constraints=constraints
     )
 
     with pytest.raises(RuntimeError, match="Ipopt doesn't support SX/MX types in constraints bounds"):
