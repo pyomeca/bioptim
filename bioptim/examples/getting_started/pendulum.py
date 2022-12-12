@@ -23,6 +23,7 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
+    RigidBodyDynamics,
 )
 
 
@@ -33,6 +34,8 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
+    rigidbody_dynamics = RigidBodyDynamics.ODE,
+    with_passive_torque = False
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -63,7 +66,7 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics, with_passive_torque=with_passive_torque)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
@@ -99,13 +102,13 @@ def prepare_ocp(
     )
 
 
-def main():
+def main(with_passive_torque):
     """
     If pendulum is run as a script, it will perform the optimization and animates it
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30, with_passive_torque=with_passive_torque)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
@@ -127,4 +130,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(with_passive_torque=False)
