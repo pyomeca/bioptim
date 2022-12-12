@@ -429,7 +429,7 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
-        with_passive_torque: bool,
+        with_passive_torque: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         with_torque: bool = False,
         fatigue=None,
@@ -722,8 +722,6 @@ class DynamicsFunctions:
             The value of tau from "get"
         with_contact: bool
             If the dynamics with contact should be used
-        with_passive_torque: bool
-            If the dynamics with passive torque should be used
 
         Returns
         -------
@@ -765,9 +763,7 @@ class DynamicsFunctions:
             The value of qddot from "get"
         with_contact: bool
             If the dynamics with contact should be used
-        with_passive_torque: bool
-            If the dynamics with passive torque should be used
-            
+
         Returns
         -------
         Torques in tau
