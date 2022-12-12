@@ -8,6 +8,7 @@ import re
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     ConstraintList,
     ConstraintFcn,
     QAndQDotBounds,
@@ -356,7 +357,7 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/pendulum.bioMod",)
 
     # --- Options --- #
-    biorbd_model = biorbd.Model(biorbd_model_path[0])
+    bio_model = BiorbdModel(biorbd_model_path[0])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -368,7 +369,7 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     # ------------- #
 
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'min_bound'")):
-        OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
+        OptimalControlProgram(bio_model, dynamics, 10, 2, objective_functions=objective_functions)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
@@ -377,7 +378,7 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
     biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/pendulum.bioMod",)
 
     # --- Options --- #
-    biorbd_model = biorbd.Model(biorbd_model_path[0])
+    bio_model = BiorbdModel(biorbd_model_path[0])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -389,7 +390,7 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
     # ------------- #
 
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'max_bound'")):
-        OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
+        OptimalControlProgram(bio_model, dynamics, 10, 2, objective_functions=objective_functions)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
@@ -611,7 +612,7 @@ def partial_ocp_parameters(n_phases):
         raise RuntimeError("n_phases should be 1 or 3")
 
     biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/cube.bioMod"
-    biorbd_model = biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path)
     n_shooting = (2, 2, 2)
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]
@@ -624,10 +625,10 @@ def partial_ocp_parameters(n_phases):
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
     if n_phases > 1:
-        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+        x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+        x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
             bounds.min[i, [0, -1]] = 0
@@ -639,29 +640,25 @@ def partial_ocp_parameters(n_phases):
         x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
 
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
     if n_phases > 1:
-        x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-        x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
 
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
     if n_phases > 1:
-        u_bounds.add(
-            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
-        )
-        u_bounds.add(
-            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
-        )
+        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * bio_model[0].nb_tau)
     if n_phases > 1:
-        u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-        u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+        u_init.add([tau_init] * bio_model[0].nb_tau)
+        u_init.add([tau_init] * bio_model[0].nb_tau)
 
     return (
-        biorbd_model[:n_phases],
+        bio_model[:n_phases],
         n_shooting[:n_phases],
         final_time[:n_phases],
         time_min[:n_phases],
@@ -679,7 +676,7 @@ def partial_ocp_parameters(n_phases):
 
 def test_mayer_neg_monophase_time_constraint():
     (
-        biorbd_model,
+        bio_model,
         n_shooting,
         final_time,
         time_min,
@@ -703,7 +700,7 @@ def test_mayer_neg_monophase_time_constraint():
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
-            biorbd_model,
+            bio_model,
             dynamics,
             n_shooting,
             final_time,
@@ -718,7 +715,7 @@ def test_mayer_neg_monophase_time_constraint():
 
 def test_mayer1_neg_multiphase_time_constraint():
     (
-        biorbd_model,
+        bio_model,
         n_shooting,
         final_time,
         time_min,
@@ -743,7 +740,7 @@ def test_mayer1_neg_multiphase_time_constraint():
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
-            biorbd_model,
+            bio_model,
             dynamics,
             n_shooting,
             final_time,
@@ -758,7 +755,7 @@ def test_mayer1_neg_multiphase_time_constraint():
 
 def test_mayer2_neg_multiphase_time_constraint():
     (
-        biorbd_model,
+        bio_model,
         n_shooting,
         final_time,
         time_min,
@@ -783,7 +780,7 @@ def test_mayer2_neg_multiphase_time_constraint():
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
-            biorbd_model,
+            bio_model,
             dynamics,
             n_shooting,
             final_time,
@@ -798,7 +795,7 @@ def test_mayer2_neg_multiphase_time_constraint():
 
 def test_mayer_multiphase_time_constraint():
     (
-        biorbd_model,
+        bio_model,
         n_shooting,
         final_time,
         time_min,
@@ -822,7 +819,7 @@ def test_mayer_multiphase_time_constraint():
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -837,7 +834,7 @@ def test_mayer_multiphase_time_constraint():
 
 def test_lagrange_neg_monophase_time_constraint():
     (
-        biorbd_model,
+        bio_model,
         n_shooting,
         final_time,
         time_min,
@@ -862,7 +859,7 @@ def test_lagrange_neg_monophase_time_constraint():
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
-            biorbd_model,
+            bio_model,
             dynamics,
             n_shooting,
             final_time,
@@ -878,7 +875,7 @@ def test_lagrange_neg_monophase_time_constraint():
 def test_lagrange1_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         (
-            biorbd_model,
+            bio_model,
             n_shooting,
             final_time,
             time_min,
@@ -904,7 +901,7 @@ def test_lagrange1_neg_multiphase_time_constraint():
         constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=0)
 
         OptimalControlProgram(
-            biorbd_model,
+            bio_model,
             dynamics,
             n_shooting,
             final_time,
@@ -920,7 +917,7 @@ def test_lagrange1_neg_multiphase_time_constraint():
 def test_lagrange2_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         (
-            biorbd_model,
+            bio_model,
             n_shooting,
             final_time,
             time_min,
@@ -946,7 +943,7 @@ def test_lagrange2_neg_multiphase_time_constraint():
         constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
         OptimalControlProgram(
-            biorbd_model,
+            bio_model,
             dynamics,
             n_shooting,
             final_time,
@@ -961,7 +958,7 @@ def test_lagrange2_neg_multiphase_time_constraint():
 
 def test_lagrange_multiphase_time_constraint():
     (
-        biorbd_model,
+        bio_model,
         n_shooting,
         final_time,
         time_min,
@@ -985,7 +982,7 @@ def test_lagrange_multiphase_time_constraint():
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -1000,7 +997,7 @@ def test_lagrange_multiphase_time_constraint():
 
 def test_mayer_neg_two_objectives():
     (
-        biorbd_model,
+        bio_model,
         n_shooting,
         final_time,
         time_min,
@@ -1021,7 +1018,7 @@ def test_mayer_neg_two_objectives():
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
-            biorbd_model,
+            bio_model,
             dynamics,
             n_shooting,
             final_time,

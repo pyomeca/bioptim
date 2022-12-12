@@ -428,13 +428,13 @@ class PenaltyOption(OptionGeneric):
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
-        self.function = biorbd.to_casadi_func(name, sub_fcn, state_cx, control_cx, param_cx, expand=self.expand)
+        self.function = nlp.to_casadi_func(name, sub_fcn, state_cx, control_cx, param_cx, expand=self.expand)
         self.function_non_threaded = self.function
 
         if self.derivative:
             state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
             control_cx = horzcat(all_pn.nlp.controls.cx_end, all_pn.nlp.controls.cx)
-            self.function = biorbd.to_casadi_func(
+            self.function = nlp.to_casadi_func(
                 f"{name}",
                 self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx)
                 - self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx),
@@ -479,7 +479,7 @@ class PenaltyOption(OptionGeneric):
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else nlp.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp.parameters.cx)["xf"]
             )
-            self.modified_function = biorbd.to_casadi_func(
+            self.modified_function = nlp.to_casadi_func(
                 f"{name}",
                 (
                     (self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx[:, 0])

@@ -3,11 +3,10 @@ import re
 
 import numpy as np
 from casadi import MX, SX, vertcat
-import biorbd_casadi as biorbd
 from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
-from bioptim.interfaces.biorbd_interface import BiorbdInterface
-from bioptim.misc.enums import ControlType, RigidBodyDynamics, SoftContactDynamics
+from bioptim.interfaces.biorbd_model import BiorbdModel
+from bioptim.misc.enums import ControlType, RigidBodyDynamics
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector
 from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
@@ -34,14 +33,14 @@ class OptimalControlProgram:
 def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -61,8 +60,10 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        external_forces = np.random.rand(6, nlp.model.nb_segments, nlp.ns)
+        external_forces = np.transpose(external_forces, (2, 0, 1))
+        external_forces = [[external_forces[i, :, :] for i in range(nlp.ns)]]
+        NonLinearProgram.add(ocp, "external_forces", external_forces, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -167,14 +168,14 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
 def test_torque_driven_implicit(with_contact, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -228,14 +229,14 @@ def test_torque_driven_implicit(with_contact, cx):
 def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * (2 + 3), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -286,14 +287,14 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
 def test_torque_derivative_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -312,8 +313,10 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        external_forces = np.random.rand(6, nlp.model.nb_segments, nlp.ns)
+        external_forces = np.transpose(external_forces, (2, 0, 1))
+        external_forces = [[external_forces[i, :, :] for i in range(nlp.ns)]]
+        NonLinearProgram.add(ocp, "external_forces", external_forces, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -409,13 +412,13 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
 def test_torque_derivative_driven_implicit(with_contact, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 2))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 2))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -501,14 +504,14 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
 def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * (2 + 3), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -588,13 +591,13 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
 def test_soft_contacts_dynamics_errors(dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
 
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -627,13 +630,13 @@ def test_soft_contacts_dynamics_errors(dynamics):
 def test_implicit_dynamics_errors(dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
 
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -665,13 +668,13 @@ def test_implicit_dynamics_errors(dynamics):
 def test_torque_activation_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -688,8 +691,10 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        external_forces = np.random.rand(6, nlp.model.nb_segments, nlp.ns)
+        external_forces = np.transpose(external_forces, (2, 0, 1))
+        external_forces = [[external_forces[i, :, :] for i in range(nlp.ns)]]
+        NonLinearProgram.add(ocp, "external_forces", external_forces, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -759,14 +764,12 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, rigidbody_dynamics, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
-        TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod"
-    )
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2 + nlp.model.nbMuscles(), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbMuscles(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -793,8 +796,8 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        nlp.external_forces = np.random.rand(nlp.ns, 6, nlp.model.nb_segments)
+        nlp.external_forces = [nlp.external_forces[i, :, :] for i in range(nlp.ns)]
 
     # Prepare the dynamics
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
@@ -1264,12 +1267,12 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 def test_joints_acceleration_driven(cx, rigid_body_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -1330,14 +1333,14 @@ def test_custom_dynamics(with_contact):
 
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(

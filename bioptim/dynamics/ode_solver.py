@@ -134,7 +134,7 @@ class RK(OdeSolverBase):
             "implicit_ode": nlp.implicit_dynamics_func,
         }
 
-        if nlp.external_forces:
+        if len(nlp.external_forces) != 0:
             dynamics_out = []
             for idx in range(len(nlp.external_forces)):
                 ode_opt["idx"] = idx
@@ -276,7 +276,7 @@ class OdeSolver:
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
 
-            if nlp.model.nbQuat() > 0:
+            if nlp.model.nb_quaternions > 0:
                 raise NotImplementedError(
                     "Quaternions can't be used with IRK yet. If you get this error, please notify the "
                     "developers and ping @EveCharbie"

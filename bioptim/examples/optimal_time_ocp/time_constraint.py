@@ -6,6 +6,7 @@ control program
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     Dynamics,
     DynamicsFcn,
@@ -53,7 +54,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -66,9 +67,9 @@ def prepare_ocp(
     constraints = Constraint(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min, max_bound=time_max)
 
     # Path constraint
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
-    x_bounds = QAndQDotBounds(biorbd_model)
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[n_q - 1, -1] = 3.14
 
@@ -76,7 +77,7 @@ def prepare_ocp(
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[n_tau - 1, :] = 0
@@ -86,7 +87,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

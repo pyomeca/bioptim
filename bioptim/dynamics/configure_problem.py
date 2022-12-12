@@ -79,7 +79,7 @@ class ConfigureProblem:
     """
 
     @staticmethod
-    def _get_kinematics_based_names(nlp, type: str) -> list[str]:
+    def _get_kinematics_based_names(nlp, var_type: str) -> list[str]:
         """
         To modify the names of the variables added to the plots if there is quaternions
 
@@ -87,7 +87,7 @@ class ConfigureProblem:
         ----------
         nlp: NonLinearProgram
             A reference to the phase
-        type: str
+        var_type: str
             A string that refers to the decision variable such as (q, qdot, qddot, tau, etc...)
 
         Returns
@@ -96,42 +96,25 @@ class ConfigureProblem:
             The list of str to display on figures
         """
 
-        if nlp.phase_mapping:
-            idx = nlp.phase_mapping.map_idx
-        else:
-            idx = range(nlp.model.nbQ())
-        if nlp.model.nbQuat() == 0:
-            new_name = [nlp.model.nameDof()[i].to_string() for i in idx]
+        idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nb_q)
+
+        if nlp.model.nb_quaternions == 0:
+            new_name = nlp.model.name_dof[idx[0]]
         else:
             new_name = []
             for i in nlp.phase_mapping.map_idx:
-                if (
-                    nlp.model.nameDof()[i].to_string()[-4:-1] == "Rot"
-                    or nlp.model.nameDof()[i].to_string()[-6:-1] == "Trans"
-                ):
-                    new_name += [nlp.model.nameDof()[i].to_string()]
+                if nlp.model.name_dof[i][-4:-1] == "Rot" or nlp.model.name_dof[i][-6:-1] == "Trans":
+                    new_name += [nlp.model.name_dof[i]]
                 else:
-                    if nlp.model.nameDof()[i].to_string()[-5:] != "QuatW":
-                        if type == "qdot":
-                            new_name += [
-                                nlp.model.nameDof()[i].to_string()[:-5]
-                                + "omega"
-                                + nlp.model.nameDof()[i].to_string()[-1]
-                            ]
-                        elif type == "qddot":
-                            new_name += [
-                                nlp.model.nameDof()[i].to_string()[:-5]
-                                + "omegadot"
-                                + nlp.model.nameDof()[i].to_string()[-1]
-                            ]
-                        elif type == "qdddot":
-                            new_name += [
-                                nlp.model.nameDof()[i].to_string()[:-5]
-                                + "omegaddot"
-                                + nlp.model.nameDof()[i].to_string()[-1]
-                            ]
-                        elif type == "tau" or type == "taudot":
-                            new_name += [nlp.model.nameDof()[i].to_string()]
+                    if nlp.model.name_dof[i][-5:] != "QuatW":
+                        if var_type == "qdot":
+                            new_name += [nlp.model.name_dof[i][:-5] + "omega" + nlp.model.name_dof[i][-1]]
+                        elif var_type == "qddot":
+                            new_name += [nlp.model.name_dof[i][:-5] + "omegadot" + nlp.model.name_dof[i][-1]]
+                        elif var_type == "qdddot":
+                            new_name += [nlp.model.name_dof[i][:-5] + "omegaddot" + nlp.model.name_dof[i][-1]]
+                        elif var_type == "tau" or var_type == "taudot":
+                            new_name += [nlp.model.name_dof[i]]
 
         return new_name
 
@@ -193,7 +176,7 @@ class ConfigureProblem:
             A list of fatigue elements
         """
 
-        if nlp.model.nbSoftContacts() != 0:
+        if nlp.model.nb_soft_contacts != 0:
             if (
                 soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
                 and soft_contacts_dynamics != SoftContactDynamics.ODE
@@ -247,7 +230,7 @@ class ConfigureProblem:
                 # at the first shooting node
                 node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
                 ConfigureProblem.configure_contact_forces(ocp, nlp, False, True)
-                for ii in range(nlp.model.nbContacts()):
+                for ii in range(nlp.model.nb_contacts):
                     ocp.implicit_constraints.add(
                         ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
                         with_contact=with_contact,
@@ -327,7 +310,7 @@ class ConfigureProblem:
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
-        if nlp.model.nbSoftContacts() != 0:
+        if nlp.model.nb_soft_contacts != 0:
             if (
                 soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
                 and soft_contacts_dynamics != SoftContactDynamics.ODE
@@ -440,16 +423,16 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
         # Configure qddot joints
-        nb_root = nlp.model.nbRoot()
+        nb_root = nlp.model.nb_root
         if not nb_root > 0:
-            raise RuntimeError("Model must have at least one DoF on root.")
+            raise RuntimeError("BioModel must have at least one DoF on root.")
 
         name_qddot_roots = [str(i) for i in range(nb_root)]
         ConfigureProblem.configure_new_variable(
             "qddot_roots", name_qddot_roots, ocp, nlp, as_states=False, as_controls=False, as_states_dot=True
         )
 
-        name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nbQddot() - nb_root)]
+        name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
         ConfigureProblem.configure_new_variable(
             "qddot_joints", name_qddot_joints, ocp, nlp, as_states=False, as_controls=True, as_states_dot=True
         )
@@ -601,14 +584,12 @@ class ConfigureProblem:
 
         all_contact_names = []
         for elt in ocp.nlp:
-            all_contact_names.extend(
-                [name.to_string() for name in elt.model.contactNames() if name.to_string() not in all_contact_names]
-            )
+            all_contact_names.extend([name for name in elt.model.contact_names if name not in all_contact_names])
 
         if "contact_forces" in nlp.plot_mapping:
             phase_mappings = nlp.plot_mapping["contact_forces"]
         else:
-            contact_names_in_phase = [name.to_string() for name in nlp.model.contactNames()]
+            contact_names_in_phase = [name for name in nlp.model.contact_names]
             phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
 
         nlp.plot["contact_forces"] = CustomPlot(
@@ -630,19 +611,13 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
-
-        global_soft_contact_force_func = MX.zeros(nlp.model.nbSoftContacts() * 6, 1)
-        n = nlp.model.nbQ()
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
-        for i_sc in range(nlp.model.nbSoftContacts()):
-            soft_contact = nlp.model.softContact(i_sc)
+        global_soft_contact_force_func = nlp.model.soft_contact_forces(
+            nlp.states.mx_reduced[nlp.states["q"].index],
+            nlp.states.mx_reduced[nlp.states["qdot"].index],
+        )
 
-            global_soft_contact_force_func[i_sc * 6 : (i_sc + 1) * 6, :] = (
-                biorbd.SoftContactSphere(soft_contact)
-                .computeForceAtOrigin(nlp.model, nlp.states.mx_reduced[:n], nlp.states.mx_reduced[n:])
-                .to_mx()
-            )
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
             [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
@@ -651,13 +626,13 @@ class ConfigureProblem:
             ["soft_contact_forces"],
         ).expand()
 
-        for i_sc in range(nlp.model.nbSoftContacts()):
+        for i_sc in range(nlp.model.nb_soft_contacts):
             all_soft_contact_names = []
             all_soft_contact_names.extend(
                 [
-                    f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
+                    f"{nlp.model.soft_contact_names[i_sc]}_{name}"
                     for name in component_list
-                    if nlp.model.softContactName(i_sc).to_string() not in all_soft_contact_names
+                    if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
                 ]
             )
 
@@ -665,14 +640,14 @@ class ConfigureProblem:
                 phase_mappings = nlp.plot_mapping["soft_contact_forces"]
             else:
                 soft_contact_names_in_phase = [
-                    f"{nlp.model.softContactName(i_sc).to_string()}_{name}"
+                    f"{nlp.model.soft_contact_names[i_sc]}_{name}"
                     for name in component_list
-                    if nlp.model.softContactName(i_sc).to_string() not in all_soft_contact_names
+                    if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
                 ]
                 phase_mappings = Mapping(
                     [i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase]
                 )
-            nlp.plot[f"soft_contact_forces_{nlp.model.softContactName(i_sc).to_string()}"] = CustomPlot(
+            nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
                 lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
@@ -971,7 +946,7 @@ class ConfigureProblem:
         """
 
         name = "q"
-        name_q = [name.to_string() for name in nlp.model.nameDof()]
+        name_q = nlp.model.name_dof
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name,
@@ -1141,7 +1116,7 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_contact_forces = [name.to_string() for name in nlp.model.contactNames()]
+        name_contact_forces = [name for name in nlp.model.contact_names]
         ConfigureProblem.configure_new_variable("fext", name_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
@@ -1160,12 +1135,12 @@ class ConfigureProblem:
         """
         name_soft_contact_forces = []
         component_list = ["fx", "fy", "fz"]  # TODO: find a better place to hold this or define it in biorbd ?
-        for ii in range(nlp.model.nbSoftContacts()):
+        for ii in range(nlp.model.nb_soft_contacts):
             name_soft_contact_forces.extend(
                 [
-                    f"{nlp.model.softContactName(ii).to_string()}_{name}"
+                    f"{nlp.model.soft_contact_name(ii)}_{name}"
                     for name in component_list
-                    if nlp.model.softContactName(ii).to_string() not in name_soft_contact_forces
+                    if nlp.model.soft_contact_name(ii) not in name_soft_contact_forces
                 ]
             )
 
@@ -1188,7 +1163,7 @@ class ConfigureProblem:
             The list of fatigue parameters
         """
 
-        muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
+        muscle_names = nlp.model.muscle_names
         ConfigureProblem.configure_new_variable(
             "muscles",
             muscle_names,
@@ -1220,14 +1195,14 @@ class ConfigureProblem:
                 if n in nlp.variable_mappings:
                     if n == "q":
                         q_map = list(nlp.variable_mappings[n].to_first.map_idx)
-                        target = list(range(nlp.model.nbQ()))
-                        if nlp.model.nbQuat() > 0:
+                        target = list(range(nlp.model.nb_q))
+                        if nlp.model.nb_quaternions > 0:
                             if q_map != target:
                                 raise RuntimeError(
                                     "It is not possible to define a q mapping without a qdot or tau mapping"
                                     "while the model has quaternions"
                                 )
-                            target = list(range(nlp.model.nbQdot()))
+                            target = list(range(nlp.model.nb_qdot))
                         nlp.variable_mappings[key_to_adjust] = BiMapping(target, target)
                     else:
                         nlp.variable_mappings[key_to_adjust] = nlp.variable_mappings[n]
