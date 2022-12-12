@@ -106,65 +106,61 @@ class OptimizationVector:
         #######
 
         # il faut avoir toutes les nouvelles variables declar2es, il manque celle des racines zoula
-        x_f = []
-        u_f = []
         x = []
         u = []
 
         for nlp in self.ocp.nlp:
-          #  x.append([])
-          #  u.append([])
-         #   index_x = nlp.index_x
-         #   index_u = nlp.index_u
-         #   node_all = nlp.ns
-         #   if nlp.use_states_from_phase_idx == nlp.phase_idx:
-         ##       for k in range(node_all+1):
-         #           x[nlp.phase_idx].append([])
-          #          for liberty in range(len(self.x[nlp.phase_idx][k])):
-          #              x[nlp.phase_idx][k].append(self.x[nlp.phase_idx][k][liberty])
-         #           x[nlp.phase_idx][k] = vertcat(*x[nlp.phase_idx][k])  # vertcat(*x[nlp.phase_idx][k])
-          #      x[nlp.phase_idx] = vertcat(*x[nlp.phase_idx])
+            x.append([])
+            u.append([])
+            index_x = nlp.index_x
+            index_u = nlp.index_u
+            node_all = nlp.ns
+            if nlp.use_states_from_phase_idx == nlp.phase_idx:
+                for k in range(node_all+1):
+                    x[nlp.phase_idx].append([])
+                    for liberty in range(len(self.x[nlp.phase_idx][k])):
+                        x[nlp.phase_idx][k].append(self.x[nlp.phase_idx][k][liberty])
+                    x[nlp.phase_idx][k] = vertcat(*x[nlp.phase_idx][k])  # vertcat(*x[nlp.phase_idx][k])
+                x[nlp.phase_idx] = vertcat(*x[nlp.phase_idx])
+           # x[nlp.phase_idx] = vertcat(*x[])
 
-         #   else :
-          #      for k in range(node_all+1) :
-          #          x[nlp.phase_idx].append([])
-          #          for liberty in range(len(self.x[nlp.phase_idx][k])):
-          #              if liberty not in index_x :
-          #                  x[nlp.phase_idx][k].append(self.x[nlp.phase_idx][k][liberty])
-          #          x[nlp.phase_idx][k] = vertcat(*x[nlp.phase_idx][k])
-          #      x[nlp.phase_idx] = vertcat(*x[nlp.phase_idx])
+            else :
+                for k in range(node_all+1) :
+                    x[nlp.phase_idx].append([])
+                    for liberty in range(len(self.x[nlp.phase_idx][k])):
+                        if liberty not in index_x :
+                            x[nlp.phase_idx][k].append(self.x[nlp.phase_idx][k][liberty])
+                    x[nlp.phase_idx][k] = vertcat(*x[nlp.phase_idx][k])
+                x[nlp.phase_idx] = vertcat(*x[nlp.phase_idx])
+
+            if nlp.use_controls_from_phase_idx == nlp.phase_idx :
+               for k in range(node_all):
+                   u[nlp.phase_idx].append([])
+                   for liberty in range(len(self.u[nlp.phase_idx][k])) :
+                       u[nlp.phase_idx][k].append(self.u[nlp.phase_idx][k][liberty])
+                   u[nlp.phase_idx][k] = vertcat(*u[nlp.phase_idx][k])
+               u[nlp.phase_idx] = vertcat(*u[nlp.phase_idx])
+
+            else :
+                if self.u[nlp.phase_idx] :
+                    for k in range(node_all) :
+                        u[nlp.phase_idx].append([])
+                        if self.u[nlp.phase_idx][k] :
+                            for liberty in range(len(self.u[nlp.phase_idx][k])):
+                                if liberty not in index_u :
+                                    u[nlp.phase_idx][k].append(self.u[nlp.phase_idx][k][liberty])
+                            u[nlp.phase_idx][k] = vertcat(*u[nlp.phase_idx][k])
+                    u[nlp.phase_idx] = vertcat(*u[nlp.phase_idx])
 
 
-        #    if nlp.use_controls_from_phase_idx == nlp.phase_idx :
-         #      for k in range(node_all) :
-         ##           u[nlp.phase_idx].append([])
-         ##           for liberty in range(len(self.u[nlp.phase_idx][k])):
-         #               u[nlp.phase_idx][k].append(self.u[nlp.phase_idx][k][liberty])
-        #            u[nlp.phase_idx][k] = vertcat(*u[nlp.phase_idx][k])
-         #       u[nlp.phase_idx] = vertcat(*u[nlp.phase_idx])
-
-        #    else :
-        #        if self.u[nlp.phase_idx] :
-        #            for k in range(node_all) :
-        #                u[nlp.phase_idx].append([])
-        #                if self.u[nlp.phase_idx][k] :
-       #                     for liberty in range(len(self.u[nlp.phase_idx][k])):
-        #                        if liberty not in index_u :
-       #                             u[nlp.phase_idx][k].append(self.u[nlp.phase_idx][k][liberty])
-        #                    u[nlp.phase_idx][k] = vertcat(*u[nlp.phase_idx][k])
-        #            u[nlp.phase_idx] = vertcat(*u[nlp.phase_idx])
-
-
-            for phase in range(len(self.x)) :
-                for node in range(len(self.x[phase])) :
-                    for liberty in range(len(self.x[phase][node])) :
-                        x += [self.x[phase][node][liberty]]
-            for phase in range(len(self.u)) :
-                for node in range(len(self.u[phase])) :
-                    for liberty in range(len(self.u[phase][node])) :
-                        u += [self.u[phase][node][liberty]]
-      #  x += [x[nlp.phase_idx]]
-      #  u += [u[nlp.phase_idx]]
+            #for phase in range(len(self.x)) :
+           #     for node in range(len(self.x[phase])) :
+           #         for liberty in range(len(self.x[phase][node])) :
+          #              x += [self.x[phase][node][liberty]]
+           ## for phase in range(len(self.u)) :
+           #     for node in range(len(self.u[phase])) :
+           #         for liberty in range(len(self.u[phase][node])) :
+           #             u += [self.u[phase][node][liberty]]
 
 
 
@@ -382,8 +378,6 @@ class OptimizationVector:
             for k in range(nlp.ns + 1):
                 x[nlp.phase_idx].append([])
 
-                self.x[nlp.phase_idx].append([])
-
                 # states
                 if nlp.phase_idx == nlp.use_states_from_phase_idx :
                     for liberty in range(nlp.states.shape):
@@ -395,13 +389,13 @@ class OptimizationVector:
                                     nlp.ode_solver.polynomial_degree + 1,
                                 )
                             )
-                            self.x[nlp.phase_idx][k].append(x[nlp.phase_idx][k][liberty])
+
 
                         else:
                             x[nlp.phase_idx][k].append(
                                 nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k) + '_' + str(liberty), 1, 1)
                             )
-                            self.x[nlp.phase_idx][k].append(x[nlp.phase_idx][k][liberty])
+
 
 
                 else :
@@ -417,40 +411,39 @@ class OptimizationVector:
                                         nlp.ode_solver.polynomial_degree + 1,
                                     )
                                 )
-                                self.x[nlp.phase_idx][k].append(x[nlp.phase_idx][k][liberty])
+
 
                             else:
                                 x[nlp.phase_idx][k].append(
                                     nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k) + '_' + str(liberty), 1, 1)
                                 )
-                                self.x[nlp.phase_idx][k].append(x[nlp.phase_idx][k][liberty])
 
-                #self.x[nlp.phase_idx] = vertcat(*self.x[nlp.phase_idx])
+
 
                 #controls
                 if k!= nlp.ns :
                     u[nlp.phase_idx].append([])
                   #  if len(index_u) != nlp.controls.shape :
                     if nlp.phase_idx == nlp.use_controls_from_phase_idx :
-                        self.u[nlp.phase_idx].append([])
+                        #self.u[nlp.phase_idx].append([])
                         for liberty in range(nlp.controls.shape):
                             if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns ):
                                 u[nlp.phase_idx][k].append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k) + '_' + str(liberty), 1, 1))
                                # if len(index_u) != nlp.controls.shape:
-                                self.u[nlp.phase_idx][k].append(u[nlp.phase_idx][k][liberty])
+                                #self.u[nlp.phase_idx][k].append(u[nlp.phase_idx][k][liberty])
 
 
                     else:
-                        if len(index_u) != nlp.controls.shape :
-                            self.u[nlp.phase_idx].append([])
+                        #if len(index_u) != nlp.controls.shape :
+                            #self.u[nlp.phase_idx].append([])
                         for liberty in range(nlp.controls.shape):
                             if liberty in index_u:
                                u[nlp.phase_idx][k].append(u[nlp.use_controls_from_phase_idx][k][liberty])
                             else:
                                 if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns ):
                                     u[nlp.phase_idx][k].append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k) + '_' + str(liberty), 1, 1))
-                                    if len(index_u) != nlp.controls.shape:
-                                        self.u[nlp.phase_idx][k].append(u[nlp.phase_idx][k][liberty])
+                                    #if len(index_u) != nlp.controls.shape:
+                                       # self.u[nlp.phase_idx][k].append(u[nlp.phase_idx][k][liberty])
                                    # self.u[nlp.phase_idx][k] = vertcat(self.u[nlp.phase_idx][k][0],
                                                                  #     self.u[nlp.phase_idx][k][1])
 
@@ -469,12 +462,44 @@ class OptimizationVector:
 
                      #   self.u[nlp.phase_idx][k] = vertcat(*self.u[nlp.phase_idx][k])
 
-                    u[nlp.phase_idx][k] = vertcat(*[z for z in u[nlp.phase_idx][k]])
-                x[nlp.phase_idx][k] = vertcat(*[z for z in x[nlp.phase_idx][k]]) # vertcat(*x[nlp.phase_idx][k])
+                    #u[nlp.phase_idx][k] = vertcat(*[z for z in u[nlp.phase_idx][k]])
+                #x[nlp.phase_idx][k] = vertcat(*[z for z in x[nlp.phase_idx][k]]) # vertcat(*x[nlp.phase_idx][k])
 
+           # = u[nlp.phase_idx]
+            #self.x[nlp.phase_idx] = x[nlp.phase_idx]  # pas de vertcat car on a besoin des indices
 
+        for nlp in self.ocp.nlp:
+
+                # on fait le vercat de x et u
+            for node in range(len(x[nlp.phase_idx])):
+                self.x[nlp.phase_idx].append([])
+                for freedom in range(len(x[nlp.phase_idx][node])) :
+                    self.x[nlp.phase_idx][node].append(x[nlp.phase_idx][node][freedom])
+                x[nlp.phase_idx][node] = vertcat(*x[nlp.phase_idx][node])
+
+           # x[nlp.phase_idx] = vertcat(*x[nlp.phase_idx])
             nlp.X = x[nlp.phase_idx]
+            for node in range(len(u[nlp.phase_idx])):
+                self.u[nlp.phase_idx].append([])
+                for freedom in range(len(u[nlp.phase_idx][node])):
+                    self.u[nlp.phase_idx][node].append(u[nlp.phase_idx][node][freedom])
+                u[nlp.phase_idx][node] = vertcat(*u[nlp.phase_idx][node])
             nlp.U = u[nlp.phase_idx]
+            #u[nlp.phase_idx] = vertcat(*u[nlp.phase_idx])
+
+            self.n_phase_x[nlp.phase_idx] = (
+                len(self.x[nlp.phase_idx]) * len(self.x[nlp.phase_idx][
+                                                     0]) if nlp.phase_idx == nlp.use_states_from_phase_idx else nlp.states.shape - len(
+                    index_x)
+            )
+
+            self.n_phase_u[nlp.phase_idx] = (
+                len(self.u[nlp.phase_idx]) * len(self.u[nlp.phase_idx][
+                                                     0]) if nlp.phase_idx == nlp.use_controls_from_phase_idx else nlp.controls.shape - len(
+                    index_u)
+            )
+
+
             #self.x[nlp.phase_idx] = vertcat(*self.x[nlp.phase_idx])
             #self.u[nlp.phase_idx] = vertcat(*self.u[nlp.phase_idx])
               #  x_tp_all = MX()
@@ -485,9 +510,7 @@ class OptimizationVector:
                #     x_tp_all = vertcat(x_tp_all, x_tp)
                # self.x[nlp.phase_idx] = x_tp_all
 
-            self.n_phase_x[nlp.phase_idx] = (
-                 len(self.x[nlp.phase_idx])*len(self.x[nlp.phase_idx][0]) if nlp.phase_idx == nlp.use_states_from_phase_idx else nlp.states.shape - len(index_x)
-            )
+
             #self.u[nlp.phase_idx] = vertcat(*u[nlp.use_controls_from_phase_idx])
 
 
@@ -496,9 +519,7 @@ class OptimizationVector:
                #     u_tp_all = vertcat(u_tp_all, u_tp)
                # self.u[nlp.phase_idx] = u_tp_all
 
-            self.n_phase_u[nlp.phase_idx] = (
-                len(self.u[nlp.phase_idx]) * len(self.u[nlp.phase_idx][0]) if nlp.phase_idx == nlp.use_controls_from_phase_idx else nlp.controls.shape - len(index_u)
-            )
+
 
         self.n_all_x = sum(self.n_phase_x)
         self.n_all_u = sum(self.n_phase_u)
