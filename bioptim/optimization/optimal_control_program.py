@@ -653,7 +653,7 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states["unscaled"].keys():
+            for key in nlp.states.keys():
                 if f"{key}_states" in nlp.plot:
                     nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
             for key in nlp.controls.keys():

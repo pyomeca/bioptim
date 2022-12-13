@@ -134,7 +134,7 @@ class TestUtils:
 
         # Evaluate the final error of the single shooting integration versus the finale node
         np.testing.assert_almost_equal(
-            sol_merged.states["unscaled"][0]["all"][:, -1],
-            sol_single.states["unscaled"][0]["all"][:, -1],
+            sol_merged.states[0]["all"][:, -1],
+            sol_single.states[0]["all"][:, -1],
             decimal=decimal_value,
         )

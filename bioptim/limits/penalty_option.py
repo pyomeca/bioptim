@@ -471,9 +471,9 @@ class PenaltyOption(OptionGeneric):
                 else all_pn.nlp.states["scaled"].cx
             )
             state_cx = (
-                horzcat(all_pn.nlp.states["unscaled"].cx, all_pn.nlp.states["unscaled"].cx_end)
+                horzcat(all_pn.nlp.states.cx, all_pn.nlp.states.cx_end)
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else all_pn.nlp.states["unscaled"].cx
+                else all_pn.nlp.states.cx
             )
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
@@ -483,9 +483,9 @@ class PenaltyOption(OptionGeneric):
                 else horzcat(all_pn.nlp.controls["scaled"].cx, all_pn.nlp.controls["scaled"].cx_end)
             )
             control_cx = (
-                horzcat(all_pn.nlp.controls["unscaled"].cx)
+                horzcat(all_pn.nlp.controls.cx)
                 if nlp.control_type == ControlType.CONSTANT
-                else horzcat(all_pn.nlp.controls["unscaled"].cx, all_pn.nlp.controls["unscaled"].cx_end)
+                else horzcat(all_pn.nlp.controls.cx, all_pn.nlp.controls.cx_end)
             )
             control_cx_end_scaled = get_u(nlp, control_cx_scaled, dt_cx)
             control_cx_end = get_u(nlp, control_cx, dt_cx)
@@ -621,9 +621,7 @@ class PenaltyOption(OptionGeneric):
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(
-                    range(nlp.states["unscaled"].shape), range(nlp.states["unscaled"].shape)
-                )
+                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
@@ -647,9 +645,7 @@ class PenaltyOption(OptionGeneric):
             # self.phase_pre_idx
             # self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(
-                    range(nlp.states["unscaled"].shape), range(nlp.states["unscaled"].shape)
-                )
+                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
             self.node = self.node_list[0]
             nlp = ocp.nlp[self.phase_first_idx]
             all_pn.append(self._get_penalty_node_list(ocp, nlp))

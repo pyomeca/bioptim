@@ -126,11 +126,11 @@ class RK(OdeSolverBase):
             "defects_type": DefectType.NOT_APPLICABLE,
         }
         ode = {
-            "x_unscaled": nlp.states["unscaled"].cx,
+            "x_unscaled": nlp.states.cx,
             "x_scaled": nlp.states["scaled"].cx,
-            "p_unscaled": nlp.controls["unscaled"].cx
+            "p_unscaled": nlp.controls.cx
             if nlp.control_type == ControlType.CONSTANT
-            else horzcat(nlp.controls["unscaled"].cx, nlp.controls["unscaled"].cx_end),
+            else horzcat(nlp.controls.cx, nlp.controls.cx_end),
             "p_scaled": nlp.controls["scaled"].cx
             if nlp.control_type == ControlType.CONSTANT
             else horzcat(nlp.controls["scaled"].cx, nlp.controls["scaled"].cx_end),
@@ -287,9 +287,9 @@ class OdeSolver:
                 )
 
             ode = {
-                "x_unscaled": [nlp.states["unscaled"].cx] + nlp.states["unscaled"].cx_intermediates_list,
+                "x_unscaled": [nlp.states.cx] + nlp.states.cx_intermediates_list,
                 "x_scaled": [nlp.states["scaled"].cx] + nlp.states["scaled"].cx_intermediates_list,
-                "p_unscaled": nlp.controls["unscaled"].cx,
+                "p_unscaled": nlp.controls.cx,
                 "p_scaled": nlp.controls["scaled"].cx,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,

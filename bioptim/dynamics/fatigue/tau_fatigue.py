@@ -83,7 +83,7 @@ class TauFatigue(MultiFatigueModel):
         return dxdt
 
     def _get_target_load(self, var: FatigueModel, suffix: str, nlp, controls, index: int):
-        if self.model_type() not in nlp.controls["unscaled"]:
+        if self.model_type() not in nlp.controls:
             raise NotImplementedError(f"Fatigue dynamics without {self.model_type()} controls is not implemented yet")
 
         val = DynamicsFunctions.get(nlp.controls[f"{self.model_type()}_{suffix}"], controls)[index, :]

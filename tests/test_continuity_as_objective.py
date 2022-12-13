@@ -14,4 +14,4 @@ def test_continuity_as_objective():
     sol = ocp.solve()
 
     expected = np.array([-0.1376, 2.9976372])
-    np.testing.assert_almost_equal(sol.states["unscaled"][0]["q"][:, -1], expected)
+    np.testing.assert_almost_equal(sol.states[0]["q"][:, -1], expected)

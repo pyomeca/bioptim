@@ -578,27 +578,24 @@ class OptimizationVariableContainer:
     def __getitem__(self, item: str):
         if isinstance(self.optimization_variable["unscaled"], list):
             if item != "scaled" and item != "unscaled":
-                return [
-                    self.optimization_variable["unscaled"][i][item]
-                    for i in range(len(self.optimization_variable["unscaled"]))
-                ]
+                return [self.optimization_variable[i][item] for i in range(len(self.optimization_variable))]
             else:
                 return self.optimization_variable[item]
         else:
             if item != "scaled" and item != "unscaled":
-                return self.optimization_variable["unscaled"][item]
+                return self.optimization_variable[item]
             else:
                 return self.optimization_variable[item]
 
     def __setitem__(self, item: str, value: Union[OptimizationVariableList, np.ndarray]):
 
         if item != "scaled" and item != "unscaled":
-            self.optimization_variable["unscaled"][item] = value
+            self.optimization_variable[item] = value
         else:
             self.optimization_variable[item] = value
 
     def keys(self):
-        return self.optimization_variable["unscaled"].keys()
+        return self.optimization_variable.keys()
 
     def shape(self):
-        return self.optimization_variable["unscaled"].shape
+        return self.optimization_variable.shape

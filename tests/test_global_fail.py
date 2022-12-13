@@ -18,7 +18,7 @@ def test_custom_constraint_mx_fail():
     def custom_mx_fail(pn):
         if pn.u_scaled is None:
             return None
-        u = pn.nlp.controls["unscaled"]
+        u = pn.nlp.controls
         return MX.zeros(u.shape), u.cx, MX.zeros(u.shape)
 
     bioptim_folder = TestUtils.bioptim_folder()

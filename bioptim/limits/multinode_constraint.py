@@ -233,8 +233,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states["unscaled"].cx_end)
-            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states["unscaled"].cx)
+            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -281,8 +281,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             pre_com = nlp_pre.model.CoM(states_pre[nlp_pre.states["scaled"]["q"].index, :]).to_mx()
             post_com = nlp_post.model.CoM(states_post_sym_list[0]).to_mx()
 
-            pre_states_cx = nlp_pre.states["unscaled"].cx_end
-            post_states_cx = nlp_post.states["unscaled"].cx
+            pre_states_cx = nlp_pre.states.cx_end
+            post_states_cx = nlp_post.states.cx
 
             return biorbd.to_casadi_func(
                 "com_equality",
@@ -330,8 +330,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             ).to_mx()
             post_com_dot = nlp_post.model.CoMdot(states_post_sym_list[0], states_post_sym_list[1]).to_mx()
 
-            pre_states_cx = nlp_pre.states["unscaled"].cx_end
-            post_states_cx = nlp_post.states["unscaled"].cx
+            pre_states_cx = nlp_pre.states.cx_end
+            post_states_cx = nlp_post.states.cx
 
             return biorbd.to_casadi_func(
                 "com_dot_equality",

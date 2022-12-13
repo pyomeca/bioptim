@@ -34,7 +34,7 @@ def test_xia_fatigable_muscles():
     np.testing.assert_almost_equal(g, np.zeros((552, 1)))
 
     # Check some of the results
-    states, controls = sol.states["unscaled"][0], sol.controls["unscaled"][0]
+    states, controls = sol.states[0], sol.controls[0]
     q, qdot, ma, mr, mf = states["q"], states["qdot"], states["muscles_ma"], states["muscles_mr"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -108,7 +108,7 @@ def test_xia_stabilized_fatigable_muscles():
     np.testing.assert_almost_equal(g, np.zeros((552, 1)))
 
     # Check some of the results
-    states, controls = sol.states["unscaled"][0], sol.controls["unscaled"][0]
+    states, controls = sol.states[0], sol.controls[0]
     q, qdot, ma, mr, mf = states["q"], states["qdot"], states["muscles_ma"], states["muscles_mr"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -219,7 +219,7 @@ def test_effort_fatigable_muscles():
     np.testing.assert_almost_equal(g, np.zeros((252, 1)))
 
     # Check some of the results
-    states, controls = sol.states["unscaled"][0], sol.controls["unscaled"][0]
+    states, controls = sol.states[0], sol.controls[0]
     q, qdot, mf = states["q"], states["qdot"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -317,7 +317,7 @@ def test_fatigable_xia_torque_split():
     np.testing.assert_almost_equal(g, np.zeros((480, 1)))
 
     # Check some of the results
-    states, controls = sol.states["unscaled"][0], sol.controls["unscaled"][0]
+    states, controls = sol.states[0], sol.controls[0]
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
@@ -382,7 +382,7 @@ def test_fatigable_xia_stabilized_torque_split():
     np.testing.assert_almost_equal(g, np.zeros((480, 1)))
 
     # Check some of the results
-    states, controls = sol.states["unscaled"][0], sol.controls["unscaled"][0]
+    states, controls = sol.states[0], sol.controls[0]
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
@@ -480,7 +480,7 @@ def test_fatigable_michaud_torque_split():
     np.testing.assert_almost_equal(g, np.zeros((200, 1)))
 
     # Check some of the results
-    states, controls = sol.states["unscaled"][0], sol.controls["unscaled"][0]
+    states, controls = sol.states[0], sol.controls[0]
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
@@ -580,7 +580,7 @@ def test_fatigable_effort_torque_split():
         np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
         # Check some of the results
-        states, controls = sol.states["unscaled"][0], sol.controls["unscaled"][0]
+        states, controls = sol.states[0], sol.controls[0]
         q, qdot = states["q"], states["qdot"]
         mf_minus, mf_plus = states["tau_minus_mf"], states["tau_plus_mf"]
         tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]

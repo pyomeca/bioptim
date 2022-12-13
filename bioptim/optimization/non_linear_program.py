@@ -165,9 +165,9 @@ class NonLinearProgram:
         self.plot = {}
         self.cx = cx
         self.states["scaled"]._cx = self.cx()
-        self.states["unscaled"]._cx = self.cx()
+        self.states._cx = self.cx()
         self.controls["scaled"]._cx = self.cx()
-        self.controls["unscaled"]._cx = self.cx()
+        self.controls._cx = self.cx()
         self.J = []
         self.g = []
         self.g_internal = []

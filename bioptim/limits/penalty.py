@@ -63,7 +63,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_states")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return all_pn.nlp.states["unscaled"][key].cx
+            return all_pn.nlp.states[key].cx
 
         @staticmethod
         def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
@@ -88,7 +88,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return all_pn.nlp.controls["unscaled"][key].cx
+            return all_pn.nlp.controls[key].cx
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
@@ -281,7 +281,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            states = all_pn.nlp.states["unscaled"][key].cx
+            states = all_pn.nlp.states[key].cx
             return states[first_dof, :] - coef * states[second_dof, :]
 
         @staticmethod
@@ -315,7 +315,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            controls = all_pn.nlp.controls["unscaled"][key].cx
+            controls = all_pn.nlp.controls[key].cx
             return controls[first_dof, :] - coef * controls[second_dof, :]
 
         @staticmethod
@@ -336,14 +336,12 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states["unscaled"].keys() and "qddot" not in nlp.controls["unscaled"].keys():
-                return nlp.dynamics_func(nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx)[
-                    nlp.states["unscaled"]["qdot"].index, :
-                ]
-            elif "qddot" in nlp.states["unscaled"].keys():
-                return nlp.states["unscaled"]["qddot"].cx
-            elif "qddot" in nlp.controls["unscaled"].keys():
-                return nlp.controls["unscaled"]["qddot"].cx
+            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+                return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
+            elif "qddot" in nlp.states.keys():
+                return nlp.states["qddot"].cx
+            elif "qddot" in nlp.controls.keys():
+                return nlp.controls["qddot"].cx
 
         @staticmethod
         def minimize_predicted_com_height(_: PenaltyOption, all_pn: PenaltyNodeList):
@@ -362,8 +360,8 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             g = nlp.model.getGravity().to_mx()[2]
-            com = nlp.model.CoM(nlp.states["unscaled"]["q"].mx).to_mx()
-            com_dot = nlp.model.CoMdot(nlp.states["unscaled"]["q"].mx, nlp.states["unscaled"]["qdot"].mx).to_mx()
+            com = nlp.model.CoM(nlp.states["q"].mx).to_mx()
+            com_dot = nlp.model.CoMdot(nlp.states["q"].mx, nlp.states["qdot"].mx).to_mx()
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
             com_height_cx = BiorbdInterface.mx_to_cx(
                 "com_height", com_height, nlp.states["scaled"]["q"], nlp.states["scaled"]["qdot"]
@@ -443,7 +441,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states["unscaled"].keys() and "qddot" not in nlp.controls["unscaled"].keys():
+            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
                 com_ddot = nlp.model.CoMddot(
                     nlp.states["scaled"]["q"].mx,
                     nlp.states["scaled"]["qdot"].mx,
@@ -549,9 +547,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            contact_force = nlp.contact_forces_func(
-                nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx
-            )
+            contact_force = nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
             return contact_force
 
         @staticmethod
@@ -586,9 +582,7 @@ class PenaltyFunctionAbstract:
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
-            soft_contact_force = nlp.soft_contact_forces_func(
-                nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx
-            )
+            soft_contact_force = nlp.soft_contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
             return soft_contact_force[force_idx]
 
         @staticmethod
@@ -676,9 +670,9 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             if nlp.control_type == ControlType.CONSTANT:
-                u = nlp.controls["unscaled"].cx
+                u = nlp.controls.cx
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                u = horzcat(nlp.controls["unscaled"].cx, nlp.controls["unscaled"].cx_end)
+                u = horzcat(nlp.controls.cx, nlp.controls.cx_end)
             else:
                 raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
 
@@ -687,15 +681,15 @@ class PenaltyFunctionAbstract:
 
             penalty.expand = all_pn.nlp.dynamics_type.expand
 
-            continuity = nlp.states["unscaled"].cx_end
+            continuity = nlp.states.cx_end
             if nlp.ode_solver.is_direct_collocation:
-                cx = horzcat(*([nlp.states["unscaled"].cx] + nlp.states["unscaled"].cx_intermediates_list))
+                cx = horzcat(*([nlp.states.cx] + nlp.states.cx_intermediates_list))
                 continuity -= nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
                 continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
                 penalty.integrate = True
 
             else:
-                continuity -= nlp.dynamics[0](x0=nlp.states["unscaled"].cx, p=u, params=nlp.parameters.cx)["xf"]
+                continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True

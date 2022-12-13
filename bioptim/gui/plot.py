@@ -258,7 +258,7 @@ class PlotOcp:
         self.top_margin: Union[int, None] = None
         self.height_step: Union[int, None] = None
         self.width_step: Union[int, None] = None
-        self._organize_windows(len(self.ocp.nlp[0].states["unscaled"]) + len(self.ocp.nlp[0].controls["unscaled"]))
+        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -337,8 +337,8 @@ class PlotOcp:
                             nlp.plot[key]
                             .function(
                                 np.nan,
-                                np.zeros((nlp.states["unscaled"].shape, 2)),
-                                np.zeros((nlp.controls["unscaled"].shape, 2)),
+                                np.zeros((nlp.states.shape, 2)),
+                                np.zeros((nlp.controls.shape, 2)),
                                 np.zeros((nlp.parameters.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )
@@ -611,7 +611,7 @@ class PlotOcp:
 
         if all([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]):
             # no need to integrate when using direct collocation
-            data_states = sol.states["unscaled"]
+            data_states = sol.states
             data_time = sol._generate_time()
         elif all([nlp.ode_solver.is_direct_shooting for nlp in self.ocp.nlp]):
             integrated = sol.integrate(
@@ -619,12 +619,12 @@ class PlotOcp:
                 keep_intermediate_points=True,
                 integrator=self.integrator,
             )
-            data_states = integrated.states["unscaled"]
+            data_states = integrated.states
             data_time = integrated._time_vector
         else:
             raise NotImplementedError("Graphs are not implemented when mixing direct collocation and direct shooting")
 
-        data_controls = sol.controls["unscaled"]
+        data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
 

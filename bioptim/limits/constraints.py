@@ -237,9 +237,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
 
-            contact = all_pn.nlp.contact_forces_func(
-                nlp.states["unscaled"].cx, nlp.controls["unscaled"].cx, nlp.parameters.cx
-            )
+            contact = all_pn.nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
                 tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
@@ -276,26 +274,24 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
 
-            bound = nlp.model.torqueMax(nlp.states["unscaled"]["q"].mx, nlp.states["unscaled"]["qdot"].mx)
+            bound = nlp.model.torqueMax(nlp.states["q"].mx, nlp.states["qdot"].mx)
             min_bound = BiorbdInterface.mx_to_cx(
                 "min_bound",
-                nlp.controls["unscaled"]["tau"].mapping.to_first.map(bound[1].to_mx()),
-                nlp.states["unscaled"]["q"],
-                nlp.states["unscaled"]["qdot"],
+                nlp.controls["tau"].mapping.to_first.map(bound[1].to_mx()),
+                nlp.states["q"],
+                nlp.states["qdot"],
             )
             max_bound = BiorbdInterface.mx_to_cx(
                 "max_bound",
-                nlp.controls["unscaled"]["tau"].mapping.to_first.map(bound[0].to_mx()),
-                nlp.states["unscaled"]["q"],
-                nlp.states["unscaled"]["qdot"],
+                nlp.controls["tau"].mapping.to_first.map(bound[0].to_mx()),
+                nlp.states["q"],
+                nlp.states["qdot"],
             )
             if min_torque:
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
 
-            value = vertcat(
-                nlp.controls["unscaled"]["tau"].cx + min_bound, nlp.controls["unscaled"]["tau"].cx - max_bound
-            )
+            value = vertcat(nlp.controls["tau"].cx + min_bound, nlp.controls["tau"].cx - max_bound)
 
             n_rows = constraint.rows if constraint.rows else int(value.shape[0] / 2)
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
@@ -338,19 +334,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             nlp = all_pn.nlp
-            q = nlp.states["unscaled"]["q"].mx
-            qdot = nlp.states["unscaled"]["qdot"].mx
-            tau = (
-                nlp.states["unscaled"]["tau"].mx
-                if "tau" in nlp.states["unscaled"].keys()
-                else nlp.controls["unscaled"]["tau"].mx
-            )
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
 
-            qddot = (
-                nlp.controls["unscaled"]["qddot"].mx
-                if "qddot" in nlp.controls["unscaled"].keys()
-                else nlp.states["unscaled"]["qddot"].mx
-            )
+            qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls.keys() else nlp.states["qddot"].mx
             if with_contact:
                 model = biorbd.Model(
                     nlp.model.path().absolutePath().to_string()
@@ -360,8 +348,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
             var = []
-            var.extend([nlp.states["unscaled"][key] for key in nlp.states["unscaled"]])
-            var.extend([nlp.controls["unscaled"][key] for key in nlp.controls["unscaled"]])
+            var.extend([nlp.states[key] for key in nlp.states])
+            var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("ForwardDynamics", qddot - qddot_fd, *var)
@@ -385,18 +373,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             nlp = all_pn.nlp
-            q = nlp.states["unscaled"]["q"].mx
-            qdot = nlp.states["unscaled"]["qdot"].mx
-            tau = (
-                nlp.states["unscaled"]["tau"].mx
-                if "tau" in nlp.states["unscaled"].keys()
-                else nlp.controls["unscaled"]["tau"].mx
-            )
-            qddot = (
-                nlp.states["unscaled"]["qddot"].mx
-                if "qddot" in nlp.states["unscaled"].keys()
-                else nlp.controls["unscaled"]["qddot"].mx
-            )
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
             if nlp.external_forces:
                 raise NotImplementedError(
@@ -404,11 +384,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
                 # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
             if with_contact:
-                f_contact = (
-                    nlp.controls["unscaled"]["fext"].mx
-                    if "fext" in nlp.controls["unscaled"].keys()
-                    else nlp.states["unscaled"]["fext"].mx
-                )
+                f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls.keys() else nlp.states["fext"].mx
                 count = 0
                 f_contact_vec = biorbd.VecBiorbdVector()
                 for ii in range(nlp.model.nbRigidContacts()):
@@ -423,8 +399,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
 
             var = []
-            var.extend([nlp.states["unscaled"][key] for key in nlp.states["unscaled"]])
-            var.extend([nlp.controls["unscaled"][key] for key in nlp.controls["unscaled"]])
+            var.extend([nlp.states[key] for key in nlp.states])
+            var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - tau, *var)
@@ -447,13 +423,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             nlp = all_pn.nlp
-            q = nlp.states["unscaled"]["q"].mx
-            qdot = nlp.states["unscaled"]["qdot"].mx
-            qddot = (
-                nlp.states["unscaled"]["qddot"].mx
-                if "qddot" in nlp.states["unscaled"].keys()
-                else nlp.controls["unscaled"]["qddot"].mx
-            )
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
             # TODO get the index of the marker
             contact_name = nlp.model.contactNames()[contact_index].to_string()
@@ -466,8 +438,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             contact_acceleration = nlp.model.rigidContactAcceleration(q, qdot, qddot, 0).to_mx()[idx_dir]
 
             var = []
-            var.extend([nlp.states["unscaled"][key] for key in nlp.states["unscaled"]])
-            var.extend([nlp.controls["unscaled"][key] for key in nlp.controls["unscaled"]])
+            var.extend([nlp.states[key] for key in nlp.states])
+            var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([nlp.parameters[key] for key in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("contact_acceleration", contact_acceleration, *var)
@@ -489,18 +461,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             nlp = all_pn.nlp
-            q = nlp.states["unscaled"]["q"].mx
-            qdot = nlp.states["unscaled"]["qdot"].mx
-            muscle_activations = nlp.controls["unscaled"]["muscles"].mx
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            muscle_activations = nlp.controls["muscles"].mx
             muscles_states = nlp.model.stateSet()
-            for k in range(len(nlp.controls["unscaled"]["muscles"])):
+            for k in range(len(nlp.controls["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
             muscle_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-            qddot = (
-                nlp.states["unscaled"]["qddot"].mx
-                if "qddot" in nlp.states["unscaled"].keys()
-                else nlp.controls["unscaled"]["qddot"].mx
-            )
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
 
             if nlp.external_forces:
                 raise NotImplementedError(
@@ -512,8 +480,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
 
             var = []
-            var.extend([nlp.states["unscaled"][key] for key in nlp.states["unscaled"]])
-            var.extend([nlp.controls["unscaled"][key] for key in nlp.controls["unscaled"]])
+            var.extend([nlp.states[key] for key in nlp.states])
+            var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
             return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - muscle_tau, *var)
