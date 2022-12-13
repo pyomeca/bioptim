@@ -9,7 +9,7 @@ import pytest
 from casadi import Function, MX
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, RigidBodyDynamics
+from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel
 from bioptim.limits.penalty import PenaltyOption
 
 import matplotlib
@@ -33,6 +33,18 @@ def test_plot_graphs_one_phase():
     sol.graphs(automatically_organize=False)
 
 
+def test_plot_check_contioning():
+    # Load graphs check conditioning
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=False)
+    ocp.check_conditioning()
+    sol = ocp.solve()
+    sol.graphs(automatically_organize=False)
+
+
 def test_plot_merged_graphs():
     # Load graphs_one_phase
     from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
@@ -41,22 +53,22 @@ def test_plot_merged_graphs():
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    bio_model = BiorbdModel(model_path)
     final_time = 0.1
     n_shooting = 5
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(biorbd_model, final_time, n_shooting)
+    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(bio_model, final_time, n_shooting)
 
-    biorbd_model = biorbd.Model(model_path)  # To prevent from free variable, the model must be reloaded
+    bio_model = BiorbdModel(model_path)  # To prevent from free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time,
         n_shooting,
         markers_ref,
         muscle_excitations_ref,
-        x_ref[: biorbd_model.nbQ(), :].T,
+        x_ref[: bio_model.nb_q, :].T,
         ode_solver=OdeSolver.RK4(),
         use_residual_torque=True,
         kin_data_to_track="markers",

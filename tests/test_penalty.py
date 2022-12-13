@@ -4,6 +4,7 @@ from casadi import DM, MX
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -32,32 +33,32 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     if with_muscles and implicit or implicit and with_actuator:
         raise RuntimeError("With muscles and implicit and with_actuator together is not defined")
     elif with_muscles:
-        biorbd_model = biorbd.Model(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
+        bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True)
-        nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
-        nu = biorbd_model.nbGeneralizedTorque() + biorbd_model.nbMuscles()
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        nu = bio_model.nb_tau + bio_model.nb_muscles
     elif with_contact:
-        biorbd_model = biorbd.Model(
+        bio_model = BiorbdModel(
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
         )
         dynamics = DynamicsList()
         rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, rigidbody_dynamics=rigidbody_dynamics)
-        nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
-        nu = biorbd_model.nbGeneralizedTorque()
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        nu = bio_model.nb_tau
     elif with_actuator:
-        biorbd_model = biorbd.Model(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
+        bio_model = BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-        nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
-        nu = biorbd_model.nbGeneralizedTorque()
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        nu = bio_model.nb_tau
     else:
-        biorbd_model = biorbd.Model(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+        bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-        nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
-        nu = biorbd_model.nbGeneralizedTorque()
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        nu = bio_model.nb_tau
     x_init = InitialGuess(np.zeros((nx, 1)))
 
     if implicit:
@@ -68,7 +69,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     u_init = InitialGuess(np.zeros((nu, 1)))
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
     u_bounds = Bounds(np.zeros((nu, 1)), np.zeros((nu, 1)))
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=use_sx)
+    ocp = OptimalControlProgram(bio_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=use_sx)
     ocp.nlp[0].J = [[]]
     ocp.nlp[0].g = [[]]
     return ocp
@@ -82,7 +83,7 @@ def get_penalty_value(ocp, penalty, t, x, u, p):
     states = ocp.nlp[0].states.cx if ocp.nlp[0].states.cx.shape != (0, 0) else ocp.cx(0, 0)
     controls = ocp.nlp[0].controls.cx if ocp.nlp[0].controls.cx.shape != (0, 0) else ocp.cx(0, 0)
     parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
-    return biorbd.to_casadi_func("penalty", val, states, controls, parameters)(x[0], u[0], p)
+    return ocp.nlp[0].to_casadi_func("penalty", val, states, controls, parameters)(x[0], u[0], p)
 
 
 def test_penalty_targets_shapes():

@@ -33,7 +33,7 @@ class DynamicsFunctions:
         Main accessor to a variable in states or controls (cx)
     apply_parameters(parameters: MX.sym, nlp: NonLinearProgram)
         Apply the parameter variables to the model. This should be called before calling the dynamics
-    compute_qdot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX]):
+    reshape_qdot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX]):
         Easy accessor to derivative of q
     forward_dynamics(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], tau: Union[MX, SX], with_contact: bool):
         Easy accessor to derivative of qdot
@@ -41,8 +41,6 @@ class DynamicsFunctions:
         Easy accessor to derivative of muscle activations
     compute_tau_from_muscle(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], muscle_activations: Union[MX, SX]):
         Easy accessor to tau computed from muscles
-    contact_forces(nlp: NonLinearProgram, q, qdot, tau):
-        Easy accessor for the contact forces in contact dynamics
     """
 
     @staticmethod
@@ -246,7 +244,7 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau_activations = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        tau = nlp.model.torque(tau_activations, q, qdot).to_mx()
+        tau = nlp.model.torque(tau_activations, q, qdot)
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
@@ -348,7 +346,7 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau = DynamicsFunctions.get(tau_nlp, tau_var)
 
-        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+        return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
     @staticmethod
     def forces_from_torque_activation_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
@@ -380,9 +378,9 @@ class DynamicsFunctions:
         q = DynamicsFunctions.get(q_nlp, q_var)
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau_activations = DynamicsFunctions.get(tau_nlp, tau_var)
-        tau = nlp.model.torque(tau_activations, q, qdot).to_mx()
+        tau = nlp.model.torque(tau_activations, q, qdot)
 
-        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+        return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
     @staticmethod
     def muscles_driven(
@@ -539,7 +537,7 @@ class DynamicsFunctions:
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+        return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
     @staticmethod
     def joints_acceleration_driven(
@@ -578,7 +576,7 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
 
-        qddot_root = nlp.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
+        qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
         qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
 
         return DynamicsEvaluation(
@@ -644,7 +642,7 @@ class DynamicsFunctions:
         """
 
         q_nlp = nlp.states["q"] if "q" in nlp.states else nlp.controls["q"]
-        return q_nlp.mapping.to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
+        return q_nlp.mapping.to_first.map(nlp.model.reshape_qdot(q, qdot))
 
     @staticmethod
     def forward_dynamics(
@@ -672,22 +670,21 @@ class DynamicsFunctions:
         """
         qdot_var = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
 
-        if nlp.external_forces:
+        if len(nlp.external_forces) != 0:
             dxdt = MX(len(qdot_var.mapping.to_first), nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 if with_contact:
-                    qddot = nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau, f_ext).to_mx()
+                    qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, f_ext)
                 else:
-                    qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
+                    qddot = nlp.model.forward_dynamics(q, qdot, tau, f_ext)
                 dxdt[:, i] = qdot_var.mapping.to_first.map(qddot)
             return dxdt
         else:
             if with_contact:
-                qddot = nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
+                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau)
             else:
-                qddot = nlp.model.ForwardDynamics(
-                    q, qdot, tau
-                ).to_mx()  # cas.jacobian(qddot, nlp.states['scaled'].mx) = MX(zeros(2x4,0nz))
+                qddot = nlp.model.forward_dynamics(q, qdot, tau)
+
             return qdot_var.mapping.to_first.map(qddot)
 
     @staticmethod
@@ -715,18 +712,18 @@ class DynamicsFunctions:
         Torques in tau
         """
 
-        if nlp.external_forces:
+        if len(nlp.external_forces) != 0:
             if "tau" in nlp.states:
                 tau_shape = nlp.states["tau"].mx.shape[0]
             elif "tau" in nlp.controls:
                 tau_shape = nlp.controls["tau"].mx.shape[0]
             else:
-                tau_shape = nlp.model.nbGeneralizedTorque()
+                tau_shape = nlp.model.nb_tau
             tau = MX(tau_shape, nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
-                tau[:, i] = nlp.model.InverseDynamics(q, qdot, qddot, f_ext).to_mx()
+                tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, f_ext)
         else:
-            tau = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
+            tau = nlp.model.inverse_dynamics(q, qdot, qddot)
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod
@@ -746,10 +743,7 @@ class DynamicsFunctions:
         The derivative of muscle activations
         """
 
-        muscles_states = nlp.model.stateSet()
-        for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setExcitation(muscle_excitations[k])
-        return nlp.model.activationDot(muscles_states).to_mx()
+        return nlp.model.muscle_activation_dot(muscle_excitations)
 
     @staticmethod
     def compute_tau_from_muscle(
@@ -780,42 +774,10 @@ class DynamicsFunctions:
         The generalized forces computed from the muscles
         """
 
-        muscles_states = nlp.model.stateSet()
+        activations = []
         for k in range(len(nlp.controls["muscles"])):
             if fatigue_states is not None:
-                muscles_states[k].setActivation(muscle_activations[k] * (1 - fatigue_states[k]))
+                activations.append(muscle_activations[k] * (1 - fatigue_states[k]))
             else:
-                muscles_states[k].setActivation(muscle_activations[k])
-        return nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-
-    @staticmethod
-    def contact_forces(nlp: NonLinearProgram, q, qdot, tau):
-        """
-        Easy accessor for the contact forces in contact dynamics
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            The phase of the program
-        q: Union[MX, SX]
-            The value of q from "get"
-        qdot: Union[MX, SX]
-            The value of qdot from "get"
-        tau: Union[MX, SX]
-            The value of tau from "get"
-
-        Returns
-        -------
-        The contact forces
-        """
-
-        cs = nlp.model.getConstraints()
-        if nlp.external_forces:
-            all_cs = MX()
-            for i, f_ext in enumerate(nlp.external_forces):
-                nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau, cs, f_ext).to_mx()
-                all_cs = horzcat(all_cs, cs.getForce().to_mx())
-            return all_cs
-        else:
-            nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau, cs).to_mx()
-            return cs.getForce().to_mx()
+                activations.append(muscle_activations[k])
+        return nlp.model.muscle_joint_torque(activations, q, qdot)

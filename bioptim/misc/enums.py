@@ -165,3 +165,13 @@ class DefectType(Enum):
     EXPLICIT = "explicit"
     IMPLICIT = "implicit"
     NOT_APPLICABLE = "not_applicable"
+
+
+class CXStep(Enum):
+    CX_START = "cx_start"
+    CX_END = "cx_end"
+
+
+class MagnitudeType(Enum):
+    RELATIVE = "relative"
+    ABSOLUTE = "absolute"

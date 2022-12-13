@@ -1,15 +1,15 @@
-from typing import Union, Callable, Any
+from typing import Union, Callable, Any, List, Tuple
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, SX, vertcat
 from scipy.interpolate import interp1d
 from numpy import array, ndarray
 
-from ..misc.enums import InterpolationType
+from ..misc.enums import InterpolationType, MagnitudeType
 from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..optimization.optimization_variable import VariableScaling
+from ..interfaces.biomodel import BioModel
 
 
 class PathCondition(np.ndarray):
@@ -614,13 +614,13 @@ class QAndQDotBounds(Bounds):
 
     def __init__(
         self,
-        biorbd_model,
+        bio_model: BioModel,
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: biorbd.Model
+        bio_model: BioModel
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
@@ -628,7 +628,7 @@ class QAndQDotBounds(Bounds):
         if dof_mappings is None:
             dof_mappings = {}
 
-        if biorbd_model.nbQuat() > 0:
+        if bio_model.nb_quaternions > 0:
             if "q" in dof_mappings and "qdot" not in dof_mappings:
                 raise RuntimeError(
                     "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
@@ -639,18 +639,18 @@ class QAndQDotBounds(Bounds):
                 )
 
         if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
 
         if "qdot" not in dof_mappings:
-            if biorbd_model.nbQuat() > 0:
-                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+            if bio_model.nb_quaternions > 0:
+                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
             else:
                 dof_mappings["qdot"] = dof_mappings["q"]
 
         q_ranges = []
         qdot_ranges = []
-        for i in range(biorbd_model.nbSegment()):
-            segment = biorbd_model.segment(i)
+        for i in range(bio_model.nb_segments):
+            segment = bio_model.segments[i]
             q_ranges += [q_range for q_range in segment.QRanges()]
             qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
 
@@ -671,41 +671,41 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
 
     def __init__(
         self,
-        biorbd_model,
+        bio_model: BioModel,
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: biorbd.Model
+        bio_model: BioModel
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
         """
 
-        super(QAndQDotAndQDDotBounds, self).__init__(biorbd_model=biorbd_model, dof_mappings=dof_mappings)
+        super(QAndQDotAndQDDotBounds, self).__init__(bio_model=bio_model, dof_mappings=dof_mappings)
 
         if dof_mappings is None:
             dof_mappings = {}
 
         if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
 
         if "qdot" not in dof_mappings:
-            if biorbd_model.nbQuat() > 0:
-                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+            if bio_model.nb_quaternions > 0:
+                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
             else:
                 dof_mappings["qdot"] = dof_mappings["q"]
 
         if "qddot" not in dof_mappings:
-            if biorbd_model.nbQuat() > 0:
-                dof_mappings["qddot"] = BiMapping(range(biorbd_model.nbQddot()), range(biorbd_model.nbQddot()))
+            if bio_model.nb_quaternions > 0:
+                dof_mappings["qddot"] = BiMapping(range(bio_model.nb_qddot), range(bio_model.nb_qddot))
             else:
                 dof_mappings["qddot"] = dof_mappings["qdot"]
 
         qddot_ranges = []
-        for i in range(biorbd_model.nbSegment()):
-            segment = biorbd_model.segment(i)
+        for i in range(bio_model.nb_segments):
+            segment = bio_model.segments[i]
             qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
 
         x_min = [qddot_ranges[i].min() for i in dof_mappings["qddot"].to_first.map_idx]
@@ -853,6 +853,49 @@ class InitialGuess(OptionGeneric):
 
         self.init[_slice] = value
 
+    def add_noise(
+        self,
+        bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
+        magnitude: Union[list, int, float, np.ndarray] = 1,
+        magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
+        n_shooting: int = None,
+        bound_push: Union[list, int, float] = 0.1,
+        seed: int = None,
+    ):
+        """
+        An interface for NoisedInitialGuess class
+
+        Parameters
+        ----------
+        bounds: Union[Bounds, BoundsList, QAndQDotBounds]
+            The bounds
+        magnitude: Union[list, int, float, np.ndarray]
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
+            range defined between the bounds or between -magnitude and +magnitude for absolute noise
+            If one value is given, applies this value to each initial guess
+        magnitude_type: MagnitudeType
+            The type of magnitude to apply : relative to the bounds or absolute
+        n_shooting: int
+            Number of nodes (second dim)
+        bound_push: Union[list, int, float]
+            The absolute minimal distance between the bound and the noised initial guess (if the originally generated
+            initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push)
+        seed: int
+            The seed of the random generator
+        """
+
+        return NoisedInitialGuess(
+            initial_guess=self.init,
+            interpolation=self.type,
+            bounds=bounds,
+            n_shooting=n_shooting,
+            bound_push=bound_push,
+            seed=seed,
+            magnitude=magnitude,
+            magnitude_type=magnitude_type,
+            **self.params,
+        )
+
 
 class NoisedInitialGuess(InitialGuess):
     """
@@ -884,7 +927,8 @@ class NoisedInitialGuess(InitialGuess):
         initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
-        noise_magnitude: Union[list, int, float, np.ndarray] = 1,
+        magnitude: Union[list, int, float, np.ndarray] = 1,
+        magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         n_shooting: int = None,
         bound_push: Union[list, int, float] = 0.1,
         seed: int = None,
@@ -899,9 +943,12 @@ class NoisedInitialGuess(InitialGuess):
             The type of interpolation of the initial guess
         bounds: Union[Bounds, BoundsList, QAndQDotBounds]
             The bounds
-        noise_magnitude: Union[list, int, float]
-            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = gaussian noise with a
-            standard deviation of the size of the range defined between the bounds
+        magnitude: Union[list, int, float, np.ndarray]
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
+            range defined between the bounds or between -magnitude and +magnitude for absolute noise
+            If one value is given, applies this value to each initial guess
+        magnitude_type: MagnitudeType
+            The type of magnitude to apply : relative to the bounds or absolute
         n_elements: int
             Number of elements (first dim)
         n_shooting: int
@@ -915,7 +962,7 @@ class NoisedInitialGuess(InitialGuess):
 
         if n_shooting is None:
             raise RuntimeError("n_shooting must be specified to generate noised initial guess")
-        self.n_shooting = n_shooting + 1
+        self.n_shooting = n_shooting
 
         if bounds is None:
             raise RuntimeError("'bounds' must be specified to generate noised initial guess")
@@ -936,10 +983,12 @@ class NoisedInitialGuess(InitialGuess):
 
         self.seed = seed
 
-        self._check_noise_magnitude(noise_magnitude)
+        self._check_magnitude(magnitude)
         self.noise = None
 
-        self._create_noise_matrix(initial_guess=initial_guess, interpolation=interpolation, **parameters)
+        self._create_noise_matrix(
+            initial_guess=initial_guess, interpolation=interpolation, magnitude_type=magnitude_type, **parameters
+        )
 
         super(NoisedInitialGuess, self).__init__(
             initial_guess=self.noised_initial_guess,
@@ -949,38 +998,39 @@ class NoisedInitialGuess(InitialGuess):
             **parameters,
         )
 
-    def _check_noise_magnitude(self, noise_magnitude: Union[list, int, float, np.ndarray]):
+    def _check_magnitude(self, magnitude: Union[list, int, float, np.ndarray]):
         """
         Check noise magnitude type and shape
 
         Parameters
         ----------
-        noise_magnitude: Union[list, int, float, np.ndarray]
-            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = gaussian noise with a
+        magnitude: Union[list, int, float, np.ndarray]
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
             standard deviation of the size of the range defined between the bounds
         """
 
-        if isinstance(noise_magnitude, (int, float)):
-            noise_magnitude = (noise_magnitude,)
+        if isinstance(magnitude, (int, float)):
+            magnitude = (magnitude,)
 
-        if isinstance(noise_magnitude, (list, tuple)):
-            noise_magnitude = np.array(noise_magnitude)
+        if isinstance(magnitude, (list, tuple)):
+            magnitude = np.array(magnitude)
 
-        if len(noise_magnitude.shape) == 1:
-            noise_magnitude = noise_magnitude[:, np.newaxis]
+        if len(magnitude.shape) == 1:
+            magnitude = magnitude[:, np.newaxis]
 
-        if noise_magnitude.shape[0] == 1:
-            noise_magnitude = np.repeat(noise_magnitude, self.n_elements, axis=0)
+        if magnitude.shape[0] == 1:
+            magnitude = np.repeat(magnitude, self.n_elements, axis=0)
 
-        if noise_magnitude.shape[0] != 1 and noise_magnitude.shape[0] != self.n_elements:
-            raise ValueError("noise_magnitude must be a float or list of float of the size of states or controls")
+        if magnitude.shape[0] != 1 and magnitude.shape[0] != self.n_elements:
+            raise ValueError("magnitude must be a float or list of float of the size of states or controls")
 
-        self.noise_magnitude = noise_magnitude
+        self.magnitude = magnitude
 
     def _create_noise_matrix(
         self,
         initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
+        magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         **parameters: Any,
     ):
         """
@@ -991,14 +1041,15 @@ class NoisedInitialGuess(InitialGuess):
             tp = initial_guess
         else:
             tp = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
-        if tp.type == InterpolationType.EACH_FRAME:
-            n_shooting = self.n_shooting - 1
-        elif tp.type == InterpolationType.ALL_POINTS:
-            n_shooting = tp.shape[1] - 1
-        else:
-            n_shooting = self.n_shooting
 
-        ns = n_shooting + 1 if interpolation == InterpolationType.ALL_POINTS else self.n_shooting
+        if tp.type == InterpolationType.EACH_FRAME:
+            n_columns = self.n_shooting - 1  # As it will add 1 by itself later
+        elif tp.type == InterpolationType.ALL_POINTS:
+            n_columns = tp.shape[1] - 1  # As it will add 1 by itself later
+        else:
+            n_columns = self.n_shooting
+
+        ns = n_columns + 1 if interpolation == InterpolationType.ALL_POINTS else self.n_shooting
         bounds_min_matrix = np.zeros((self.n_elements, ns))
         bounds_max_matrix = np.zeros((self.n_elements, ns))
         self.bounds.min.n_shooting = ns
@@ -1011,20 +1062,20 @@ class NoisedInitialGuess(InitialGuess):
                 bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
                 bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
 
-        if self.seed:
+        if self.seed is not None:
             np.random.seed(self.seed)
 
         self.noise = (
-            (np.random.random((self.n_elements, ns)) * 2 - 1)  # random noise
-            * self.noise_magnitude  # magnitude of the noise within the range defined by the bounds
-            * (bounds_max_matrix - bounds_min_matrix)  # scale the noise to the range of bounds
-        )
+            np.random.random((self.n_elements, ns)) * 2 - 1  # random noise
+        ) * self.magnitude  # magnitude of the noise within the range defined by the bounds
+        if magnitude_type == MagnitudeType.RELATIVE:
+            self.noise *= bounds_max_matrix - bounds_min_matrix
 
         # building the noised initial guess
         if initial_guess is None:
             initial_guess_matrix = (bounds_min_matrix + bounds_max_matrix) / 2
         else:
-            tp.check_and_adjust_dimensions(self.n_elements, n_shooting)
+            tp.check_and_adjust_dimensions(self.n_elements, n_columns)
             initial_guess_matrix = np.zeros((self.n_elements, ns))
             for shooting_point in range(ns):
                 initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point)
@@ -1062,9 +1113,21 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Add a new initial guess to the list
     print(self)
         Print the InitialGuessList to the console
+    _check_type_and_format_bounds(bounds, nb_phases)
+        Check bounds type and format
+    _check_type_and_format_magnitude(self, nb_phases)
+        Check magnitude type and format
+    _check_type_and_format_bound_push(self, nb_phases)
+        Check bound_push type and format
+    _check_type_and_format_seed(self, nb_phases)
+        Check seed type and format
+    _check_type_and_format_parameters(self, nb_phases)
+        Check parameters type and format
+    add_noise
+        Add noise to each initial guesses from an InitialGuessList
     """
 
-    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple], **extra_arguments: Any):
+    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple] = None, **extra_arguments: Any):
         """
         Add a new initial guess to the list
 
@@ -1086,3 +1149,183 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Print the InitialGuessList to the console
         """
         raise NotImplementedError("Printing of InitialGuessList is not ready yet")
+
+    @staticmethod
+    def _check_type_and_format_bounds(bounds, nb_phases):
+        """
+        Check bounds type and format
+
+        Parameters
+        ----------
+        nb_phases
+            The number of phases
+        """
+        if bounds is None:
+            raise ValueError("bounds must be specified to generate noised initial guess")
+
+        if len(bounds) != nb_phases:
+            raise ValueError(f"Invalid size of 'bounds', 'bounds' must be size {nb_phases}")
+
+        return bounds
+
+    @staticmethod
+    def _check_type_and_format_magnitude(magnitude, nb_phases):
+        """
+        Check magnitude type and format
+
+        Parameters
+        ----------
+        nb_phases
+            The number of phases
+        """
+        if magnitude is None:
+            raise ValueError("'magnitude' must be specified to generate noised initial guess")
+
+        if not isinstance(magnitude, (int, float, list, ndarray)):
+            raise ValueError("'magnitude' must be an instance of int, float, list, or ndarray")
+
+        if isinstance(magnitude, (int, float)):
+            magnitude = [magnitude for j in range(nb_phases)]
+
+        if isinstance(magnitude, list):
+            if len(magnitude) == 1:
+                magnitude = [magnitude[0] for j in range(nb_phases)]
+            elif len(magnitude) != nb_phases:
+                raise ValueError(f"Invalid size of 'magnitude', 'magnitude' as list must be size 1 or {nb_phases}")
+
+        if isinstance(magnitude, ndarray):
+            if magnitude.shape.__len__() > 1:
+                # if todo: prepare the 2dimensional absolute_noise
+                raise ValueError("'magnitude' must be a 1 dimension array'")
+            if magnitude.shape == ():
+                magnitude = magnitude[np.newaxis]
+                magnitude = [magnitude[0] for j in range(nb_phases)]
+            elif magnitude.shape[0] == 1:
+                magnitude = [magnitude[0] for j in range(nb_phases)]
+            elif magnitude.shape[0] != nb_phases:
+                raise ValueError(f"Invalid size of 'magnitude', 'magnitude' as array must be size 1 or {nb_phases}")
+
+        return magnitude
+
+    @staticmethod
+    def _check_type_and_format_bound_push(bound_push, nb_phases):
+        """
+        Check bound_push type and format
+
+        Parameters
+        ----------
+        nb_phases
+            The number of phases
+        """
+        if bound_push is None:
+            raise ValueError("'bound_push' must be specified to generate noised initial guess")
+
+        if not isinstance(bound_push, (int, float, list, ndarray)):
+            raise ValueError("'bound_push' must be an instance of int, float, list or ndarray")
+
+        if isinstance(bound_push, (float, int)):
+            bound_push = [bound_push for j in range(nb_phases)]
+
+        if isinstance(bound_push, list):
+            if len(bound_push) == 1:
+                bound_push = [bound_push[0] for j in range(nb_phases)]
+            elif len(bound_push) != nb_phases:
+                raise ValueError(f"Invalid size of 'bound_push', 'bound_push' as list must be size 1 or {nb_phases}")
+
+        if isinstance(bound_push, ndarray):
+            if bound_push.shape.__len__() > 1:
+                # if todo: prepare the 2dimensional absolute_noise
+                raise ValueError("'bound_push' must be a 1 dimension array'")
+            if bound_push.shape == ():
+                bound_push = bound_push[np.newaxis]
+                bound_push = [bound_push[0] for j in range(nb_phases)]
+            elif bound_push.shape[0] != nb_phases:
+                raise ValueError(f"Invalid size of 'bound_push', 'bound_push' as array must be size 1 or {nb_phases}")
+
+        return bound_push
+
+    @staticmethod
+    def _check_type_and_format_seed(seed, nb_phases):
+        """
+        Check seed type and format
+
+        Parameters
+        ----------
+        nb_phases
+            The number of phases
+        """
+        if seed is None:
+            seed = [None for j in range(nb_phases)]
+
+        if not isinstance(seed, (int, list)):
+            raise ValueError("Seed must be an integer or a list of integer")
+
+        if isinstance(seed, int):
+            seed = [seed for j in range(nb_phases)]
+
+        if isinstance(seed, list):
+            if len(seed) == 1:
+                seed = [seed[0] for j in range(nb_phases)]
+            elif len(seed) != nb_phases:
+                raise ValueError(f"Invalid size of 'seed', 'seed' as list must be size 1 or {nb_phases}")
+
+        return seed
+
+    def add_noise(
+        self,
+        bounds: BoundsList = None,
+        n_shooting: Union[int, List[int], Tuple[int]] = None,
+        magnitude: Union[list, int, float, np.ndarray] = 1,
+        magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
+        bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
+        seed: Union[int, List[int]] = 1,
+    ):
+        """
+        Add noise to each initial guesses from an InitialGuessList
+
+        Parameters
+        ----------
+        bounds: BoundsList
+            The bounds of each phase
+        n_shooting: Union[List[int], int, Tuple[int]]
+            Number of nodes (second dim) per initial guess
+        magnitude: Union[list, int, float, np.ndarray]
+            The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
+            range defined between the bounds or between -magnitude and +magnitude for absolute noise
+            If one value is given, applies this value to each initial guess
+        magnitude_type: MagnitudeType
+            The type of magnitude to apply : relative to the bounds or absolute
+        bound_push: Union[int, float, List[int], List[float], ndarray]
+            The absolute minimal distance between the bound and the noised initial guess (if the originally generated
+            initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push).
+            If one value is given, applies this value to each initial guess
+        seed: Union[int, List[int]]
+            The seed of the random generator
+            If one value is given, applies this value to each initial guess
+        """
+
+        nb_phases = self.__len__()  # number of init guesses, i.e. number of phases
+
+        if n_shooting is None:
+            raise ValueError("n_shooting must be specified to generate noised initial guess")
+
+        if n_shooting.__len__() != nb_phases:
+            raise ValueError(f"Invalid size of 'n_shooting', 'n_shooting' must be size {nb_phases}")
+
+        bounds = self._check_type_and_format_bounds(bounds, nb_phases)
+        magnitude = self._check_type_and_format_magnitude(magnitude, nb_phases)
+        bound_push = self._check_type_and_format_bound_push(bound_push, nb_phases)
+        seed = self._check_type_and_format_seed(seed, nb_phases)
+
+        for i in range(nb_phases):
+            self.options[i][0] = NoisedInitialGuess(
+                self[i],
+                interpolation=self[i].type,
+                bounds=bounds[i],
+                n_shooting=n_shooting[i],
+                bound_push=bound_push[i],
+                seed=seed[i],
+                magnitude=magnitude[i],
+                magnitude_type=magnitude_type,
+                **self[i].params,
+            )

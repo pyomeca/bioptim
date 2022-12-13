@@ -14,10 +14,10 @@ InterpolationType.SPLINE: The values are interpolated from the first to last nod
 InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
-from typing import Union
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     Dynamics,
@@ -29,10 +29,13 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    NoisedInitialGuess,
     InterpolationType,
     OdeSolver,
+<<<<<<< HEAD
     VariableScalingList,
+=======
+    MagnitudeType,
+>>>>>>> master
 )
 
 
@@ -67,7 +70,7 @@ def prepare_ocp(
     final_time: float,
     random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
-    ode_solver=OdeSolver.RK4(),
+    ode_solver=OdeSolver.COLLOCATION(),
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -93,11 +96,11 @@ def prepare_ocp(
     """
 
     # --- Options --- #
-    # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    # BioModel path
+    bio_model = BiorbdModel(biorbd_model_path)
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
+    ntau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
@@ -113,7 +116,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
     u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
@@ -155,29 +158,21 @@ def prepare_ocp(
     else:
         raise RuntimeError("Initial guess not implemented yet")
 
+    x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
+    u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
     if random_init:
-        x_init = NoisedInitialGuess(
-            x,
-            t=t,
-            interpolation=initial_guess,
+        x_init = x_init.add_noise(
             bounds=x_bounds,
-            noise_magnitude=1,
+            magnitude=1,
+            magnitude_type=MagnitudeType.RELATIVE,
+            n_shooting=n_shooting + 1,
+            bound_push=0.1,
+        )
+        u_init = u_init.add_noise(
+            bounds=u_bounds,
             n_shooting=n_shooting,
             bound_push=0.1,
-            **extra_params_x,
         )
-        u_init = NoisedInitialGuess(
-            u,
-            t=t,
-            interpolation=initial_guess,
-            bounds=u_bounds,
-            n_shooting=n_shooting - 1,
-            bound_push=0.1,
-            **extra_params_u,
-        )
-    else:
-        x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
-        u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
 
     # Variable scaling
     x_scaling = VariableScalingList()
@@ -192,7 +187,7 @@ def prepare_ocp(
     u_scaling.add("tau", scaling=[1] * biorbd_model.nbGeneralizedTorque())
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -215,10 +210,27 @@ def main():
     """
 
     sol = None
+<<<<<<< HEAD
     # for initial_guess in InterpolationType:
     initial_guess = InterpolationType.CUSTOM
     print(f"Solving problem using {initial_guess} initial guess")
     ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess)
+=======
+    for initial_guess in InterpolationType:
+        print(f"Solving problem using {initial_guess} initial guess")
+
+        ocp = None
+        try:
+            ocp = prepare_ocp(
+                "models/cube.bioMod", n_shooting=30, final_time=2, random_init=True, initial_guess=initial_guess
+            )
+        except ValueError as message:
+            if str(message) == "InterpolationType.ALL_POINTS must only be used with direct collocation":
+                # This is normal as ALL_POINTS cannot be used without collocations
+                pass
+            else:
+                raise ValueError(message)
+>>>>>>> master
 
     sol = ocp.solve()
     print("\n")

@@ -3,6 +3,7 @@ import numpy as np
 import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     DynamicsList,
@@ -15,6 +16,7 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     OdeSolver,
+    MagnitudeType,
 )
 
 from .utils import TestUtils
@@ -22,13 +24,13 @@ from .utils import TestUtils
 
 def test_double_update_bounds_and_init():
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
-    nq = biorbd_model.nbQ()
+    bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+    nq = bio_model.nb_q
     ns = 10
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(biorbd_model, dynamics, ns, 1.0)
+    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0)
 
     x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
@@ -68,16 +70,16 @@ def test_double_update_bounds_and_init():
 
 
 def test_update_bounds_and_init_with_param():
-    def my_parameter_function(biorbd_model, value, extra_value):
+    def my_parameter_function(bio_model, value, extra_value):
         new_gravity = MX.zeros(3, 1)
         new_gravity[2] = value + extra_value
-        biorbd_model.setGravity(new_gravity)
+        bio_model.set_gravity(new_gravity)
 
     def my_target_function(ocp, value, target_value):
         return value + target_value
 
-    biorbd_model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod")
-    nq = biorbd_model.nbQ()
+    bio_model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod")
+    nq = bio_model.nb_q
     ns = 10
     g_min, g_max, g_init = -10, -6, -8
 
@@ -100,7 +102,7 @@ def test_update_bounds_and_init_with_param():
         extra_value=1,
     )
 
-    ocp = OptimalControlProgram(biorbd_model, dynamics, ns, 1.0, parameters=parameters)
+    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0, parameters=parameters)
 
     x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
@@ -121,8 +123,8 @@ def test_update_bounds_and_init_with_param():
 def test_add_wrong_param():
     g_min, g_max, g_init = -10, -6, -8
 
-    def my_parameter_function(biorbd_model, value, extra_value):
-        biorbd_model.setGravity(biorbd.Vector3d(0, 0, value + extra_value))
+    def my_parameter_function(bio_model, value, extra_value):
+        bio_model.set_gravity(biorbd.Vector3d(0, 0, value + extra_value))
 
     def my_target_function(ocp, value, target_value):
         return value + target_value
@@ -199,21 +201,19 @@ def test_add_wrong_param():
 )
 def test_update_noised_init_rk4(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
+    ntau = bio_model.nb_tau
     ns = 3
     phase_time = 1.0
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(
-        biorbd_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=OdeSolver.RK4()
-    )
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=OdeSolver.RK4())
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -254,8 +254,9 @@ def test_update_noised_init_rk4(interpolation):
         t=t,
         interpolation=interpolation,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         **extra_params_x,
     )
@@ -264,8 +265,9 @@ def test_update_noised_init_rk4(interpolation):
         t=t,
         interpolation=interpolation,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         **extra_params_u,
     )
@@ -491,19 +493,19 @@ def test_update_noised_init_rk4(interpolation):
 )
 def test_update_noised_init_collocation(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
+    ntau = bio_model.nb_tau
     ns = 3
     phase_time = 1.0
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(biorbd_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -545,8 +547,9 @@ def test_update_noised_init_collocation(interpolation):
         t=t,
         interpolation=interpolation,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         **extra_params_x,
     )
@@ -555,8 +558,9 @@ def test_update_noised_init_collocation(interpolation):
         t=t,
         interpolation=interpolation,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         **extra_params_u,
     )
@@ -924,19 +928,19 @@ def test_update_noised_init_collocation(interpolation):
 )
 def test_update_noised_initial_guess_rk4(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
+    ntau = bio_model.nb_tau
     ns = 3
     phase_time = 1.0
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(biorbd_model, dynamics, n_shooting=ns, phase_time=phase_time)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time)
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -983,8 +987,9 @@ def test_update_noised_initial_guess_rk4(interpolation):
     x_init = NoisedInitialGuess(
         initial_guess=x,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         seed=42,
         **extra_params_x,
@@ -992,8 +997,9 @@ def test_update_noised_initial_guess_rk4(interpolation):
     u_init = NoisedInitialGuess(
         initial_guess=u,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         seed=42,
         **extra_params_u,
@@ -1206,19 +1212,19 @@ def test_update_noised_initial_guess_rk4(interpolation):
 @pytest.mark.parametrize("n_extra", [0, 1])
 def test_update_noised_initial_guess_rk4(n_extra):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
+    ntau = bio_model.nb_tau
     ns = 3
     phase_time = 1.0
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(biorbd_model, dynamics, n_shooting=ns, phase_time=phase_time)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time)
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -1235,13 +1241,14 @@ def test_update_noised_initial_guess_rk4(n_extra):
     state_noise = np.array([0.01] * nq + [0.2] * nqdot + [0.1] * n_extra)
     if n_extra > 0:
         with pytest.raises(
-            ValueError, match="noise_magnitude must be a float or list of float of the size of states or controls"
+            ValueError, match="magnitude must be a float or list of float of the size of states or controls"
         ):
             NoisedInitialGuess(
                 initial_guess=x,
                 bounds=x_bounds,
-                noise_magnitude=state_noise,
-                n_shooting=ns,
+                magnitude=state_noise,
+                magnitude_type=MagnitudeType.RELATIVE,
+                n_shooting=ns + 1,
                 bound_push=0.1,
                 seed=42,
                 **extra_params_x,
@@ -1251,8 +1258,9 @@ def test_update_noised_initial_guess_rk4(n_extra):
         x_init = NoisedInitialGuess(
             initial_guess=x,
             bounds=x_bounds,
-            noise_magnitude=state_noise,
-            n_shooting=ns,
+            magnitude=state_noise,
+            magnitude_type=MagnitudeType.RELATIVE,
+            n_shooting=ns + 1,
             bound_push=0.1,
             seed=42,
             **extra_params_x,
@@ -1261,8 +1269,9 @@ def test_update_noised_initial_guess_rk4(n_extra):
     u_init = NoisedInitialGuess(
         initial_guess=u,
         bounds=u_bounds,
-        noise_magnitude=np.array([0.03] * ntau),
-        n_shooting=ns - 1,
+        magnitude=np.array([0.03] * ntau),
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         seed=42,
         **extra_params_u,
@@ -1327,20 +1336,20 @@ def test_update_noised_initial_guess_rk4(n_extra):
 )
 def test_update_noised_initial_guess_collocation(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
+    ntau = bio_model.nb_tau
     ns = 3
     phase_time = 1.0
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(biorbd_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -1387,8 +1396,9 @@ def test_update_noised_initial_guess_collocation(interpolation):
     x_init = NoisedInitialGuess(
         initial_guess=x,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         seed=42,
         **extra_params_x,
@@ -1396,8 +1406,9 @@ def test_update_noised_initial_guess_collocation(interpolation):
     u_init = NoisedInitialGuess(
         initial_guess=u,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         seed=42,
         **extra_params_u,
@@ -1760,20 +1771,20 @@ def test_update_noised_initial_guess_collocation(interpolation):
 )
 def test_update_noised_initial_guess_list(interpolation):
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model = biorbd.Model(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
+    ntau = bio_model.nb_tau
     ns = 3
     phase_time = 1.0
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(biorbd_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -1784,8 +1795,9 @@ def test_update_noised_initial_guess_list(interpolation):
         initial_guess=[0] * (nq + nqdot),
         interpolation=InterpolationType.CONSTANT,
         bounds=x_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns + 1,
         bound_push=0.1,
         seed=42,
     )
@@ -1793,8 +1805,9 @@ def test_update_noised_initial_guess_list(interpolation):
         initial_guess=[tau_init] * ntau,
         interpolation=InterpolationType.CONSTANT,
         bounds=u_bounds,
-        noise_magnitude=0.01,
-        n_shooting=ns - 1,
+        magnitude=0.01,
+        magnitude_type=MagnitudeType.RELATIVE,
+        n_shooting=ns,
         bound_push=0.1,
         seed=42,
     )

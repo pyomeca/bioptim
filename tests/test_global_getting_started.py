@@ -1164,13 +1164,14 @@ def test_multistart():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     multi_start = ocp_module.prepare_multi_start(
-        biorbd_model_path=[bioptim_folder + "/models/pendulum.bioMod"],
+        bio_model_path=[bioptim_folder + "/models/pendulum.bioMod"],
         final_time=[1],
         n_shooting=[5, 10],
-        seed=[0, 1],
+        seed=[2, 1],
     )
     multi_start.solve()
 
+<<<<<<< HEAD
 
 def test_example_variable_scaling():
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
@@ -1210,3 +1211,145 @@ def test_example_variable_scaling():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+=======
+    with open("pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
+        multi_start_0 = pickle.load(file)
+    with open("pendulum_multi_start_random_states_5_1.pkl", "rb") as file:
+        multi_start_1 = pickle.load(file)
+    with open("pendulum_multi_start_random_states_10_2.pkl", "rb") as file:
+        multi_start_2 = pickle.load(file)
+    with open("pendulum_multi_start_random_states_10_1.pkl", "rb") as file:
+        multi_start_3 = pickle.load(file)
+
+    np.testing.assert_almost_equal(
+        multi_start_0,
+        np.array(
+            [
+                [0.0, -0.9, 0.29797487, -0.38806564, -0.47779319, 0.0],
+                [0.0, 1.49880317, -2.51761362, -2.93013488, 1.52221264, 3.14],
+                [0.0, 0.85313852, -19.827228, 17.92813608, 22.24092358, 0.0],
+                [0.0, -26.41165363, 0.32962156, -27.31385448, -4.51620735, 0.0],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        multi_start_1,
+        np.array(
+            [
+                [0.0, 1.32194696, -0.9, -0.9, -0.9, 0.0],
+                [0.0, -1.94074114, -1.29725818, 0.48778547, -1.01543168, 3.14],
+                [0.0, 23.75781921, -29.6951133, 10.71078955, -5.19589251, 0.0],
+                [0.0, -18.96884288, 18.89633855, 29.42174252, -11.72290462, 0.0],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        multi_start_2,
+        np.array(
+            [
+                [
+                    0.00000000e00,
+                    -9.00000000e-01,
+                    2.97974867e-01,
+                    -3.88065644e-01,
+                    -4.77793187e-01,
+                    -9.00000000e-01,
+                    -9.00000000e-01,
+                    7.15625798e-01,
+                    -9.00000000e-01,
+                    -9.00000000e-01,
+                    0.00000000e00,
+                ],
+                [
+                    0.00000000e00,
+                    -4.59200384e00,
+                    1.70627704e-01,
+                    -3.96544560e00,
+                    3.58562722e00,
+                    4.44818472e00,
+                    -7.24220374e-02,
+                    4.35502007e00,
+                    -5.28233073e00,
+                    6.59243127e-02,
+                    3.14000000e00,
+                ],
+                [
+                    0.00000000e00,
+                    -2.53507102e01,
+                    -2.34262299e01,
+                    6.07868704e00,
+                    -1.72151737e01,
+                    -2.46963310e01,
+                    -1.75736793e01,
+                    -9.43569280e00,
+                    -2.02397204e00,
+                    -1.87400258e01,
+                    0.00000000e00,
+                ],
+                [
+                    0.00000000e00,
+                    3.29032823e-01,
+                    -7.10674433e00,
+                    1.84497854e01,
+                    5.02681081e00,
+                    -2.12184048e01,
+                    1.26136419e01,
+                    2.91886052e01,
+                    5.25347819e-04,
+                    2.44742674e01,
+                    0.00000000e00,
+                ],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        multi_start_3,
+        np.array(
+            [
+                [0.0, 1.32194696, -0.9, -0.9, -0.9, -0.9, -0.9, -0.92663564, -0.61939515, 0.2329004, 0.0],
+                [
+                    0.0,
+                    -3.71396256,
+                    4.75156384,
+                    -5.93902266,
+                    2.14215791,
+                    -1.0391785,
+                    0.73751814,
+                    -4.51903101,
+                    -3.79376858,
+                    3.77926771,
+                    3.14,
+                ],
+                [
+                    0.0,
+                    12.08398633,
+                    23.64922791,
+                    24.7938679,
+                    -26.07244114,
+                    -28.96204213,
+                    -20.74516657,
+                    23.75939422,
+                    -25.23661272,
+                    -4.95695411,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    12.05599463,
+                    -11.59149477,
+                    11.71819889,
+                    21.02515105,
+                    -30.26684018,
+                    15.71703084,
+                    30.71604811,
+                    15.59270793,
+                    -13.79511083,
+                    0.0,
+                ],
+            ]
+        ),
+    )
+>>>>>>> master

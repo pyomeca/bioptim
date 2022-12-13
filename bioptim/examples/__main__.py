@@ -111,7 +111,9 @@ examples_ = OrderedDict(
             "torque_driven_ocp",
             OrderedDict(
                 [
-                    ("Maximize predicted height CoM", "maximize_predicted_height_CoM.py"),
+                    ("Maximize predicted height center_of_mass", "maximize_predicted_height_CoM.py"),
+                    ("Multi model by constraint", "multi_model_by_constraint.py"),
+                    ("Multi model by mapping", "multi_model_by_mapping.py"),
                     (
                         "phase transition uneven variable number by bounds",
                         "phase_transition_uneven_variable_number_by_bounds.py",

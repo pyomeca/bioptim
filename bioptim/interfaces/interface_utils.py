@@ -295,7 +295,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         if penalty.multi_thread:
             if penalty.target is not None and len(penalty.target[0].shape) != 2:
                 raise NotImplementedError("multi_thread penalty with target shape != [n x m] is not implemented yet")
-            target = penalty.target if penalty.target is not None else []
+            target = penalty.target[0] if penalty.target is not None else []
 
             x = nlp.cx()
             u = nlp.cx()

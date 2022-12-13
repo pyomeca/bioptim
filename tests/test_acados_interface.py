@@ -11,6 +11,7 @@ from sys import platform
 import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     Axis,
     ObjectiveList,
     ObjectiveFcn,
@@ -431,7 +432,7 @@ def test_acados_one_parameter():
     # Path constraint
     x_bounds = QAndQDotBounds(model)
     x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
+    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
@@ -495,7 +496,7 @@ def test_acados_several_parameter():
     # Path constraint
     x_bounds = QAndQDotBounds(model)
     x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
+    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
@@ -663,10 +664,10 @@ def test_acados_bounds_not_implemented(failing):
         print("Test for ACADOS on Windows is skipped")
         return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
+    bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
-    nq = biorbd_model.nbQ()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    nq = bio_model.nb_q
+    ntau = bio_model.nb_tau
 
     n_cycles = 3
     window_len = 5
@@ -683,7 +684,7 @@ def test_acados_bounds_not_implemented(failing):
         raise ValueError("Wrong value for failing")
 
     mhe = MovingHorizonEstimator(
-        biorbd_model,
+        bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,
