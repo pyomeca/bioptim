@@ -306,13 +306,13 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com = nlp_pre.model.CoM(states_pre[nlp_pre.states["q"].index, :]).to_mx()
-            post_com = nlp_post.model.CoM(states_post_sym_list[0]).to_mx()
+            pre_com = nlp_pre.model.center_of_mass(states_pre[nlp_pre.states["q"].index, :])
+            post_com = nlp_post.model.center_of_mass(states_post_sym_list[0])
 
             pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
 
-            return biorbd.to_casadi_func(
+            return nlp_pre.to_casadi_func(
                 "com_equality",
                 pre_com - post_com,
                 states_pre,
@@ -350,15 +350,15 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com_dot = nlp_pre.model.CoMdot(
+            pre_com_dot = nlp_pre.model.center_of_mass_velocity(
                 states_pre[nlp_pre.states["q"].index, :], states_pre[nlp_pre.states["qdot"].index, :]
-            ).to_mx()
-            post_com_dot = nlp_post.model.CoMdot(states_post_sym_list[0], states_post_sym_list[1]).to_mx()
+            )
+            post_com_dot = nlp_post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
             pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
 
-            return biorbd.to_casadi_func(
+            return nlp_pre.to_casadi_func(
                 "com_dot_equality",
                 pre_com_dot - post_com_dot,
                 states_pre,

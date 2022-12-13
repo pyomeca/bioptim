@@ -180,14 +180,14 @@ class Solution:
         ----------
         control_type: ControlType
             The control type for the current nlp
-        dynamics: list[ODE_SOLVER]
+        dynamics: list[OdeSolver]
             All the dynamics for each of the node of the phase
         g: list[list[Constraint]]
             All the constraints at each of the node of the phase
         J: list[list[Objective]]
             All the objectives at each of the node of the phase
-        model: biorbd.Model
-            A reference to the biorbd Model
+        model: BioModel
+            A reference to the biorbd BioModel
         variable_mappings: dict
             All the BiMapping of the states and controls
         ode_solver: OdeSolverBase
@@ -1210,6 +1210,9 @@ class Solution:
             import bioviz
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
+
+        from ..interfaces.biorbd_model import BiorbdModel
+
         check_version(bioviz, "2.1.0", "2.3.0")
 
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
@@ -1228,13 +1231,20 @@ class Solution:
 
         all_bioviz = []
         for idx_phase, data in enumerate(states):
+
+            if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
+                raise NotImplementedError("Animation is only implemented for biorbd models")
+
             # Convert parameters to actual values
             nlp = self.ocp.nlp[idx_phase]
             for param in nlp.parameters:
                 if param.function:
                     param.function(nlp.model, self.parameters[param.name], **param.params)
 
-            all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path().absolutePath().to_string(), **kwargs))
+            # noinspection PyTypeChecker
+            biorbd_model: BiorbdModel = nlp.model
+
+            all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
             for objective in self.ocp.nlp[idx_phase].J:
                 if objective.target is not None:

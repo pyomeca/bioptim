@@ -3,6 +3,7 @@ import os
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -17,13 +18,13 @@ def test_noisy_multiphase():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
     )
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -37,9 +38,9 @@ def test_noisy_multiphase():
     x_init.add([1, 2, 1, 2, 1, 2])
 
     u_bounds = BoundsList()
-    u_bounds.add([-100] * biorbd_model.nbGeneralizedTorque(), [100] * biorbd_model.nbGeneralizedTorque())
-    u_bounds.add([-100] * biorbd_model.nbGeneralizedTorque(), [100] * biorbd_model.nbGeneralizedTorque())
-    u_bounds.add([-100] * biorbd_model.nbGeneralizedTorque(), [100] * biorbd_model.nbGeneralizedTorque())
+    u_bounds.add([-100] * bio_model.nb_tau, [100] * bio_model.nb_tau)
+    u_bounds.add([-100] * bio_model.nb_tau, [100] * bio_model.nb_tau)
+    u_bounds.add([-100] * bio_model.nb_tau, [100] * bio_model.nb_tau)
 
     u_init = InitialGuessList()
     u_init.add([1, 2, 1])
@@ -744,15 +745,15 @@ def test_add_wrong_magnitude(magnitude, raised_str):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
     )
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     nb_phases = ocp.n_phases
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])
@@ -788,13 +789,13 @@ def test_add_wrong_bound_push(bound_push, raised_str):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
     )
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])
@@ -827,13 +828,13 @@ def test_add_wrong_seed(seed, raised_str):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
     )
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])
@@ -859,14 +860,14 @@ def test_add_wrong_bounds():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
     )
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     nb_phases = ocp.n_phases
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])
@@ -901,14 +902,14 @@ def test_add_wrong_n_shooting():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
     )
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
 
     nb_phases = ocp.n_phases
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])
