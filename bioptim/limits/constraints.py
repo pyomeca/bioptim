@@ -336,7 +336,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
-            passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
+            passive_torque = nlp.model.passive_joint_torque(q, qdot)
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
             tau = tau + passive_torque if with_passive_torque else tau
 
@@ -379,7 +379,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
-            passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
+            passive_torque = nlp.model.passive_joint_torque(q, qdot)
             tau = tau + passive_torque if with_passive_torque else tau
 
             if nlp.external_forces:
@@ -459,7 +459,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             muscle_activations = nlp.controls["muscles"].mx
             muscles_states = nlp.model.state_set()
-            passive_torque = nlp.model.passiveJointTorque(q, qdot).to_mx()
+            passive_torque = nlp.model.passive_joint_torque(q, qdot)
             for k in range(len(nlp.controls["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
             muscle_tau = nlp.model.muscle_joint_torque(muscles_states, q, qdot)

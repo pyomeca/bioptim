@@ -1,20 +1,8 @@
-import numpy as np
-from casadi import MX, SX, vertcat
-import biorbd_casadi as biorbd
-from bioptim.dynamics.configure_problem import ConfigureProblem
-from bioptim.dynamics.dynamics_functions import DynamicsFunctions
-from bioptim.interfaces.biorbd_interface import BiorbdInterface
-from bioptim.misc.enums import ControlType, RigidBodyDynamics, SoftContactDynamics
-from bioptim.optimization.non_linear_program import NonLinearProgram
-from bioptim.optimization.optimization_vector import OptimizationVector
-from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
-from bioptim.dynamics.dynamics_evaluation import DynamicsEvaluation
-from bioptim.limits.constraints import ConstraintList
-from .utils import TestUtils
-import os
 import pytest
+import numpy as np
+from bioptim import RigidBodyDynamics, BiorbdModel, OdeSolver, Solver
+import os
 
-from bioptim import OdeSolver, Solver
 
 
 @pytest.mark.parametrize(
@@ -29,18 +17,18 @@ from bioptim import OdeSolver, Solver
         True,
     ])
 def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.torque_driven_ocp import pendulum_with_passive_torque as ocp_module
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     # Define the problem
-    biorbd_model_path = bioptim_folder + "/models/pendulum.bioMod"
+    biorbd_model_path = bioptim_folder + "/models/pendulum_with_passive_torque.bioMod"
     final_time = 0.1
     n_shooting = 5
     ode_solver = OdeSolver.RK4()
     use_sx = True
     n_threads = 1
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path,

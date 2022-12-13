@@ -1,18 +1,9 @@
 import pytest
-import re
 
 import numpy as np
-from casadi import MX, SX, vertcat
-import biorbd_casadi as biorbd
-from bioptim.dynamics.configure_problem import ConfigureProblem
-from bioptim.dynamics.dynamics_functions import DynamicsFunctions
-from bioptim.interfaces.biorbd_interface import BiorbdInterface
-from bioptim.misc.enums import ControlType, RigidBodyDynamics, SoftContactDynamics
-from bioptim.optimization.non_linear_program import NonLinearProgram
+from casadi import MX, SX
+from bioptim import ConfigureProblem, ControlType, RigidBodyDynamics, BiorbdModel, NonLinearProgram, DynamicsFcn, Dynamics, ConstraintList
 from bioptim.optimization.optimization_vector import OptimizationVector
-from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
-from bioptim.dynamics.dynamics_evaluation import DynamicsEvaluation
-from bioptim.limits.constraints import ConstraintList
 from .utils import TestUtils
 
 
@@ -38,14 +29,14 @@ class OptimalControlProgram:
 def test_torque_driven(with_passive_torque, cx, rigidbody_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -78,7 +69,7 @@ def test_torque_driven(with_passive_torque, cx, rigidbody_dynamics):
 
             np.testing.assert_almost_equal(
                 x_out[:, 0],
-                [0.6118529, 0.785176, 0.6075449, 0.8083973, -5.026124,- 10.5570655, 18.5690849, 24.2237858],
+                [0.6118529, 0.785176, 0.6075449, 0.8083973, -5.0261535, - 10.5570666, 18.569191, 24.2237134],
             )
         else:
             np.testing.assert_almost_equal(
@@ -126,14 +117,14 @@ def test_torque_driven(with_passive_torque, cx, rigidbody_dynamics):
 def test_torque_derivative_driven(with_passive_torque, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -167,10 +158,10 @@ def test_torque_derivative_driven(with_passive_torque, cx):
              0.785176,
              0.6075449,
              0.8083973,
-             -5.026124,
-             - 10.5570655,
-             18.5690849,
-             24.2237858,
+             -5.0261535,
+             -10.5570666,
+             18.569191,
+             24.2237134,
              0.3886773,
              0.5426961,
              0.7722448,
@@ -201,13 +192,13 @@ def test_torque_derivative_driven(with_passive_torque, cx):
 def test_torque_activation_driven(with_passive_torque, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -240,10 +231,10 @@ def test_torque_activation_driven(with_passive_torque, cx):
              7.8517596139e-01,
              6.0754485190e-01,
              8.0839734812e-01,
-             -2.8550007813e+01,
-             -5.8375372950e+01,
-             1.4440365320e+02,
-             3.6537330260e+03],
+             -2.8550037341e+01,
+             -5.8375374025e+01,
+             1.4440375924e+02,
+             3.6537329536e+03],
             decimal=6,
         )
     else:
@@ -268,14 +259,14 @@ def test_torque_activation_driven(with_passive_torque, cx):
 def test_muscle_driven(with_passive_torque, rigidbody_dynamics, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2 + nlp.model.nbMuscles(), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbMuscles(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -332,9 +323,9 @@ def test_muscle_driven(with_passive_torque, rigidbody_dynamics, cx):
                 [1.8340450985e-01,
                  6.1185289472e-01,
                  7.8517596139e-01,
-                 - 5.3407564410e+00,
-                 1.6890724294e+02,
-                 -5.4766471468e+02],
+                 -5.3408086130e+00,
+                 1.6890917494e+02,
+                 -5.4766884856e+02],
                 decimal=6,
             )
         else:
