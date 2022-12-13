@@ -371,12 +371,12 @@ class OptimizationVector:
                                 nlp.ode_solver.polynomial_degree + 1,
                             )
                         )
-                        x[nlp.phase_idx].append(x_scaled[0] * nlp.x_scaling["all"].scaling)
+                        x[nlp.phase_idx].append(x_scaled[nlp.phase_idx][0] * nlp.x_scaling["all"].scaling)
                     else:
                         x_scaled[nlp.phase_idx].append(
                             nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states["scaled"].shape, 1)
                         )
-                        x[nlp.phase_idx].append(x_scaled[0] * nlp.x_scaling["all"].scaling)
+                        x[nlp.phase_idx].append(x_scaled[nlp.phase_idx][0] * nlp.x_scaling["all"].scaling)
                 else:
                     x_scaled[nlp.phase_idx] = x_scaled[nlp.use_states_from_phase_idx]
                     x[nlp.phase_idx] = x[nlp.use_states_from_phase_idx]
@@ -388,7 +388,7 @@ class OptimizationVector:
                         u_scaled[nlp.phase_idx].append(
                             nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1)
                         )
-                        u[nlp.phase_idx].append(u_scaled[0] * nlp.u_scaling["all"].scaling)
+                        u[nlp.phase_idx].append(u_scaled[nlp.phase_idx][0] * nlp.u_scaling["all"].scaling)
                 else:
                     u_scaled[nlp.phase_idx] = u_scaled[nlp.use_controls_from_phase_idx]
                     u[nlp.phase_idx] = u[nlp.use_controls_from_phase_idx]

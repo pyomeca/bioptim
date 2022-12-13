@@ -9,8 +9,6 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 
-import biorbd_casadi as biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,

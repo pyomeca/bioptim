@@ -356,7 +356,7 @@ class OptimizationVariableList:
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
 
-    def __getitem__(self, item: Union[int, str, list, range]):
+    def __getitem__(self, item: int | str | list | range):
         """
         Get a specific variable in the list, whether by name or by index
 
@@ -487,7 +487,7 @@ class OptimizationVariableList:
         mx_reduced = vertcat(mx_reduced, scaled_optimization_variable.mx_reduced[0] * scaling)
         self.mx_reduced = vertcat(self.mx_reduced, mx_reduced)
 
-        self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
+        self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, self))
 
     @property
     def cx(self):
@@ -594,27 +594,82 @@ class OptimizationVariableContainer:
             variables_unscaled = OptimizationVariableList()
         self.optimization_variable = {"scaled": variable_scaled, "unscaled": variables_unscaled}
 
-    def __getitem__(self, item: str):
-        if isinstance(self.optimization_variable["unscaled"], list):
-            if item != "scaled" and item != "unscaled":
-                return [self.optimization_variable[i][item] for i in range(len(self.optimization_variable))]
-            else:
-                return self.optimization_variable[item]
+    @property
+    def mx_reduced(self):
+        return self.optimization_variable["unscaled"].mx_reduced
+
+    def __getitem__(self, item: int | str | list | range):
+        if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
+            return self.optimization_variable[item]
         else:
-            if item != "scaled" and item != "unscaled":
-                return self.optimization_variable[item]
-            else:
-                return self.optimization_variable[item]
+            return self.optimization_variable["unscaled"][item]
 
-    def __setitem__(self, item: str, value: Union[OptimizationVariableList, np.ndarray]):
-
-        if item != "scaled" and item != "unscaled":
+    def __setitem__(self, item: int | str | list | range, value: Union[OptimizationVariableList, np.ndarray]):
+        if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
             self.optimization_variable[item] = value
         else:
-            self.optimization_variable[item] = value
+            self.optimization_variable["unscaled"][item] = value
 
     def keys(self):
-        return self.optimization_variable.keys()
+        return self.optimization_variable["unscaled"].keys()
 
+    @property
     def shape(self):
         return self.optimization_variable["unscaled"].shape
+
+    def append_from_scaled(
+        self,
+        name: str,
+        cx: list,
+        mx: MX,
+        bimapping: BiMapping,
+        scaled_optimization_variable: OptimizationVariable,
+        scaling: VariableScaling,
+    ):
+        """
+        Add a new variable to the list
+
+        Parameters
+        ----------
+        name: str
+            The name of the variable
+        cx: list
+            The list of SX or MX variable associated with this variable
+        mx: MX
+            The MX variable associated with this variable
+        bimapping: BiMapping
+            The Mapping of the MX against CX
+        """
+        return self["unscaled"].append_from_scaled(name, cx, mx, bimapping, scaled_optimization_variable, scaling)
+
+    def __contains__(self, item: str):
+        """
+        If the item of name item is in the list
+        """
+        if item == "scaled" or item == "unscaled":
+            return True
+
+        return item in self.optimization_variable["unscaled"]
+
+    @property
+    def cx(self):
+        """
+        The cx of all elements together (starting point)
+        """
+
+        return self.optimization_variable["unscaled"].cx
+
+    @property
+    def cx_end(self):
+        """
+        The cx of all elements together (ending point)
+        """
+
+        return self.optimization_variable["unscaled"].cx_end
+
+    def __len__(self):
+        """
+        The number of variables in the list
+        """
+
+        return len(self.optimization_variable["unscaled"])

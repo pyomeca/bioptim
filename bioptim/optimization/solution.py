@@ -214,8 +214,8 @@ class Solution:
             self.use_states_from_phase_idx = nlp.use_states_from_phase_idx
             self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
             self.model = nlp.model
-            self.states = OptimizationVariableContainer()
-            self.controls = OptimizationVariableContainer()
+            self.states = nlp.states
+            self.controls = nlp.controls
             self.dynamics = nlp.dynamics
             self.dynamics_func = nlp.dynamics_func
             self.ode_solver = nlp.ode_solver
@@ -305,8 +305,8 @@ class Solution:
         self._time_vector = None
 
         # Extract the data now for further use
-        self._states = OptimizationVariableContainer()
-        self._controls = OptimizationVariableContainer()
+        self._states = {}
+        self._controls = {}
         self.parameters = {}
         self.phase_time = []
 
@@ -337,8 +337,8 @@ class Solution:
             self.status = _sol["status"]
 
             # Extract the data now for further use
-            self._states, self._controls = self.to_unscaled_values()
             self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(self._states["scaled"], self._controls["scaled"])
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
             self._time_vector = self._generate_time()
@@ -401,8 +401,8 @@ class Solution:
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
-            self._states, self._controls = self.to_unscaled_values()
             self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(self._states["scaled"], self._controls["scaled"])
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
@@ -417,8 +417,8 @@ class Solution:
             """
 
             self.vector = _sol
-            self._states, self._controls = self.to_unscaled_values()
             self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(self._states["scaled"], self._controls["scaled"])
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
@@ -433,14 +433,12 @@ class Solution:
         else:
             raise ValueError("Solution called with unknown initializer")
 
-    def to_unscaled_values(self) -> tuple:
+    def _to_unscaled_values(self, states_scaled, controls_scaled) -> tuple:
         """
         Convert values of scaled solution to unscaled values
         """
 
         ocp = self.ocp
-        states_scaled = self._states["scaled"]
-        controls_scaled = self._controls["scaled"]
 
         states = [{} for _ in range(len(states_scaled))]
         controls = [{} for _ in range(len(states_scaled))]
@@ -512,14 +510,14 @@ class Solution:
         new._time_vector = deepcopy(self._time_vector)
 
         if skip_data:
-            new._states, new._controls= [], []
+            new._states["unscaled"], new._controls["unscaled"] = [], []
             new._states["scaled"], new._controls["scaled"], new.parameters = [], [], {}
         else:
-            new._states = deepcopy(self._states["unscaled"])
-            new._controls = deepcopy(self._controls["unscaled"])
             new._states["scaled"] = deepcopy(self._states["scaled"])
             new._controls["scaled"] = deepcopy(self._controls["scaled"])
             new.parameters = deepcopy(self.parameters)
+            new._states["unscaled"] = deepcopy(self._states["unscaled"])
+            new._controls["unscaled"] = deepcopy(self._controls["unscaled"])
 
         return new
 
@@ -532,9 +530,8 @@ class Solution:
         -------
         The states data
         """
-        states_scaled = self._states["scaled"]
-        states_unscaled = self._states["unscaled"]
-        return OptimizationVariableContainer(states_scaled, states_unscaled)
+
+        return self._states["unscaled"]
 
     def no_intermediate(self, states) -> Union[list, dict]:
         """
@@ -639,15 +636,14 @@ class Solution:
         The controls data
         """
 
-        if not self._controls["scaled"]:
+        if not self._controls["unscaled"]:
             raise RuntimeError(
                 "There is no controls in the solution. "
                 "This may happen in "
                 "previously integrated and interpolated structure"
             )
-        controls_scaled = self._controls["scaled"]
-        controls_unscaled = self._controls["unscaled"]
-        return OptimizationVariableContainer(controls_scaled, controls_unscaled)
+
+        return self._controls["unscaled"]
 
     @property
     def time(self) -> Union[list, dict]:
@@ -752,12 +748,12 @@ class Solution:
             out.ns = sum(out.ns)
 
             if shooting_type == Shooting.SINGLE:
-                out._states = concatenate_optimization_variables_dict(out._states)
+                out._states["unscaled"] = concatenate_optimization_variables_dict(out._states["unscaled"])
                 out._time_vector = [concatenate_optimization_variables(out._time_vector)]
 
             else:
-                out._states = concatenate_optimization_variables_dict(
-                    out._states, continuous=False
+                out._states["unscaled"] = concatenate_optimization_variables_dict(
+                    out._states["unscaled"], continuous=False
                 )
                 out._time_vector = [
                     concatenate_optimization_variables(
@@ -918,8 +914,8 @@ class Solution:
         # Get the first frame of the phase
         if shooting_type == Shooting.SINGLE:
             if phase != 0:
-                x0 = sol._states[phase - 1]["all"][:, -1]  # the last node of the previous phase
-                u0 = self._controls[phase - 1]["all"][:, -1]
+                x0 = sol._states["unscaled"][phase - 1]["all"][:, -1]  # the last node of the previous phase
+                u0 = self._controls["unscaled"][phase - 1]["all"][:, -1]
                 params = self.parameters["all"]
                 val = self.ocp.phase_transitions[phase - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
                 if val.shape[0] != x0.shape[0]:
@@ -931,10 +927,10 @@ class Solution:
                 x0 += np.array(val)[:, 0]
                 return x0
             else:
-                return self._states[phase]["all"][:, 0]
+                return self._states["unscaled"][phase]["all"][:, 0]
 
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            return self._states[phase]["all"][:, 0]
+            return self._states["unscaled"][phase]["all"][:, 0]
 
         elif shooting_type == Shooting.MULTIPLE:
             return (
@@ -973,7 +969,7 @@ class Solution:
         # Copy the data
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = integrator != SolutionIntegrator.OCP
-        out._states = [dict() for _ in range(len(self._states))]
+        out._states["unscaled"] = [dict() for _ in range(len(self._states["unscaled"]))]
         out._time_vector = self._generate_time(
             keep_intermediate_points=keep_intermediate_points,
             merge_phases=False,
@@ -987,9 +983,9 @@ class Solution:
             controls_phase_idx = self.ocp.nlp[p].use_controls_from_phase_idx
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
-            u = self._controls[controls_phase_idx]["all"]
+            u = self._controls["unscaled"][controls_phase_idx]["all"]
             if integrator != SolutionIntegrator.OCP:
-                out._states[states_phase_idx]["all"] = solve_ivp_interface(
+                out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
                     keep_intermediate_points=keep_intermediate_points,
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
@@ -1001,7 +997,7 @@ class Solution:
                 )
 
             else:
-                out._states[states_phase_idx]["all"] = solve_ivp_bioptim_interface(
+                out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
                     x0=x0,
@@ -1014,13 +1010,13 @@ class Solution:
 
             if shooting_type == Shooting.MULTIPLE:
                 # last node of the phase is not integrated but do exist as an independent node
-                out._states[states_phase_idx]["all"] = np.concatenate(
-                    (out._states[states_phase_idx]["all"], self._states[states_phase_idx]["all"][:, -1:]), axis=1
+                out._states["unscaled"][states_phase_idx]["all"] = np.concatenate(
+                    (out._states["unscaled"][states_phase_idx]["all"], self._states["unscaled"][states_phase_idx]["all"][:, -1:]), axis=1
                 )
 
-                # Dispatch the integrated values to all the keys
-            for key in nlp.states:
-                out._states[states_phase_idx][key] = out._states[states_phase_idx]["all"][nlp.states[key].index, :]
+            # Dispatch the integrated values to all the keys
+            for key in nlp.states.keys():
+                out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][nlp.states[key].index, :]
 
         return out
 
@@ -1042,7 +1038,7 @@ class Solution:
         out = self.copy(skip_data=True)
 
         t_all = []
-        for p, data in enumerate(self._states):
+        for p, data in enumerate(self._states["unscaled"]):
             nlp = self.ocp.nlp[p]
             if nlp.ode_solver.is_direct_collocation and not self.recomputed_time_steps:
                 time_offset = sum(out.phase_time[: p + 1])
@@ -1059,17 +1055,17 @@ class Solution:
 
             n_frames = [n_frames]
             out.is_merged = True
-        elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states):
-            data_states = self._states
+        elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states["unscaled"]):
+            data_states = self._states["unscaled"]
         else:
             raise ValueError(
                 "n_frames should either be a int to merge_phases phases "
                 "or a list of int of the number of phases dimension"
             )
 
-        out._states = []
+        out._states["unscaled"] = []
         for _ in range(len(data_states)):
-            out._states.append({})
+            out._states["unscaled"].append({})
         for p in range(len(data_states)):
             x_phase = data_states[p]["all"]
             n_elements = x_phase.shape[0]
@@ -1082,14 +1078,14 @@ class Solution:
             for j in range(n_elements):
                 s = sci_interp.splrep(t_phase, x_phase[j, time_index], k=1)
                 x_interpolate[j, :] = sci_interp.splev(t_int, s)
-            out._states[p]["all"] = x_interpolate
+            out._states["unscaled"][p]["all"] = x_interpolate
 
             offset = 0
             for key in data_states[p]:
                 if key == "all":
                     continue
                 n_elements = data_states[p][key].shape[0]
-                out._states[p][key] = out._states[p]["all"][offset : offset + n_elements]
+                out._states["unscaled"][p][key] = out._states["unscaled"][p]["all"][offset : offset + n_elements]
                 offset += n_elements
 
         out.is_interpolated = True
@@ -1233,10 +1229,10 @@ class Solution:
                         ),
                         axis=1,
                     )
-                    self._controls[p][key] = np.concatenate(
+                    self._controls["unscaled"][p][key] = np.concatenate(
                         (
-                            self._controls[p][key],
-                            np.nan * np.zeros((self._controls[p][key].shape[0], 1)),
+                            self._controls["unscaled"][p][key],
+                            np.nan * np.zeros((self._controls["unscaled"][p][key].shape[0], 1)),
                         ),
                         axis=1,
                     )
@@ -1320,8 +1316,7 @@ class Solution:
         elif n_frames > 0:
             data_to_animate = data_to_animate.interpolate(n_frames)
 
-        states_scaled = data_to_animate.states
-        states = states_scaled["unscaled"]
+        states = data_to_animate.states
         if not isinstance(states, (list, tuple)):
             states = [states]
 
