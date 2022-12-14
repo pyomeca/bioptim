@@ -468,37 +468,6 @@ class OptimizationVector:
 
                 self.u_bounds[i_phase] = u_bounds
 
-    def get_interpolation_type(self, phase: int) -> InterpolationType:
-        """
-        Find the interpolation type of x_init
-
-        Parameters
-        ----------
-        phase: int
-            The index of the current phase of the ocp
-
-        Returns
-        -------
-        interpolation_type: InterpolationType
-            The interpolation type of x_init
-        """
-        ocp = self.ocp
-
-        if isinstance(ocp.original_values["x_init"], InitialGuessList):
-            original_x_init = ocp.original_values["x_init"][phase]
-        else:
-            original_x_init = ocp.original_values["x_init"]
-
-        if original_x_init:
-            interpolation_type = original_x_init.type
-        else:
-            interpolation_type = (
-                InterpolationType.ALL_POINTS
-                if ocp.nlp[phase].x_init.type == InterpolationType.ALL_POINTS
-                else None  # interpolation_type is not used after
-            )
-        return interpolation_type
-
     def get_ns(self, phase: int, interpolation_type: InterpolationType) -> int:
         """
         Define the number of shooting nodes and collocation points
@@ -534,8 +503,8 @@ class OptimizationVector:
         ocp = self.ocp
         # Sanity check
         for nlp in ocp.nlp:
-            interpolation_type = self.get_interpolation_type(phase=nlp.phase_idx)
-            ns = self.get_ns(phase=nlp.phase_idx, interpolation_type=interpolation_type)
+            interpolation = nlp.x_init.type
+            ns = self.get_ns(phase=nlp.phase_idx, interpolation_type=interpolation)
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 if nlp.ode_solver.is_direct_shooting:
                     if nlp.x_init.type == InterpolationType.ALL_POINTS:
@@ -555,7 +524,7 @@ class OptimizationVector:
             # For states
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 nx = nlp.states.shape
-                if nlp.ode_solver.is_direct_collocation and interpolation_type != InterpolationType.EACH_FRAME:
+                if nlp.ode_solver.is_direct_collocation and nlp.x_init.type != InterpolationType.EACH_FRAME:
                     all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                     outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
                     repeat = nlp.ode_solver.polynomial_degree + 1
