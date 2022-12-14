@@ -627,7 +627,7 @@ class ConfigureProblem:
         )
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
-            [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
+            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
             [global_soft_contact_force_func],
             ["x", "u", "p"],
             ["soft_contact_forces"],
