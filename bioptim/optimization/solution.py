@@ -533,6 +533,18 @@ class Solution:
 
         return self._states["unscaled"] if len(self._states["unscaled"]) > 1 else self._states["unscaled"][0]
 
+    @property
+    def states_scaled(self) -> list | dict:
+        """
+        Returns the state in list if more than one phases, otherwise it returns the only dict
+
+        Returns
+        -------
+        The states data
+        """
+
+        return self._states["scaled"] if len(self._states["scaled"]) > 1 else self._states["scaled"][0]
+
     def _no_intermediate(self, states) -> Union[list, dict]:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
@@ -645,6 +657,18 @@ class Solution:
 
         return self._controls["unscaled"] if len(self._controls["unscaled"]) > 1 else self._controls["unscaled"][0]
 
+    @property
+    def controls_scaled(self) -> Union[list, dict]:
+        """
+        Returns the controls in list if more than one phases, otherwise it returns the only dict
+
+        Returns
+        -------
+        The controls data
+        """
+
+
+        return self._controls["scaled"] if len(self._controls["scaled"]) > 1 else self._controls["scaled"][0]
     @property
     def time(self) -> Union[list, dict]:
         """

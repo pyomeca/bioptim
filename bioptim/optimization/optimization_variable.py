@@ -655,7 +655,7 @@ class OptimizationVariableContainer:
         bimapping: BiMapping
             The Mapping of the MX against CX
         """
-        return self["unscaled"].append_from_scaled(name, cx, mx, bimapping, scaled_optimization_variable, scaling)
+        return self.optimization_variable["unscaled"].append_from_scaled(name, cx, mx, bimapping, scaled_optimization_variable, scaling)
 
     def __contains__(self, item: str):
         """

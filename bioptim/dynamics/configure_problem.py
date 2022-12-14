@@ -853,50 +853,25 @@ class ConfigureProblem:
                 key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
             )
 
-        mx_states_scaled = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states["scaled"][name].mx]
-        mx_states_dot_scaled = [] if not copy_states_dot else [
-            ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot["scaled"][name].mx]
-        mx_controls_scaled = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls["scaled"][name].mx]
         mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[name].mx]
         mx_states_dot = [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].mx]
         mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].mx]
-
         # todo: if mapping on variables, what do we do with mapping on the nodes
         for i in nlp.variable_mappings[name].to_second.map_idx:
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
 
             if not copy_states:
-                mx_states_scaled.append(MX.sym(var_name, 1, 1))
-                if as_states:
-                    mx_states.append(
-                        mx_states_scaled[i] * nlp.x_scaling[name].scaling[i] if i is not None else mx_states_scaled[-1]
-                    )
+                mx_states.append(MX.sym(var_name, 1, 1))
 
             if not copy_states_dot:
-                mx_states_dot_scaled.append(MX.sym(var_name, 1, 1))
-                if as_states_dot:
-                    mx_states_dot.append(
-                        mx_states_dot_scaled[i] * nlp.xdot_scaling[name].scaling[i]
-                        if i is not None
-                        else mx_states_dot_scaled[-1]
-                    )
+                mx_states_dot.append(MX.sym(var_name, 1, 1))
 
             if not copy_controls:
-                mx_controls_scaled.append(MX.sym(var_name, 1, 1))
-                if as_controls:
-                    mx_controls.append(
-                        mx_controls_scaled[i] * nlp.u_scaling[name].scaling[i] if i is not None else mx_controls_scaled[-1]
-                    )
+                mx_controls.append(MX.sym(var_name, 1, 1))
 
-        mx_states_scaled = vertcat(*mx_states_scaled)
-        mx_states_dot_scaled = vertcat(*mx_states_dot_scaled)
-        mx_controls_scaled = vertcat(*mx_controls_scaled)
-        if as_states:
-            mx_states = vertcat(*mx_states)
-        if as_states_dot:
-            mx_states_dot = vertcat(*mx_states_dot)
-        if as_controls:
-            mx_controls = vertcat(*mx_controls)
+        mx_states = vertcat(*mx_states)
+        mx_states_dot = vertcat(*mx_states_dot)
+        mx_controls = vertcat(*mx_controls)
 
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
@@ -924,7 +899,7 @@ class ConfigureProblem:
                 if copy_states
                 else define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
             )
-            nlp.states["scaled"].append(name, cx_scaled, mx_states_scaled, nlp.variable_mappings[name])
+            nlp.states["scaled"].append(name, cx_scaled, mx_states, nlp.variable_mappings[name])
             nlp.states.append_from_scaled(
                 name, cx, mx_states, nlp.variable_mappings[name], nlp.states["scaled"], nlp.x_scaling[name].scaling
             )
@@ -949,7 +924,7 @@ class ConfigureProblem:
                 if copy_controls
                 else define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
             )
-            nlp.controls["scaled"].append(name, cx_scaled, mx_controls_scaled, nlp.variable_mappings[name])
+            nlp.controls["scaled"].append(name, cx_scaled, mx_controls, nlp.variable_mappings[name])
             nlp.controls.append_from_scaled(
                 name, cx, mx_controls, nlp.variable_mappings[name], nlp.controls["scaled"], nlp.u_scaling[name].scaling
             )
@@ -976,7 +951,7 @@ class ConfigureProblem:
                 if copy_states_dot
                 else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
             )
-            nlp.states_dot["scaled"].append(name, cx, mx_states_dot_scaled, nlp.variable_mappings[name])
+            nlp.states_dot["scaled"].append(name, cx, mx_states_dot, nlp.variable_mappings[name])
             nlp.states_dot.append_from_scaled(
                 name,
                 cx,
