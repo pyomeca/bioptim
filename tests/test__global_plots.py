@@ -33,7 +33,7 @@ def test_plot_graphs_one_phase():
     sol.graphs(automatically_organize=False)
 
 
-def test_plot_check_contioning():
+def test_plot_check_conditioning():
     # Load graphs check conditioning
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
