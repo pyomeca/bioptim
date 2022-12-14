@@ -487,12 +487,8 @@ class OptimizationVector:
         ocp = self.ocp
         ns = ocp.nlp[phase].ns
         if ocp.nlp[phase].ode_solver.is_direct_collocation:
-            if isinstance(ocp.nlp[phase].x_init, NoisedInitialGuess):
-                if interpolation_type == InterpolationType.ALL_POINTS:
-                    ns *= ocp.nlp[phase].ode_solver.steps + 1
-            elif isinstance(ocp.nlp[phase].x_init, InitialGuess):
-                if interpolation_type != InterpolationType.EACH_FRAME:
-                    ns *= ocp.nlp[phase].ode_solver.steps + 1
+            if interpolation_type != InterpolationType.EACH_FRAME and interpolation_type != InterpolationType.ALL_POINTS:
+                ns *= ocp.nlp[phase].ode_solver.steps + 1
         return ns
 
     def define_ocp_initial_guess(self):
