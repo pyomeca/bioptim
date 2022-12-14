@@ -902,9 +902,7 @@ class ConfigureProblem:
                 else define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
             )
             nlp.states["scaled"].append(name, cx_scaled, mx_states, nlp.variable_mappings[name])
-            nlp.states.append_from_scaled(
-                name, cx, mx_states, nlp.variable_mappings[name], nlp.states["scaled"], nlp.x_scaling[name].scaling
-            )
+            nlp.states.append_from_scaled(name, cx, nlp.states["scaled"])
 
             if not skip_plot:
                 nlp.plot[f"{name}_states"] = CustomPlot(
@@ -928,7 +926,7 @@ class ConfigureProblem:
             )
             nlp.controls["scaled"].append(name, cx_scaled, mx_controls, nlp.variable_mappings[name])
             nlp.controls.append_from_scaled(
-                name, cx, mx_controls, nlp.variable_mappings[name], nlp.controls["scaled"], nlp.u_scaling[name].scaling
+                name, cx, nlp.controls["scaled"]
             )
 
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
@@ -957,10 +955,7 @@ class ConfigureProblem:
             nlp.states_dot.append_from_scaled(
                 name,
                 cx,
-                mx_states_dot,
-                nlp.variable_mappings[name],
-                nlp.states_dot["scaled"],
-                nlp.xdot_scaling[name].scaling,
+                nlp.states_dot["scaled"]
             )
 
     @staticmethod

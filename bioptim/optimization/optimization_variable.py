@@ -1,10 +1,10 @@
-from typing import Union, Any
+from typing import Union
 
 import numpy as np
 from casadi import MX, SX, vertcat
 
 from ..misc.mapping import BiMapping
-from ..misc.options import OptionGeneric, OptionDict, UniquePerPhaseOptionList
+from ..misc.options import OptionGeneric, OptionDict
 from ..misc.enums import CXStep
 
 
@@ -456,10 +456,7 @@ class OptimizationVariableList:
         self,
         name: str,
         cx: list,
-        mx: MX,
-        bimapping: BiMapping,
-        scaled_optimization_variable: OptimizationVariable,
-        scaling: VariableScaling,
+        scaled_optimization_variable: "OptimizationVariableList",
     ):
         """
         Add a new variable to the list
@@ -470,13 +467,10 @@ class OptimizationVariableList:
             The name of the variable
         cx: list
             The list of SX or MX variable associated with this variable
-        mx: MX
-            The MX variable associated with this variable
-        bimapping: BiMapping
-            The Mapping of the MX against CX
+        scaled_optimization_variable: OptimizationVariable
+            The scaled optimization variable associated with this variable
         """
 
-        index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
         self._cx = vertcat(self._cx, cx[0])
         self._cx_end = vertcat(self._cx_end, cx[-1])
         for i, c in enumerate(cx[1:-1]):
@@ -484,11 +478,10 @@ class OptimizationVariableList:
                 self._cx_intermediates.append(c)
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
-        mx_reduced = MX()
-        mx_reduced = vertcat(mx_reduced, scaled_optimization_variable.mx_reduced[0] * scaling)
-        self.mx_reduced = vertcat(self.mx_reduced, mx_reduced)
+        self.mx_reduced = scaled_optimization_variable.mx_reduced
 
-        self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, self))
+        var = scaled_optimization_variable[name]
+        self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
 
     @property
     def cx(self):
@@ -636,10 +629,7 @@ class OptimizationVariableContainer:
         self,
         name: str,
         cx: list,
-        mx: MX,
-        bimapping: BiMapping,
-        scaled_optimization_variable: OptimizationVariable,
-        scaling: VariableScaling,
+        scaled_optimization_variable: OptimizationVariableList,
     ):
         """
         Add a new variable to the list
@@ -650,12 +640,11 @@ class OptimizationVariableContainer:
             The name of the variable
         cx: list
             The list of SX or MX variable associated with this variable
-        mx: MX
-            The MX variable associated with this variable
-        bimapping: BiMapping
-            The Mapping of the MX against CX
+        scaled_optimization_variable: OptimizationVariable
+            The scaled optimization variable associated with this variable
         """
-        return self.optimization_variable["unscaled"].append_from_scaled(name, cx, mx, bimapping, scaled_optimization_variable, scaling)
+
+        return self.optimization_variable["unscaled"].append_from_scaled(name, cx, scaled_optimization_variable)
 
     def __contains__(self, item: str):
         """
