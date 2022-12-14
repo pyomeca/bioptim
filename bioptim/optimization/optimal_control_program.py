@@ -571,7 +571,7 @@ class OptimalControlProgram:
         self, use_states_from_phase_idx, use_controls_from_phase_idx
     ):
         # TODO this feature is broken since the merge with multi_node, fix it
-        if sum(use_states_from_phase_idx) + sum(use_controls_from_phase_idx) != 0:
+        if list(set(use_states_from_phase_idx)) != use_states_from_phase_idx or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx:
             raise NotImplementedError("Mapping over phases is broken")
 
         for i in range(self.n_phases):

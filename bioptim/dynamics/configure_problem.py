@@ -878,8 +878,7 @@ class ConfigureProblem:
         mx_states_dot = [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].mx]
         mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].mx]
 
-        # if mapping on variables, what do we do with mapping on the nodes ?
-
+        # todo: if mapping on variables, what do we do with mapping on the nodes
         for i in nlp.variable_mappings[name].to_second.map_idx:
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
 
