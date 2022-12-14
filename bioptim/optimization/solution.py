@@ -533,7 +533,7 @@ class Solution:
 
         return self._states["unscaled"] if len(self._states["unscaled"]) > 1 else self._states["unscaled"][0]
 
-    def no_intermediate(self, states) -> Union[list, dict]:
+    def _no_intermediate(self, states) -> Union[list, dict]:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
         it removes the intermediate states in the case COLLOCATION Solver is used
@@ -612,7 +612,7 @@ class Solution:
         -------
         The states data without intermediate states in the case of collocation
         """
-        return self.no_intermediate(self._states["scaled"])
+        return self._no_intermediate(self._states["scaled"])
 
     @property
     def states_no_intermediate(self) -> Union[list, dict]:
@@ -624,7 +624,7 @@ class Solution:
         -------
         The states data without intermediate states in the case of collocation
         """
-        return self.no_intermediate(self._states["unscaled"])
+        return self._no_intermediate(self._states["unscaled"])
 
     @property
     def controls(self) -> Union[list, dict]:

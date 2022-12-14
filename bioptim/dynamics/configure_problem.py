@@ -836,39 +836,22 @@ class ConfigureProblem:
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
-        copy_states = False
-        if nlp.use_states_from_phase_idx is not None:
-            if nlp.use_states_from_phase_idx < nlp.phase_idx:
-                if name in ocp.nlp[nlp.use_states_from_phase_idx].states:
-                    copy_states = True
+        copy_states = nlp.use_states_from_phase_idx is not None and nlp.use_states_from_phase_idx < nlp.phase_idx and name in ocp.nlp[nlp.use_states_from_phase_idx].states
+        copy_controls = nlp.use_controls_from_phase_idx is not None and nlp.use_controls_from_phase_idx < nlp.phase_idx and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls
+        copy_states_dot = nlp.use_states_dot_from_phase_idx is not None and nlp.use_states_dot_from_phase_idx < nlp.phase_idx and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot
 
-        copy_controls = False
-        if nlp.use_controls_from_phase_idx is not None:
-            if nlp.use_controls_from_phase_idx < nlp.phase_idx:
-                if name in ocp.nlp[nlp.use_controls_from_phase_idx].controls:
-                    copy_controls = True
-
-        copy_states_dot = False
-        if nlp.use_states_dot_from_phase_idx is not None:
-            if nlp.use_states_dot_from_phase_idx < nlp.phase_idx:
-                if name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot:
-                    copy_states_dot = True
-
-        if as_states:
-            if name not in nlp.x_scaling:
-                nlp.x_scaling[name] = VariableScaling(
-                    key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
-                )
-        if as_states_dot:
-            if name not in nlp.xdot_scaling:
-                nlp.xdot_scaling[name] = VariableScaling(
-                    key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
-                )
-        if as_controls:
-            if name not in nlp.u_scaling:
-                nlp.u_scaling[name] = VariableScaling(
-                    key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
-                )
+        if as_states and name not in nlp.x_scaling:
+            nlp.x_scaling[name] = VariableScaling(
+                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+            )
+        if as_states_dot and name not in nlp.xdot_scaling:
+            nlp.xdot_scaling[name] = VariableScaling(
+                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+            )
+        if as_controls and name not in nlp.u_scaling:
+            nlp.u_scaling[name] = VariableScaling(
+                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+            )
 
         mx_states_scaled = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states["scaled"][name].mx]
         mx_states_dot_scaled = [] if not copy_states_dot else [
