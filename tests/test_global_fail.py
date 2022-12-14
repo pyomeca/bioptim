@@ -31,17 +31,13 @@ def test_custom_constraint_mx_fail():
     u_init = InitialGuess([0] * 3)
 
     ocp = OptimalControlProgram(
-<<<<<<< HEAD
-        biorbd.Model(model_path),
+        BiorbdModel(model_path),
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         30,
         2,
         constraints=constraints,
         x_init=x_init,
         u_init=u_init,
-=======
-        BiorbdModel(model_path), Dynamics(DynamicsFcn.TORQUE_DRIVEN), 30, 2, constraints=constraints
->>>>>>> master
     )
 
     with pytest.raises(RuntimeError, match="Ipopt doesn't support SX/MX types in constraints bounds"):

@@ -15,7 +15,6 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -31,11 +30,8 @@ from bioptim import (
     InitialGuess,
     InterpolationType,
     OdeSolver,
-<<<<<<< HEAD
     VariableScalingList,
-=======
     MagnitudeType,
->>>>>>> master
 )
 
 
@@ -176,15 +172,15 @@ def prepare_ocp(
 
     # Variable scaling
     x_scaling = VariableScalingList()
-    x_scaling.add("q", scaling=[1] * biorbd_model.nbQ())
-    x_scaling.add("qdot", scaling=[1] * biorbd_model.nbQdot())
+    x_scaling.add("q", scaling=[1] * bio_model.nb_q)
+    x_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
 
     xdot_scaling = VariableScalingList()
-    xdot_scaling.add("qdot", scaling=[1] * biorbd_model.nbQdot())
-    xdot_scaling.add("qddot", scaling=[1] * biorbd_model.nbQddot())
+    xdot_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
+    xdot_scaling.add("qddot", scaling=[1] * bio_model.nb_qddot)
 
     u_scaling = VariableScalingList()
-    u_scaling.add("tau", scaling=[1] * biorbd_model.nbGeneralizedTorque())
+    u_scaling.add("tau", scaling=[1] * bio_model.nb_tau)
 
     return OptimalControlProgram(
         bio_model,
@@ -210,12 +206,6 @@ def main():
     """
 
     sol = None
-<<<<<<< HEAD
-    # for initial_guess in InterpolationType:
-    initial_guess = InterpolationType.CUSTOM
-    print(f"Solving problem using {initial_guess} initial guess")
-    ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess)
-=======
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
 
@@ -230,7 +220,6 @@ def main():
                 pass
             else:
                 raise ValueError(message)
->>>>>>> master
 
     sol = ocp.solve()
     print("\n")
