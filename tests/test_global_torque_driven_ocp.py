@@ -562,6 +562,7 @@ def test_multi_model_by_mapping():
     """
     This test is highly sensitive, do not change anything please.
     """
+
     # Load multi_model_by_mapping
     from bioptim.examples.torque_driven_ocp import multi_model_by_mapping as ocp_module
 
@@ -571,11 +572,14 @@ def test_multi_model_by_mapping():
     biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
 
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=biorbd_model_path,
-        biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
-        n_shooting=(5, 5),
-    )
+    with pytest.raises(NotImplementedError, match="Mapping over phases is broken"):
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=biorbd_model_path,
+            biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
+            n_shooting=(5, 5),
+        )
+    return  # TODO: when it is not broken anymore, the following results should be good
+
     sol = ocp.solve()
 
     # Check objective function value

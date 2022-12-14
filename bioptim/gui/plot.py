@@ -634,14 +634,14 @@ class PlotOcp:
 
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
-            for s in nlp.states.keys():
+            for s in nlp.states:
                 if nlp.use_states_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_states, (list, tuple)):
                         state = np.concatenate((state, data_states[i][s]))
                     else:
                         state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.controls.keys():
+            for s in nlp.controls:
                 if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_controls, (list, tuple)):
                         control = np.concatenate((control, data_controls[i][s]))

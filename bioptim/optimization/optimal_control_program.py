@@ -309,7 +309,7 @@ class OptimalControlProgram:
 
         if x_init is None:
             if x_scaling is None:
-                raise RuntimeError("At least x_scaling or x_init should be provided.")
+                raise RuntimeError("At least x_init or x_scaling should be provided.")
             x_init = InitialGuessList()
         elif isinstance(x_init, InitialGuess):
             if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
@@ -324,9 +324,11 @@ class OptimalControlProgram:
             x_init_tp.add(x_init.init)
             x_init = x_init_tp
         elif not isinstance(x_init, InitialGuessList):
-            raise RuntimeError("x_scaling ans xdot_scaling should be built from a InitialGuess or InitialGuessList")
+            raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
         if u_init is None:
+            if u_scaling is None:
+                raise RuntimeError("At least u_init or u_scaling should be provided.")
             u_init = InitialGuessList()
         elif isinstance(u_init, InitialGuess):
             if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
@@ -414,10 +416,7 @@ class OptimalControlProgram:
             raise RuntimeError("use_sx should be a bool")
 
         # Type of CasADi graph
-        if use_sx:
-            self.cx = SX
-        else:
-            self.cx = MX
+        self.cx = SX if use_sx else MX
 
         # Declare optimization variables
         self.program_changed = True
@@ -503,7 +502,8 @@ class OptimalControlProgram:
             use_states_from_phase_idx,
             use_states_dot_from_phase_idx,
             use_controls_from_phase_idx,
-        ) = node_mappings.get_variable_from_phase_idx(self, NLP)
+        ) = node_mappings.get_variable_from_phase_idx(self)
+
         self._check_variable_mapping_consistency_with_node_mapping(
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
@@ -570,6 +570,10 @@ class OptimalControlProgram:
     def _check_variable_mapping_consistency_with_node_mapping(
         self, use_states_from_phase_idx, use_controls_from_phase_idx
     ):
+        # TODO this feature is broken since the merge with multi_node, fix it
+        if sum(use_states_from_phase_idx) + sum(use_controls_from_phase_idx) != 0:
+            raise NotImplementedError("Mapping over phases is broken")
+
         for i in range(self.n_phases):
             for j in [idx for idx, x in enumerate(use_states_from_phase_idx) if x == i]:
                 for key in self.nlp[i].variable_mappings.keys():
@@ -752,10 +756,10 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states.keys():
+            for key in nlp.states:
                 if f"{key}_states" in nlp.plot:
                     nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
-            for key in nlp.controls.keys():
+            for key in nlp.controls:
                 if f"{key}_controls" in nlp.plot:
                     nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
 

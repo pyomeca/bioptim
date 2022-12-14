@@ -72,42 +72,42 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.57063948309302)
-        np.testing.assert_almost_equal(sol.states_unscaled_no_intermediate["q"][:, 15], [-0.5010317, 0.6824593])
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.5010317, 0.6824593])
 
     elif isinstance(ode_solver, OdeSolver.IRK):
         np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 65.8236055171619)
-        np.testing.assert_almost_equal(sol.states_unscaled_no_intermediate["q"][:, 15], [0.5536468, -0.4129719])
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.5536468, -0.4129719])
 
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(f[0, 0], 46.667345680854794)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 46.667345680854794)
-        np.testing.assert_almost_equal(sol.states_unscaled_no_intermediate["q"][:, 15], [-0.1780507, 0.3254202])
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.1780507, 0.3254202])
 
     elif isinstance(ode_solver, OdeSolver.RK1):
         np.testing.assert_almost_equal(f[0, 0], 47.360621044913245)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 47.360621044913245)
-        np.testing.assert_almost_equal(sol.states_unscaled_no_intermediate["q"][:, 15], [0.1463538, 0.0215651])
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.1463538, 0.0215651])
 
     elif isinstance(ode_solver, OdeSolver.RK2):
         np.testing.assert_almost_equal(f[0, 0], 76.24887695462857)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 76.24887695462857)
-        np.testing.assert_almost_equal(sol.states_unscaled_no_intermediate["q"][:, 15], [0.652476, -0.496652])
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.652476, -0.496652])
 
     else:
         np.testing.assert_almost_equal(f[0, 0], 41.58259426)
         # detailed cost values
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.58259426)
-        np.testing.assert_almost_equal(sol.states_unscaled_no_intermediate["q"][:, 15], [-0.4961208, 0.6764171])
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.4961208, 0.6764171])
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -120,7 +120,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
 
     # Check some of the results
     states, controls = sol.states, sol.controls
-    q, qdot, tau = states[0]["q"], states[0]["qdot"], controls[0]["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -200,9 +200,9 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
 
             # Check some of the results
             q, qdot, tau = (
-                sol.states[0]["q"],
-                sol.states[0]["qdot"],
-                sol.controls[0]["tau"],
+                sol.states["q"],
+                sol.states["qdot"],
+                sol.controls["tau"]
             )
 
             # initial and final position
@@ -251,9 +251,9 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
 
         # Check some of the results
         q, qdot, tau = (
-            sol.states[0]["q"],
-            sol.states[0]["qdot"],
-            sol.controls[0]["tau"],
+            sol.states["q"],
+            sol.states["qdot"],
+            sol.controls["tau"]
         )
 
         # initial and final position
@@ -298,7 +298,7 @@ def test_custom_constraint_track_markers(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states[0]["q"], sol.states[0]["qdot"], sol.controls[0]["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -384,9 +384,9 @@ def test_initial_guesses(random_init, interpolation, ode_solver):
 
         # Check some of the results
         q, qdot, tau = (
-            sol.states[0]["q"],
-            sol.states[0]["qdot"],
-            sol.controls[0]["tau"],
+            sol.states["q"],
+            sol.states["qdot"],
+            sol.controls["tau"]
         )
 
         # initial and final position
@@ -443,7 +443,7 @@ def test_cyclic_objective(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((67, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states[0]["q"], sol.states[0]["qdot"], sol.controls[0]["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1.60205103, -0.01069317, 0.62477988]))
@@ -495,7 +495,7 @@ def test_cyclic_constraint(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((73, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states[0]["q"], sol.states[0]["qdot"], sol.controls[0]["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 1.57]))
@@ -611,9 +611,9 @@ def test_parameter_optimization(ode_solver):
 
     # Check some of the results
     q, qdot, tau, gravity = (
-        sol.states[0]["q"],
-        sol.states[0]["qdot"],
-        sol.controls[0]["tau"],
+        sol.states["q"],
+        sol.states["qdot"],
+        sol.controls["tau"],
         sol.parameters["gravity_xyz"],
     )
 
@@ -713,7 +713,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states[0]["q"], sol.states[0]["qdot"], sol.controls[0]["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -757,7 +757,7 @@ def test_example_external_forces(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((246, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states[0]["q"], sol.states[0]["qdot"], sol.controls[0]["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.71322593, 0, 0)))
@@ -823,10 +823,10 @@ def test_example_multiphase(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
     # Check some of the results
-    states, controls, states_unscaled_no_intermediate = (
+    states, controls, states_no_intermediate = (
         sol.states,
         sol.controls,
-        sol.states_unscaled_no_intermediate,
+        sol.states_no_intermediate,
     )
 
     # initial and final position
@@ -873,110 +873,110 @@ def test_example_multiphase(ode_solver):
     np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 38560.82580432337)
 
     # state no intermediate
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate[0]["q"][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate[0]["q"][:, -1], np.array((2, 0, 0.0078695)))
+    np.testing.assert_almost_equal(states_no_intermediate[0]["q"][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states_no_intermediate[0]["q"][:, -1], np.array((2, 0, 0.0078695)))
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
+            states_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
             np.array((1.5000000e00, 3.3040241e-17, 3.9347424e-03)),
         )
     elif ode_solver == OdeSolver.RK8:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
+            states_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
             np.array((1.5000000e00, 4.6362903e-17, 3.9347424e-03)),
         )
     elif ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
+            states_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
             np.array((1.5000000e00, -4.4586581e-17, 3.9347424e-03)),
         )
     elif ode_solver == OdeSolver.COLLOCATION:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
+            states_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
             np.array([1.5000000e00, -2.4992262e-16, 3.9347423e-03]),
         )
     else:
         raise Exception("ode solver not supported for this test")
 
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate[1]["q"][:, 0], np.array((2, 0, 0.0078695)))
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate[1]["q"][:, -1], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states_no_intermediate[1]["q"][:, 0], np.array((2, 0, 0.0078695)))
+    np.testing.assert_almost_equal(states_no_intermediate[1]["q"][:, -1], np.array((1, 0, 0)))
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
+            states_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
             np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
         )
     elif ode_solver == OdeSolver.RK8:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
+            states_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
             np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
         )
     elif ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
+            states_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
             np.array((1.5070658e00, -5.0200022e-17, 3.5555768e-02)),
         )
     elif ode_solver == OdeSolver.COLLOCATION:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
+            states_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
             np.array((1.5070658e00, -2.8260005e-15, 3.5555768e-02)),
         )
     else:
         raise Exception("ode solver not supported for this test")
 
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate[2]["q"][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate[2]["q"][:, -1], np.array((2, 0, 1.57)))
+    np.testing.assert_almost_equal(states_no_intermediate[2]["q"][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states_no_intermediate[2]["q"][:, -1], np.array((2, 0, 1.57)))
 
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
+            states_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
             np.array((1.4945492e00, 1.4743187e-17, 7.6060664e-01)),
         )
     elif ode_solver == OdeSolver.RK8:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
+            states_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
             np.array((1.4945492e00, 2.8290382e-17, 7.6060664e-01)),
         )
     elif ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
+            states_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
             np.array((1.4945492e00, 3.1188726e-16, 7.6060664e-01)),
         )
     elif ode_solver == OdeSolver.COLLOCATION:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
+            states_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
             np.array((1.4945492e00, 9.6246483e-16, 7.6060664e-01)),
         )
     else:
         raise Exception("ode solver not supported for this test")
 
     sol_merged = sol.merge_phases()
-    states_unscaled_no_intermediate = sol_merged.states_unscaled_no_intermediate
+    states_no_intermediate = sol_merged.states_no_intermediate
 
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate["q"][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate["q"][:, ocp.nlp[0].ns], np.array((2, 0, 0.0078695)))
+    np.testing.assert_almost_equal(states_no_intermediate["q"][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states_no_intermediate["q"][:, ocp.nlp[0].ns], np.array((2, 0, 0.0078695)))
     np.testing.assert_almost_equal(
-        states_unscaled_no_intermediate["q"][:, ocp.nlp[0].ns + ocp.nlp[1].ns], np.array((1, 0, 0))
+        states_no_intermediate["q"][:, ocp.nlp[0].ns + ocp.nlp[1].ns], np.array((1, 0, 0))
     )
-    np.testing.assert_almost_equal(states_unscaled_no_intermediate["q"][:, -1], np.array((2, 0, 1.57)))
+    np.testing.assert_almost_equal(states_no_intermediate["q"][:, -1], np.array((2, 0, 1.57)))
 
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
             np.array((1.5000000e00, 3.3040241e-17, 3.9347424e-03)),
         )
     elif ode_solver == OdeSolver.RK8:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
             np.array((1.5000000e00, 4.6362903e-17, 3.9347424e-03)),
         )
     elif ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
             np.array((1.5000000e00, -4.4586581e-17, 3.9347424e-03)),
         )
     elif ode_solver == OdeSolver.COLLOCATION:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
             np.array([1.5000000e00, -2.4992262e-16, 3.9347423e-03]),
         )
     else:
@@ -984,22 +984,22 @@ def test_example_multiphase(ode_solver):
 
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
             np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
         )
     elif ode_solver == OdeSolver.RK8:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
             np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
         )
     elif ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
             np.array((1.5070658e00, -5.0200022e-17, 3.5555768e-02)),
         )
     elif ode_solver == OdeSolver.COLLOCATION:
         np.testing.assert_almost_equal(
-            states_unscaled_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
             np.array((1.5070658e00, -2.8260005e-15, 3.5555768e-02)),
         )
     else:
@@ -1038,7 +1038,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
     np.testing.assert_array_less(-g[80:100], -min_bound)
 
     # Check some of the results
-    q, qdot, tau = sol.states[0]["q"], sol.states[0]["qdot"], sol.controls[0]["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
@@ -1093,7 +1093,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     np.testing.assert_array_less(g[80:100], max_bound)
 
     # Check some of the results
-    q, qdot, tau = sol.states[0]["q"], sol.states[0]["qdot"], sol.controls[0]["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
     np.testing.assert_almost_equal(q[:, -1], np.array((-0.00902682, 0.00820596, -0.72560094, 0.72560094)))
@@ -1336,7 +1336,7 @@ def test_example_variable_scaling():
     np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states[0]["q"], sol.states[0]["qdot"], sol.controls[0]["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))

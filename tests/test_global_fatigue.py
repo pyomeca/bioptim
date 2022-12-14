@@ -34,7 +34,7 @@ def test_xia_fatigable_muscles():
     np.testing.assert_almost_equal(g, np.zeros((552, 1)))
 
     # Check some of the results
-    states, controls = sol.states[0], sol.controls[0]
+    states, controls = sol.states, sol.controls
     q, qdot, ma, mr, mf = states["q"], states["qdot"], states["muscles_ma"], states["muscles_mr"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -108,7 +108,7 @@ def test_xia_stabilized_fatigable_muscles():
     np.testing.assert_almost_equal(g, np.zeros((552, 1)))
 
     # Check some of the results
-    states, controls = sol.states[0], sol.controls[0]
+    states, controls = sol.states, sol.controls
     q, qdot, ma, mr, mf = states["q"], states["qdot"], states["muscles_ma"], states["muscles_mr"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -219,7 +219,7 @@ def test_effort_fatigable_muscles():
     np.testing.assert_almost_equal(g, np.zeros((252, 1)))
 
     # Check some of the results
-    states, controls = sol.states[0], sol.controls[0]
+    states, controls = sol.states, sol.controls
     q, qdot, mf = states["q"], states["qdot"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 

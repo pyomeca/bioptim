@@ -183,7 +183,7 @@ class Parameter(PenaltyOption):
 
                 func = penalty.custom_function
 
-                all_pn = PenaltyNodeList(ocp, None, [], [], [], [])
+                all_pn = PenaltyNodeList(ocp, None, [], [], [], [], [], [])
                 val = func(ocp, self.cx * self.scaling, **penalty.params)
                 self.set_penalty(ocp, penalty, val, target_ns=1)
                 penalty.clear_penalty(ocp, None)

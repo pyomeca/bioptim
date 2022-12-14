@@ -337,11 +337,11 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+            if "qddot" not in nlp.states and "qddot" not in nlp.controls:
                 return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
-            elif "qddot" in nlp.states.keys():
+            elif "qddot" in nlp.states:
                 return nlp.states["qddot"].cx
-            elif "qddot" in nlp.controls.keys():
+            elif "qddot" in nlp.controls:
                 return nlp.controls["qddot"].cx
 
         @staticmethod
@@ -438,7 +438,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+            if "qddot" not in nlp.states and "qddot" not in nlp.controls:
                 com_ddot = nlp.model.center_of_mass_acceleration(
                     nlp.states["q"].mx,
                     nlp.states["qdot"].mx,
@@ -451,7 +451,7 @@ class PenaltyFunctionAbstract:
                 var.extend([nlp.parameters[key] for key in nlp.parameters])
                 return nlp.mx_to_cx("com_ddot", com_ddot, *var)
             else:
-                qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
+                qddot = nlp.states["qddot"] if "qddot" in nlp.states else nlp.controls["qddot"]
                 return nlp.mx_to_cx(
                     "com_ddot", nlp.model.center_of_mass_acceleration, nlp.states["q"], nlp.states["qdot"], qddot
                 )

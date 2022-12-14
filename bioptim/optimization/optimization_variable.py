@@ -139,7 +139,8 @@ class VariableScalingList(OptionDict):
 
         raise NotImplementedError("Printing of VariableScalingList is not ready yet")
 
-    def scaling_fill_phases(self, ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
+    @staticmethod
+    def scaling_fill_phases(ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
 
         x_scaling_out = VariableScalingList()
         xdot_scaling_out = VariableScalingList()
@@ -594,10 +595,6 @@ class OptimizationVariableContainer:
             variables_unscaled = OptimizationVariableList()
         self.optimization_variable = {"scaled": variable_scaled, "unscaled": variables_unscaled}
 
-    @property
-    def mx_reduced(self):
-        return self.optimization_variable["unscaled"].mx_reduced
-
     def __getitem__(self, item: int | str | list | range):
         if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
             return self.optimization_variable[item]
@@ -616,6 +613,24 @@ class OptimizationVariableContainer:
     @property
     def shape(self):
         return self.optimization_variable["unscaled"].shape
+
+    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
+        """
+        Add a new variable to the list
+
+        Parameters
+        ----------
+        name: str
+            The name of the variable
+        cx: list
+            The list of SX or MX variable associated with this variable
+        mx: MX
+            The MX variable associated with this variable
+        bimapping: BiMapping
+            The Mapping of the MX against CX
+        """
+
+        return self.optimization_variable["unscaled"].append(name, cx, mx, bimapping)
 
     def append_from_scaled(
         self,
@@ -651,6 +666,9 @@ class OptimizationVariableContainer:
 
         return item in self.optimization_variable["unscaled"]
 
+    def get_cx(self, key, cx_type):
+        return self.optimization_variable["unscaled"].get_cx(key, cx_type)
+
     @property
     def cx(self):
         """
@@ -660,6 +678,14 @@ class OptimizationVariableContainer:
         return self.optimization_variable["unscaled"].cx
 
     @property
+    def cx_intermediates_list(self):
+        """
+        The cx of all elements together (starting point)
+        """
+
+        return self.optimization_variable["unscaled"].cx_intermediates_list
+
+    @property
     def cx_end(self):
         """
         The cx of all elements together (ending point)
@@ -667,9 +693,43 @@ class OptimizationVariableContainer:
 
         return self.optimization_variable["unscaled"].cx_end
 
+    @property
+    def mx(self):
+        return self.optimization_variable["unscaled"].mx
+
+    @property
+    def mx_reduced(self):
+        return self.optimization_variable["unscaled"].mx_reduced
+
     def __len__(self):
         """
         The number of variables in the list
         """
 
         return len(self.optimization_variable["unscaled"])
+
+    def __iter__(self):
+        """
+        Allow for the list to be used in a for loop
+
+        Returns
+        -------
+        A reference to self
+        """
+
+        self._iter_idx = 0
+        return self
+
+    def __next__(self):
+        """
+        Get the next phase of the option list
+
+        Returns
+        -------
+        The next phase of the option list
+        """
+
+        self._iter_idx += 1
+        if self._iter_idx > len(self):
+            raise StopIteration
+        return self.optimization_variable["unscaled"][self._iter_idx - 1].name

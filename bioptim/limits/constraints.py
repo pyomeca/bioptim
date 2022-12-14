@@ -333,9 +333,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
-            tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
+            tau = nlp.states["tau"].mx if "tau" in nlp.states else nlp.controls["tau"].mx
 
-            qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls.keys() else nlp.states["qddot"].mx
+            qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls else nlp.states["qddot"].mx
             if with_contact:
                 model = nlp.model.copy()
                 qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
@@ -370,8 +370,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
-            tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
-            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+            tau = nlp.states["tau"].mx if "tau" in nlp.states else nlp.controls["tau"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
 
             if nlp.external_forces:
                 raise NotImplementedError(
@@ -380,7 +380,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
             if with_contact:
                 # todo: this should be done internally in BiorbdModel
-                f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls.keys() else nlp.states["fext"].mx
+                f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls else nlp.states["fext"].mx
                 f_contact_vec = nlp.model.reshape_fext_to_fcontact(f_contact)
 
                 tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)
@@ -415,7 +415,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
-            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
 
             # TODO get the index of the marker
             contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, contact_index)
@@ -448,7 +448,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             muscle_activations = nlp.controls["muscles"].mx
             muscle_tau = nlp.model.muscle_joint_torque(muscle_activations, q, qdot)
-            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
 
             if nlp.external_forces:
                 raise NotImplementedError(

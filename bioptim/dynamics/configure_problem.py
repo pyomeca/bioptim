@@ -836,7 +836,6 @@ class ConfigureProblem:
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
-
         copy_states = False
         if nlp.use_states_from_phase_idx is not None:
             if nlp.use_states_from_phase_idx < nlp.phase_idx:
@@ -886,28 +885,26 @@ class ConfigureProblem:
 
             if not copy_states:
                 mx_states_scaled.append(MX.sym(var_name, 1, 1))
+                if as_states:
+                    mx_states.append(
+                        mx_states_scaled[i] * nlp.x_scaling[name].scaling[i] if i is not None else mx_states_scaled[-1]
+                    )
 
             if not copy_states_dot:
                 mx_states_dot_scaled.append(MX.sym(var_name, 1, 1))
+                if as_states_dot:
+                    mx_states_dot.append(
+                        mx_states_dot_scaled[i] * nlp.xdot_scaling[name].scaling[i]
+                        if i is not None
+                        else mx_states_dot_scaled[-1]
+                    )
 
             if not copy_controls:
                 mx_controls_scaled.append(MX.sym(var_name, 1, 1))
-
-            # Todo add if not copy?
-            if as_states:
-                mx_states.append(
-                    mx_states_scaled[i] * nlp.x_scaling[name].scaling[i] if i is not None else mx_states_scaled[-1]
-                )
-            if as_states_dot:
-                mx_states_dot.append(
-                    mx_states_dot_scaled[i] * nlp.xdot_scaling[name].scaling[i]
-                    if i is not None
-                    else mx_states_dot_scaled[-1]
-                )
-            if as_controls:
-                mx_controls.append(
-                    mx_controls_scaled[i] * nlp.u_scaling[name].scaling[i] if i is not None else mx_controls_scaled[-1]
-                )
+                if as_controls:
+                    mx_controls.append(
+                        mx_controls_scaled[i] * nlp.u_scaling[name].scaling[i] if i is not None else mx_controls_scaled[-1]
+                    )
 
         mx_states_scaled = vertcat(*mx_states_scaled)
         mx_states_dot_scaled = vertcat(*mx_states_dot_scaled)

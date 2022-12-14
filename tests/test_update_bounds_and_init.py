@@ -30,7 +30,9 @@ def test_double_update_bounds_and_init():
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0)
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0, x_init=x_init, u_init=u_init)
 
     x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
@@ -102,7 +104,9 @@ def test_update_bounds_and_init_with_param():
         extra_value=1,
     )
 
-    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0, parameters=parameters)
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_tau))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0, parameters=parameters, x_init=x_init, u_init=u_init)
 
     x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
@@ -210,7 +214,10 @@ def test_update_noised_init_rk4(interpolation):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=OdeSolver.RK4())
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=OdeSolver.RK4(), x_init=x_init, u_init=u_init)
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -502,7 +509,10 @@ def test_update_noised_init_collocation(interpolation):
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init)
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -1221,7 +1231,10 @@ def test_update_noised_initial_guess_rk4(n_extra):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time)
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, x_init=x_init, u_init=u_init)
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -1346,7 +1359,10 @@ def test_update_noised_initial_guess_collocation(interpolation):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init)
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -1781,7 +1797,10 @@ def test_update_noised_initial_guess_list(interpolation):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init)
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)

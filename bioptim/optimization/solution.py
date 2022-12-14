@@ -88,7 +88,7 @@ class Solution:
         Returns the state scaled in list if more than one phases, otherwise it returns the only dict
         and removes the intermediate states scaled if Collocation solver is used
     @property
-    states_unscaled_no_intermediate(self) -> Union[list, dict]
+    states_no_intermediate(self) -> Union[list, dict]
         Returns the state unscaled in list if more than one phases, otherwise it returns the only dict
         and removes the intermediate states unscaled if Collocation solver is used
     @property
@@ -531,7 +531,7 @@ class Solution:
         The states data
         """
 
-        return self._states["unscaled"]
+        return self._states["unscaled"] if len(self._states["unscaled"]) > 1 else self._states["unscaled"][0]
 
     def no_intermediate(self, states) -> Union[list, dict]:
         """
@@ -615,7 +615,7 @@ class Solution:
         return self.no_intermediate(self._states["scaled"])
 
     @property
-    def states_unscaled_no_intermediate(self) -> Union[list, dict]:
+    def states_no_intermediate(self) -> Union[list, dict]:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
         it removes the intermediate states in the case COLLOCATION Solver is used
@@ -643,7 +643,7 @@ class Solution:
                 "previously integrated and interpolated structure"
             )
 
-        return self._controls["unscaled"]
+        return self._controls["unscaled"] if len(self._controls["unscaled"]) > 1 else self._controls["unscaled"][0]
 
     @property
     def time(self) -> Union[list, dict]:
@@ -934,9 +934,9 @@ class Solution:
 
         elif shooting_type == Shooting.MULTIPLE:
             return (
-                self.states_unscaled_no_intermediate[phase]["all"][:, :-1]
+                self.states_no_intermediate[phase]["all"][:, :-1]
                 if len(self.ocp.nlp) > 1
-                else self.states_unscaled_no_intermediate["all"][:, :-1]
+                else self.states_no_intermediate["all"][:, :-1]
             )
         else:
             raise NotImplementedError(f"Shooting type {shooting_type} is not implemented")
@@ -1015,7 +1015,7 @@ class Solution:
                 )
 
             # Dispatch the integrated values to all the keys
-            for key in nlp.states.keys():
+            for key in nlp.states:
                 out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][nlp.states[key].index, :]
 
         return out
@@ -1195,20 +1195,20 @@ class Solution:
             out_states = deepcopy(self._states["unscaled"])
         else:
             out_states_scaled = (
-                _merge(self.states["scaled"], is_control=False) if not skip_states and self._states["scaled"] else None
+                _merge(self._states["scaled"], is_control=False) if not skip_states and self._states["scaled"] else None
             )
-            out_states = _merge(self.states["unscaled"], is_control=False) if not skip_states else None
+            out_states = _merge(self._states["unscaled"], is_control=False) if not skip_states else None
 
         if len(self._controls["scaled"]) == 1:
             out_controls_scaled = deepcopy(self._controls["scaled"])
             out_controls = deepcopy(self._controls["unscaled"])
         else:
             out_controls_scaled = (
-                _merge(self.controls["scaled"], is_control=True)
+                _merge(self._controls["scaled"], is_control=True)
                 if not skip_controls and self._controls["scaled"]
                 else None
             )
-            out_controls = _merge(self.controls["unscaled"], is_control=True) if not skip_controls else None
+            out_controls = _merge(self._controls["unscaled"], is_control=True) if not skip_controls else None
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
@@ -1431,9 +1431,9 @@ class Solution:
                         "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
                     ):
                         x = (
-                            self.states_unscaled_no_intermediate["all"][:, col_x_idx]
+                            self.states_no_intermediate["all"][:, col_x_idx]
                             if len(self.phase_time) - 1 == 1
-                            else self.states_unscaled_no_intermediate[phase_idx]["all"][:, col_x_idx]
+                            else self.states_no_intermediate[phase_idx]["all"][:, col_x_idx]
                         )
                     else:
                         x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]
