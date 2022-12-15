@@ -406,7 +406,7 @@ class DynamicsFunctions:
         q = DynamicsFunctions.get(q_nlp, q_var)
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau_activations = DynamicsFunctions.get(tau_nlp, tau_var)
-        tau = nlp.model.torque(tau_activations, q, qdot).to_mx()
+        tau = nlp.model.torque(tau_activations, q, qdot)
         passive_torque = nlp.model.passive_joint_torque(q, qdot)
         tau = tau + passive_torque if with_passive_torque else tau
 
@@ -580,7 +580,7 @@ class DynamicsFunctions:
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         tau = tau + passive_torque if with_passive_torque else tau
 
-        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+        return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
     @staticmethod
     def joints_acceleration_driven(
