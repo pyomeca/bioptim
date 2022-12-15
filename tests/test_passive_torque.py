@@ -41,7 +41,7 @@ class OptimalControlProgram:
         RigidBodyDynamics.ODE,
     ],
 )
-def test_torque_driven(with_passive_torque, cx, rigidbody_dynamics):
+def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
@@ -130,7 +130,7 @@ def test_torque_driven(with_passive_torque, cx, rigidbody_dynamics):
 
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
-def test_torque_derivative_driven(with_passive_torque, cx):
+def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
@@ -210,7 +210,7 @@ def test_torque_derivative_driven(with_passive_torque, cx):
 
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
-def test_torque_activation_driven(with_passive_torque, cx):
+def test_torque_activation_driven_with_passive_torque(with_passive_torque, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
@@ -283,7 +283,7 @@ def test_torque_activation_driven(with_passive_torque, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 @pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE])
-def test_muscle_driven(with_passive_torque, rigidbody_dynamics, cx):
+def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynamics, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
