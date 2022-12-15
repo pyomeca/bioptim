@@ -475,7 +475,7 @@ class OptimizationVector:
         ocp = self.ocp
         ns = ocp.nlp[phase].ns
         if ocp.nlp[phase].ode_solver.is_direct_collocation:
-            if interpolation_type != InterpolationType.EACH_FRAME and interpolation_type != InterpolationType.ALL_POINTS:
+            if interpolation_type != InterpolationType.EACH_FRAME:
                 ns *= ocp.nlp[phase].ode_solver.steps + 1
         return ns
 
