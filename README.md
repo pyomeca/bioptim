@@ -64,6 +64,9 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [The initial conditions](#the-initial-conditions)
   - [InitialGuess](#class-initialguess)
   - [InitialGuessList](#class-initialguesslist)
+- [The variable scaling](#the-variable-scaling)
+  - [VariableScaling](#class-VariableScaling)
+  - [VariableScalingList](#class-VariableScalinglist)
 - [The constraints](#the-constraints)
   - [Constraint](#class-constraint)
   - [ConstraintList](#class-constraintlist)
@@ -310,6 +313,17 @@ u_init = InitialGuess([0, 0])
 ```
 Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*).
 In this case, we have both the positions `and` their velocities to be 0.
+
+On the same train of thoughts, if we want to help the solver even more, we can also define a variable scaling for the states (`x_scaling`, here *q* and *qdot*) and for the controls (`u_scaling`, here *tau*). *Note that the scaling should be declared in order that the variables appear. 
+We encourage you to choose a variable scaling the same order of magnitude to the expected optimal values.
+```python
+x_scaling = VariableScalingList()
+x_scaling.add("q", scaling=[1, 3])
+x_scaling.add("qdot", scaling=[85, 85])
+    
+u_scaling = VariableScalingList()
+u_scaling.add("tau", scaling=[900, 1])
+```
 
 We now have everything to create the ocp!
 For that we have to decide how much time the pendulum has to get up there (`phase_time`) and how many shooting point are defined for the multishoot (`n_shooting`).
@@ -561,6 +575,9 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `u_init` is the initial guess for the controls variables (see The initial conditions section)
 `x_bounds` is the minimal and maximal value the states can have (see The bounds section)
 `u_bounds` is the minimal and maximal value the controls can have (see The bounds section)
+`x_scaling` is the scaling applied to the states variables (see The variable scaling section)
+`xdot_scaling` is the scaling applied to the states derivative variables (see The variable scaling section)
+`u_scaling` is the scaling applied to the controls variables (see The variable scaling section)
 `objective_functions` is the objective function set of the ocp (see The objective functions section)
 `constraints` is the constraint set of the ocp (see The constraints section)
 `parameters` is the parameter set of the ocp (see The parameters section)
@@ -960,6 +977,7 @@ So a minimal use is as follows:
 init_list = InitialGuessList()
 init_list.add(init)
 ```
+
 If someone wants to add noise to the initial guess list, you can provide the following:
 ```python
 init_list.add_noise(
@@ -972,6 +990,28 @@ init_list.add_noise(
 )
 ```
 The parameters, except `MagnitudeType` must be specified for each phase unless you want the same value for every phases.
+
+## The variable scaling
+The scaling applied to the optimization variables, it is what is expected by the `OptimalControlProgram` for its `x_scaling`, `xdot_scaling` and `u_init` parameters. 
+
+### Class VariableScaling
+
+The VariableScaling class is the main class to define variables scaling.
+The constructor can be called by sending the variable name and the scaling to be applied such as
+```python
+scaling = VariableScaling('q', scaling=[1, 1])
+```
+
+### Class VariableScalingList
+A VariableScalingList is a list of VariableScaling. 
+The `add()` method can be called exactly as if one was calling the `VariableScaling` constructor.  
+
+So a minimal use is as follows:
+```python
+scaling = VariableScalingList()
+scaling.add("q", scaling=[1, 1])
+```
+
 ## The constraints
 The constraints are hard penalties of the optimization program.
 That means the solution won't be considered optimal unless all the constraint set is fully respected.

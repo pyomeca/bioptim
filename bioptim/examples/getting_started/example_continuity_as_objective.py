@@ -176,7 +176,7 @@ def prepare_ocp_second_pass(
     x_bounds[:, 0] = 0
 
     # Initial guess
-    x_init = np.vstack((solution.states["q"], solution.states["qdot"]))
+    x_init = np.vstack((solution.states[0]["q"], solution.states[0]["qdot"]))
     x_init = InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
@@ -185,7 +185,7 @@ def prepare_ocp_second_pass(
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = InitialGuess(solution.controls["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+    u_init = InitialGuess(solution.controls[0]["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")

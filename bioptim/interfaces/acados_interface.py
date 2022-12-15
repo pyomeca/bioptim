@@ -164,9 +164,10 @@ class AcadosInterface(SolverInterface):
                     raise RuntimeError("Time constraint not implemented yet with Acados.")
 
         self.nparams = ocp.nlp[0].parameters.shape
-        self.params_initial_guess = ocp.v.parameters_in_list.initial_guess
+        param_list = ocp.v.parameters_in_list
+        self.params_initial_guess = param_list.initial_guess.scale(param_list.scaling)
         self.params_initial_guess.check_and_adjust_dimensions(self.nparams, 1)
-        self.params_bounds = ocp.v.parameters_in_list.bounds
+        self.params_bounds = param_list.bounds.scale(param_list.scaling)
         self.params_bounds.check_and_adjust_dimensions(self.nparams, 1)
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])

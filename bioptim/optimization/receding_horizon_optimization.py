@@ -13,6 +13,7 @@ from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import SolverType, InterpolationType
 from ..interfaces.solver_options import Solver
+from ..optimization.optimization_variable import VariableScaling
 from ..interfaces.biomodel import BioModel
 
 
@@ -202,6 +203,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             n_shooting=self.total_optimization_run - 1,
             phase_time=self.total_optimization_run * self.nlp[0].dt,
             skip_continuity=True,
+            x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
+            xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
+            u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
+            use_sx=self.original_values["use_sx"],
         )
         return Solution(solution_ocp, [_states, _controls])
 
@@ -264,7 +269,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         return True
 
     def export_data(self, sol) -> tuple:
-        return sol.states["all"][:, self.frame_to_export], sol.controls["all"][:, self.frame_to_export]
+        states = sol.states["all"][:, self.frame_to_export]
+        controls = sol.controls["all"][:, self.frame_to_export]
+        return states, controls
 
     def _define_time(self, phase_time: Union[int, float, list, tuple], objective_functions, constraints):
         """
@@ -368,7 +375,11 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run * self.nlp[0].ns - 1,
             phase_time=self.total_optimization_run * self.nlp[0].ns * self.nlp[0].dt,
+            x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
+            xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
+            u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
             skip_continuity=True,
+            use_sx=self.original_values["use_sx"],
         )
         return Solution(solution_ocp, [_states, _controls])
 
@@ -430,7 +441,8 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def advance_window_initial_guess_controls(self, sol, **advance_options):
         if self.nlp[0].u_init.type != InterpolationType.EACH_FRAME:
             self.nlp[0].u_init = InitialGuess(
-                np.ndarray((sol.controls["all"].shape[0], self.nlp[0].ns)), interpolation=InterpolationType.EACH_FRAME
+                np.ndarray((sol.controls["all"].shape[0], self.nlp[0].ns)),
+                interpolation=InterpolationType.EACH_FRAME,
             )
             self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns - 1)
         self.nlp[0].u_init.init[:, :] = sol.controls["all"][:, :-1]
@@ -494,7 +506,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def advance_window_initial_guess_controls(self, sol, **advance_options):
         if self.nlp[0].u_init.type != InterpolationType.EACH_FRAME:
             self.nlp[0].u_init = InitialGuess(
-                np.ndarray((sol.controls["all"].shape[0], self.nlp[0].ns)), interpolation=InterpolationType.EACH_FRAME
+                np.ndarray((sol.controls["all"].shape[0], self.nlp[0].ns)),
+                interpolation=InterpolationType.EACH_FRAME,
             )
             self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns - 1)
         self.nlp[0].u_init.init[:, :] = sol.controls["all"][:, self.initial_guess_frames[:-1]]
@@ -510,6 +523,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
             phase_time=self.cycle_len * self.total_optimization_run * self.nlp[0].dt,
             skip_continuity=True,
+            x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
+            xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
+            u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
+            use_sx=self.original_values["use_sx"],
         )
         return Solution(solution_ocp, [_states, _controls])
 

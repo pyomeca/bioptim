@@ -61,7 +61,6 @@ def custom_dynamic(
     The derivative of the states in the tuple[Union[MX, SX]] format
     """
 
-    DynamicsFunctions.apply_parameters(parameters, nlp)
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)

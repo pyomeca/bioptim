@@ -1,17 +1,15 @@
 from typing import Callable, Union, Any
 from warnings import warn
 
-import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
 from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, PenaltyType
+from ..misc.enums import Node, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
-from ..interfaces.biorbd_model import BiorbdModel
 
 
 class PhaseTransition(MultinodeConstraint):
@@ -263,6 +261,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
 
             if nlp_post.model.nb_contacts == 0:
                 warn("The chosen model does not have any contact")
+
+            # Todo scaled?
             q_pre = nlp_pre.states["q"].mx
             qdot_pre = nlp_pre.states["qdot"].mx
             qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
@@ -271,7 +271,10 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             cx_end = []
             cx = []
             for key in nlp_pre.states:
-                cx_end = vertcat(cx_end, nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end))
+                cx_end = vertcat(
+                    cx_end,
+                    nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end),
+                )
                 cx = vertcat(cx, nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx))
                 post_mx = nlp_post.states[key].mx
                 continuity = nlp_post.states["qdot"].mapping.to_first.map(

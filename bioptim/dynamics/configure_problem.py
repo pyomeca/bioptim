@@ -2,7 +2,6 @@ from typing import Callable, Any, Union
 
 from casadi import MX, vertcat, Function
 import numpy as np
-from biorbd_casadi import biorbd
 
 from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
@@ -22,6 +21,7 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
+from ..optimization.optimization_variable import VariableScaling
 
 
 class ConfigureProblem:
@@ -528,15 +528,18 @@ class ConfigureProblem:
         """
 
         nlp.parameters = ocp.v.parameters_in_list
+        DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
-        dynamics_eval = dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)
+        dynamics_eval = dyn_func(
+            nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params
+        )
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
 
         nlp.dynamics_func = Function(
             "ForwardDyn",
-            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
             [dynamics_dxdt],
             ["x", "u", "p"],
             ["xdot"],
@@ -547,7 +550,12 @@ class ConfigureProblem:
         if dynamics_eval.defects is not None:
             nlp.implicit_dynamics_func = Function(
                 "DynamicsDefects",
-                [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp.states_dot.mx_reduced],
+                [
+                    nlp.states["scaled"].mx_reduced,
+                    nlp.controls["scaled"].mx_reduced,
+                    nlp.parameters.mx,
+                    nlp.states_dot["scaled"].mx_reduced,
+                ],
                 [dynamics_eval.defects],
                 ["x", "u", "p", "xdot"],
                 ["defects"],
@@ -570,8 +578,16 @@ class ConfigureProblem:
 
         nlp.contact_forces_func = Function(
             "contact_forces_func",
-            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
-            [dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)],
+            [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
+            [
+                dyn_func(
+                    nlp.states["scaled"].mx_reduced,
+                    nlp.controls["scaled"].mx_reduced,
+                    nlp.parameters.mx,
+                    nlp,
+                    **extra_params,
+                )
+            ],
             ["x", "u", "p"],
             ["contact_forces"],
         ).expand()
@@ -611,7 +627,6 @@ class ConfigureProblem:
             nlp.states.mx_reduced[nlp.states["q"].index],
             nlp.states.mx_reduced[nlp.states["qdot"].index],
         )
-
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
             [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
@@ -747,10 +762,12 @@ class ConfigureProblem:
 
         # Create a fake accessor for the name of the controls so it can be directly called in nlp.controls
         if split_controls:
-            ConfigureProblem.append_faked_optim_var(name, nlp.controls, var_names_with_suffix)
+            ConfigureProblem.append_faked_optim_var(name, nlp.controls["scaled"], var_names_with_suffix)
+            ConfigureProblem.append_faked_optim_var(name, nlp.controls["unscaled"], var_names_with_suffix)
         else:
             for meta_suffix in var_names_with_suffix:
-                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls, [name])
+                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls["scaled"], [name])
+                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls["unscaled"], [name])
 
         return True
 
@@ -799,16 +816,20 @@ class ConfigureProblem:
         if combine_state_control_plot and combine_name is not None:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
-        def define_cx(n_col: int) -> list:
+        def define_cx_scaled(n_col: int) -> list:
             _cx = [nlp.cx() for _ in range(n_col)]
             for idx in nlp.variable_mappings[name].to_first.map_idx:
-                if idx is None:
-                    continue
                 for j in range(len(_cx)):
                     sign = "-" if np.sign(idx) < 0 else ""
                     _cx[j] = vertcat(
                         _cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{j}", 1, 1)
                     )
+            return _cx
+
+        def define_cx_unscaled(_cx_scaled: list, scaling: np.ndarray) -> list:
+            _cx = [nlp.cx() for _ in range(len(_cx_scaled))]
+            for j in range(len(_cx_scaled)):
+                _cx[j] = _cx_scaled[j] * scaling
             return _cx
 
         if ConfigureProblem._manage_fatigue_to_new_variable(
@@ -821,45 +842,54 @@ class ConfigureProblem:
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
-        copy_states = False
-        if nlp.use_states_from_phase_idx is not None:
-            if nlp.use_states_from_phase_idx < nlp.phase_idx:
-                if name in ocp.nlp[nlp.use_states_from_phase_idx].states:
-                    copy_states = True
+        copy_states = (
+            nlp.use_states_from_phase_idx is not None
+            and nlp.use_states_from_phase_idx < nlp.phase_idx
+            and name in ocp.nlp[nlp.use_states_from_phase_idx].states
+        )
+        copy_controls = (
+            nlp.use_controls_from_phase_idx is not None
+            and nlp.use_controls_from_phase_idx < nlp.phase_idx
+            and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls
+        )
+        copy_states_dot = (
+            nlp.use_states_dot_from_phase_idx is not None
+            and nlp.use_states_dot_from_phase_idx < nlp.phase_idx
+            and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot
+        )
 
-        copy_controls = False
-        if nlp.use_controls_from_phase_idx is not None:
-            if nlp.use_controls_from_phase_idx < nlp.phase_idx:
-                if name in ocp.nlp[nlp.use_controls_from_phase_idx].controls:
-                    copy_controls = True
-
-        copy_states_dot = False
-        if nlp.use_states_dot_from_phase_idx is not None:
-            if nlp.use_states_dot_from_phase_idx < nlp.phase_idx:
-                if name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot:
-                    copy_states_dot = True
+        if as_states and name not in nlp.x_scaling:
+            nlp.x_scaling[name] = VariableScaling(
+                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+            )
+        if as_states_dot and name not in nlp.xdot_scaling:
+            nlp.xdot_scaling[name] = VariableScaling(
+                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+            )
+        if as_controls and name not in nlp.u_scaling:
+            nlp.u_scaling[name] = VariableScaling(
+                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+            )
 
         mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[name].mx]
-        mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].mx]
         mx_states_dot = [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].mx]
-
-        # if mapping on variables, what do we do with mapping on the nodes ?
-
+        mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].mx]
+        # todo: if mapping on variables, what do we do with mapping on the nodes
         for i in nlp.variable_mappings[name].to_second.map_idx:
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
 
             if not copy_states:
                 mx_states.append(MX.sym(var_name, 1, 1))
 
-            if not copy_controls:
-                mx_controls.append(MX.sym(var_name, 1, 1))
-
             if not copy_states_dot:
                 mx_states_dot.append(MX.sym(var_name, 1, 1))
 
+            if not copy_controls:
+                mx_controls.append(MX.sym(var_name, 1, 1))
+
         mx_states = vertcat(*mx_states)
-        mx_controls = vertcat(*mx_controls)
         mx_states_dot = vertcat(*mx_states_dot)
+        mx_controls = vertcat(*mx_controls)
 
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
@@ -877,13 +907,19 @@ class ConfigureProblem:
 
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
+            cx_scaled = (
+                ocp.nlp[nlp.use_states_from_phase_idx].states[name].original_cx
+                if copy_states
+                else define_cx_scaled(n_col=n_cx)
+            )
             cx = (
                 ocp.nlp[nlp.use_states_from_phase_idx].states[name].original_cx
                 if copy_states
-                else define_cx(n_col=n_cx)
+                else define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
             )
+            nlp.states["scaled"].append(name, cx_scaled, mx_states, nlp.variable_mappings[name])
+            nlp.states.append_from_scaled(name, cx, nlp.states["scaled"])
 
-            nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             if not skip_plot:
                 nlp.plot[f"{name}_states"] = CustomPlot(
                     lambda t, x, u, p: x[nlp.states[name].index, :],
@@ -894,13 +930,18 @@ class ConfigureProblem:
                 )
 
         if as_controls:
+            cx_scaled = (
+                ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].original_cx
+                if copy_controls
+                else define_cx_scaled(n_col=2)
+            )
             cx = (
                 ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].original_cx
                 if copy_controls
-                else define_cx(n_col=2)
+                else define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
             )
-
-            nlp.controls.append(name, cx, mx_controls, nlp.variable_mappings[name])
+            nlp.controls["scaled"].append(name, cx_scaled, mx_controls, nlp.variable_mappings[name])
+            nlp.controls.append_from_scaled(name, cx, nlp.controls["scaled"])
 
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             if not skip_plot:
@@ -914,13 +955,18 @@ class ConfigureProblem:
 
         if as_states_dot:
             n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
+            cx_scaled = (
+                ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].original_cx
+                if copy_states_dot
+                else define_cx_scaled(n_col=n_cx)
+            )
             cx = (
                 ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].original_cx
                 if copy_states_dot
-                else define_cx(n_col=n_cx)
+                else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
             )
-
-            nlp.states_dot.append(name, cx, mx_states_dot, nlp.variable_mappings[name])
+            nlp.states_dot["scaled"].append(name, cx, mx_states_dot, nlp.variable_mappings[name])
+            nlp.states_dot.append_from_scaled(name, cx, nlp.states_dot["scaled"])
 
     @staticmethod
     def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
@@ -938,7 +984,6 @@ class ConfigureProblem:
         as_states_dot: bool
             If the generalized velocities should be a state_dot
         """
-
         name = "q"
         name_q = nlp.model.name_dof
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)

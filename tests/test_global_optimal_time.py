@@ -6,7 +6,6 @@ import pytest
 import re
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     ConstraintList,
@@ -368,8 +367,14 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
+    x_init = InitialGuessList()
+    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuessList()
+    u_init.add([0] * bio_model.nb_tau)
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'min_bound'")):
-        OptimalControlProgram(bio_model, dynamics, 10, 2, objective_functions=objective_functions)
+        OptimalControlProgram(
+            bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_init=x_init, u_init=u_init
+        )
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
@@ -389,8 +394,14 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
+    x_init = InitialGuessList()
+    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuessList()
+    u_init.add([0] * bio_model.nb_tau)
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'max_bound'")):
-        OptimalControlProgram(bio_model, dynamics, 10, 2, objective_functions=objective_functions)
+        OptimalControlProgram(
+            bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_init=x_init, u_init=u_init
+        )
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
