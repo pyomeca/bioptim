@@ -422,10 +422,7 @@ class Bounds(OptionGeneric):
 
     def scale(
         self,
-        scaling: Union[float, np.ndarray, VariableScaling],
-        n_elements: int,
-        n_shooting: int,
-        n_collocation_steps: int,
+        scaling: Union[float, np.ndarray, VariableScaling]
     ):
         """
         Scaling a Bound
@@ -436,11 +433,7 @@ class Bounds(OptionGeneric):
             The scaling factor
         """
 
-        if isinstance(scaling, VariableScaling):
-            scaling = scaling.to_vector(n_elements, n_shooting, n_collocation_steps)
-        self.min /= scaling
-        self.max /= scaling
-        return self
+        return Bounds(self.min / scaling, self.max / scaling, interpolation=self.type)
 
     def __getitem__(self, slice_list: Union[slice, list, tuple]) -> "Bounds":
         """
@@ -798,10 +791,7 @@ class InitialGuess(OptionGeneric):
 
     def scale(
         self,
-        scaling: Union[float, np.ndarray, VariableScaling],
-        n_elements: int,
-        n_shooting: int,
-        n_collocation_steps: int,
+        scaling: Union[float, np.ndarray, VariableScaling]
     ):
         """
         Scaling an InitialGuess
@@ -811,10 +801,8 @@ class InitialGuess(OptionGeneric):
         scaling: float
             The scaling factor
         """
-        if isinstance(scaling, VariableScaling):
-            scaling = scaling.to_vector(n_elements, n_shooting, n_collocation_steps)
-        self.init /= scaling
-        return self
+
+        return InitialGuess(self.init / scaling, interpolation=self.type)
 
     def __bool__(self) -> bool:
         """

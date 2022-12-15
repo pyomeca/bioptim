@@ -101,9 +101,7 @@ class Parameter(PenaltyOption):
         else:
             raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
 
-        initial_guess.scale(self.scaling, 1, 1, 1)
         self.initial_guess = initial_guess
-        bounds.scale(self.scaling, 1, 1, 1)
         self.bounds = bounds
         self.quadratic = quadratic
         self.size = size
@@ -146,7 +144,7 @@ class Parameter(PenaltyOption):
                     continue
 
                 dt_cx = ocp.cx.sym("dt", 1, 1)
-                weight_cx = ocp.cx.sym("weight", 1, 1)
+                weight_cx = ocp.cx.sym("weight", len(p_list.rows), 1)
                 target_cx = ocp.cx.sym("target", p_list.weighted_function.numel_out(), 1)
 
                 p_list.function = Function(
@@ -221,7 +219,7 @@ class Parameter(PenaltyOption):
         modified_fcn = objective.function(state_cx, control_cx, param_cx)
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
-        weight_cx = ocp.cx.sym("weight", 1, 1)
+        weight_cx = ocp.cx.sym("weight", fcn.shape[0], 1)
         target_cx = ocp.cx.sym("target", modified_fcn.shape)
 
         modified_fcn = modified_fcn - target_cx

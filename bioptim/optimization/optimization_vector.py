@@ -127,19 +127,14 @@ class OptimizationVector:
         if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(
             self.ocp.nlp[0].ode_solver, OdeSolver.IRK
         ):
-            n_collocation_steps = self.ocp.nlp[0].ode_solver.steps + 1
+            n_steps = self.ocp.nlp[0].ode_solver.steps + 1
         else:
-            n_collocation_steps = 1
+            n_steps = 1
 
         v_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for phase, x_bound in enumerate(self.x_bounds):
             v_bounds.concatenate(
-                x_bound.scale(
-                    self.ocp.nlp[phase].x_scaling["all"],
-                    self.ocp.nlp[phase].states["scaled"].shape,
-                    self.ocp.nlp[phase].ns + 1,
-                    n_collocation_steps,
-                )
+                x_bound.scale(self.ocp.nlp[phase].x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * n_steps + 1))
             )
 
         for phase, u_bound in enumerate(self.u_bounds):
@@ -147,10 +142,11 @@ class OptimizationVector:
                 ns = self.ocp.nlp[phase].ns + 1
             else:
                 ns = self.ocp.nlp[phase].ns
-            v_bounds.concatenate(
-                u_bound.scale(self.ocp.nlp[phase].u_scaling["all"], self.ocp.nlp[phase].controls["scaled"].shape, ns, 1)
-            )
-        v_bounds.concatenate(self.parameters_in_list.bounds)
+            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling["all"].to_vector(ns)))
+
+        for param in self.parameters_in_list:
+            v_bounds.concatenate(param.bounds.scale(param.scaling))
+
         return v_bounds
 
     @property
@@ -166,9 +162,9 @@ class OptimizationVector:
         if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(
             self.ocp.nlp[0].ode_solver, OdeSolver.IRK
         ):
-            n_collocation_steps = self.ocp.nlp[0].ode_solver.steps + 1
+            steps = self.ocp.nlp[0].ode_solver.steps + 1
         else:
-            n_collocation_steps = 1
+            steps = 1
 
         for phase, x_init in enumerate(self.x_init):
             nlp = self.ocp.nlp[phase]
@@ -177,26 +173,17 @@ class OptimizationVector:
                 original_x_init = self.ocp.original_values["x_init"][phase]
             else:
                 original_x_init = self.ocp.original_values["x_init"]
-
             interpolation_type = None if original_x_init is None else original_x_init.type
 
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
                 v_init.concatenate(
                     self._init_linear_interpolation(phase=phase).scale(
-                        self.ocp.nlp[phase].x_scaling["all"],
-                        self.ocp.nlp[phase].states["scaled"].shape,
-                        self.ocp.nlp[phase].ns + 1,
-                        n_collocation_steps,
+                        self.ocp.nlp[phase].x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * steps + 1),
                     )
                 )
             else:
                 v_init.concatenate(
-                    x_init.scale(
-                        self.ocp.nlp[phase].x_scaling["all"],
-                        self.ocp.nlp[phase].states["scaled"].shape,
-                        self.ocp.nlp[phase].ns + 1,
-                        n_collocation_steps,
-                    )
+                    x_init.scale(self.ocp.nlp[phase].x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * steps + 1))
                 )
 
         for phase, u_init in enumerate(self.u_init):
@@ -204,10 +191,11 @@ class OptimizationVector:
                 ns = self.ocp.nlp[phase].ns + 1
             else:
                 ns = self.ocp.nlp[phase].ns
-            v_init.concatenate(
-                u_init.scale(self.ocp.nlp[phase].u_scaling["all"], self.ocp.nlp[phase].controls["scaled"].shape, ns, 1)
-            )
-        v_init.concatenate(self.parameters_in_list.initial_guess)
+            v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling["all"].to_vector(ns)))
+
+        for param in self.parameters_in_list:
+            v_init.concatenate(param.initial_guess.scale(param.scaling))
+
         return v_init
 
     def _init_linear_interpolation(self, phase: int) -> InitialGuess:

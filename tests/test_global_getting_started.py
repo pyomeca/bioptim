@@ -348,7 +348,7 @@ def test_initial_guesses(random_init, interpolation, ode_solver):
 
     if interpolation == InterpolationType.ALL_POINTS and ode_solver.is_direct_shooting:
         with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS must only be used with direct collocation"):
-            ocp = ocp_module.prepare_ocp(
+            _ = ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
                 final_time=1,
                 n_shooting=5,
@@ -356,62 +356,63 @@ def test_initial_guesses(random_init, interpolation, ode_solver):
                 initial_guess=interpolation,
                 ode_solver=ode_solver,
             )
+        return
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        final_time=1,
+        n_shooting=5,
+        random_init=random_init,
+        initial_guess=interpolation,
+        ode_solver=ode_solver,
+    )
+
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 13954.735)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    if ode_solver.is_direct_collocation:
+        np.testing.assert_equal(g.shape, (156, 1))
+        np.testing.assert_almost_equal(g, np.zeros((156, 1)))
     else:
-        ocp = ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-            final_time=1,
-            n_shooting=5,
-            random_init=random_init,
-            initial_guess=interpolation,
-            ode_solver=ode_solver,
-        )
+        np.testing.assert_equal(g.shape, (36, 1))
+        np.testing.assert_almost_equal(g, np.zeros((36, 1)))
 
-        sol = ocp.solve()
+    # Check some of the results
+    q, qdot, tau = (
+        sol.states["q"],
+        sol.states["qdot"],
+        sol.controls["tau"]
+    )
 
-        # Check objective function value
-        f = np.array(sol.cost)
-        np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 13954.735)
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([2, 0, 1.57]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([5.0, 9.81, 7.85]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([-5.0, 9.81, -7.85]))
 
-        # Check constraints
-        g = np.array(sol.constraints)
-        if ode_solver.is_direct_collocation:
-            np.testing.assert_equal(g.shape, (156, 1))
-            np.testing.assert_almost_equal(g, np.zeros((156, 1)))
-        else:
-            np.testing.assert_equal(g.shape, (36, 1))
-            np.testing.assert_almost_equal(g, np.zeros((36, 1)))
-
-        # Check some of the results
-        q, qdot, tau = (
-            sol.states["q"],
-            sol.states["qdot"],
-            sol.controls["tau"]
-        )
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([2, 0, 1.57]))
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([5.0, 9.81, 7.85]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-5.0, 9.81, -7.85]))
-
-        # save and load
-        if interpolation == InterpolationType.CUSTOM and random_init == False:
-            with pytest.raises(AttributeError, match="'PathCondition' object has no attribute 'custom_function'"):
-                TestUtils.save_and_load(sol, ocp, True)
-        else:
+    # save and load
+    if interpolation == InterpolationType.CUSTOM and random_init == False:
+        with pytest.raises(AttributeError, match="'PathCondition' object has no attribute 'custom_function'"):
             TestUtils.save_and_load(sol, ocp, True)
+    else:
+        TestUtils.save_and_load(sol, ocp, True)
 
-        # simulate
-        TestUtils.simulate(sol)
+    # simulate
+    TestUtils.simulate(sol)
 
-        # detailed cost values
-        sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13954.735000000004)
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13954.735000000004)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])

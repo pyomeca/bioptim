@@ -38,20 +38,15 @@ class VariableScaling(OptionGeneric):
 
         return self.scaling["all"]
 
-    def to_vector(self, n_elements: int, n_shooting: int, n_collocation_steps: int):
+    def to_vector(self, n_repeat: int):
         """
-        Repeate the scaling to match the variables vector format
-
+        Repeat the scaling to match the variables vector format
         """
 
-        if self.scaling.shape[0] != n_elements:
-            raise RuntimeError(
-                f"The number of elements in the scaling ({self.scaling.shape[0]}) is not the same as the number of elements ({n_elements})"
-            )
+        n_elements = self.scaling.shape[0]
 
-        n_repetition = (n_shooting - 1) * n_collocation_steps + 1
-        scaling_vector = np.zeros((n_repetition * n_elements, 1))
-        for i in range(n_repetition):
+        scaling_vector = np.zeros((n_repeat * n_elements, 1))
+        for i in range(n_repeat):
             scaling_vector[i * n_elements : (i + 1) * n_elements] = np.reshape(self.scaling, (n_elements, 1))
 
         return scaling_vector
