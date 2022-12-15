@@ -338,7 +338,9 @@ class Solution:
 
             # Extract the data now for further use
             self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
-            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(self._states["scaled"], self._controls["scaled"])
+            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
+                self._states["scaled"], self._controls["scaled"]
+            )
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
             self._time_vector = self._generate_time()
@@ -402,7 +404,9 @@ class Solution:
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
             self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
-            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(self._states["scaled"], self._controls["scaled"])
+            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
+                self._states["scaled"], self._controls["scaled"]
+            )
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
@@ -418,7 +422,9 @@ class Solution:
 
             self.vector = _sol
             self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
-            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(self._states["scaled"], self._controls["scaled"])
+            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
+                self._states["scaled"], self._controls["scaled"]
+            )
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
@@ -667,8 +673,8 @@ class Solution:
         The controls data
         """
 
-
         return self._controls["scaled"] if len(self._controls["scaled"]) > 1 else self._controls["scaled"][0]
+
     @property
     def time(self) -> Union[list, dict]:
         """
@@ -1035,12 +1041,18 @@ class Solution:
             if shooting_type == Shooting.MULTIPLE:
                 # last node of the phase is not integrated but do exist as an independent node
                 out._states["unscaled"][states_phase_idx]["all"] = np.concatenate(
-                    (out._states["unscaled"][states_phase_idx]["all"], self._states["unscaled"][states_phase_idx]["all"][:, -1:]), axis=1
+                    (
+                        out._states["unscaled"][states_phase_idx]["all"],
+                        self._states["unscaled"][states_phase_idx]["all"][:, -1:],
+                    ),
+                    axis=1,
                 )
 
             # Dispatch the integrated values to all the keys
             for key in nlp.states:
-                out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][nlp.states[key].index, :]
+                out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][
+                    nlp.states[key].index, :
+                ]
 
         return out
 

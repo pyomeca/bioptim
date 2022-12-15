@@ -217,7 +217,15 @@ def test_update_noised_init_rk4(interpolation):
 
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
     u_init = InitialGuess([0] * bio_model.nb_tau)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=OdeSolver.RK4(), x_init=x_init, u_init=u_init)
+    ocp = OptimalControlProgram(
+        bio_model,
+        dynamics,
+        n_shooting=ns,
+        phase_time=phase_time,
+        ode_solver=OdeSolver.RK4(),
+        x_init=x_init,
+        u_init=u_init,
+    )
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -511,7 +519,9 @@ def test_update_noised_init_collocation(interpolation):
 
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
     u_init = InitialGuess([0] * bio_model.nb_tau)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init)
+    ocp = OptimalControlProgram(
+        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init
+    )
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -576,7 +586,10 @@ def test_update_noised_init_collocation(interpolation):
         **extra_params_u,
     )
 
-    with pytest.raises(NotImplementedError, match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness"):
+    with pytest.raises(
+        NotImplementedError,
+        match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
+    ):
         ocp.update_initial_guess(x_init, u_init)
 
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
@@ -1020,7 +1033,9 @@ def test_update_noised_initial_guess_collocation(interpolation):
 
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
     u_init = InitialGuess([0] * bio_model.nb_tau)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init)
+    ocp = OptimalControlProgram(
+        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init
+    )
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -1088,7 +1103,10 @@ def test_update_noised_initial_guess_collocation(interpolation):
         **extra_params_u,
     )
 
-    with pytest.raises(NotImplementedError, match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness"):
+    with pytest.raises(
+        NotImplementedError,
+        match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
+    ):
         ocp.update_initial_guess(x_init, u_init)
 
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
@@ -1116,7 +1134,9 @@ def test_update_noised_initial_guess_list(interpolation):
 
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
     u_init = InitialGuess([0] * bio_model.nb_tau)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init)
+    ocp = OptimalControlProgram(
+        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init
+    )
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -1147,7 +1167,10 @@ def test_update_noised_initial_guess_list(interpolation):
         seed=42,
     )
 
-    with pytest.raises(NotImplementedError, match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness"):
+    with pytest.raises(
+        NotImplementedError,
+        match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
+    ):
         ocp.update_initial_guess(x_init, u_init)
 
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):

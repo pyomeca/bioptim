@@ -784,8 +784,7 @@ class PenaltyFunctionAbstract:
             # Convert to int if it is str
             if _type == "marker":
                 penalty.cols = [
-                    cols if isinstance(cols, int) else all_pn.nlp.model.marker_index(cols)
-                    for cols in penalty.cols
+                    cols if isinstance(cols, int) else all_pn.nlp.model.marker_index(cols) for cols in penalty.cols
                 ]
 
     @staticmethod

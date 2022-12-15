@@ -832,7 +832,9 @@ class ConfigureProblem:
                 _cx[j] = _cx_scaled[j] * scaling
             return _cx
 
-        if ConfigureProblem._manage_fatigue_to_new_variable(name, name_elements, ocp, nlp, as_states, as_controls, fatigue):
+        if ConfigureProblem._manage_fatigue_to_new_variable(
+            name, name_elements, ocp, nlp, as_states, as_controls, fatigue
+        ):
             # If the element is fatigable, this function calls back configure_new_variable to fill everything.
             # Therefore, we can exist now
             return
@@ -840,9 +842,21 @@ class ConfigureProblem:
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
-        copy_states = nlp.use_states_from_phase_idx is not None and nlp.use_states_from_phase_idx < nlp.phase_idx and name in ocp.nlp[nlp.use_states_from_phase_idx].states
-        copy_controls = nlp.use_controls_from_phase_idx is not None and nlp.use_controls_from_phase_idx < nlp.phase_idx and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls
-        copy_states_dot = nlp.use_states_dot_from_phase_idx is not None and nlp.use_states_dot_from_phase_idx < nlp.phase_idx and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot
+        copy_states = (
+            nlp.use_states_from_phase_idx is not None
+            and nlp.use_states_from_phase_idx < nlp.phase_idx
+            and name in ocp.nlp[nlp.use_states_from_phase_idx].states
+        )
+        copy_controls = (
+            nlp.use_controls_from_phase_idx is not None
+            and nlp.use_controls_from_phase_idx < nlp.phase_idx
+            and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls
+        )
+        copy_states_dot = (
+            nlp.use_states_dot_from_phase_idx is not None
+            and nlp.use_states_dot_from_phase_idx < nlp.phase_idx
+            and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot
+        )
 
         if as_states and name not in nlp.x_scaling:
             nlp.x_scaling[name] = VariableScaling(
@@ -927,9 +941,7 @@ class ConfigureProblem:
                 else define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
             )
             nlp.controls["scaled"].append(name, cx_scaled, mx_controls, nlp.variable_mappings[name])
-            nlp.controls.append_from_scaled(
-                name, cx, nlp.controls["scaled"]
-            )
+            nlp.controls.append_from_scaled(name, cx, nlp.controls["scaled"])
 
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             if not skip_plot:
@@ -954,11 +966,7 @@ class ConfigureProblem:
                 else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
             )
             nlp.states_dot["scaled"].append(name, cx, mx_states_dot, nlp.variable_mappings[name])
-            nlp.states_dot.append_from_scaled(
-                name,
-                cx,
-                nlp.states_dot["scaled"]
-            )
+            nlp.states_dot.append_from_scaled(name, cx, nlp.states_dot["scaled"])
 
     @staticmethod
     def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):

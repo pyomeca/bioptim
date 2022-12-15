@@ -341,6 +341,7 @@ class NodeMappingList(OptionDict):
                     use_controls_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
 
         from ..optimization.non_linear_program import NonLinearProgram
+
         NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
         NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
         NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)

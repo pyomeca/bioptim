@@ -420,10 +420,7 @@ class Bounds(OptionGeneric):
         self.extra_params = self.min.extra_params
         self.n_shooting = self.min.n_shooting
 
-    def scale(
-        self,
-        scaling: Union[float, np.ndarray, VariableScaling]
-    ):
+    def scale(self, scaling: Union[float, np.ndarray, VariableScaling]):
         """
         Scaling a Bound
 
@@ -789,10 +786,7 @@ class InitialGuess(OptionGeneric):
             interpolation=self.init.type,
         )
 
-    def scale(
-        self,
-        scaling: Union[float, np.ndarray, VariableScaling]
-    ):
+    def scale(self, scaling: Union[float, np.ndarray, VariableScaling]):
         """
         Scaling an InitialGuess
 

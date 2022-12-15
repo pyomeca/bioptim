@@ -372,7 +372,9 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     u_init = InitialGuessList()
     u_init.add([0] * bio_model.nb_tau)
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'min_bound'")):
-        OptimalControlProgram(bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_init=x_init, u_init=u_init)
+        OptimalControlProgram(
+            bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_init=x_init, u_init=u_init
+        )
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
@@ -397,7 +399,9 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
     u_init = InitialGuessList()
     u_init.add([0] * bio_model.nb_tau)
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'max_bound'")):
-        OptimalControlProgram(bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_init=x_init, u_init=u_init)
+        OptimalControlProgram(
+            bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_init=x_init, u_init=u_init
+        )
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])

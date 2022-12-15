@@ -10,7 +10,17 @@ class PenaltyNodeList:
     A placeholder for the required elements to compute a penalty (all time)
     """
 
-    def __init__(self, ocp, nlp: NonLinearProgram, t: list, x: list, u: list,  x_scaled: list, u_scaled: list, p: Union[MX, SX, list]):
+    def __init__(
+        self,
+        ocp,
+        nlp: NonLinearProgram,
+        t: list,
+        x: list,
+        u: list,
+        x_scaled: list,
+        u_scaled: list,
+        p: Union[MX, SX, list],
+    ):
         """
         Parameters
         ----------

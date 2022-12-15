@@ -199,11 +199,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
             # Check some of the results
-            q, qdot, tau = (
-                sol.states["q"],
-                sol.states["qdot"],
-                sol.controls["tau"]
-            )
+            q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
 
             # initial and final position
             np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -250,11 +246,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # Check some of the results
-        q, qdot, tau = (
-            sol.states["q"],
-            sol.states["qdot"],
-            sol.controls["tau"]
-        )
+        q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -384,11 +376,7 @@ def test_initial_guesses(random_init, interpolation, ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((36, 1)))
 
     # Check some of the results
-    q, qdot, tau = (
-        sol.states["q"],
-        sol.states["qdot"],
-        sol.controls["tau"]
-    )
+    q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0]))
@@ -862,8 +850,9 @@ def test_example_multiphase(ode_solver):
 
     # Test warm start
     if ode_solver == OdeSolver.COLLOCATION:
-        with pytest.raises(NotImplementedError, match=
-            "It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness"
+        with pytest.raises(
+            NotImplementedError,
+            match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
         ):
             TestUtils.assert_warm_start(ocp, sol, state_decimal=0)
         return
@@ -959,9 +948,7 @@ def test_example_multiphase(ode_solver):
 
     np.testing.assert_almost_equal(states_no_intermediate["q"][:, 0], np.array((1, 0, 0)))
     np.testing.assert_almost_equal(states_no_intermediate["q"][:, ocp.nlp[0].ns], np.array((2, 0, 0.0078695)))
-    np.testing.assert_almost_equal(
-        states_no_intermediate["q"][:, ocp.nlp[0].ns + ocp.nlp[1].ns], np.array((1, 0, 0))
-    )
+    np.testing.assert_almost_equal(states_no_intermediate["q"][:, ocp.nlp[0].ns + ocp.nlp[1].ns], np.array((1, 0, 0)))
     np.testing.assert_almost_equal(states_no_intermediate["q"][:, -1], np.array((2, 0, 1.57)))
 
     if ode_solver == OdeSolver.RK4:

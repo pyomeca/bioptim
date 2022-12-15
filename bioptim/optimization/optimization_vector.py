@@ -295,11 +295,15 @@ class OptimizationVector:
         p_idx = 0
         for p in range(self.ocp.n_phases):
             if self.ocp.nlp[p].use_states_from_phase_idx == self.ocp.nlp[p].phase_idx:
-                x_array = v_array[offset: offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states["scaled"].shape, -1), order="F")
+                x_array = v_array[offset : offset + self.n_phase_x[p]].reshape(
+                    (ocp.nlp[p].states["scaled"].shape, -1), order="F"
+                )
                 data_states[p_idx]["all"] = x_array
                 offset_var = 0
                 for var in ocp.nlp[p].states["scaled"]:
-                    data_states[p_idx][var] = x_array[offset_var: offset_var + len(ocp.nlp[p].states["scaled"][var]), :]
+                    data_states[p_idx][var] = x_array[
+                        offset_var : offset_var + len(ocp.nlp[p].states["scaled"][var]), :
+                    ]
                     offset_var += len(ocp.nlp[p].states["scaled"][var])
                 p_idx += 1
                 offset += self.n_phase_x[p]
@@ -314,7 +318,9 @@ class OptimizationVector:
                 data_controls[p_idx]["all"] = u_array
                 offset_var = 0
                 for var in ocp.nlp[p].controls["scaled"]:
-                    data_controls[p_idx][var] = u_array[offset_var : offset_var + len(ocp.nlp[p].controls["scaled"][var]), :]
+                    data_controls[p_idx][var] = u_array[
+                        offset_var : offset_var + len(ocp.nlp[p].controls["scaled"][var]), :
+                    ]
                     offset_var += len(ocp.nlp[p].controls["scaled"][var])
                 p_idx += 1
                 offset += self.n_phase_u[p]
@@ -370,7 +376,7 @@ class OptimizationVector:
 
                 if nlp.phase_idx == nlp.use_controls_from_phase_idx:
                     if nlp.control_type != ControlType.CONSTANT or (
-                            nlp.control_type == ControlType.CONSTANT and k != nlp.ns
+                        nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                     ):
                         u_scaled[nlp.phase_idx].append(
                             nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1)
@@ -383,7 +389,8 @@ class OptimizationVector:
             nlp.X_scaled = x_scaled[nlp.phase_idx]
             nlp.X = x[nlp.phase_idx]
             self.x_scaled[nlp.phase_idx] = vertcat(
-                *[x_tp.reshape((-1, 1)) for x_tp in x_scaled[nlp.use_states_from_phase_idx]])
+                *[x_tp.reshape((-1, 1)) for x_tp in x_scaled[nlp.use_states_from_phase_idx]]
+            )
             self.n_phase_x[nlp.phase_idx] = (
                 self.x_scaled[nlp.phase_idx].size()[0] if nlp.phase_idx == nlp.use_states_from_phase_idx else 0
             )

@@ -294,9 +294,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
             states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
-            states_post_sym_list = [
-                MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states
-            ]
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -340,9 +338,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
             states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
-            states_post_sym_list = [
-                MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states
-            ]
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
