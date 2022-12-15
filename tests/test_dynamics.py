@@ -1355,7 +1355,6 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact):
     def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> DynamicsEvaluation:
-        DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
