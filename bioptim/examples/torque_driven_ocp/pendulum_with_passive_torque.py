@@ -1,12 +1,7 @@
 """
-A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
-while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
-
-This simple example is a good place to start investigating bioptim as it describes the most common dynamics out there
-(the joint torque driven), it defines an objective function and some boundaries and initial guesses
-
-During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
-appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+this time there is a passive torque which is applied on Seg1 in the model "pendulum_with_passive_torque.bioMod".
+The expression of the tau is therefore not the same here.
 """
 
 import biorbd_casadi as biorbd
@@ -33,10 +28,8 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     ode_solver: OdeSolver = OdeSolver.RK4(),
-    use_sx: bool = True,
-    n_threads: int = 1,
     rigidbody_dynamics=RigidBodyDynamics.ODE,
-    with_passive_torque= False,
+    with_passive_torque=False,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -55,6 +48,10 @@ def prepare_ocp(
         If the SX variable should be used instead of MX (can be extensive on RAM)
     n_threads: int
         The number of threads to use in the paralleling (1 = no parallel computing)
+    rigidbody_dynamics : RigidBodyDynamics
+        rigidbody dynamics DAE or ODE
+    with_passive_torque: bool
+        If the passive torque is used in dynamics
 
     Returns
     -------
@@ -67,7 +64,9 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics, with_passive_torque=with_passive_torque)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics, with_passive_torque=with_passive_torque
+    )
 
     # Path constraint
     x_bounds = QAndQDotBounds(bio_model)
@@ -98,8 +97,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
-        use_sx=use_sx,
-        n_threads=n_threads,
     )
 
 
@@ -113,14 +110,11 @@ def main():
         biorbd_model_path="models/pendulum_with_passive_torque.bioMod",
         final_time=1,
         n_shooting=30,
-        with_passive_torque=False
+        with_passive_torque=False,
     )
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
-
-    # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
-    # ocp.check_conditioning()
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)

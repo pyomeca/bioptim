@@ -314,7 +314,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return all_pn.nlp.tf
 
         @staticmethod
-        def qddot_equals_forward_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, with_passive_torque: bool, **unused_param):
+        def qddot_equals_forward_dynamics(
+            _: Constraint, all_pn: PenaltyNodeList, with_contact: bool, with_passive_torque: bool, **unused_param
+        ):
             """
             Compute the difference between symbolic joint accelerations and forward dynamic results
             It includes the inversion of mass matrix
@@ -355,7 +357,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return nlp.mx_to_cx("forward_dynamics", qddot - qddot_fd, *var)
 
         @staticmethod
-        def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, with_passive_torque: bool,  **unused_param):
+        def tau_equals_inverse_dynamics(
+            _: Constraint, all_pn: PenaltyNodeList, with_contact: bool, with_passive_torque: bool, **unused_param
+        ):
             """
             Compute the difference between symbolic joint torques and inverse dynamic results
             It does not include any inversion of mass matrix
@@ -437,7 +441,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return nlp.mx_to_cx("contact_acceleration", contact_acceleration, *var)
 
         @staticmethod
-        def tau_from_muscle_equal_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_passive_torque: bool, **unused_param):
+        def tau_from_muscle_equal_inverse_dynamics(
+            _: Constraint, all_pn: PenaltyNodeList, with_passive_torque: bool, **unused_param
+        ):
             """
             Compute the difference between symbolic joint torques from muscle and inverse dynamic results
             It does not include any inversion of mass matrix

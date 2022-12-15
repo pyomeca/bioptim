@@ -298,7 +298,3 @@ class BiorbdModel:
     def passive_joint_torque(self, q, qdot) -> MX:
 
         return self.model.passiveJointTorque(q, qdot).to_mx()
-
-    def ligament_joint_torque(self, q, qdot) -> MX:
-
-        return self.model.ligamentsJointTorque(q, qdot).to_mx()

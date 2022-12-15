@@ -221,12 +221,9 @@ class DynamicsFunctions:
         return tau
 
     @staticmethod
-    def torque_activations_driven(states: MX.sym,
-                                  controls: MX.sym,
-                                  parameters: MX.sym,
-                                  nlp,
-                                  with_contact,
-                                  with_passive_torque: bool):
+    def torque_activations_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact, with_passive_torque: bool
+    ):
         """
         Forward dynamics driven by joint torques activations.
 
@@ -336,11 +333,9 @@ class DynamicsFunctions:
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
-    def forces_from_torque_driven(states: MX.sym,
-                                  controls: MX.sym,
-                                  parameters: MX.sym,
-                                  nlp,
-                                  with_passive_torque: bool = False) -> MX:
+    def forces_from_torque_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False
+    ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
 
@@ -378,11 +373,9 @@ class DynamicsFunctions:
         return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
     @staticmethod
-    def forces_from_torque_activation_driven(states: MX.sym,
-                                             controls: MX.sym,
-                                             parameters: MX.sym,
-                                             nlp,
-                                             with_passive_torque: bool = False) -> MX:
+    def forces_from_torque_activation_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False
+    ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
 
@@ -549,11 +542,9 @@ class DynamicsFunctions:
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     @staticmethod
-    def forces_from_muscle_driven(states: MX.sym,
-                                  controls: MX.sym,
-                                  parameters: MX.sym,
-                                  nlp,
-                                  with_passive_torque: bool = False) -> MX:
+    def forces_from_muscle_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False
+    ) -> MX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
 
@@ -699,10 +690,10 @@ class DynamicsFunctions:
     @staticmethod
     def forward_dynamics(
         nlp: NonLinearProgram,
-            q: Union[MX, SX],
-            qdot: Union[MX, SX],
-            tau: Union[MX, SX],
-            with_contact: bool,
+        q: Union[MX, SX],
+        qdot: Union[MX, SX],
+        tau: Union[MX, SX],
+        with_contact: bool,
     ):
         """
         Easy accessor to derivative of qdot

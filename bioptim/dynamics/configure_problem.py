@@ -410,7 +410,7 @@ class ConfigureProblem:
                 nlp,
                 DynamicsFunctions.torque_activations_driven,
                 with_contact=with_contact,
-                with_passive_torque=with_passive_torque
+                with_passive_torque=with_passive_torque,
             )
 
         if with_contact:
@@ -515,7 +515,7 @@ class ConfigureProblem:
                 node=Node.ALL_SHOOTING,
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
-                with_passive_torque=with_passive_torque
+                with_passive_torque=with_passive_torque,
             )
 
         if nlp.dynamics_type.dynamic_function:

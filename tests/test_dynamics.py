@@ -30,7 +30,7 @@ class OptimalControlProgram:
     "rigidbody_dynamics",
     [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
 )
-def test_torque_driven(with_contact, with_external_force, with_passive_torque, cx, rigidbody_dynamics):
+def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
@@ -46,7 +46,11 @@ def test_torque_driven(with_contact, with_external_force, with_passive_torque, c
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, rigidbody_dynamics=rigidbody_dynamics, with_passive_torque=with_passive_torque),
+        Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=with_contact,
+            rigidbody_dynamics=rigidbody_dynamics,
+        ),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -96,8 +100,7 @@ def test_torque_driven(with_contact, with_external_force, with_passive_torque, c
             if with_external_force:
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
-                    [0.86310343, 0.32518332, 0.11959425, 0.4937956, 0.30731739, -9.97912778, 1.15263778,
-                     36.02430956],
+                    [0.86310343, 0.32518332, 0.11959425, 0.4937956, 0.30731739, -9.97912778, 1.15263778, 36.02430956],
                 )
             else:
                 np.testing.assert_almost_equal(
@@ -124,8 +127,7 @@ def test_torque_driven(with_contact, with_external_force, with_passive_torque, c
                 np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
             else:
                 np.testing.assert_almost_equal(
-                    x_out[:, 0],
-                    [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
+                    x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
                 )
                 np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
@@ -151,8 +153,7 @@ def test_torque_driven(with_contact, with_external_force, with_passive_torque, c
                 np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
             else:
                 np.testing.assert_almost_equal(
-                    x_out[:, 0],
-                    [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
+                    x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
                 )
                 np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
@@ -290,7 +291,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_derivative_driven(with_contact, with_external_force, with_passive_torque, cx):
+def test_torque_derivative_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
@@ -305,7 +306,13 @@ def test_torque_derivative_driven(with_contact, with_external_force, with_passiv
     nlp.control_type = ControlType.CONSTANT
 
     NonLinearProgram.add(
-        ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, with_passive_torque=with_passive_torque), False
+        ocp,
+        "dynamics_type",
+        Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+            with_contact=with_contact,
+        ),
+        False,
     )
 
     phase_index = [i for i in range(ocp.n_phases)]
@@ -671,7 +678,7 @@ def test_implicit_dynamics_errors(dynamics):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_activation_driven(with_contact, with_external_force, with_passive_torque, cx):
+def test_torque_activation_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
@@ -684,7 +691,10 @@ def test_torque_activation_driven(with_contact, with_external_force, with_passiv
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
-        ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact, with_passive_torque=with_passive_torque), False
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact),
+        False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
@@ -1298,6 +1308,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             ],
                             decimal=6,
                         )
+
 
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("rigid_body_dynamics", RigidBodyDynamics)
