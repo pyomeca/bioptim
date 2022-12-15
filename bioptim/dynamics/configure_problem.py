@@ -528,6 +528,8 @@ class ConfigureProblem:
         """
 
         nlp.parameters = ocp.v.parameters_in_list
+        DynamicsFunctions.apply_parameters(nlp.parameters, nlp)
+
         dynamics_eval = dyn_func(
             nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params
         )
