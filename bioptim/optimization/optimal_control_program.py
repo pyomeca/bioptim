@@ -782,6 +782,12 @@ class OptimalControlProgram:
             The parameters initial guess to add
         """
 
+        if self.nlp[0].ode_solver.is_direct_collocation and self.nlp[0].x_init.init.shape[0] != 0:
+            raise NotImplementedError(
+                "It is not possible to use initial guess with NoisedInitialGuess "
+                "as it won't produce the expected randomness"
+            )
+
         if x_init:
             NLP.add_path_condition(self, x_init, "x_init", InitialGuess, InitialGuessList)
         if u_init:
