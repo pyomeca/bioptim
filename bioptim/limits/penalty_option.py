@@ -457,7 +457,7 @@ class PenaltyOption(OptionGeneric):
             ]
         )
         target_cx = nlp.cx.sym("target", target_shape)
-        weight_cx = nlp.cx.sym("weight", fcn.shape[0], 1)
+        weight_cx = nlp.cx.sym("weight", 1, 1)
         exponent = 2 if self.quadratic and self.weight else 1
 
         if is_trapezoidal:

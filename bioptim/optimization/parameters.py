@@ -144,7 +144,7 @@ class Parameter(PenaltyOption):
                     continue
 
                 dt_cx = ocp.cx.sym("dt", 1, 1)
-                weight_cx = ocp.cx.sym("weight", len(p_list.rows), 1)
+                weight_cx = ocp.cx.sym("weight", 1, 1)
                 target_cx = ocp.cx.sym("target", p_list.weighted_function.numel_out(), 1)
 
                 p_list.function = Function(
