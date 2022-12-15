@@ -768,7 +768,7 @@ If external forces are provided, they are added to the ForwardDynamics function.
 The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
 
 ##### with_passive_torque = True
-The passive torque is taken into account in the calcul of *tau*
+The passive torque is taken into account in the *tau* 
 
 #### TORQUE_DERIVATIVE_DRIVEN
 The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
@@ -781,7 +781,7 @@ If external forces are provided, they are added to the ForwardDynamics function.
 The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
 
 ##### with_passive_torque = True
-The passive torque is taken into account in the calcul of *tau*
+The passive torque is taken into account in the *tau* 
 
 #### TORQUE_ACTIVATIONS_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. 
@@ -797,7 +797,7 @@ This has been shown to be more efficient and allows defining minimum torque.
 The actual *tau* is computed from the activation by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `tau = bio_model.torque(torque_act, q, qdot)`.
 
 ##### with_passive_torque = True
-The passive torque is taken into account in the calcul of *tau*
+The passive torque is taken into account in the *tau*
 
 #### JOINTS_ACCELERATION_DRIVEN
 The joints acceleration driven defines the states (x) as *q* and *qdot* and the controls (u) as *qddot_joints*. The derivative of *q* is trivially *qdot*.
@@ -814,39 +814,19 @@ The actual *tau* is computed from the muscle activation converted in muscle forc
 The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 
 ##### with_torque = True
+The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). 
 The actual *tau* is computed from the sum of *tau* to the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
 
-##### with_contact = True and with_torque = True
-The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*).
+##### with_contact = True
 The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
 The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 
 ##### with_excitations = True
+The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*.
 The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
 
 ##### with_passive_torque = True
-The passive torque is taken into account in the calcul of *tau*
-
-#### MUSCLE_EXCITATIONS_DRIVEN
-The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *EMG*. 
-The derivative of *q* is trivially *qdot*.
-The actual *tau* is computed from *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
-
-#### MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN
-The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*. 
-The derivative of *q* is trivially *qdot*.
-The actual *tau* is computed from the sum of *tau* to *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
-
-#### MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT
-The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*. 
-The derivative of *q* is trivially *qdot*.
-The actual *tau* is computed from the sum of *tau* to *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
+The passive torque is taken into account in the *tau*
 
 #### CUSTOM
 This leaves the user to define both the configuration (what are the states and controls) and to define the dynamic function. 
