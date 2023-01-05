@@ -347,14 +347,14 @@ def solve_ivp_bioptim_interface(
     # if multiple shooting, we need to set the first x0
     x0i = x0[:, 0] if x0.shape[1] > 1 else x0
 
-    y_final = np.array([], dtype=np.float).reshape(x0i.shape[0], 0)
+    y_final = np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
 
     for s, func in enumerate(dynamics_func):
         u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
         # y always contains [x0, xf] of the interval
         y = np.concatenate(
             (
-                np.array([], dtype=np.float).reshape(x0i.shape[0], 0)
+                np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
                 if keep_intermediate_points
                 else x0i,  # x0 or None
                 np.array(func(x0=x0i, p=u[:, u_slice], params=params / param_scaling)[dynamics_output]),
