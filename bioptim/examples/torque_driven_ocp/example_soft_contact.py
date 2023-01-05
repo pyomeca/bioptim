@@ -6,11 +6,9 @@ One could use soft_contacts_dynamics or implicit_dynamics to ease the convergenc
 """
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
     Dynamics,
     DynamicsFcn,
     ObjectiveList,
@@ -26,7 +24,6 @@ from bioptim import (
     Shooting,
     Solution,
     InitialGuess,
-    CostType,
     InterpolationType,
     SoftContactDynamics,
     RigidBodyDynamics,
@@ -148,7 +145,6 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = DynamicsList()
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
         rigidbody_dynamics=RigidBodyDynamics.ODE,
@@ -211,8 +207,8 @@ def main():
 
     # Prepare OCP to reach the second marker
     ocp = prepare_ocp(model, 37, 0.37, ode_solver, slack=1e-4)
-    ocp.add_plot_penalty(CostType.ALL)
-    ocp.print(to_graph=True)
+    # ocp.add_plot_penalty(CostType.ALL)
+    # ocp.print(to_graph=True)
 
     # --- Solve the program --- #
     solv = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))

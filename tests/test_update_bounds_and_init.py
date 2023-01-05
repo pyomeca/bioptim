@@ -30,7 +30,9 @@ def test_double_update_bounds_and_init():
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0)
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0, x_init=x_init, u_init=u_init)
 
     x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
@@ -102,7 +104,9 @@ def test_update_bounds_and_init_with_param():
         extra_value=1,
     )
 
-    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0, parameters=parameters)
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_tau))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0, parameters=parameters, x_init=x_init, u_init=u_init)
 
     x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
@@ -210,7 +214,18 @@ def test_update_noised_init_rk4(interpolation):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=OdeSolver.RK4())
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(
+        bio_model,
+        dynamics,
+        n_shooting=ns,
+        phase_time=phase_time,
+        ode_solver=OdeSolver.RK4(),
+        x_init=x_init,
+        u_init=u_init,
+    )
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -277,7 +292,6 @@ def test_update_noised_init_rk4(interpolation):
             ocp.update_initial_guess(x_init, u_init)
     else:
         ocp.update_initial_guess(x_init, u_init)
-        print(ocp.v.init.init)
 
         if interpolation == InterpolationType.CONSTANT:
             expected = np.array(
@@ -502,7 +516,12 @@ def test_update_noised_init_collocation(interpolation):
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(
+        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init
+    )
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -540,6 +559,8 @@ def test_update_noised_init_collocation(interpolation):
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
         x = np.random.random((nq + nqdot, 5))
         u = np.random.random((ntau, 5))
+    else:
+        raise NotImplementedError("This interpolation is not implemented yet")
 
     np.random.seed(0)
     x_init = NoisedInitialGuess(
@@ -565,352 +586,12 @@ def test_update_noised_init_collocation(interpolation):
         **extra_params_u,
     )
 
-    ocp.update_initial_guess(x_init, u_init)
-    print(ocp.v.init.init)
+    with pytest.raises(
+        NotImplementedError,
+        match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
+    ):
+        ocp.update_initial_guess(x_init, u_init)
 
-    if interpolation == InterpolationType.CONSTANT:
-        expected = np.array(
-            [
-                [0.00292881],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.01291136],
-                [0.00583576],
-                [-0.01464717],
-                [0.53482051],
-                [0.41798243],
-                [0.37593374],
-                [0.01291136],
-                [0.00583576],
-                [-0.01464717],
-                [0.53482051],
-                [0.41798243],
-                [0.37593374],
-                [0.01291136],
-                [0.00583576],
-                [-0.01464717],
-                [0.53482051],
-                [0.41798243],
-                [0.37593374],
-                [0.0061658],
-                [-0.00249651],
-                [0.03665925],
-                [-0.53905199],
-                [0.34954208],
-                [-0.04840646],
-                [0.0061658],
-                [-0.00249651],
-                [0.03665925],
-                [-0.53905199],
-                [0.34954208],
-                [-0.04840646],
-                [0.00269299],
-                [0.0],
-                [1.67],
-                [0.0],
-                [0.0],
-                [0.0],
-                [-1.5269023],
-                [1.77867567],
-                [-0.94177755],
-                [0.55968409],
-                [0.08739329],
-                [1.09693476],
-                [-1.42658685],
-                [-0.34135224],
-                [-0.17539867],
-            ]
-        )
-
-    elif interpolation == InterpolationType.LINEAR:
-        expected = np.array(
-            [
-                [1.00292881e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [1.26291136e00],
-                [5.83576452e-03],
-                [3.77852829e-01],
-                [5.34820509e-01],
-                [4.17982425e-01],
-                [3.75933739e-01],
-                [1.26291136e00],
-                [5.83576452e-03],
-                [3.77852829e-01],
-                [5.34820509e-01],
-                [4.17982425e-01],
-                [3.75933739e-01],
-                [1.26291136e00],
-                [5.83576452e-03],
-                [3.77852829e-01],
-                [5.34820509e-01],
-                [4.17982425e-01],
-                [3.75933739e-01],
-                [1.50616580e00],
-                [-2.49651155e-03],
-                [8.21659249e-01],
-                [-5.39051987e-01],
-                [3.49542082e-01],
-                [-4.84064610e-02],
-                [1.50616580e00],
-                [-2.49651155e-03],
-                [8.21659249e-01],
-                [-5.39051987e-01],
-                [3.49542082e-01],
-                [-4.84064610e-02],
-                [1.75269299e00],
-                [0.00000000e00],
-                [1.67000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [-7.69022965e-02],
-                [1.15886757e01],
-                [1.33822245e00],
-                [1.04301742e00],
-                [9.89739329e00],
-                [1.85693476e00],
-                [-1.90992018e00],
-                [9.46864776e00],
-                [-9.35398671e-01],
-            ]
-        )
-
-    elif interpolation == InterpolationType.SPLINE:
-        expected = np.array(
-            [
-                [0.61502453],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [0.76732112],
-                [0.43533947],
-                [0.19273203],
-                [1.15035619],
-                [0.76088147],
-                [0.81430269],
-                [0.76732112],
-                [0.43533947],
-                [0.19273203],
-                [1.15035619],
-                [0.76088147],
-                [0.81430269],
-                [0.76732112],
-                [0.43533947],
-                [0.19273203],
-                [1.15035619],
-                [0.76088147],
-                [0.81430269],
-                [0.90922359],
-                [0.13708974],
-                [0.32886699],
-                [-0.32665397],
-                [0.78933071],
-                [0.15428881],
-                [0.90922359],
-                [0.13708974],
-                [0.32886699],
-                [-0.32665397],
-                [0.78933071],
-                [0.15428881],
-                [0.57293724],
-                [-0.1],
-                [1.67],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [-0.70590907],
-                [2.24732687],
-                [-0.65897059],
-                [1.08074616],
-                [0.85131915],
-                [1.31781816],
-                [-1.21759843],
-                [0.30813958],
-                [-0.03112013],
-            ]
-        )
-
-    elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-        expected = np.array(
-            [
-                [1.00292881e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [1.51291136e00],
-                [5.83576452e-03],
-                [7.70352829e-01],
-                [5.34820509e-01],
-                [4.17982425e-01],
-                [3.75933739e-01],
-                [1.51291136e00],
-                [5.83576452e-03],
-                [7.70352829e-01],
-                [5.34820509e-01],
-                [4.17982425e-01],
-                [3.75933739e-01],
-                [1.51291136e00],
-                [5.83576452e-03],
-                [7.70352829e-01],
-                [5.34820509e-01],
-                [4.17982425e-01],
-                [3.75933739e-01],
-                [1.50616580e00],
-                [-2.49651155e-03],
-                [8.21659249e-01],
-                [-5.39051987e-01],
-                [3.49542082e-01],
-                [-4.84064610e-02],
-                [1.50616580e00],
-                [-2.49651155e-03],
-                [8.21659249e-01],
-                [-5.39051987e-01],
-                [3.49542082e-01],
-                [-4.84064610e-02],
-                [1.50269299e00],
-                [0.00000000e00],
-                [1.67000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [-7.69022965e-02],
-                [1.15886757e01],
-                [1.33822245e00],
-                [5.59684085e-01],
-                [9.89739329e00],
-                [1.09693476e00],
-                [-1.42658685e00],
-                [9.46864776e00],
-                [-1.75398671e-01],
-            ]
-        )
-
-    elif interpolation == InterpolationType.EACH_FRAME:
-        expected = np.array(
-            [
-                [2.92881024e-03],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [3.46244695e-01],
-                [9.00000000e-01],
-                [2.31868616e00],
-                [3.86815384e00],
-                [4.75131576e00],
-                [5.70926707e00],
-                [3.46244695e-01],
-                [9.00000000e-01],
-                [2.31868616e00],
-                [3.86815384e00],
-                [4.75131576e00],
-                [5.70926707e00],
-                [3.46244695e-01],
-                [9.00000000e-01],
-                [2.31868616e00],
-                [3.86815384e00],
-                [4.75131576e00],
-                [5.70926707e00],
-                [6.72832469e-01],
-                [9.00000000e-01],
-                [2.70332592e00],
-                [3.12761468e00],
-                [5.01620875e00],
-                [5.61826021e00],
-                [6.72832469e-01],
-                [9.00000000e-01],
-                [2.70332592e00],
-                [3.12761468e00],
-                [5.01620875e00],
-                [5.61826021e00],
-                [1.00269299e00],
-                [-1.00000000e-01],
-                [1.47000000e00],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [-1.52690230e00],
-                [1.77867567e00],
-                [-9.41777552e-01],
-                [5.59684085e-01],
-                [8.73932870e-02],
-                [1.09693476e00],
-                [-1.42658685e00],
-                [-3.41352240e-01],
-                [-1.75398671e-01],
-            ]
-        )
-
-    elif interpolation == InterpolationType.ALL_POINTS:
-        expected = np.array(
-            [
-                [2.92881024e-03],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [1.79578029e-01],
-                [9.00000000e-01],
-                [2.11478380e00],
-                [3.11826021e00],
-                [4.05942770e00],
-                [5.30753031e00],
-                [3.39499136e-01],
-                [9.00000000e-01],
-                [2.27304220e00],
-                [3.68585669e00],
-                [4.03746519e00],
-                [5.48027693e00],
-                [5.02692991e-01],
-                [9.00000000e-01],
-                [2.54179824e00],
-                [3.02030950e00],
-                [4.84461222e00],
-                [6.05763028e00],
-                [6.62085955e-01],
-                [9.00000000e-01],
-                [2.70162087e00],
-                [3.84249661e00],
-                [4.61156355e00],
-                [5.89514879e00],
-                [8.42086980e-01],
-                [9.00000000e-01],
-                [2.87983043e00],
-                [3.38515786e00],
-                [4.91932997e00],
-                [5.65678575e00],
-                [9.96255233e-01],
-                [-1.00000000e-01],
-                [1.47000000e00],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [-1.00000000e-01],
-                [7.90524784e-01],
-                [6.82551478e-01],
-                [-7.38286596e-01],
-                [-1.75909811e00],
-                [-1.15846976e00],
-                [-5.45156916e-01],
-                [6.67066862e-01],
-                [-1.48429481e00],
-                [2.80787082e-01],
-            ]
-        )
-
-    np.testing.assert_almost_equal(ocp.v.init.init, expected)
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
         ocp.update_bounds(x_init, u_init)
 
@@ -1009,7 +690,7 @@ def test_update_noised_initial_guess_rk4(interpolation):
             ocp.update_initial_guess(x_init, u_init)
     else:
         ocp.update_initial_guess(x_init, u_init)
-        print(ocp.v.init.init)
+
         if interpolation == InterpolationType.CONSTANT:
             expected = np.array(
                 [
@@ -1221,7 +902,10 @@ def test_update_noised_initial_guess_rk4(n_extra):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time)
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, x_init=x_init, u_init=u_init)
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -1346,7 +1030,12 @@ def test_update_noised_initial_guess_collocation(interpolation):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(
+        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init
+    )
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -1414,351 +1103,12 @@ def test_update_noised_initial_guess_collocation(interpolation):
         **extra_params_u,
     )
 
-    ocp.update_initial_guess(x_init, u_init)
-    print(ocp.v.init.init)
-    if interpolation == InterpolationType.CONSTANT:
-        expected = np.array(
-            [
-                [-0.00752759],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.02704286],
-                [-0.01376022],
-                [0.02614717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [0.02704286],
-                [-0.01376022],
-                [0.02614717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [0.02704286],
-                [-0.01376022],
-                [0.02614717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [0.01391964],
-                [-0.01767666],
-                [-0.06024513],
-                [-0.39983054],
-                [-0.08552041],
-                [-0.26119874],
-                [0.01391964],
-                [-0.01767666],
-                [-0.06024513],
-                [-0.39983054],
-                [-0.08552041],
-                [-0.26119874],
-                [0.00591951],
-                [0.0],
-                [1.67],
-                [0.0],
-                [0.0],
-                [0.0],
-                [-0.50183952],
-                [0.39463394],
-                [-1.76766555],
-                [1.80285723],
-                [-1.37592544],
-                [1.46470458],
-                [0.92797577],
-                [-1.37602192],
-                [0.40446005],
-            ]
-        )
+    with pytest.raises(
+        NotImplementedError,
+        match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
+    ):
+        ocp.update_initial_guess(x_init, u_init)
 
-    elif interpolation == InterpolationType.LINEAR:
-        expected = np.array(
-            [
-                [0.99247241],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [1.27704286],
-                [-0.01376022],
-                [0.41864717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [1.27704286],
-                [-0.01376022],
-                [0.41864717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [1.27704286],
-                [-0.01376022],
-                [0.41864717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [1.51391964],
-                [-0.01767666],
-                [0.72475487],
-                [-0.39983054],
-                [-0.08552041],
-                [-0.26119874],
-                [1.51391964],
-                [-0.01767666],
-                [0.72475487],
-                [-0.39983054],
-                [-0.08552041],
-                [-0.26119874],
-                [1.75591951],
-                [0.0],
-                [1.67],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.94816048],
-                [10.20463394],
-                [0.51233445],
-                [2.28619056],
-                [8.43407456],
-                [2.22470458],
-                [0.44464243],
-                [8.43397808],
-                [-0.35553995],
-            ]
-        )
-
-    elif interpolation == InterpolationType.SPLINE:
-        expected = np.array(
-            [
-                [0.59113089],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [0.33024578],
-                [0.65874739],
-                [0.21811854],
-                [-0.02346609],
-                [0.45735055],
-                [-0.22503382],
-                [0.33024578],
-                [0.65874739],
-                [0.21811854],
-                [-0.02346609],
-                [0.45735055],
-                [-0.22503382],
-                [0.33024578],
-                [0.65874739],
-                [0.21811854],
-                [-0.02346609],
-                [0.45735055],
-                [-0.22503382],
-                [0.16992981],
-                [0.44909993],
-                [0.12213423],
-                [0.00393179],
-                [0.48605987],
-                [-0.01781424],
-                [0.16992981],
-                [0.44909993],
-                [0.12213423],
-                [0.00393179],
-                [0.48605987],
-                [-0.01781424],
-                [0.15385356],
-                [-0.1],
-                [1.67],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [0.44704601],
-                [1.07886696],
-                [-0.85834515],
-                [2.76664681],
-                [-0.90891928],
-                [1.79505682],
-                [1.76510889],
-                [-1.195846],
-                [0.9931955],
-            ]
-        )
-
-    elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-        expected = np.array(
-            [
-                [0.99247241],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [1.52704286],
-                [-0.01376022],
-                [0.81114717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [1.52704286],
-                [-0.01376022],
-                [0.81114717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [1.52704286],
-                [-0.01376022],
-                [0.81114717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [1.51391964],
-                [-0.01767666],
-                [0.72475487],
-                [-0.39983054],
-                [-0.08552041],
-                [-0.26119874],
-                [1.51391964],
-                [-0.01767666],
-                [0.72475487],
-                [-0.39983054],
-                [-0.08552041],
-                [-0.26119874],
-                [1.50591951],
-                [0.0],
-                [1.67],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.94816048],
-                [10.20463394],
-                [0.51233445],
-                [1.80285723],
-                [8.43407456],
-                [1.46470458],
-                [0.92797577],
-                [8.43397808],
-                [0.40446005],
-            ]
-        )
-
-    elif interpolation == InterpolationType.EACH_FRAME:
-        expected = np.array(
-            [
-                [-0.00752759],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.36037619],
-                [0.31957311],
-                [0.3594805],
-                [-0.028152],
-                [0.36444318],
-                [-0.11969204],
-                [0.36037619],
-                [0.31957311],
-                [0.3594805],
-                [-0.028152],
-                [0.36444318],
-                [-0.11969204],
-                [0.36037619],
-                [0.31957311],
-                [0.3594805],
-                [-0.028152],
-                [0.36444318],
-                [-0.11969204],
-                [0.6805863],
-                [0.64899001],
-                [0.60642154],
-                [0.26683613],
-                [0.58114625],
-                [0.40546793],
-                [0.6805863],
-                [0.64899001],
-                [0.60642154],
-                [0.26683613],
-                [0.58114625],
-                [0.40546793],
-                [1.00591951],
-                [-0.1],
-                [1.67],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [-0.50183952],
-                [0.39463394],
-                [-1.76766555],
-                [1.80285723],
-                [-1.37592544],
-                [1.46470458],
-                [0.92797577],
-                [-1.37602192],
-                [0.40446005],
-            ]
-        )
-
-    elif interpolation == InterpolationType.ALL_POINTS:
-        expected = np.array(
-            [
-                [-0.00752759],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.19370953],
-                [0.17071127],
-                [0.1268821],
-                [-0.09453207],
-                [-0.40328055],
-                [-0.07886291],
-                [0.34725297],
-                [0.34165624],
-                [0.30873369],
-                [0.16539867],
-                [0.46847818],
-                [-0.1722468],
-                [0.50591951],
-                [0.48082338],
-                [0.50311098],
-                [0.44479591],
-                [0.0859684],
-                [0.73151405],
-                [0.64602779],
-                [0.68546306],
-                [0.65811463],
-                [1.02502935],
-                [0.12009438],
-                [0.59146007],
-                [0.812693],
-                [0.84663104],
-                [0.80709841],
-                [0.45593228],
-                [1.39741954],
-                [0.35837257],
-                [0.97348502],
-                [-0.1],
-                [1.67],
-                [-0.1],
-                [-0.1],
-                [-0.1],
-                [-0.50183952],
-                [0.39463394],
-                [-1.76766555],
-                [1.80285723],
-                [-1.37592544],
-                [1.46470458],
-                [0.92797577],
-                [-1.37602192],
-                [0.40446005],
-            ]
-        )
-
-    np.testing.assert_almost_equal(ocp.v.init.init, expected)
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
         ocp.update_bounds(x_init, u_init)
 
@@ -1781,7 +1131,12 @@ def test_update_noised_initial_guess_list(interpolation):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver)
+
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
+    ocp = OptimalControlProgram(
+        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init
+    )
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(bio_model)
@@ -1812,65 +1167,11 @@ def test_update_noised_initial_guess_list(interpolation):
         seed=42,
     )
 
-    ocp.update_initial_guess(x_init, u_init)
-    print(ocp.v.init.init)
-    if interpolation == InterpolationType.CONSTANT:
-        expected = np.array(
-            [
-                [-0.00752759],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.0],
-                [0.02704286],
-                [-0.01376022],
-                [0.02614717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [0.02704286],
-                [-0.01376022],
-                [0.02614717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [0.02704286],
-                [-0.01376022],
-                [0.02614717],
-                [-0.36148533],
-                [0.03110985],
-                [-0.45302538],
-                [0.01391964],
-                [-0.01767666],
-                [-0.06024513],
-                [-0.39983054],
-                [-0.08552041],
-                [-0.26119874],
-                [0.01391964],
-                [-0.01767666],
-                [-0.06024513],
-                [-0.39983054],
-                [-0.08552041],
-                [-0.26119874],
-                [0.00591951],
-                [0.0],
-                [1.67],
-                [0.0],
-                [0.0],
-                [0.0],
-                [-0.50183952],
-                [0.39463394],
-                [-1.76766555],
-                [1.80285723],
-                [-1.37592544],
-                [1.46470458],
-                [0.92797577],
-                [-1.37602192],
-                [0.40446005],
-            ]
-        )
+    with pytest.raises(
+        NotImplementedError,
+        match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
+    ):
+        ocp.update_initial_guess(x_init, u_init)
 
-    np.testing.assert_almost_equal(ocp.v.init.init, expected)
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
         ocp.update_bounds(x_init, u_init)

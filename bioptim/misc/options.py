@@ -249,7 +249,7 @@ class OptionDict(OptionList):
 
     def _add(self, key: str, option_type: Callable = OptionGeneric, phase: int = -1, **extra_arguments: Any):
         self.__prepare_option_list(phase, key)
-        self.options[phase][key] = option_type(phase=phase, **extra_arguments)
+        self.options[phase][key] = option_type(key=key, phase=phase, **extra_arguments)
 
     def copy(self, option: OptionGeneric, key: str):
         self.__prepare_option_list(option.phase, key)

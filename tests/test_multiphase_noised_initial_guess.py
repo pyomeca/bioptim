@@ -724,7 +724,6 @@ def test_noisy_multiphase():
     ]
 
     np.testing.assert_almost_equal(ocp.v.init.init, expected)
-    print(ocp.v.init.init)
 
 
 @pytest.mark.parametrize(

@@ -41,6 +41,10 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -176,6 +180,10 @@ def test_torque_driven_implicit(with_contact, cx):
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -237,6 +245,10 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -295,6 +307,10 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -417,8 +433,14 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+
+    nlp.phase_idx = 0
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 4, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 2))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -512,6 +534,10 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -598,6 +624,8 @@ def test_soft_contacts_dynamics_errors(dynamics):
     nlp.cx = MX
 
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -637,6 +665,8 @@ def test_implicit_dynamics_errors(dynamics):
     nlp.cx = MX
 
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -673,8 +703,13 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -770,6 +805,10 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+    nlp.phase_idx = 0
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -1273,6 +1312,10 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
@@ -1312,7 +1355,6 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact):
     def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> DynamicsEvaluation:
-        DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
@@ -1341,6 +1383,10 @@ def test_custom_dynamics(with_contact):
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(

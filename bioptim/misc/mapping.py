@@ -326,7 +326,7 @@ class NodeMappingList(OptionDict):
             phase_post=phase_post,
         )
 
-    def get_variable_from_phase_idx(self, ocp, NLP):
+    def get_variable_from_phase_idx(self, ocp):
 
         use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
@@ -340,9 +340,11 @@ class NodeMappingList(OptionDict):
                 if self[i][key].map_controls:
                     use_controls_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
 
-        NLP.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-        NLP.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-        NLP.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+        from ..optimization.non_linear_program import NonLinearProgram
+
+        NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+        NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+        NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
         return use_states_from_phase_idx, use_states_dot_from_phase_idx, use_controls_from_phase_idx
 

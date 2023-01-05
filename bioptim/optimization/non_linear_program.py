@@ -1,10 +1,9 @@
 from typing import Callable, Any, Union
 
 import casadi
-import numpy as np
 from casadi import SX, MX, Function, horzcat
 
-from .optimization_variable import OptimizationVariableList, OptimizationVariable
+from .optimization_variable import OptimizationVariableList, OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
@@ -128,7 +127,7 @@ class NonLinearProgram:
         self.g_implicit = []
         self.J = []
         self.J_internal = []
-        self.model: BioModel = None
+        self.model: BioModel | None = None
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()
@@ -144,16 +143,18 @@ class NonLinearProgram:
         self.variable_mappings = {}
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
+        self.U_scaled = None
         self.U = None
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
-        self.controls = OptimizationVariableList()
+        self.controls = OptimizationVariableContainer()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
+        self.X_scaled = None
         self.X = None
-        self.states = OptimizationVariableList()
-        self.states_dot = OptimizationVariableList()
+        self.states = OptimizationVariableContainer()
+        self.states_dot = OptimizationVariableContainer()
 
     def initialize(self, cx: Callable = None):
         """
@@ -167,7 +168,9 @@ class NonLinearProgram:
         """
         self.plot = {}
         self.cx = cx
+        self.states["scaled"]._cx = self.cx()
         self.states._cx = self.cx()
+        self.controls["scaled"]._cx = self.cx()
         self.controls._cx = self.cx()
         self.J = []
         self.g = []

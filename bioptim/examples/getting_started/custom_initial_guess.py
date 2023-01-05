@@ -15,7 +15,6 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -31,6 +30,7 @@ from bioptim import (
     InitialGuess,
     InterpolationType,
     OdeSolver,
+    VariableScalingList,
     MagnitudeType,
 )
 
@@ -170,7 +170,17 @@ def prepare_ocp(
             bound_push=0.1,
         )
 
-    # ------------- #
+    # Variable scaling
+    x_scaling = VariableScalingList()
+    x_scaling.add("q", scaling=[1] * bio_model.nb_q)
+    x_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
+
+    xdot_scaling = VariableScalingList()
+    xdot_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
+    xdot_scaling.add("qddot", scaling=[1] * bio_model.nb_qddot)
+
+    u_scaling = VariableScalingList()
+    u_scaling.add("tau", scaling=[1] * bio_model.nb_tau)
 
     return OptimalControlProgram(
         bio_model,
@@ -184,6 +194,9 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        x_scaling=x_scaling,
+        xdot_scaling=xdot_scaling,
+        u_scaling=u_scaling,
     )
 
 
@@ -208,8 +221,8 @@ def main():
             else:
                 raise ValueError(message)
 
-        sol = ocp.solve()
-        print("\n")
+    sol = ocp.solve()
+    print("\n")
 
     # Print the last solution
     sol.animate()

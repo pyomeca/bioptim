@@ -15,12 +15,11 @@ from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
-from ..dynamics.configure_problem import ConfigureProblem, DynamicsFcn
+from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 
 from ..interfaces.biomodel import BioModel
-from ..interfaces.biorbd_model import BiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -34,7 +33,6 @@ from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
-from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
@@ -46,11 +44,13 @@ from ..misc.enums import (
     CostType,
     SolutionIntegrator,
     IntegralApproximation,
+    InterpolationType,
 )
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
+from ..optimization.optimization_variable import VariableScalingList, VariableScaling
 from ..gui.check_conditioning import check_conditioning
 
 check_version(biorbd, "1.9.8", "1.10.0")
@@ -163,6 +163,9 @@ class OptimalControlProgram:
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
+        x_scaling: Union[VariableScaling, VariableScalingList] = None,
+        xdot_scaling: Union[VariableScaling, VariableScalingList] = None,
+        u_scaling: Union[VariableScaling, VariableScalingList] = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -187,6 +190,12 @@ class OptimalControlProgram:
             The bounds for the states
         u_bounds: Union[Bounds, BoundsList]
             The bounds for the controls
+        x_scaling: Union[VariableScaling, VariableScalingList]
+            The scaling for the states
+        xdot_scaling: Union[VariableScaling, VariableScalingList]
+            The scaling for the states derivative
+        u_scaling: Union[VariableScaling, VariableScalingList]
+            The scaling for the controls
         objective_functions: Union[Objective, ObjectiveList]
             All the objective function of the program
         constraints: Union[Constraint, ConstraintList]
@@ -241,6 +250,9 @@ class OptimalControlProgram:
             "u_init": u_init,
             "x_bounds": x_bounds,
             "u_bounds": u_bounds,
+            "x_scaling": x_scaling,
+            "xdot_scaling": xdot_scaling,
+            "u_scaling": u_scaling,
             "objective_functions": ObjectiveList(),
             "constraints": ConstraintList(),
             "parameters": ParameterList(),
@@ -296,12 +308,18 @@ class OptimalControlProgram:
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
         if x_init is None:
+            if x_scaling is None:
+                raise RuntimeError("At least x_init or x_scaling should be provided.")
             x_init = InitialGuessList()
         elif isinstance(x_init, InitialGuess):
+            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
+                raise RuntimeError("x_scaling should be provided with a custom x_init")
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init)
             x_init = x_init_tp
         elif isinstance(x_init, NoisedInitialGuess):
+            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
+                raise RuntimeError("x_scaling ans xdot_scaling should be provided with a custom x_init")
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init.init)
             x_init = x_init_tp
@@ -309,17 +327,50 @@ class OptimalControlProgram:
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
         if u_init is None:
+            if u_scaling is None:
+                raise RuntimeError("At least u_init or u_scaling should be provided.")
             u_init = InitialGuessList()
         elif isinstance(u_init, InitialGuess):
+            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
+                raise RuntimeError("u_scaling should be provided with a custom u_init")
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init)
             u_init = u_init_tp
         elif isinstance(u_init, NoisedInitialGuess):
+            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
+                raise RuntimeError("u_scaling should be provided with a custom u_init")
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init.init)
             u_init = u_init_tp
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
+
+        if x_scaling is None:
+            x_scaling = VariableScalingList()
+        elif isinstance(x_scaling, VariableScaling):
+            x_scaling_tp = VariableScalingList()
+            x_scaling_tp.add(scaling=x_scaling)
+            x_scaling = x_scaling_tp
+        elif not isinstance(x_scaling, VariableScalingList):
+            raise RuntimeError("x_scaling should be built from a VariableScaling or a VariableScalingList")
+
+        if xdot_scaling is None:
+            xdot_scaling = VariableScalingList()
+        elif isinstance(xdot_scaling, VariableScaling):
+            xdot_scaling_tp = VariableScalingList()
+            xdot_scaling_tp.add(scaling=xdot_scaling)
+            xdot_scaling = xdot_scaling_tp
+        elif not isinstance(xdot_scaling, VariableScalingList):
+            raise RuntimeError("xdot_scaling should be built from a VariableScaling or a VariableScalingList")
+
+        if u_scaling is None:
+            u_scaling = VariableScalingList()
+        elif isinstance(u_scaling, VariableScaling):
+            u_scaling_tp = VariableScalingList()
+            u_scaling_tp.add(scaling=u_scaling)
+            u_scaling = u_scaling_tp
+        elif not isinstance(u_scaling, VariableScalingList):
+            raise RuntimeError("u_scaling should be built from a VariableScaling or a VariableScalingList")
 
         if objective_functions is None:
             objective_functions = ObjectiveList()
@@ -365,10 +416,7 @@ class OptimalControlProgram:
             raise RuntimeError("use_sx should be a bool")
 
         # Type of CasADi graph
-        if use_sx:
-            self.cx = SX
-        else:
-            self.cx = MX
+        self.cx = SX if use_sx else MX
 
         # Declare optimization variables
         self.program_changed = True
@@ -439,6 +487,14 @@ class OptimalControlProgram:
         variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
+        # Add the scaling of the variables
+        x_scaling, xdot_scaling, u_scaling = x_scaling.scaling_fill_phases(
+            self, x_scaling, xdot_scaling, u_scaling, x_init, u_init
+        )
+        NLP.add(self, "x_scaling", x_scaling, True)
+        NLP.add(self, "xdot_scaling", xdot_scaling, True)
+        NLP.add(self, "u_scaling", u_scaling, True)
+
         # Prepare the node mappings
         if node_mappings is None:
             node_mappings = NodeMappingList()
@@ -446,7 +502,8 @@ class OptimalControlProgram:
             use_states_from_phase_idx,
             use_states_dot_from_phase_idx,
             use_controls_from_phase_idx,
-        ) = node_mappings.get_variable_from_phase_idx(self, NLP)
+        ) = node_mappings.get_variable_from_phase_idx(self)
+
         self._check_variable_mapping_consistency_with_node_mapping(
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
@@ -513,6 +570,13 @@ class OptimalControlProgram:
     def _check_variable_mapping_consistency_with_node_mapping(
         self, use_states_from_phase_idx, use_controls_from_phase_idx
     ):
+        # TODO this feature is broken since the merge with multi_node, fix it
+        if (
+            list(set(use_states_from_phase_idx)) != use_states_from_phase_idx
+            or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx
+        ):
+            raise NotImplementedError("Mapping over phases is broken")
+
         for i in range(self.n_phases):
             for j in [idx for idx, x in enumerate(use_states_from_phase_idx) if x == i]:
                 for key in self.nlp[i].variable_mappings.keys():
@@ -695,10 +759,10 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states.keys():
+            for key in nlp.states:
                 if f"{key}_states" in nlp.plot:
                     nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
-            for key in nlp.controls.keys():
+            for key in nlp.controls:
                 if f"{key}_controls" in nlp.plot:
                     nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
 
@@ -720,6 +784,12 @@ class OptimalControlProgram:
         param_init: Union[Bounds, BoundsList]
             The parameters initial guess to add
         """
+
+        if self.nlp[0].ode_solver.is_direct_collocation and self.nlp[0].x_init.init.shape[0] != 0:
+            raise NotImplementedError(
+                "It is not possible to use initial guess with NoisedInitialGuess "
+                "as it won't produce the expected randomness"
+            )
 
         if x_init:
             NLP.add_path_condition(self, x_init, "x_init", InitialGuess, InitialGuessList)
@@ -859,6 +929,9 @@ class OptimalControlProgram:
             if len(x.shape) < 2:
                 x = x.reshape((-1, 1))
 
+            if len(u.shape) < 2:
+                u = u.reshape((-1, 1))
+
             # if time is parameter of the ocp, we need to evaluate with current parameters
             if isinstance(dt, Function):
                 dt = dt(p)
@@ -873,6 +946,27 @@ class OptimalControlProgram:
                 if penalty.target is not None and isinstance(t, int)
                 else []
             )
+
+            if x.shape[1] == 1:
+                x_shape = int(x.shape[0] / self.nlp[penalty.phase].x_scaling["all"].scaling.shape[0])
+                x_scaling = np.reshape(
+                    np.hstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T, (-1, 1)
+                )
+            else:
+                x_shape = x.shape[1]
+                x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T
+
+            if u.shape[1] == 1:
+                u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling["all"].scaling.shape[0])
+                u_scaling = np.reshape(
+                    np.hstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T, (-1, 1)
+                )
+            else:
+                u_shape = u.shape[1]
+                u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T
+
+            x /= x_scaling
+            u /= u_scaling
 
             out = []
             if penalty.transition or penalty.multinode_constraint:

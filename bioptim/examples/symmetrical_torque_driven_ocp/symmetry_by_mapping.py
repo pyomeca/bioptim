@@ -24,7 +24,6 @@ Please note that while BiMapping is used in that context for reducing dof, it is
 applications one can do with the Mappings
 """
 
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,

@@ -217,6 +217,6 @@ from .optimization.receding_horizon_optimization import (
 )
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
-from .optimization.optimization_variable import OptimizationVariableList
+from .optimization.optimization_variable import OptimizationVariableList, VariableScalingList, VariableScaling
 
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero

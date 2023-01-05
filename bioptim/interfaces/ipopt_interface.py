@@ -141,4 +141,4 @@ class IpoptInterface(SolverInterface):
         -------
 
         """
-        return generic_get_all_penalties(self, nlp, penalties)
+        return generic_get_all_penalties(self, nlp, penalties, is_unscaled=False)
