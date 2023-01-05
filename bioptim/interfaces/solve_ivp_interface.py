@@ -104,7 +104,7 @@ def solve_ivp_interface(
                 ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
-                ui = f(t_eval_step)
+                ui = f(np.array(t_eval_step, dtype=np.float64))  # prevent error with dtype=object
             else:
                 raise NotImplementedError("Control type not implemented")
 
