@@ -45,7 +45,7 @@ def solve_ivp_interface(
     """
     if isinstance(t_eval[0], np.ndarray):  # Direct multiple shooting
 
-        y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
+        y_final = np.array([], dtype=np.float64).reshape(x0.shape[0], 0)
 
         for s, t_eval_step in enumerate(t_eval):
 
@@ -92,7 +92,7 @@ def solve_ivp_interface(
             # resize t_eval to get intervals of [ti, ti+1] for each intervals
             t_eval = np.hstack((np.array(t_eval).reshape(-1, 1)[:-1], np.array(t_eval).reshape(-1, 1)[1:]))
 
-        y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
+        y_final = np.array([], dtype=np.float64).reshape(x0.shape[0], 0)
         x0i = x0
 
         for s, t_eval_step in enumerate(t_eval):
