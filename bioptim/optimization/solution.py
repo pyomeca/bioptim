@@ -862,7 +862,7 @@ class Solution:
             if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
                 flat_time += [nlp.ns * dt_ns]
 
-            time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time))
+            time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time, dtype=object))
 
         if merge_phases:
             return concatenate_optimization_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
