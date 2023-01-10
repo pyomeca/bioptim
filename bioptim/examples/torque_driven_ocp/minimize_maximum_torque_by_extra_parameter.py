@@ -21,6 +21,7 @@ from bioptim import (
     Bounds,
     InitialGuess,
     Objective,
+    BiorbdModel,
 )
 
 
@@ -50,7 +51,7 @@ def prepare_ocp(
     biorbd_model_path: str = "models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
 
-    biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
+    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
     n_shooting = (40, 40)
@@ -121,8 +122,8 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([1] * (biorbd_model[1].nbQ() + biorbd_model[1].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
+    x_init.add([1] * (biorbd_model[1].nb_q + biorbd_model[1].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
