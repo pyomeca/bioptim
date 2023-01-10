@@ -7,8 +7,6 @@ from casadi import horzcat, vertcat, SX, Function
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
-from ..dynamics.ode_solver import OdeSolver
-from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis, ControlType, IntegralApproximation
 
 
@@ -146,14 +144,20 @@ class PenaltyFunctionAbstract:
 
             # Compute the position of the marker in the requested reference frame (None for global)
             nlp = all_pn.nlp
-            q_mx = nlp.states["q"].mx
+            q = nlp.states["q"].mx
             model = nlp.model
-            jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
-            markers = horzcat(
-                *[m.to_mx() for m in model.markers(q_mx) if m.applyRT(jcs_t) is None]  # applyRT always returns None
+            jcs_t = (
+                biorbd.RotoTrans()
+                if reference_jcs is None
+                else model.homogeneous_matrices_in_global(q, reference_jcs, inverse=True)
             )
 
-            markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["q"])
+            markers = []
+            for m in model.markers(q):
+                markers_in_jcs = jcs_t.to_mx() @ vertcat(m, 1)
+                markers = horzcat(markers, markers_in_jcs[:3])
+
+            markers_objective = nlp.mx_to_cx("markers", markers, nlp.states["q"])
             return markers_objective
 
         @staticmethod
@@ -192,13 +196,14 @@ class PenaltyFunctionAbstract:
 
             # Add the penalty in the requested reference frame. None for global
             nlp = all_pn.nlp
+
             q_mx = nlp.states["q"].mx
             qdot_mx = nlp.states["qdot"].mx
-            model = nlp.model
-            jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
-            markers = horzcat(*[m.to_mx() for m in model.markersVelocity(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
 
-            markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
+            # todo: return all MX, shouldn't it be a list of MX, I think there is an inconsistency here
+            markers = nlp.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs)
+
+            markers_objective = nlp.mx_to_cx("markers_velocity", markers, nlp.states["q"], nlp.states["qdot"])
             return markers_objective
 
         @staticmethod
@@ -228,23 +233,23 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = all_pn.nlp
-            first_marker_idx = (
-                biorbd.marker_index(nlp.model, first_marker) if isinstance(first_marker, str) else first_marker
-            )
+            first_marker_idx = nlp.model.marker_index(first_marker) if isinstance(first_marker, str) else first_marker
             second_marker_idx = (
-                biorbd.marker_index(nlp.model, second_marker) if isinstance(second_marker, str) else second_marker
+                nlp.model.marker_index(second_marker) if isinstance(second_marker, str) else second_marker
             )
-            PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
+            PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nb_markers)
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            marker_0 = BiorbdInterface.mx_to_cx(
-                f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx
+            diff_markers = nlp.model.marker(nlp.states["q"].mx, second_marker_idx) - nlp.model.marker(
+                nlp.states["q"].mx, first_marker_idx
             )
-            marker_1 = BiorbdInterface.mx_to_cx(
-                f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker_idx
+
+            return nlp.mx_to_cx(
+                f"diff_markers",
+                diff_markers,
+                nlp.states["q"],
             )
-            return marker_1 - marker_0
 
         @staticmethod
         def proportional_states(
@@ -332,18 +337,18 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+            if "qddot" not in nlp.states and "qddot" not in nlp.controls:
                 return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
-            elif "qddot" in nlp.states.keys():
+            elif "qddot" in nlp.states:
                 return nlp.states["qddot"].cx
-            elif "qddot" in nlp.controls.keys():
+            elif "qddot" in nlp.controls:
                 return nlp.controls["qddot"].cx
 
         @staticmethod
         def minimize_predicted_com_height(_: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
-            assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]
+            assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + com[2]
             By default this function is not quadratic, meaning that it minimizes towards infinity.
 
             Parameters
@@ -355,19 +360,19 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = all_pn.nlp
-            g = nlp.model.getGravity().to_mx()[2]
-            com = nlp.model.CoM(nlp.states["q"].mx).to_mx()
-            com_dot = nlp.model.CoMdot(nlp.states["q"].mx, nlp.states["qdot"].mx).to_mx()
+            g = nlp.model.gravity[2]
+            com = nlp.model.center_of_mass(nlp.states["q"].mx)
+            com_dot = nlp.model.center_of_mass_velocity(nlp.states["q"].mx, nlp.states["qdot"].mx)
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
-            com_height_cx = BiorbdInterface.mx_to_cx("com_height", com_height, nlp.states["q"], nlp.states["qdot"])
+            com_height_cx = nlp.mx_to_cx("com_height", com_height, nlp.states["q"], nlp.states["qdot"])
             return com_height_cx
 
         @staticmethod
         def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
-            If no axes is specified, the squared-norm of the CoM's position is minimized.
-            Otherwise, the projection of the CoM's position on the specified axes are minimized.
+            If no axes is specified, the squared-norm of the center_of_mass's position is minimized.
+            Otherwise, the projection of the center_of_mass's position on the specified axes are minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
 
             Parameters
@@ -383,15 +388,15 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            com_cx = BiorbdInterface.mx_to_cx("com", all_pn.nlp.model.CoM, all_pn.nlp.states["q"])
+            com_cx = all_pn.nlp.mx_to_cx("com", all_pn.nlp.model.center_of_mass, all_pn.nlp.states["q"])
             return com_cx
 
         @staticmethod
         def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
-            If no axis is specified, the squared-norm of the CoM's velocity is minimized.
-            Otherwise, the projection of the CoM's velocity on the specified axis is minimized.
+            If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
+            Otherwise, the projection of the center_of_mass's velocity on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
 
             Parameters
@@ -408,15 +413,15 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"])
+            com_dot_cx = nlp.mx_to_cx("com_dot", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"])
             return com_dot_cx
 
         @staticmethod
         def minimize_com_acceleration(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
-            If no axis is specified, the squared-norm of the CoM's velocity is minimized.
-            Otherwise, the projection of the CoM's velocity on the specified axis is minimized.
+            If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
+            Otherwise, the projection of the center_of_mass's velocity on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
 
             Parameters
@@ -433,21 +438,22 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
-                com_ddot = nlp.model.CoMddot(
+            if "qddot" not in nlp.states and "qddot" not in nlp.controls:
+                com_ddot = nlp.model.center_of_mass_acceleration(
                     nlp.states["q"].mx,
                     nlp.states["qdot"].mx,
                     nlp.dynamics_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)[nlp.states["qdot"].index, :],
-                ).to_mx()
+                )
+                # TODO scaled?
                 var = []
                 var.extend([nlp.states[key] for key in nlp.states])
                 var.extend([nlp.controls[key] for key in nlp.controls])
                 var.extend([nlp.parameters[key] for key in nlp.parameters])
-                return BiorbdInterface.mx_to_cx("com_ddot", com_ddot, *var)
+                return nlp.mx_to_cx("com_ddot", com_ddot, *var)
             else:
-                qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
-                return BiorbdInterface.mx_to_cx(
-                    "com_ddot", nlp.model.CoMddot, nlp.states["q"], nlp.states["qdot"], qddot
+                qddot = nlp.states["qddot"] if "qddot" in nlp.states else nlp.controls["qddot"]
+                return nlp.mx_to_cx(
+                    "com_ddot", nlp.model.center_of_mass_acceleration, nlp.states["q"], nlp.states["qdot"], qddot
                 )
 
         @staticmethod
@@ -469,8 +475,8 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             nlp = all_pn.nlp
-            angular_momentum_cx = BiorbdInterface.mx_to_cx(
-                "angular_momentum", nlp.model.angularMomentum, nlp.states["q"], nlp.states["qdot"]
+            angular_momentum_cx = nlp.mx_to_cx(
+                "angular_momentum", nlp.model.angular_momentum, nlp.states["q"], nlp.states["qdot"]
             )
             return angular_momentum_cx
 
@@ -495,14 +501,14 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            com_velocity = BiorbdInterface.mx_to_cx(
-                "com_velocity", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"]
+            com_velocity = nlp.mx_to_cx(
+                "com_velocity", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"]
             )
             if isinstance(com_velocity, SX):
-                mass = Function("mass", [], [nlp.model.mass().to_mx()]).expand()
+                mass = Function("mass", [], [nlp.model.mass]).expand()
                 mass = mass()["o0"]
             else:
-                mass = nlp.model.mass().to_mx()
+                mass = nlp.model.mass
             linear_momentum_cx = com_velocity * mass
             return linear_momentum_cx
 
@@ -564,7 +570,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             force_idx = []
-            for i_sc in range(nlp.model.nbSoftContacts()):
+            for i_sc in range(nlp.model.nb_soft_contacts):
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
@@ -590,17 +596,23 @@ class PenaltyFunctionAbstract:
             rt: int
                 The index of the RT in the bioMod
             """
+            from ..interfaces.biorbd_model import BiorbdModel
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            segment_index = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
+            segment_index = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
-            r_seg = nlp.model.globalJCS(nlp.states["q"].mx, segment_index).rot()
-            r_rt = nlp.model.RT(nlp.states["q"].mx, rt).rot()
-            angles_diff = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
+            if not isinstance(nlp.model, BiorbdModel):
+                raise NotImplementedError(
+                    "The track_segment_with_custom_rt penalty can only be called with a BiorbdModel"
+                )
+            model: BiorbdModel = nlp.model
+            r_seg_transposed = model.model.globalJCS(nlp.states["q"].mx, segment_index).rot().transpose()
+            r_rt = model.model.RT(nlp.states["q"].mx, rt).rot()
+            angles_diff = biorbd.Rotation.toEulerAngles(r_seg_transposed * r_rt, "zyx").to_mx()
 
-            angle_objective = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
+            angle_objective = nlp.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
             return angle_objective
 
         @staticmethod
@@ -635,14 +647,12 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            marker_idx = biorbd.marker_index(nlp.model, marker) if isinstance(marker, str) else marker
-            segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
+            marker_idx = nlp.model.marker_index(marker) if isinstance(marker, str) else marker
+            segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             # Get the marker in rt reference frame
-            jcs = nlp.model.globalJCS(nlp.states["q"].mx, segment_idx)
-            marker = nlp.model.marker(nlp.states["q"].mx, marker_idx)
-            marker.applyRT(jcs.transpose())
-            marker_objective = BiorbdInterface.mx_to_cx("marker", marker.to_mx(), nlp.states["q"])
+            marker = nlp.model.marker(nlp.states["q"].mx, marker_idx, segment_idx)
+            marker_objective = nlp.mx_to_cx("marker", marker, nlp.states["q"])
 
             # To align an axis, the other must be equal to 0
             if penalty.rows is not None:
@@ -673,6 +683,7 @@ class PenaltyFunctionAbstract:
                 continuity -= nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
                 continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
                 penalty.integrate = True
+
             else:
                 continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
 
@@ -773,8 +784,7 @@ class PenaltyFunctionAbstract:
             # Convert to int if it is str
             if _type == "marker":
                 penalty.cols = [
-                    cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols)
-                    for cols in penalty.cols
+                    cols if isinstance(cols, int) else all_pn.nlp.model.marker_index(cols) for cols in penalty.cols
                 ]
 
     @staticmethod
@@ -825,7 +835,7 @@ class PenaltyFunctionAbstract:
     @staticmethod
     def validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyNodeList):
         """
-        Check for any non sense in the requested times for the penalty. Raises an error if so
+        Check for any nonsense in the requested times for the penalty. Raises an error if so
 
         Parameters
         ----------
@@ -835,12 +845,13 @@ class PenaltyFunctionAbstract:
             The penalty node elements
         """
 
-        func = penalty.type.value[0]
+        func = penalty.type
         node = penalty.node
         # Everything that is suspicious in terms of the span of the penalty function ca be checked here
         if (
             func == PenaltyFunctionAbstract.Functions.minimize_controls
             or func == PenaltyFunctionAbstract.Functions.proportional_controls
+            or func == PenaltyFunctionAbstract.Functions.minimize_qddot
         ):
             if node == Node.END or (isinstance(node, int) and node >= all_pn.nlp.ns):
                 raise RuntimeError("No control u at last node")

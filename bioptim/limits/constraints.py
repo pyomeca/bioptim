@@ -1,13 +1,12 @@
 from typing import Callable, Union, Any
-from enum import Enum
 
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
-from ..interfaces.biorbd_interface import BiorbdInterface
-from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
 
@@ -56,6 +55,10 @@ class Constraint(PenaltyOption):
         super(Constraint, self).__init__(
             penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params
         )
+
+        if isinstance(constraint, ImplicitConstraintFcn):
+            self.penalty_type = ConstraintType.IMPLICIT  # doing this puts the relevance of this enum in question
+
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
@@ -91,25 +94,25 @@ class Constraint(PenaltyOption):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
     def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
-        if self.constraint_type == ConstraintType.INTERNAL:
+        if self.penalty_type == PenaltyType.INTERNAL:
             pool = all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
-        elif self.constraint_type == ConstraintType.IMPLICIT:
+        elif self.penalty_type == ConstraintType.IMPLICIT:
             pool = all_pn.nlp.g_implicit if all_pn is not None and all_pn.nlp else all_pn.ocp.g_implicit
-        elif self.constraint_type == ConstraintType.USER:
+        elif self.penalty_type == PenaltyType.USER:
             pool = all_pn.nlp.g if all_pn is not None and all_pn.nlp else all_pn.ocp.g
         else:
             raise ValueError(f"Invalid constraint type {self.contraint_type}.")
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        if self.constraint_type == ConstraintType.INTERNAL:
+        if self.penalty_type == PenaltyType.INTERNAL:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        elif self.constraint_type == ConstraintType.IMPLICIT:
+        elif self.penalty_type == ConstraintType.IMPLICIT:
             g_to_add_to = nlp.g_implicit if nlp else ocp.g_implicit
-        elif self.constraint_type == ConstraintType.USER:
+        elif self.penalty_type == PenaltyType.USER:
             g_to_add_to = nlp.g if nlp else ocp.g
         else:
-            raise ValueError(f"Invalid Type of Constraint {self.constraint_type}")
+            raise ValueError(f"Invalid Type of Constraint {self.penalty_type}")
 
         if self.list_index < 0:
             for i, j in enumerate(g_to_add_to):
@@ -268,16 +271,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
 
-            bound = nlp.model.torqueMax(nlp.states["q"].mx, nlp.states["qdot"].mx)
-            min_bound = BiorbdInterface.mx_to_cx(
+            bound = nlp.model.tau_max(nlp.states["q"].mx, nlp.states["qdot"].mx)
+            min_bound = nlp.mx_to_cx(
                 "min_bound",
-                nlp.controls["tau"].mapping.to_first.map(bound[1].to_mx()),
+                nlp.controls["tau"].mapping.to_first.map(bound[1]),
                 nlp.states["q"],
                 nlp.states["qdot"],
             )
-            max_bound = BiorbdInterface.mx_to_cx(
+            max_bound = nlp.mx_to_cx(
                 "max_bound",
-                nlp.controls["tau"].mapping.to_first.map(bound[0].to_mx()),
+                nlp.controls["tau"].mapping.to_first.map(bound[0]),
                 nlp.states["q"],
                 nlp.states["qdot"],
             )
@@ -310,7 +313,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return all_pn.nlp.tf
 
         @staticmethod
-        def qddot_equals_forward_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def qddot_equals_forward_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, **unused_param):
             """
             Compute the difference between symbolic joint accelerations and forward dynamic results
             It includes the inversion of mass matrix
@@ -321,6 +324,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The actual constraint to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            with_contact: bool
+                True if the contact dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -328,20 +333,24 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
-            tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
+            tau = nlp.states["tau"].mx if "tau" in nlp.states else nlp.controls["tau"].mx
 
-            qddot = nlp.controls["qddot"].mx
-            qddot_fd = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+            qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls else nlp.states["qddot"].mx
+            if with_contact:
+                model = nlp.model.copy()
+                qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
+            else:
+                qddot_fd = nlp.model.forward_dynamics(q, qdot, tau)
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("ForwardDynamics", qddot - qddot_fd, *var)
+            return nlp.mx_to_cx("forward_dynamics", qddot - qddot_fd, *var)
 
         @staticmethod
-        def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, **unused_param):
             """
             Compute the difference between symbolic joint torques and inverse dynamic results
             It does not include any inversion of mass matrix
@@ -352,6 +361,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The actual constraint to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            with_contact: bool
+                True if the contact dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -359,24 +370,62 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
-            tau = nlp.states["tau"].mx if "tau" in nlp.states.keys() else nlp.controls["tau"].mx
-            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+            tau = nlp.states["tau"].mx if "tau" in nlp.states else nlp.controls["tau"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
 
             if nlp.external_forces:
                 raise NotImplementedError(
                     "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
                 )
-                # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
-                # fext need to be a mx
+                # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
+            if with_contact:
+                # todo: this should be done internally in BiorbdModel
+                f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls else nlp.states["fext"].mx
+                f_contact_vec = nlp.model.reshape_fext_to_fcontact(f_contact)
 
-            tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
+                tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)
+
+            else:
+                tau_id = nlp.model.inverse_dynamics(q, qdot, qddot)
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - tau, *var)
+            return nlp.mx_to_cx("inverse_dynamics", tau_id - tau, *var)
+
+        @staticmethod
+        def implicit_marker_acceleration(_: Constraint, all_pn: PenaltyNodeList, contact_index: int, **unused_param):
+            """
+            Compute the acceleration of the contact node to set it at zero
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            contact_index: int
+                The contact index
+            **unused_param: dict
+                Since the function does nothing, we can safely ignore any argument
+            """
+
+            nlp = all_pn.nlp
+            q = nlp.states["q"].mx
+            qdot = nlp.states["qdot"].mx
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
+
+            # TODO get the index of the marker
+            contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, contact_index)
+
+            var = []
+            var.extend([nlp.states[key] for key in nlp.states])
+            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([nlp.parameters[key] for key in nlp.parameters])
+
+            return nlp.mx_to_cx("contact_acceleration", contact_acceleration, *var)
 
         @staticmethod
         def tau_from_muscle_equal_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
@@ -398,32 +447,29 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
             muscle_activations = nlp.controls["muscles"].mx
-            muscles_states = nlp.model.stateSet()
-            for k in range(len(nlp.controls["muscles"])):
-                muscles_states[k].setActivation(muscle_activations[k])
-            muscle_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states.keys() else nlp.controls["qddot"].mx
+            muscle_tau = nlp.model.muscle_joint_torque(muscle_activations, q, qdot)
+            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
 
             if nlp.external_forces:
                 raise NotImplementedError(
                     "This implicit constraint tau_from_muscle_equal_inverse_dynamics is not implemented yet with external forces"
                 )
-                # Todo: add fext tau_id = nlp.model.InverseDynamics(q, qdot, qddot, fext).to_mx()
+                # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
                 # fext need to be a mx
 
-            tau_id = nlp.model.InverseDynamics(q, qdot, qddot).to_mx()
+            tau_id = nlp.model.inverse_dynamics(q, qdot, qddot)
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("InverseDynamics", tau_id - muscle_tau, *var)
+            return nlp.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
 
         @staticmethod
         def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
             """
-            The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
+            Compute the difference between symbolic soft contact forces and actual force contact dynamic
 
             Parameters
             ----------
@@ -438,7 +484,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
 
             force_idx = []
-            for i_sc in range(nlp.model.nbSoftContacts()):
+            for i_sc in range(nlp.model.nb_soft_contacts):
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
@@ -451,7 +497,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var.extend([nlp.controls[key] for key in nlp.controls])
             var.extend([param for param in nlp.parameters])
 
-            return BiorbdInterface.mx_to_cx("ForwardDynamics", nlp.controls["fext"].mx - soft_contact_force, *var)
+            return nlp.mx_to_cx("forward_dynamics", nlp.controls["fext"].mx - soft_contact_force, *var)
 
     @staticmethod
     def inner_phase_continuity(ocp):
@@ -465,10 +511,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
 
         # Dynamics must be sound within phases
-        for i, nlp in enumerate(ocp.nlp):
-            penalty = Constraint(
-                ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, constraint_type=ConstraintType.INTERNAL
-            )
+        for nlp in ocp.nlp:
+            penalty = Constraint(ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
             penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
@@ -481,7 +525,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, pt in enumerate(ocp.phase_transitions):
+        from ..limits.phase_transition import PhaseTransitionFcn
+
+        for pt in ocp.phase_transitions:
+            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                continue
             # Dynamics must be respected between phases
             pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
             pt.list_index = -1
@@ -497,7 +545,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for i, mnc in enumerate(ocp.multinode_constraints):
+        for mnc in ocp.multinode_constraints:
             # Equality constraint between nodes
             first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
             second_node_name = (
@@ -520,7 +568,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         return "constraints"
 
 
-class ConstraintFcn(Enum):
+class ConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions
 
@@ -533,6 +581,7 @@ class ConstraintFcn(Enum):
     CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
     TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
     TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+    TRACK_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
     TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
     TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
@@ -559,7 +608,7 @@ class ConstraintFcn(Enum):
         return ConstraintFunction
 
 
-class ImplicitConstraintFcn(Enum):
+class ImplicitConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions
 
@@ -572,6 +621,7 @@ class ImplicitConstraintFcn(Enum):
     QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
     TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
+    CONTACT_ACCELERATION_EQUALS_ZERO = (ConstraintFunction.Functions.implicit_marker_acceleration,)
     TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
 
     @staticmethod
@@ -583,7 +633,7 @@ class ImplicitConstraintFcn(Enum):
         return ConstraintFunction
 
 
-class ContinuityFunctions:
+class ContinuityConstraintFunctions:
     """
     Interface between continuity and constraint
     """
@@ -604,5 +654,5 @@ class ContinuityFunctions:
         # Dynamics must be respected between phases
         ConstraintFunction.inter_phase_continuity(ocp)
 
-        if ocp.multinode_constraints:
+        if ocp.multinode_constraints:  # TODO: they shouldn't be added here
             ConstraintFunction.node_equalities(ocp)

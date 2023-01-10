@@ -14,6 +14,10 @@ class MichaudFatigue(MuscleFatigue):
     def dynamics_suffix() -> str:
         return "ma"
 
+    @staticmethod
+    def fatigue_suffix() -> str:
+        return "mf"
+
     def __init__(
         self,
         LD: float,
@@ -116,7 +120,18 @@ class MichaudTauFatigue(TauFatigue):
     def dynamics_suffix() -> str:
         return "ma"
 
-    def __init__(self, minus: MichaudFatigue, plus: MichaudFatigue, state_only: bool = False, **kwargs):
+    @staticmethod
+    def fatigue_suffix() -> str:
+        return "mf"
+
+    def __init__(
+        self,
+        minus: MichaudFatigue,
+        plus: MichaudFatigue,
+        state_only: bool = False,
+        apply_to_joint_dynamics: bool = False,
+        **kwargs
+    ):
         """
         Parameters
         ----------
@@ -124,6 +139,12 @@ class MichaudTauFatigue(TauFatigue):
             The Michaud model for the negative tau
         plus: MichaudFatigue
             The Michaud model for the positive tau
+        state_only: bool
+            If the dynamics should be passed to tau or only computed
+        apply_to_joint_dynamics: bool
+            If the fatigue should be applied to joint directly
         """
 
-        super(MichaudTauFatigue, self).__init__(minus, plus, state_only=state_only, **kwargs)
+        super(MichaudTauFatigue, self).__init__(
+            minus, plus, state_only=state_only, apply_to_joint_dynamics=apply_to_joint_dynamics, **kwargs
+        )

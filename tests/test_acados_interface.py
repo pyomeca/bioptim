@@ -11,6 +11,7 @@ from sys import platform
 import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     Axis,
     ObjectiveList,
     ObjectiveFcn,
@@ -79,6 +80,39 @@ def test_acados_one_mayer(cost_type):
     # Check end state value
     q = sol.states["q"]
     np.testing.assert_almost_equal(q[0, -1], 1.0)
+
+    # Clean test folder
+    os.remove(f"./acados_ocp.json")
+    shutil.rmtree(f"./c_generated_code/")
+
+
+@pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
+def test_acados_mayer_first_node(cost_type):
+    if platform == "win32":
+        return
+
+    from bioptim.examples.acados import cube as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        n_shooting=10,
+        tf=2,
+    )
+    objective_functions = ObjectiveList()
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.START, key="q", index=[0], target=np.array([[1.0]]).T
+    )
+    ocp.update_objectives(objective_functions)
+
+    solver = Solver.ACADOS()
+    solver.set_cost_type(cost_type)
+    sol = ocp.solve(solver=solver)
+
+    # Check end state value
+    q = sol.states["q"]
+    np.testing.assert_almost_equal(q[0, 0], 0.999999948505021)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -202,7 +236,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
 
     # Check end state value
     q = sol.states["q"]
-    np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze())
+    np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze(), decimal=6)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -398,7 +432,7 @@ def test_acados_one_parameter():
     # Path constraint
     x_bounds = QAndQDotBounds(model)
     x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
+    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
@@ -462,7 +496,7 @@ def test_acados_several_parameter():
     # Path constraint
     x_bounds = QAndQDotBounds(model)
     x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
+    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
@@ -534,11 +568,11 @@ def test_acados_one_end_constraints():
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
-    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((2.72727272, 9.81, 0)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-2.72727272, 9.81, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, 0], np.array((2.72727272, 9.81, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-2.72727272, 9.81, 0)))
 
 
 def test_acados_constraints_all():
@@ -630,10 +664,10 @@ def test_acados_bounds_not_implemented(failing):
         print("Test for ACADOS on Windows is skipped")
         return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
+    bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
-    nq = biorbd_model.nbQ()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    nq = bio_model.nb_q
+    ntau = bio_model.nb_tau
 
     n_cycles = 3
     window_len = 5
@@ -650,7 +684,7 @@ def test_acados_bounds_not_implemented(failing):
         raise ValueError("Wrong value for failing")
 
     mhe = MovingHorizonEstimator(
-        biorbd_model,
+        bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,

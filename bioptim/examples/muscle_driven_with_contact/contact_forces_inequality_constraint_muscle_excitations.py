@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     ConstraintList,
@@ -27,7 +28,7 @@ from bioptim import (
 
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4()):
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
     dof_mapping = BiMappingList()
@@ -59,14 +60,14 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     )
 
     # Path constraint
-    n_q = biorbd_model.nbQ()
+    n_q = bio_model.nb_q
     n_qdot = n_q
-    n_mus = biorbd_model.nbMuscleTotal()
+    n_mus = bio_model.nb_muscles
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0].concatenate(Bounds([activation_min] * n_mus, [activation_max] * n_mus))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot + [0.5] * n_mus
 
@@ -77,12 +78,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [torque_min] * len(dof_mapping["tau"].to_first) + [activation_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * len(dof_mapping["tau"].to_first) + [activation_max] * biorbd_model.nbMuscleTotal(),
+        [torque_min] * len(dof_mapping["tau"].to_first) + [activation_min] * bio_model.nb_muscles,
+        [torque_max] * len(dof_mapping["tau"].to_first) + [activation_max] * bio_model.nb_muscles,
     )
 
     u_init = InitialGuessList()
-    u_init.add([torque_init] * len(dof_mapping["tau"].to_first) + [activation_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([torque_init] * len(dof_mapping["tau"].to_first) + [activation_init] * bio_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(
@@ -111,7 +112,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     nlp = ocp.nlp[0]
-    nlp.model = biorbd.Model(biorbd_model_path)
+    nlp.model = BiorbdModel(biorbd_model_path)
 
     q = sol.states["q"]
     qdot = sol.states["qdot"]
@@ -123,9 +124,9 @@ def main():
     u = np.concatenate((tau, excitations))
     contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))
 
-    names_contact_forces = ocp.nlp[0].model.contactNames()
+    names_contact_forces = ocp.nlp[0].model.contact_names
     for i, elt in enumerate(contact_forces):
-        plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i].to_string()}")
+        plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i]}")
     plt.legend()
     plt.grid()
     plt.title("Contact forces")

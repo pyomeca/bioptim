@@ -1,15 +1,13 @@
 from typing import Callable, Union, Any
-from warnings import warn
-from enum import Enum
 
-import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
 from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType, CXStep
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -43,7 +41,7 @@ class MultinodeConstraint(Constraint):
         The index of the node in nlp pre
     multinode_constraint: Union[Callable, Any]
         The nature of the cost function is the multi node constraint
-    constraint_type: ConstraintType
+    penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
     """
 
@@ -107,7 +105,7 @@ class MultinodeConstraint(Constraint):
         self.node = self.first_node, self.second_node
         self.dt = 1
         self.node_idx = [0]
-        self.constraint_type = ConstraintType.INTERNAL
+        self.penalty_type = PenaltyType.INTERNAL
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         ocp = all_pn[0].ocp
@@ -191,15 +189,11 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
         The list of all the multi_node constraints prepared
         """
         full_phase_multinode_constraint = []
-        existing_phases = []
         for mnc in self:
-
-            idx_phase = mnc.phase_first_idx
             if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
                 raise RuntimeError("Phase index of the multinode_constraint is higher than the number of phases")
             if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
                 raise RuntimeError("Phase index of the multinode_constraint need to be positive")
-            existing_phases.append(idx_phase)
 
             if mnc.weight:
                 mnc.base = ObjectiveFunction.MayerFunction
@@ -220,7 +214,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def equality(multinode_constraint, all_pn):
+        def states_equality(multinode_constraint, all_pn, key: str = "all"):
             """
             The most common continuity function, that is state before equals state after
 
@@ -237,8 +231,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.get_cx(key, CXStep.CX_END))
+            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.get_cx(key, CXStep.CX_START))
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -248,6 +242,36 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             return states_pre - states_post
+
+        @staticmethod
+        def controls_equality(multinode_constraint, all_pn, key: str = "all"):
+            """
+            The controls before equals controls after
+
+            Parameters
+            ----------
+            multinode_constraint : MultinodeConstraint
+                A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the controls after and before
+            """
+
+            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
+            controls_pre = nlp_pre.controls.get_cx(key, CXStep.CX_END)
+            controls_post = nlp_post.controls.get_cx(key, CXStep.CX_START)
+
+            if controls_pre.shape != controls_post.shape:
+                raise RuntimeError(
+                    f"Continuity can't be established since the number of x to be matched is {controls_pre.shape} in the "
+                    f"pre-transition phase and {controls_post.shape} post-transition phase. Please use a custom "
+                    f"transition or supply states_mapping"
+                )
+
+            return controls_pre - controls_post
 
         @staticmethod
         def com_equality(multinode_constraint, all_pn):
@@ -270,7 +294,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
             states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
-            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states.keys()]
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -280,13 +304,13 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com = nlp_pre.model.CoM(states_pre[nlp_pre.states["q"].index, :]).to_mx()
-            post_com = nlp_post.model.CoM(states_post_sym_list[0]).to_mx()
+            pre_com = nlp_pre.model.center_of_mass(states_pre[nlp_pre.states["q"].index, :])
+            post_com = nlp_post.model.center_of_mass(states_post_sym_list[0])
 
-            pre_states_cx = nlp_pre.states.cx
+            pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
 
-            return biorbd.to_casadi_func(
+            return nlp_pre.to_casadi_func(
                 "com_equality",
                 pre_com - post_com,
                 states_pre,
@@ -314,7 +338,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
             states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
-            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states.keys()]
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -324,20 +348,65 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com_dot = nlp_pre.model.CoMdot(
+            pre_com_dot = nlp_pre.model.center_of_mass_velocity(
                 states_pre[nlp_pre.states["q"].index, :], states_pre[nlp_pre.states["qdot"].index, :]
-            ).to_mx()
-            post_com_dot = nlp_post.model.CoMdot(states_post_sym_list[0], states_post_sym_list[1]).to_mx()
+            )
+            post_com_dot = nlp_post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
             pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
 
-            return biorbd.to_casadi_func(
+            return nlp_pre.to_casadi_func(
                 "com_dot_equality",
                 pre_com_dot - post_com_dot,
                 states_pre,
                 states_post_sym,
             )(pre_states_cx, post_states_cx)
+
+        @staticmethod
+        def time_equality(multinode_constraint, all_pn):
+            """
+            The duration of one phase must be the same as the duration of another phase
+
+            Parameters
+            ----------
+            multinode_constraint : MultinodeConstraint
+                A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the duration of the phases
+            """
+            time_pre_idx = None
+            for i in range(all_pn[0].nlp.parameters.cx.shape[0]):
+                param_name = all_pn[0].nlp.parameters.cx[i].name()
+                if param_name == "time_phase_" + str(all_pn[0].nlp.phase_idx):
+                    time_pre_idx = all_pn[0].nlp.phase_idx
+            if time_pre_idx == None:
+                raise RuntimeError(
+                    f"Time constraint can't be established since the first phase has no time parameter. "
+                    f"\nTime parameter can be added with : "
+                    f"\nobjective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
+                    f"\nwith constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
+                )
+
+            time_post_idx = None
+            for i in range(all_pn[1].nlp.parameters.cx.shape[0]):
+                param_name = all_pn[1].nlp.parameters.cx[i].name()
+                if param_name == "time_phase_" + str(all_pn[1].nlp.phase_idx):
+                    time_post_idx = all_pn[1].nlp.phase_idx
+            if time_post_idx == None:
+                raise RuntimeError(
+                    f"Time constraint can't be established since the second phase has no time parameter. Time parameter "
+                    f"can be added with : objective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
+                    f"with constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
+                )
+
+            time_pre, time_post = all_pn[0].nlp.parameters.cx[time_pre_idx], all_pn[1].nlp.parameters.cx[time_post_idx]
+
+            return time_pre - time_post
 
         @staticmethod
         def custom(multinode_constraint, all_pn, **extra_params):
@@ -360,15 +429,17 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return multinode_constraint.custom_function(multinode_constraint, nlp_pre, nlp_post, **extra_params)
 
 
-class MultinodeConstraintFcn(Enum):
+class MultinodeConstraintFcn(FcnEnum):
     """
     Selection of valid multinode constraint functions
     """
 
-    EQUALITY = (MultinodeConstraintFunctions.Functions.equality,)
+    STATES_EQUALITY = (MultinodeConstraintFunctions.Functions.states_equality,)
+    CONTROLS_EQUALITY = (MultinodeConstraintFunctions.Functions.controls_equality,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
     COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
     COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
+    TIME_CONSTRAINT = (MultinodeConstraintFunctions.Functions.time_equality,)
 
     @staticmethod
     def get_type():

@@ -94,6 +94,7 @@ examples/*/biorbd_optim
 examples/biorbd_optim
 
 # Remove other development artifacts
+examples/sandbox
 */examples/sandbox
 *.npy
 *.bo
@@ -109,3 +110,7 @@ c_generated_code
 # Remove graphviz files
 *.gv
 *.gv.pdf
+
+# Bioptim files
+bioptim/sandbox/
+*.pkl

@@ -17,7 +17,7 @@ echo ""
 ARG1=${1:NB_CPU}
 if [ -z "$ARG1" ]; then
   $ARG1=$CPU_COUNT
-  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs."
+  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($ARG1)."
   echo ""
 fi
 
@@ -57,6 +57,7 @@ cmake . .. \
   -DACADOS_INSTALL_DIR="$ARG2"\
   -DACADOS_PYTHON=ON\
   -DACADOS_WITH_QPOASES=ON\
+  -DACADOS_WITH_OSQP=ON\
   -DBLASFEO_TARGET="$ARG3"\
   -DCMAKE_INSTALL_PREFIX="$ARG2"\
   -DACADOS_WITH_OPENMP=ON\
@@ -91,20 +92,23 @@ REPLACE_JSON_DEP_BY="'acados_sim_layout.json',\n       'simulink_default_opts.js
 TO_REPLACE_PATH="'..\/..\/..\/'"
 REPLACE_PATH_BY="'..\/..\/..\/..\/'"
 
-# Change simulink path
-TO_REPLACE_JSON="json_path = os.path.join(acados_path, 'interfaces\/acados_template\/acados_template')"
-REPLACE_JSON_BY="import site\n            acados_path = site.getsitepackages()\n            json_path = os.path.join(acados_path[0], 'acados_template')"
+# Change acados path
+TO_REPLACE_ACADOS_SOURCE="    ACADOS_PATH = os.environ.get('ACADOS_SOURCE_DIR')"
+REPLACE_ACADOS_SOURCE_BY="    ACADOS_PATH = os.environ['CONDA_PREFIX']"
+
+TO_REPLACE_ACADOS_PYTHON="ACADOS_PYTHON_INTERFACE_PATH = os.environ.get('ACADOS_PYTHON_INTERFACE_PATH')"
+REPLACE_ACADOS_PYTHON_BY="import site\n    acados_path = site.getsitepackages()\n    ACADOS_PYTHON_INTERFACE_PATH = os.path.join(acados_path[0], 'acados_template')"
 
 # Change acados external library linking at run time
-TO_REPLACE_LIB_PATH="self.shared_lib_name = f'{code_export_dir}\/libacados_ocp_solver_{model.name}.so'"
-REPLACE_LIB_PATH_BY="self.shared_lib_name = f'{code_export_dir}\/libacados_ocp_solver_{model.name}.so'\n        # Relink macos lib\n        acados_ext_lib_path = os.path.abspath(acados_path[0]+'\/..\/..')\n        os.system(\n            f'install_name_tool -change libhpipm.dylib {acados_ext_lib_path}\/libhpipm.dylib {self.shared_lib_name}')\n        os.system(\n            f'install_name_tool -change libblasfeo.dylib {acados_ext_lib_path}\/libblasfeo.dylib {self.shared_lib_name}')"
-
+TO_REPLACE_LIB_PATH="libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'"
+REPLACE_LIB_PATH_BY="libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'\n        self.shared_lib_name = os.path.join(code_export_directory, libacados_ocp_solver_name)\n        import site\n        acados_path = site.getsitepackages()\n        libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'\n        # Relink macos lib\n        acados_ext_lib_path = os.path.abspath(acados_path[0]+'\/..\/..')\n        os.system(\n            f'install_name_tool -change libhpipm.dylib {acados_ext_lib_path}\/libhpipm.dylib {self.shared_lib_name}')\n        os.system(\n            f'install_name_tool -change libblasfeo.dylib {acados_ext_lib_path}\/libblasfeo.dylib {self.shared_lib_name}')"
 # Perform the modifications
 sed -i "s/$TO_REPLACE_PYTHON_REQUIRED/$REPLACE_PYTHON_REQUIRED_BY/" setup.py
 sed -i "s/$TO_REPLACE_CASADI_DEP/$REPLACE_CASADI_DEP_BY/" setup.py
 sed -i "s/$TO_REPLACE_JSON_DEP/$REPLACE_JSON_DEP_BY/" setup.py
 sed -i "s/$TO_REPLACE_PATH/$REPLACE_PATH_BY/" acados_template/utils.py
-sed -i "s/$TO_REPLACE_JSON/$REPLACE_JSON_BY/" acados_template/acados_ocp_solver.py
+sed -i "s/$TO_REPLACE_ACADOS_PYTHON/$REPLACE_ACADOS_PYTHON_BY/" acados_template/utils.py
+sed -i "s/$TO_REPLACE_ACADOS_SOURCE/$REPLACE_ACADOS_SOURCE_BY/" acados_template/utils.py
 sed -i "s/$TO_REPLACE_LIB_PATH/$REPLACE_LIB_PATH_BY/" acados_template/acados_ocp_solver.py
 
 # Change acados external lib linking permanently

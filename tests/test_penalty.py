@@ -1,9 +1,8 @@
 import pytest
-import re
 from casadi import DM, MX
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -15,6 +14,7 @@ from bioptim import (
     ConstraintFcn,
     Constraint,
     Node,
+    RigidBodyDynamics,
 )
 from bioptim.limits.penalty_node import PenaltyNodeList
 from bioptim.limits.penalty import PenaltyOption
@@ -31,53 +31,57 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     if with_muscles and implicit or implicit and with_actuator:
         raise RuntimeError("With muscles and implicit and with_actuator together is not defined")
     elif with_muscles:
-        biorbd_model = biorbd.Model(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
+        bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True)
-        nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
-        nu = biorbd_model.nbGeneralizedTorque() + biorbd_model.nbMuscles()
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        nu = bio_model.nb_tau + bio_model.nb_muscles
     elif with_contact:
-        biorbd_model = biorbd.Model(
+        bio_model = BiorbdModel(
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
         )
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, implicit_dynamics=implicit)
-        nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
-        nu = biorbd_model.nbGeneralizedTorque()
+        rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False, rigidbody_dynamics=rigidbody_dynamics)
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        nu = bio_model.nb_tau
     elif with_actuator:
-        biorbd_model = biorbd.Model(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
+        bio_model = BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-        nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
-        nu = biorbd_model.nbGeneralizedTorque()
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        nu = bio_model.nb_tau
     else:
-        biorbd_model = biorbd.Model(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+        bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-        nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
-        nu = biorbd_model.nbGeneralizedTorque()
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        nu = bio_model.nb_tau
     x_init = InitialGuess(np.zeros((nx, 1)))
 
-    mod = 2 if implicit else 1
+    if implicit:
+        nu *= 2
+        if with_contact:
+            nu += 3
 
-    u_init = InitialGuess(np.zeros((nu * mod, 1)))
+    u_init = InitialGuess(np.zeros((nu, 1)))
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
-    u_bounds = Bounds(np.zeros((nu * mod, 1)), np.zeros((nu * mod, 1)))
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=use_sx)
+    u_bounds = Bounds(np.zeros((nu, 1)), np.zeros((nu, 1)))
+    ocp = OptimalControlProgram(bio_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=use_sx)
     ocp.nlp[0].J = [[]]
     ocp.nlp[0].g = [[]]
     return ocp
 
 
 def get_penalty_value(ocp, penalty, t, x, u, p):
-    val = penalty.type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, u, []), **penalty.params)
+    val = penalty.type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, u, [], [], []), **penalty.params)
     if isinstance(val, float):
         return val
 
     states = ocp.nlp[0].states.cx if ocp.nlp[0].states.cx.shape != (0, 0) else ocp.cx(0, 0)
     controls = ocp.nlp[0].controls.cx if ocp.nlp[0].controls.cx.shape != (0, 0) else ocp.cx(0, 0)
     parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
-    return biorbd.to_casadi_func("penalty", val, states, controls, parameters)(x[0], u[0], p)
+    return ocp.nlp[0].to_casadi_func("penalty", val, states, controls, parameters)(x[0], u[0], p)
 
 
 def test_penalty_targets_shapes():
@@ -101,7 +105,7 @@ def test_penalty_minimize_time(penalty_origin, value):
 
     penalty_type = penalty_origin.MINIMIZE_TIME
     penalty = Objective(penalty_type)
-    penalty_type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], [], [], [], []))
+    penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], [], [], [], [], [], []))
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
     np.testing.assert_almost_equal(res, np.array(1))
@@ -126,7 +130,7 @@ def test_penalty_minimize_qddot(penalty_origin, value):
     t = [0, 1]
     x = [DM.ones((8, 1)) * value, DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
-    if penalty_origin == ObjectiveFcn.Mayer or penalty_origin == ConstraintFcn:
+    if penalty_origin == ConstraintFcn:
         with pytest.raises(AttributeError, match="MINIMIZE_QDDOT"):
             _ = penalty_origin.MINIMIZE_QDDOT
         return
@@ -709,11 +713,11 @@ def test_penalty_custom_fail(penalty_origin, value):
 
     with pytest.raises(TypeError):
         penalty.custom_function = custom_no_mult
-        penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], mult=2)
+        penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [], mult=2)
 
     with pytest.raises(TypeError):
         penalty.custom_function = custom_with_mult
-        penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+        penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [])
 
     with pytest.raises(TypeError):
         keywords = [
@@ -738,7 +742,7 @@ def test_penalty_custom_fail(penalty_origin, value):
                             return my_values"""
             )
             exec("""penalty.custom_function = custom_with_keyword""")
-            exec(f"""penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], {keyword}=0)""")
+            exec(f"""penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [], {keyword}=0)""")
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -776,7 +780,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], []))
+        penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], [], [], []))
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -799,7 +803,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
         RuntimeError,
         match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
     ):
-        penalty_type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], []))
+        penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], [], [], []))
 
 
 @pytest.mark.parametrize(
@@ -822,6 +826,8 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
     nlp.ns = ns
     nlp.X = np.linspace(0, -10, ns + 1)
     nlp.U = np.linspace(10, 19, ns)
+    nlp.X_scaled = nlp.X
+    nlp.U_scaled = nlp.U
     tp = OptimizationVariableList()
     tp.append("param", [MX(), MX()], MX(), BiMapping([], []))
     nlp.parameters = tp["param"]
@@ -832,15 +838,15 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
 
     if node == Node.MID and ns % 2 != 0:
         with pytest.raises(ValueError, match="Number of shooting points must be even to use MID"):
-            t, x, u = penalty._get_penalty_node_list([], nlp)
+            _ = penalty._get_penalty_node_list([], nlp)
         return
     elif node == Node.TRANSITION:
         with pytest.raises(RuntimeError, match=" is not a valid node"):
-            t, x, u = penalty._get_penalty_node_list([], nlp)
+            _ = penalty._get_penalty_node_list([], nlp)
         return
     elif ns == 1 and node == Node.PENULTIMATE:
         with pytest.raises(ValueError, match="Number of shooting points must be greater than 1"):
-            t, x, u = penalty._get_penalty_node_list([], nlp)
+            _ = penalty._get_penalty_node_list([], nlp)
         return
     else:
         all_pn = penalty._get_penalty_node_list([], nlp)
@@ -852,29 +858,43 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
         np.testing.assert_almost_equal(all_pn.t, [i for i in range(ns + 1)])
         np.testing.assert_almost_equal(np.array(all_pn.x), np.linspace(0, -10, ns + 1))
         np.testing.assert_almost_equal(np.array(all_pn.u), np.linspace(10, 19, ns))
+        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), np.linspace(0, -10, ns + 1))
+        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), np.linspace(10, 19, ns))
     elif node == Node.ALL_SHOOTING:
         np.testing.assert_almost_equal(all_pn.t, [i for i in range(ns)])
         np.testing.assert_almost_equal(np.array(all_pn.x), nlp.X[:-1])
         np.testing.assert_almost_equal(np.array(all_pn.u), nlp.U)
+        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), nlp.X[:-1])
+        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), nlp.U)
     elif node == Node.INTERMEDIATES:
         np.testing.assert_almost_equal(all_pn.t, [i for i in range(1, ns - 1)])
         np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[1 : ns - 1])
         np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[1 : ns - 1])
     elif node == Node.START:
         np.testing.assert_almost_equal(all_pn.t, [0])
         np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[0])
         np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[0])
+        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[0])
+        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[0])
     elif node == Node.MID:
         np.testing.assert_almost_equal(all_pn.t, [ns // 2])
         np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[ns // 2])
         np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[ns // 2])
+        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[ns // 2])
+        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[ns // 2])
     elif node == Node.PENULTIMATE:
         np.testing.assert_almost_equal(all_pn.t, [ns - 1])
         np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[-2])
         np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[-1])
+        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[-2])
+        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[-1])
     elif node == Node.END:
         np.testing.assert_almost_equal(all_pn.t, [ns])
         np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[ns])
         np.testing.assert_almost_equal(all_pn.u, [])
+        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[ns])
+        np.testing.assert_almost_equal(all_pn.u_scaled, [])
     else:
         raise RuntimeError("Something went wrong")

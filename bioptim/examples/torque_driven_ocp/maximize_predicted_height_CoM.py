@@ -8,6 +8,7 @@ weight=-1 to maximize instead of minimizing.
 import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
@@ -23,6 +24,7 @@ from bioptim import (
     ConstraintFcn,
     Node,
     Solver,
+    RigidBodyDynamics,
 )
 
 
@@ -34,6 +36,7 @@ def prepare_ocp(
     ode_solver: OdeSolver = OdeSolver.RK4(),
     objective_name: str = "MINIMIZE_PREDICTED_COM_HEIGHT",
     com_constraints: bool = False,
+    rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -55,13 +58,14 @@ def prepare_ocp(
         'MINIMIZE_COM_POSITION' or 'MINIMIZE_COM_VELOCITY')
     com_constraints: bool
         If a constraint on the COM should be applied
-
+    rigidbody_dynamics: RigidBodyDynamics
+        which transcription of rigidbody dynamics is chosen
     Returns
     -------
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     if use_actuators:
         tau_min, tau_max, tau_init = -1, 1, 0
@@ -86,7 +90,7 @@ def prepare_ocp(
     if use_actuators:
         dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, rigidbody_dynamics=rigidbody_dynamics)
 
     # Constraints
     constraints = ConstraintList()
@@ -105,13 +109,13 @@ def prepare_ocp(
         )
 
     # Path constraint
-    n_q = biorbd_model.nbQ()
+    n_q = bio_model.nb_q
     n_qdot = n_q
     pose_at_first_node = [0, 0, -0.5, 0.5]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess
@@ -119,14 +123,24 @@ def prepare_ocp(
     x_init.add(pose_at_first_node + [0] * n_qdot)
 
     # Define control path constraint
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+        nu_sup = bio_model.nb_qddot
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        nu_sup = bio_model.nb_qddot + bio_model.nb_contacts
+    else:
+        nu_sup = 0
+
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * len(dof_mapping["tau"].to_first), [tau_max] * len(dof_mapping["tau"].to_first))
+
+    u_bounds.add(
+        [tau_min] * (len(dof_mapping["tau"].to_first) + nu_sup), [tau_max] * (len(dof_mapping["tau"].to_first) + nu_sup)
+    )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * len(dof_mapping["tau"].to_first))
+    u_init.add([tau_init] * (len(dof_mapping["tau"].to_first) + nu_sup))
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,

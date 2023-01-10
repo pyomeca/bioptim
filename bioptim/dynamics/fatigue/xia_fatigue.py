@@ -51,7 +51,30 @@ class XiaFatigue(MuscleFatigue):
     def dynamics_suffix() -> str:
         return "ma"
 
+    @staticmethod
+    def fatigue_suffix() -> str:
+        return "mf"
+
     def apply_dynamics(self, target_load, *states):
+        """
+        The dynamics of the fatigue model that returns the derivatives of the states.
+        with Xia's model.
+
+        according to the paper: "A theoretical approach for modeling peripheral muscle fatigue and recovery"
+        by Xia, et al. 2008, doi: 10.1016/j.biomech.2008.07.013
+
+        Parameters
+        ----------
+        target_load: Union[float, MX, SX]
+            The target load the actuator must accomplish
+        states: Union[float, MX, SX]
+            The values of the states used to compute the dynamics
+        Returns
+        -------
+        Union[float, MX, SX]
+        The derivative of the states: (ma_dot, mr_dot, mf_dot)
+
+        """
         ma, mr, mf = states
         # Implementation of Xia dynamics
         c = if_else(
@@ -96,3 +119,7 @@ class XiaTauFatigue(TauFatigue):
     @staticmethod
     def dynamics_suffix() -> str:
         return "ma"
+
+    @staticmethod
+    def fatigue_suffix() -> str:
+        return "mf"

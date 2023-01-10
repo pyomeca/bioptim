@@ -65,7 +65,7 @@ musclegroup musclegroup1
 endmusclegroup
 
     muscle    muscle1
-        Type    hillthelen
+        Type    degroote
         musclegroup    musclegroup1
         OriginPosition    0.0 0.0 -0.25
         InsertionPosition    0.0 0.06 0.0

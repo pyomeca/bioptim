@@ -101,17 +101,21 @@ class AcadosInterface(SolverInterface):
         # solver_options = solver_options.__dict__
         if solver_options is None:
             solver_options = Solver.ACADOS()
+        self.opts = solver_options
 
         self.acados_ocp = AcadosOcp(acados_path=solver_options.acados_dir)
+        self.acados_ocp.code_export_directory = solver_options.c_generated_code_path
         self.acados_model = AcadosModel()
 
         self.__set_cost_type(solver_options.cost_type)
         self.__set_constr_type(solver_options.constr_type)
 
         self.lagrange_costs = SX()
+        self.mayer_costs_e = SX()
         self.mayer_costs = SX()
         self.y_ref = []
         self.y_ref_end = []
+        self.y_ref_start = []
         self.nparams = 0
         self.params_initial_guess = None
         self.params_bounds = None
@@ -120,6 +124,7 @@ class AcadosInterface(SolverInterface):
         self.ocp_solver = None
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
+        self.W_0 = np.zeros((0, 0))
         self.status = None
         self.out = {}
         self.real_time_to_optimize = -1
@@ -133,8 +138,7 @@ class AcadosInterface(SolverInterface):
         self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].controls.shape)
         self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
         self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
-
-        self.opts = Solver.ACADOS() if solver_options is None else solver_options
+        self.Vx0 = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
 
     def __acados_export_model(self, ocp):
         """
@@ -160,9 +164,10 @@ class AcadosInterface(SolverInterface):
                     raise RuntimeError("Time constraint not implemented yet with Acados.")
 
         self.nparams = ocp.nlp[0].parameters.shape
-        self.params_initial_guess = ocp.v.parameters_in_list.initial_guess
+        param_list = ocp.v.parameters_in_list
+        self.params_initial_guess = param_list.initial_guess.scale(param_list.scaling)
         self.params_initial_guess.check_and_adjust_dimensions(self.nparams, 1)
-        self.params_bounds = ocp.v.parameters_in_list.bounds
+        self.params_bounds = param_list.bounds.scale(param_list.scaling)
         self.params_bounds.check_and_adjust_dimensions(self.nparams, 1)
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
@@ -178,8 +183,16 @@ class AcadosInterface(SolverInterface):
         self.acados_model.con_h_expr = np.zeros((0, 0))
         self.acados_model.con_h_expr_e = np.zeros((0, 0))
         self.acados_model.p = []
-        now = datetime.now()  # current date and time
-        self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
+        if not self.opts.acados_model_name:
+            if self.opts.c_compile:
+                now = datetime.now()  # current date and time
+                self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
+            else:
+                raise RuntimeError(
+                    "If not compiling the library you must provide the name of the model" " you want to use."
+                )
+        else:
+            self.acados_model.name = self.opts.acados_model_name
 
     def __prepare_acados(self, ocp):
         """
@@ -309,6 +322,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.dims.nbu = self.acados_ocp.dims.nu
 
         # initial state constraints
+        self.acados_ocp.constraints.Jbx_0 = np.eye(self.acados_ocp.dims.nx)
         self.acados_ocp.constraints.lbx_0 = self.x_bound_min[:, 0]
         self.acados_ocp.constraints.ubx_0 = self.x_bound_max[:, 0]
         self.acados_ocp.constraints.idxbx_0 = np.array(range(self.acados_ocp.dims.nx))
@@ -348,6 +362,7 @@ class AcadosInterface(SolverInterface):
 
         self.acados_ocp.cost.cost_type = cost_type
         self.acados_ocp.cost.cost_type_e = cost_type
+        self.acados_ocp.cost.cost_type_0 = cost_type
 
     def __set_costs(self, ocp):
         """
@@ -391,18 +406,43 @@ class AcadosInterface(SolverInterface):
                 )
 
         def add_linear_ls_mayer(acados, objectives):
-            if objectives.type in allowed_state_objectives:
-                vxe = np.zeros(n_states)
-                rows = objectives.rows + acados.ocp.nlp[0].states[objectives.params["key"]].index[0]
-                vxe[rows] = 1.0
-                acados.Vxe = np.vstack((acados.Vxe, np.diag(vxe)))
-                acados.W_e = linalg.block_diag(acados.W_e, np.diag([objectives.weight] * n_states))
+            def add_objective(n_variables, is_state):
+                def _adjust_dim():
+                    v_var = np.zeros(n_variables)
+                    var_type = acados.ocp.nlp[0].states if is_state else acados.ocp.nlp[0].controls
+                    rows = objectives.rows + var_type[objectives.params["key"]].index[0]
+                    v_var[rows] = 1.0
+                    return v_var, rows
 
-                y_ref_end = np.zeros((n_states, 1))
-                if objectives.target is not None:
-                    y_ref_end[rows] = objectives.target[0][..., -1].T.reshape((-1, 1))
-                acados.y_ref_end.append(y_ref_end)
+                if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
+                    v_var, rows = _adjust_dim()
+                    if is_state:
+                        acados.Vx0 = np.vstack((acados.Vx0, np.diag(v_var)))
+                        acados.Vu0 = np.vstack((acados.Vu0, np.zeros((n_states, n_controls))))
+                    else:
+                        acados.Vx0 = np.vstack((acados.Vx0, np.zeros((n_controls, n_states))))
+                        acados.Vu0 = np.vstack((acados.Vu0, np.diag(v_var)))
+                    acados.W_0 = linalg.block_diag(acados.W_0, np.diag([objectives.weight] * n_variables))
+                    y_ref_start = np.zeros((n_variables, 1))
+                    if objectives.target is not None:
+                        y_ref_start[rows] = objectives.target[0][..., 0].T.reshape((-1, 1))
+                    acados.y_ref_start.append(y_ref_start)
 
+                if objectives.node[0] in [Node.END, Node.ALL]:
+                    v_var, rows = _adjust_dim()
+                    if not is_state:
+                        raise RuntimeError("Mayer objective at final node for controls is not defined.")
+                    acados.Vxe = np.vstack((acados.Vxe, np.diag(v_var)))
+                    acados.W_e = linalg.block_diag(acados.W_e, np.diag([objectives.weight] * n_states))
+                    y_ref_end = np.zeros((n_states, 1))
+                    if objectives.target is not None:
+                        y_ref_end[rows] = objectives.target[0][..., -1].T.reshape((-1, 1))
+                    acados.y_ref_end.append(y_ref_end)
+
+            if objectives.type in allowed_control_objectives:
+                add_objective(n_controls, False)
+            elif objectives.type in allowed_state_objectives:
+                add_objective(n_states, True)
             else:
                 raise RuntimeError(f"{objectives.type.name} is an incompatible objective term with LINEAR_LS cost type")
 
@@ -416,26 +456,45 @@ class AcadosInterface(SolverInterface):
             else:
                 acados.y_ref.append([np.zeros((objectives.function.numel_out(), 1)) for _ in node_idx])
 
-        def add_nonlinear_ls_mayer(acados, objectives, x, u, p):
-            acados.W_e = linalg.block_diag(acados.W_e, np.diag([objectives.weight] * objectives.function.numel_out()))
-            x = x if objectives.function.sparsity_in("i0").shape != (0, 0) else []
-            u = u if objectives.function.sparsity_in("i1").shape != (0, 0) else []
-            acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function(x, u, p).reshape((-1, 1)))
+        def add_nonlinear_ls_mayer(acados, objectives, x, u, p, node=None):
+            if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
+                acados.W_0 = linalg.block_diag(
+                    acados.W_0, np.diag([objectives.weight] * objectives.function.numel_out())
+                )
+                x = x if objectives.function.sparsity_in("i0").shape != (0, 0) else []
+                u = u if objectives.function.sparsity_in("i1").shape != (0, 0) else []
+                acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function(x, u, p).reshape((-1, 1)))
 
-            if objectives.target is not None:
-                acados.y_ref_end.append(objectives.target[0][..., -1].T.reshape((-1, 1)))
-            else:
-                acados.y_ref_end.append(np.zeros((objectives.function.numel_out(), 1)))
+                if objectives.target is not None:
+                    acados.y_ref_start.append(objectives.target[0][..., 0].T.reshape((-1, 1)))
+                else:
+                    acados.y_ref_start.append(np.zeros((objectives.function.numel_out(), 1)))
+
+            if objectives.node[0] in [Node.END, Node.ALL]:
+                acados.W_e = linalg.block_diag(
+                    acados.W_e, np.diag([objectives.weight] * objectives.function.numel_out())
+                )
+                x = x if objectives.function.sparsity_in("i0").shape != (0, 0) else []
+                u = u if objectives.function.sparsity_in("i1").shape != (0, 0) else []
+                acados.mayer_costs_e = vertcat(acados.mayer_costs_e, objectives.function(x, u, p).reshape((-1, 1)))
+
+                if objectives.target is not None:
+                    acados.y_ref_end.append(objectives.target[0][..., -1].T.reshape((-1, 1)))
+                else:
+                    acados.y_ref_end.append(np.zeros((objectives.function.numel_out(), 1)))
 
         if ocp.n_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
         # costs handling in self.acados_ocp
         self.y_ref = []
         self.y_ref_end = []
+        self.y_ref_start = []
         self.lagrange_costs = SX()
+        self.mayer_costs_e = SX()
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
+        self.W_0 = np.zeros((0, 0))
         allowed_control_objectives = [ObjectiveFcn.Lagrange.MINIMIZE_CONTROL]
         allowed_state_objectives = [ObjectiveFcn.Lagrange.MINIMIZE_STATE, ObjectiveFcn.Mayer.TRACK_STATE]
 
@@ -445,6 +504,8 @@ class AcadosInterface(SolverInterface):
             self.Vu = np.array([], dtype=np.int64).reshape(0, n_controls)
             self.Vx = np.array([], dtype=np.int64).reshape(0, n_states)
             self.Vxe = np.array([], dtype=np.int64).reshape(0, n_states)
+            self.Vx0 = np.array([], dtype=np.int64).reshape(0, n_states)
+            self.Vu0 = np.array([], dtype=np.int64).reshape(0, n_controls)
             for i in range(ocp.n_phases):
                 for J in ocp.nlp[i].J:
                     if not J:
@@ -459,9 +520,8 @@ class AcadosInterface(SolverInterface):
                     if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
                         add_linear_ls_lagrange(self, J)
 
-                        # Deal with last node to match ipopt formulation
-                        if J.node[0] == Node.ALL:
-                            add_linear_ls_mayer(self, J)
+                        # Deal with first and last node
+                        add_linear_ls_mayer(self, J)
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
                         add_linear_ls_mayer(self, J)
@@ -475,19 +535,24 @@ class AcadosInterface(SolverInterface):
             # Set costs
             self.acados_ocp.cost.Vx = self.Vx if self.Vx.shape[0] else np.zeros((0, 0))
             self.acados_ocp.cost.Vu = self.Vu if self.Vu.shape[0] else np.zeros((0, 0))
+            self.acados_ocp.cost.Vu_0 = self.Vu0 if self.Vu0.shape[0] else np.zeros((0, 0))
             self.acados_ocp.cost.Vx_e = self.Vxe if self.Vxe.shape[0] else np.zeros((0, 0))
+            self.acados_ocp.cost.Vx_0 = self.Vx0 if self.Vx0.shape[0] else np.zeros((0, 0))
 
             # Set dimensions
             self.acados_ocp.dims.ny = sum([len(data[0]) for data in self.y_ref])
             self.acados_ocp.dims.ny_e = sum([len(data) for data in self.y_ref_end])
+            self.acados_ocp.dims.ny_0 = sum([len(data) for data in self.y_ref_start])
 
             # Set weight
             self.acados_ocp.cost.W = self.W
             self.acados_ocp.cost.W_e = self.W_e
+            self.acados_ocp.cost.W_0 = self.W_0
 
             # Set target shape
-            self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.cost.W.shape[0],))
-            self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
+            self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.dims.ny,))
+            self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.dims.ny_e,))
+            self.acados_ocp.cost.yref_0 = np.zeros((self.acados_ocp.dims.ny_0,))
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
             for i, nlp in enumerate(ocp.nlp):
@@ -504,13 +569,11 @@ class AcadosInterface(SolverInterface):
                     if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
                         add_nonlinear_ls_lagrange(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
-                        # Deal with last node to match ipopt formulation
-                        if J.node[0] == Node.ALL:
-                            add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+                        # Deal with first and last node
+                        add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
                         add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
-
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
@@ -519,6 +582,7 @@ class AcadosInterface(SolverInterface):
             if self.nparams:
                 nlp = ocp.nlp[0]  # Assume 1 phase
                 for j, J in enumerate(ocp.J):
+                    J.node = [Node.END]
                     add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
             # Set costs
@@ -526,20 +590,26 @@ class AcadosInterface(SolverInterface):
                 self.lagrange_costs.reshape((-1, 1)) if self.lagrange_costs.numel() else SX(1, 1)
             )
             self.acados_ocp.model.cost_y_expr_e = (
+                self.mayer_costs_e.reshape((-1, 1)) if self.mayer_costs_e.numel() else SX(1, 1)
+            )
+            self.acados_ocp.model.cost_y_expr_0 = (
                 self.mayer_costs.reshape((-1, 1)) if self.mayer_costs.numel() else SX(1, 1)
             )
 
             # Set dimensions
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
+            self.acados_ocp.dims.ny_0 = self.acados_ocp.model.cost_y_expr_0.shape[0]
 
             # Set weight
             self.acados_ocp.cost.W = np.zeros((1, 1)) if self.W.shape == (0, 0) else self.W
             self.acados_ocp.cost.W_e = np.zeros((1, 1)) if self.W_e.shape == (0, 0) else self.W_e
+            self.acados_ocp.cost.W_0 = np.zeros((1, 1)) if self.W_0.shape == (0, 0) else self.W_0
 
             # Set target shape
             self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.cost.W.shape[0],))
             self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
+            self.acados_ocp.cost.yref_0 = np.zeros((self.acados_ocp.cost.W_0.shape[0],))
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
             raise RuntimeError("EXTERNAL is not interfaced yet, please use NONLINEAR_LS")
@@ -554,14 +624,26 @@ class AcadosInterface(SolverInterface):
 
         param_init = []
         for n in range(self.acados_ocp.dims.N):
-            if self.y_ref:  # Target
-                self.ocp_solver.cost_set(n, "yref", np.vstack([data[n] for data in self.y_ref])[:, 0])
+            if n == 0:
+                # Initial node
+                if self.y_ref_start:
+                    if len(self.y_ref_start) == 1:
+                        self.ocp_solver.cost_set(0, "yref", np.array(self.y_ref_start[0])[:, 0])
+                    else:
+                        self.ocp_solver.cost_set(0, "yref", np.concatenate(self.y_ref_start)[:, 0])
+                self.ocp_solver.constraints_set(0, "lbx", self.x_bound_min[:, 0])
+                self.ocp_solver.constraints_set(0, "ubx", self.x_bound_max[:, 0])
+            else:
+                if self.y_ref:  # Target
+                    self.ocp_solver.cost_set(n, "yref", np.vstack([data[n] for data in self.y_ref])[:, 0])
+                self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 1])
+                self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
+
+            # Intermediates
             # check following line
             # self.ocp_solver.cost_set(n, "W", self.W)
-
             if self.nparams:
                 param_init = self.params_initial_guess.init.evaluate_at(n)
-
             self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
             self.ocp_solver.constraints_set(n, "lbu", self.ocp.nlp[0].u_bounds.min[:, 0])
@@ -569,13 +651,7 @@ class AcadosInterface(SolverInterface):
             self.ocp_solver.constraints_set(n, "uh", self.all_g_bounds.max[:, 0])
             self.ocp_solver.constraints_set(n, "lh", self.all_g_bounds.min[:, 0])
 
-            if n == 0:
-                self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 0])
-                self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 0])
-            else:
-                self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 1])
-                self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
-
+        # Final
         if self.y_ref_end:
             if len(self.y_ref_end) == 1:
                 self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.array(self.y_ref_end[0])[:, 0])
@@ -585,6 +661,7 @@ class AcadosInterface(SolverInterface):
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
+
         if len(self.end_g_bounds.max[:, 0]):
             self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "uh", self.end_g_bounds.max[:, 0])
             self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lh", self.end_g_bounds.min[:, 0])
@@ -658,7 +735,7 @@ class AcadosInterface(SolverInterface):
         if self.ocp_solver is None:
             for key in options:
                 setattr(self.acados_ocp.solver_options, key, options[key])
-            self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
+            self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json", build=self.opts.c_compile)
             self.opts.set_only_first_options_has_changed(False)
             self.opts.set_has_tolerance_changed(False)
 
@@ -676,8 +753,6 @@ class AcadosInterface(SolverInterface):
                 self.opts.set_has_tolerance_changed(False)
 
         self.__update_solver()
-
         self.status = self.ocp_solver.solve()
         self.real_time_to_optimize = perf_counter() - tic
-
         return self.get_optimized_value()

@@ -24,8 +24,8 @@ Please note that while BiMapping is used in that context for reducing dof, it is
 applications one can do with the Mappings
 """
 
-import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsList,
@@ -61,7 +61,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -96,7 +96,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model, dof_mappings[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model, dof_mappings[0]))
     x_bounds[0][3:6, [0, -1]] = 0
 
     # Initial guess
@@ -113,7 +113,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

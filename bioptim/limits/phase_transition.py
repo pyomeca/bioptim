@@ -1,15 +1,14 @@
 from typing import Callable, Union, Any
 from warnings import warn
-from enum import Enum
 
-import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
 from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, ConstraintType
+from ..misc.enums import Node, PenaltyType
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
@@ -41,7 +40,7 @@ class PhaseTransition(MultinodeConstraint):
         The index of the node in nlp pre
     transition: bool
         The nature of the cost function is transition
-    constraint_type: ConstraintType
+    penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
     """
 
@@ -68,7 +67,7 @@ class PhaseTransition(MultinodeConstraint):
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
-            weight=weight,
+            weight=weight if weight is not None else 0,
             force_multinode=True,
             **params,
         )
@@ -116,7 +115,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
-    def prepare_phase_transitions(self, ocp) -> list:
+    def prepare_phase_transitions(self, ocp, continuity_weight: float = None) -> list:
         """
         Configure all the phase transitions and put them in a list
 
@@ -132,16 +131,19 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         # By default it assume Continuous. It can be change later
         full_phase_transitions = [
-            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS) for i in range(ocp.n_phases - 1)
+            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=continuity_weight)
+            for i in range(ocp.n_phases - 1)
         ]
         for pt in full_phase_transitions:
             pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
         existing_phases = []
         for pt in self:
-            if pt.phase_pre_idx is None and pt.type == PhaseTransitionFcn.CYCLIC:
-                pt.phase_pre_idx = ocp.n_phases - 1
-            pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
+            if pt.phase_pre_idx is None:
+                if pt.type == PhaseTransitionFcn.CYCLIC:
+                    pt.phase_pre_idx = ocp.n_phases - 1
+            else:
+                pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
             idx_phase = pt.phase_pre_idx
             if idx_phase >= ocp.n_phases:
@@ -186,7 +188,26 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
+            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
+
+        @staticmethod
+        def discontinuous(transition, all_pn):
+            """
+            There is no continuity constraints on the states
+
+            Parameters
+            ----------
+            transition : PhaseTransition
+                A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the state after and before
+            """
+
+            return MX.zeros(0, 0)
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:
@@ -205,7 +226,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return MultinodeConstraintFunctions.Functions.equality(transition, all_pn)
+            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
 
         @staticmethod
         def impact(transition, all_pn):
@@ -236,19 +257,24 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
             # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
-            model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
+            model = nlp_post.model.copy()
 
-            if nlp_post.model.nbContacts() == 0:
+            if nlp_post.model.nb_contacts == 0:
                 warn("The chosen model does not have any contact")
+
+            # Todo scaled?
             q_pre = nlp_pre.states["q"].mx
             qdot_pre = nlp_pre.states["qdot"].mx
-            qdot_impact = model.ComputeConstraintImpulsesDirect(q_pre, qdot_pre).to_mx()
+            qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
 
             val = []
             cx_end = []
             cx = []
             for key in nlp_pre.states:
-                cx_end = vertcat(cx_end, nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end))
+                cx_end = vertcat(
+                    cx_end,
+                    nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end),
+                )
                 cx = vertcat(cx, nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx))
                 post_mx = nlp_post.states[key].mx
                 continuity = nlp_post.states["qdot"].mapping.to_first.map(
@@ -257,16 +283,17 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 val = vertcat(val, continuity)
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = biorbd.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
+            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
             return func
 
 
-class PhaseTransitionFcn(Enum):
+class PhaseTransitionFcn(FcnEnum):
     """
     Selection of valid phase transition functions
     """
 
     CONTINUOUS = (PhaseTransitionFunctions.Functions.continuous,)
+    DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)

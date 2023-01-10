@@ -4,10 +4,11 @@ pulling downward and afterward to let it go so it gains velocity. It is designed
 forces to interact with the body.
 """
 
-from casadi import MX
+from casadi import MX, vertcat
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     Dynamics,
     ConfigureProblem,
@@ -19,10 +20,11 @@ from bioptim import (
     InitialGuess,
     NonLinearProgram,
     Solver,
+    DynamicsEvaluation,
 )
 
 
-def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram) -> tuple:
+def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram) -> DynamicsEvaluation:
     """
     The dynamics of the system using an external force (see custom_dynamics for more explanation)
 
@@ -49,11 +51,9 @@ def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgr
     force_vector = MX.zeros(6)
     force_vector[5] = 100 * q[0] ** 2
 
-    f_ext = biorbd.VecBiorbdSpatialVector()
-    f_ext.append(biorbd.SpatialVector(force_vector))
-    qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
+    qddot = nlp.model.forward_dynamics(q, qdot, tau, force_vector)
 
-    return qdot, qddot
+    return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
@@ -67,16 +67,16 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     nlp: NonLinearProgram
         A reference to the phase of the ocp
     """
-    ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 
 
 def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
-    # Model path
-    m = biorbd.Model(biorbd_model_path)
-    m.setGravity(np.array((0, 0, 0)))
+    # BioModel path
+    m = BiorbdModel(biorbd_model_path)
+    m.set_gravity(np.array((0, 0, 0)))
 
     # Add objective functions (high upward velocity at end point)
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", index=0, weight=-1)
@@ -86,19 +86,19 @@ def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
 
     # Path constraint
     x_bounds = QAndQDotBounds(m)
-    x_bounds[:, 0] = [0] * m.nbQ() + [0] * m.nbQdot()
-    x_bounds.min[:, 1] = [-1] * m.nbQ() + [-100] * m.nbQdot()
-    x_bounds.max[:, 1] = [1] * m.nbQ() + [100] * m.nbQdot()
-    x_bounds.min[:, 2] = [-1] * m.nbQ() + [-100] * m.nbQdot()
-    x_bounds.max[:, 2] = [1] * m.nbQ() + [100] * m.nbQdot()
+    x_bounds[:, 0] = [0] * m.nb_q + [0] * m.nb_qdot
+    x_bounds.min[:, 1] = [-1] * m.nb_q + [-100] * m.nb_qdot
+    x_bounds.max[:, 1] = [1] * m.nb_q + [100] * m.nb_qdot
+    x_bounds.min[:, 2] = [-1] * m.nb_q + [-100] * m.nb_qdot
+    x_bounds.max[:, 2] = [1] * m.nb_q + [100] * m.nb_qdot
 
     # Initial guess
-    x_init = InitialGuess([0] * (m.nbQ() + m.nbQdot()))
+    x_init = InitialGuess([0] * (m.nb_q + m.nb_qdot))
 
     # Define control path constraint
-    u_bounds = Bounds([-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque())
+    u_bounds = Bounds([-100] * m.nb_tau, [0] * m.nb_tau)
 
-    u_init = InitialGuess([0] * m.nbGeneralizedTorque())
+    u_init = InitialGuess([0] * m.nb_tau)
     return OptimalControlProgram(
         m,
         dynamics,

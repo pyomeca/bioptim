@@ -62,6 +62,8 @@ DynamicsFcn
     Selection of valid dynamics functions
 DynamicsFunctions
     Implementation of all the dynamic functions
+DynamicsEvaluation
+    A placeholder for the dynamics evaluation in explicit dxdt or in implicit defects
 
 
 # --- Managing the constraints --- #
@@ -124,6 +126,10 @@ BiMapping
     Mapping of two index sets between each other
 BiMappingList
     A list of BiMapping
+NodeMapping
+    Mapping of two node sets
+NodeMappingList
+    A list of NodeMapping
 
 
 # --- Version of bioptim --- #
@@ -159,13 +165,15 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 from .misc.__version__ import __version__
 from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
+from .dynamics.dynamics_evaluation import DynamicsEvaluation
 from .dynamics.fatigue.fatigue_dynamics import FatigueList
 from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueStabilized
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver
-from .interfaces.biorbd_interface import BiorbdInterface
 from .interfaces.solver_options import Solver
+from .interfaces.biorbd_model import BiorbdModel
+from .interfaces.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
@@ -175,6 +183,7 @@ from .limits.path_conditions import (
     Bounds,
     InitialGuessList,
     InitialGuess,
+    NoisedInitialGuess,
     QAndQDotBounds,
     QAndQDotAndQDDotBounds,
 )
@@ -191,8 +200,13 @@ from .misc.enums import (
     VariableType,
     SolutionIntegrator,
     IntegralApproximation,
+    RigidBodyDynamics,
+    SoftContactDynamics,
+    DefectType,
+    MagnitudeType,
 )
-from .misc.mapping import BiMappingList, BiMapping, Mapping
+from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList
+from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl
@@ -203,6 +217,6 @@ from .optimization.receding_horizon_optimization import (
 )
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
-from .optimization.optimization_variable import OptimizationVariableList
+from .optimization.optimization_variable import OptimizationVariableList, VariableScalingList, VariableScaling
 
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero

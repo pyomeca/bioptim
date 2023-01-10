@@ -6,8 +6,7 @@ from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import PathCondition, Bounds
 from ..optimization.parameters import Parameter
-from ..misc.enums import Node
-from bioptim import InterpolationType
+from ..misc.enums import Node, InterpolationType
 
 
 class GraphAbstract:
@@ -251,7 +250,7 @@ class GraphAbstract:
 
         initial_guess_str = self._structure_scaling_parameter(parameter.initial_guess.init, parameter)
         min_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
-        max_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
+        max_bound_str = self._structure_scaling_parameter(parameter.bounds.max, parameter)
 
         scaling = [parameter.scaling[i][0] for i in range(parameter.size)]
         scaling_str = f"{self._vector_layout(scaling)}"
@@ -361,7 +360,7 @@ class OcpToConsole(GraphAbstract):
                 print("")
             print("")
             print(f"**********")
-            print(f"MODEL: {self.ocp.original_values['biorbd_model'][phase_idx]}")
+            print(f"MODEL: {self.ocp.original_values['bio_model'][phase_idx]}")
             print(f"PHASE DURATION: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s")
             print(f"SHOOTING NODES : {self.ocp.nlp[phase_idx].ns}")
             print(f"DYNAMICS: {self.ocp.nlp[phase_idx].dynamics_type.type.name}")
@@ -416,6 +415,12 @@ class OcpToConsole(GraphAbstract):
             title = ["", "Bounds"]
         elif bounds.type == InterpolationType.LINEAR:
             title = ["", "Beginning", "End"]
+        else:
+            raise NotImplementedError(
+                "Print bounds function has been implemented only with the following enums"
+                ": InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, "
+                "InterpolationType.CONSTANT and InterpolationType.LINEAR."
+            )
         self.print_bounds_table(bounds, col_name, title)
 
     @staticmethod
@@ -617,10 +622,7 @@ class OcpToGraph(GraphAbstract):
             The index of the current phase
         """
 
-        node_str = (
-            f"<b>Model</b>: {self.ocp.nlp[phase_idx].model.path().filename().to_string()}"
-            f".{self.ocp.nlp[phase_idx].model.path().extension().to_string()}<br/>"
-        )
+        node_str = f"<b>BioModel</b>: {type(self.ocp.nlp[phase_idx].model)}<br/>"
         node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
         node_str += f"<b>Dynamics</b>: {self.ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"

@@ -1,0 +1,17 @@
+#Checks if the code is formatted with black.
+
+name: is your code linted with black?
+on: [pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.10'
+      - name: Install Black
+        run: pip install black
+      - name: Run black --check .
+        run: black . --exclude "external/*" --check -l120

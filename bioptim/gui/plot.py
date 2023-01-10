@@ -199,7 +199,7 @@ class PlotOcp:
         automatically_organize: bool = True,
         show_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
-        integrator: SolutionIntegrator = SolutionIntegrator.DEFAULT,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
     ):
         """
         Prepares the figures during the simulation
@@ -218,10 +218,6 @@ class PlotOcp:
              Use the ode defined by OCP or use a separate integrator provided by scipy
 
         """
-        for i in range(1, ocp.n_phases):
-            if len(ocp.nlp[0].states["q"]) != len(ocp.nlp[i].states["q"]):
-                raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
-
         self.ocp = ocp
         self.plot_options = {
             "general_options": {"use_tight_layout": False},
@@ -299,13 +295,13 @@ class PlotOcp:
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
             n_int_steps = (
-                nlp.ode_solver.steps_scipy if self.integrator != SolutionIntegrator.DEFAULT else nlp.ode_solver.steps
+                nlp.ode_solver.steps_scipy if self.integrator != SolutionIntegrator.OCP else nlp.ode_solver.steps
             )
             dt_ns = self.tf[phase_idx] / nlp.ns
             time_phase_integrated = []
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
-                if nlp.ode_solver.is_direct_collocation and self.integrator == SolutionIntegrator.DEFAULT:
+                if nlp.ode_solver.is_direct_collocation and self.integrator == SolutionIntegrator.OCP:
                     time_phase_integrated.append(np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int)
                 else:
                     time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
@@ -360,9 +356,11 @@ class PlotOcp:
             # No graph was setup in problem_type
             return
 
+        y_min_all = [None for _ in self.variable_sizes[0]]
+        y_max_all = [None for _ in self.variable_sizes[0]]
         self.plot_func = {}
         for i, nlp in enumerate(self.ocp.nlp):
-            for variable in self.variable_sizes[i]:
+            for var_idx, variable in enumerate(self.variable_sizes[i]):
                 if nlp.plot[variable].combine_to:
                     self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
                     axes = self.axes[variable][1]
@@ -371,13 +369,16 @@ class PlotOcp:
                 else:
                     nb = max(
                         [
-                            max(nlp.plot[variable].phase_mappings.map_idx) + 1 if variable in nlp.plot else 0
+                            len(nlp.plot[variable].phase_mappings.map_idx) if variable in nlp.plot else 0
                             for nlp in self.ocp.nlp
                         ]
                     )
                     n_cols, n_rows = PlotOcp._generate_windows_size(nb)
                     axes = self.__add_new_axis(variable, nb, n_rows, n_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
+                    if not y_min_all[var_idx]:
+                        y_min_all[var_idx] = [np.inf] * nb
+                        y_max_all[var_idx] = [-np.inf] * nb
 
                 if variable not in self.plot_func:
                     self.plot_func[variable] = [
@@ -386,11 +387,12 @@ class PlotOcp:
 
                 if not self.plot_func[variable][i]:
                     continue
-                mapping = self.plot_func[variable][i].phase_mappings.map_idx
-                for ctr, k in enumerate(mapping):
-                    ax = axes[k]
-                    if k < len(self.plot_func[variable][i].legend):
-                        axes[k].set_title(self.plot_func[variable][i].legend[k])
+
+                mapping = nlp.plot[variable].phase_mappings.map_idx
+                for ctr, _ in enumerate(mapping):
+                    ax = axes[ctr]
+                    if ctr < len(nlp.plot[variable].legend):
+                        ax.set_title(nlp.plot[variable].legend[ctr])
                     ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp.plot[variable].ylim:
@@ -401,10 +403,16 @@ class PlotOcp:
                             y_max = nlp.plot[variable].bounds.max[ctr, :].max()
                         else:
                             nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping), nlp.ns)
-                            y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[k] for j in range(nlp.ns)])
-                            y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[k] for j in range(nlp.ns)])
-                        y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
+                            y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[ctr] for j in range(nlp.ns)])
+                            y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[ctr] for j in range(nlp.ns)])
+                        if y_min.__array__()[0] < y_min_all[var_idx][ctr]:
+                            y_min_all[var_idx][ctr] = y_min
+                        if y_max.__array__()[0] > y_max_all[var_idx][ctr]:
+                            y_max_all[var_idx][ctr] = y_max
+
+                        y_range, _ = self.__compute_ylim(y_min_all[var_idx][ctr], y_max_all[var_idx][ctr], 1.25)
                         ax.set_ylim(y_range)
+
                     plot_type = self.plot_func[variable][i].type
 
                     t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
@@ -434,7 +442,7 @@ class PlotOcp:
                         plots_integrated = []
                         n_int_steps = (
                             nlp.ode_solver.steps_scipy
-                            if self.integrator != SolutionIntegrator.DEFAULT
+                            if self.integrator != SolutionIntegrator.OCP
                             else nlp.ode_solver.steps
                         )
                         zero = np.zeros(n_int_steps + 1)
@@ -450,6 +458,7 @@ class PlotOcp:
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
+
                     elif plot_type == PlotType.STEP:
                         zero = np.zeros((t.shape[0], 1))
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
@@ -497,7 +506,6 @@ class PlotOcp:
                         if bounds_min.shape[0] == nlp.ns:
                             bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
                             bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
-
                         self.plots_bounds.append(
                             [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
                         )
@@ -591,12 +599,22 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, v)
-        data_states = sol.integrate(
-            continuous=False,
-            shooting_type=self.shooting_type,
-            keep_intermediate_points=True,
-            integrator=self.integrator,
-        ).states
+
+        if all([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]):
+            # no need to integrate when using direct collocation
+            data_states = sol.states
+            data_time = sol._generate_time()
+        elif all([nlp.ode_solver.is_direct_shooting for nlp in self.ocp.nlp]):
+            integrated = sol.integrate(
+                shooting_type=self.shooting_type,
+                keep_intermediate_points=True,
+                integrator=self.integrator,
+            )
+            data_states = integrated.states
+            data_time = integrated._time_vector
+        else:
+            raise NotImplementedError("Graphs are not implemented when mixing direct collocation and direct shooting")
+
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
@@ -610,23 +628,25 @@ class PlotOcp:
         for i, nlp in enumerate(self.ocp.nlp):
             step_size = (
                 nlp.ode_solver.steps_scipy + 1
-                if self.integrator != SolutionIntegrator.DEFAULT
+                if self.integrator != SolutionIntegrator.OCP
                 else nlp.ode_solver.steps + 1
             )
-            n_elements = nlp.ns * step_size + 1
 
+            n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
             for s in nlp.states:
-                if isinstance(data_states, (list, tuple)):
-                    state = np.concatenate((state, data_states[i][s]))
-                else:
-                    state = np.concatenate((state, data_states[s]))
+                if nlp.use_states_from_phase_idx == nlp.phase_idx:
+                    if isinstance(data_states, (list, tuple)):
+                        state = np.concatenate((state, data_states[i][s]))
+                    else:
+                        state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
             for s in nlp.controls:
-                if isinstance(data_controls, (list, tuple)):
-                    control = np.concatenate((control, data_controls[i][s]))
-                else:
-                    control = np.concatenate((control, data_controls[s]))
+                if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+                    if isinstance(data_controls, (list, tuple)):
+                        control = np.concatenate((control, data_controls[i][s]))
+                    else:
+                        control = np.concatenate((control, data_controls[s]))
 
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
@@ -738,9 +758,19 @@ class PlotOcp:
                                         **self.plot_func[key][i].parameters,
                                     )
                                 else:
+                                    if (
+                                        self.plot_func[key][i].label == "CONTINUITY"
+                                        and nlp.ode_solver.is_direct_collocation
+                                    ):
+                                        states = state[:, node_idx * (step_size) : (node_idx + 1) * (step_size) + 1]
+                                    else:
+                                        states = state[
+                                            :, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size
+                                        ]
+
                                     val = self.plot_func[key][i].function(
                                         node_idx,
-                                        state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size],
+                                        states,
                                         control[:, node_idx : node_idx + 1 + u_mod],
                                         data_params_in_dyn,
                                         **self.plot_func[key][i].parameters,
@@ -867,7 +897,6 @@ class PlotOcp:
                                 step=data_range / 4,
                             )
                         )
-
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
 

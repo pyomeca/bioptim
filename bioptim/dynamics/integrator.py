@@ -1,9 +1,10 @@
 from typing import Union
 
-from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tangent, rootfinder, MX, SX
+from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX
 import numpy as np
 
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, DefectType
+from ..interfaces.biomodel import BioModel
 
 
 class Integrator:
@@ -12,7 +13,7 @@ class Integrator:
 
     Attributes
     ----------
-    model: biorbd.Model
+    model: BioModel
         The biorbd model to integrate
     t_span = tuple[float, float]
         The initial and final time
@@ -30,6 +31,8 @@ class Integrator:
         The parameters variables scaling factor
     fun: Callable
         The dynamic function which provides the derivative of the states
+    implicit_fun: Callable
+        The implicit dynamic function which provides the defects of the dynamics
     control_type: ControlType
         The type of the controls
     step_time: float
@@ -68,11 +71,13 @@ class Integrator:
         self.t_span = ode_opt["t0"], ode_opt["tf"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
-        self.x_sym = ode["x"]
-        self.u_sym = ode["p"]
+        self.x_sym = ode["x_scaled"]
+        self.u_sym = ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
+        self.implicit_fun = ode["implicit_ode"]
+        self.defects_type = ode_opt["defects_type"]
         self.control_type = ode_opt["control_type"]
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
@@ -239,26 +244,12 @@ class RK(Integrator):
         p = params
         x[:, 0] = states
 
-        n_dof = 0
-        quat_idx = []
-        quat_number = 0
-        for j in range(self.model.nbSegment()):
-            if self.model.segment(j).isRotationAQuaternion():
-                quat_idx.append([n_dof, n_dof + 1, n_dof + 2, self.model.nbDof() + quat_number])
-                quat_number += 1
-            n_dof += self.model.segment(j).nbDof()
-
         for i in range(1, self.n_step + 1):
             t_norm_init = (i - 1) / self.n_step  # normalized time
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
 
-            for j in range(self.model.nbQuat()):
-                quaternion = vertcat(
-                    x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
-                )
-                quaternion /= norm_fro(quaternion)
-                x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
-                x[quat_idx[j][3], i] = quaternion[0]
+            if self.model.nb_quaternions > 0:
+                x[:, i] = self.model.normalize_state_quaternions(x[:, i])
 
         return x[:, -1], x
 
@@ -542,8 +533,11 @@ class COLLOCATION(Integrator):
                     _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-            lfcn = Function("lfcn", [time_control_interval], [_l])
-            self._d[j] = lfcn(1.0)
+            if self.method == "radau":
+                self._d[j] = 1 if j == self.degree else 0
+            else:
+                lfcn = Function("lfcn", [time_control_interval], [_l])
+                self._d[j] = lfcn(1.0)
 
             # Construct Lagrange polynomials to get the polynomial basis at the collocation point
             _l = 1
@@ -610,9 +604,13 @@ class COLLOCATION(Integrator):
             for r in range(self.degree + 1):
                 xp_j += self._c[r, j] * states[r]
 
-            # Append collocation equations
-            f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
-            defects.append(h * f_j - xp_j)
+            if self.defects_type == DefectType.EXPLICIT:
+                f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
+                defects.append(h * f_j - xp_j)
+            elif self.defects_type == DefectType.IMPLICIT:
+                defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params, xp_j / h))
+            else:
+                raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
             # Add contribution to the end state
             states_end += self._d[j] * states[j]
