@@ -214,6 +214,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
     def _initialize_one_window_solution(self, states: np.array, controls: np.array):
         """ return a solution for a single window kept of the MHE """
+
+        if states.shape[1] < 2:
+            return None
+
         _states = InitialGuess(states, interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(controls, interpolation=InterpolationType.EACH_FRAME)
 
@@ -222,7 +226,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
-            n_shooting=self.frame_to_export.stop - 1,
+            n_shooting=states.shape[1] - 1,
             phase_time=self.nlp[0].dt,
             skip_continuity=True,
             x_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
