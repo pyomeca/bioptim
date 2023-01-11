@@ -517,7 +517,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
 
     def solve(
         self,
-        update_function =None,
+        update_function=None,
         get_cycles: bool = False,
         **extra_options,
     ) -> Solution | tuple:
@@ -526,8 +526,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         extra_options["get_all_iterations"] = True if get_cycles else False
 
         solution = super(MultiCyclicRecedingHorizonOptimization, self).solve(
-            update_function=update_function,
-            **extra_options
+            update_function=update_function, **extra_options
         )
 
         if get_cycles:

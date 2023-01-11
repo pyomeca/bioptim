@@ -63,7 +63,13 @@ def test_multi_cyclic_nmpc():
         n_cycles_to_advance=n_cycles_to_advance,
         max_torque=50,
     )
-    sol = nmpc.solve(update_functions, solver=Solver.IPOPT(), n_cycles_simultaneous=n_cycles_simultaneous, get_all_iterations=True, get_cycles=True)
+    sol = nmpc.solve(
+        update_functions,
+        solver=Solver.IPOPT(),
+        n_cycles_simultaneous=n_cycles_simultaneous,
+        get_all_iterations=True,
+        get_cycles=True,
+    )
 
     # Check some of the results
     states, controls = sol[0].states, sol[0].controls
