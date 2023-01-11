@@ -68,7 +68,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         update_function_extra_params: dict = None,
         get_all_iterations: bool = False,
         **advance_options,
-    ) -> Union[Solution, tuple]:
+    ) -> Solution | tuple:
         """
         Solve MHE program. The program runs until 'update_function' returns False. This function can be used to
         modify the objective set, for instance. The warm_start_function can be provided by the user. Otherwise, the
@@ -126,6 +126,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         total_time = 0
         real_time = perf_counter()
         all_solutions = []
+        split_solutions = []
         consecutive_failing = 0
         update_function_extra_params = {} if update_function_extra_params is None else update_function_extra_params
 
@@ -158,13 +159,13 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             if solver_current == Solver.ACADOS and self.total_optimization_run == 0:
                 real_time = perf_counter()  # Reset timer to skip the compiling time (so skip the first call to solve)
 
-            # Solve and save the current window
+            # Solve and save the current window of interest
             _states, _controls = self.export_data(sol)
             states.append(_states)
             controls.append(_controls)
+            # Solve and save the full window of the OCP
             if get_all_iterations:
                 all_solutions.append(sol)
-
             # Update the initial frame bounds and initial guess
             self.advance_window(sol, **advance_options)
 
@@ -174,9 +175,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         # Prepare the modified ocp that fits the solution dimension
         sol = self._initialize_solution(states, controls)
+        split_solutions = [self._initialize_one_window_solution(states[i], controls[i]) for i in range(self.total_optimization_run)]
         sol.solver_time_to_optimize = total_time
         sol.real_time_to_optimize = real_time
-        return (sol, all_solutions) if get_all_iterations else sol
+        return (sol, all_solutions, split_solutions) if get_all_iterations else sol
 
     def _initialize_frame_to_export(self, export_options):
         if export_options is None:
@@ -206,6 +208,26 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
             xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
             u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
+            use_sx=self.original_values["use_sx"],
+        )
+        return Solution(solution_ocp, [_states, _controls])
+
+    def _initialize_one_window_solution(self, states: np.array, controls: np.array):
+        """ return a solution for a single window kept of the MHE """
+        _states = InitialGuess(states, interpolation=InterpolationType.EACH_FRAME)
+        _controls = InitialGuess(controls, interpolation=InterpolationType.EACH_FRAME)
+
+        model_class = self.original_values["bio_model"][0][0]
+        model_initializer = self.original_values["bio_model"][0][1]
+        solution_ocp = OptimalControlProgram(
+            bio_model=model_class(**model_initializer),
+            dynamics=self.original_values["dynamics"][0],
+            n_shooting=self.frame_to_export.stop - 1,
+            phase_time=self.nlp[0].dt,
+            skip_continuity=True,
+            x_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
+            xdot_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
+            u_scaling=VariableScaling(key="all", scaling=np.ones((controls.shape[0],))),
             use_sx=self.original_values["use_sx"],
         )
         return Solution(solution_ocp, [_states, _controls])
@@ -526,6 +548,26 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
             xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
             u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
+            use_sx=self.original_values["use_sx"],
+        )
+        return Solution(solution_ocp, [_states, _controls])
+
+    def _initialize_one_window_solution(self, states: np.array, controls: np.array):
+        """ return a solution for a single window kept of the MHE """
+        _states = InitialGuess(states, interpolation=InterpolationType.EACH_FRAME)
+        _controls = InitialGuess(controls, interpolation=InterpolationType.EACH_FRAME)
+
+        model_class = self.original_values["bio_model"][0][0]
+        model_initializer = self.original_values["bio_model"][0][1]
+        solution_ocp = OptimalControlProgram(
+            bio_model=model_class(**model_initializer),
+            dynamics=self.original_values["dynamics"][0],
+            n_shooting=self.cycle_len - 1,
+            phase_time=self.cycle_len * self.nlp[0].dt,
+            skip_continuity=True,
+            x_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
+            xdot_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
+            u_scaling=VariableScaling(key="all", scaling=np.ones((controls.shape[0],))),
             use_sx=self.original_values["use_sx"],
         )
         return Solution(solution_ocp, [_states, _controls])
