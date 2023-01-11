@@ -542,8 +542,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             return solution[0]
 
     def export_cycles(self, sol: Solution):
-        states = sol.states["all"][:, 0: self.cycle_len + 1]
-        controls = sol.controls["all"][:, 0: self.cycle_len + 1]
+        states = sol.states["all"][:, 0 : self.cycle_len + 1]
+        controls = sol.controls["all"][:, 0 : self.cycle_len + 1]
         return states, controls
 
     def _initialize_solution(self, states: list, controls: list):
@@ -566,7 +566,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         return Solution(solution_ocp, [_states, _controls])
 
     def _initialize_one_cycle(self, states: np.ndarray, controls: np.ndarray):
-        """ return a solution for a single window kept of the MHE """
+        """return a solution for a single window kept of the MHE"""
 
         _states = InitialGuess(states, interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(controls, interpolation=InterpolationType.EACH_FRAME)
