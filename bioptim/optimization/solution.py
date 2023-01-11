@@ -409,6 +409,7 @@ class Solution:
             )
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+            self._time_vector = self._generate_time()
 
         def init_from_vector(_sol: Union[np.ndarray, DM]):
             """
