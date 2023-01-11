@@ -556,7 +556,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             dynamics=self.original_values["dynamics"][0],
             ode_solver=self.nlp[0].ode_solver,
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
-            phase_time=self.cycle_len * self.total_optimization_run * self.nlp[0].dt,
+            phase_time=(self.cycle_len * self.total_optimization_run - 1) * self.nlp[0].dt,
             skip_continuity=True,
             x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
             xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
