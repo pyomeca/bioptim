@@ -529,20 +529,20 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             update_function=update_function, **extra_options
         )
 
+        final_solution = [solution[0]]
+
+        if get_all_iterations:
+            final_solution.append(solution[1])
+
         if get_cycles:
             cycle_solutions = []
             for sol in solution[1]:
                 _states, _controls = self.export_cycles(sol)
                 cycle_solutions.append(self._initialize_one_cycle(_states, _controls))
 
-        if get_all_iterations and get_cycles:
-            return solution[0], solution[1], cycle_solutions
-        elif get_all_iterations:
-            return solution[0], solution[1]
-        elif get_cycles:
-            return solution, cycle_solutions
-        else:
-            return solution[0]
+            final_solution.append(cycle_solutions)
+
+        return tuple(final_solution) if len(final_solution) > 1 else final_solution[0]
 
     def export_cycles(self, sol: Solution):
         states = sol.states["all"][:, 0 : self.cycle_len + 1]
