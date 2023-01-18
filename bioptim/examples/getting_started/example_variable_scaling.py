@@ -1,15 +1,14 @@
 """
-A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
-while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
+This is a very simple example aiming to show how vairable scaling can be used.
+Variable scaling is important for the conditioning of the problem thus it might improve for convergence.
+This example is copied from the getting_started/pendulum.py example.
 
-This simple example is a good place to start investigating bioptim as it describes the most common dynamics out there
-(the joint torque driven), it defines an objective function and some boundaries and initial guesses
-
-During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
-appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
+One scaling should be declared for each phase for the states and controls. The scaling of the parameters should be
+declared in the parameter declaration like in the example getting_started/custom_parameters.py.
 """
 
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
@@ -21,7 +20,7 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
-    BiorbdModel,
+    VariableScalingList,
 )
 
 
@@ -56,7 +55,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    biorbd_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -65,25 +64,35 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds.min[2:4, :] = -3.14 * 100
+    x_bounds.max[2:4, :] = 3.14 * 100
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
+    n_q = biorbd_model.nb_q
+    n_qdot = biorbd_model.nb_q
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = bio_model.nb_tau
-    tau_min, tau_max, tau_init = -100, 100, 0
+    n_tau = biorbd_model.nb_tau
+    tau_min, tau_max, tau_init = -1000, 1000, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
+    u_bounds[1, :] = 0
 
     u_init = InitialGuess([tau_init] * n_tau)
 
+    # Variable scaling
+    x_scaling = VariableScalingList()
+    x_scaling.add("q", scaling=[1, 3])  # declare keys in order, so that they are concatenated in the right order
+    x_scaling.add("qdot", scaling=[85, 85])
+
+    u_scaling = VariableScalingList()
+    u_scaling.add("tau", scaling=[900, 1])
+
     return OptimalControlProgram(
-        bio_model,
+        biorbd_model,
         dynamics,
         n_shooting,
         final_time,
@@ -91,6 +100,8 @@ def prepare_ocp(
         u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
+        x_scaling=x_scaling,
+        u_scaling=u_scaling,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         use_sx=use_sx,
@@ -104,20 +115,17 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1 / 10, n_shooting=30)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
-
-    # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
-    # ocp.check_conditioning()
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
-    # sol.graphs()
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
     sol.detailed_cost_values()

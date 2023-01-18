@@ -287,7 +287,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show the results --- #
-    q = sol.states["q"]
+    q = sol.states["q"][0]
 
     n_q = ocp.nlp[0].model.nb_q
     n_mark = ocp.nlp[0].model.nbMarkers()

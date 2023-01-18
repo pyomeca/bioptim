@@ -71,8 +71,8 @@ class Integrator:
         self.t_span = ode_opt["t0"], ode_opt["tf"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
-        self.x_sym = ode["x"]
-        self.u_sym = ode["p"]
+        self.x_sym = ode["x_scaled"]
+        self.u_sym = ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]

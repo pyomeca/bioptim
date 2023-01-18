@@ -196,13 +196,14 @@ class PenaltyFunctionAbstract:
 
             # Add the penalty in the requested reference frame. None for global
             nlp = all_pn.nlp
+
             q_mx = nlp.states["q"].mx
             qdot_mx = nlp.states["qdot"].mx
 
             # todo: return all MX, shouldn't it be a list of MX, I think there is an inconsistency here
             markers = nlp.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs)
 
-            markers_objective = nlp.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
+            markers_objective = nlp.mx_to_cx("markers_velocity", markers, nlp.states["q"], nlp.states["qdot"])
             return markers_objective
 
         @staticmethod
@@ -336,11 +337,11 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+            if "qddot" not in nlp.states and "qddot" not in nlp.controls:
                 return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
-            elif "qddot" in nlp.states.keys():
+            elif "qddot" in nlp.states:
                 return nlp.states["qddot"].cx
-            elif "qddot" in nlp.controls.keys():
+            elif "qddot" in nlp.controls:
                 return nlp.controls["qddot"].cx
 
         @staticmethod
@@ -437,19 +438,20 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            if "qddot" not in nlp.states.keys() and "qddot" not in nlp.controls.keys():
+            if "qddot" not in nlp.states and "qddot" not in nlp.controls:
                 com_ddot = nlp.model.center_of_mass_acceleration(
                     nlp.states["q"].mx,
                     nlp.states["qdot"].mx,
                     nlp.dynamics_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)[nlp.states["qdot"].index, :],
                 )
+                # TODO scaled?
                 var = []
                 var.extend([nlp.states[key] for key in nlp.states])
                 var.extend([nlp.controls[key] for key in nlp.controls])
                 var.extend([nlp.parameters[key] for key in nlp.parameters])
                 return nlp.mx_to_cx("com_ddot", com_ddot, *var)
             else:
-                qddot = nlp.states["qddot"] if "qddot" in nlp.states.keys() else nlp.controls["qddot"]
+                qddot = nlp.states["qddot"] if "qddot" in nlp.states else nlp.controls["qddot"]
                 return nlp.mx_to_cx(
                     "com_ddot", nlp.model.center_of_mass_acceleration, nlp.states["q"], nlp.states["qdot"], qddot
                 )
@@ -782,8 +784,7 @@ class PenaltyFunctionAbstract:
             # Convert to int if it is str
             if _type == "marker":
                 penalty.cols = [
-                    cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols)
-                    for cols in penalty.cols
+                    cols if isinstance(cols, int) else all_pn.nlp.model.marker_index(cols) for cols in penalty.cols
                 ]
 
     @staticmethod

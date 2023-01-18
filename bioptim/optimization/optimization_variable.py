@@ -4,7 +4,223 @@ import numpy as np
 from casadi import MX, SX, vertcat
 
 from ..misc.mapping import BiMapping
+from ..misc.options import OptionGeneric, OptionDict
 from ..misc.enums import CXStep
+
+
+class VariableScaling(OptionGeneric):
+    def __init__(self, key: str, scaling: Union[np.ndarray, list] = None, **kwargs):
+        """
+        Parameters
+        ----------
+        scaling: Union[np.ndarray, list]
+            The scaling of the variables
+        """
+
+        super(VariableScaling, self).__init__()
+
+        if isinstance(scaling, list):
+            scaling = np.array(scaling)
+        elif not (isinstance(scaling, np.ndarray) or isinstance(scaling, VariableScaling)):
+            raise RuntimeError(f"Scaling must be a list or a numpy array, not {type(scaling)}")
+
+        self.scaling = scaling
+        self.key = key
+
+    def scaling(self):
+        """
+        Get the scaling
+
+        Returns
+        -------
+        The scaling
+        """
+
+        return self.scaling["all"]
+
+    def to_vector(self, n_repeat: int):
+        """
+        Repeat the scaling to match the variables vector format
+        """
+
+        n_elements = self.scaling.shape[0]
+
+        scaling_vector = np.zeros((n_repeat * n_elements, 1))
+        for i in range(n_repeat):
+            scaling_vector[i * n_elements : (i + 1) * n_elements] = np.reshape(self.scaling, (n_elements, 1))
+
+        return scaling_vector
+
+    def to_array(self, n_elements: int, n_shooting: int):
+        """
+        Repeate the scaling to match the variables array format
+        """
+
+        scaling_array = np.zeros((n_elements, n_shooting))
+        for i in range(n_shooting):
+            scaling_array[:, i] = self.scaling
+
+        return scaling_array
+
+
+class VariableScalingList(OptionDict):
+    """
+    A list of VariableScaling if more than one is required
+
+    Methods
+    -------
+    add(self, scaling: Union[np.ndarray, list] = None)
+        Add a new variable scaling to the list
+    __getitem__(self, item) -> Bounds
+        Get the ith option of the list
+    print(self)
+        Print the VariableScalingList to the console
+    """
+
+    def __init__(self):
+        super(VariableScalingList, self).__init__()
+
+    def add(
+        self,
+        key: str = None,
+        scaling: Union[np.ndarray, list, VariableScaling] = None,
+        phase: int = -1,
+    ):
+        """
+        Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
+
+        Parameters
+        ----------
+        min_bound: Union[PathCondition, np.ndarray, list, tuple]
+            The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
+        max_bound: [PathCondition, np.ndarray, list, tuple]
+            The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
+        bounds: Bounds
+            Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
+        extra_arguments: dict
+            Any parameters to pass to the Bounds
+        """
+
+        if isinstance(scaling, VariableScaling):
+            self.add(key=scaling.key, scaling=scaling.scaling, phase=phase)
+        else:
+            for i, elt in enumerate(scaling):
+                if elt <= 0:
+                    raise RuntimeError(
+                        f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0."
+                    )
+            super(VariableScalingList, self)._add(key=key, phase=phase, scaling=scaling, option_type=VariableScaling)
+
+    def __getitem__(self, item) -> VariableScaling:
+        """
+        Get the ith option of the list
+
+        Parameters
+        ----------
+        item: int
+            The index of the option to get
+
+        Returns
+        -------
+        The ith option of the list
+        """
+
+        return super(VariableScalingList, self).__getitem__(item)
+
+    def print(self):
+        """
+        Print the VariableScalingList to the console
+        """
+
+        raise NotImplementedError("Printing of VariableScalingList is not ready yet")
+
+    @staticmethod
+    def scaling_fill_phases(ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
+
+        x_scaling_out = VariableScalingList()
+        xdot_scaling_out = VariableScalingList()
+        u_scaling_out = VariableScalingList()
+
+        for phase in range(ocp.n_phases):
+
+            if "all" not in x_scaling.keys():
+                nx = x_init[phase].shape[0]
+                if len(x_scaling.keys()) > 0:
+                    x_scaling_all = np.array([])
+                    for key in x_scaling.keys():
+                        if len(x_scaling) > 1:
+                            x_scaling_all = np.concatenate((x_scaling_all, x_scaling[phase][key].scaling))
+                        else:
+                            x_scaling_all = np.concatenate((x_scaling_all, x_scaling[key].scaling))
+                else:
+                    x_scaling_all = np.ones((nx,))
+
+            else:
+                if len(x_scaling) > 1:
+                    x_scaling_all = x_scaling[phase]["all"].scaling
+                else:
+                    x_scaling_all = x_scaling["all"].scaling
+
+            if len(x_scaling.keys()) > 0:
+                for key in x_scaling.keys():
+                    if len(x_scaling) > 0:
+                        x_scaling_out.add(key, scaling=x_scaling[phase][key].scaling, phase=phase)
+                    else:
+                        x_scaling_out.add(key, scaling=x_scaling[key].scaling, phase=0)
+
+            if "all" not in xdot_scaling.keys():
+                nx = x_init[phase].shape[0]
+                if len(xdot_scaling.keys()) > 0:
+                    xdot_scaling_all = np.array([])
+                    for key in xdot_scaling.keys():
+                        if len(xdot_scaling) > 1:
+                            xdot_scaling_all = np.concatenate((xdot_scaling_all, xdot_scaling[phase][key].scaling))
+                        else:
+                            xdot_scaling_all = np.concatenate((xdot_scaling_all, xdot_scaling[key].scaling))
+                else:
+                    xdot_scaling_all = np.ones((nx,))
+            else:
+                if len(xdot_scaling) > 1:
+                    xdot_scaling_all = xdot_scaling[phase]["all"].scaling
+                else:
+                    xdot_scaling_all = xdot_scaling["all"].scaling
+
+            if len(xdot_scaling.keys()) > 0:
+                for key in xdot_scaling.keys():
+                    if len(xdot_scaling) > 0:
+                        xdot_scaling_out.add(key, scaling=xdot_scaling[phase][key].scaling, phase=phase)
+                    else:
+                        xdot_scaling_out.add(key, scaling=xdot_scaling[key].scaling, phase=0)
+
+            if "all" not in u_scaling.keys():
+                nu = u_init[phase].shape[0]
+                if len(u_scaling.keys()) > 0:
+                    u_scaling_all = np.array([])
+                    for key in u_scaling.keys():
+                        if len(u_scaling) > 1:
+                            u_scaling_all = np.concatenate((u_scaling_all, u_scaling[phase][key].scaling))
+                        else:
+                            u_scaling_all = np.concatenate((u_scaling_all, u_scaling[key].scaling))
+                else:
+                    u_scaling_all = np.ones((nu,))
+            else:
+                if len(u_scaling) > 1:
+                    u_scaling_all = u_scaling[phase]["all"].scaling
+                else:
+                    u_scaling_all = u_scaling["all"].scaling
+
+            if len(u_scaling.keys()) > 0:
+                for key in u_scaling.keys():
+                    if len(u_scaling) > 0:
+                        u_scaling_out.add(key, scaling=u_scaling[phase][key].scaling, phase=phase)
+                    else:
+                        u_scaling_out.add(key, scaling=u_scaling[key].scaling, phase=0)
+
+            x_scaling_out.add(key="all", scaling=x_scaling_all, phase=phase)
+            xdot_scaling_out.add(key="all", scaling=xdot_scaling_all, phase=phase)
+            u_scaling_out.add(key="all", scaling=u_scaling_all, phase=phase)
+
+        return x_scaling_out, xdot_scaling_out, u_scaling_out
 
 
 class OptimizationVariable:
@@ -136,7 +352,7 @@ class OptimizationVariableList:
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
 
-    def __getitem__(self, item: Union[int, str, list, range]):
+    def __getitem__(self, item: int | str | list | range):
         """
         Get a specific variable in the list, whether by name or by index
 
@@ -230,6 +446,37 @@ class OptimizationVariableList:
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape))
 
         self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, self))
+
+    def append_from_scaled(
+        self,
+        name: str,
+        cx: list,
+        scaled_optimization_variable: "OptimizationVariableList",
+    ):
+        """
+        Add a new variable to the list
+
+        Parameters
+        ----------
+        name: str
+            The name of the variable
+        cx: list
+            The list of SX or MX variable associated with this variable
+        scaled_optimization_variable: OptimizationVariable
+            The scaled optimization variable associated with this variable
+        """
+
+        self._cx = vertcat(self._cx, cx[0])
+        self._cx_end = vertcat(self._cx_end, cx[-1])
+        for i, c in enumerate(cx[1:-1]):
+            if i >= len(self._cx_intermediates):
+                self._cx_intermediates.append(c)
+            else:
+                self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
+        self.mx_reduced = scaled_optimization_variable.mx_reduced
+
+        var = scaled_optimization_variable[name]
+        self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
 
     @property
     def cx(self):
@@ -326,3 +573,147 @@ class OptimizationVariableList:
         if self._iter_idx > len(self):
             raise StopIteration
         return self[self._iter_idx - 1].name
+
+
+class OptimizationVariableContainer:
+    def __init__(self, variable_scaled=None, variables_unscaled=None):
+        if variable_scaled is None:
+            variable_scaled = OptimizationVariableList()
+        if variables_unscaled is None:
+            variables_unscaled = OptimizationVariableList()
+        self.optimization_variable = {"scaled": variable_scaled, "unscaled": variables_unscaled}
+
+    def __getitem__(self, item: int | str | list | range):
+        if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
+            return self.optimization_variable[item]
+        else:
+            return self.optimization_variable["unscaled"][item]
+
+    def __setitem__(self, item: int | str | list | range, value: Union[OptimizationVariableList, np.ndarray]):
+        if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
+            self.optimization_variable[item] = value
+        else:
+            self.optimization_variable["unscaled"][item] = value
+
+    def keys(self):
+        return self.optimization_variable["unscaled"].keys()
+
+    @property
+    def shape(self):
+        return self.optimization_variable["unscaled"].shape
+
+    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
+        """
+        Add a new variable to the list
+
+        Parameters
+        ----------
+        name: str
+            The name of the variable
+        cx: list
+            The list of SX or MX variable associated with this variable
+        mx: MX
+            The MX variable associated with this variable
+        bimapping: BiMapping
+            The Mapping of the MX against CX
+        """
+
+        return self.optimization_variable["unscaled"].append(name, cx, mx, bimapping)
+
+    def append_from_scaled(
+        self,
+        name: str,
+        cx: list,
+        scaled_optimization_variable: OptimizationVariableList,
+    ):
+        """
+        Add a new variable to the list
+
+        Parameters
+        ----------
+        name: str
+            The name of the variable
+        cx: list
+            The list of SX or MX variable associated with this variable
+        scaled_optimization_variable: OptimizationVariable
+            The scaled optimization variable associated with this variable
+        """
+
+        return self.optimization_variable["unscaled"].append_from_scaled(name, cx, scaled_optimization_variable)
+
+    def __contains__(self, item: str):
+        """
+        If the item of name item is in the list
+        """
+        if item == "scaled" or item == "unscaled":
+            return True
+
+        return item in self.optimization_variable["unscaled"]
+
+    def get_cx(self, key, cx_type):
+        return self.optimization_variable["unscaled"].get_cx(key, cx_type)
+
+    @property
+    def cx(self):
+        """
+        The cx of all elements together (starting point)
+        """
+
+        return self.optimization_variable["unscaled"].cx
+
+    @property
+    def cx_intermediates_list(self):
+        """
+        The cx of all elements together (starting point)
+        """
+
+        return self.optimization_variable["unscaled"].cx_intermediates_list
+
+    @property
+    def cx_end(self):
+        """
+        The cx of all elements together (ending point)
+        """
+
+        return self.optimization_variable["unscaled"].cx_end
+
+    @property
+    def mx(self):
+        return self.optimization_variable["unscaled"].mx
+
+    @property
+    def mx_reduced(self):
+        return self.optimization_variable["unscaled"].mx_reduced
+
+    def __len__(self):
+        """
+        The number of variables in the list
+        """
+
+        return len(self.optimization_variable["unscaled"])
+
+    def __iter__(self):
+        """
+        Allow for the list to be used in a for loop
+
+        Returns
+        -------
+        A reference to self
+        """
+
+        self._iter_idx = 0
+        return self
+
+    def __next__(self):
+        """
+        Get the next phase of the option list
+
+        Returns
+        -------
+        The next phase of the option list
+        """
+
+        self._iter_idx += 1
+        if self._iter_idx > len(self):
+            raise StopIteration
+        return self.optimization_variable["unscaled"][self._iter_idx - 1].name

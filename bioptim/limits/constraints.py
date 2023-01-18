@@ -5,7 +5,6 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
-from ..interfaces.biorbd_model import BiorbdModel
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -342,7 +341,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = nlp.states["tau"].mx if "tau" in nlp.states else nlp.controls["tau"].mx
             tau = tau + passive_torque if with_passive_torque else tau
 
-            qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls.keys() else nlp.states["qddot"].mx
+            qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls else nlp.states["qddot"].mx
             if with_contact:
                 model = nlp.model.copy()
                 qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
@@ -393,7 +392,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
             if with_contact:
                 # todo: this should be done internally in BiorbdModel
-                f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls.keys() else nlp.states["fext"].mx
+                f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls else nlp.states["fext"].mx
                 f_contact_vec = nlp.model.reshape_fext_to_fcontact(f_contact)
 
                 tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)

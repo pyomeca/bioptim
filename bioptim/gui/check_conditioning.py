@@ -73,10 +73,10 @@ def check_conditioning(ocp):
                 ):
 
                     # depends if there are parameters
-                    if (phase.parameters.shape == 0) == True:
-                        vertcat_obj = vertcat(*phase.X, *phase.U, phase.parameters.cx)
+                    if phase.parameters.shape == 0:
+                        vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)
                     else:
-                        vertcat_obj = vertcat(*phase.X, *phase.U, *[phase.parameters.cx])
+                        vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx])
 
                     list_constraints.append(
                         jacobian(
@@ -92,10 +92,10 @@ def check_conditioning(ocp):
             jacobian_cas = vcat(list_constraints).T
 
             # depends if there are parameters
-            if (phase.parameters.shape == 0) == True:
-                vertcat_obj = vertcat(*phase.X, *phase.U, phase.parameters.cx)
+            if phase.parameters.shape == 0:
+                vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)
             else:
-                vertcat_obj = vertcat(*phase.X, *phase.U, *[phase.parameters.cx])
+                vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx])
 
             jac_func = Function(
                 "jacobian",
@@ -143,9 +143,9 @@ def check_conditioning(ocp):
 
                         # parameters
                         if (phase.parameters.shape == 0) == True:
-                            vertcat_obj = vertcat(*phase.X, *phase.U, phase.parameters.cx)
+                            vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)
                         else:
-                            vertcat_obj = vertcat(*phase.X, *phase.U, *[phase.parameters.cx])
+                            vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx])
 
                         hessian_cas = hessian(
                             constraints.function(
@@ -363,10 +363,10 @@ def check_conditioning(ocp):
 
             # create function to build the hessian
             # parameters
-            if (nlp_phase.parameters.shape == 0) == True:
-                vertcat_obj = vertcat(*nlp_phase.X, *nlp_phase.U, nlp_phase.parameters.cx)
+            if nlp_phase.parameters.shape == 0:
+                vertcat_obj = vertcat(*nlp_phase.X_scaled, *nlp_phase.U_scaled, nlp_phase.parameters.cx)
             else:
-                vertcat_obj = vertcat(*nlp_phase.X, *nlp_phase.U, *[nlp_phase.parameters.cx])
+                vertcat_obj = vertcat(*nlp_phase.X_scaled, *nlp_phase.U_scaled, *[nlp_phase.parameters.cx])
 
             hessian_cas = hessian(objective, vertcat_obj)[0]
 

@@ -1,4 +1,3 @@
-import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     BiorbdModel,
@@ -114,6 +113,7 @@ def prepare_ocp(
 
 
 def main():
+    # Please note that this example is currently broken and will therefore raise a NotImplementedError
 
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
