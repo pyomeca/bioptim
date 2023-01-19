@@ -49,6 +49,9 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -138,6 +141,9 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -218,6 +224,9 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
@@ -289,7 +298,9 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
-
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
 
