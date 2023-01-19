@@ -80,7 +80,7 @@ class PenaltyOption(OptionGeneric):
         Doing some configuration on the penalty and add it to the list of penalty
     _add_penalty_to_pool(self, all_pn: PenaltyNodeList)
         Return the penalty pool for the specified penalty (abstract)
-    clear_penalty(self, ocp, nlp)
+    ensure_penalty_sanity(self, ocp, nlp)
         Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
     _get_penalty_node_list(self, ocp, nlp) -> PenaltyNodeList
         Get the actual node (time, X and U) specified in the penalty
@@ -632,7 +632,7 @@ class PenaltyOption(OptionGeneric):
 
             penalty_type.validate_penalty_time_index(self, all_pn[0])
             penalty_type.validate_penalty_time_index(self, all_pn[1])
-            self.clear_penalty(ocp, all_pn[0].nlp)
+            self.ensure_penalty_sanity(ocp, all_pn[0].nlp)
 
         elif isinstance(self.node, tuple) and self.multinode_constraint:
             all_pn = []
@@ -664,11 +664,11 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, all_pn[0])
             penalty_type.validate_penalty_time_index(self, all_pn[1])
             self.node_idx = [all_pn[0].t[0], all_pn[1].t[0]]
-            self.clear_penalty(ocp, all_pn[0].nlp)
+            self.ensure_penalty_sanity(ocp, all_pn[0].nlp)
         else:
             all_pn = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, all_pn)
-            self.clear_penalty(all_pn.ocp, all_pn.nlp)
+            self.ensure_penalty_sanity(all_pn.ocp, all_pn.nlp)
             self.dt = penalty_type.get_dt(all_pn.nlp)
             self.node_idx = (
                 all_pn.t[:-1]
@@ -695,7 +695,7 @@ class PenaltyOption(OptionGeneric):
 
         raise RuntimeError("get_dt cannot be called from an abstract class")
 
-    def clear_penalty(self, ocp, nlp):
+    def ensure_penalty_sanity(self, ocp, nlp):
         """
         Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
 

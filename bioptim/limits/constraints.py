@@ -104,7 +104,7 @@ class Constraint(PenaltyOption):
             raise ValueError(f"Invalid constraint type {self.contraint_type}.")
         pool[self.list_index] = self
 
-    def clear_penalty(self, ocp, nlp):
+    def ensure_penalty_sanity(self, ocp, nlp):
         if self.penalty_type == PenaltyType.INTERNAL:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
         elif self.penalty_type == ConstraintType.IMPLICIT:
@@ -178,7 +178,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         Add phase transition constraints between two phases.
     inter_node_continuity(ocp)
         Add phase multi node constraints between specified nodes and phases.
-    clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Constraint)
+    ensure_penalty_sanity(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Constraint)
         Resets a penalty. A negative penalty index creates a new empty penalty.
     penalty_nature() -> str
         Get the nature of the penalty
