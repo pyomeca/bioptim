@@ -77,7 +77,7 @@ class Objective(PenaltyOption):
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self
 
-    def clear_penalty(self, ocp, nlp):
+    def ensure_penalty_sanity(self, ocp, nlp):
         """
         Resets a objective function. A negative penalty index creates a new empty objective function.
 

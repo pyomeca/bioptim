@@ -116,7 +116,7 @@ class MultinodeConstraint(Constraint):
             pool = nlp.J_internal if nlp else ocp.J_internal
         pool[self.list_index] = self
 
-    def clear_penalty(self, ocp, nlp):
+    def ensure_penalty_sanity(self, ocp, nlp):
         if self.weight == 0:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
         else:
