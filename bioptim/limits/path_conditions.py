@@ -10,6 +10,7 @@ from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..optimization.optimization_variable import VariableScaling
 from ..interfaces.biomodel import BioModel
+from ..interfaces.biorbd_model import BiorbdModel
 
 
 class PathCondition(np.ndarray):
@@ -604,13 +605,13 @@ class QAndQDotBounds(Bounds):
 
     def __init__(
         self,
-        bio_model: BioModel,
+        bio_model: BiorbdModel,
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        bio_model: BioModel
+        bio_model: BiorbdModel
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
@@ -637,6 +638,7 @@ class QAndQDotBounds(Bounds):
             else:
                 dof_mappings["qdot"] = dof_mappings["q"]
 
+        # todo: to be refactored and moved to BiorbdModel (as a method) so BioModel could be used directly
         q_ranges = []
         qdot_ranges = []
         for i in range(bio_model.nb_segments):
@@ -661,13 +663,13 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
 
     def __init__(
         self,
-        bio_model: BioModel,
+        bio_model: BiorbdModel,
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        bio_model: BioModel
+        bio_model: BiorbdModel
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
@@ -693,6 +695,7 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
             else:
                 dof_mappings["qddot"] = dof_mappings["qdot"]
 
+        # todo: to be refactored and moved to BiorbdModel (as a method) so BioModel could be used directly
         qddot_ranges = []
         for i in range(bio_model.nb_segments):
             segment = bio_model.segments[i]
