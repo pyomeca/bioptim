@@ -287,10 +287,10 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show the results --- #
-    q = sol.states["q"][0]
+    q = sol.states["q"]
 
     n_q = ocp.nlp[0].model.nb_q
-    n_mark = ocp.nlp[0].model.nbMarkers()
+    n_mark = ocp.nlp[0].model.nb_markers
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
