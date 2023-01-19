@@ -313,7 +313,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return all_pn.nlp.tf
 
         @staticmethod
-        def qddot_equals_forward_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, **unused_param):
+        def qddot_equals_forward_dynamics(
+            _: Constraint, all_pn: PenaltyNodeList, with_contact: bool, with_passive_torque: bool, **unused_param
+        ):
             """
             Compute the difference between symbolic joint accelerations and forward dynamic results
             It includes the inversion of mass matrix
@@ -326,6 +328,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The penalty node elements
             with_contact: bool
                 True if the contact dynamics is handled
+            with_passive_torque: bool
+                True if the passive torque dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -333,7 +337,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
+            passive_torque = nlp.model.passive_joint_torque(q, qdot)
             tau = nlp.states["tau"].mx if "tau" in nlp.states else nlp.controls["tau"].mx
+            tau = tau + passive_torque if with_passive_torque else tau
 
             qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls else nlp.states["qddot"].mx
             if with_contact:
@@ -350,7 +356,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return nlp.mx_to_cx("forward_dynamics", qddot - qddot_fd, *var)
 
         @staticmethod
-        def tau_equals_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, with_contact: bool, **unused_param):
+        def tau_equals_inverse_dynamics(
+            _: Constraint, all_pn: PenaltyNodeList, with_contact: bool, with_passive_torque: bool, **unused_param
+        ):
             """
             Compute the difference between symbolic joint torques and inverse dynamic results
             It does not include any inversion of mass matrix
@@ -363,6 +371,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The penalty node elements
             with_contact: bool
                 True if the contact dynamics is handled
+            with_passive_torque: bool
+                True if the passive torque dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -372,6 +382,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = nlp.states["qdot"].mx
             tau = nlp.states["tau"].mx if "tau" in nlp.states else nlp.controls["tau"].mx
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
+            passive_torque = nlp.model.passive_joint_torque(q, qdot)
+            tau = tau + passive_torque if with_passive_torque else tau
 
             if nlp.external_forces:
                 raise NotImplementedError(
@@ -428,7 +440,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return nlp.mx_to_cx("contact_acceleration", contact_acceleration, *var)
 
         @staticmethod
-        def tau_from_muscle_equal_inverse_dynamics(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def tau_from_muscle_equal_inverse_dynamics(
+            _: Constraint, all_pn: PenaltyNodeList, with_passive_torque: bool, **unused_param
+        ):
             """
             Compute the difference between symbolic joint torques from muscle and inverse dynamic results
             It does not include any inversion of mass matrix
@@ -439,6 +453,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The actual constraint to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            with_passive_torque: bool
+                True if the passive torque dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -447,7 +463,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             q = nlp.states["q"].mx
             qdot = nlp.states["qdot"].mx
             muscle_activations = nlp.controls["muscles"].mx
-            muscle_tau = nlp.model.muscle_joint_torque(muscle_activations, q, qdot)
+            muscles_states = nlp.model.state_set()
+            passive_torque = nlp.model.passive_joint_torque(q, qdot)
+            for k in range(len(nlp.controls["muscles"])):
+                muscles_states[k].setActivation(muscle_activations[k])
+            muscle_tau = nlp.model.muscle_joint_torque(muscles_states, q, qdot)
+            muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
 
             if nlp.external_forces:

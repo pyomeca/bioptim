@@ -189,3 +189,6 @@ class BioModel(Protocol):
         -------
         The contact forces MX of size [nb_contacts, 1], or [nb_contacts, n_frames] if external_forces is not None
         """
+
+    def passive_joint_torque(self, q, qdot) -> MX:
+        """Get the passive joint torque"""

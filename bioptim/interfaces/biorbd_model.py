@@ -294,3 +294,7 @@ class BiorbdModel:
             return all_forces
         else:
             return self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=None)
+
+    def passive_joint_torque(self, q, qdot) -> MX:
+
+        return self.model.passiveJointTorque(q, qdot).to_mx()
