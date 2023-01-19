@@ -173,7 +173,7 @@ def run_solve_ivp(
         lambda t, x: np.array(dynamics_func(x, control_function(t), params))[:, 0],
         t_span=t_span,
         y0=x0,
-        t_eval=t_eval,
+        t_eval=np.array(t_eval, dtype=np.float64),  # prevent error with dtype=object
         method=method,
     )
 
