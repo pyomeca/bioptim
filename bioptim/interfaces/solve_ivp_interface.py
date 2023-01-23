@@ -45,7 +45,7 @@ def solve_ivp_interface(
     """
     if isinstance(t_eval[0], np.ndarray):  # Direct multiple shooting
 
-        y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
+        y_final = np.array([], dtype=np.float64).reshape(x0.shape[0], 0)
 
         for s, t_eval_step in enumerate(t_eval):
 
@@ -92,7 +92,7 @@ def solve_ivp_interface(
             # resize t_eval to get intervals of [ti, ti+1] for each intervals
             t_eval = np.hstack((np.array(t_eval).reshape(-1, 1)[:-1], np.array(t_eval).reshape(-1, 1)[1:]))
 
-        y_final = np.array([], dtype=np.float).reshape(x0.shape[0], 0)
+        y_final = np.array([], dtype=np.float64).reshape(x0.shape[0], 0)
         x0i = x0
 
         for s, t_eval_step in enumerate(t_eval):
@@ -104,7 +104,7 @@ def solve_ivp_interface(
                 ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
-                ui = f(t_eval_step)
+                ui = f(np.array(t_eval_step, dtype=np.float64))  # prevent error with dtype=object
             else:
                 raise NotImplementedError("Control type not implemented")
 
@@ -173,7 +173,7 @@ def run_solve_ivp(
         lambda t, x: np.array(dynamics_func(x, control_function(t), params))[:, 0],
         t_span=t_span,
         y0=x0,
-        t_eval=t_eval,
+        t_eval=np.array(t_eval, dtype=np.float64),  # prevent error with dtype=object
         method=method,
     )
 
@@ -347,14 +347,14 @@ def solve_ivp_bioptim_interface(
     # if multiple shooting, we need to set the first x0
     x0i = x0[:, 0] if x0.shape[1] > 1 else x0
 
-    y_final = np.array([], dtype=np.float).reshape(x0i.shape[0], 0)
+    y_final = np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
 
     for s, func in enumerate(dynamics_func):
         u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
         # y always contains [x0, xf] of the interval
         y = np.concatenate(
             (
-                np.array([], dtype=np.float).reshape(x0i.shape[0], 0)
+                np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
                 if keep_intermediate_points
                 else x0i,  # x0 or None
                 np.array(func(x0=x0i, p=u[:, u_slice], params=params / param_scaling)[dynamics_output]),

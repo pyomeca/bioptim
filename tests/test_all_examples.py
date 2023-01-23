@@ -350,6 +350,31 @@ def test__torque_driven_ocp__maximize_predicted_height_CoM():
     )
 
 
+def test__torque_driven_ocp__multi_model_by_constraint():
+    from bioptim.examples.torque_driven_ocp import multi_model_by_constraint as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
+        biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
+        n_shooting=(5, 5),
+    )
+
+
+def test__torque_driven_ocp__multi_model_by_mapping():
+    from bioptim.examples.torque_driven_ocp import multi_model_by_mapping as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    with pytest.raises(NotImplementedError, match="Mapping over phases is broken"):
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
+            biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
+            n_shooting=(5, 5),
+        )
+
+
 def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping():
     from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
 
@@ -358,6 +383,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
         biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
+        n_shooting=(5, 5),
     )
 
 
@@ -368,6 +394,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds()
 
     ocp_module.prepare_ocp(
         biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
+        n_shooting=(5, 5),
     )
 
 
@@ -430,4 +457,16 @@ def test__track__track_segment_on_rt():
         biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
         n_shooting=30,
         final_time=1,
+    )
+
+
+def test__getting_started__example_variable_scaling():
+    from bioptim.examples.getting_started import example_variable_scaling as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        final_time=1 / 10,
+        n_shooting=30,
     )

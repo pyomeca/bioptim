@@ -126,6 +126,10 @@ BiMapping
     Mapping of two index sets between each other
 BiMappingList
     A list of BiMapping
+NodeMapping
+    Mapping of two node sets
+NodeMappingList
+    A list of NodeMapping
 
 
 # --- Version of bioptim --- #
@@ -167,8 +171,9 @@ from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueS
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver
-from .interfaces.biorbd_interface import BiorbdInterface
 from .interfaces.solver_options import Solver
+from .interfaces.biorbd_model import BiorbdModel
+from .interfaces.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
@@ -200,7 +205,7 @@ from .misc.enums import (
     DefectType,
     MagnitudeType,
 )
-from .misc.mapping import BiMappingList, BiMapping, Mapping
+from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
@@ -212,6 +217,6 @@ from .optimization.receding_horizon_optimization import (
 )
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
-from .optimization.optimization_variable import OptimizationVariableList
+from .optimization.optimization_variable import OptimizationVariableList, VariableScalingList, VariableScaling
 
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero

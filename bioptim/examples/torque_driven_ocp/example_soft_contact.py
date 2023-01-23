@@ -6,10 +6,9 @@ One could use soft_contacts_dynamics or implicit_dynamics to ease the convergenc
 """
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
     Dynamics,
     DynamicsFcn,
     ObjectiveList,
@@ -25,7 +24,6 @@ from bioptim import (
     Shooting,
     Solution,
     InitialGuess,
-    CostType,
     InterpolationType,
     SoftContactDynamics,
     RigidBodyDynamics,
@@ -49,7 +47,7 @@ def prepare_single_shooting(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Dynamics
     dynamics = Dynamics(
@@ -59,15 +57,15 @@ def prepare_single_shooting(
     )
 
     # Initial guess
-    x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -120,7 +118,7 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
 
@@ -147,7 +145,6 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = DynamicsList()
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
         rigidbody_dynamics=RigidBodyDynamics.ODE,
@@ -163,8 +160,8 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    nQ = biorbd_model.nbQ()
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    nQ = bio_model.nb_q
     X0 = initial_states_from_single_shooting(biorbd_model_path, 100, 1, ode_solver)
     x_bounds[0].min[:nQ, 0] = X0[:nQ] - slack
     x_bounds[0].max[:nQ, 0] = X0[:nQ] + slack
@@ -177,15 +174,15 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
-    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init.add([tau_init] * bio_model.nb_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -210,8 +207,8 @@ def main():
 
     # Prepare OCP to reach the second marker
     ocp = prepare_ocp(model, 37, 0.37, ode_solver, slack=1e-4)
-    ocp.add_plot_penalty(CostType.ALL)
-    ocp.print(to_graph=True)
+    # ocp.add_plot_penalty(CostType.ALL)
+    # ocp.print(to_graph=True)
 
     # --- Solve the program --- #
     solv = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))

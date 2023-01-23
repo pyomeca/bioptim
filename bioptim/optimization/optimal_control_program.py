@@ -18,7 +18,8 @@ from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
-from ..interfaces.biorbd_interface import BiorbdInterface
+
+from ..interfaces.biomodel import BioModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -32,7 +33,6 @@ from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
-from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
@@ -44,13 +44,16 @@ from ..misc.enums import (
     CostType,
     SolutionIntegrator,
     IntegralApproximation,
+    InterpolationType,
 )
-from ..misc.mapping import BiMappingList, Mapping
+from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
+from ..optimization.optimization_variable import VariableScalingList, VariableScaling
+from ..gui.check_conditioning import check_conditioning
 
-check_version(biorbd, "1.9.5", "1.10.0")
+check_version(biorbd, "1.9.8", "1.10.0")
 
 
 class OptimalControlProgram:
@@ -140,7 +143,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        bio_model: Union[list, tuple, BioModel],
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
@@ -151,13 +154,18 @@ class OptimalControlProgram:
         objective_functions: Union[Objective, ObjectiveList] = None,
         constraints: Union[Constraint, ConstraintList] = None,
         parameters: Union[Parameter, ParameterList] = None,
-        external_forces: Union[list, tuple] = None,
+        external_forces: list[list[Any], ...] | tuple[list[Any], ...] = None,
         ode_solver: Union[list, OdeSolverBase, OdeSolver] = None,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
+        parameter_mappings: BiMappingList = None,
+        node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
+        x_scaling: Union[VariableScaling, VariableScalingList] = None,
+        xdot_scaling: Union[VariableScaling, VariableScalingList] = None,
+        u_scaling: Union[VariableScaling, VariableScalingList] = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -166,8 +174,8 @@ class OptimalControlProgram:
         """
         Parameters
         ----------
-        biorbd_model: Union[str, biorbd.Model, list, tuple]
-            The biorbd model. If biorbd_model is an str, a new model is loaded. Otherwise, the references are used
+        bio_model: Union[list, tuple, BioModel]
+            The bio_model to use for the optimization
         dynamics: Union[Dynamics, DynamicsList]
             The dynamics of the phases
         n_shooting: Union[int, list[int]]
@@ -182,13 +190,19 @@ class OptimalControlProgram:
             The bounds for the states
         u_bounds: Union[Bounds, BoundsList]
             The bounds for the controls
+        x_scaling: Union[VariableScaling, VariableScalingList]
+            The scaling for the states
+        xdot_scaling: Union[VariableScaling, VariableScalingList]
+            The scaling for the states derivative
+        u_scaling: Union[VariableScaling, VariableScalingList]
+            The scaling for the controls
         objective_functions: Union[Objective, ObjectiveList]
             All the objective function of the program
         constraints: Union[Constraint, ConstraintList]
             All the constraints of the program
         parameters: Union[Parameter, ParameterList]
             All the parameters to optimize of the program
-        external_forces: Union[list, tuple]
+        external_forces: list[list, ...] | tuple[list, ...]
             The external forces acting on the center of mass of the segments specified in the bioMod
         ode_solver: OdeSolverBase
             The solver for the ordinary differential equations
@@ -196,10 +210,12 @@ class OptimalControlProgram:
             The type of controls for each phase
         variable_mappings: BiMappingList
             The mapping to apply on variables
+        parameter_mappings: BiMappingList
+            The mapping to apply on parameters
+        node_mappings: NodeMappingList
+            The mapping to apply between the variables associated with the nodes
         plot_mappings: Mapping
             The mapping to apply on the plots
-        phase_mappings: Mapping
-            The mapping to apply on the phases
         phase_transitions: PhaseTransitionList
             The transition types between the phases
         n_threads: int
@@ -210,18 +226,13 @@ class OptimalControlProgram:
             This is mainly for internal purposes when creating an OCP not destined to be solved
         """
 
-        if isinstance(biorbd_model, str):
-            biorbd_model = [biorbd.Model(biorbd_model)]
-        elif isinstance(biorbd_model, biorbd.biorbd.Model):
-            biorbd_model = [biorbd_model]
-        elif isinstance(biorbd_model, (list, tuple)):
-            biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
-        else:
-            raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
-        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
-        self.n_phases = len(biorbd_model)
+        if not isinstance(bio_model, (list, tuple)):
+            bio_model = [bio_model]
 
-        biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
+        bio_model = self.check_quaternions_hasattr(bio_model)
+
+        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
+        self.n_phases = len(bio_model)
 
         if isinstance(dynamics, Dynamics):
             dynamics_type_tp = DynamicsList()
@@ -231,7 +242,7 @@ class OptimalControlProgram:
             raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
 
         self.original_values = {
-            "biorbd_model": biorbd_model_path,
+            "bio_model": [m.serialize() for m in bio_model],
             "dynamics": dynamics,
             "n_shooting": n_shooting,
             "phase_time": phase_time,
@@ -239,6 +250,9 @@ class OptimalControlProgram:
             "u_init": u_init,
             "x_bounds": x_bounds,
             "u_bounds": u_bounds,
+            "x_scaling": x_scaling,
+            "xdot_scaling": xdot_scaling,
+            "u_scaling": u_scaling,
             "objective_functions": ObjectiveList(),
             "constraints": ConstraintList(),
             "parameters": ParameterList(),
@@ -246,6 +260,8 @@ class OptimalControlProgram:
             "ode_solver": ode_solver,
             "control_type": control_type,
             "variable_mappings": variable_mappings,
+            "parameter_mappings": parameter_mappings,
+            "node_mappings": node_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "multinode_constraints": multinode_constraints,
@@ -292,12 +308,18 @@ class OptimalControlProgram:
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
         if x_init is None:
+            if x_scaling is None:
+                raise RuntimeError("At least x_init or x_scaling should be provided.")
             x_init = InitialGuessList()
         elif isinstance(x_init, InitialGuess):
+            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
+                raise RuntimeError("x_scaling should be provided with a custom x_init")
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init)
             x_init = x_init_tp
         elif isinstance(x_init, NoisedInitialGuess):
+            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
+                raise RuntimeError("x_scaling ans xdot_scaling should be provided with a custom x_init")
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init.init)
             x_init = x_init_tp
@@ -305,17 +327,50 @@ class OptimalControlProgram:
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
         if u_init is None:
+            if u_scaling is None:
+                raise RuntimeError("At least u_init or u_scaling should be provided.")
             u_init = InitialGuessList()
         elif isinstance(u_init, InitialGuess):
+            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
+                raise RuntimeError("u_scaling should be provided with a custom u_init")
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init)
             u_init = u_init_tp
         elif isinstance(u_init, NoisedInitialGuess):
+            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
+                raise RuntimeError("u_scaling should be provided with a custom u_init")
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init.init)
             u_init = u_init_tp
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
+
+        if x_scaling is None:
+            x_scaling = VariableScalingList()
+        elif isinstance(x_scaling, VariableScaling):
+            x_scaling_tp = VariableScalingList()
+            x_scaling_tp.add(scaling=x_scaling)
+            x_scaling = x_scaling_tp
+        elif not isinstance(x_scaling, VariableScalingList):
+            raise RuntimeError("x_scaling should be built from a VariableScaling or a VariableScalingList")
+
+        if xdot_scaling is None:
+            xdot_scaling = VariableScalingList()
+        elif isinstance(xdot_scaling, VariableScaling):
+            xdot_scaling_tp = VariableScalingList()
+            xdot_scaling_tp.add(scaling=xdot_scaling)
+            xdot_scaling = xdot_scaling_tp
+        elif not isinstance(xdot_scaling, VariableScalingList):
+            raise RuntimeError("xdot_scaling should be built from a VariableScaling or a VariableScalingList")
+
+        if u_scaling is None:
+            u_scaling = VariableScalingList()
+        elif isinstance(u_scaling, VariableScaling):
+            u_scaling_tp = VariableScalingList()
+            u_scaling_tp.add(scaling=u_scaling)
+            u_scaling = u_scaling_tp
+        elif not isinstance(u_scaling, VariableScalingList):
+            raise RuntimeError("u_scaling should be built from a VariableScaling or a VariableScalingList")
 
         if objective_functions is None:
             objective_functions = ObjectiveList()
@@ -361,10 +416,7 @@ class OptimalControlProgram:
             raise RuntimeError("use_sx should be a bool")
 
         # Type of CasADi graph
-        if use_sx:
-            self.cx = SX
-        else:
-            self.cx = MX
+        self.cx = SX if use_sx else MX
 
         # Declare optimization variables
         self.program_changed = True
@@ -378,7 +430,7 @@ class OptimalControlProgram:
 
         # nlp is the core of a phase
         self.nlp = [NLP() for _ in range(self.n_phases)]
-        NLP.add(self, "model", biorbd_model, False)
+        NLP.add(self, "model", bio_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
         # Define some aliases
@@ -394,7 +446,6 @@ class OptimalControlProgram:
 
         # External forces
         if external_forces is not None:
-            external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)
             NLP.add(self, "external_forces", external_forces, False)
 
         plot_mappings = plot_mappings if plot_mappings is not None else {}
@@ -414,6 +465,13 @@ class OptimalControlProgram:
         if len(parameters) > 0:
             self.update_parameters(parameters)
 
+        # Prepare the parameter mappings
+        if parameter_mappings is None:
+            parameter_mappings = BiMappingList()
+        if "time" not in parameter_mappings.keys():
+            parameter_mappings.add("time", [i for i in range(self.n_phases)], [i for i in range(self.n_phases)])
+        self.parameter_mappings = parameter_mappings
+
         # Declare the time to optimize
         self._define_time(phase_time, objective_functions, constraints)
 
@@ -428,6 +486,27 @@ class OptimalControlProgram:
 
         variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
+
+        # Add the scaling of the variables
+        x_scaling, xdot_scaling, u_scaling = x_scaling.scaling_fill_phases(
+            self, x_scaling, xdot_scaling, u_scaling, x_init, u_init
+        )
+        NLP.add(self, "x_scaling", x_scaling, True)
+        NLP.add(self, "xdot_scaling", xdot_scaling, True)
+        NLP.add(self, "u_scaling", u_scaling, True)
+
+        # Prepare the node mappings
+        if node_mappings is None:
+            node_mappings = NodeMappingList()
+        (
+            use_states_from_phase_idx,
+            use_states_dot_from_phase_idx,
+            use_controls_from_phase_idx,
+        ) = node_mappings.get_variable_from_phase_idx(self)
+
+        self._check_variable_mapping_consistency_with_node_mapping(
+            use_states_from_phase_idx, use_controls_from_phase_idx
+        )
 
         # Prepare the dynamics
         for i in range(self.n_phases):
@@ -467,6 +546,67 @@ class OptimalControlProgram:
         # Prepare objectives
         self.update_objectives(objective_functions)
 
+    @classmethod
+    def from_loaded_data(cls, data):
+        """
+        Loads an OCP from a dictionary ("ocp_initializer")
+
+        Parameters
+        ----------
+        data: dict
+            A dictionary containing the data to load
+
+        Returns
+        -------
+        OptimalControlProgram
+        """
+        for i, model in enumerate(data["bio_model"]):
+            model_class = model[0]
+            model_initializer = model[1]
+            data["bio_model"][i] = model_class(**model_initializer)
+
+        return cls(**data)
+
+    def _check_variable_mapping_consistency_with_node_mapping(
+        self, use_states_from_phase_idx, use_controls_from_phase_idx
+    ):
+        # TODO this feature is broken since the merge with multi_node, fix it
+        if (
+            list(set(use_states_from_phase_idx)) != use_states_from_phase_idx
+            or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx
+        ):
+            raise NotImplementedError("Mapping over phases is broken")
+
+        for i in range(self.n_phases):
+            for j in [idx for idx, x in enumerate(use_states_from_phase_idx) if x == i]:
+                for key in self.nlp[i].variable_mappings.keys():
+                    if key in self.nlp[j].variable_mappings.keys():
+                        if (
+                            self.nlp[i].variable_mappings[key].to_first.map_idx
+                            != self.nlp[j].variable_mappings[key].to_first.map_idx
+                            or self.nlp[i].variable_mappings[key].to_second.map_idx
+                            != self.nlp[j].variable_mappings[key].to_second.map_idx
+                        ):
+                            raise RuntimeError(
+                                f"The variable mappings must be the same for the mapped phases."
+                                f"Mapping on {key} is different between phases {i} and {j}."
+                            )
+        for i in range(self.n_phases):
+            for j in [idx for idx, x in enumerate(use_controls_from_phase_idx) if x == i]:
+                for key in self.nlp[i].variable_mappings.keys():
+                    if key in self.nlp[j].variable_mappings.keys():
+                        if (
+                            self.nlp[i].variable_mappings[key].to_first.map_idx
+                            != self.nlp[j].variable_mappings[key].to_first.map_idx
+                            or self.nlp[i].variable_mappings[key].to_second.map_idx
+                            != self.nlp[j].variable_mappings[key].to_second.map_idx
+                        ):
+                            raise RuntimeError(
+                                f"The variable mappings must be the same for the mapped phases."
+                                f"Mapping on {key} is different between phases {i} and {j}."
+                            )
+        return
+
     def _set_kinematic_phase_mapping(self):
         """
         To add phase_mapping for different kinematic number of states in the ocp
@@ -476,8 +616,9 @@ class OptimalControlProgram:
         dof_names = []  # [[] for _ in range(len(self.nlp))]
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
-            for j in range(nlp.model.nbQ()):
-                legend = nlp.model.nameDof()[j].to_string()
+            for j in range(nlp.model.nb_q):
+
+                legend = nlp.model.name_dof[j]
                 if legend in dof_names_all_phases:
                     current_dof_mapping += [dof_names_all_phases.index(legend)]
                 else:
@@ -486,6 +627,30 @@ class OptimalControlProgram:
             phase_mappings.append(Mapping(current_dof_mapping))
             dof_names.append([dof_names_all_phases[i] for i in phase_mappings[i].map_idx])
         return phase_mappings, dof_names
+
+    @staticmethod
+    def check_quaternions_hasattr(biomodels: list[BioModel]) -> list[BioModel]:
+        """
+        This functions checks if the biomodels have quaternions and if not we set an attribute to nb_quaternion to 0
+
+        Note: this need to be checked as this information is of importance for ODE solvers
+
+        Parameters
+        ----------
+        biomodels: list[BioModel]
+            The list of biomodels to check
+
+        Returns
+        -------
+        biomodels: list[BioModel]
+            The list of biomodels with the attribute nb_quaternion set to 0 if no quaternion is present
+        """
+
+        for i, model in enumerate(biomodels):
+            if not hasattr(model, "nb_quaternions"):
+                setattr(model, "nb_quaternions", 0)
+
+        return biomodels
 
     def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
         """
@@ -594,10 +759,10 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states.keys():
+            for key in nlp.states:
                 if f"{key}_states" in nlp.plot:
                     nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
-            for key in nlp.controls.keys():
+            for key in nlp.controls:
                 if f"{key}_controls" in nlp.plot:
                     nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
 
@@ -619,6 +784,12 @@ class OptimalControlProgram:
         param_init: Union[Bounds, BoundsList]
             The parameters initial guess to add
         """
+
+        if self.nlp[0].ode_solver.is_direct_collocation and self.nlp[0].x_init.init.shape[0] != 0:
+            raise NotImplementedError(
+                "It is not possible to use initial guess with NoisedInitialGuess "
+                "as it won't produce the expected randomness"
+            )
 
         if x_init:
             NLP.add_path_condition(self, x_init, "x_init", InitialGuess, InitialGuessList)
@@ -758,6 +929,9 @@ class OptimalControlProgram:
             if len(x.shape) < 2:
                 x = x.reshape((-1, 1))
 
+            if len(u.shape) < 2:
+                u = u.reshape((-1, 1))
+
             # if time is parameter of the ocp, we need to evaluate with current parameters
             if isinstance(dt, Function):
                 dt = dt(p)
@@ -772,6 +946,27 @@ class OptimalControlProgram:
                 if penalty.target is not None and isinstance(t, int)
                 else []
             )
+
+            if x.shape[1] == 1:
+                x_shape = int(x.shape[0] / self.nlp[penalty.phase].x_scaling["all"].scaling.shape[0])
+                x_scaling = np.reshape(
+                    np.hstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T, (-1, 1)
+                )
+            else:
+                x_shape = x.shape[1]
+                x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T
+
+            if u.shape[1] == 1:
+                u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling["all"].scaling.shape[0])
+                u_scaling = np.reshape(
+                    np.hstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T, (-1, 1)
+                )
+            else:
+                u_shape = u.shape[1]
+                u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T
+
+            x /= x_scaling
+            u /= u_scaling
 
             out = []
             if penalty.transition or penalty.multinode_constraint:
@@ -897,6 +1092,12 @@ class OptimalControlProgram:
             shooting_type=shooting_type,
             integrator=integrator,
         )
+
+    def check_conditioning(self):
+        """
+        Visualisation of jacobian and hessian contraints and hessian objective for each phase at initial time
+        """
+        check_conditioning(self)
 
     def solve(
         self,
@@ -1061,7 +1262,7 @@ class OptimalControlProgram:
                     "please refer to the original error message below\n\n"
                     f"{type(error_message).__name__}: {error_message}"
                 )
-            ocp = OptimalControlProgram(**data["ocp_initializer"])
+            ocp = OptimalControlProgram.from_loaded_data(data["ocp_initializer"])
             for key in data["versions"].keys():
                 key_module = "biorbd_casadi" if key == "biorbd" else key
                 try:
@@ -1161,14 +1362,17 @@ class OptimalControlProgram:
                             raise RuntimeError("Time constraint/objective cannot declare more than once")
                         _has_penalty[i] = True
 
-                        _initial_time_guess.append(_phase_time[i])
-                        _phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
-                        if pen_fun.type.get_type() == ConstraintFunction:
-                            _time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
-                            _time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
+                        if i in ocp.parameter_mappings["time"].to_first.map_idx:
+                            _initial_time_guess.append(_phase_time[i])
+                            _phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
+                            if pen_fun.type.get_type() == ConstraintFunction:
+                                _time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
+                                _time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
+                            else:
+                                _time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
+                                _time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
                         else:
-                            _time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
-                            _time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
+                            _phase_time[i] = _phase_time[ocp.parameter_mappings["time"].to_second.map_idx[i]]
             return _has_penalty
 
         NLP.add(self, "t_initial_guess", phase_time, False)
@@ -1194,14 +1398,15 @@ class OptimalControlProgram:
         time_param_phases_idx = []
         for nlp in self.nlp:
             if isinstance(nlp.tf, self.cx):
-                time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
-                time_init = InitialGuess(initial_time_guess[i])
-                time_param = Parameter(
-                    cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
-                )
-                self.v.add_parameter(time_param)
-                time_param_phases_idx += [i]
-                i += 1
+                if nlp.phase_idx in self.parameter_mappings["time"].to_first.map_idx:
+                    time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
+                    time_init = InitialGuess(initial_time_guess[i])
+                    time_param = Parameter(
+                        cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
+                    )
+                    self.v.add_parameter(time_param)
+                    time_param_phases_idx += [i]
+                    i += 1
 
         self.time_param_phases_idx = time_param_phases_idx
 

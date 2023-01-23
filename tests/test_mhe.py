@@ -4,8 +4,8 @@ import shutil
 from sys import platform
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Solver,
     MovingHorizonEstimator,
     Dynamics,
@@ -30,8 +30,8 @@ def test_mhe(solver):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cart_pendulum.bioMod")
-    nq = biorbd_model.nbQ()
+    bio_model = BiorbdModel(bioptim_folder + "/models/cart_pendulum.bioMod")
+    nq = bio_model.nb_q
     torque_max = 5  # Give a bit of slack on the max torque
 
     n_cycles = 5 if solver.type == SolverType.ACADOS else 1
@@ -44,9 +44,9 @@ def test_mhe(solver):
     u_init = np.zeros((nq, window_len))
 
     target_q, _, _, _ = ocp_module.generate_data(
-        biorbd_model, final_time, [0, np.pi / 2, 0, 0], torque_max, n_cycles * n_frame_by_cycle, 0
+        bio_model, final_time, [0, np.pi / 2, 0, 0], torque_max, n_cycles * n_frame_by_cycle, 0
     )
-    target = ocp_module.states_to_markers(biorbd_model, target_q)
+    target = ocp_module.states_to_markers(bio_model, target_q)
 
     def update_functions(mhe, t, _):
         def target_func(i: int):
@@ -55,9 +55,9 @@ def test_mhe(solver):
         mhe.update_objectives_target(target=target_func(t), list_index=0)
         return t < n_frame_by_cycle * n_cycles - window_len - 1
 
-    biorbd_model = biorbd.Model(bioptim_folder + "/models/cart_pendulum.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "/models/cart_pendulum.bioMod")
     sol = ocp_module.prepare_mhe(
-        biorbd_model=biorbd_model,
+        bio_model=bio_model,
         window_len=window_len,
         window_duration=window_duration,
         max_torque=torque_max,
@@ -77,10 +77,10 @@ def test_mhe(solver):
 
 def test_mhe_redim_xbounds_and_init():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
+    bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
-    nq = biorbd_model.nbQ()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    nq = bio_model.nb_q
+    ntau = bio_model.nb_tau
 
     n_cycles = 3
     window_len = 5
@@ -91,7 +91,7 @@ def test_mhe_redim_xbounds_and_init():
     u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
 
     mhe = MovingHorizonEstimator(
-        biorbd_model,
+        bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,
@@ -110,9 +110,9 @@ def test_mhe_redim_xbounds_and_init():
 
 def test_mhe_redim_xbounds_not_implemented():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
-    nq = biorbd_model.nbQ()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
+    nq = bio_model.nb_q
+    ntau = bio_model.nb_tau
 
     n_cycles = 3
     window_len = 5
@@ -127,7 +127,7 @@ def test_mhe_redim_xbounds_not_implemented():
     u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
 
     mhe = MovingHorizonEstimator(
-        biorbd_model,
+        bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,

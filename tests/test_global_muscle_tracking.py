@@ -6,7 +6,7 @@ import pytest
 
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OdeSolver, Solver
+from bioptim import OdeSolver, Solver, BiorbdModel
 
 from .utils import TestUtils
 
@@ -21,7 +21,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads):
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    bio_model = BiorbdModel(model_path)
     final_time = 0.1
     n_shooting = 5
     use_residual_torque = True
@@ -29,17 +29,17 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads):
     # Generate random data to fit
     np.random.seed(10)
     t, markers_ref, x_ref, muscle_activations_ref = ocp_module.generate_data(
-        biorbd_model, final_time, n_shooting, use_residual_torque=use_residual_torque
+        bio_model, final_time, n_shooting, use_residual_torque=use_residual_torque
     )
 
-    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time,
         n_shooting,
         markers_ref,
         muscle_activations_ref,
-        x_ref[: biorbd_model.nbQ(), :],
+        x_ref[: bio_model.nb_q, :],
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
         ode_solver=ode_solver(),
@@ -146,7 +146,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    bio_model = BiorbdModel(model_path)
     final_time = 0.1
     n_shooting = 5
     use_residual_torque = False
@@ -154,17 +154,17 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     # Generate random data to fit
     np.random.seed(10)
     t, markers_ref, x_ref, muscle_activations_ref = ocp_module.generate_data(
-        biorbd_model, final_time, n_shooting, use_residual_torque=use_residual_torque
+        bio_model, final_time, n_shooting, use_residual_torque=use_residual_torque
     )
 
-    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time,
         n_shooting,
         markers_ref,
         muscle_activations_ref,
-        x_ref[: biorbd_model.nbQ(), :],
+        x_ref[: bio_model.nb_q, :],
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
         ode_solver=ode_solver(),
@@ -258,22 +258,22 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    bio_model = BiorbdModel(model_path)
     final_time = 0.1
     n_shooting = 5
 
     # Generate random data to fit
     np.random.seed(10)
-    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(biorbd_model, final_time, n_shooting)
+    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(bio_model, final_time, n_shooting)
 
-    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time,
         n_shooting,
         markers_ref,
         muscle_excitations_ref,
-        x_ref[: biorbd_model.nbQ(), :].T,
+        x_ref[: bio_model.nb_q, :].T,
         use_residual_torque=True,
         kin_data_to_track="markers",
         ode_solver=ode_solver(),
@@ -399,22 +399,22 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    bio_model = BiorbdModel(model_path)
     final_time = 0.1
     n_shooting = 5
 
     # Generate random data to fit
     np.random.seed(10)
-    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(biorbd_model, final_time, n_shooting)
+    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(bio_model, final_time, n_shooting)
 
-    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time,
         n_shooting,
         markers_ref,
         muscle_excitations_ref,
-        x_ref[: biorbd_model.nbQ(), :].T,
+        x_ref[: bio_model.nb_q, :].T,
         use_residual_torque=False,
         kin_data_to_track="markers",
         ode_solver=ode_solver(),

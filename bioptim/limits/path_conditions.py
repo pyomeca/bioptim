@@ -1,6 +1,5 @@
 from typing import Union, Callable, Any, List, Tuple
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, SX, vertcat
 from scipy.interpolate import interp1d
@@ -9,6 +8,9 @@ from numpy import array, ndarray
 from ..misc.enums import InterpolationType, MagnitudeType
 from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
+from ..optimization.optimization_variable import VariableScaling
+from ..interfaces.biomodel import BioModel
+from ..interfaces.biorbd_model import BiorbdModel
 
 
 class PathCondition(np.ndarray):
@@ -419,7 +421,7 @@ class Bounds(OptionGeneric):
         self.extra_params = self.min.extra_params
         self.n_shooting = self.min.n_shooting
 
-    def scale(self, scaling: Union[float, np.ndarray]):
+    def scale(self, scaling: Union[float, np.ndarray, VariableScaling]):
         """
         Scaling a Bound
 
@@ -429,9 +431,7 @@ class Bounds(OptionGeneric):
             The scaling factor
         """
 
-        self.min /= scaling
-        self.max /= scaling
-        return
+        return Bounds(self.min / scaling, self.max / scaling, interpolation=self.type)
 
     def __getitem__(self, slice_list: Union[slice, list, tuple]) -> "Bounds":
         """
@@ -605,13 +605,13 @@ class QAndQDotBounds(Bounds):
 
     def __init__(
         self,
-        biorbd_model,
+        bio_model: BiorbdModel,
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: biorbd.Model
+        bio_model: BiorbdModel
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
@@ -619,7 +619,7 @@ class QAndQDotBounds(Bounds):
         if dof_mappings is None:
             dof_mappings = {}
 
-        if biorbd_model.nbQuat() > 0:
+        if bio_model.nb_quaternions > 0:
             if "q" in dof_mappings and "qdot" not in dof_mappings:
                 raise RuntimeError(
                     "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
@@ -630,18 +630,19 @@ class QAndQDotBounds(Bounds):
                 )
 
         if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
 
         if "qdot" not in dof_mappings:
-            if biorbd_model.nbQuat() > 0:
-                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+            if bio_model.nb_quaternions > 0:
+                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
             else:
                 dof_mappings["qdot"] = dof_mappings["q"]
 
+        # todo: to be refactored and moved to BiorbdModel (as a method) so BioModel could be used directly
         q_ranges = []
         qdot_ranges = []
-        for i in range(biorbd_model.nbSegment()):
-            segment = biorbd_model.segment(i)
+        for i in range(bio_model.nb_segments):
+            segment = bio_model.segments[i]
             q_ranges += [q_range for q_range in segment.QRanges()]
             qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
 
@@ -662,41 +663,42 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
 
     def __init__(
         self,
-        biorbd_model,
+        bio_model: BiorbdModel,
         dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
         ----------
-        biorbd_model: biorbd.Model
+        bio_model: BiorbdModel
             A reference to the model
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
         """
 
-        super(QAndQDotAndQDDotBounds, self).__init__(biorbd_model=biorbd_model, dof_mappings=dof_mappings)
+        super(QAndQDotAndQDDotBounds, self).__init__(bio_model=bio_model, dof_mappings=dof_mappings)
 
         if dof_mappings is None:
             dof_mappings = {}
 
         if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
 
         if "qdot" not in dof_mappings:
-            if biorbd_model.nbQuat() > 0:
-                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+            if bio_model.nb_quaternions > 0:
+                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
             else:
                 dof_mappings["qdot"] = dof_mappings["q"]
 
         if "qddot" not in dof_mappings:
-            if biorbd_model.nbQuat() > 0:
-                dof_mappings["qddot"] = BiMapping(range(biorbd_model.nbQddot()), range(biorbd_model.nbQddot()))
+            if bio_model.nb_quaternions > 0:
+                dof_mappings["qddot"] = BiMapping(range(bio_model.nb_qddot), range(bio_model.nb_qddot))
             else:
                 dof_mappings["qddot"] = dof_mappings["qdot"]
 
+        # todo: to be refactored and moved to BiorbdModel (as a method) so BioModel could be used directly
         qddot_ranges = []
-        for i in range(biorbd_model.nbSegment()):
-            segment = biorbd_model.segment(i)
+        for i in range(bio_model.nb_segments):
+            segment = bio_model.segments[i]
             qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
 
         x_min = [qddot_ranges[i].min() for i in dof_mappings["qddot"].to_first.map_idx]
@@ -787,7 +789,7 @@ class InitialGuess(OptionGeneric):
             interpolation=self.init.type,
         )
 
-    def scale(self, scaling: float):
+    def scale(self, scaling: Union[float, np.ndarray, VariableScaling]):
         """
         Scaling an InitialGuess
 
@@ -796,8 +798,8 @@ class InitialGuess(OptionGeneric):
         scaling: float
             The scaling factor
         """
-        self.init /= scaling
-        return
+
+        return InitialGuess(self.init / scaling, interpolation=self.type)
 
     def __bool__(self) -> bool:
         """
@@ -1110,7 +1112,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Add noise to each initial guesses from an InitialGuessList
     """
 
-    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple], **extra_arguments: Any):
+    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple] = None, **extra_arguments: Any):
         """
         Add a new initial guess to the list
 

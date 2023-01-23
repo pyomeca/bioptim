@@ -8,6 +8,7 @@ It is designed to show how one can define a multinode constraints and objectives
 from casadi import MX
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     PenaltyNode,
     OptimalControlProgram,
     DynamicsList,
@@ -47,7 +48,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
+    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
     n_shooting = (100, 300, 100)
@@ -78,29 +79,32 @@ def prepare_ocp(
     multinode_constraints = MultinodeConstraintList()
     # hard constraint
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=Node.START,
         second_node=Node.START,
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=2,
         second_node=Node.MID,
         weight=2,
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
-        MultinodeConstraintFcn.EQUALITY,
+        MultinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.MID,
         second_node=Node.END,
         weight=0.1,
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
@@ -115,9 +119,9 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -127,23 +131,23 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_init.add([tau_init] * bio_model[0].nb_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

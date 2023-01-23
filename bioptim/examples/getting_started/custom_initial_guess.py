@@ -15,8 +15,8 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     Dynamics,
@@ -30,6 +30,7 @@ from bioptim import (
     InitialGuess,
     InterpolationType,
     OdeSolver,
+    VariableScalingList,
     MagnitudeType,
 )
 
@@ -91,11 +92,11 @@ def prepare_ocp(
     """
 
     # --- Options --- #
-    # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    # BioModel path
+    bio_model = BiorbdModel(biorbd_model_path)
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
+    ntau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
@@ -111,7 +112,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
     u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
@@ -169,10 +170,20 @@ def prepare_ocp(
             bound_push=0.1,
         )
 
-    # ------------- #
+    # Variable scaling
+    x_scaling = VariableScalingList()
+    x_scaling.add("q", scaling=[1] * bio_model.nb_q)
+    x_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
+
+    xdot_scaling = VariableScalingList()
+    xdot_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
+    xdot_scaling.add("qddot", scaling=[1] * bio_model.nb_qddot)
+
+    u_scaling = VariableScalingList()
+    u_scaling.add("tau", scaling=[1] * bio_model.nb_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -183,6 +194,9 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        x_scaling=x_scaling,
+        xdot_scaling=xdot_scaling,
+        u_scaling=u_scaling,
     )
 
 
@@ -207,8 +221,8 @@ def main():
             else:
                 raise ValueError(message)
 
-        sol = ocp.solve()
-        print("\n")
+    sol = ocp.solve()
+    print("\n")
 
     # Print the last solution
     sol.animate()

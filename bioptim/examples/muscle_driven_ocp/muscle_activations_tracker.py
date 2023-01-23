@@ -14,6 +14,7 @@ import biorbd_casadi as biorbd
 from casadi import MX, vertcat
 from matplotlib import pyplot as plt
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     NonLinearProgram,
     BiMapping,
@@ -33,14 +34,14 @@ from bioptim import (
 
 
 def generate_data(
-    biorbd_model: biorbd.Model, final_time: float, n_shooting: int, use_residual_torque: bool = True
+    bio_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
 
     Parameters
     ----------
-    biorbd_model: biorbd.Model
+    bio_model: BiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -55,15 +56,15 @@ def generate_data(
     """
 
     # Aliases
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
-    n_qddot = biorbd_model.nbQddot()
-    n_tau = biorbd_model.nbGeneralizedTorque()
-    n_mus = biorbd_model.nbMuscleTotal()
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
+    n_qddot = bio_model.nb_qddot
+    n_tau = bio_model.nb_tau
+    n_mus = bio_model.nb_muscles
     dt = final_time / n_shooting
 
     nlp = NonLinearProgram()
-    nlp.model = biorbd_model
+    nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
         "qdot": BiMapping(range(n_qdot), range(n_qdot)),
@@ -79,7 +80,7 @@ def generate_data(
     symbolic_tau = MX.sym("tau", n_tau, 1)
     symbolic_mus = MX.sym("muscles", n_mus, 1)
     symbolic_parameters = MX.sym("params", 0, 0)
-    markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
+    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
     nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
     nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
@@ -125,7 +126,7 @@ def generate_data(
 
     # Integrate and collect the position of the markers accordingly
     X = np.ndarray((n_q + n_qdot, n_shooting + 1))
-    markers = np.ndarray((3, biorbd_model.nbMarkers(), n_shooting + 1))
+    markers = np.ndarray((3, bio_model.nb_markers, n_shooting + 1))
 
     def add_to_data(i, q):
         X[:, i] = q
@@ -144,7 +145,7 @@ def generate_data(
 
 
 def prepare_ocp(
-    biorbd_model: biorbd.Model,
+    bio_model: BiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -160,7 +161,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    biorbd_model: biorbd.Model
+    bio_model: BiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -206,15 +207,15 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    nq = biorbd_model.nbQ()
+    nq = bio_model.nb_q
     x_bounds[0].min[:nq, :] = -2 * np.pi
     x_bounds[0].max[:nq, :] = 2 * np.pi
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
     activation_min, activation_max, activation_init = 0, 1, 0.5
@@ -223,17 +224,17 @@ def prepare_ocp(
     if use_residual_torque:
         tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
-            [tau_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(),
-            [tau_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal(),
+            [tau_min] * bio_model.nb_tau + [activation_min] * bio_model.nb_muscles,
+            [tau_max] * bio_model.nb_tau + [activation_max] * bio_model.nb_muscles,
         )
-        u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal())
+        u_init.add([tau_init] * bio_model.nb_tau + [activation_init] * bio_model.nb_muscles)
     else:
-        u_bounds.add([activation_min] * biorbd_model.nbMuscleTotal(), [activation_max] * biorbd_model.nbMuscleTotal())
-        u_init.add([activation_init] * biorbd_model.nbMuscleTotal())
+        u_bounds.add([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles)
+        u_init.add([activation_init] * bio_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -253,25 +254,25 @@ def main():
     """
 
     # Define the problem
-    biorbd_model = biorbd.Model("models/arm26.bioMod")
+    bio_model = BiorbdModel("models/arm26.bioMod")
     final_time = 0.5
     n_shooting_points = 50
     use_residual_torque = True
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(
-        biorbd_model, final_time, n_shooting_points, use_residual_torque=use_residual_torque
+        bio_model, final_time, n_shooting_points, use_residual_torque=use_residual_torque
     )
 
     # Track these data
-    biorbd_model = biorbd.Model("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time,
         n_shooting_points,
         markers_ref,
         muscle_activations_ref,
-        x_ref[: biorbd_model.nbQ(), :],
+        x_ref[: bio_model.nb_q, :],
         kin_data_to_track="q",
         use_residual_torque=use_residual_torque,
     )
@@ -281,13 +282,13 @@ def main():
 
     # --- Show the results --- #
     q = sol.states["q"]
-    n_q = ocp.nlp[0].model.nbQ()
-    n_mark = ocp.nlp[0].model.nbMarkers()
+    n_q = ocp.nlp[0].model.nb_q
+    n_mark = ocp.nlp[0].model.nb_markers
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
-    markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_states)
+    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
 
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])

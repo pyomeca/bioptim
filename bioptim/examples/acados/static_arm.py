@@ -8,6 +8,7 @@ ACADOS and Ipopt.
 import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
@@ -24,8 +25,8 @@ from bioptim import (
 
 def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=False, n_threads=1):
     # --- Options --- #
-    # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    # BioModel path
+    bio_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -50, 50, 0
     muscle_min, muscle_max, muscle_init = 0, 1, 0.5
 
@@ -45,28 +46,28 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][:, 0] = (1.0, 1.0, 0, 0)
 
     # Initial guess
     if x_warm is None:
-        x_init = InitialGuess([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
+        x_init = InitialGuess([1.57] * bio_model.nb_q + [0] * bio_model.nb_qdot)
     else:
         x_init = InitialGuess(x_warm, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
-        [tau_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
+        [tau_min] * bio_model.nb_tau + [muscle_min] * bio_model.nb_muscles,
+        [tau_max] * bio_model.nb_tau + [muscle_max] * bio_model.nb_muscles,
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([tau_init] * bio_model.nb_tau + [muscle_init] * bio_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

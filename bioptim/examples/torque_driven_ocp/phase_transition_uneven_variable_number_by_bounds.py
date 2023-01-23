@@ -1,5 +1,6 @@
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -22,12 +23,12 @@ from bioptim import (
 
 def prepare_ocp(
     biorbd_model_path_withTranslations: str = "models/double_pendulum_with_translations.bioMod",
+    n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
 
-    biorbd_model = (biorbd.Model(biorbd_model_path_withTranslations), biorbd.Model(biorbd_model_path_withTranslations))
+    bio_model = (BiorbdModel(biorbd_model_path_withTranslations), BiorbdModel(biorbd_model_path_withTranslations))
 
     # Problem parameters
-    n_shooting = (40, 40)
     final_time = (1.5, 2.5)
     tau_min, tau_max, tau_init = -200, 200, 0
 
@@ -40,6 +41,8 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.01, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.01, phase=1)
     objective_functions.add(
         ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=Node.END, weight=-1000, axes=Axis.Z, phase=1, quadratic=False
     )
@@ -59,8 +62,8 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[1]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model[1]))
 
     # Phase 0
     # bound constraining the model not to use the two first DoFs
@@ -79,8 +82,8 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([1] * (biorbd_model[1].nbQ() + biorbd_model[1].nbQdot()))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([1] * (bio_model[1].nb_q + bio_model[1].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
@@ -93,7 +96,7 @@ def prepare_ocp(
     u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

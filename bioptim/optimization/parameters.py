@@ -4,13 +4,13 @@ import biorbd_casadi as biorbd
 from casadi import MX, SX, vertcat, Function
 import numpy as np
 
-from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
 from ..limits.penalty_node import PenaltyNodeList
 from ..limits.penalty import PenaltyOption
-from ..misc.enums import InterpolationType
+from ..misc.enums import InterpolationType, Node
 from ..misc.options import UniquePerProblemOptionList
+from ..optimization.non_linear_program import NonLinearProgram
 
 
 class Parameter(PenaltyOption):
@@ -101,9 +101,7 @@ class Parameter(PenaltyOption):
         else:
             raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
 
-        initial_guess.scale(self.scaling)
         self.initial_guess = initial_guess
-        bounds.scale(self.scaling)
         self.bounds = bounds
         self.quadratic = quadratic
         self.size = size
@@ -183,10 +181,10 @@ class Parameter(PenaltyOption):
 
                 func = penalty.custom_function
 
-                all_pn = PenaltyNodeList(ocp, None, [], [], [], [])
+                all_pn = PenaltyNodeList(ocp, None, [], [], [], [], [], [])
                 val = func(ocp, self.cx * self.scaling, **penalty.params)
                 self.set_penalty(ocp, penalty, val, target_ns=1)
-                penalty.clear_penalty(ocp, None)
+                penalty.ensure_penalty_sanity(ocp, None)
                 penalty._add_penalty_to_pool(all_pn)
 
     def set_penalty(
@@ -214,14 +212,14 @@ class Parameter(PenaltyOption):
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.v.parameters_in_list.cx
 
-        objective.function = biorbd.to_casadi_func(
+        objective.function = NonLinearProgram.to_casadi_func(
             f"{self.name}", fcn[objective.rows, objective.cols], state_cx, control_cx, param_cx, expand=expand
         )
 
         modified_fcn = objective.function(state_cx, control_cx, param_cx)
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
-        weight_cx = ocp.cx.sym("weight", 1, 1)
+        weight_cx = ocp.cx.sym("weight", fcn.shape[0], 1)
         target_cx = ocp.cx.sym("target", modified_fcn.shape)
 
         modified_fcn = modified_fcn - target_cx

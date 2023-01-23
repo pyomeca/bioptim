@@ -7,9 +7,9 @@ sufficient.
 More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKERS constraint.
 """
 
-import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     Dynamics,
@@ -22,7 +22,6 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     OdeSolver,
-    BiorbdInterface,
     Solver,
 )
 
@@ -50,19 +49,23 @@ def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second
     """
 
     # Get the index of the markers from their name
-    marker_0_idx = biorbd.marker_index(all_pn.nlp.model, first_marker)
-    marker_1_idx = biorbd.marker_index(all_pn.nlp.model, second_marker)
+    marker_0_idx = all_pn.nlp.model.marker_index(first_marker)
+    marker_1_idx = all_pn.nlp.model.marker_index(second_marker)
 
     if method == 0:
         # Convert the function to the required format and then subtract
-        markers = BiorbdInterface.mx_to_cx("markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
+        from bioptim import BiorbdModel
+
+        # noinspection PyTypeChecker
+        model: BiorbdModel = all_pn.nlp.model
+        markers = all_pn.nlp.mx_to_cx("markers", model.model.markers, all_pn.nlp.states["q"])
         markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     else:
         # Do the calculation in biorbd API and then convert to the required format
         markers = all_pn.nlp.model.markers(all_pn.nlp.states["q"].mx)
-        markers_diff = markers[marker_1_idx].to_mx() - markers[marker_0_idx].to_mx()
-        markers_diff = BiorbdInterface.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
+        markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
+        markers_diff = all_pn.nlp.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
 
     return markers_diff
 
@@ -84,8 +87,8 @@ def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.IRK())
     """
 
     # --- Options --- #
-    # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    # BioModel path
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -105,22 +108,22 @@ def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.IRK())
     constraints.add(custom_func_track_markers, node=Node.END, first_marker="m0", second_marker="m2", method=1)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = QAndQDotBounds(bio_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
-    u_bounds = Bounds([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+    u_bounds = Bounds([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
 
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

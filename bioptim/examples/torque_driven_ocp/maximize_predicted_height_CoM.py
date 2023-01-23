@@ -8,6 +8,7 @@ weight=-1 to maximize instead of minimizing.
 import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
@@ -64,7 +65,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     if use_actuators:
         tau_min, tau_max, tau_init = -1, 1, 0
@@ -108,13 +109,13 @@ def prepare_ocp(
         )
 
     # Path constraint
-    n_q = biorbd_model.nbQ()
+    n_q = bio_model.nb_q
     n_qdot = n_q
     pose_at_first_node = [0, 0, -0.5, 0.5]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(bio_model))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess
@@ -123,9 +124,9 @@ def prepare_ocp(
 
     # Define control path constraint
     if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
-        nu_sup = biorbd_model.nbQddot()
+        nu_sup = bio_model.nb_qddot
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        nu_sup = biorbd_model.nbQddot() + biorbd_model.nbContacts()
+        nu_sup = bio_model.nb_qddot + bio_model.nb_contacts
     else:
         nu_sup = 0
 
@@ -139,7 +140,7 @@ def prepare_ocp(
     u_init.add([tau_init] * (len(dof_mapping["tau"].to_first) + nu_sup))
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,

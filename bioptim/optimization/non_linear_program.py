@@ -1,15 +1,16 @@
 from typing import Callable, Any, Union
 
-import biorbd_casadi as biorbd
 import casadi
-from casadi import SX, MX
+from casadi import SX, MX, Function, horzcat
 
-from .optimization_variable import OptimizationVariableList, OptimizationVariable
+from .optimization_variable import OptimizationVariableList, OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
 from ..misc.options import OptionList
+from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
+from ..interfaces.biomodel import BioModel
 
 
 class NonLinearProgram:
@@ -30,7 +31,7 @@ class NonLinearProgram:
         The delta time of the current phase
     dynamics: list[ODE_SOLVER]
         All the dynamics for each of the node of the phase
-    dynamics_sym: DynamicsEvaluation
+    dynamics_evaluation: DynamicsEvaluation
         The dynamic MX or SX used during the current phase
     dynamics_func: Callable
         The dynamic function used during the current phase dxdt = f(x,u,p)
@@ -50,7 +51,7 @@ class NonLinearProgram:
         All the objectives at each of the node of the phase
     J_internal: list[list[Objective]]
         All the objectives internally defined by the phase at each of the node of the phase
-    model: biorbd.Model
+    model: Union[BiorbdModel, BioModel]
         The biorbd model associated with the phase
     n_threads: int
         The number of thread to use
@@ -120,13 +121,13 @@ class NonLinearProgram:
         self.dynamics_func = None
         self.implicit_dynamics_func = None
         self.dynamics_type = None
-        self.external_forces = []
+        self.external_forces: list[Any] = []
         self.g = []
         self.g_internal = []
         self.g_implicit = []
         self.J = []
         self.J_internal = []
-        self.model = None
+        self.model: BioModel | None = None
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()
@@ -142,13 +143,18 @@ class NonLinearProgram:
         self.variable_mappings = {}
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
+        self.U_scaled = None
         self.U = None
-        self.controls = OptimizationVariableList()
+        self.use_states_from_phase_idx = NodeMapping()
+        self.use_controls_from_phase_idx = NodeMapping()
+        self.use_states_dot_from_phase_idx = NodeMapping()
+        self.controls = OptimizationVariableContainer()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
+        self.X_scaled = None
         self.X = None
-        self.states = OptimizationVariableList()
-        self.states_dot = OptimizationVariableList()
+        self.states = OptimizationVariableContainer()
+        self.states_dot = OptimizationVariableContainer()
 
     def initialize(self, cx: Callable = None):
         """
@@ -162,7 +168,9 @@ class NonLinearProgram:
         """
         self.plot = {}
         self.cx = cx
+        self.states["scaled"]._cx = self.cx()
         self.states._cx = self.cx()
+        self.controls["scaled"]._cx = self.cx()
         self.controls._cx = self.cx()
         self.J = []
         self.g = []
@@ -298,5 +306,69 @@ class NonLinearProgram:
             return self.casadi_func[name]
         else:
             mx = [var.mx if isinstance(var, OptimizationVariable) else var for var in all_param]
-            self.casadi_func[name] = biorbd.to_casadi_func(name, function, *mx)
+            self.casadi_func[name] = self.to_casadi_func(name, function, *mx)
         return self.casadi_func[name]
+
+    @staticmethod
+    def mx_to_cx(name: str, symbolic_expression: SX | MX | Callable, *all_param: Any) -> Function:
+        """
+        Add to the pool of declared casadi function. If the function already exists, it is skipped
+
+        Parameters
+        ----------
+        name: str
+            The unique name of the function to add to the casadi functions pool
+        symbolic_expression: Union[SX, MX, Callable]
+            The symbolic expression to be converted, also support Callables
+        all_param: Any
+            Any parameters to pass to the biorbd function
+        """
+
+        from ..optimization.optimization_variable import OptimizationVariable, OptimizationVariableList
+        from ..optimization.parameters import Parameter, ParameterList
+
+        cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
+        mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
+        cx = [
+            var.mapping.to_second.map(var.cx) if hasattr(var, "mapping") else var.cx
+            for var in all_param
+            if isinstance(var, cx_types)
+        ]
+        return NonLinearProgram.to_casadi_func(name, symbolic_expression, *mx)(*cx)
+
+    @staticmethod
+    def to_casadi_func(name, symbolic_expression: MX | SX | Callable, *all_param, expand=True) -> Function:
+        """
+        Converts a symbolic expression into a casadi function
+
+        Parameters
+        ----------
+        name: str
+            The name of the function
+        symbolic_expression: Union[SX, MX, Callable]
+            The symbolic expression to be converted, also support Callables
+        all_param: Any
+            Any parameters to pass to the biorbd function
+        expand: bool
+            If the function should be expanded
+
+        Returns
+        -------
+        The converted function
+
+        """
+        cx_param = []
+        for p in all_param:
+            if isinstance(p, (MX, SX)):
+                cx_param.append(p)
+
+        if isinstance(symbolic_expression, (MX, SX, Function)):
+            func_evaluated = symbolic_expression
+        else:
+            func_evaluated = symbolic_expression(*all_param)
+            if isinstance(func_evaluated, (list, tuple)):
+                func_evaluated = horzcat(*[val if isinstance(val, MX) else val.to_mx() for val in func_evaluated])
+            elif not isinstance(func_evaluated, MX):
+                func_evaluated = func_evaluated.to_mx()
+        func = Function(name, cx_param, [func_evaluated])
+        return func.expand() if expand else func
