@@ -299,6 +299,40 @@ class BiorbdModel:
     def passive_joint_torque(self, q, qdot) -> MX:
         return self.model.passiveJointTorque(q, qdot).to_mx()
 
+
+    def q_range(self, index_to_keep) -> tuple[np.ndarray, np.ndarray]: # to verify
+        q_range_min, q_range_max = biorbd.get_range_q(self.model)
+        for ...
+
+
+        return q_range_min, q_range_max
+
+    def qdot_range(self, index_to_keep):
+        qdot_range_max = []
+        qdot_range_min = []
+        for seg in self.model.segments():
+            qdot_range_max += [q_range.max() for q_range in seg.QRanges()]
+            qdot_range_max += [q_range.min() for q_range in seg.QRanges()]
+
+        # select qdot range index
+
+    def qddot_range(self, index_to_keep):
+        qddot_range_max = []
+        qddot_range_min = []
+        for seg in self.model.segments():
+            qddot_range_max += [q_range.max() for q_range in seg.QDotRanges()]
+            qddot_range_max += [q_range.min() for q_range in seg.QDotRanges()]
+
+        # select qddot range index
+        ...
+
+    def q_and_q_dot_range(self, index_q, index_qdot) -> tuple(np.ndarray, np.ndarray):
+        q_range_min, q_range_max = self.q_range(index_q)
+        qdot_range_min, qdot_range_max = self.qdot_range(index_qdot)
+
+        return q_and_qdot_min, q_and_qdot_max
+
+
     def q_and_qdot_bounds_x_min(self, q_and_qdot_dof_mappings):
         q_ranges = []
         qdot_ranges = []
