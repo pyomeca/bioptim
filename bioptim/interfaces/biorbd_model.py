@@ -299,76 +299,42 @@ class BiorbdModel:
     def passive_joint_torque(self, q, qdot) -> MX:
         return self.model.passiveJointTorque(q, qdot).to_mx()
 
-
-    def q_range(self, index_to_keep) -> tuple[np.ndarray, np.ndarray]: # to verify
-        q_range_min, q_range_max = biorbd.get_range_q(self.model)
-        for ...
-
-
-        return q_range_min, q_range_max
-
-    def qdot_range(self, index_to_keep):
-        qdot_range_max = []
-        qdot_range_min = []
-        for seg in self.model.segments():
-            qdot_range_max += [q_range.max() for q_range in seg.QRanges()]
-            qdot_range_max += [q_range.min() for q_range in seg.QRanges()]
-
-        # select qdot range index
-
-    def qddot_range(self, index_to_keep):
-        qddot_range_max = []
-        qddot_range_min = []
-        for seg in self.model.segments():
-            qddot_range_max += [q_range.max() for q_range in seg.QDotRanges()]
-            qddot_range_max += [q_range.min() for q_range in seg.QDotRanges()]
-
-        # select qddot range index
-        ...
-
-    def q_and_q_dot_range(self, index_q, index_qdot) -> tuple(np.ndarray, np.ndarray):
-        q_range_min, q_range_max = self.q_range(index_q)
-        qdot_range_min, qdot_range_max = self.qdot_range(index_qdot)
-
-        return q_and_qdot_min, q_and_qdot_max
-
-
-    def q_and_qdot_bounds_x_min(self, q_and_qdot_dof_mappings):
+    def q_range(self) -> list:
         q_ranges = []
-        qdot_ranges = []
         for i in range(self.nb_segments):
             segment = self.segments[i]
             q_ranges += [q_range for q_range in segment.QRanges()]
-            qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-        x_min = [q_ranges[i].min() for i in q_and_qdot_dof_mappings["q"].to_first.map_idx] + [
-            qdot_ranges[i].min() for i in q_and_qdot_dof_mappings["qdot"].to_first.map_idx]
-        return x_min
+        return q_ranges
 
-    def q_and_qdot_bounds_x_max(self, q_and_qdot_dof_mappings):
-        q_ranges = []
+    def qdot_range(self) -> list:
         qdot_ranges = []
         for i in range(self.nb_segments):
             segment = self.segments[i]
-            q_ranges += [q_range for q_range in segment.QRanges()]
             qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-        x_max = [q_ranges[i].max() for i in q_and_qdot_dof_mappings["q"].to_first.map_idx] + [
-            qdot_ranges[i].max() for i in q_and_qdot_dof_mappings["qdot"].to_first.map_idx
+        return qdot_ranges
+
+    def qddot_range(self) -> list:
+        qddot_ranges = []
+        for i in range(self.nb_segments):
+            segment = self.segments[i]
+            qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
+        return qddot_ranges
+
+    def q_and_q_dot_range(self, index_to_keep):
+        q_ranges = self.q_range()
+        qdot_ranges = self.qdot_range()
+        x_min = [q_ranges[i].min() for i in index_to_keep["q"].to_first.map_idx] + [
+            qdot_ranges[i].min() for i in index_to_keep["qdot"].to_first.map_idx]
+        x_max = [q_ranges[i].max() for i in index_to_keep["q"].to_first.map_idx] + [
+            qdot_ranges[i].max() for i in index_to_keep["qdot"].to_first.map_idx
         ]
-        return x_max
+        print(index_to_keep)
+        return x_min, x_max
 
-    def q_and_qdot_and_qddot_bounds_x_min(self, q_and_qdot_and_qddot_dof_mappings):
-        qddot_ranges = []
-        for i in range(self.nb_segments):
-            segment = self.segments[i]
-            qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
-        x_min = [qddot_ranges[i].min() for i in q_and_qdot_and_qddot_dof_mappings["qddot"].to_first.map_idx]
-        return x_min
+    def q_and_q_dot_and_q_ddot_range(self, index_to_keep):
+        qddot_ranges = self.qddot_range()
+        x_min = [qddot_ranges[i].min() for i in index_to_keep["qddot"].to_first.map_idx]
+        x_max = [qddot_ranges[i].max() for i in index_to_keep["qddot"].to_first.map_idx]
+        return x_min, x_max
 
-    def q_and_qdot_and_qddot_bounds_x_max(self, q_and_qdot_and_qddot_dof_mappings):
-        qddot_ranges = []
-        for i in range(self.nb_segments):
-            segment = self.segments[i]
-            qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
-        x_max = [qddot_ranges[i].max() for i in q_and_qdot_and_qddot_dof_mappings["qddot"].to_first.map_idx]
-        return x_max
 

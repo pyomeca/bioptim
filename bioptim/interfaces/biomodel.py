@@ -192,3 +192,39 @@ class BioModel(Protocol):
 
     def passive_joint_torque(self, q, qdot) -> MX:
         """Get the passive joint torque"""
+
+    def q_range(self) -> list:
+        """Get the q_ranges"""
+
+    def qdot_range(self) -> list:
+        """Get the qdot_ranges"""
+
+    def qddot_range(self) -> list:
+        """Get the qddot_ranges"""
+
+    def q_and_q_dot_range(self, index_to_keep):
+        """
+        Get the q and qdot range to create bounds
+
+        Parameters
+        ----------
+        index_to_keep: BiMappingList
+            The mapping of q and qdot (if only q, then qdot = q)
+
+        Returns
+        -------
+        The minimum and maximum of the x_bound
+        """
+    def q_and_q_dot_and_q_ddot_range(self, index_to_keep):
+        """
+        Get the q, qdot and qddot range to create bounds
+
+        Parameters
+        ----------
+        index_to_keep: BiMappingList
+            The mapping of q and qdot (if only q, then qdot = q)
+
+        Returns
+        -------
+        The minimum and maximum of the x_bound
+        """

@@ -638,26 +638,8 @@ class QAndQDotBounds(Bounds):
             else:
                 dof_mappings["qdot"] = dof_mappings["q"]
 
-        # # todo: to be refactored and moved to BiorbdModel (as a method) so BioModel could be used directly
-        # q_ranges = []
-        # qdot_ranges = []
-        # for i in range(bio_model.nb_segments):
-        #     segment = bio_model.segments[i]
-        #     q_ranges += [q_range for q_range in segment.QRanges()]
-        #     qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-        #
-        # x_min = [q_ranges[i].min() for i in dof_mappings["q"].to_first.map_idx] + [
-        #     qdot_ranges[i].min() for i in dof_mappings["qdot"].to_first.map_idx
-        # ]
-        # x_max = [q_ranges[i].max() for i in dof_mappings["q"].to_first.map_idx] + [
-        #     qdot_ranges[i].max() for i in dof_mappings["qdot"].to_first.map_idx
-        # ]
-        #
-        # super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
-
-#         MODIF
-#         print(bio_model.dof_mappings)
-        super(QAndQDotBounds, self).__init__(min_bound=bio_model.q_and_qdot_bounds_x_min(dof_mappings), max_bound=bio_model.q_and_qdot_bounds_x_max(dof_mappings))
+        x_min, x_max = bio_model.q_and_q_dot_range(dof_mappings)
+        super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
 class QAndQDotAndQDDotBounds(QAndQDotBounds):
     """
@@ -698,17 +680,8 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
             else:
                 dof_mappings["qddot"] = dof_mappings["qdot"]
 
-        # # todo: to be refactored and moved to BiorbdModel (as a method) so BioModel could be used directly
-        # qddot_ranges = []
-        # for i in range(bio_model.nb_segments):
-        #     segment = bio_model.segments[i]
-        #     qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
-        #
-        # x_min = [qddot_ranges[i].min() for i in dof_mappings["qddot"].to_first.map_idx]
-        # x_max = [qddot_ranges[i].max() for i in dof_mappings["qddot"].to_first.map_idx]
-
-        self.concatenate(Bounds(bio_model.q_and_qdot_and_qddot_bounds_x_min(dof_mappings), bio_model.q_and_qdot_and_qddot_bounds_x_max(dof_mappings)))
-        # self.concatenate(Bounds(x_min, x_max))
+        x_min, x_max = bio_model.q_and_q_dot_and_q_ddot_range(dof_mappings)
+        self.concatenate(Bounds(x_min, x_max))
 
 
 class InitialGuess(OptionGeneric):
