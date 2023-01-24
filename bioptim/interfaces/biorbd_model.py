@@ -1,9 +1,8 @@
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 import biorbd_casadi as biorbd
 from casadi import MX, horzcat, vertcat, SX, norm_fro
 
-from ..misc.mapping import BiMapping, BiMappingList
 import numpy as np
 
 
@@ -298,103 +297,44 @@ class BiorbdModel:
             return self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=None)
 
     def passive_joint_torque(self, q, qdot) -> MX:
-
         return self.model.passiveJointTorque(q, qdot).to_mx()
 
-    def q_and_q_dot_bounds_dof_mappings(self):
-        dof_mappings: Union[BiMapping, BiMappingList] = None
-
-        if dof_mappings is None:
-            dof_mappings = {}
-
-        if self.nb_quaternions > 0:
-            if "q" in dof_mappings and "qdot" not in dof_mappings:
-                raise RuntimeError(
-                    "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
-                )
-            elif "q" not in dof_mappings and "qdot" in dof_mappings:
-                raise RuntimeError(
-                    "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
-                )
-
-        if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(self.nb_q), range(self.nb_q))
-
-        if "qdot" not in dof_mappings:
-            if self.nb_quaternions > 0:
-                dof_mappings["qdot"] = BiMapping(range(self.nb_qdot), range(self.nb_qdot))
-            else:
-                dof_mappings["qdot"] = dof_mappings["q"]
-
-        return dof_mappings
-
-    def q_and_q_dot_and_q_ddot_bounds_dof_mappings(self):
-        dof_mappings: Union[BiMapping, BiMappingList] = None
-        if dof_mappings is None:
-            dof_mappings = {}
-
-        if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(self.nb_q), range(self.nb_q))
-
-        if "qdot" not in dof_mappings:
-            if self.nb_quaternions > 0:
-                dof_mappings["qdot"] = BiMapping(range(self.nb_qdot), range(self.nb_qdot))
-            else:
-                dof_mappings["qdot"] = dof_mappings["q"]
-
-        if "qddot" not in dof_mappings:
-            if self.nb_quaternions > 0:
-                dof_mappings["qddot"] = BiMapping(range(self.nb_qddot), range(self.nb_qddot))
-            else:
-                dof_mappings["qddot"] = dof_mappings["qdot"]
-
-        return dof_mappings
-
-    def q_and_q_dot_bounds_x_min(self):
+    def q_and_qdot_bounds_x_min(self, q_and_qdot_dof_mappings):
         q_ranges = []
         qdot_ranges = []
-        dof_mappings = self.q_and_q_dot_bounds_dof_mappings()
         for i in range(self.nb_segments):
             segment = self.segments[i]
             q_ranges += [q_range for q_range in segment.QRanges()]
             qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-        x_min = [q_ranges[i].min() for i in dof_mappings["q"].to_first.map_idx] + [
-            qdot_ranges[i].min() for i in dof_mappings["qdot"].to_first.map_idx
-        ]
+        x_min = [q_ranges[i].min() for i in q_and_qdot_dof_mappings["q"].to_first.map_idx] + [
+            qdot_ranges[i].min() for i in q_and_qdot_dof_mappings["qdot"].to_first.map_idx]
         return x_min
 
-    def q_and_q_dot_bounds_x_max(self):
+    def q_and_qdot_bounds_x_max(self, q_and_qdot_dof_mappings):
         q_ranges = []
         qdot_ranges = []
-        dof_mappings = self.q_and_q_dot_bounds_dof_mappings()
         for i in range(self.nb_segments):
             segment = self.segments[i]
             q_ranges += [q_range for q_range in segment.QRanges()]
             qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-        x_max = [q_ranges[i].max() for i in dof_mappings["q"].to_first.map_idx] + [
-            qdot_ranges[i].max() for i in dof_mappings["qdot"].to_first.map_idx
+        x_max = [q_ranges[i].max() for i in q_and_qdot_dof_mappings["q"].to_first.map_idx] + [
+            qdot_ranges[i].max() for i in q_and_qdot_dof_mappings["qdot"].to_first.map_idx
         ]
         return x_max
 
-    def q_and_q_dot_and_q_ddot_bounds_x_min(self):
+    def q_and_qdot_and_qddot_bounds_x_min(self, q_and_qdot_and_qddot_dof_mappings):
         qddot_ranges = []
         for i in range(self.nb_segments):
             segment = self.segments[i]
             qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
-
-        dof_mappings = self.q_and_q_dot_and_q_ddot_bounds_dof_mappings()
-        x_min = [qddot_ranges[i].min() for i in dof_mappings["qddot"].to_first.map_idx]
-
+        x_min = [qddot_ranges[i].min() for i in q_and_qdot_and_qddot_dof_mappings["qddot"].to_first.map_idx]
         return x_min
 
-    def q_and_q_dot_and_q_ddot_bounds_x_max(self):
+    def q_and_qdot_and_qddot_bounds_x_max(self, q_and_qdot_and_qddot_dof_mappings):
         qddot_ranges = []
         for i in range(self.nb_segments):
             segment = self.segments[i]
             qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
-
-        dof_mappings = self.q_and_q_dot_and_q_ddot_bounds_dof_mappings()
-        x_max = [qddot_ranges[i].max() for i in dof_mappings["qddot"].to_first.map_idx]
-
+        x_max = [qddot_ranges[i].max() for i in q_and_qdot_and_qddot_dof_mappings["qddot"].to_first.map_idx]
         return x_max
 

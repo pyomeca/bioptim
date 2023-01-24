@@ -616,28 +616,28 @@ class QAndQDotBounds(Bounds):
         dof_mappings: BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
         """
-        # if dof_mappings is None:
-        #     dof_mappings = {}
-        #
-        # if bio_model.nb_quaternions > 0:
-        #     if "q" in dof_mappings and "qdot" not in dof_mappings:
-        #         raise RuntimeError(
-        #             "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
-        #         )
-        #     elif "q" not in dof_mappings and "qdot" in dof_mappings:
-        #         raise RuntimeError(
-        #             "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
-        #         )
-        #
-        # if "q" not in dof_mappings:
-        #     dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
-        #
-        # if "qdot" not in dof_mappings:
-        #     if bio_model.nb_quaternions > 0:
-        #         dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
-        #     else:
-        #         dof_mappings["qdot"] = dof_mappings["q"]
-        #
+        if dof_mappings is None:
+            dof_mappings = {}
+
+        if bio_model.nb_quaternions > 0:
+            if "q" in dof_mappings and "qdot" not in dof_mappings:
+                raise RuntimeError(
+                    "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
+                )
+            elif "q" not in dof_mappings and "qdot" in dof_mappings:
+                raise RuntimeError(
+                    "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
+                )
+
+        if "q" not in dof_mappings:
+            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
+
+        if "qdot" not in dof_mappings:
+            if bio_model.nb_quaternions > 0:
+                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
+            else:
+                dof_mappings["qdot"] = dof_mappings["q"]
+
         # # todo: to be refactored and moved to BiorbdModel (as a method) so BioModel could be used directly
         # q_ranges = []
         # qdot_ranges = []
@@ -657,7 +657,7 @@ class QAndQDotBounds(Bounds):
 
 #         MODIF
 #         print(bio_model.dof_mappings)
-        super(QAndQDotBounds, self).__init__(min_bound=bio_model.q_and_q_dot_bounds_x_min(), max_bound=bio_model.q_and_q_dot_bounds_x_max())
+        super(QAndQDotBounds, self).__init__(min_bound=bio_model.q_and_qdot_bounds_x_min(dof_mappings), max_bound=bio_model.q_and_qdot_bounds_x_max(dof_mappings))
 
 class QAndQDotAndQDDotBounds(QAndQDotBounds):
     """
@@ -679,25 +679,25 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
         """
 
         super(QAndQDotAndQDDotBounds, self).__init__(bio_model=bio_model, dof_mappings=dof_mappings)
-        #
-        # if dof_mappings is None:
-        #     dof_mappings = {}
-        #
-        # if "q" not in dof_mappings:
-        #     dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
-        #
-        # if "qdot" not in dof_mappings:
-        #     if bio_model.nb_quaternions > 0:
-        #         dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
-        #     else:
-        #         dof_mappings["qdot"] = dof_mappings["q"]
-        #
-        # if "qddot" not in dof_mappings:
-        #     if bio_model.nb_quaternions > 0:
-        #         dof_mappings["qddot"] = BiMapping(range(bio_model.nb_qddot), range(bio_model.nb_qddot))
-        #     else:
-        #         dof_mappings["qddot"] = dof_mappings["qdot"]
-        #
+
+        if dof_mappings is None:
+            dof_mappings = {}
+
+        if "q" not in dof_mappings:
+            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
+
+        if "qdot" not in dof_mappings:
+            if bio_model.nb_quaternions > 0:
+                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
+            else:
+                dof_mappings["qdot"] = dof_mappings["q"]
+
+        if "qddot" not in dof_mappings:
+            if bio_model.nb_quaternions > 0:
+                dof_mappings["qddot"] = BiMapping(range(bio_model.nb_qddot), range(bio_model.nb_qddot))
+            else:
+                dof_mappings["qddot"] = dof_mappings["qdot"]
+
         # # todo: to be refactored and moved to BiorbdModel (as a method) so BioModel could be used directly
         # qddot_ranges = []
         # for i in range(bio_model.nb_segments):
@@ -707,7 +707,7 @@ class QAndQDotAndQDDotBounds(QAndQDotBounds):
         # x_min = [qddot_ranges[i].min() for i in dof_mappings["qddot"].to_first.map_idx]
         # x_max = [qddot_ranges[i].max() for i in dof_mappings["qddot"].to_first.map_idx]
 
-        self.concatenate(Bounds(bio_model.q_and_q_dot_and_q_ddot_bounds_x_min(), bio_model.q_and_q_dot_and_q_ddot_bounds_x_max()))
+        self.concatenate(Bounds(bio_model.q_and_qdot_and_qddot_bounds_x_min(dof_mappings), bio_model.q_and_qdot_and_qddot_bounds_x_max(dof_mappings)))
         # self.concatenate(Bounds(x_min, x_max))
 
 
