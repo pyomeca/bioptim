@@ -12,7 +12,7 @@ class BiorbdModel:
         elif isinstance(bio_model, biorbd.Model):
             self.model = bio_model
         else:
-            raise RuntimeError("Type must be a string or a biorbdmodel")
+            raise RuntimeError("Type must be a 'str' or a 'biorbd.Model'")
 
     def deep_copy(self, *args):
         return BiorbdModel(self.model.DeepCopy(*args))
