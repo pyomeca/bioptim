@@ -2,7 +2,10 @@ from typing import Any, Callable
 
 import biorbd_casadi as biorbd
 from casadi import MX, horzcat, vertcat, SX, norm_fro
-import numpy as np
+from bioptim.misc.utils import check_version
+
+
+check_version(biorbd, "1.9.9", "1.10.0")
 
 
 class BiorbdModel:
