@@ -9,8 +9,10 @@ class BiorbdModel:
     def __init__(self, bio_model: str | biorbd.Model):
         if isinstance(bio_model, str):
             self.model = biorbd.Model(bio_model)
-        else:
+        elif isinstance(bio_model, biorbd.Model):
             self.model = bio_model
+        else:
+            raise RuntimeError("Type must be a string or a biorbdmodel")
 
     def deep_copy(self, *args):
         return BiorbdModel(self.model.DeepCopy(*args))
