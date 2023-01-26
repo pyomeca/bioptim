@@ -5,7 +5,6 @@ from casadi import MX, horzcat, vertcat, SX, norm_fro
 import numpy as np
 
 
-
 check_version(biorbd, "1.9.9", "1.10.0")
 
 
