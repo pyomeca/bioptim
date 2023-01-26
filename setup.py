@@ -1,3 +1,4 @@
+from bioptim import __version__ as bioptim_version
 from setuptools import setup
 
 with open("README.md", "r") as fh:
@@ -5,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="bioptim",
-    version="2.3.0",
+    version=bioptim_version,
     author="Pariterre",
     author_email="pariterre@hotmail.com",
     description="An optimization framework for Optimal Control Programming in biomechanics",

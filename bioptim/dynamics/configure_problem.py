@@ -99,24 +99,24 @@ class ConfigureProblem:
         idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nb_q)
 
         if nlp.model.nb_quaternions == 0:
-            new_name = nlp.model.name_dof[idx[0]]
+            new_names = [nlp.model.name_dof[i] for i in idx]
         else:
-            new_name = []
+            new_names = []
             for i in nlp.phase_mapping.map_idx:
                 if nlp.model.name_dof[i][-4:-1] == "Rot" or nlp.model.name_dof[i][-6:-1] == "Trans":
-                    new_name += [nlp.model.name_dof[i]]
+                    new_names += [nlp.model.name_dof[i]]
                 else:
                     if nlp.model.name_dof[i][-5:] != "QuatW":
                         if var_type == "qdot":
-                            new_name += [nlp.model.name_dof[i][:-5] + "omega" + nlp.model.name_dof[i][-1]]
+                            new_names += [nlp.model.name_dof[i][:-5] + "omega" + nlp.model.name_dof[i][-1]]
                         elif var_type == "qddot":
-                            new_name += [nlp.model.name_dof[i][:-5] + "omegadot" + nlp.model.name_dof[i][-1]]
+                            new_names += [nlp.model.name_dof[i][:-5] + "omegadot" + nlp.model.name_dof[i][-1]]
                         elif var_type == "qdddot":
-                            new_name += [nlp.model.name_dof[i][:-5] + "omegaddot" + nlp.model.name_dof[i][-1]]
+                            new_names += [nlp.model.name_dof[i][:-5] + "omegaddot" + nlp.model.name_dof[i][-1]]
                         elif var_type == "tau" or var_type == "taudot":
-                            new_name += [nlp.model.name_dof[i]]
+                            new_names += [nlp.model.name_dof[i]]
 
-        return new_name
+        return new_names
 
     @staticmethod
     def initialize(ocp, nlp):

@@ -1106,14 +1106,9 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 Constraints the linear momentum towards a target.
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
 
-#### CONTACT_FORCE
-Adds a constraint to the non-acceleration point reaction forces.
-It is usually used in conjunction with changing the bounds, so it creates an inequality constraint on this contact force.
-The extra parameter `contact_force_idx: int` must be passed to the `Constraint` constructor
-
 #### NON_SLIPPING
 Adds a constraint of static friction at contact points constraining for small tangential forces. 
-This constraint assumes that the normal forces is positive (that is having an additional CONTACT_FORCE with `max_bound=np.inf`).
+This constraint assumes that the normal forces is positive (that is having an additional TRACK_CONTACT_FORCES with `max_bound=np.inf`).
 The extra parameters `tangential_component_idx: int`, `normal_component_idx: int` and `static_friction_coefficient: float` must be passed to the `Constraint` constructor
 
 #### TORQUE_MAX_FROM_ACTUATORS
@@ -1902,18 +1897,18 @@ forces have to remain inside of the cone of friction), as shown in the part of t
 ```python
 constraints = ConstraintList()
    constraints.add(
-   ConstraintFcn.CONTACT_FORCE,
+   ConstraintFcn.TRACK_CONTACT_FORCES,
    min_bound=min_bound,
    max_bound=max_bound,
    node=Node.ALL,
-   contact_force_idx=1,
+   contact_index=1,
    )
 constraints.add(
-    ConstraintFcn.CONTACT_FORCE,
+    ConstraintFcn.TRACK_CONTACT_FORCES,
     min_bound=min_bound,
     max_bound=max_bound,
     node=Node.ALL,
-    contact_force_idx=2,
+    contact_index=2,
     )
 constraints.add(
     ConstraintFcn.NON_SLIPPING,

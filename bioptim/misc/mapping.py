@@ -12,7 +12,7 @@ class Mapping(OptionGeneric):
     Mapping of index set to a different index set
 
     Example of use:
-        - to_map = Mapping([0, 1, 1, 3, -1, 1], [3])
+        - to_map = Mapping([0, 1, 1, 3, None, 1], [3])
         - obj = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
         - mapped_obj = to_map.map(obj)
     Expected result:
