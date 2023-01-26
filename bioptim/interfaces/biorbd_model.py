@@ -5,6 +5,10 @@ from casadi import MX, horzcat, vertcat, SX, norm_fro
 import numpy as np
 
 
+
+check_version(biorbd, "1.9.9", "1.10.0")
+
+
 class BiorbdModel:
     def __init__(self, bio_model: str | biorbd.Model):
         if isinstance(bio_model, str):
