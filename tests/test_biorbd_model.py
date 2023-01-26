@@ -10,8 +10,9 @@ from bioptim import (
     BiorbdModel,
 )
 
-def test_biorbd_model_fail():
-    # Load pendulum_min_time_Mayer
+
+def test_biorbd_model_import():
+
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
