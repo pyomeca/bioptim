@@ -53,8 +53,6 @@ from ..optimization.solution import Solution
 from ..optimization.optimization_variable import VariableScalingList, VariableScaling
 from ..gui.check_conditioning import check_conditioning
 
-check_version(biorbd, "1.9.8", "1.10.0")
-
 
 class OptimalControlProgram:
     """
