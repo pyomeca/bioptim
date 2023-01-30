@@ -1341,7 +1341,7 @@ class Solution:
 
         from ..interfaces.biorbd_model import BiorbdModel
 
-        check_version(bioviz, "2.1.0", "2.3.0")
+        check_version(bioviz, "2.3.0", "2.4.0")
 
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
