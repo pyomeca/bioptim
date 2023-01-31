@@ -598,90 +598,90 @@ class BoundsList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of BoundsList is not ready yet")
 
 
-class QAndQDotBounds(Bounds):
-    """
-    Specialized Bounds that reads a model to automatically extract q and qdot bounds
-    """
-
-    def __init__(
-        self,
-        bio_model: BiorbdModel,
-        dof_mappings: Union[BiMapping, BiMappingList] = None,
-    ):
-        """
-        Parameters
-        ----------
-        bio_model: BiorbdModel
-            A reference to the model
-        dof_mappings: BiMappingList
-            The mapping of q and qdot (if only q, then qdot = q)
-        """
-        if dof_mappings is None:
-            dof_mappings = {}
-
-        if bio_model.nb_quaternions > 0:
-            if "q" in dof_mappings and "qdot" not in dof_mappings:
-                raise RuntimeError(
-                    "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
-                )
-            elif "q" not in dof_mappings and "qdot" in dof_mappings:
-                raise RuntimeError(
-                    "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
-                )
-
-        if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
-
-        if "qdot" not in dof_mappings:
-            if bio_model.nb_quaternions > 0:
-                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
-            else:
-                dof_mappings["qdot"] = dof_mappings["q"]
-
-        x_min, x_max = bio_model.q_and_q_dot_range(dof_mappings)
-        super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
-
-class QAndQDotAndQDDotBounds(QAndQDotBounds):
-    """
-    Specialized Bounds that reads a model to automatically extract q, qdot and qddot bounds
-    """
-
-    def __init__(
-        self,
-        bio_model: BiorbdModel,
-        dof_mappings: Union[BiMapping, BiMappingList] = None,
-    ):
-        """
-        Parameters
-        ----------
-        bio_model: BiorbdModel
-            A reference to the model
-        dof_mappings: BiMappingList
-            The mapping of q and qdot (if only q, then qdot = q)
-        """
-
-        super(QAndQDotAndQDDotBounds, self).__init__(bio_model=bio_model, dof_mappings=dof_mappings)
-
-        if dof_mappings is None:
-            dof_mappings = {}
-
-        if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
-
-        if "qdot" not in dof_mappings:
-            if bio_model.nb_quaternions > 0:
-                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
-            else:
-                dof_mappings["qdot"] = dof_mappings["q"]
-
-        if "qddot" not in dof_mappings:
-            if bio_model.nb_quaternions > 0:
-                dof_mappings["qddot"] = BiMapping(range(bio_model.nb_qddot), range(bio_model.nb_qddot))
-            else:
-                dof_mappings["qddot"] = dof_mappings["qdot"]
-
-        x_min, x_max = bio_model.q_and_q_dot_and_q_ddot_range(dof_mappings)
-        self.concatenate(Bounds(x_min, x_max))
+# class QAndQDotBounds(Bounds):
+#     """
+#     Specialized Bounds that reads a model to automatically extract q and qdot bounds
+#     """
+#
+#     def __init__(
+#         self,
+#         bio_model: BiorbdModel,
+#         dof_mappings: Union[BiMapping, BiMappingList] = None,
+#     ):
+#         """
+#         Parameters
+#         ----------
+#         bio_model: BiorbdModel
+#             A reference to the model
+#         dof_mappings: BiMappingList
+#             The mapping of q and qdot (if only q, then qdot = q)
+#         """
+#         if dof_mappings is None:
+#             dof_mappings = {}
+#
+#         if bio_model.nb_quaternions > 0:
+#             if "q" in dof_mappings and "qdot" not in dof_mappings:
+#                 raise RuntimeError(
+#                     "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
+#                 )
+#             elif "q" not in dof_mappings and "qdot" in dof_mappings:
+#                 raise RuntimeError(
+#                     "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
+#                 )
+#
+#         if "q" not in dof_mappings:
+#             dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
+#
+#         if "qdot" not in dof_mappings:
+#             if bio_model.nb_quaternions > 0:
+#                 dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
+#             else:
+#                 dof_mappings["qdot"] = dof_mappings["q"]
+#
+#         x_min, x_max = bio_model.q_and_q_dot_range(dof_mappings)
+#         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
+#
+# class QAndQDotAndQDDotBounds(QAndQDotBounds):
+#     """
+#     Specialized Bounds that reads a model to automatically extract q, qdot and qddot bounds
+#     """
+#
+#     def __init__(
+#         self,
+#         bio_model: BiorbdModel,
+#         dof_mappings: Union[BiMapping, BiMappingList] = None,
+#     ):
+#         """
+#         Parameters
+#         ----------
+#         bio_model: BiorbdModel
+#             A reference to the model
+#         dof_mappings: BiMappingList
+#             The mapping of q and qdot (if only q, then qdot = q)
+#         """
+#
+#         super(QAndQDotAndQDDotBounds, self).__init__(bio_model=bio_model, dof_mappings=dof_mappings)
+#
+#         if dof_mappings is None:
+#             dof_mappings = {}
+#
+#         if "q" not in dof_mappings:
+#             dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
+#
+#         if "qdot" not in dof_mappings:
+#             if bio_model.nb_quaternions > 0:
+#                 dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
+#             else:
+#                 dof_mappings["qdot"] = dof_mappings["q"]
+#
+#         if "qddot" not in dof_mappings:
+#             if bio_model.nb_quaternions > 0:
+#                 dof_mappings["qddot"] = BiMapping(range(bio_model.nb_qddot), range(bio_model.nb_qddot))
+#             else:
+#                 dof_mappings["qddot"] = dof_mappings["qdot"]
+#
+#         x_min, x_max = bio_model.q_and_q_dot_and_q_ddot_range(dof_mappings)
+#         self.concatenate(Bounds(x_min, x_max))
 
 
 class InitialGuess(OptionGeneric):
@@ -818,6 +818,7 @@ class InitialGuess(OptionGeneric):
     def add_noise(
         self,
         bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
+        # Todo : Question : remplacer QAndQDotBounds par BiorbdModel.bounds_from_range est jouable?
         magnitude: Union[list, int, float, np.ndarray] = 1,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         n_shooting: int = None,
@@ -889,6 +890,7 @@ class NoisedInitialGuess(InitialGuess):
         initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
+        # Todo : Question : remplacer QAndQDotBounds par BiorbdModel.bounds_from_range est jouable?
         magnitude: Union[list, int, float, np.ndarray] = 1,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         n_shooting: int = None,

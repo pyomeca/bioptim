@@ -1,6 +1,7 @@
 from casadi import MX, SX
-from typing import Protocol, Callable
-
+from typing import Protocol, Callable, Union
+from bioptim import Bounds
+from ..misc.mapping import BiMapping, BiMappingList
 
 class BioModel(Protocol):
     def copy(self):
@@ -193,38 +194,19 @@ class BioModel(Protocol):
     def passive_joint_torque(self, q, qdot) -> MX:
         """Get the passive joint torque"""
 
-    def q_range(self) -> list:
-        """Get the q_ranges"""
-
-    def qdot_range(self) -> list:
-        """Get the qdot_ranges"""
-
-    def qddot_range(self) -> list:
-        """Get the qddot_ranges"""
-
-    def q_and_q_dot_range(self, index_to_keep):
+    def bounds_from_ranges(self, variables, mapping=None) -> Bounds:
+        #  todo : question : renseigner le type des inputs obligatoire ici ? nécessite 2 import supplémentaire
         """
-        Get the q and qdot range to create bounds
+        Create bounds from range model depending on the variable into to chose between q qdot or q qdot qddot
 
         Parameters
         ----------
-        index_to_keep: BiMappingList
+        variables: [str, ...]
+            Input to chose between qqdot qnd qqdotqddot method
+        mapping: Union[BiMapping, BiMappingList]
             The mapping of q and qdot (if only q, then qdot = q)
-
         Returns
         -------
-        The minimum and maximum of the x_bound
+        Create de desire bound model
         """
-    def q_and_q_dot_and_q_ddot_range(self, index_to_keep):
-        """
-        Get the q, qdot and qddot range to create bounds
 
-        Parameters
-        ----------
-        index_to_keep: BiMappingList
-            The mapping of q and qdot (if only q, then qdot = q)
-
-        Returns
-        -------
-        The minimum and maximum of the x_bound
-        """
