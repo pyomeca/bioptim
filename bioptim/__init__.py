@@ -184,8 +184,6 @@ from .limits.path_conditions import (
     InitialGuessList,
     InitialGuess,
     NoisedInitialGuess,
-    QAndQDotBounds,
-    QAndQDotAndQDDotBounds,
 )
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_node import PenaltyNode, PenaltyNodeList

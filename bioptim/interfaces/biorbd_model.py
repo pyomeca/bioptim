@@ -3,8 +3,6 @@ from typing import Any, Callable
 import biorbd_casadi as biorbd
 from casadi import MX, horzcat, vertcat, SX, norm_fro
 
-from bioptim import Bounds
-
 from ..misc.mapping import BiMapping, BiMappingList
 import numpy as np
 
@@ -353,7 +351,9 @@ class BiorbdModel:
                         mapping["qddot"] = mapping["qdot"]
         return mapping
 
-    def bounds_from_ranges(self, variables: str | [str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
+    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> "Bounds":
+        from bioptim import Bounds
+
         out = Bounds()
         q_ranges = []
         qdot_ranges = []

@@ -9,6 +9,7 @@ from ..misc.enums import InterpolationType, MagnitudeType
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..optimization.optimization_variable import VariableScaling
 
+
 class PathCondition(np.ndarray):
     """
     A matrix for any component (rows) and time (columns) conditions
