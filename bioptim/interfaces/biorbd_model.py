@@ -335,59 +335,63 @@ class BiorbdModel:
     def qddot_mapping(self, mapping: BiMapping = None) -> BiMapping:
         if mapping is None:
             mapping = {}
-
         if "qddot" not in mapping:
             if self.nb_quaternions > 0:
                 mapping["qddot"] = BiMapping(range(self.nb_qddot), range(self.nb_qddot))
+            elif "qdot" not in mapping:
+                if self.nb_quaternions > 0:
+                    mapping["qdot"] = BiMapping(range(self.nb_qdot), range(self.nb_qdot))
+                    mapping["qddot"] = mapping["qdot"]
+                else:
+                    if "q" not in mapping:
+                        mapping["q"] = BiMapping(range(self.nb_q), range(self.nb_q))
+                    mapping["qdot"] = mapping["q"]
+                    mapping["qddot"] = mapping["qdot"]
             else:
-                if "qdot" not in mapping:
-                    if self.nb_quaternions > 0:
-                        mapping["qdot"] = BiMapping(range(self.nb_qdot), range(self.nb_qdot))
-                        mapping["qddot"] = mapping["qdot"]
-                    else:
-                        if "q" not in mapping:
-                            mapping["q"] = BiMapping(range(self.nb_q), range(self.nb_q))
-                        mapping["qdot"] = mapping["q"]
-                        mapping["qddot"] = mapping["qdot"]
+                mapping["qddot"] = mapping["qdot"]
         return mapping
 
     def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> "Bounds":
         from bioptim import Bounds
-
         out = Bounds()
-        q_ranges = []
-        qdot_ranges = []
-        qddot_ranges = []
 
-        if any(variables) == "q":
-            for i in range(self.nb_segments):
-                segment = self.segments[i]
-                q_ranges += [q_range for q_range in segment.QRanges()]
-                q_mapping = self.q_mapping(mapping)
-                mapping = q_mapping
-                x_min = [q_ranges[i].min() for i in q_mapping["q"].to_first.map_idx]
-                x_max = [q_ranges[i].max() for i in q_mapping["q"].to_first.map_idx]
-                out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
+        for var in variables:
+            if var == "q":
+                for i in range(self.nb_segments):
+                    q_ranges = []
+                    segment = self.segments[i]
+                    q_ranges += [q_range for q_range in segment.QRanges()]
+                    q_mapping = self.q_mapping(mapping)
+                    mapping = q_mapping
+                    x_min = [q_ranges[i].min() for i in q_mapping["q"].to_first.map_idx]
+                    x_max = [q_ranges[i].max() for i in q_mapping["q"].to_first.map_idx]
+                    out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
 
-        elif any(variables) == "qdot":
-            for i in range(self.nb_segments):
-                segment = self.segments[i]
-                qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-                qdot_mapping = self.qdot_mapping(mapping)
-                mapping = qdot_mapping
-                x_min = [qdot_ranges[i].min() for i in qdot_mapping["qdot"].to_first.map_idx]
-                x_max = [qdot_ranges[i].max() for i in qdot_mapping["qdot"].to_first.map_idx]
-                out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
+        for var in variables:
+            if var == "qdot":
+                for i in range(self.nb_segments):
+                    qdot_ranges = []
+                    segment = self.segments[i]
+                    qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+                    qdot_mapping = self.qdot_mapping(mapping)
+                    mapping = qdot_mapping
+                    x_min = [qdot_ranges[i].min() for i in qdot_mapping["qdot"].to_first.map_idx]
+                    x_max = [qdot_ranges[i].max() for i in qdot_mapping["qdot"].to_first.map_idx]
+                    out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
 
-        elif any(variables) == "qddot":
-            for i in range(self.nb_segments):
-                segment = self.segments[i]
-                qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
-                qddot_mapping = self.qddot_mapping(mapping)
-                mapping = qddot_mapping
-                x_min = [qddot_ranges[i].min() for i in qddot_mapping["qddot"].to_first.map_idx]
-                x_max = [qddot_ranges[i].max() for i in qddot_mapping["qddot"].to_first.map_idx]
-                out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
-        else:
+        for var in variables:
+            if var == "qddot":
+                for i in range(self.nb_segments):
+                    qddot_ranges = []
+                    segment = self.segments[i]
+                    qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
+                    qddot_mapping = self.qddot_mapping(mapping)
+                    mapping = qddot_mapping
+                    x_min = [qddot_ranges[i].min() for i in qddot_mapping["qddot"].to_first.map_idx]
+                    x_max = [qddot_ranges[i].max() for i in qddot_mapping["qddot"].to_first.map_idx]
+                    out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
+
+        if out.shape[0] == 0:
             raise ValueError(f"Unrecognized variable ({variables}), only 'q', 'qdot' and 'qddot' are allowed")
+
         return out

@@ -1,5 +1,5 @@
 from casadi import MX, SX
-from typing import Protocol, Callable, Union
+from typing import Protocol, Callable
 from ..misc.mapping import BiMapping, BiMappingList
 
 
