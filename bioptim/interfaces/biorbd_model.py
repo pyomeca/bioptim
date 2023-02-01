@@ -306,7 +306,7 @@ class BiorbdModel:
     def passive_joint_torque(self, q, qdot) -> MX:
         return self.model.passiveJointTorque(q, qdot).to_mx()
 
-    def q_mapping(self, mapping=None):
+    def q_mapping(self, mapping: BiMapping = None) -> BiMapping:
         if mapping is None:
             mapping = {}
         if self.nb_quaternions > 0:
@@ -322,7 +322,7 @@ class BiorbdModel:
             mapping["q"] = BiMapping(range(self.nb_q), range(self.nb_q))
         return mapping
 
-    def qdot_mapping(self, mapping=None):
+    def qdot_mapping(self, mapping: BiMapping = None) -> BiMapping:
         if mapping is None:
             mapping = {}
         if "qdot" not in mapping:
@@ -334,7 +334,7 @@ class BiorbdModel:
                 mapping["qdot"] = mapping["q"]
         return mapping
 
-    def qddot_mapping(self, mapping=None):
+    def qddot_mapping(self, mapping: BiMapping = None) -> BiMapping:
         if mapping is None:
             mapping = {}
 
@@ -389,6 +389,5 @@ class BiorbdModel:
                 x_max = [qddot_ranges[i].max() for i in qddot_mapping["qddot"].to_first.map_idx]
                 out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
         else:
-            raise RuntimeError(f"Unrecognized variable, only 'q', 'qdot' and 'qddot' are allowed")
-            # todo : add ({variable}) in RuntimeError with correct spelling
+            raise ValueError(f"Unrecognized variable ({variables}), only 'q', 'qdot' and 'qddot' are allowed")
         return out
