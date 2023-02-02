@@ -6,7 +6,7 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 Note that the final node is not tracked.
 """
 
-from typing import Callable, Union
+from typing import Callable
 import importlib.util
 from pathlib import Path
 
@@ -37,13 +37,13 @@ data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
-def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable, n_q: int) -> Union[DM, np.ndarray]:
+def get_markers_pos(x: DM | np.ndarray, idx_marker: int, fun: Callable, n_q: int) -> DM | np.ndarray:
     """
     Get the position of a specific marker from the states
 
     Parameters
     ----------
-    x: Union[DM, np.ndarray]
+    x: DM | np.ndarray
         The states to get the marker positions from
     idx_marker: int
         The index of the marker to get the position

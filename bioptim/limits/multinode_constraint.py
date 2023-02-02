@@ -1,4 +1,4 @@
-from typing import Callable, Union, Any
+from typing import Callable, Any
 
 from casadi import vertcat, MX
 
@@ -39,7 +39,7 @@ class MultinodeConstraint(Constraint):
         The delta time
     node_idx: int
         The index of the node in nlp pre
-    multinode_constraint: Union[Callable, Any]
+    multinode_constraint: Callable | Any
         The nature of the cost function is the multi node constraint
     penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
@@ -49,9 +49,9 @@ class MultinodeConstraint(Constraint):
         self,
         phase_first_idx: int,
         phase_second_idx: int,
-        first_node: Union[Node, int],
-        second_node: Union[Node, int],
-        multinode_constraint: Union[Callable, Any] = None,
+        first_node: Node | int,
+        second_node: Node | int,
+        multinode_constraint: Callable | Any = None,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
@@ -107,7 +107,7 @@ class MultinodeConstraint(Constraint):
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL
 
-    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
+    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList | list | tuple):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
         if self.weight == 0:
@@ -142,7 +142,7 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, transition: Union[Callable, PhaseTransitionFcn], phase: int = -1, **extra_arguments)
+    add(self, transition: Callable | PhaseTransitionFcn, phase: int = -1, **extra_arguments)
         Add a new MultinodeConstraint to the list
     print(self)
         Print the MultinodeConstraintList to the console
@@ -156,7 +156,7 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
 
         Parameters
         ----------
-        multinode_constraint: Union[Callable, MultinodeConstraintFcn]
+        multinode_constraint: Callable | MultinodeConstraintFcn
             The chosen phase transition
         extra_arguments: dict
             Any parameters to pass to Constraint

@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Any
 from math import inf
 import inspect
 
@@ -18,11 +18,11 @@ class PenaltyFunctionAbstract:
     -------
     add(ocp: OptimalControlProgram, nlp: NonLinearProgram)
         Add a new penalty to the list (abstract)
-    set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, index: Union[str, int, list, tuple], _type: str)
+    set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, index: str | int | list | tuple, _type: str)
         Simple penalty.cols setter for marker index and names
-    set_axes_rows(penalty: PenaltyOption, axes: Union[list, tuple])
+    set_axes_rows(penalty: PenaltyOption, axes: list | tuple)
         Simple penalty.cols setter for marker index and names
-    _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0)
+    _check_idx(name: str, elements: list | tuple | int, max_n_elements: int = inf, min_n_elements: int = 0)
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay
     validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyNodeList)
@@ -111,9 +111,9 @@ class PenaltyFunctionAbstract:
         def minimize_markers(
             penalty: PenaltyOption,
             all_pn: PenaltyNodeList,
-            marker_index: Union[tuple, list, int, str] = None,
-            axes: Union[tuple, list] = None,
-            reference_jcs: Union[str, int] = None,
+            marker_index: tuple | list | int | str = None,
+            axes: tuple | list = None,
+            reference_jcs: str | int = None,
         ):
             """
             Minimize a marker set.
@@ -126,12 +126,12 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            marker_index: Union[tuple, list, int, str]
+            marker_index: tuple | list | int | str
                 The index of markers to minimize, can be int or str.
                 penalty.cols should not be defined if marker_index is defined
             axes: list
                 The axes to minimize, default XYZ
-            reference_jcs: Union[int, str]
+            reference_jcs: int | str
                 The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
 
@@ -164,9 +164,9 @@ class PenaltyFunctionAbstract:
         def minimize_markers_velocity(
             penalty: PenaltyOption,
             all_pn: PenaltyNodeList,
-            marker_index: Union[tuple, list, int, str] = None,
-            axes: Union[tuple, list] = None,
-            reference_jcs: Union[str, int] = None,
+            marker_index: tuple | list | int | str = None,
+            axes: tuple | list = None,
+            reference_jcs: str | int = None,
         ):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
@@ -179,12 +179,12 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            marker_index: Union[tuple, list, int, str]
+            marker_index: tuple | list | int | str
                 The index of markers to minimize, can be int or str.
                 penalty.cols should not be defined if marker_index is defined
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
-            reference_jcs: Union[int, str]
+            reference_jcs: int | str
                 The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
 
@@ -210,9 +210,9 @@ class PenaltyFunctionAbstract:
         def superimpose_markers(
             penalty: PenaltyOption,
             all_pn: PenaltyNodeList,
-            first_marker: Union[str, int],
-            second_marker: Union[str, int],
-            axes: Union[tuple, list] = None,
+            first_marker: str | int,
+            second_marker: str | int,
+            axes: tuple | list = None,
         ):
             """
             Minimize the distance between two markers
@@ -224,11 +224,11 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            first_marker: Union[str, int]
+            first_marker: str | int
                 The name or index of one of the two markers
-            second_marker: Union[str, int]
+            second_marker: str | int
                 The name or index of one of the two markers
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
@@ -368,7 +368,7 @@ class PenaltyFunctionAbstract:
             return com_height_cx
 
         @staticmethod
-        def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axes is specified, the squared-norm of the center_of_mass's position is minimized.
@@ -381,7 +381,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
@@ -392,7 +392,7 @@ class PenaltyFunctionAbstract:
             return com_cx
 
         @staticmethod
-        def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
@@ -405,7 +405,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
@@ -417,7 +417,7 @@ class PenaltyFunctionAbstract:
             return com_dot_cx
 
         @staticmethod
-        def minimize_com_acceleration(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_com_acceleration(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
@@ -430,7 +430,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
@@ -457,7 +457,7 @@ class PenaltyFunctionAbstract:
                 )
 
         @staticmethod
-        def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
             """
             Adds the objective that the angular momentum of the model in the global reference frame should be minimized.
             If no axis is specified, the three components of the angular momentum are minimized.
@@ -469,7 +469,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
@@ -481,7 +481,7 @@ class PenaltyFunctionAbstract:
             return angular_momentum_cx
 
         @staticmethod
-        def minimize_linear_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_linear_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
             """
             Adds the objective that the linear momentum of the model in the global reference frame should be minimized.
             If no axis is specified, the three components of the linear momentum are minimized.
@@ -493,7 +493,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
@@ -514,7 +514,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_contact_forces(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: tuple | list | int | str = None
         ):
             """
             Minimize the contact forces computed from dynamics with contact
@@ -527,7 +527,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            contact_index: Union[tuple, list]
+            contact_index: tuple | list
                 The index of contact to minimize, must be an int or a list.
                 penalty.cols should not be defined if contact_index is defined
             """
@@ -544,7 +544,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_soft_contact_forces(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: tuple | list | int | str = None
         ):
             """
             Minimize the soft contact forces computed from dynamics with contact
@@ -557,7 +557,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            contact_index: Union[tuple, list]
+            contact_index: tuple | list
                 The index of contact to minimize, must be an int or a list.
                 penalty.cols should not be defined if contact_index is defined
             """
@@ -579,7 +579,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, segment: Union[int, str], rt: int
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, segment: int | str, rt: int
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -591,7 +591,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            segment: Union[int, str]
+            segment: int | str
                 The name or index of the segment
             rt: int
                 The index of the RT in the bioMod
@@ -619,8 +619,8 @@ class PenaltyFunctionAbstract:
         def track_marker_with_segment_axis(
             penalty: PenaltyOption,
             all_pn: PenaltyNodeList,
-            marker: Union[int, str],
-            segment: Union[int, str],
+            marker: int | str,
+            segment: int | str,
             axis: Axis,
         ):
             """
@@ -662,7 +662,7 @@ class PenaltyFunctionAbstract:
             return marker_objective
 
         @staticmethod
-        def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list]):
+        def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):
 
             nlp = all_pn.nlp
             if nlp.control_type == ControlType.CONSTANT:
@@ -693,7 +693,7 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
-        def custom(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], **parameters: Any):
+        def custom(penalty: PenaltyOption, all_pn: PenaltyNodeList | list, **parameters: Any):
             """
             A user defined penalty function
 
@@ -759,7 +759,7 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def set_idx_columns(
-        penalty: PenaltyOption, all_pn: PenaltyNodeList, index: Union[str, int, list, tuple], _type: str
+        penalty: PenaltyOption, all_pn: PenaltyNodeList, index: str | int | list | tuple, _type: str
     ):
         """
         Simple penalty.cols setter for marker index and names
@@ -770,7 +770,7 @@ class PenaltyFunctionAbstract:
             The actual penalty to declare
         all_pn: PenaltyNodeList
             The penalty node elements
-        index: Union[str, int, list, tuple]
+        index: str | int | list | tuple
             The marker to index
         _type: str
             The type of penalty (for raise error message purpose)
@@ -788,7 +788,7 @@ class PenaltyFunctionAbstract:
                 ]
 
     @staticmethod
-    def set_axes_rows(penalty: PenaltyOption, axes: Union[list, tuple]):
+    def set_axes_rows(penalty: PenaltyOption, axes: list | tuple):
         """
         Simple penalty.cols setter for marker index and names
 
@@ -796,7 +796,7 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        axes: Union[list, tuple]
+        axes: list | tuple
             The marker to index
         """
 
@@ -805,7 +805,7 @@ class PenaltyFunctionAbstract:
         penalty.rows = axes if axes is not None else penalty.rows
 
     @staticmethod
-    def _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0):
+    def _check_idx(name: str, elements: list | tuple | int, max_n_elements: int = inf, min_n_elements: int = 0):
         """
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay
@@ -813,7 +813,7 @@ class PenaltyFunctionAbstract:
         Parameters
         name: str
             Name of the element
-        elements: Union[list, tuple, int]
+        elements: list | tuple | int
             Index of the slicing of the array variable
         max_n_elements: int
             The maximal shape of the element

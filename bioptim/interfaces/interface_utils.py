@@ -152,7 +152,7 @@ def generic_dispatch_obj_func(interface):
 
     Returns
     -------
-    Union[SX, MX]
+    SX | MX
         The objective function
     """
 

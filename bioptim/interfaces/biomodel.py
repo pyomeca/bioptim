@@ -162,7 +162,7 @@ class BioModel(Protocol):
 
         Parameters
         ----------
-        x: Union[MX, SX]
+        x: MX | SX
             The state to normalize
 
         Returns
@@ -176,11 +176,11 @@ class BioModel(Protocol):
 
         Parameters
         ----------
-        q: Union[MX, SX]
+        q: MX | SX
             The value of q from "get"
-        qdot: Union[MX, SX]
+        qdot: MX | SX
             The value of qdot from "get"
-        tau: Union[MX, SX]
+        tau: MX | SX
             The value of tau from "get"
         external_forces: list[np.ndarray]
             The value of external_forces, one for each frame

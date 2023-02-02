@@ -1,5 +1,3 @@
-from typing import Union
-
 from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX
 import numpy as np
 
@@ -19,15 +17,15 @@ class Integrator:
         The initial and final time
     idx: int
         The index of the degrees of freedom to integrate
-    cx: Union[MX, SX]
+    cx: MX | SX
         The CasADi type the integration should be built from
-    x_sym: Union[MX, SX]
+    x_sym: MX | SX
         The state variables
-    u_sym: Union[MX, SX]
+    u_sym: MX | SX
         The control variables
-    param_sym: Union[MX, SX]
+    param_sym: MX | SX
         The parameters variables
-    param_scaling: Union[MX, SX]
+    param_scaling: MX | SX
         The parameters variables scaling factor
     fun: Callable
         The dynamic function which provides the derivative of the states
@@ -50,7 +48,7 @@ class Integrator:
         Get the multithreaded CasADi graph of the integration
     get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     _finish_init(self)
         Prepare the CasADi function from dxdt
@@ -123,7 +121,7 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple:
         """
         The dynamics of the system
 
@@ -131,11 +129,11 @@ class Integrator:
         ----------
         h: float
             The time step
-        states: Union[MX, SX]
+        states: MX | SX
             The states of the system
-        controls: Union[MX, SX]
+        controls: MX | SX
             The controls of the system
-        params: Union[MX, SX]
+        params: MX | SX
             The parameters of the system
 
         Returns
@@ -174,9 +172,9 @@ class RK(Integrator):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
         Compute the next integrated state (abstract)
-    dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -195,7 +193,7 @@ class RK(Integrator):
         self.h_norm = 1 / self.n_step
         self.h = self.step_time * self.h_norm
 
-    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX):
         """
         Compute the next integrated state (abstract)
 
@@ -205,11 +203,11 @@ class RK(Integrator):
             The time step
         t: float
             The initial time of the integration
-        x_prev: Union[MX, SX]
+        x_prev: MX | SX
             The current state of the system
-        u: Union[MX, SX]
+        u: MX | SX
             The control of the system
-        p: Union[MX, SX]
+        p: MX | SX
             The parameters of the system
 
         Returns
@@ -219,7 +217,7 @@ class RK(Integrator):
 
         raise RuntimeError("RK is abstract, please select a specific RK")
 
-    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple:
         """
         The dynamics of the system
 
@@ -227,11 +225,11 @@ class RK(Integrator):
         ----------
         h: float
             The time step
-        states: Union[MX, SX]
+        states: MX | SX
             The states of the system
-        controls: Union[MX, SX]
+        controls: MX | SX
             The controls of the system
-        params: Union[MX, SX]
+        params: MX | SX
             The parameters of the system
 
         Returns
@@ -260,7 +258,7 @@ class RK1(RK):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -277,7 +275,7 @@ class RK1(RK):
         super(RK1, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX):
         """
         Compute the next integrated state
 
@@ -287,11 +285,11 @@ class RK1(RK):
             The time step
         t: float
             The initial time of the integration
-        x_prev: Union[MX, SX]
+        x_prev: MX | SX
             The current state of the system
-        u: Union[MX, SX]
+        u: MX | SX
             The control of the system
-        p: Union[MX, SX]
+        p: MX | SX
             The parameters of the system
 
         Returns
@@ -308,7 +306,7 @@ class RK2(RK):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -325,7 +323,7 @@ class RK2(RK):
         super(RK2, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX):
         """
         Compute the next integrated state
 
@@ -335,11 +333,11 @@ class RK2(RK):
             The time step
         t: float
             The initial time of the integration
-        x_prev: Union[MX, SX]
+        x_prev: MX | SX
             The current state of the system
-        u: Union[MX, SX]
+        u: MX | SX
             The control of the system
-        p: Union[MX, SX]
+        p: MX | SX
             The parameters of the system
 
         Returns
@@ -356,7 +354,7 @@ class RK4(RK):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -373,7 +371,7 @@ class RK4(RK):
         super(RK4, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX):
         """
         Compute the next integrated state
 
@@ -383,11 +381,11 @@ class RK4(RK):
             The time step
         t: float
             The initial time of the integration
-        x_prev: Union[MX, SX]
+        x_prev: MX | SX
             The current state of the system
-        u: Union[MX, SX]
+        u: MX | SX
             The control of the system
-        p: Union[MX, SX]
+        p: MX | SX
             The parameters of the system
 
         Returns
@@ -408,7 +406,7 @@ class RK8(RK4):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -425,7 +423,7 @@ class RK8(RK4):
         super(RK8, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX):
         """
         Compute the next integrated state
 
@@ -435,11 +433,11 @@ class RK8(RK4):
             The time step
         t: float
             The initial time of the integration
-        x_prev: Union[MX, SX]
+        x_prev: MX | SX
             The current state of the system
-        u: Union[MX, SX]
+        u: MX | SX
             The control of the system
-        p: Union[MX, SX]
+        p: MX | SX
             The parameters of the system
 
         Returns
@@ -493,7 +491,7 @@ class COLLOCATION(Integrator):
     -------
     get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -574,7 +572,7 @@ class COLLOCATION(Integrator):
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
 
-    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple:
         """
         The dynamics of the system
 
@@ -582,11 +580,11 @@ class COLLOCATION(Integrator):
         ----------
         h: float
             The time step
-        states: Union[MX, SX]
+        states: MX | SX
             The states of the system
-        controls: Union[MX, SX]
+        controls: MX | SX
             The controls of the system
-        params: Union[MX, SX]
+        params: MX | SX
             The parameters of the system
 
         Returns
@@ -641,7 +639,7 @@ class IRK(COLLOCATION):
     -------
     get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -657,7 +655,7 @@ class IRK(COLLOCATION):
 
         super(IRK, self).__init__(ode, ode_opt)
 
-    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple:
         """
         The dynamics of the system
 
@@ -665,11 +663,11 @@ class IRK(COLLOCATION):
         ----------
         h: float
             The time step
-        states: Union[MX, SX]
+        states: MX | SX
             The states of the system
-        controls: Union[MX, SX]
+        controls: MX | SX
             The controls of the system
-        params: Union[MX, SX]
+        params: MX | SX
             The parameters of the system
 
         Returns
