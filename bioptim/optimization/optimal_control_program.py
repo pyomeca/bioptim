@@ -607,16 +607,15 @@ class OptimalControlProgram:
 
     def _set_kinematic_phase_mapping(self):
         """
-        To add phase_mapping for different kinematic number of states in the ocp
+        To add phase_mapping for different kinematic number of states in the ocp. It maps the degrees of freedom
+        across phases, so they appear on the same graph.
         """
         dof_names_all_phases = []
         phase_mappings = []  # [[] for _ in range(len(self.nlp))]
         dof_names = []  # [[] for _ in range(len(self.nlp))]
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
-            for j in range(nlp.model.nb_q):
-
-                legend = nlp.model.name_dof[j]
+            for legend in nlp.model.name_dof:
                 if legend in dof_names_all_phases:
                     current_dof_mapping += [dof_names_all_phases.index(legend)]
                 else:
