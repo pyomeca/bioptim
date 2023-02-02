@@ -5,6 +5,10 @@ from casadi import MX, horzcat, vertcat, SX, norm_fro
 
 from ..misc.mapping import BiMapping, BiMappingList
 import numpy as np
+from ..misc.utils import check_version
+
+
+check_version(biorbd, "1.9.9", "1.10.0")
 
 from bioptim.misc.utils import check_version
 
