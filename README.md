@@ -934,10 +934,10 @@ Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be ca
 If someone wants to add noise to the initial guess, you can provide the following:
 ```python
 init = init.add_noise(
-    bounds: Union[Bounds, BoundsList, QAndQDotBounds], 
-    magnitude: Union[list, int, float, np.ndarray],
+    bounds: Bounds | BoundsList | QAndQDotBounds, 
+    magnitude: list | int | float | np.ndarray,
     magnitude_type: MagnitudeType, n_shooting: int, 
-    bound_push: Union[list, int, float], 
+    bound_push: list | int | float, 
     seed: int
     )
 ```
@@ -961,11 +961,11 @@ If someone wants to add noise to the initial guess list, you can provide the fol
 ```python
 init_list.add_noise(
   bounds: BoundList,
-  n_shooting: Union[int, List[int], Tuple[int]],
-  magnitude: Union[list, int, float, np.ndarray],
+  n_shooting: int | List[int] | Tuple[int],
+  magnitude: list | int | float | np.ndarray,
   magnitude_type: magnitudeType,
-  bound_push: Union[int, float, List[int], List[float], ndarray],
-  seed: Union[int, List[int]],
+  bound_push: int | float | List[int] | List[float] | ndarray,
+  seed: int | List[int],
 )
 ```
 The parameters, except `MagnitudeType` must be specified for each phase unless you want the same value for every phases.
