@@ -578,9 +578,7 @@ class PenaltyFunctionAbstract:
             return soft_contact_force[force_idx]
 
         @staticmethod
-        def track_segment_with_custom_rt(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, segment: int | str, rt: int
-        ):
+        def track_segment_with_custom_rt(penalty: PenaltyOption, all_pn: PenaltyNodeList, segment: int | str, rt: int):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
             and a RT (e.g. IMU). By default this function is quadratic, meaning that it minimizes the difference.
@@ -663,7 +661,6 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):
-
             nlp = all_pn.nlp
             if nlp.control_type == ControlType.CONSTANT:
                 u = nlp.controls.cx
@@ -758,9 +755,7 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("add cannot be called from an abstract class")
 
     @staticmethod
-    def set_idx_columns(
-        penalty: PenaltyOption, all_pn: PenaltyNodeList, index: str | int | list | tuple, _type: str
-    ):
+    def set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, index: str | int | list | tuple, _type: str):
         """
         Simple penalty.cols setter for marker index and names
 

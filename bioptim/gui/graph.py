@@ -190,9 +190,7 @@ class GraphAbstract:
             for i in obj.node_idx:
                 if isinstance(obj.type, ObjectiveFcn.Mayer):
                     mayer_str = ""
-                    mayer_objective: list | tuple = (
-                        [obj.node[0]] if isinstance(obj.node, (list, tuple)) else [obj.node]
-                    )
+                    mayer_objective: list | tuple = [obj.node[0]] if isinstance(obj.node, (list, tuple)) else [obj.node]
                     if obj.target is not None:
                         if obj.quadratic:
                             mayer_str += (

@@ -734,9 +734,7 @@ class DynamicsFunctions:
             return qdot_var.mapping.to_first.map(qddot)
 
     @staticmethod
-    def inverse_dynamics(
-        nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, qddot: MX | SX, with_contact: bool
-    ):
+    def inverse_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, qddot: MX | SX, with_contact: bool):
         """
         Easy accessor to torques from inverse dynamics
 

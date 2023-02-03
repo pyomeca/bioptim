@@ -12,7 +12,6 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_segment_on_rt(ode_solver):
-
     from bioptim.examples.track import track_segment_on_rt as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)

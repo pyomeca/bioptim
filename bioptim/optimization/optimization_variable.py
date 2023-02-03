@@ -134,13 +134,11 @@ class VariableScalingList(OptionDict):
 
     @staticmethod
     def scaling_fill_phases(ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
-
         x_scaling_out = VariableScalingList()
         xdot_scaling_out = VariableScalingList()
         u_scaling_out = VariableScalingList()
 
         for phase in range(ocp.n_phases):
-
             if "all" not in x_scaling.keys():
                 nx = x_init[phase].shape[0]
                 if len(x_scaling.keys()) > 0:

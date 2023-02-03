@@ -311,7 +311,6 @@ class PenaltyOption(OptionGeneric):
             self.integration_rule == IntegralApproximation.TRAPEZOIDAL
             or self.integration_rule == IntegralApproximation.TRAPEZOIDAL
         ):
-
             target_dim = len(self.target)
             if target_dim != 2:
                 raise RuntimeError(f"targets with trapezoidal integration rule need to get a list of two elements.")

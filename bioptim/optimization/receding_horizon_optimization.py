@@ -347,7 +347,6 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         solver_first_iter: Solver.Generic = None,
         **extra_options,
     ) -> Solution | tuple:
-
         if solver is None:
             solver = Solver.ACADOS()
 
@@ -521,7 +520,6 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         get_cycles: bool = False,
         **extra_options,
     ) -> Solution | tuple:
-
         get_all_iterations = extra_options["get_all_iterations"] if "get_all_iterations" in extra_options else False
         extra_options["get_all_iterations"] = True if get_cycles else False
 
