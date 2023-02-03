@@ -1,6 +1,6 @@
 from itertools import chain
 from math import inf
-from typing import Union, Callable
+from typing import Callable
 from time import perf_counter
 
 import numpy as np
@@ -30,17 +30,17 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
     def __init__(
         self,
-        bio_model: Union[list, tuple, BioModel],
-        dynamics: Union[Dynamics, DynamicsList],
-        window_len: Union[int, list, tuple],
-        window_duration: Union[int, float, list, tuple],
+        bio_model: list | tuple | BioModel,
+        dynamics: Dynamics | DynamicsList,
+        window_len: int | list | tuple,
+        window_duration: int | float | list | tuple,
         use_sx=True,
         **kwargs,
     ):
         """
         Parameters
         ----------
-        window_size: Union[int, list[int]]
+        window_size: int | list[int]
             The number of shooting point of the moving window
         """
 
@@ -276,14 +276,14 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         controls = sol.controls["all"][:, self.frame_to_export]
         return states, controls
 
-    def _define_time(self, phase_time: Union[int, float, list, tuple], objective_functions, constraints):
+    def _define_time(self, phase_time: int | float | list | tuple, objective_functions, constraints):
         """
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
 
         Parameters
         ----------
-        phase_time: Union[int, float, list, tuple]
+        phase_time: int | float | list | tuple
             The time of all the phases
         objective_functions: ObjectiveList
             All the objective functions. It is used to scan if any time optimization was defined
@@ -297,7 +297,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
             Parameters
             ----------
-            penalty_functions: Union[ObjectiveList, ConstraintList]
+            penalty_functions: ObjectiveList | ConstraintList
                 The list to parse to ensure no double free times are declared
 
             """
@@ -322,10 +322,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def __init__(
         self,
-        bio_model: Union[list, tuple, BioModel],
-        dynamics: Union[Dynamics, DynamicsList],
-        cycle_len: Union[int, list, tuple],
-        cycle_duration: Union[int, float, list, tuple],
+        bio_model: list | tuple | BioModel,
+        dynamics: Dynamics | DynamicsList,
+        cycle_len: int | list | tuple,
+        cycle_duration: int | float | list | tuple,
         use_sx=True,
         **kwargs,
     ):
@@ -346,7 +346,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         cyclic_options: dict = None,
         solver_first_iter: Solver.Generic = None,
         **extra_options,
-    ) -> Union[Solution, tuple]:
+    ) -> Solution | tuple:
 
         if solver is None:
             solver = Solver.ACADOS()
@@ -454,10 +454,10 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def __init__(
         self,
-        bio_model: Union[list, tuple],
-        dynamics: Union[Dynamics, DynamicsList],
-        cycle_len: Union[int, list, tuple],
-        cycle_duration: Union[int, float, list, tuple],
+        bio_model: list | tuple,
+        dynamics: Dynamics | DynamicsList,
+        cycle_len: int | list | tuple,
+        cycle_duration: int | float | list | tuple,
         n_cycles_simultaneous: int,
         n_cycles_to_advance: int = 1,
         use_sx=True,
@@ -466,7 +466,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         """
         Parameters
         ----------
-        window_size: Union[int, list[int]]
+        window_size: int | list[int]
             The number of shooting point of the moving window
         n_cycles_simultaneous: int
             The number of simultaneous cycles
