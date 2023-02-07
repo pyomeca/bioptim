@@ -19,7 +19,6 @@ from bioptim import (
     DynamicsFcn,
     BiMappingList,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     Solver,
 )
@@ -66,7 +65,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess

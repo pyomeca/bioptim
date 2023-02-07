@@ -663,7 +663,6 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list]):
-
             nlp = all_pn.nlp
             if nlp.control_type == ControlType.CONSTANT:
                 u = nlp.controls.cx

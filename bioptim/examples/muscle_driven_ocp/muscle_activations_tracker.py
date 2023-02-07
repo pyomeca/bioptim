@@ -24,7 +24,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Node,
@@ -207,7 +206,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
     nq = bio_model.nb_q
     x_bounds[0].min[:nq, :] = -2 * np.pi

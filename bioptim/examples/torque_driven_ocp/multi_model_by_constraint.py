@@ -9,7 +9,6 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     Node,
-    QAndQDotBounds,
     ObjectiveFcn,
     BiMappingList,
     PhaseTransitionList,
@@ -24,7 +23,6 @@ def prepare_ocp(
     biorbd_model_path_modified_inertia: str = "models/double_pendulum_modified_inertia.bioMod",
     n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
-
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_modified_inertia))
 
     # Problem parameters
@@ -71,8 +69,8 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[1]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[1].bounds_from_ranges(["q", "qdot"]))
 
     # Phase 0
     x_bounds[0][0, 0] = -np.pi
@@ -126,7 +124,6 @@ def prepare_ocp(
 
 
 def main():
-
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 

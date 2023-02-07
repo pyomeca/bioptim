@@ -17,7 +17,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     Solver,
     Node,
@@ -45,7 +44,7 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n
     model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_bound = QAndQDotBounds(model)
+    x_bound = model.bounds_from_ranges(["q", "qdot"])
     x_bound.min[0, :] = -2 * np.pi * n_cycles_simultaneous  # Allow the wheel to spin as much as needed
     x_bound.max[0, :] = 0
     u_bound = Bounds([-max_torque] * model.nb_q, [max_torque] * model.nb_q)

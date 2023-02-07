@@ -1359,7 +1359,6 @@ class Solution:
 
         all_bioviz = []
         for idx_phase, data in enumerate(states):
-
             if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
                 raise NotImplementedError("Animation is only implemented for biorbd models")
 
@@ -1430,7 +1429,6 @@ class Solution:
                         )
                     )
                 elif penalty.multinode_constraint:
-
                     x = np.concatenate(
                         (
                             self._states["scaled"][penalty.phase_first_idx]["all"][:, idx[0]],
@@ -1693,7 +1691,6 @@ def concatenate_optimization_variables(
             else:
                 return z_final
         else:
-
             final_tuple = []
             for i, y in enumerate(variable):
                 if i < (len(variable) - 1) and continuous_phase:

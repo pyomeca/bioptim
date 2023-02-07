@@ -62,7 +62,6 @@ def check_conditioning(ocp):
         for phase in ocp.nlp:
             list_constraints = []
             for constraints in phase.g:
-
                 # If no constraints then leave
                 if (len(phase.g) == 0) == True:
                     break
@@ -71,7 +70,6 @@ def check_conditioning(ocp):
                     0,
                     constraints.function(phase.states.cx, phase.controls.cx, phase.parameters.cx).shape[0],
                 ):
-
                     # depends if there are parameters
                     if phase.parameters.shape == 0:
                         vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)
@@ -137,10 +135,8 @@ def check_conditioning(ocp):
                     0,
                     constraints.function(phase.states.cx, phase.controls.cx, phase.parameters.cx).shape[0],
                 ):
-
                     # find all equality constraints
                     if (constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]) == True:
-
                         # parameters
                         if (phase.parameters.shape == 0) == True:
                             vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)

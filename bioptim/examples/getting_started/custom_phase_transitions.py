@@ -19,7 +19,6 @@ from bioptim import (
     ConstraintFcn,
     ConstraintList,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     PhaseTransitionFcn,
     PhaseTransitionList,
@@ -120,10 +119,10 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
 
     x_bounds[0][[1, 3, 4, 5], 0] = 0
     x_bounds[-1][[1, 3, 4, 5], -1] = 0

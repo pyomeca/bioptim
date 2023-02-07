@@ -17,7 +17,6 @@ from bioptim import (
     Objective,
     Bounds,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     InitialGuess,
     InterpolationType,
@@ -157,10 +156,10 @@ def prepare_ocp_phase_transitions(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
 
     x_bounds[0][[1, 3, 4, 5], 0] = 0
     x_bounds[-1][[1, 3, 4, 5], -1] = 0
@@ -287,7 +286,7 @@ def prepare_ocp_parameters(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
@@ -416,7 +415,7 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 

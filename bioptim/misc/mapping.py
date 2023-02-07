@@ -173,7 +173,6 @@ class BiMappingList(OptionDict):
         bimapping: BiMapping = None,
         phase: int = -1,
     ):
-
         """
         Add a new BiMapping to the list
 
@@ -257,7 +256,6 @@ class NodeMapping(OptionGeneric):
         phase_post: int = None,
         **params
     ):
-
         """
         Parameters
         ----------
@@ -327,7 +325,6 @@ class NodeMappingList(OptionDict):
         )
 
     def get_variable_from_phase_idx(self, ocp):
-
         use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]

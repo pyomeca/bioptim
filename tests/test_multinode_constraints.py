@@ -11,7 +11,6 @@ from bioptim import (
     ObjectiveList,
     BoundsList,
     InitialGuessList,
-    QAndQDotBounds,
 )
 import biorbd_casadi as biorbd
 from .utils import TestUtils
@@ -60,9 +59,9 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2) -> OptimalControlProgram:
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:

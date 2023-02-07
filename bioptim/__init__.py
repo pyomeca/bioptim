@@ -94,10 +94,6 @@ Bounds
     A placeholder for bounds constraints
 BoundsList
     A list of Bounds if more than one is required
-QAndQDotBounds
-    Specialized Bounds that reads a model to automatically extract q and qdot bounds
-QAndQDotAndQDDotBounds
-    Specialized Bounds that reads a model to automatically extract q, qdot and qddot bounds
 
 
 # --- Managing the initial guesses of the variables --- #

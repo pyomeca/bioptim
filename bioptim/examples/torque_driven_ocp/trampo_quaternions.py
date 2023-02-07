@@ -16,7 +16,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     InterpolationType,
     OdeSolver,
@@ -103,7 +102,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0].min[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
     x_bounds[0].max[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
 

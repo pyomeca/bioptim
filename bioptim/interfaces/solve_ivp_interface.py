@@ -44,11 +44,9 @@ def solve_ivp_interface(
 
     """
     if isinstance(t_eval[0], np.ndarray):  # Direct multiple shooting
-
         y_final = np.array([], dtype=np.float64).reshape(x0.shape[0], 0)
 
         for s, t_eval_step in enumerate(t_eval):
-
             x0i = x0[:, s]
             u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
 
@@ -96,7 +94,6 @@ def solve_ivp_interface(
         x0i = x0
 
         for s, t_eval_step in enumerate(t_eval):
-
             u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
 
             # resize u to match the size of t_eval according to the type of control
@@ -224,7 +221,6 @@ def define_control_function(
             t_u = t_u[::n_step]  # get the actual time steps of u
             return interp1d(t_u, controls, kind="linear", axis=1)
     else:
-
         if control_type == ControlType.CONSTANT:
             return lambda t: piecewise_constant_u(t, t_u, controls)
 

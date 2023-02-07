@@ -598,7 +598,6 @@ class COLLOCATION(Integrator):
         states_end = self._d[0] * states[0]
         defects = []
         for j in range(1, self.degree + 1):
-
             # Expression for the state derivative at the collocation point
             xp_j = 0
             for r in range(self.degree + 1):

@@ -10,7 +10,6 @@ from bioptim import (
     BiorbdModel,
     ConstraintList,
     ConstraintFcn,
-    QAndQDotBounds,
     DynamicsList,
     DynamicsFcn,
     InitialGuessList,
@@ -65,7 +64,7 @@ def test_pendulum_min_time_mayer(ode_solver):
         np.testing.assert_equal(g.shape, (ns * 4, 1))
         np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     tf = sol.parameters["time"][0, 0]
 
@@ -150,7 +149,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
         np.testing.assert_equal(g.shape, (ns * 4, 1))
         np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     tf = sol.parameters["time"][0, 0]
 
@@ -224,7 +223,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
         np.testing.assert_equal(g.shape, (ns * 4, 1))
         np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     tf = sol.parameters["time"][0, 0]
 
@@ -290,7 +289,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
         np.testing.assert_equal(g.shape, (ns * 4, 1))
         np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     tf = sol.parameters["time"][0, 0]
 
@@ -442,7 +441,7 @@ def test_time_constraint(ode_solver):
         np.testing.assert_equal(g.shape, (ns * 4 + 1, 1))
         np.testing.assert_almost_equal(g, np.concatenate((np.zeros((ns * 4, 1)), [[1]])))
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     tf = sol.parameters["time"][0, 0]
 
@@ -527,7 +526,7 @@ def test_monophase_time_constraint(ode_solver):
         np.testing.assert_equal(g.shape, (127, 1))
         np.testing.assert_almost_equal(g, np.concatenate((np.zeros((126, 1)), [[1]])))
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     tf = sol.parameters["time"][0, 0]
 
@@ -588,7 +587,7 @@ def test_multiphase_time_constraint(ode_solver):
             g, np.concatenate((np.zeros((132, 1)), [[1]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.8]]))
         )
 
-    # Check some of the results
+    # Check some results
     sol_merged = sol.merge_phases()
     states, controls = sol_merged.states, sol_merged.controls
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
@@ -636,10 +635,10 @@ def partial_ocp_parameters(n_phases):
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
     if n_phases > 1:
-        x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-        x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
             bounds.min[i, [0, -1]] = 0

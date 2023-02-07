@@ -9,7 +9,6 @@ from bioptim import (
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     ObjectiveFcn,
     Objective,
@@ -56,7 +55,7 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
@@ -144,7 +143,6 @@ def prepare_multi_start(bio_model_path: list, final_time: list, n_shooting: list
 
 
 def main():
-
     # --- Prepare the multi-start and run it --- #
     multi_start = prepare_multi_start(
         bio_model_path=["models/pendulum.bioMod"], final_time=[1], n_shooting=[30, 40, 50], seed=[0, 1, 2, 3]

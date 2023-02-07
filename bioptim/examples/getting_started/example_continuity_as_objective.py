@@ -23,7 +23,6 @@ from bioptim import (
     Dynamics,
     Bounds,
     InterpolationType,
-    QAndQDotBounds,
     NoisedInitialGuess,
     InitialGuess,
     ObjectiveFcn,
@@ -91,7 +90,7 @@ def prepare_ocp_first_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = 0
 
     # Initial guess
@@ -172,7 +171,7 @@ def prepare_ocp_second_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = 0
 
     # Initial guess

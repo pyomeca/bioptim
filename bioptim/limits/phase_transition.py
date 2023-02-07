@@ -54,7 +54,6 @@ class PhaseTransition(MultinodeConstraint):
         max_bound: float = 0,
         **params: Any,
     ):
-
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM

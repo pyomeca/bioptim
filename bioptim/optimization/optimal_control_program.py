@@ -615,7 +615,6 @@ class OptimalControlProgram:
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
             for j in range(nlp.model.nb_q):
-
                 legend = nlp.model.name_dof[j]
                 if legend in dof_names_all_phases:
                     current_dof_mapping += [dof_names_all_phases.index(legend)]
@@ -1280,7 +1279,6 @@ class OptimalControlProgram:
         to_console: bool = True,
         to_graph: bool = True,
     ):
-
         if to_console:
             display_console = OcpToConsole(self)
             display_console.print()

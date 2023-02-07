@@ -16,7 +16,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     Solver,
     Node,
@@ -37,7 +36,7 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque):
     model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_bound = QAndQDotBounds(model)
+    x_bound = model.bounds_from_ranges(["q", "qdot"])
     u_bound = Bounds([-max_torque] * model.nb_q, [max_torque] * model.nb_q)
 
     x_init = InitialGuess(

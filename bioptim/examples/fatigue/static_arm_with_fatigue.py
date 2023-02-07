@@ -15,7 +15,6 @@ from bioptim import (
     ObjectiveFcn,
     Dynamics,
     DynamicsFcn,
-    QAndQDotBounds,
     InitialGuess,
     OdeSolver,
     Constraint,
@@ -156,7 +155,7 @@ def prepare_ocp(
         axes=[Axis.X, Axis.Y],
     )
 
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = (0.07, 1.4, 0, 0)
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
 

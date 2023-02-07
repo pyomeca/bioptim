@@ -59,8 +59,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [The bounds](#the-bounds)
   - [Bounds](#class-bounds)
   - [BoundsList](#class-boundslist)
-  - [QAndQDotBounds](#class-qandqdotbounds)
-  - [QAndQDotAndQDDotBounds](#class-qandqdotandqddotbounds)
 - [The initial conditions](#the-initial-conditions)
   - [InitialGuess](#class-initialguess)
   - [InitialGuessList](#class-initialguesslist)
@@ -239,7 +237,7 @@ from bioptim import (
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
+    
     InitialGuess,
     ObjectiveFcn,
     Objective,
@@ -269,10 +267,10 @@ To define that, it would be nice to first define boundary constraints on the pos
 In this case, the state with index 0 is translation y, and the index 1 refers to rotation about x. 
 Finally, the index 2 and 3 are respectively the velocity of translation y and rotation about x 
 
-QAndQDotBounds waits for a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
+bounds_from_ranges uses the ranges from a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
 How convenient!
 ```python
-x_bounds = QAndQDotBounds(bio_model)
+x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
 ```
 The first dimension of x_bounds is the degrees of freedom (*q*) `and` their velocities (*qdot*) that match those `in` the bioMod `file`. The time `is` discretized `in` nodes wich `is` the second dimension declared `in` x_bounds.
 If you have more than one phase, we would have x_bound[*phase*][*q `and` qdot*, *nodes*]
@@ -426,7 +424,7 @@ from bioptim import (
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
+    
     InitialGuess,
     ObjectiveFcn,
     Objective,
@@ -434,7 +432,7 @@ from bioptim import (
 
 bio_model = BiorbdModel("pendulum.bioMod")
 dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
-x_bounds = QAndQDotBounds(bio_model)
+x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
 x_bounds[:, [0, -1]] = 0
 x_bounds[1, -1] = 3.14
 u_bounds = Bounds([-100, 0], [100, 0])
@@ -894,15 +892,6 @@ bounds_list = BoundsList()
 bounds_list.add(min_bounds, max_bounds)
 ```
 
-### Class: QAndQDotBounds 
-The QAndQDotBounds is a Bounds that uses a biorbd_model to define the minimal and maximal bounds for the generalized coordinates (*q*) and velocities (*qdot*). 
-It is particularly useful when declaring the states bounds for *q* and *qdot*. 
-Anything that was presented for Bounds, also applies to QAndQDotBounds
-
-### Class: QAndQDotAndQDDotBounds 
-The QAndQDotAndQDDotBounds is almost the same as the previous class.
-Except that it also defines the bounds for the generalized accelerations *qddot* in addition to *q* and *qdot*.  
-
 ## The initial conditions
 The initial conditions the solver should start from, i.e., initial values of the states (x) and the controls (u).
 In that sense, it is what is expected by the `OptimalControlProgram` for its `u_init` and `x_init` parameters. 
@@ -934,7 +923,7 @@ Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be ca
 If someone wants to add noise to the initial guess, you can provide the following:
 ```python
 init = init.add_noise(
-    bounds: Union[Bounds, BoundsList, QAndQDotBounds], 
+    bounds: Bounds | BoundsList, 
     magnitude: Union[list, int, float, np.ndarray],
     magnitude_type: MagnitudeType, n_shooting: int, 
     bound_push: Union[list, int, float], 

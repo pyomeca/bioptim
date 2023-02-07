@@ -709,7 +709,6 @@ class PlotOcp:
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
                     for i_var in range(self.variable_sizes[i][key]):
-
                         if self.plot_func[key][i].parameters["penalty"].multinode_constraint:
                             y = np.array([np.nan])
 
@@ -738,7 +737,6 @@ class PlotOcp:
                             y = np.empty((len(self.plot_func[key][i].node_idx),))
                             y.fill(np.nan)
                             for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
-
                                 if self.plot_func[key][i].parameters["penalty"].transition:
                                     val = self.plot_func[key][i].function(
                                         node_idx,
@@ -783,7 +781,6 @@ class PlotOcp:
                     y.fill(np.nan)
                     if self.plot_func[key][i].compute_derivative:
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
-
                             val = self.plot_func[key][i].function(
                                 node_idx,
                                 state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],

@@ -28,7 +28,6 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     InterpolationType,
     Solver,
@@ -101,7 +100,7 @@ def prepare_mhe(bio_model, window_len, window_duration, max_torque, x_init, u_in
         objective_functions=new_objectives,
         x_init=InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME),
         u_init=InitialGuess(u_init, interpolation=InterpolationType.EACH_FRAME),
-        x_bounds=QAndQDotBounds(bio_model),
+        x_bounds=bio_model.bounds_from_ranges(["q", "qdot"]),
         u_bounds=Bounds([-max_torque, 0.0], [max_torque, 0.0]),
         n_threads=4,
     )

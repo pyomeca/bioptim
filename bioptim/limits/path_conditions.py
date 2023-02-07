@@ -740,7 +740,7 @@ class InitialGuess(OptionGeneric):
 
         Parameters
         ----------
-        bounds: Union[Bounds, BoundsList, QAndQDotBounds]
+        bounds: Bounds | BoundsList
             The bounds
         magnitude: Union[list, int, float, np.ndarray]
             The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
@@ -814,7 +814,7 @@ class NoisedInitialGuess(InitialGuess):
             The initial guess
         init_interpolation: InterpolationType
             The type of interpolation of the initial guess
-        bounds: Union[Bounds, BoundsList, QAndQDotBounds]
+        bounds: Bounds | BoundsList
             The bounds
         magnitude: Union[list, int, float, np.ndarray]
             The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
