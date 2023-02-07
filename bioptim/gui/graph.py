@@ -13,7 +13,7 @@ class GraphAbstract:
     """
     Methods
     -------
-    _vector_layout_structure(self, vector: list | np.array, decimal: int)
+    _vector_layout_structure(self, vector: list | np.ndarray, decimal: int)
         Main structure of the method _vector_layout()
     _vector_layout(self, vector: list, size: int)
         Resize vector content for display task
@@ -48,13 +48,13 @@ class GraphAbstract:
 
         self.ocp = ocp
 
-    def _vector_layout_structure(self, vector: list | np.array, decimal: int):
+    def _vector_layout_structure(self, vector: list | np.ndarray, decimal: int):
         """
-        Main structure of the next method _vector_layout(self, vector: list | np.array, size: int, param: bool)
+        Main structure of the next method _vector_layout(self, vector: list | np.ndarray, size: int, param: bool)
 
         Parameters
         ----------
-        vector: list | np.array
+        vector: list | np.ndarray
             The vector to be condensed
         decimal: int
             Number of decimals
@@ -66,13 +66,13 @@ class GraphAbstract:
                 condensed_vector += f"... {self._return_line}... "
         return condensed_vector
 
-    def _vector_layout(self, vector: list | np.array | int):
+    def _vector_layout(self, vector: list | np.ndarray | int):
         """
         Resize vector content for display task
 
         Parameters
         ----------
-        vector: list | np.array | int
+        vector: list | np.ndarray | int
             The vector to be condensed
         """
 

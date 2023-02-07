@@ -91,7 +91,7 @@ class PenaltyOption(OptionGeneric):
         penalty: Any,
         phase: int = 0,
         node: Node | list | tuple = Node.DEFAULT,
-        target: int | float | np.array | list[int] | list[float] | list[np.array] = None,
+        target: int | float | np.ndarray | list[int] | list[float] | list[np.ndarray] = None,
         quadratic: bool = None,
         weight: float = 1,
         derivative: bool = False,
@@ -117,7 +117,7 @@ class PenaltyOption(OptionGeneric):
             The phase the penalty is acting on
         node: Node | list | tuple
             The node within a phase on which the penalty is acting on
-        target: int | float | np.array | list[int] | list[float] | list[np.array]
+        target: int | float | np.ndarray | list[int] | list[float] | list[np.ndarray]
             A target to track for the penalty
         quadratic: bool
             If the penalty is quadratic

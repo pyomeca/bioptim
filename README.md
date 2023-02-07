@@ -582,7 +582,7 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `constraints` is the constraint set of the ocp (see The constraints section)
 `parameters` is the parameter set of the ocp (see The parameters section)
 `external_forces` are the external forces acting on the center of mass of the bodies. 
-It is list (one element for each phase) of np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
+It is list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
 `ode_solver` is the ode solver used to solve the dynamic equations
 `control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section)
 `all_generalized_mapping` is used to reduce the number of degrees of freedom by linking them (see The mappings section).
@@ -1469,7 +1469,7 @@ q = sol.states[0]["q"]
 q = sol.states[0]["all"]
 ```
 
-The values inside the dictionaries are np.array of dimension `n_elements` x `n_shooting`, unless the data were previously altered by integrating or interpolating (then the number of columns may differ).
+The values inside the dictionaries are np.ndarray of dimension `n_elements` x `n_shooting`, unless the data were previously altered by integrating or interpolating (then the number of columns may differ).
 
 The parameters are very similar, but differs by the fact that it is always a dictionary (since parameters don't depend on the phases).
 Also, the values inside the dictionaries are of dimension `n_elements` x 1. 

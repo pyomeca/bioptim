@@ -44,9 +44,9 @@ class OptimizationVector:
         Format the x, u and p bounds so they are in one nice (and useful) vector
     init(self)
         Format the x, u and p init so they are in one nice (and useful) vector
-    extract_phase_time(self, data: np.array | DM) -> list
+    extract_phase_time(self, data: np.ndarray | DM) -> list
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
-    to_dictionaries(self, data: np.array | DM) -> tuple
+    to_dictionaries(self, data: np.ndarray | DM) -> tuple
         Convert a vector of solution in an easy to use dictionary, where are the variables are given their proper names
     define_ocp_shooting_points(self)
         Declare all the casadi variables with the right size to be used during a specific phase
@@ -233,13 +233,13 @@ class OptimizationVector:
         x_init_reshaped = x_init_vector.reshape((1, -1), order="F").T
         return InitialGuess(x_init_reshaped)
 
-    def extract_phase_time(self, data: np.array | DM) -> list:
+    def extract_phase_time(self, data: np.ndarray | DM) -> list:
         """
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
 
         Parameters
         ----------
-        data: np.array | DM
+        data: np.ndarray | DM
             The solution in a vector
 
         Returns
@@ -265,13 +265,13 @@ class OptimizationVector:
                     cmp += 1
         return phase_time
 
-    def to_dictionaries(self, data: np.array | DM) -> tuple:
+    def to_dictionaries(self, data: np.ndarray | DM) -> tuple:
         """
         Convert a vector of solution in an easy to use dictionary, where are the variables are given their proper names
 
         Parameters
         ----------
-        data: np.array | DM
+        data: np.ndarray | DM
             The solution in a vector
 
         Returns

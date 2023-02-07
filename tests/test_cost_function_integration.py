@@ -30,7 +30,7 @@ def prepare_ocp(
     integration_rule: IntegralApproximation,
     control_type: ControlType,
     objective: str,
-    target: np.array = None,
+    target: np.ndarray = None,
     ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
