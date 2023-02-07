@@ -105,15 +105,17 @@ class OptimizationVector:
         """
         #######
 
-        # il faut avoir toutes les nouvelles variables declar2es, il manque celle des racines zoula
+        # si on veut toutes les variables sans les doublons (mapping)
         x = []
         u = []
 
         for nlp in self.ocp.nlp:
             x.append([])
-            u.append([])
+
             index_x = nlp.index_x
             index_u = nlp.index_u
+            index_x = [6,7,8,9,10,11,12,13,14,15,22,23,24,25,26,27,28,29,30,31] # indices des degres de liberté qui son mappés
+            index_u = [0,1,2,3,4,5,6,7,8,9]
             node_all = nlp.ns
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 for k in range(node_all+1):
@@ -134,15 +136,17 @@ class OptimizationVector:
                 x[nlp.phase_idx] = vertcat(*x[nlp.phase_idx])
 
             if nlp.use_controls_from_phase_idx == nlp.phase_idx :
-               for k in range(node_all):
-                   u[nlp.phase_idx].append([])
-                   for liberty in range(len(self.u[nlp.phase_idx][k])) :
-                       u[nlp.phase_idx][k].append(self.u[nlp.phase_idx][k][liberty])
-                   u[nlp.phase_idx][k] = vertcat(*u[nlp.phase_idx][k])
-               u[nlp.phase_idx] = vertcat(*u[nlp.phase_idx])
+                u.append([])
+                for k in range(node_all):
+                    u[nlp.phase_idx].append([])
+                    for liberty in range(len(self.u[nlp.phase_idx][k])) :
+                        u[nlp.phase_idx][k].append(self.u[nlp.phase_idx][k][liberty])
+                    u[nlp.phase_idx][k] = vertcat(*u[nlp.phase_idx][k])
+                u[nlp.phase_idx] = vertcat(*u[nlp.phase_idx])
 
             else :
-                if self.u[nlp.phase_idx] :
+                if nlp.controls.shape != len(index_u):
+                    u.append([])
                     for k in range(node_all) :
                         u[nlp.phase_idx].append([])
                         if self.u[nlp.phase_idx][k] :
@@ -153,14 +157,27 @@ class OptimizationVector:
                     u[nlp.phase_idx] = vertcat(*u[nlp.phase_idx])
 
 
-            #for phase in range(len(self.x)) :
-           #     for node in range(len(self.x[phase])) :
-           #         for liberty in range(len(self.x[phase][node])) :
-          #              x += [self.x[phase][node][liberty]]
-           ## for phase in range(len(self.u)) :
-           #     for node in range(len(self.u[phase])) :
-           #         for liberty in range(len(self.u[phase][node])) :
-           #             u += [self.u[phase][node][liberty]]
+       # for phase in range(len(self.x)) :
+       #     for node in range(len(self.x[phase])) :
+        #        for liberty in range(len(self.x[phase][node])) :
+        #            x += [self.x[phase][node][liberty]]
+       # for phase in range(len(self.u)) :
+        #    for node in range(len(self.u[phase])) :
+         #       for liberty in range(len(self.u[phase][node])) :
+          #          u += [self.u[phase][node][liberty]]
+
+
+        # si on veut toutes les variables avec doublons
+       # x =[]
+
+       # for phase in range(len(self.x)):
+        #    for k in range(len(self.x[phase])) :
+         #       x_1 = vertcat(*self.x[phase][k])
+         #       x.append(x_1)
+         #       if len(x) > 1 :
+         #           vertcat(x[0],x[1] )
+
+       # vertcat(*x)
 
 
 
@@ -168,13 +185,23 @@ class OptimizationVector:
 
 
 
-          #  if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-          #      u += [self.u[nlp.phase_idx]]
-         #   else:
-          #      for liberty in len(nlp.controls.shape):
-          #         if liberty in index_u:
-           #             u += [self.x[nlp.phase_idx][0: node_all][liberty]]
+            #if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+             #   u += [self.u[nlp.phase_idx]]
+           # else:
+              #  for liberty in len(nlp.controls.shape):
+              #     if liberty in index_u:
+                 #       u += [self.x[nlp.phase_idx][0: node_all][liberty]]
 
+
+       # for i in len(self.ocp.nlp) :
+        #    x = vertcat(x[0],self.ocp.nlp[i].X)
+        #    x = vertcat(u[0], self.ocp.nlp[i].U)
+        # lenght = 0
+        # for x_i in x :
+        #     lenght += x_i.shape
+        # for u_i in u :
+        #     lenght += u_i.shape
+        # print(f"lenght is {lenght}")
         return vertcat(*x, *u, self.parameters_in_list.cx)
 
     @property
@@ -193,7 +220,7 @@ class OptimizationVector:
         for u_bound in self.u_bounds:
             v_bounds.concatenate(u_bound)
         v_bounds.concatenate(self.parameters_in_list.bounds)
-        return v_bounds
+        return v_bounds  #v_bounds pas de la bonne taille
 
     @property
     def init(self):
@@ -369,7 +396,10 @@ class OptimizationVector:
         u = []
         for nlp in self.ocp.nlp:
             index_x = nlp.index_x
+            index_x = [6,7,8,9,10,11,12,13,14,15,22,23,24,25,26,27,28,29,30,31] # indices des degres de liberté qui son mappés
+
             index_u = nlp.index_u
+            index_u = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
             x.append([])
             u.append([])
             if nlp.control_type != ControlType.CONSTANT and nlp.control_type != ControlType.LINEAR_CONTINUOUS:
@@ -474,6 +504,7 @@ class OptimizationVector:
             for node in range(len(x[nlp.phase_idx])):
                 self.x[nlp.phase_idx].append([])
                 for freedom in range(len(x[nlp.phase_idx][node])) :
+                    #if freedom not in index_x :
                     self.x[nlp.phase_idx][node].append(x[nlp.phase_idx][node][freedom])
                 x[nlp.phase_idx][node] = vertcat(*x[nlp.phase_idx][node])
 
@@ -482,21 +513,21 @@ class OptimizationVector:
             for node in range(len(u[nlp.phase_idx])):
                 self.u[nlp.phase_idx].append([])
                 for freedom in range(len(u[nlp.phase_idx][node])):
+                   # if freedom not in index_u :
                     self.u[nlp.phase_idx][node].append(u[nlp.phase_idx][node][freedom])
                 u[nlp.phase_idx][node] = vertcat(*u[nlp.phase_idx][node])
+
+
             nlp.U = u[nlp.phase_idx]
             #u[nlp.phase_idx] = vertcat(*u[nlp.phase_idx])
 
             self.n_phase_x[nlp.phase_idx] = (
                 len(self.x[nlp.phase_idx]) * len(self.x[nlp.phase_idx][
-                                                     0]) if nlp.phase_idx == nlp.use_states_from_phase_idx else nlp.states.shape - len(
-                    index_x)
-            )
+                                                     0]) if nlp.phase_idx == nlp.use_states_from_phase_idx else (nlp.states.shape - len(index_x))*nlp.ns )
 
             self.n_phase_u[nlp.phase_idx] = (
                 len(self.u[nlp.phase_idx]) * len(self.u[nlp.phase_idx][
-                                                     0]) if nlp.phase_idx == nlp.use_controls_from_phase_idx else nlp.controls.shape - len(
-                    index_u)
+                                                     0]) if nlp.phase_idx == nlp.use_controls_from_phase_idx else (nlp.controls.shape - len(index_u))*nlp.ns
             )
 
 
@@ -535,17 +566,20 @@ class OptimizationVector:
         for nlp in ocp.nlp:
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
-            if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT:
-                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
-                else:
-                    raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
+            else :
+                nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
+            #if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+            if nlp.control_type == ControlType.CONSTANT:
+                nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
+            else:
+                raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
+
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 nx = nlp.states.shape
                 if nlp.ode_solver.is_direct_collocation:
@@ -564,7 +598,31 @@ class OptimizationVector:
                         x_bounds.min[span, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=point)
                         x_bounds.max[span, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=point)
 
-                self.x_bounds[i_phase] = x_bounds
+
+
+            else :
+                index_x = nlp.index_x
+                nx = nlp.states.shape #nombre de degré de liberté
+                index_roots = [i for i in range(nx) if i not in index_x]
+                if nlp.ode_solver.is_direct_collocation:
+                    all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
+                    outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
+                    repeat = nlp.ode_solver.polynomial_degree + 1
+                else:
+                    all_nx = nx * (nlp.ns + 1)
+                    outer_offset = nx
+                    repeat = 1
+                x_bounds = Bounds([0] * nx, [0] * nx, interpolation=InterpolationType.CONSTANT) # définit un une liste de 0 pour initialiser le vecteur
+                for k in range(nlp.ns + 1):
+                    for p in range(repeat if k != nlp.ns else 1):
+                        #for index in index_x :
+                        a,b = [k * outer_offset + p * len(index_roots), k * outer_offset + (p + 1) * len(index_roots)]
+                        point = k if k != 0 else 0 if p == 0 else 1
+                        x_bounds.min[a:b, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=point)[a:b]
+                        x_bounds.max[a:b, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=point)[a:b]
+
+
+            self.x_bounds[i_phase] = x_bounds
 
             # For controls
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
@@ -580,8 +638,22 @@ class OptimizationVector:
                 for k in range(ns):
                     u_bounds.min[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
                     u_bounds.max[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
+            else :
+                index_u = nlp.index_u
+                if nlp.control_type == ControlType.CONSTANT:
+                    ns = nlp.ns
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    ns = nlp.ns + 1
+                else:
+                    raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
+                nu = nlp.controls.shape
+                all_nu = (len(index_u)) * ns
+                u_bounds = Bounds([0] * all_nu, [0] * all_nu, interpolation=InterpolationType.CONSTANT)
+                for k in range(ns):
+                    u_bounds.min[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
+                    u_bounds.max[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
 
-                self.u_bounds[i_phase] = u_bounds
+            self.u_bounds[i_phase] = u_bounds
 
     def get_interpolation_type(self, phase: int) -> InterpolationType:
         """
@@ -647,6 +719,8 @@ class OptimizationVector:
         """
 
         ocp = self.ocp
+        index_roots_x = [0,1,2,3,4,5,16,17,18,19,20,21] #indices des nouvelles variables /non mappées
+        index_roots_u = []
         # Sanity check
         for nlp in ocp.nlp:
             interpolation_type = self.get_interpolation_type(phase=nlp.phase_idx)
@@ -657,11 +731,23 @@ class OptimizationVector:
                         raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
 
                 nlp.x_init.check_and_adjust_dimensions(nlp.states.shape, ns)
+            else :
+                if nlp.ode_solver.is_direct_shooting:
+                    if nlp.x_init.type == InterpolationType.ALL_POINTS:
+                        raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
+                nlp.x_init.check_and_adjust_dimensions(len(index_roots_x), ns)
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                 if nlp.control_type == ControlType.CONSTANT:
                     nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
+                else:
+                    raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
+            else :
+                if nlp.control_type == ControlType.CONSTANT:
+                    nlp.u_init.check_and_adjust_dimensions(len(index_roots_u), nlp.ns - 1)
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    nlp.u_init.check_and_adjust_dimensions(len(index_roots_u), nlp.ns)
                 else:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
@@ -670,6 +756,31 @@ class OptimizationVector:
             # For states
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 nx = nlp.states.shape
+                if nlp.ode_solver.is_direct_collocation and interpolation_type != InterpolationType.EACH_FRAME:
+                    all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
+                    outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
+                    repeat = nlp.ode_solver.polynomial_degree + 1
+                else:
+                    all_nx = nx * (nlp.ns + 1)
+                    outer_offset = nx
+                    repeat = 1
+
+                x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
+                for k in range(nlp.ns + 1):
+                    for p in range(repeat if k != nlp.ns else 1):
+                        span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
+                        point = k if k != 0 else 0 if p == 0 else 1
+                        if isinstance(nlp.x_init, NoisedInitialGuess):
+                            if nlp.x_init.type == InterpolationType.ALL_POINTS:
+                                point = k * repeat + p
+                        elif isinstance(nlp.x_init, InitialGuess) and nlp.x_init.type == InterpolationType.EACH_FRAME:
+                            point = k * repeat + p
+                        x_init.init[span, 0] = nlp.x_init.init.evaluate_at(shooting_point=point)
+                self.x_init[i_phase] = x_init
+
+            else :
+
+                nx = len(index_roots_x)
                 if nlp.ode_solver.is_direct_collocation and interpolation_type != InterpolationType.EACH_FRAME:
                     all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                     outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
@@ -701,6 +812,23 @@ class OptimizationVector:
                 else:
                     raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
                 nu = nlp.controls.shape
+                all_nu = nu * ns
+                u_init = InitialGuess([0] * all_nu, interpolation=InterpolationType.CONSTANT)
+                for k in range(ns):
+                    u_init.init[k * nu : (k + 1) * nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
+
+                self.u_init[i_phase] = u_init
+
+            else :
+                if nlp.control_type == ControlType.CONSTANT:
+                    ns = nlp.ns
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    ns = nlp.ns + 1
+                else:
+                    raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
+                #nu = nlp.controls.shape
+
+                nu = len(index_roots_u)
                 all_nu = nu * ns
                 u_init = InitialGuess([0] * all_nu, interpolation=InterpolationType.CONSTANT)
                 for k in range(ns):

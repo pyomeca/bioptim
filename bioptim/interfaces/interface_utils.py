@@ -44,7 +44,7 @@ def generic_solve(interface) -> dict:
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
-    interface.sqp_nlp = {"x": interface.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
+    interface.sqp_nlp = {"x": interface.ocp.v.vector, "f": sum1(all_objectives), "g": all_g} # all_g : 2696  x : 2712
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
 
@@ -127,8 +127,13 @@ def generic_dispatch_bounds(interface):
 
     for nlp in interface.ocp.nlp:
         all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g_internal))
+        print(interface.get_all_penalties(nlp, nlp.g_internal))
+        print(interface.get_all_penalties(nlp, nlp.g_internal).shape)
+        print(interface.get_all_penalties(nlp, nlp.g_internal)[0])
         for g in nlp.g_internal:
+            print(g)
             for _ in g.node_idx:
+                print(g.node_idx)
                 all_g_bounds.concatenate(g.bounds)
 
         all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g_implicit))

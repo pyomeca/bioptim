@@ -607,6 +607,7 @@ class QAndQDotBounds(Bounds):
         self,
         biorbd_model,
         dof_mappings: Union[BiMapping, BiMappingList] = None,
+        mapping = []
     ):
         """
         Parameters
@@ -645,12 +646,24 @@ class QAndQDotBounds(Bounds):
             q_ranges += [q_range for q_range in segment.QRanges()]
             qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
 
+
         x_min = [q_ranges[i].min() for i in dof_mappings["q"].to_first.map_idx] + [
             qdot_ranges[i].min() for i in dof_mappings["qdot"].to_first.map_idx
         ]
         x_max = [q_ranges[i].max() for i in dof_mappings["q"].to_first.map_idx] + [
             qdot_ranges[i].max() for i in dof_mappings["qdot"].to_first.map_idx
         ]
+
+        x_min_mapping = []
+        x_max_mapping = []
+
+        if mapping :
+            for index in mapping :
+                x_min_mapping.append(x_min[index])
+                x_min_mapping.append(x_min[index])
+            x_min = x_min_mapping
+            x_max = x_max_mapping
+
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
