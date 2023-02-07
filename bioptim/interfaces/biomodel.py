@@ -195,9 +195,7 @@ class BioModel(Protocol):
     def passive_joint_torque(self, q, qdot) -> MX:
         """Get the passive joint torque"""
 
-    def bounds_from_ranges(
-        self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None
-    ) -> Bounds:
+    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
         """
         Create bounds from ranges of the model depending on the variable chosen, such as q, qdot, qddot
 
