@@ -1332,7 +1332,7 @@ class Dynamics(OptionGeneric):
         """
         Parameters
         ----------
-        dynamics_type: Callable| DynamicsFcn
+        dynamics_type: Callable | DynamicsFcn
             The chosen dynamic functions
         params: Any
             Any parameters to pass to the dynamic and configure functions
