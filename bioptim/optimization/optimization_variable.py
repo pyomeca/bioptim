@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 from casadi import MX, SX, vertcat
 
@@ -9,11 +7,11 @@ from ..misc.enums import CXStep
 
 
 class VariableScaling(OptionGeneric):
-    def __init__(self, key: str, scaling: Union[np.ndarray, list] = None, **kwargs):
+    def __init__(self, key: str, scaling: np.ndarray | list = None, **kwargs):
         """
         Parameters
         ----------
-        scaling: Union[np.ndarray, list]
+        scaling: np.ndarray | list
             The scaling of the variables
         """
 
@@ -69,7 +67,7 @@ class VariableScalingList(OptionDict):
 
     Methods
     -------
-    add(self, scaling: Union[np.ndarray, list] = None)
+    add(self, scaling: np.ndarray | list = None)
         Add a new variable scaling to the list
     __getitem__(self, item) -> Bounds
         Get the ith option of the list
@@ -83,7 +81,7 @@ class VariableScalingList(OptionDict):
     def add(
         self,
         key: str = None,
-        scaling: Union[np.ndarray, list, VariableScaling] = None,
+        scaling: np.ndarray | list | VariableScaling = None,
         phase: int = -1,
     ):
         """
@@ -91,9 +89,9 @@ class VariableScalingList(OptionDict):
 
         Parameters
         ----------
-        min_bound: Union[PathCondition, np.ndarray, list, tuple]
+        min_bound: PathCondition | np.ndarray | list | tuple
             The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
-        max_bound: [PathCondition, np.ndarray, list, tuple]
+        max_bound: PathCondition | np.ndarray | list | tuple
             The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
         bounds: Bounds
             Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
@@ -136,13 +134,11 @@ class VariableScalingList(OptionDict):
 
     @staticmethod
     def scaling_fill_phases(ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
-
         x_scaling_out = VariableScalingList()
         xdot_scaling_out = VariableScalingList()
         u_scaling_out = VariableScalingList()
 
         for phase in range(ocp.n_phases):
-
             if "all" not in x_scaling.keys():
                 nx = x_init[phase].shape[0]
                 if len(x_scaling.keys()) > 0:
@@ -254,7 +250,7 @@ class OptimizationVariable:
         self,
         name: str,
         mx: MX,
-        cx: Union[list, None],
+        cx: list | None,
         index: [range, list],
         mapping: BiMapping = None,
         parent_list=None,
@@ -319,16 +315,16 @@ class OptimizationVariableList:
     ----------
     elements: list
         Each of the variable separated
-    _cx: Union[MX, SX]
+    _cx: MX | SX
         The symbolic MX or SX of the list (starting point)
-    _cx_end: Union[MX, SX]
+    _cx_end: MX | SX
         The symbolic MX or SX of the list (ending point)
     mx_reduced: MX
         The reduced MX to the size of _cx
 
     Methods
     -------
-    __getitem__(self, item: Union[int, str])
+    __getitem__(self, item: int | str)
         Get a specific variable in the list, whether by name or by index
     append(self, name: str, cx: list, mx: MX, bimapping: BiMapping)
         Add a new variable to the list
@@ -347,8 +343,8 @@ class OptimizationVariableList:
     def __init__(self):
         self.elements: list = []
         self.fake_elements: list = []
-        self._cx: Union[MX, SX, np.ndarray] = np.array([])
-        self._cx_end: Union[MX, SX, np.ndarray] = np.array([])
+        self._cx: MX | SX | np.ndarray = np.array([])
+        self._cx_end: MX | SX | np.ndarray = np.array([])
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
 
@@ -358,7 +354,7 @@ class OptimizationVariableList:
 
         Parameters
         ----------
-        item: Union[int, str]
+        item: int | str
             The index or name of the element to return
 
         Returns
@@ -401,7 +397,7 @@ class OptimizationVariableList:
         else:
             return self[key].cx if cx_type == CXStep.CX_START else self[key].cx_end
 
-    def append_fake(self, name: str, index: Union[MX, SX, list], mx: MX, bimapping: BiMapping):
+    def append_fake(self, name: str, index: MX | SX | list, mx: MX, bimapping: BiMapping):
         """
         Add a new variable to the fake list which add something without changing the size of the normal elements
 
@@ -409,7 +405,7 @@ class OptimizationVariableList:
         ----------
         name: str
             The name of the variable
-        index: Union[MX, SX]
+        index: MX | SX
             The SX or MX variable associated with this variable. Is interpreted as index if is_fake is true
         mx: MX
             The MX variable associated with this variable
@@ -589,7 +585,7 @@ class OptimizationVariableContainer:
         else:
             return self.optimization_variable["unscaled"][item]
 
-    def __setitem__(self, item: int | str | list | range, value: Union[OptimizationVariableList, np.ndarray]):
+    def __setitem__(self, item: int | str | list | range, value: OptimizationVariableList | np.ndarray):
         if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
             self.optimization_variable[item] = value
         else:

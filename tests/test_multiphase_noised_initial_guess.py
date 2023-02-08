@@ -737,7 +737,6 @@ def test_noisy_multiphase():
     ],
 )
 def test_add_wrong_magnitude(magnitude, raised_str):
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -781,7 +780,6 @@ def test_add_wrong_magnitude(magnitude, raised_str):
     ],
 )
 def test_add_wrong_bound_push(bound_push, raised_str):
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -820,7 +818,6 @@ def test_add_wrong_bound_push(bound_push, raised_str):
     ],
 )
 def test_add_wrong_seed(seed, raised_str):
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -852,7 +849,6 @@ def test_add_wrong_seed(seed, raised_str):
 
 
 def test_add_wrong_bounds():
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -894,7 +890,6 @@ def test_add_wrong_bounds():
 
 
 def test_add_wrong_n_shooting():
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)

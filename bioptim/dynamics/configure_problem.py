@@ -1,4 +1,4 @@
-from typing import Callable, Any, Union
+from typing import Callable, Any
 
 from casadi import MX, vertcat, Function
 import numpy as np
@@ -1325,14 +1325,14 @@ class Dynamics(OptionGeneric):
 
     def __init__(
         self,
-        dynamics_type: Union[Callable, DynamicsFcn],
+        dynamics_type: Callable | DynamicsFcn,
         expand: bool = False,
         **params: Any,
     ):
         """
         Parameters
         ----------
-        dynamics_type: Union[Callable, DynamicsFcn]
+        dynamics_type: Callable | DynamicsFcn
             The chosen dynamic functions
         params: Any
             Any parameters to pass to the dynamic and configure functions
@@ -1372,13 +1372,13 @@ class DynamicsList(UniquePerPhaseOptionList):
         Print the DynamicsList to the console
     """
 
-    def add(self, dynamics_type: Union[Callable, Dynamics, DynamicsFcn], **extra_parameters: Any):
+    def add(self, dynamics_type: Callable | Dynamics | DynamicsFcn, **extra_parameters: Any):
         """
         Add a new Dynamics to the list
 
         Parameters
         ----------
-        dynamics_type: Union[Callable, Dynamics, DynamicsFcn]
+        dynamics_type: Callable | Dynamics | DynamicsFcn
             The chosen dynamic functions
         extra_parameters: dict
             Any parameters to pass to Dynamics

@@ -144,7 +144,6 @@ def prepare_multi_start(bio_model_path: list, final_time: list, n_shooting: list
 
 
 def main():
-
     # --- Prepare the multi-start and run it --- #
     multi_start = prepare_multi_start(
         bio_model_path=["models/pendulum.bioMod"], final_time=[1], n_shooting=[30, 40, 50], seed=[0, 1, 2, 3]

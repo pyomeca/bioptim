@@ -266,7 +266,6 @@ class BiorbdModel:
         return f_contact_vec
 
     def normalize_state_quaternions(self, x: MX | SX) -> MX | SX:
-
         quat_idx = self.get_quaternion_idx()
 
         # Normalize quaternion, if needed
@@ -290,7 +289,6 @@ class BiorbdModel:
         return quat_idx
 
     def contact_forces(self, q, qdot, tau, external_forces: list = None) -> MX:
-
         if external_forces is not None and len(external_forces) != 0:
             all_forces = MX()
             for i, f_ext in enumerate(external_forces):
@@ -301,5 +299,4 @@ class BiorbdModel:
             return self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=None)
 
     def passive_joint_torque(self, q, qdot) -> MX:
-
         return self.model.passiveJointTorque(q, qdot).to_mx()
