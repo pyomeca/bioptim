@@ -351,8 +351,6 @@ class BiorbdModel:
         return mapping
 
     def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
-        from bioptim import Bounds
-
         out = Bounds()
         q_ranges = []
         qdot_ranges = []
