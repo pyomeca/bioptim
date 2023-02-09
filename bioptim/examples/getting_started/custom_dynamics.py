@@ -7,8 +7,6 @@ sufficient.
 More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE_DRIVEN using a custom dynamics
 """
 
-from typing import Union
-
 from casadi import MX, SX, vertcat
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -33,9 +31,9 @@ from bioptim import (
 
 
 def custom_dynamic(
-    states: Union[MX, SX],
-    controls: Union[MX, SX],
-    parameters: Union[MX, SX],
+    states: MX | SX,
+    controls: MX | SX,
+    parameters: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
 ) -> DynamicsEvaluation:
@@ -44,11 +42,11 @@ def custom_dynamic(
 
     Parameters
     ----------
-    states: Union[MX, SX]
+    states: MX | SX
         The state of the system
-    controls: Union[MX, SX]
+    controls: MX | SX
         The controls of the system
-    parameters: Union[MX, SX]
+    parameters: MX | SX
         The parameters acting on the system
     nlp: NonLinearProgram
         A reference to the phase
@@ -57,7 +55,7 @@ def custom_dynamic(
 
     Returns
     -------
-    The derivative of the states in the tuple[Union[MX, SX]] format
+    The derivative of the states in the tuple[MX | SX] format
     """
 
     q = DynamicsFunctions.get(nlp.states["q"], states)

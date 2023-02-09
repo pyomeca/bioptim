@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 from copy import deepcopy
 
 import numpy as np
@@ -81,23 +81,23 @@ class Solution:
     copy(self, skip_data: bool = False) -> Any
         Create a deepcopy of the Solution
     @property
-    states(self) -> Union[list, dict]
+    states(self) -> list | dict
         Returns the state scaled and unscaled in list if more than one phases, otherwise it returns the only dict
     @property
-    states_scaled_no_intermediate(self) -> Union[list, dict]
+    states_scaled_no_intermediate(self) -> list | dict
         Returns the state scaled in list if more than one phases, otherwise it returns the only dict
         and removes the intermediate states scaled if Collocation solver is used
     @property
-    states_no_intermediate(self) -> Union[list, dict]
+    states_no_intermediate(self) -> list | dict
         Returns the state unscaled in list if more than one phases, otherwise it returns the only dict
         and removes the intermediate states unscaled if Collocation solver is used
     @property
-    controls(self) -> Union[list, dict]
+    controls(self) -> list | dict
         Returns the controls scaled and unscaled in list if more than one phases, otherwise it returns the only dict
     integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keep_intermediate_points: bool = True,
               merge_phases: bool = False, continuous: bool = True) -> Solution
         Integrate the states unscaled
-    interpolate(self, n_frames: Union[int, list, tuple]) -> Solution
+    interpolate(self, n_frames: int | list | tuple) -> Solution
         Interpolate the states unscaled
     merge_phases(self) -> Solution
         Get a data structure where all the phases are merged into one
@@ -108,7 +108,7 @@ class Solution:
     graphs(self, automatically_organize: bool, show_bounds: bool,
            show_now: bool, shooting_type: Shooting)
         Show the graphs of the simulation
-    animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]
+    animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> None | list
         Animate the simulation
     print(self, cost_type: CostType = CostType.ALL)
         Print the objective functions and/or constraints to the console
@@ -132,7 +132,7 @@ class Solution:
         Simplified version of OptimizationVariableList (compatible with pickle)
         """
 
-        def __init__(self, other: Union[OptimizationVariableList]):
+        def __init__(self, other: OptimizationVariableList):
             self.elements = []
             if isinstance(other, Solution.SimplifiedOptimizationVariableList):
                 self.shape = other.shape
@@ -269,13 +269,13 @@ class Solution:
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
 
-    def __init__(self, ocp, sol: Union[dict, list, tuple, np.ndarray, DM, None]):
+    def __init__(self, ocp, sol: dict | list | tuple | np.ndarray | DM | None):
         """
         Parameters
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp to strip
-        sol: Union[dict, list, tuple, np.ndarray, DM]
+        sol: dict | list | tuple | np.ndarray | DM | None
             The values of a solution
         """
 
@@ -411,13 +411,13 @@ class Solution:
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
             self._time_vector = self._generate_time()
 
-        def init_from_vector(_sol: Union[np.ndarray, DM]):
+        def init_from_vector(_sol: np.ndarray | DM):
             """
             Initialize all the attributes from a vector of solution
 
             Parameters
             ----------
-            _sol: Union[np.ndarray, DM]
+            _sol: np.ndarray | DM
                 The solution in vector format
             """
 
@@ -529,7 +529,7 @@ class Solution:
         return new
 
     @property
-    def states(self) -> Union[list, dict]:
+    def states(self) -> list | dict:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
 
@@ -552,7 +552,7 @@ class Solution:
 
         return self._states["scaled"] if len(self._states["scaled"]) > 1 else self._states["scaled"][0]
 
-    def _no_intermediate(self, states) -> Union[list, dict]:
+    def _no_intermediate(self, states) -> list | dict:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
         it removes the intermediate states in the case COLLOCATION Solver is used
@@ -622,7 +622,7 @@ class Solution:
             return states_no_intermediate[0] if len(states_no_intermediate) == 1 else states_no_intermediate
 
     @property
-    def states_scaled_no_intermediate(self) -> Union[list, dict]:
+    def states_scaled_no_intermediate(self) -> list | dict:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
         it removes the intermediate states in the case COLLOCATION Solver is used
@@ -634,7 +634,7 @@ class Solution:
         return self._no_intermediate(self._states["scaled"])
 
     @property
-    def states_no_intermediate(self) -> Union[list, dict]:
+    def states_no_intermediate(self) -> list | dict:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
         it removes the intermediate states in the case COLLOCATION Solver is used
@@ -646,7 +646,7 @@ class Solution:
         return self._no_intermediate(self._states["unscaled"])
 
     @property
-    def controls(self) -> Union[list, dict]:
+    def controls(self) -> list | dict:
         """
         Returns the controls in list if more than one phases, otherwise it returns the only dict
 
@@ -665,7 +665,7 @@ class Solution:
         return self._controls["unscaled"] if len(self._controls["unscaled"]) > 1 else self._controls["unscaled"][0]
 
     @property
-    def controls_scaled(self) -> Union[list, dict]:
+    def controls_scaled(self) -> list | dict:
         """
         Returns the controls in list if more than one phases, otherwise it returns the only dict
 
@@ -677,7 +677,7 @@ class Solution:
         return self._controls["scaled"] if len(self._controls["scaled"]) > 1 else self._controls["scaled"][0]
 
     @property
-    def time(self) -> Union[list, dict]:
+    def time(self) -> list | dict:
         """
         Returns the time vector in list if more than one phases, otherwise it returns the only dict
 
@@ -806,7 +806,7 @@ class Solution:
         keep_intermediate_points: bool = None,
         merge_phases: bool = False,
         shooting_type: Shooting = None,
-    ) -> Union[np.ndarray, list[np.ndarray]]:
+    ) -> np.ndarray | list[np.ndarray]:
         """
         Generate time integration vector
 
@@ -1057,13 +1057,13 @@ class Solution:
 
         return out
 
-    def interpolate(self, n_frames: Union[int, list, tuple]) -> Any:
+    def interpolate(self, n_frames: int | list | tuple) -> Any:
         """
         Interpolate the states
 
         Parameters
         ----------
-        n_frames: Union[int, list, tuple]
+        n_frames: int | list | tuple
             If the value is an int, the Solution returns merges the phases,
             otherwise, it interpolates them independently
 
@@ -1180,7 +1180,7 @@ class Solution:
                 deepcopy(self.ns),
             )
 
-        def _merge(data: list, is_control: bool) -> Union[list, dict]:
+        def _merge(data: list, is_control: bool) -> list | dict:
             """
             Merge the phases of a states or controls data structure
 
@@ -1313,7 +1313,7 @@ class Solution:
 
     def animate(
         self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any
-    ) -> Union[None, list]:
+    ) -> None | list:
         """
         Animate the simulation
 
@@ -1654,11 +1654,11 @@ def concatenate_optimization_variables_dict(
 
 
 def concatenate_optimization_variables(
-    variable: Union[list[np.ndarray], np.ndarray],
+    variable: list[np.ndarray] | np.ndarray,
     continuous_phase: bool = True,
     continuous_interval: bool = True,
     merge_phases: bool = True,
-) -> Union[np.ndarray, list[dict[np.ndarray]]]:
+) -> np.ndarray | list[dict[np.ndarray]]:
     """
     This function concatenates the decision variables of the phases of the system
     into a single array, omitting the last element of each phase except for the last one.

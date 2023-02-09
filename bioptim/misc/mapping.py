@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 from casadi import MX, SX, DM
 
@@ -35,16 +33,16 @@ class Mapping(OptionGeneric):
 
     def __init__(
         self,
-        map_idx: Union[list, tuple, range, np.ndarray],
-        oppose: Union[int, list, tuple, range, np.ndarray] = None,
+        map_idx: list | tuple | range | np.ndarray,
+        oppose: int | list | tuple | range | np.ndarray = None,
         **params
     ):
         """
         Parameters
         ----------
-        map_idx: Union[list, tuple, range]
+        map_idx: list | tuple | range | np.ndarray
             The actual index list that links to the other set
-        oppose: Union[list, tuple, range]
+        oppose: int | list | tuple | range | np.ndarray
             Index to multiply by -1
         """
         super(Mapping, self).__init__(**params)
@@ -56,13 +54,13 @@ class Mapping(OptionGeneric):
             for i in oppose:
                 self.oppose[i] = -1
 
-    def map(self, obj: Union[tuple, list, np.ndarray, MX, SX, DM]) -> Union[np.ndarray, MX, SX, DM]:
+    def map(self, obj: tuple | list | np.ndarray | MX | SX | DM) -> np.ndarray | MX | SX | DM:
         """
         Apply the mapping to an matrix object. The rows are mapped while the columns are preserved as is
 
         Parameters
         ----------
-        obj: Union[np.ndarray, MX, SX, DM]
+        obj: tuple | list | np.ndarray | MX | SX | DM
             The matrix to map
 
         Returns
@@ -125,22 +123,22 @@ class BiMapping(OptionGeneric):
 
     def __init__(
         self,
-        to_second: Union[Mapping, int, list, tuple, range],
-        to_first: Union[Mapping, int, list, tuple, range],
-        oppose_to_second: Union[Mapping, int, list, tuple, range] = None,
-        oppose_to_first: Union[Mapping, int, list, tuple, range] = None,
+        to_second: Mapping | int | list | tuple | range,
+        to_first: Mapping | int | list | tuple | range,
+        oppose_to_second: Mapping | int | list | tuple | range = None,
+        oppose_to_first: Mapping | int | list | tuple | range = None,
         **params
     ):
         """
         Parameters
         ----------
-        to_second: Union[Mapping, list[int], tuple[int], range]
+        to_second: Mapping | int | list | tuple | range
             The mapping that links the first index set to the second
-        to_first: Union[Mapping, list[int], tuple[int], range]
+        to_first: Mapping | int | list | tuple | range
             The mapping that links the second index set to the first
-        oppose_to_second: Union[list, tuple, range]
+        oppose_to_second: Mapping | int | list | tuple | range
             Index to multiply by -1 of the to_second mapping
-        oppose_to_first: Union[list, tuple, range]
+        oppose_to_first: Mapping | int | list | tuple | range
             Index to multiply by -1 of the to_first mapping
         """
         super(BiMapping, self).__init__(**params)
@@ -166,10 +164,10 @@ class BiMappingList(OptionDict):
     def add(
         self,
         name: str,
-        to_second: Union[Mapping, int, list, tuple, range] = None,
-        to_first: Union[Mapping, int, list, tuple, range] = None,
-        oppose_to_second: Union[Mapping, int, list, tuple, range] = None,
-        oppose_to_first: Union[Mapping, int, list, tuple, range] = None,
+        to_second: Mapping | int | list | tuple | range = None,
+        to_first: Mapping | int | list | tuple | range = None,
+        oppose_to_second: Mapping | int | list | tuple | range = None,
+        oppose_to_first: Mapping | int | list | tuple | range = None,
         bimapping: BiMapping = None,
         phase: int = -1,
     ):
@@ -179,13 +177,13 @@ class BiMappingList(OptionDict):
         Parameters
         name: str
             The name of the new BiMapping
-        to_second: Mapping
+        to_second: Mapping | int | list | tuple | range
             The mapping that links the first variable to the second
-        to_first: Mapping
+        to_first: Mapping | int | list | tuple | range
             The mapping that links the second variable to the first
-        oppose_to_second: Union[list, tuple, range]
+        oppose_to_second: Mapping | int | list | tuple | range
             Index to multiply by -1 of the to_second mapping
-        oppose_to_first: Union[list, tuple, range]
+        oppose_to_first: Mapping | int | list | tuple | range
             Index to multiply by -1 of the to_first mapping
         bimapping: BiMapping
             The BiMapping to copy
@@ -227,7 +225,7 @@ class BiMappingList(OptionDict):
                             self.add(name=key, bimapping=mappings[key], phase=i_phase)
         return self
 
-    def __getitem__(self, item) -> Union[dict, BiMapping]:
+    def __getitem__(self, item) -> dict | BiMapping:
         return super(BiMappingList, self).__getitem__(item)
 
     def __contains__(self, item):
@@ -263,9 +261,9 @@ class NodeMapping(OptionGeneric):
             The number of the first phase to map
         phase_post: int
             The number of the second phase to map
-        nodes_pre: Union[Node, int, list, tuple, range]
+        nodes_pre: Node | int | list | tuple | range
             The indices of the nodes to map in first phase
-        nodes_post: Union[Node, int, list, tuple, range]
+        nodes_post: Node | int | list | tuple | range
             The indices of the nodes to map in second phase
         """
         super(NodeMapping, self).__init__(**params)
@@ -345,7 +343,7 @@ class NodeMappingList(OptionDict):
 
         return use_states_from_phase_idx, use_states_dot_from_phase_idx, use_controls_from_phase_idx
 
-    def __getitem__(self, item) -> Union[dict, BiMapping]:
+    def __getitem__(self, item) -> dict | BiMapping:
         return super(NodeMappingList, self).__getitem__(item)
 
     def __contains__(self, item):

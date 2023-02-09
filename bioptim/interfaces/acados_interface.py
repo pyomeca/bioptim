@@ -1,4 +1,3 @@
-from typing import Union
 from time import perf_counter
 from datetime import datetime
 
@@ -77,7 +76,7 @@ class AcadosInterface(SolverInterface):
         Set the cost functions from ocp
     __update_solver(self)
         Update the ACADOS solver to new values
-    get_optimized_value(self) -> Union[list[dict], dict]
+    get_optimized_value(self) -> list[dict] | dict
         Get the previously optimized solution
     solve(self) -> "AcadosInterface"
         Solve the prepared ocp
@@ -681,7 +680,7 @@ class AcadosInterface(SolverInterface):
     def online_optim(self, ocp):
         raise NotImplementedError("online_optim is not implemented yet with ACADOS backend")
 
-    def get_optimized_value(self) -> Union[list, dict]:
+    def get_optimized_value(self) -> list | dict:
         """
         Get the previously optimized solution
 
@@ -717,7 +716,7 @@ class AcadosInterface(SolverInterface):
             out.append(self.out[key])
         return out[0] if len(out) == 1 else out
 
-    def solve(self) -> Union[list, dict]:
+    def solve(self) -> list | dict:
         """
         Solve the prepared ocp
 

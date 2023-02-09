@@ -1,6 +1,3 @@
-from typing import Union
-
-
 class SolverInterface:
     """
     Abstract class for an ocp solver
@@ -20,13 +17,13 @@ class SolverInterface:
         Set some options
     solve(self) -> dict
         Solve the prepared ocp
-    get_optimized_value(self) -> Union[list[dict], dict]
+    get_optimized_value(self) -> list[dict] | dict
         Get the previously optimized solution
     start_get_iterations(self)
         Create the necessary folder and create the file to store the iterations while optimizing
     finish_get_iterations(self)
         Close the file where iterations are saved and remove temporary folders
-    finalize_objective_value(j: dict) -> Union[MX, SX]
+    finalize_objective_value(j: dict) -> MX | SX
         Apply weight and dt to all objective values and convert them to scalar value
     """
 
@@ -65,7 +62,7 @@ class SolverInterface:
 
         raise RuntimeError("SolverInterface is an abstract class")
 
-    def get_optimized_value(self) -> Union[list, dict]:
+    def get_optimized_value(self) -> list | dict:
         """
         Get the previously optimized solution
 

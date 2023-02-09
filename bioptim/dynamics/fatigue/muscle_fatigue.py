@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Union, Any
+from typing import Any
 
 from casadi import SX, MX
 
@@ -14,13 +14,13 @@ class MuscleFatigue(FatigueModel):
     """
 
     @abstractmethod
-    def apply_dynamics(self, target_load: Union[float, MX, SX], *states: Any):
+    def apply_dynamics(self, target_load: float | MX | SX, *states: Any):
         """
         Apply the dynamics to the system (return dx/dt)
 
         Parameters
         ----------
-        target_load: Union[float, MX, SX]
+        target_load: float | MX | SX
             The target load the muscle must accomplish
         states: Any
             The list of states the dynamics should compute

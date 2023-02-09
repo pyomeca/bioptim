@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Any
 
 from casadi import MX, SX, vertcat
 
@@ -19,7 +19,7 @@ class PenaltyNodeList:
         u: list,
         x_scaled: list,
         u_scaled: list,
-        p: Union[MX, SX, list],
+        p: MX | SX | list,
     ):
         """
         Parameters
@@ -38,7 +38,7 @@ class PenaltyNodeList:
             References to the scaled state variables
         u_scaled: list
             References to the scaled control variables
-        p: Union[MX, SX]
+        p: MX | SX | list
             References to the parameter variables
         """
 

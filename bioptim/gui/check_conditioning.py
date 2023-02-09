@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 from casadi import MX, SX, Function, horzcat, vertcat, jacobian, vcat, hessian
 from matplotlib import pyplot as plt
@@ -16,7 +14,7 @@ def check_conditioning(ocp):
     Visualisation of jacobian and hessian contraints and hessian objective for each phase at initial time
     """
 
-    def get_u(nlp, u: Union[MX, SX], dt: Union[MX, SX]):
+    def get_u(nlp, u: MX | SX, dt: MX | SX):
         """
         Get the control at a given time
 
@@ -24,9 +22,9 @@ def check_conditioning(ocp):
         ----------
         nlp: NonlinearProgram
             The nonlinear program
-        u: Union[MX, SX]
+        u: MX | SX
             The control matrix
-        dt: Union[MX, SX]
+        dt: MX | SX
             The time a which control should be computed
 
         Returns

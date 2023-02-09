@@ -1,4 +1,4 @@
-from typing import Union, List, Callable, Any
+from typing import List, Callable, Any
 import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
@@ -7,11 +7,11 @@ from ..misc.enums import Shooting, ControlType
 
 def solve_ivp_interface(
     dynamics_func: Callable,
-    t_eval: Union[np.ndarray, List[float]],
+    t_eval: np.ndarray | List[float],
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
-    method: Union[str, Any] = "RK45",
+    method: str | Any = "RK45",
     keep_intermediate_points: bool = False,
     control_type: ControlType = ControlType.CONSTANT,
 ):
@@ -22,7 +22,7 @@ def solve_ivp_interface(
     ----------
     dynamics_func : Callable
         function that computes the dynamics of the system
-    t_eval : Union[np.ndarray, List[float]]
+    t_eval : np.ndarray | List[float]
         array of times t the controls u are evaluated at
     x0 : np.ndarray
         array of initial conditions
@@ -125,11 +125,11 @@ def solve_ivp_interface(
 
 def run_solve_ivp(
     dynamics_func: Callable,
-    t_eval: Union[np.ndarray, List[float]],
+    t_eval: np.ndarray | List[float],
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
-    method: Union[str, Any] = "RK45",
+    method: str | Any = "RK45",
     keep_intermediate_points: bool = False,
     control_type: ControlType = ControlType.CONSTANT,
 ):
@@ -140,7 +140,7 @@ def run_solve_ivp(
     ----------
     dynamics_func : Callable
         function that computes the dynamics of the system
-    t_eval : Union[np.ndarray, List[float]]
+    t_eval : np.ndarray | List[float]
         array of times t the controls u are evaluated at
     x0 : np.ndarray
         array of initial conditions
@@ -229,7 +229,7 @@ def define_control_function(
             return interp1d(t_u, controls, kind="linear", axis=1)
 
 
-def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np.ndarray) -> float:
+def piecewise_constant_u(t: float, t_eval: np.ndarray | List[float], u: np.ndarray) -> float:
     """
     This function computes the values of u at any time t as piecewise constant function.
     As the last element is an open end point, we need to use the previous element.
@@ -238,7 +238,7 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
     ----------
     t : float
         time to evaluate the piecewise constant function
-    t_eval : Union[np.ndarray, List[float]]
+    t_eval : np.ndarray | List[float]
         array of times t the controls u are evaluated at
     u : np.ndarray
         arrays of controls u over the tspans of t_eval
@@ -249,7 +249,7 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
         value of u at time t
     """
 
-    def previous_t(t: float, t_eval: Union[np.ndarray, List[float]]) -> int:
+    def previous_t(t: float, t_eval: np.ndarray | List[float]) -> int:
         """
         find the closest time in t_eval to t
 
@@ -257,7 +257,7 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
         ----------
         t : float
             time to compare to t_eval
-        t_eval : Union[np.ndarray, List[float]]
+        t_eval : np.ndarray | List[float]
             array of times to compare to t
 
         Returns
@@ -270,7 +270,7 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
         diff = diff[diff <= 0]
         return int(np.argmin(np.abs(diff)))
 
-    def previous_t_except_the_last_one(t: float, t_eval: Union[np.ndarray, List[float]]) -> int:
+    def previous_t_except_the_last_one(t: float, t_eval: np.ndarray | List[float]) -> int:
         """
         find the closest time in t_eval to t
 
@@ -278,7 +278,7 @@ def piecewise_constant_u(t: float, t_eval: Union[np.ndarray, List[float]], u: np
         ----------
         t : float
             time to compare to t_eval
-        t_eval : Union[np.ndarray, List[float]]
+        t_eval : np.ndarray | List[float]
             array of times to compare to t
 
         Returns

@@ -1,4 +1,4 @@
-from typing import Any, Union, Callable
+from typing import Any, Callable
 
 import biorbd_casadi as biorbd
 from casadi import horzcat, vertcat, Function, MX, SX
@@ -20,9 +20,9 @@ class PenaltyOption(OptionGeneric):
         The node within a phase on which the penalty is acting on
     quadratic: bool
         If the penalty is quadratic
-    rows: Union[list, tuple, range, np.ndarray]
+    rows: list | tuple | range | np.ndarray
         The index of the rows in the penalty to keep
-    cols: Union[list, tuple, range, np.ndarray]
+    cols: list | tuple | range | np.ndarray
         The index of the columns in the penalty to keep
     expand: bool
         If the penalty should be expanded or not
@@ -36,7 +36,7 @@ class PenaltyOption(OptionGeneric):
         If the target should be plotted
     custom_function: Callable
         A user defined function to call to get the penalty
-    node_idx: Union[list, tuple, Node]
+    node_idx: list | tuple | Node
         The index in nlp to apply the penalty to
     dt: float
         The delta time
@@ -63,14 +63,14 @@ class PenaltyOption(OptionGeneric):
 
     Methods
     -------
-    set_penalty(self, penalty: Union[MX, SX], all_pn: PenaltyNodeList)
+    set_penalty(self, penalty: MX | SX, all_pn: PenaltyNodeList)
         Prepare the dimension and index of the penalty (including the target)
-    _set_dim_idx(self, dim: Union[list, tuple, range, np.ndarray], n_rows: int)
+    _set_dim_idx(self, dim: list | tuple | range | np.ndarray, n_rows: int)
         Checks if the variable index is consistent with the requested variable.
     _check_target_dimensions(self, all_pn: PenaltyNodeList, n_time_expected: int)
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
-    _set_penalty_function(self, all_pn: Union[PenaltyNodeList, list, tuple], fcn: Union[MX, SX])
+    _set_penalty_function(self, all_pn: PenaltyNodeList | list | tuple, fcn: MX | SX)
         Finalize the preparation of the penalty (setting function and weighted_function)
     add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str)
         Interface to the plot so it can be properly added to the proper plot
@@ -90,8 +90,8 @@ class PenaltyOption(OptionGeneric):
         self,
         penalty: Any,
         phase: int = 0,
-        node: Union[Node, list, tuple] = Node.DEFAULT,
-        target: Union[int, float, np.array, list[int], list[float], list[np.array]] = None,
+        node: Node | list | tuple = Node.DEFAULT,
+        target: int | float | np.ndarray | list[int] | list[float] | list[np.ndarray] = None,
         quadratic: bool = None,
         weight: float = 1,
         derivative: bool = False,
@@ -99,8 +99,8 @@ class PenaltyOption(OptionGeneric):
         integrate: bool = False,
         integration_rule: IntegralApproximation = IntegralApproximation.DEFAULT,
         index: list = None,
-        rows: Union[list, tuple, range, np.ndarray] = None,
-        cols: Union[list, tuple, range, np.ndarray] = None,
+        rows: list | tuple | range | np.ndarray = None,
+        cols: list | tuple | range | np.ndarray = None,
         states_mapping: BiMapping = None,
         custom_function: Callable = None,
         penalty_type: PenaltyType = PenaltyType.USER,
@@ -115,9 +115,9 @@ class PenaltyOption(OptionGeneric):
             The actual penalty
         phase: int
             The phase the penalty is acting on
-        node: Union[Node, list, tuple]
+        node: Node | list | tuple
             The node within a phase on which the penalty is acting on
-        target: Union[int, float, np.array, list[int], list[float], list[np.array]]
+        target: int | float | np.ndarray | list[int] | list[float] | list[np.ndarray]
             A target to track for the penalty
         quadratic: bool
             If the penalty is quadratic
@@ -142,7 +142,7 @@ class PenaltyOption(OptionGeneric):
         """
 
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
-        self.node: Union[Node, list, tuple] = node
+        self.node: Node | list | tuple = node
         self.quadratic = quadratic
         self.integration_rule = integration_rule
 
@@ -196,10 +196,10 @@ class PenaltyOption(OptionGeneric):
         self.node_idx = []
         self.dt = 0
         self.weight = weight
-        self.function: Union[Function, None] = None
-        self.function_non_threaded: Union[Function, None] = None
-        self.weighted_function: Union[Function, None] = None
-        self.weighted_function_non_threaded: Union[Function, None] = None
+        self.function: Function | None = None
+        self.function_non_threaded: Function | None = None
+        self.weighted_function: Function | None = None
+        self.weighted_function_non_threaded: Function | None = None
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
@@ -213,13 +213,13 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = multi_thread
 
-    def set_penalty(self, penalty: Union[MX, SX], all_pn: PenaltyNodeList):
+    def set_penalty(self, penalty: MX | SX, all_pn: PenaltyNodeList):
         """
         Prepare the dimension and index of the penalty (including the target)
 
         Parameters
         ----------
-        penalty: Union[MX, SX],
+        penalty: MX | SX,
             The actual penalty function
         all_pn: PenaltyNodeList
             The penalty node elements
@@ -234,13 +234,13 @@ class PenaltyOption(OptionGeneric):
         self._set_penalty_function(all_pn, penalty)
         self._add_penalty_to_pool(all_pn)
 
-    def _set_dim_idx(self, dim: Union[list, tuple, range, np.ndarray], n_rows: int):
+    def _set_dim_idx(self, dim: list | tuple | range | np.ndarray, n_rows: int):
         """
         Checks if the variable index is consistent with the requested variable.
 
         Parameters
         ----------
-        dim: Union[list, tuple, range]
+        dim: list | tuple | range | np.ndarray
             The dimension to set
         n_rows: int
             The expected row shape
@@ -271,7 +271,7 @@ class PenaltyOption(OptionGeneric):
         ----------
         all_pn: PenaltyNodeList
             The penalty node elements
-        n_time_expected: Union[list, tuple]
+        n_time_expected: int
             The expected shape (n_rows, ns) of the data to track
         """
 
@@ -348,15 +348,15 @@ class PenaltyOption(OptionGeneric):
                         raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                     self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
-    def _set_penalty_function(self, all_pn: Union[PenaltyNodeList, list, tuple], fcn: Union[MX, SX]):
+    def _set_penalty_function(self, all_pn: PenaltyNodeList | list | tuple, fcn: MX | SX):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 
         Parameters
         ----------
-        all_pn: PenaltyNodeList
+        all_pn: PenaltyNodeList | list | tuple
             The nodes
-        fcn: Union[MX, SX]
+        fcn: MX | SX
             The value of the penalty function
         """
 
@@ -368,7 +368,7 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-        def get_u(nlp, u: Union[MX, SX], dt: Union[MX, SX]):
+        def get_u(nlp, u: MX | SX, dt: MX | SX):
             """
             Get the control at a given time
 
@@ -376,9 +376,9 @@ class PenaltyOption(OptionGeneric):
             ----------
             nlp: NonlinearProgram
                 The nonlinear program
-            u: Union[MX, SX]
+            u: MX | SX
                 The control matrix
-            dt: Union[MX, SX]
+            dt: MX | SX
                 The time a which control should be computed
 
             Returns
