@@ -728,7 +728,7 @@ class InitialGuess(OptionGeneric):
 
     def add_noise(
         self,
-        bounds: Union[Bounds, BoundsList] = None,
+        bounds: Bounds | BoundsList = None,
         magnitude: list | int | float | np.ndarray = 1,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         n_shooting: int = None,
@@ -799,7 +799,7 @@ class NoisedInitialGuess(InitialGuess):
         self,
         initial_guess: np.ndarray | list | tuple | float | Callable | PathCondition | InitialGuess = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
-        bounds: Union[Bounds, BoundsList] = None,
+        bounds: Bounds | BoundsList = None,
         magnitude: list | int | float | np.ndarray = 1,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         n_shooting: int = None,
