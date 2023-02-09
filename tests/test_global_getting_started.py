@@ -755,7 +755,6 @@ def test_example_external_forces(ode_solver):
     np.testing.assert_almost_equal(tau[:, -2], np.array((0, 3.90677425, 0, 0)))
 
     if isinstance(ode_solver, OdeSolver.IRK):
-
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)), decimal=5)
         np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)), decimal=5)
@@ -768,7 +767,6 @@ def test_example_external_forces(ode_solver):
         sol.detailed_cost_values()
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 9875.887687469118)
     else:
-
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)))
         np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)))

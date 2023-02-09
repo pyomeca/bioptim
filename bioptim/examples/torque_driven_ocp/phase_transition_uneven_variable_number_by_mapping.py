@@ -25,7 +25,6 @@ def prepare_ocp(
     biorbd_model_path_withTranslations: str = "models/double_pendulum_with_translations.bioMod",
     n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
-
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_withTranslations))
 
     # Problem parameters
@@ -111,7 +110,6 @@ def prepare_ocp(
 
 
 def main():
-
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 

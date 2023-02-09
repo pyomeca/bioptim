@@ -1,5 +1,3 @@
-from typing import Union
-
 from casadi import horzcat, vertcat, MX, SX, Function
 
 from ..misc.enums import RigidBodyDynamics
@@ -29,17 +27,17 @@ class DynamicsFunctions:
         Forward dynamics driven by muscle.
     forces_from_muscle_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
-    get(var: OptimizationVariable, cx: Union[MX, SX]):
+    get(var: OptimizationVariable, cx: MX | SX):
         Main accessor to a variable in states or controls (cx)
     apply_parameters(parameters: MX.sym, nlp: NonLinearProgram)
         Apply the parameter variables to the model. This should be called before calling the dynamics
-    reshape_qdot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX]):
+    reshape_qdot(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX):
         Easy accessor to derivative of q
-    forward_dynamics(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], tau: Union[MX, SX], with_contact: bool):
+    forward_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, tau: MX | SX, with_contact: bool):
         Easy accessor to derivative of qdot
-    compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: Union[MX, SX]):
+    compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: MX | SX):
         Easy accessor to derivative of muscle activations
-    compute_tau_from_muscle(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], muscle_activations: Union[MX, SX]):
+    compute_tau_from_muscle(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, muscle_activations: MX | SX):
         Easy accessor to tau computed from muscles
     """
 
@@ -628,7 +626,7 @@ class DynamicsFunctions:
         )
 
     @staticmethod
-    def get(var: OptimizationVariable, cx: Union[MX, SX]):
+    def get(var: OptimizationVariable, cx: MX | SX):
         """
         Main accessor to a variable in states or controls (cx)
 
@@ -636,7 +634,7 @@ class DynamicsFunctions:
         ----------
         var: OptimizationVariable
             The variable from nlp.states["name"] or nlp.controls["name"]
-        cx: Union[MX, SX]
+        cx: MX | SX
             The actual SX or MX variables
 
         Returns
@@ -667,7 +665,7 @@ class DynamicsFunctions:
                 offset += param.size
 
     @staticmethod
-    def compute_qdot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX]):
+    def compute_qdot(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX):
         """
         Easy accessor to derivative of q
 
@@ -675,9 +673,9 @@ class DynamicsFunctions:
         ----------
         nlp: NonLinearProgram
             The phase of the program
-        q: Union[MX, SX]
+        q: MX | SX
             The value of q from "get"
-        qdot: Union[MX, SX]
+        qdot: MX | SX
             The value of qdot from "get"
 
         Returns
@@ -691,9 +689,9 @@ class DynamicsFunctions:
     @staticmethod
     def forward_dynamics(
         nlp: NonLinearProgram,
-        q: Union[MX, SX],
-        qdot: Union[MX, SX],
-        tau: Union[MX, SX],
+        q: MX | SX,
+        qdot: MX | SX,
+        tau: MX | SX,
         with_contact: bool,
     ):
         """
@@ -703,11 +701,11 @@ class DynamicsFunctions:
         ----------
         nlp: NonLinearProgram
             The phase of the program
-        q: Union[MX, SX]
+        q: MX | SX
             The value of q from "get"
-        qdot: Union[MX, SX]
+        qdot: MX | SX
             The value of qdot from "get"
-        tau: Union[MX, SX]
+        tau: MX | SX
             The value of tau from "get"
         with_contact: bool
             If the dynamics with contact should be used
@@ -736,9 +734,7 @@ class DynamicsFunctions:
             return qdot_var.mapping.to_first.map(qddot)
 
     @staticmethod
-    def inverse_dynamics(
-        nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], qddot: Union[MX, SX], with_contact: bool
-    ):
+    def inverse_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, qddot: MX | SX, with_contact: bool):
         """
         Easy accessor to torques from inverse dynamics
 
@@ -746,11 +742,11 @@ class DynamicsFunctions:
         ----------
         nlp: NonLinearProgram
             The phase of the program
-        q: Union[MX, SX]
+        q: MX | SX
             The value of q from "get"
-        qdot: Union[MX, SX]
+        qdot: MX | SX
             The value of qdot from "get"
-        qddot: Union[MX, SX]
+        qddot: MX | SX
             The value of qddot from "get"
         with_contact: bool
             If the dynamics with contact should be used
@@ -775,7 +771,7 @@ class DynamicsFunctions:
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod
-    def compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: Union[MX, SX]):
+    def compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: MX | SX):
         """
         Easy accessor to derivative of muscle activations
 
@@ -783,7 +779,7 @@ class DynamicsFunctions:
         ----------
         nlp: NonLinearProgram
             The phase of the program
-        muscle_excitations: Union[MX, SX]
+        muscle_excitations: MX | SX
             The value of muscle_excitations from "get"
 
         Returns
@@ -796,10 +792,10 @@ class DynamicsFunctions:
     @staticmethod
     def compute_tau_from_muscle(
         nlp: NonLinearProgram,
-        q: Union[MX, SX],
-        qdot: Union[MX, SX],
-        muscle_activations: Union[MX, SX],
-        fatigue_states: Union[MX, SX] = None,
+        q: MX | SX,
+        qdot: MX | SX,
+        muscle_activations: MX | SX,
+        fatigue_states: MX | SX = None,
     ):
         """
         Easy accessor to tau computed from muscles
@@ -808,13 +804,13 @@ class DynamicsFunctions:
         ----------
         nlp: NonLinearProgram
             The phase of the program
-        q: Union[MX, SX]
+        q: MX | SX
             The value of q from "get"
-        qdot: Union[MX, SX]
+        qdot: MX | SX
             The value of qdot from "get"
-        muscle_activations: Union[MX, SX]
+        muscle_activations: MX | SX
             The value of muscle_activations from "get"
-        fatigue_states: Union[MX, SX]
+        fatigue_states: MX | SX
             The states of fatigue
 
         Returns

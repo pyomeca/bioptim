@@ -30,7 +30,7 @@ def prepare_ocp(
     integration_rule: IntegralApproximation,
     control_type: ControlType,
     objective: str,
-    target: np.array = None,
+    target: np.ndarray = None,
     ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
@@ -523,7 +523,6 @@ def test_error_mayer_trapz(integration_rule):
         match="Mayer objective functions cannot be integrated, "
         "remove the argument integration_rule or use a Lagrange objective function",
     ):
-
         ocp = prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
             n_shooting=30,

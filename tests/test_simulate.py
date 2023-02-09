@@ -525,7 +525,6 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver):
     decimal = 0 if integrator != SolutionIntegrator.OCP or ode_solver == OdeSolver.COLLOCATION else 8
     np.testing.assert_almost_equal(sol_integrated.states["q"][:, [0, -1]], sol.states["q"][:, [0, -1]], decimal=decimal)
     for i, key in enumerate(sol.states):
-
         if ode_solver == OdeSolver.COLLOCATION:
             if integrator != SolutionIntegrator.OCP:
                 if shooting == Shooting.MULTIPLE:

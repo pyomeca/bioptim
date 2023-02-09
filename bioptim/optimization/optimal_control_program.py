@@ -1,4 +1,4 @@
-from typing import Union, Callable, Any
+from typing import Callable, Any
 import os
 import sys
 import pickle
@@ -81,7 +81,7 @@ class OptimalControlProgram:
         If the bounds of the controls are set
     nlp: NLP
         All the phases of the ocp
-    n_phases: Union[int, list, tuple]
+    n_phases: int | list | tuple
         The number of phases of the ocp
     n_threads: int
         The number of thread to use if using multithreading
@@ -100,22 +100,22 @@ class OptimalControlProgram:
 
     Methods
     -------
-    update_objectives(self, new_objective_function: Union[Objective, ObjectiveList])
+    update_objectives(self, new_objective_function: Objective | ObjectiveList)
         The main user interface to add or modify objective functions in the ocp
     update_objectives_target(self, target, phase=None, list_index=None)
         Fast accessor to update the target of a specific objective function. To update target of global objective
         (usually defined by parameters), one can pass 'phase=-1
-    update_constraints(self, new_constraint: Union[Constraint, ConstraintList])
+    update_constraints(self, new_constraint: Constraint | ConstraintList)
         The main user interface to add or modify constraint in the ocp
-    update_parameters(self, new_parameters: Union[Parameter, ParameterList])
+    update_parameters(self, new_parameters: Parameter | ParameterList)
         The main user interface to add or modify parameters in the ocp
-    update_bounds(self, x_bounds: Union[Bounds, BoundsList], u_bounds: Union[Bounds, BoundsList])
+    update_bounds(self, x_bounds: Bounds | BoundsList, u_bounds: Bounds | BoundsList)
         The main user interface to add bounds in the ocp
     update_initial_guess(
         self,
-        x_init: Union[InitialGuess, InitialGuessList],
-        u_init: Union[InitialGuess, InitialGuessList],
-        param_init: Union[InitialGuess, InitialGuessList],
+        x_init: InitialGuess | InitialGuessList,
+        u_init: InitialGuess | InitialGuessList,
+        param_init: InitialGuess | InitialGuessList,
     )
         The main user interface to add initial guesses in the ocp
     add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any)
@@ -131,39 +131,39 @@ class OptimalControlProgram:
     @staticmethod
     load(file_path: str) -> list
         Reload a previous optimization (*.bo) saved using save
-    _define_time(self, phase_time: Union[float, tuple], objective_functions: ObjectiveList, constraints: ConstraintList)
+    _define_time(self, phase_time: float | tuple, objective_functions: ObjectiveList, constraints: ConstraintList)
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
-    __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter])
+    __modify_penalty(self, new_penalty: PenaltyOption | Parameter)
         The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
         overrides an objective only the latter is preserved when saved
     """
 
     def __init__(
         self,
-        bio_model: Union[list, tuple, BioModel],
-        dynamics: Union[Dynamics, DynamicsList],
-        n_shooting: Union[int, list, tuple],
-        phase_time: Union[int, float, list, tuple],
-        x_init: Union[InitialGuess, InitialGuessList, NoisedInitialGuess] = None,
-        u_init: Union[InitialGuess, InitialGuessList, NoisedInitialGuess] = None,
-        x_bounds: Union[Bounds, BoundsList] = None,
-        u_bounds: Union[Bounds, BoundsList] = None,
-        objective_functions: Union[Objective, ObjectiveList] = None,
-        constraints: Union[Constraint, ConstraintList] = None,
-        parameters: Union[Parameter, ParameterList] = None,
+        bio_model: list | tuple | BioModel,
+        dynamics: Dynamics | DynamicsList,
+        n_shooting: int | list | tuple,
+        phase_time: int | float | list | tuple,
+        x_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
+        u_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
+        x_bounds: Bounds | BoundsList = None,
+        u_bounds: Bounds | BoundsList = None,
+        objective_functions: Objective | ObjectiveList = None,
+        constraints: Constraint | ConstraintList = None,
+        parameters: Parameter | ParameterList = None,
         external_forces: list[list[Any], ...] | tuple[list[Any], ...] = None,
-        ode_solver: Union[list, OdeSolverBase, OdeSolver] = None,
-        control_type: Union[ControlType, list] = ControlType.CONSTANT,
+        ode_solver: list | OdeSolverBase | OdeSolver = None,
+        control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
         parameter_mappings: BiMappingList = None,
         node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
-        x_scaling: Union[VariableScaling, VariableScalingList] = None,
-        xdot_scaling: Union[VariableScaling, VariableScalingList] = None,
-        u_scaling: Union[VariableScaling, VariableScalingList] = None,
+        x_scaling: VariableScaling | VariableScalingList = None,
+        xdot_scaling: VariableScaling | VariableScalingList = None,
+        u_scaling: VariableScaling | VariableScalingList = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -172,33 +172,33 @@ class OptimalControlProgram:
         """
         Parameters
         ----------
-        bio_model: Union[list, tuple, BioModel]
+        bio_model: list | tuple | BioModel
             The bio_model to use for the optimization
-        dynamics: Union[Dynamics, DynamicsList]
+        dynamics: Dynamics | DynamicsList
             The dynamics of the phases
-        n_shooting: Union[int, list[int]]
+        n_shooting: int | list[int]
             The number of shooting point of the phases
-        phase_time: Union[int, float, list, tuple]
+        phase_time: int | float | list | tuple
             The phase time of the phases
-        x_init: Union[InitialGuess, InitialGuessList]
+        x_init: InitialGuess | InitialGuessList
             The initial guesses for the states
-        u_init: Union[InitialGuess, InitialGuessList]
+        u_init: InitialGuess | InitialGuessList
             The initial guesses for the controls
-        x_bounds: Union[Bounds, BoundsList]
+        x_bounds: Bounds | BoundsList
             The bounds for the states
-        u_bounds: Union[Bounds, BoundsList]
+        u_bounds: Bounds | BoundsList
             The bounds for the controls
-        x_scaling: Union[VariableScaling, VariableScalingList]
+        x_scaling: VariableScaling | VariableScalingList
             The scaling for the states
-        xdot_scaling: Union[VariableScaling, VariableScalingList]
+        xdot_scaling: VariableScaling | VariableScalingList
             The scaling for the states derivative
-        u_scaling: Union[VariableScaling, VariableScalingList]
+        u_scaling: VariableScaling | VariableScalingList
             The scaling for the controls
-        objective_functions: Union[Objective, ObjectiveList]
+        objective_functions: Objective | ObjectiveList
             All the objective function of the program
-        constraints: Union[Constraint, ConstraintList]
+        constraints: Constraint | ConstraintList
             All the constraints of the program
-        parameters: Union[Parameter, ParameterList]
+        parameters: Parameter | ParameterList
             All the parameters to optimize of the program
         external_forces: list[list, ...] | tuple[list, ...]
             The external forces acting on the center of mass of the segments specified in the bioMod
@@ -649,13 +649,13 @@ class OptimalControlProgram:
 
         return biomodels
 
-    def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
+    def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """
         The main user interface to add or modify objective functions in the ocp
 
         Parameters
         ----------
-        new_objective_function: Union[Objective, ObjectiveList]
+        new_objective_function: Objective | ObjectiveList
             The objective to add to the ocp
         """
 
@@ -694,13 +694,13 @@ class OptimalControlProgram:
 
         ObjectiveFunction.update_target(self.nlp[phase] if phase >= 0 else self, list_index, target)
 
-    def update_constraints(self, new_constraint: Union[Constraint, ConstraintList]):
+    def update_constraints(self, new_constraint: Constraint | ConstraintList):
         """
         The main user interface to add or modify constraint in the ocp
 
         Parameters
         ----------
-        new_constraint: Union[Constraint, ConstraintList]
+        new_constraint: Constraint | ConstraintList
             The constraint to add to the ocp
         """
 
@@ -715,13 +715,13 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
-    def update_parameters(self, new_parameters: Union[Parameter, ParameterList]):
+    def update_parameters(self, new_parameters: Parameter | ParameterList):
         """
         The main user interface to add or modify parameters in the ocp
 
         Parameters
         ----------
-        new_parameters: Union[Parameter, ParameterList]
+        new_parameters: Parameter | ParameterList
             The parameters to add to the ocp
         """
 
@@ -734,17 +734,15 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-    def update_bounds(
-        self, x_bounds: Union[Bounds, BoundsList] = BoundsList(), u_bounds: Union[Bounds, BoundsList] = BoundsList()
-    ):
+    def update_bounds(self, x_bounds: Bounds | BoundsList = BoundsList(), u_bounds: Bounds | BoundsList = BoundsList()):
         """
         The main user interface to add bounds in the ocp
 
         Parameters
         ----------
-        x_bounds: Union[Bounds, BoundsList]
+        x_bounds: Bounds | BoundsList
             The state bounds to add
-        u_bounds: Union[Bounds, BoundsList]
+        u_bounds: Bounds | BoundsList
             The control bounds to add
         """
 
@@ -765,20 +763,20 @@ class OptimalControlProgram:
 
     def update_initial_guess(
         self,
-        x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-        u_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-        param_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
+        x_init: InitialGuess | InitialGuessList = InitialGuessList(),
+        u_init: InitialGuess | InitialGuessList = InitialGuessList(),
+        param_init: InitialGuess | InitialGuessList = InitialGuessList(),
     ):
         """
         The main user interface to add initial guesses in the ocp
 
         Parameters
         ----------
-        x_init: Union[Bounds, BoundsList]
+        x_init: Bounds | BoundsList
             The state initial guess to add
-        u_init: Union[Bounds, BoundsList]
+        u_init: Bounds | BoundsList
             The control initial guess to add
-        param_init: Union[Bounds, BoundsList]
+        param_init: Bounds | BoundsList
             The parameters initial guess to add
         """
 
@@ -1098,7 +1096,7 @@ class OptimalControlProgram:
 
     def solve(
         self,
-        solver: Union[Solver, Solver.Generic] = None,
+        solver: Solver | Solver.Generic = None,
         warm_start: Solution = None,
     ) -> Solution:
         """
@@ -1279,7 +1277,6 @@ class OptimalControlProgram:
         to_console: bool = True,
         to_graph: bool = True,
     ):
-
         if to_console:
             display_console = OcpToConsole(self)
             display_console.print()
@@ -1290,7 +1287,7 @@ class OptimalControlProgram:
 
     def _define_time(
         self,
-        phase_time: Union[int, float, list, tuple],
+        phase_time: int | float | list | tuple,
         objective_functions: ObjectiveList,
         constraints: ConstraintList,
     ):
@@ -1300,7 +1297,7 @@ class OptimalControlProgram:
 
         Parameters
         ----------
-        phase_time: Union[int, float, list, tuple]
+        phase_time: int | float | list | tuple
             The time of all the phases
         objective_functions: ObjectiveList
             All the objective functions. It is used to scan if any time optimization was defined
@@ -1310,7 +1307,7 @@ class OptimalControlProgram:
 
         def define_parameters_phase_time(
             ocp: OptimalControlProgram,
-            penalty_functions: Union[ObjectiveList, ConstraintList],
+            penalty_functions: ObjectiveList | ConstraintList,
             _initial_time_guess: list,
             _phase_time: list,
             _time_min: list,
@@ -1325,7 +1322,7 @@ class OptimalControlProgram:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            penalty_functions: Union[ObjectiveList, ConstraintList]
+            penalty_functions: ObjectiveList | ConstraintList
                 The list to parse to ensure no double free times are declared
             _initial_time_guess: list
                 The list of all initial guesses for the free time optimization
@@ -1407,14 +1404,14 @@ class OptimalControlProgram:
 
         self.time_param_phases_idx = time_param_phases_idx
 
-    def __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter]):
+    def __modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """
         The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
         overrides an objective only the latter is preserved when saved
 
         Parameters
         ----------
-        new_penalty: PenaltyOption
+        new_penalty: PenaltyOption | Parameter
             Any valid option to add to the program
         """
 

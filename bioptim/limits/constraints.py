@@ -1,4 +1,4 @@
-from typing import Callable, Union, Any
+from typing import Callable, Any
 
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
@@ -25,8 +25,8 @@ class Constraint(PenaltyOption):
     def __init__(
         self,
         constraint: Any,
-        min_bound: Union[np.ndarray, float] = None,
-        max_bound: Union[np.ndarray, float] = None,
+        min_bound: np.ndarray | float = None,
+        max_bound: np.ndarray | float = None,
         quadratic: bool = False,
         phase: int = -1,
         **params: Any,
@@ -63,7 +63,7 @@ class Constraint(PenaltyOption):
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
-    def set_penalty(self, penalty: Union[MX, SX], all_pn: PenaltyNodeList):
+    def set_penalty(self, penalty: MX | SX, all_pn: PenaltyNodeList):
         super(Constraint, self).set_penalty(penalty, all_pn)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
@@ -134,19 +134,19 @@ class ConstraintList(OptionList):
 
     Methods
     -------
-    add(self, constraint: Union[Callable, "ConstraintFcn"], **extra_arguments)
+    add(self, constraint: Callable | "ConstraintFcn", **extra_arguments)
         Add a new Constraint to the list
     print(self)
         Print the ConstraintList to the console
     """
 
-    def add(self, constraint: Union[Callable, Constraint, Any], **extra_arguments: Any):
+    def add(self, constraint: Callable | Constraint | Any, **extra_arguments: Any):
         """
         Add a new constraint to the list
 
         Parameters
         ----------
-        constraint: Union[Callable, Constraint, ConstraintFcn]
+        constraint: Callable | Constraint | ConstraintFcn
             The chosen constraint
         extra_arguments: dict
             Any parameters to pass to Constraint

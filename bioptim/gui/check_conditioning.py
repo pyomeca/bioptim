@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 from casadi import MX, SX, Function, horzcat, vertcat, jacobian, vcat, hessian
 from matplotlib import pyplot as plt
@@ -16,7 +14,7 @@ def check_conditioning(ocp):
     Visualisation of jacobian and hessian contraints and hessian objective for each phase at initial time
     """
 
-    def get_u(nlp, u: Union[MX, SX], dt: Union[MX, SX]):
+    def get_u(nlp, u: MX | SX, dt: MX | SX):
         """
         Get the control at a given time
 
@@ -24,9 +22,9 @@ def check_conditioning(ocp):
         ----------
         nlp: NonlinearProgram
             The nonlinear program
-        u: Union[MX, SX]
+        u: MX | SX
             The control matrix
-        dt: Union[MX, SX]
+        dt: MX | SX
             The time a which control should be computed
 
         Returns
@@ -62,7 +60,6 @@ def check_conditioning(ocp):
         for phase in ocp.nlp:
             list_constraints = []
             for constraints in phase.g:
-
                 # If no constraints then leave
                 if (len(phase.g) == 0) == True:
                     break
@@ -71,7 +68,6 @@ def check_conditioning(ocp):
                     0,
                     constraints.function(phase.states.cx, phase.controls.cx, phase.parameters.cx).shape[0],
                 ):
-
                     # depends if there are parameters
                     if phase.parameters.shape == 0:
                         vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)
@@ -137,10 +133,8 @@ def check_conditioning(ocp):
                     0,
                     constraints.function(phase.states.cx, phase.controls.cx, phase.parameters.cx).shape[0],
                 ):
-
                     # find all equality constraints
                     if (constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]) == True:
-
                         # parameters
                         if (phase.parameters.shape == 0) == True:
                             vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)

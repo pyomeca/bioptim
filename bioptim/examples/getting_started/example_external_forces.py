@@ -9,7 +9,7 @@ Please note that the point of application of the external forces are defined in 
 externalforceindex tag in segment and is acting at the center of mass of this particular segment. Please note that
 this segment MUST have at least one degree of freedom defined (translations and/or rotations). Otherwise, the
 external_force is silently ignored. Bioptim expects external_forces to be a list (one element for each phase) of
-np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
+np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
 (defined by the externalforceindex) for each node n
 """
 

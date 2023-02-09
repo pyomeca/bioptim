@@ -582,7 +582,7 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `constraints` is the constraint set of the ocp (see The constraints section)
 `parameters` is the parameter set of the ocp (see The parameters section)
 `external_forces` are the external forces acting on the center of mass of the bodies. 
-It is list (one element for each phase) of np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
+It is list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
 `ode_solver` is the ode solver used to solve the dynamic equations
 `control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section)
 `all_generalized_mapping` is used to reduce the number of degrees of freedom by linking them (see The mappings section).
@@ -934,10 +934,10 @@ Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be ca
 If someone wants to add noise to the initial guess, you can provide the following:
 ```python
 init = init.add_noise(
-    bounds: Union[Bounds, BoundsList, QAndQDotBounds], 
-    magnitude: Union[list, int, float, np.ndarray],
+    bounds: Bounds | BoundsList | QAndQDotBounds, 
+    magnitude: list | int | float | np.ndarray,
     magnitude_type: MagnitudeType, n_shooting: int, 
-    bound_push: Union[list, int, float], 
+    bound_push: list | int | float, 
     seed: int
     )
 ```
@@ -961,11 +961,11 @@ If someone wants to add noise to the initial guess list, you can provide the fol
 ```python
 init_list.add_noise(
   bounds: BoundList,
-  n_shooting: Union[int, List[int], Tuple[int]],
-  magnitude: Union[list, int, float, np.ndarray],
+  n_shooting: int | List[int] | Tuple[int],
+  magnitude: list | int | float | np.ndarray,
   magnitude_type: magnitudeType,
-  bound_push: Union[int, float, List[int], List[float], ndarray],
-  seed: Union[int, List[int]],
+  bound_push: int | float | List[int] | List[float] | ndarray,
+  seed: int | List[int],
 )
 ```
 The parameters, except `MagnitudeType` must be specified for each phase unless you want the same value for every phases.
@@ -1469,7 +1469,7 @@ q = sol.states[0]["q"]
 q = sol.states[0]["all"]
 ```
 
-The values inside the dictionaries are np.array of dimension `n_elements` x `n_shooting`, unless the data were previously altered by integrating or interpolating (then the number of columns may differ).
+The values inside the dictionaries are np.ndarray of dimension `n_elements` x `n_shooting`, unless the data were previously altered by integrating or interpolating (then the number of columns may differ).
 
 The parameters are very similar, but differs by the fact that it is always a dictionary (since parameters don't depend on the phases).
 Also, the values inside the dictionaries are of dimension `n_elements` x 1. 

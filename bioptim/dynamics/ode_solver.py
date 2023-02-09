@@ -1,4 +1,4 @@
-from typing import Union, Callable
+from typing import Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
@@ -16,7 +16,7 @@ class OdeSolverBase:
         The number of integration steps
     steps_scipy: int
         Number of steps while integrating with scipy
-    rk_integrator: Union[RK4, RK8, IRK]
+    rk_integrator: RK4 | RK8 | IRK
         The corresponding integrator class
     is_direct_collocation: bool
         indicating if the ode solver is direct collocation method
@@ -426,7 +426,7 @@ class OdeSolver:
             ]
 
         @staticmethod
-        def _adapt_integrator_output(integrator_func: Callable, x0: Union[MX, SX], p: Union[MX, SX]):
+        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX):
             """
             Interface to make xf and xall as outputs
 
@@ -434,9 +434,9 @@ class OdeSolver:
             ----------
             integrator_func: Callable
                 Handler on a CasADi function
-            x0: Union[MX, SX]
+            x0: MX | SX
                 Symbolic variable of states
-            p: Union[MX, SX]
+            p: MX | SX
                 Symbolic variable of controls
 
             Returns

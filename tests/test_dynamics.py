@@ -85,7 +85,6 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
         if with_contact:
             contact_out = np.array(nlp.contact_forces_func(states, controls, params))
             if with_external_force:
-
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
                     [0.8631034, 0.3251833, 0.1195942, 0.4937956, -7.7700092, -7.5782306, 21.7073786, -16.3059315],
@@ -93,7 +92,6 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                 np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
 
             else:
-
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
                     [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716],
@@ -870,7 +868,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             if with_torque:
                 if with_excitations:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -889,7 +886,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             ],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -910,14 +906,12 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
                 else:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.61585, 0.503136, 0.642419, 0.895523, 0.319314, 0.448446],
                             decimal=6,
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, 0.729007, 0.863103, 0.325183],
@@ -927,7 +921,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             else:
                 if with_excitations:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -946,7 +939,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             ],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -967,13 +959,11 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
                 else:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.6158501, 0.5031363, 0.6424193, 0.9905051, 0.9307573, 0.1031239],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
@@ -983,7 +973,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             if with_torque:
                 if with_excitations:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1002,7 +991,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             ],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1023,7 +1011,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
                 else:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1037,7 +1024,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             decimal=6,
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, -0.867138, 22.511947, -153.294775],
@@ -1047,7 +1033,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             else:
                 if with_excitations:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1066,7 +1051,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             ],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1087,13 +1071,11 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
                 else:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.6158501, 0.50313626, 0.64241928, 1.61627195, -59.62168912, 111.27061562],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1111,7 +1093,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             if with_torque:
                 if with_excitations:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1130,7 +1111,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             ],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1151,14 +1131,12 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
                 else:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.61585, 0.503136, 0.642419, 0.895523, 0.319314, 0.448446],
                             decimal=6,
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, 0.729007, 0.863103, 0.325183],
@@ -1168,7 +1146,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             else:
                 if with_excitations:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1187,7 +1164,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             ],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1208,13 +1184,11 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
                 else:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.6158501, 0.5031363, 0.6424193, 0.9905051, 0.9307573, 0.1031239],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
@@ -1224,7 +1198,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             if with_torque:
                 if with_excitations:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1243,7 +1216,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             ],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1264,7 +1236,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
                 else:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1278,7 +1249,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             decimal=6,
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.18340451, 0.61185289, 0.78517596, -0.8671376, 22.51194682, -153.29477496],
@@ -1288,7 +1258,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             else:
                 if with_excitations:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1307,7 +1276,6 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             ],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [
@@ -1328,13 +1296,11 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
                 else:
                     if with_external_force:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [0.6158501, 0.50313626, 0.64241928, 1.61627195, -59.62168912, 111.27061562],
                         )
                     else:
-
                         np.testing.assert_almost_equal(
                             x_out[:, 0],
                             [

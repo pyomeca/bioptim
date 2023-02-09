@@ -86,7 +86,6 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     x_out = np.array(nlp.dynamics_func(states, controls, params))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_passive_torque:
-
             np.testing.assert_almost_equal(
                 x_out[:, 0],
                 [0.6118529, 0.785176, 0.6075449, 0.8083973, -5.0261535, -10.5570666, 18.569191, 24.2237134],
@@ -107,7 +106,6 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
             )
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         if with_passive_torque:
-
             np.testing.assert_almost_equal(
                 x_out[:, 0],
                 [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
@@ -119,7 +117,6 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
             )
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:
-
             np.testing.assert_almost_equal(
                 x_out[:, 0],
                 [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
@@ -257,7 +254,6 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, cx):
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
     if with_passive_torque:
-
         np.testing.assert_almost_equal(
             x_out[:, 0],
             [
@@ -340,7 +336,6 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:
-
             np.testing.assert_almost_equal(
                 x_out[:, 0],
                 [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
@@ -422,7 +417,6 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:
-
             # initial and final position
             np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
             np.testing.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
@@ -457,9 +451,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
             )
 
     else:
-
         if with_passive_torque:
-
             # initial and final position
             np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
             np.testing.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))

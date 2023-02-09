@@ -1,4 +1,4 @@
-from typing import Callable, Union, Any
+from typing import Callable, Any
 from warnings import warn
 
 from casadi import vertcat, MX
@@ -47,14 +47,13 @@ class PhaseTransition(MultinodeConstraint):
     def __init__(
         self,
         phase_pre_idx: int = None,
-        transition: Union[Callable, Any] = None,
+        transition: Callable | Any = None,
         weight: float = 0,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
         **params: Any,
     ):
-
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
@@ -82,7 +81,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, transition: Union[Callable, PhaseTransitionFcn], phase: int = -1, **extra_arguments)
+    add(self, transition: Callable | PhaseTransitionFcn, phase: int = -1, **extra_arguments)
         Add a new PhaseTransition to the list
     print(self)
         Print the PhaseTransitionList to the console
@@ -96,7 +95,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         Parameters
         ----------
-        transition: Union[Callable, PhaseTransitionFcn]
+        transition: Callable | PhaseTransitionFcn
             The chosen phase transition
         extra_arguments: dict
             Any parameters to pass to Constraint
