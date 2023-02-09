@@ -395,6 +395,7 @@ class OptimizationVector:
         x = []
         u = []
         for nlp in self.ocp.nlp:
+
             index_x = nlp.index_x
             index_x = [6,7,8,9,10,11,12,13,14,15,22,23,24,25,26,27,28,29,30,31] # indices des degres de liberté qui son mappés
 
@@ -601,7 +602,8 @@ class OptimizationVector:
 
 
             else :
-                index_x = nlp.index_x
+                if nlp.index_x == [] :
+                    index_x = [i for i in range(nlp.states.shape)]
                 nx = nlp.states.shape #nombre de degré de liberté
                 index_roots = [i for i in range(nx) if i not in index_x]
                 if nlp.ode_solver.is_direct_collocation:
@@ -639,7 +641,8 @@ class OptimizationVector:
                     u_bounds.min[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
                     u_bounds.max[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
             else :
-                index_u = nlp.index_u
+                if nlp.index_u == [] :
+                    index_u = [i for i in range(nlp.states.controls)]
                 if nlp.control_type == ControlType.CONSTANT:
                     ns = nlp.ns
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -735,7 +738,7 @@ class OptimizationVector:
                 if nlp.ode_solver.is_direct_shooting:
                     if nlp.x_init.type == InterpolationType.ALL_POINTS:
                         raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                nlp.x_init.check_and_adjust_dimensions(len(index_roots_x), ns)
+                nlp.x_init.check_and_adjust_dimensions(nlp.states.shape, ns)
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                 if nlp.control_type == ControlType.CONSTANT:
                     nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
@@ -745,9 +748,9 @@ class OptimizationVector:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
             else :
                 if nlp.control_type == ControlType.CONSTANT:
-                    nlp.u_init.check_and_adjust_dimensions(len(index_roots_u), nlp.ns - 1)
+                    nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    nlp.u_init.check_and_adjust_dimensions(len(index_roots_u), nlp.ns)
+                    nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
                 else:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
@@ -802,6 +805,9 @@ class OptimizationVector:
                             point = k * repeat + p
                         x_init.init[span, 0] = nlp.x_init.init.evaluate_at(shooting_point=point)
                 self.x_init[i_phase] = x_init
+
+                #probleme ici sur self.x_init
+                # il y a nlp.ns+1 elements pour chaque phase, il faut pareil partout
 
             # For controls
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
