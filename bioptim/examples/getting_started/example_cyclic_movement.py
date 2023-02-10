@@ -21,7 +21,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     OdeSolver,
     PhaseTransitionList,
@@ -74,7 +73,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1")
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     # First node is free but mid and last are constrained to be exactly at a certain point.
     # The cyclic penalty ensures that the first node and the last node are the same.
     x_bounds[2:6, -1] = [1.57, 0, 0, 0]

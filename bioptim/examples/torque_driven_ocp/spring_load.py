@@ -16,7 +16,6 @@ from bioptim import (
     DynamicsFunctions,
     ObjectiveFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     NonLinearProgram,
     Solver,
@@ -85,7 +84,7 @@ def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
     dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(m)
+    x_bounds = m.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = [0] * m.nb_q + [0] * m.nb_qdot
     x_bounds.min[:, 1] = [-1] * m.nb_q + [-100] * m.nb_qdot
     x_bounds.max[:, 1] = [1] * m.nb_q + [100] * m.nb_qdot

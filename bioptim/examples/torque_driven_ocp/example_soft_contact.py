@@ -16,7 +16,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Node,
@@ -160,7 +159,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     nQ = bio_model.nb_q
     X0 = initial_states_from_single_shooting(biorbd_model_path, 100, 1, ode_solver)
     x_bounds[0].min[:nQ, 0] = X0[:nQ] - slack

@@ -16,7 +16,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     Bounds,
-    QAndQDotBounds,
     OdeSolver,
     ConstraintList,
     ConstraintFcn,
@@ -382,7 +381,7 @@ def test_acados_custom_dynamics(problem_type_custom):
     ocp.update_constraints(constraints)
     sol = ocp.solve(solver=Solver.ACADOS())
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
@@ -430,7 +429,7 @@ def test_acados_one_parameter():
     ocp.update_objectives(objectives)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(model)
+    x_bounds = model.bounds_from_ranges(["q", "qdot"])
     x_bounds[[0, 1, 2, 3], 0] = 0
     u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
@@ -439,7 +438,7 @@ def test_acados_one_parameter():
     solver.set_nlp_solver_tol_eq(1e-3)
     sol = ocp.solve(solver=solver)
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_xyz"]
 
     # initial and final position
@@ -494,7 +493,7 @@ def test_acados_several_parameter():
     ocp.update_objectives(objectives)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(model)
+    x_bounds = model.bounds_from_ranges(["q", "qdot"])
     x_bounds[[0, 1, 2, 3], 0] = 0
     u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
@@ -503,7 +502,7 @@ def test_acados_several_parameter():
     solver.set_nlp_solver_tol_eq(1e-3)
     sol = ocp.solve(solver=solver)
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau, gravity, mass = (
         sol.states["q"],
         sol.states["qdot"],
@@ -553,7 +552,7 @@ def test_acados_one_end_constraints():
     ocp.update_objectives(objective_functions)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(model)
+    x_bounds = model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[0, 0] = 0
     ocp.update_bounds(x_bounds=x_bounds)
@@ -564,7 +563,7 @@ def test_acados_one_end_constraints():
 
     sol = ocp.solve(solver=Solver.ACADOS())
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
@@ -601,7 +600,7 @@ def test_acados_constraints_all():
 
     sol = ocp.solve(solver=Solver.ACADOS())
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position

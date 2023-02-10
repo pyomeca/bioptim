@@ -17,7 +17,6 @@ from bioptim import (
     ObjectiveFcn,
     ObjectiveList,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     OdeSolver,
     PenaltyNodeList,
@@ -118,7 +117,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 

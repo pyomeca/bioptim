@@ -1,5 +1,7 @@
 from casadi import MX, SX
 from typing import Protocol, Callable
+from ..misc.mapping import BiMapping, BiMappingList
+from ..interfaces.biorbd_model import Bounds
 
 
 class BioModel(Protocol):
@@ -192,3 +194,19 @@ class BioModel(Protocol):
 
     def passive_joint_torque(self, q, qdot) -> MX:
         """Get the passive joint torque"""
+
+    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
+        """
+        Create bounds from ranges of the model depending on the variable chosen, such as q, qdot, qddot
+
+        Parameters
+        ----------
+        variables: [str, ...]
+           Input or list of input such as ["q"] for bounds on q ranges, ["q", "qdot"] for bounds on q and qdot ranges
+            or even ["q", "qdot", qddot"] for bounds on q, qdot and qddot ranges
+        mapping: Union[BiMapping, BiMappingList]
+            The mapping of q and qdot (if only q, then qdot = q)
+        Returns
+        -------
+        Create the desired bounds
+        """

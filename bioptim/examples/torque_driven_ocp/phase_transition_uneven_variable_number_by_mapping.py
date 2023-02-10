@@ -10,7 +10,6 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     Node,
-    QAndQDotBounds,
     ObjectiveFcn,
     BiMappingList,
     Axis,
@@ -61,8 +60,8 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[1]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[1].bounds_from_ranges(["q", "qdot"]))
 
     # Phase 0
     x_bounds[0][1, 0] = 0

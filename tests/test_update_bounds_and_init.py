@@ -8,7 +8,6 @@ from bioptim import (
     DynamicsFcn,
     DynamicsList,
     Bounds,
-    QAndQDotBounds,
     ParameterList,
     InterpolationType,
     InitialGuess,
@@ -228,7 +227,7 @@ def test_update_noised_init_rk4(interpolation):
     )
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -524,7 +523,7 @@ def test_update_noised_init_collocation(interpolation):
     )
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -621,7 +620,7 @@ def test_update_noised_initial_guess_rk4(interpolation):
     ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time)
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -908,7 +907,7 @@ def test_update_noised_initial_guess_rk4(n_extra):
     ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, x_init=x_init, u_init=u_init)
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -1038,7 +1037,7 @@ def test_update_noised_initial_guess_collocation(interpolation):
     )
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -1139,7 +1138,7 @@ def test_update_noised_initial_guess_list(interpolation):
     )
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 

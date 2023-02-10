@@ -2,8 +2,10 @@ from typing import Any, Callable
 
 import biorbd_casadi as biorbd
 from casadi import MX, horzcat, vertcat, SX, norm_fro
-from bioptim.misc.utils import check_version
 
+from ..misc.mapping import BiMapping, BiMappingList
+from ..misc.utils import check_version
+from ..limits.path_conditions import Bounds
 
 check_version(biorbd, "1.9.9", "1.10.0")
 
@@ -300,3 +302,93 @@ class BiorbdModel:
 
     def passive_joint_torque(self, q, qdot) -> MX:
         return self.model.passiveJointTorque(q, qdot).to_mx()
+
+    def _q_mapping(self, mapping: BiMapping = None) -> BiMapping:
+        if mapping is None:
+            mapping = {}
+        if self.nb_quaternions > 0:
+            if "q" in mapping and "qdot" not in mapping:
+                raise RuntimeError(
+                    "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
+                )
+            elif "q" not in mapping and "qdot" in mapping:
+                raise RuntimeError(
+                    "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
+                )
+        if "q" not in mapping:
+            mapping["q"] = BiMapping(range(self.nb_q), range(self.nb_q))
+        return mapping
+
+    def _qdot_mapping(self, mapping: BiMapping = None) -> BiMapping:
+        if mapping is None:
+            mapping = {}
+        if "qdot" not in mapping:
+            if self.nb_quaternions > 0:
+                mapping["qdot"] = BiMapping(range(self.nb_qdot), range(self.nb_qdot))
+            else:
+                if "q" not in mapping:
+                    mapping["q"] = BiMapping(range(self.nb_q), range(self.nb_q))
+                mapping["qdot"] = mapping["q"]
+        return mapping
+
+    def _qddot_mapping(self, mapping: BiMapping = None) -> BiMapping:
+        if mapping is None:
+            mapping = {}
+        if "qddot" not in mapping:
+            if self.nb_quaternions > 0:
+                mapping["qddot"] = BiMapping(range(self.nb_qddot), range(self.nb_qddot))
+            elif "qdot" not in mapping:
+                if self.nb_quaternions > 0:
+                    mapping["qdot"] = BiMapping(range(self.nb_qdot), range(self.nb_qdot))
+                    mapping["qddot"] = mapping["qdot"]
+                else:
+                    if "q" not in mapping:
+                        mapping["q"] = BiMapping(range(self.nb_q), range(self.nb_q))
+                    mapping["qdot"] = mapping["q"]
+                    mapping["qddot"] = mapping["qdot"]
+            else:
+                mapping["qddot"] = mapping["qdot"]
+        return mapping
+
+    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
+        out = Bounds()
+        q_ranges = []
+        qdot_ranges = []
+        qddot_ranges = []
+
+        for i in range(self.nb_segments):
+            segment = self.segments[i]
+            for var in variables:
+                if var == "q":
+                    q_ranges += [q_range for q_range in segment.QRanges()]
+                if var == "qdot":
+                    qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+                if var == "qddot":
+                    qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
+
+        for var in variables:
+            if var == "q":
+                q_mapping = self._q_mapping(mapping)
+                mapping = q_mapping
+                x_min = [q_ranges[i].min() for i in q_mapping["q"].to_first.map_idx]
+                x_max = [q_ranges[i].max() for i in q_mapping["q"].to_first.map_idx]
+                out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
+
+            elif var == "qdot":
+                qdot_mapping = self._qdot_mapping(mapping)
+                mapping = qdot_mapping
+                x_min = [qdot_ranges[i].min() for i in qdot_mapping["qdot"].to_first.map_idx]
+                x_max = [qdot_ranges[i].max() for i in qdot_mapping["qdot"].to_first.map_idx]
+                out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
+
+            elif var == "qddot":
+                qddot_mapping = self._qddot_mapping(mapping)
+                mapping = qddot_mapping
+                x_min = [qddot_ranges[i].min() for i in qddot_mapping["qddot"].to_first.map_idx]
+                x_max = [qddot_ranges[i].max() for i in qddot_mapping["qddot"].to_first.map_idx]
+                out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
+
+        if out.shape[0] == 0:
+            raise ValueError(f"Unrecognized variable ({variables}), only 'q', 'qdot' and 'qddot' are allowed")
+
+        return out
