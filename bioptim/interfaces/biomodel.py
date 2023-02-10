@@ -194,6 +194,8 @@ class BioModel(Protocol):
 
     def passive_joint_torque(self, q, qdot) -> MX:
         """Get the passive joint torque"""
+    def ligament_joint_torque(self, q, qdot) -> MX:
+        """Get the ligament joint torque"""
 
     def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
         """
