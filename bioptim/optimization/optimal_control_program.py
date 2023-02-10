@@ -454,9 +454,9 @@ class OptimalControlProgram:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
         NLP.add(self, "plot_mapping", reshaped_plot_mappings, False, name="plot_mapping")
 
-        phase_mapping, dof_names = self._set_kinematic_phase_mapping()
-        NLP.add(self, "phase_mapping", phase_mapping, True)
-        NLP.add(self, "dof_names", dof_names, True)
+        # phase_mapping, dof_names = self._set_kinematic_phase_mapping()
+        # NLP.add(self, "phase_mapping", phase_mapping, True)
+        # NLP.add(self, "dof_names", dof_names, True)
 
         # Prepare the parameters to optimize
         self.phase_transitions = []
@@ -510,6 +510,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
+        for i in range(self.n_phases):
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
         # Define the actual NLP problem
