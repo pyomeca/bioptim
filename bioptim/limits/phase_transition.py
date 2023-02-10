@@ -1,14 +1,13 @@
-from typing import Callable, Union, Any
+from typing import Callable, Any
 from warnings import warn
 
-import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
 from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.enums import Node, InterpolationType, PenaltyType
+from ..misc.enums import Node, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
@@ -48,14 +47,13 @@ class PhaseTransition(MultinodeConstraint):
     def __init__(
         self,
         phase_pre_idx: int = None,
-        transition: Union[Callable, Any] = None,
+        transition: Callable | Any = None,
         weight: float = 0,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
         **params: Any,
     ):
-
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
@@ -83,7 +81,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, transition: Union[Callable, PhaseTransitionFcn], phase: int = -1, **extra_arguments)
+    add(self, transition: Callable | PhaseTransitionFcn, phase: int = -1, **extra_arguments)
         Add a new PhaseTransition to the list
     print(self)
         Print the PhaseTransitionList to the console
@@ -97,7 +95,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         Parameters
         ----------
-        transition: Union[Callable, PhaseTransitionFcn]
+        transition: Callable | PhaseTransitionFcn
             The chosen phase transition
         extra_arguments: dict
             Any parameters to pass to Constraint
@@ -258,19 +256,24 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
             # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
-            model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
+            model = nlp_post.model.copy()
 
-            if nlp_post.model.nbContacts() == 0:
+            if nlp_post.model.nb_contacts == 0:
                 warn("The chosen model does not have any contact")
+
+            # Todo scaled?
             q_pre = nlp_pre.states["q"].mx
             qdot_pre = nlp_pre.states["qdot"].mx
-            qdot_impact = model.ComputeConstraintImpulsesDirect(q_pre, qdot_pre).to_mx()
+            qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
 
             val = []
             cx_end = []
             cx = []
             for key in nlp_pre.states:
-                cx_end = vertcat(cx_end, nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end))
+                cx_end = vertcat(
+                    cx_end,
+                    nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end),
+                )
                 cx = vertcat(cx, nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx))
                 post_mx = nlp_post.states[key].mx
                 continuity = nlp_post.states["qdot"].mapping.to_first.map(
@@ -279,7 +282,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 val = vertcat(val, continuity)
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = biorbd.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
+            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
             return func
 
 

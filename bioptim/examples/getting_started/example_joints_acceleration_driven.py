@@ -9,11 +9,11 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     ObjectiveFcn,
     Objective,
@@ -54,7 +54,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qddot_joints")
@@ -63,25 +63,25 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[0, -1] = 3.14
     x_bounds[1, -1] = 0
 
     # Initial guess
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_qddot_joints = biorbd_model.nbQddot() - biorbd_model.nbRoot()  # 2 - 1 = 1 in this example
+    n_qddot_joints = bio_model.nb_qddot - bio_model.nbRoot()  # 2 - 1 = 1 in this example
     qddot_joints_min, qddot_joints_max, qddot_joints_init = -100, 100, 0
     u_bounds = Bounds([qddot_joints_min] * n_qddot_joints, [qddot_joints_max] * n_qddot_joints)
 
     u_init = InitialGuess([qddot_joints_init] * n_qddot_joints)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

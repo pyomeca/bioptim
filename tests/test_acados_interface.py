@@ -11,11 +11,11 @@ from sys import platform
 import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     Axis,
     ObjectiveList,
     ObjectiveFcn,
     Bounds,
-    QAndQDotBounds,
     OdeSolver,
     ConstraintList,
     ConstraintFcn,
@@ -381,7 +381,7 @@ def test_acados_custom_dynamics(problem_type_custom):
     ocp.update_constraints(constraints)
     sol = ocp.solve(solver=Solver.ACADOS())
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
@@ -429,16 +429,16 @@ def test_acados_one_parameter():
     ocp.update_objectives(objectives)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(model)
+    x_bounds = model.bounds_from_ranges(["q", "qdot"])
     x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
+    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
     solver.set_nlp_solver_tol_eq(1e-3)
     sol = ocp.solve(solver=solver)
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_xyz"]
 
     # initial and final position
@@ -493,16 +493,16 @@ def test_acados_several_parameter():
     ocp.update_objectives(objectives)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(model)
+    x_bounds = model.bounds_from_ranges(["q", "qdot"])
     x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
+    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
     solver.set_nlp_solver_tol_eq(1e-3)
     sol = ocp.solve(solver=solver)
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau, gravity, mass = (
         sol.states["q"],
         sol.states["qdot"],
@@ -552,7 +552,7 @@ def test_acados_one_end_constraints():
     ocp.update_objectives(objective_functions)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(model)
+    x_bounds = model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[0, 0] = 0
     ocp.update_bounds(x_bounds=x_bounds)
@@ -563,7 +563,7 @@ def test_acados_one_end_constraints():
 
     sol = ocp.solve(solver=Solver.ACADOS())
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
@@ -600,7 +600,7 @@ def test_acados_constraints_all():
 
     sol = ocp.solve(solver=Solver.ACADOS())
 
-    # Check some of the results
+    # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
@@ -663,10 +663,10 @@ def test_acados_bounds_not_implemented(failing):
         print("Test for ACADOS on Windows is skipped")
         return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
+    bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
-    nq = biorbd_model.nbQ()
-    ntau = biorbd_model.nbGeneralizedTorque()
+    nq = bio_model.nb_q
+    ntau = bio_model.nb_tau
 
     n_cycles = 3
     window_len = 5
@@ -683,7 +683,7 @@ def test_acados_bounds_not_implemented(failing):
         raise ValueError("Wrong value for failing")
 
     mhe = MovingHorizonEstimator(
-        biorbd_model,
+        bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,

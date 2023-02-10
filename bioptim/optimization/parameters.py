@@ -1,16 +1,16 @@
-from typing import Callable, Union, Any
+from typing import Callable, Any
 
 import biorbd_casadi as biorbd
 from casadi import MX, SX, vertcat, Function
 import numpy as np
 
-from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
 from ..limits.penalty_node import PenaltyNodeList
 from ..limits.penalty import PenaltyOption
-from ..misc.enums import InterpolationType
+from ..misc.enums import InterpolationType, Node
 from ..misc.options import UniquePerProblemOptionList
+from ..optimization.non_linear_program import NonLinearProgram
 
 
 class Parameter(PenaltyOption):
@@ -21,17 +21,17 @@ class Parameter(PenaltyOption):
     ----------
     function: Callable[OptimalControlProgram, MX]
             The user defined function that modify the model
-    initial_guess: Union[InitialGuess, InitialGuessList]
+    initial_guess: InitialGuess | InitialGuessList
         The list of initial guesses associated with this parameter
-    bounds: Union[Bounds, BoundsList]
+    bounds: Bounds | BoundsList
         The list of bounds associated with this parameter
     quadratic: bool
         If the objective is squared [True] or not [False]
     size: int
         The number of variables this parameter has
-    penalty_list: Union[Objective, ObjectiveList]
+    penalty_list: Objective | ObjectiveList
         The list of objective associated with this parameter
-    cx: Union[MX, SX]
+    cx: MX | SX
         The type of casadi variable
     mx: MX
         The MX vector of the parameter
@@ -40,12 +40,12 @@ class Parameter(PenaltyOption):
     def __init__(
         self,
         function: Callable = None,
-        initial_guess: Union[InitialGuess, InitialGuessList] = None,
-        bounds: Union[Bounds, BoundsList] = None,
+        initial_guess: InitialGuess | InitialGuessList = None,
+        bounds: Bounds | BoundsList = None,
         quadratic: bool = True,
         size: int = None,
-        penalty_list: Union[Objective, ObjectiveList] = None,
-        cx: Union[Callable, MX, SX] = None,
+        penalty_list: Objective | ObjectiveList = None,
+        cx: Callable | MX | SX = None,
         scaling: np.ndarray = None,
         **params: Any,
     ):
@@ -54,17 +54,17 @@ class Parameter(PenaltyOption):
         ----------
         function: Callable[OptimalControlProgram, MX]
             The user defined function that modify the model
-        initial_guess: Union[InitialGuess, InitialGuessList]
+        initial_guess: InitialGuess | InitialGuessList
             The list of initial guesses associated with this parameter
-        bounds: Union[Bounds, BoundsList]
+        bounds: Bounds | BoundsList
             The list of bounds associated with this parameter
         quadratic: bool
             If the objective is squared [True] or not [False]
         size: int
             The number of variables this parameter has
-        penalty_list: Union[Objective, ObjectiveList]
+        penalty_list: Objective | ObjectiveList
             The list of objective associated with this parameter
-        cx: Union[MX, SX]
+        cx: MX | SX
             The type of casadi variable
         params: dict
             Any parameters to pass to the function
@@ -101,9 +101,7 @@ class Parameter(PenaltyOption):
         else:
             raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
 
-        initial_guess.scale(self.scaling)
         self.initial_guess = initial_guess
-        bounds.scale(self.scaling)
         self.bounds = bounds
         self.quadratic = quadratic
         self.size = size
@@ -183,17 +181,17 @@ class Parameter(PenaltyOption):
 
                 func = penalty.custom_function
 
-                all_pn = PenaltyNodeList(ocp, None, [], [], [], [])
+                all_pn = PenaltyNodeList(ocp, None, [], [], [], [], [], [])
                 val = func(ocp, self.cx * self.scaling, **penalty.params)
                 self.set_penalty(ocp, penalty, val, target_ns=1)
-                penalty.clear_penalty(ocp, None)
+                penalty.ensure_penalty_sanity(ocp, None)
                 penalty._add_penalty_to_pool(all_pn)
 
     def set_penalty(
         self,
         ocp,
         objective: Objective,
-        penalty: Union[MX, SX],
+        penalty: MX | SX,
         combine_to: str = None,
         target_ns: int = -1,
         expand: bool = False,
@@ -208,20 +206,20 @@ class Parameter(PenaltyOption):
                 objective.add_target_to_plot(None, combine_to)
         self._set_penalty_function(ocp, objective, penalty, expand)
 
-    def _set_penalty_function(self, ocp, objective, fcn: Union[MX, SX], expand: bool = False):
+    def _set_penalty_function(self, ocp, objective, fcn: MX | SX, expand: bool = False):
         # Do not use nlp.add_casadi_func because all functions must be registered
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.v.parameters_in_list.cx
 
-        objective.function = biorbd.to_casadi_func(
+        objective.function = NonLinearProgram.to_casadi_func(
             f"{self.name}", fcn[objective.rows, objective.cols], state_cx, control_cx, param_cx, expand=expand
         )
 
         modified_fcn = objective.function(state_cx, control_cx, param_cx)
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
-        weight_cx = ocp.cx.sym("weight", 1, 1)
+        weight_cx = ocp.cx.sym("weight", fcn.shape[0], 1)
         target_cx = ocp.cx.sym("target", modified_fcn.shape)
 
         modified_fcn = modified_fcn - target_cx
@@ -246,13 +244,13 @@ class ParameterList(UniquePerProblemOptionList):
     -------
     add(
         self,
-        parameter_name: Union[str, Parameter],
+        parameter_name: str | Parameter,
         function: Callable = None,
-        initial_guess: Union[InitialGuess, InitialGuessList] = None,
-        bounds: Union[Bounds, BoundsList] = None,
+        initial_guess: InitialGuess | InitialGuessList = None,
+        bounds: Bounds | BoundsList = None,
         size: int = None,
         phase: int = 0,
-        penalty_list: Union[Objective, ObjectiveList] = None,
+        penalty_list: Objective | ObjectiveList = None,
         **extra_arguments
     ):
         Add a new Parameter to the list
@@ -280,13 +278,13 @@ class ParameterList(UniquePerProblemOptionList):
 
     def add(
         self,
-        parameter_name: Union[str, Parameter],
+        parameter_name: str | Parameter,
         function: Callable = None,
-        initial_guess: Union[InitialGuess, InitialGuessList] = None,
-        bounds: Union[Bounds, BoundsList] = None,
+        initial_guess: InitialGuess | InitialGuessList = None,
+        bounds: Bounds | BoundsList = None,
         size: int = None,
         list_index: int = -1,
-        penalty_list: Union[Objective, ObjectiveList] = None,
+        penalty_list: Objective | ObjectiveList = None,
         scaling: np.ndarray = np.array([1.0]),
         **extra_arguments: Any,
     ):
@@ -295,20 +293,20 @@ class ParameterList(UniquePerProblemOptionList):
 
         Parameters
         ----------
-        parameter_name: Union[str, Parameter
+        parameter_name: str | Parameter
             If str, the name of the parameter. This name will be used for plotting purpose. It must be unique
             If Parameter, the parameter is copied
         function: Callable[OptimalControlProgram, MX]
             The user defined function that modify the model
-        initial_guess: Union[InitialGuess, InitialGuessList]
+        initial_guess: InitialGuess | InitialGuessList
             The list of initial guesses associated with this parameter
-        bounds: Union[Bounds, BoundsList]
+        bounds: Bounds | BoundsList
             The list of bounds associated with this parameter
         size: int
             The number of variables this parameter has
         list_index: int
             The index of the parameter in the parameters list
-        penalty_list: Union[Objective, ObjectiveList]
+        penalty_list: Objective | ObjectiveList
             The objective function associate with the parameter
         scaling: float
             The scaling of the parameter

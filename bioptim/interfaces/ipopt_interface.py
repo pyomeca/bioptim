@@ -122,7 +122,7 @@ class IpoptInterface(SolverInterface):
 
         Returns
         -------
-        Union[SX, MX]
+        SX | MX
             The objective function
         """
         return generic_dispatch_obj_func(self)
@@ -141,4 +141,4 @@ class IpoptInterface(SolverInterface):
         -------
 
         """
-        return generic_get_all_penalties(self, nlp, penalties)
+        return generic_get_all_penalties(self, nlp, penalties, is_unscaled=False)

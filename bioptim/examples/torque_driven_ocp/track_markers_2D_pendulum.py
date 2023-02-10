@@ -6,7 +6,7 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 Note that the final node is not tracked.
 """
 
-from typing import Callable, Union
+from typing import Callable
 import importlib.util
 from pathlib import Path
 
@@ -14,11 +14,11 @@ import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, horzcat, DM
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     ObjectiveList,
     ObjectiveFcn,
@@ -36,13 +36,13 @@ data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
-def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable, n_q: int) -> Union[DM, np.ndarray]:
+def get_markers_pos(x: DM | np.ndarray, idx_marker: int, fun: Callable, n_q: int) -> DM | np.ndarray:
     """
     Get the position of a specific marker from the states
 
     Parameters
     ----------
-    x: Union[DM, np.ndarray]
+    x: DM | np.ndarray
         The states to get the marker positions from
     idx_marker: int
         The index of the marker to get the position
@@ -62,7 +62,7 @@ def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable, n_
 
 
 def prepare_ocp(
-    biorbd_model: biorbd.Model,
+    bio_model: BiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -74,7 +74,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    biorbd_model: biorbd.Model
+    bio_model: BiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -110,17 +110,17 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, 0] = 0
 
     # Initial guess
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
     x_init = InitialGuessList()
     x_init.add([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
@@ -131,7 +131,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -151,7 +151,7 @@ def main():
     """
 
     biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/models/pendulum.bioMod"
-    biorbd_model = biorbd.Model(biorbd_path)
+    bio_model = BiorbdModel(biorbd_path)
     final_time = 1
     n_shooting = 20
 
@@ -160,19 +160,19 @@ def main():
     )
     sol = ocp_to_track.solve()
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    n_q = biorbd_model.nbQ()
-    n_marker = biorbd_model.nbMarkers()
+    n_q = bio_model.nb_q
+    n_marker = bio_model.nb_markers
     x = np.concatenate((q, qdot))
 
     symbolic_states = MX.sym("q", n_q, 1)
-    markers_fun = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_states)
+    markers_fun = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
     markers_ref = np.zeros((3, n_marker, n_shooting + 1))
     for i in range(n_shooting + 1):
         markers_ref[:, :, i] = markers_fun(x[:n_q, i])
     tau_ref = tau[:, :-1]
 
     ocp = prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time=final_time,
         n_shooting=n_shooting,
         markers_ref=markers_ref,

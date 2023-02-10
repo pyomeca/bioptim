@@ -113,10 +113,8 @@ def test_generate_time(
         merge_phases=merge_phase,
     )
 
-    print(time)
     if shooting_type == Shooting.SINGLE:
         if merge_phase:
-
             np.testing.assert_almost_equal(time[0], 0)
             np.testing.assert_almost_equal(time[-1], 1)
             if keep_intermediate_points:
@@ -140,7 +138,6 @@ def test_generate_time(
                     np.testing.assert_almost_equal(time[0][4], 0.06203787705313508)
 
     elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-
         if merge_phase:
             np.testing.assert_almost_equal(time[0], 0)
             np.testing.assert_almost_equal(time[-1], 1)
@@ -429,11 +426,8 @@ def test_generate_integrate_linear_continuous(
 
         plt.figure()
 
-        print(merged_sol.time)
         plt.plot(merged_sol.time, merged_sol.states["q"][0, :], label="merged", marker=".")
         if merge_phase:
-            print(type(integrated_sol.states))
-            print(integrated_sol.time)
             plt.plot(
                 integrated_sol.time,
                 integrated_sol.states["q"][0, :],
@@ -443,12 +437,8 @@ def test_generate_integrate_linear_continuous(
                 markersize=5,
             )
         else:
-            print(integrated_sol.time)
-            print(integrated_sol.states)
             for t, state in zip(integrated_sol.time, integrated_sol.states):
                 plt.plot(t[:, np.newaxis], state["q"].T, label="integrated by bioptim", marker=".")
-            print(integrated_sol.states[0]["q"][:, -1] - integrated_sol.states[1]["q"][:, 0])
-            print(integrated_sol.states[1]["q"][:, -1] - integrated_sol.states[2]["q"][:, 0])
 
         # plt.legend()
         # plt.vlines(0.2, -1, 1, color="black", linestyle="--")

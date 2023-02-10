@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 
 from ..limits.constraints import Constraint
@@ -15,7 +13,7 @@ class GraphAbstract:
     """
     Methods
     -------
-    _vector_layout_structure(self, vector: Union[list, np.array], decimal: int)
+    _vector_layout_structure(self, vector: list | np.ndarray, decimal: int)
         Main structure of the method _vector_layout()
     _vector_layout(self, vector: list, size: int)
         Resize vector content for display task
@@ -50,13 +48,13 @@ class GraphAbstract:
 
         self.ocp = ocp
 
-    def _vector_layout_structure(self, vector: Union[list, np.array], decimal: int):
+    def _vector_layout_structure(self, vector: list | np.ndarray, decimal: int):
         """
-        Main structure of the next method _vector_layout(self, vector: Union[list, np.array], size: int, param: bool)
+        Main structure of the next method _vector_layout(self, vector: list | np.ndarray, size: int, param: bool)
 
         Parameters
         ----------
-        vector: Union[list, np.array]
+        vector: list | np.ndarray
             The vector to be condensed
         decimal: int
             Number of decimals
@@ -68,13 +66,13 @@ class GraphAbstract:
                 condensed_vector += f"... {self._return_line}... "
         return condensed_vector
 
-    def _vector_layout(self, vector: Union[list, np.array, int]):
+    def _vector_layout(self, vector: list | np.ndarray | int):
         """
         Resize vector content for display task
 
         Parameters
         ----------
-        vector: Union[list, np.array]
+        vector: list | np.ndarray | int
             The vector to be condensed
         """
 
@@ -192,9 +190,7 @@ class GraphAbstract:
             for i in obj.node_idx:
                 if isinstance(obj.type, ObjectiveFcn.Mayer):
                     mayer_str = ""
-                    mayer_objective: Union[list, tuple] = (
-                        [obj.node[0]] if isinstance(obj.node, (list, tuple)) else [obj.node]
-                    )
+                    mayer_objective: list | tuple = [obj.node[0]] if isinstance(obj.node, (list, tuple)) else [obj.node]
                     if obj.target is not None:
                         if obj.quadratic:
                             mayer_str += (
@@ -360,7 +356,7 @@ class OcpToConsole(GraphAbstract):
                 print("")
             print("")
             print(f"**********")
-            print(f"MODEL: {self.ocp.original_values['biorbd_model'][phase_idx]}")
+            print(f"MODEL: {self.ocp.original_values['bio_model'][phase_idx]}")
             print(f"PHASE DURATION: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s")
             print(f"SHOOTING NODES : {self.ocp.nlp[phase_idx].ns}")
             print(f"DYNAMICS: {self.ocp.nlp[phase_idx].dynamics_type.type.name}")
@@ -622,10 +618,7 @@ class OcpToGraph(GraphAbstract):
             The index of the current phase
         """
 
-        node_str = (
-            f"<b>Model</b>: {self.ocp.nlp[phase_idx].model.path().filename().to_string()}"
-            f".{self.ocp.nlp[phase_idx].model.path().extension().to_string()}<br/>"
-        )
+        node_str = f"<b>BioModel</b>: {type(self.ocp.nlp[phase_idx].model)}<br/>"
         node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
         node_str += f"<b>Dynamics</b>: {self.ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"

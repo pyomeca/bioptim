@@ -10,13 +10,13 @@ dynamics out there (the joint torque driven), it defines an objective function a
 import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
     DynamicsList,
     DynamicsFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     Solver,
 )
@@ -44,9 +44,9 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
+    bio_model = BiorbdModel(biorbd_model_path)
+    nq = bio_model.nb_q
+    nqdot = bio_model.nb_qdot
 
     target = np.zeros((nq + nqdot, 1))
     target[1, 0] = 3.14
@@ -69,7 +69,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, 0] = 0
 
     # Initial guess
@@ -77,7 +77,7 @@ def prepare_ocp(
     x_init.add([0] * (nq + nqdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = bio_model.nb_tau
     torque_min, torque_max, torque_init = -300, 300, 0
     u_bounds = BoundsList()
     u_bounds.add([torque_min] * n_tau, [torque_max] * n_tau)
@@ -89,7 +89,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

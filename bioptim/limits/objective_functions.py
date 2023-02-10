@@ -1,4 +1,4 @@
-from typing import Callable, Union, Any
+from typing import Callable, Any
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -16,9 +16,9 @@ class Objective(PenaltyOption):
         """
         Parameters
         ----------
-        objective: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, Callable[OptimalControlProgram, MX]]
+        objective: ObjectiveFcn.Lagrange | ObjectiveFcn.Mayer | Callable[OptimalControlProgram, MX]
             The chosen objective function
-        custom_type: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, Callable]
+        custom_type: ObjectiveFcn.Lagrange | ObjectiveFcn.Mayer | Callable
             When objective is a custom defined function, one must specify if the custom_type is Mayer or Lagrange
         phase: int
             At which phase this objective function must be applied
@@ -65,7 +65,7 @@ class Objective(PenaltyOption):
 
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
-    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
+    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList | list | tuple):
         if isinstance(all_pn, (list, tuple)):
             all_pn = all_pn[0]
 
@@ -77,7 +77,7 @@ class Objective(PenaltyOption):
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self
 
-    def clear_penalty(self, ocp, nlp):
+    def ensure_penalty_sanity(self, ocp, nlp):
         """
         Resets a objective function. A negative penalty index creates a new empty objective function.
 
@@ -131,19 +131,19 @@ class ObjectiveList(OptionList):
 
     Methods
     -------
-    add(self, constraint: Union[Callable, "ConstraintFcn"], **extra_arguments)
+    add(self, constraint: Callable | "ConstraintFcn", **extra_arguments)
         Add a new Constraint to the list
     print(self):
         Print the ObjectiveList to the console
     """
 
-    def add(self, objective: Union[Callable, Objective, Any], **extra_arguments: Any):
+    def add(self, objective: Callable | Objective | Any, **extra_arguments: Any):
         """
         Add a new objective function to the list
 
         Parameters
         ----------
-        objective: Union[Callable, Objective, ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer]
+        objective: Callable | Objective | ObjectiveFcn.Lagrange | ObjectiveFcn.Mayer
             The chosen objective function
         extra_arguments: dict
             Any parameters to pass to ObjectiveFcn
@@ -268,7 +268,7 @@ class ObjectiveFunction:
 
         Parameters
         ----------
-        ocp_or_nlp: Union[OptimalControlProgram, NonLinearProgram]
+        ocp_or_nlp: OptimalControlProgram  NonLinearProgram
             The reference to where to find J
         list_index: int
             The index in J
@@ -279,7 +279,7 @@ class ObjectiveFunction:
         if list_index >= len(ocp_or_nlp.J) or list_index < 0:
             raise ValueError("'list_index' must be defined properly")
 
-        ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, Union[list, tuple]) else new_target
+        ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, list | tuple) else new_target
 
     @staticmethod
     def inner_phase_continuity(ocp, weight: float):

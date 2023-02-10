@@ -7,6 +7,7 @@ cycle at a time (main difference between cyclic and normal NMPC where NMPC advan
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     CyclicNonlinearModelPredictiveControl,
     Dynamics,
     DynamicsFcn,
@@ -15,7 +16,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     Solver,
     Node,
@@ -33,20 +33,20 @@ class MyCyclicNMPC(CyclicNonlinearModelPredictiveControl):
 
 
 def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque):
-    model = biorbd.Model(model_path)
+    model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_bound = QAndQDotBounds(model)
-    u_bound = Bounds([-max_torque] * model.nbQ(), [max_torque] * model.nbQ())
+    x_bound = model.bounds_from_ranges(["q", "qdot"])
+    u_bound = Bounds([-max_torque] * model.nb_q, [max_torque] * model.nb_q)
 
     x_init = InitialGuess(
         np.zeros(
-            model.nbQ() * 2,
+            model.nb_q * 2,
         )
     )
     u_init = InitialGuess(
         np.zeros(
-            model.nbQ(),
+            model.nb_q,
         )
     )
 

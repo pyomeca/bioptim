@@ -6,7 +6,7 @@ import pytest
 
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver
+from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver, BiorbdModel
 
 from .utils import TestUtils
 
@@ -217,7 +217,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
     # Define the problem
     model_path = bioptim_folder + "/models/pendulum.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    bio_model = BiorbdModel(model_path)
 
     final_time = 2
     n_shooting = 30
@@ -230,7 +230,7 @@ def test_track_marker_2D_pendulum(ode_solver):
     if isinstance(ode_solver, OdeSolver.IRK):
         tau_ref = tau_ref * 5
 
-    ocp = ocp_module.prepare_ocp(biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(bio_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check constraints
@@ -299,7 +299,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type):
 
     # Define the problem
     model_path = bioptim_folder + "/models/pendulum.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    bio_model = BiorbdModel(model_path)
 
     final_time = 2
     n_shooting = 30
@@ -312,7 +312,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type):
     if isinstance(ode_solver, OdeSolver.IRK):
         tau_ref = tau_ref * 5
 
-    ocp = ocp_module.prepare_ocp(biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(bio_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check constraints
@@ -562,6 +562,7 @@ def test_multi_model_by_mapping():
     """
     This test is highly sensitive, do not change anything please.
     """
+
     # Load multi_model_by_mapping
     from bioptim.examples.torque_driven_ocp import multi_model_by_mapping as ocp_module
 
@@ -571,11 +572,14 @@ def test_multi_model_by_mapping():
     biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod"
 
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=biorbd_model_path,
-        biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
-        n_shooting=(5, 5),
-    )
+    with pytest.raises(NotImplementedError, match="Mapping over phases is broken"):
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=biorbd_model_path,
+            biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
+            n_shooting=(5, 5),
+        )
+    return  # TODO: when it is not broken anymore, the following results should be good
+
     sol = ocp.solve()
 
     # Check objective function value

@@ -1,13 +1,12 @@
-import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
     BoundsList,
     InitialGuessList,
-    QAndQDotBounds,
     ObjectiveFcn,
     BiMappingList,
     PhaseTransitionList,
@@ -21,8 +20,7 @@ def prepare_ocp(
     biorbd_model_path_modified_inertia: str = "models/double_pendulum_modified_inertia.bioMod",
     n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
-
-    biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path_modified_inertia))
+    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_modified_inertia))
 
     # Problem parameters
     final_time = (1.5, 1.5)
@@ -57,8 +55,8 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[1]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[1].bounds_from_ranges(["q", "qdot"]))
 
     # Phase 0
     x_bounds[0][0, 0] = -np.pi
@@ -76,8 +74,8 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    x_init.add([0] * (biorbd_model[1].nbQ() + biorbd_model[1].nbQdot()))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([0] * (bio_model[1].nb_q + bio_model[1].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
@@ -96,7 +94,7 @@ def prepare_ocp(
     )
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -113,6 +111,7 @@ def prepare_ocp(
 
 
 def main():
+    # Please note that this example is currently broken and will therefore raise a NotImplementedError
 
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()

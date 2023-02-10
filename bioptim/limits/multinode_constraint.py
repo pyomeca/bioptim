@@ -1,7 +1,5 @@
-from typing import Callable, Union, Any
-from warnings import warn
+from typing import Callable, Any
 
-import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
 from .constraints import Constraint
@@ -41,7 +39,7 @@ class MultinodeConstraint(Constraint):
         The delta time
     node_idx: int
         The index of the node in nlp pre
-    multinode_constraint: Union[Callable, Any]
+    multinode_constraint: Callable | Any
         The nature of the cost function is the multi node constraint
     penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
@@ -51,9 +49,9 @@ class MultinodeConstraint(Constraint):
         self,
         phase_first_idx: int,
         phase_second_idx: int,
-        first_node: Union[Node, int],
-        second_node: Union[Node, int],
-        multinode_constraint: Union[Callable, Any] = None,
+        first_node: Node | int,
+        second_node: Node | int,
+        multinode_constraint: Callable | Any = None,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
@@ -109,7 +107,7 @@ class MultinodeConstraint(Constraint):
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL
 
-    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
+    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList | list | tuple):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
         if self.weight == 0:
@@ -118,7 +116,7 @@ class MultinodeConstraint(Constraint):
             pool = nlp.J_internal if nlp else ocp.J_internal
         pool[self.list_index] = self
 
-    def clear_penalty(self, ocp, nlp):
+    def ensure_penalty_sanity(self, ocp, nlp):
         if self.weight == 0:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
         else:
@@ -144,7 +142,7 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, transition: Union[Callable, PhaseTransitionFcn], phase: int = -1, **extra_arguments)
+    add(self, transition: Callable | PhaseTransitionFcn, phase: int = -1, **extra_arguments)
         Add a new MultinodeConstraint to the list
     print(self)
         Print the MultinodeConstraintList to the console
@@ -158,7 +156,7 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
 
         Parameters
         ----------
-        multinode_constraint: Union[Callable, MultinodeConstraintFcn]
+        multinode_constraint: Callable | MultinodeConstraintFcn
             The chosen phase transition
         extra_arguments: dict
             Any parameters to pass to Constraint
@@ -296,7 +294,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
             states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
-            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states.keys()]
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -306,13 +304,13 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com = nlp_pre.model.CoM(states_pre[nlp_pre.states["q"].index, :]).to_mx()
-            post_com = nlp_post.model.CoM(states_post_sym_list[0]).to_mx()
+            pre_com = nlp_pre.model.center_of_mass(states_pre[nlp_pre.states["q"].index, :])
+            post_com = nlp_post.model.center_of_mass(states_post_sym_list[0])
 
             pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
 
-            return biorbd.to_casadi_func(
+            return nlp_pre.to_casadi_func(
                 "com_equality",
                 pre_com - post_com,
                 states_pre,
@@ -340,7 +338,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
             states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
-            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states.keys()]
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -350,15 +348,15 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com_dot = nlp_pre.model.CoMdot(
+            pre_com_dot = nlp_pre.model.center_of_mass_velocity(
                 states_pre[nlp_pre.states["q"].index, :], states_pre[nlp_pre.states["qdot"].index, :]
-            ).to_mx()
-            post_com_dot = nlp_post.model.CoMdot(states_post_sym_list[0], states_post_sym_list[1]).to_mx()
+            )
+            post_com_dot = nlp_post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
             pre_states_cx = nlp_pre.states.cx_end
             post_states_cx = nlp_post.states.cx
 
-            return biorbd.to_casadi_func(
+            return nlp_pre.to_casadi_func(
                 "com_dot_equality",
                 pre_com_dot - post_com_dot,
                 states_pre,

@@ -15,15 +15,14 @@ User might want to start reading the script by the `main` function to get a bett
 
 from casadi import sqrt
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     Node,
     DynamicsFcn,
     Dynamics,
     Bounds,
     InterpolationType,
-    QAndQDotBounds,
     NoisedInitialGuess,
     InitialGuess,
     ObjectiveFcn,
@@ -33,18 +32,17 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
-    BiorbdInterface,
     Solution,
 )
 
 
 def out_of_sphere(all_pn, y, z):
     q = all_pn.nlp.states["q"].mx
-    marker_q = all_pn.nlp.model.markers(q)[1].to_mx()
+    marker_q = all_pn.nlp.model.markers(q)[1]
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 
-    return BiorbdInterface.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states["q"])
+    return all_pn.nlp.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states["q"])
 
 
 def prepare_ocp_first_pass(
@@ -81,7 +79,7 @@ def prepare_ocp_first_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -92,16 +90,16 @@ def prepare_ocp_first_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = 0
 
     # Initial guess
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
     x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, magnitude=0.001, n_shooting=n_shooting + 1)
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -300, 300, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
@@ -119,7 +117,7 @@ def prepare_ocp_first_pass(
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -162,7 +160,7 @@ def prepare_ocp_second_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -173,20 +171,20 @@ def prepare_ocp_second_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = 0
 
     # Initial guess
-    x_init = np.vstack((solution.states["q"], solution.states["qdot"]))
+    x_init = np.vstack((solution.states[0]["q"], solution.states[0]["qdot"]))
     x_init = InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -300, 300, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = InitialGuess(solution.controls["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+    u_init = InitialGuess(solution.controls[0]["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
@@ -199,7 +197,7 @@ def prepare_ocp_second_pass(
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         solution.ns,
         solution.phase_time[-1],

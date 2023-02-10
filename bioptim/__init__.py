@@ -94,10 +94,6 @@ Bounds
     A placeholder for bounds constraints
 BoundsList
     A list of Bounds if more than one is required
-QAndQDotBounds
-    Specialized Bounds that reads a model to automatically extract q and qdot bounds
-QAndQDotAndQDDotBounds
-    Specialized Bounds that reads a model to automatically extract q, qdot and qddot bounds
 
 
 # --- Managing the initial guesses of the variables --- #
@@ -171,8 +167,9 @@ from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueS
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver
-from .interfaces.biorbd_interface import BiorbdInterface
 from .interfaces.solver_options import Solver
+from .interfaces.biorbd_model import BiorbdModel
+from .interfaces.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
@@ -183,8 +180,6 @@ from .limits.path_conditions import (
     InitialGuessList,
     InitialGuess,
     NoisedInitialGuess,
-    QAndQDotBounds,
-    QAndQDotAndQDDotBounds,
 )
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_node import PenaltyNode, PenaltyNodeList
@@ -216,6 +211,6 @@ from .optimization.receding_horizon_optimization import (
 )
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
-from .optimization.optimization_variable import OptimizationVariableList
+from .optimization.optimization_variable import OptimizationVariableList, VariableScalingList, VariableScaling
 
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero

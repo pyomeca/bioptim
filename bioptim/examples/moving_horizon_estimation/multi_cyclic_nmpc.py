@@ -8,6 +8,7 @@ the latter has more cycle at a time giving the knowledge to the solver that 'som
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     MultiCyclicNonlinearModelPredictiveControl,
     Dynamics,
     DynamicsFcn,
@@ -16,7 +17,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     Solver,
     Node,
@@ -41,22 +41,22 @@ class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
 
 
 def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n_cycles_to_advance, max_torque):
-    model = biorbd.Model(model_path)
+    model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_bound = QAndQDotBounds(model)
+    x_bound = model.bounds_from_ranges(["q", "qdot"])
     x_bound.min[0, :] = -2 * np.pi * n_cycles_simultaneous  # Allow the wheel to spin as much as needed
     x_bound.max[0, :] = 0
-    u_bound = Bounds([-max_torque] * model.nbQ(), [max_torque] * model.nbQ())
+    u_bound = Bounds([-max_torque] * model.nb_q, [max_torque] * model.nb_q)
 
     x_init = InitialGuess(
         np.zeros(
-            model.nbQ() * 2,
+            model.nb_q * 2,
         )
     )
     u_init = InitialGuess(
         np.zeros(
-            model.nbQ(),
+            model.nb_q,
         )
     )
 
