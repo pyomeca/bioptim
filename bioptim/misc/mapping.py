@@ -188,6 +188,7 @@ class BiMappingList(OptionDict):
         bimapping: BiMapping
             The BiMapping to copy
         """
+
         if isinstance(bimapping, BiMapping):
             if to_second is not None or to_first is not None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
@@ -251,7 +252,7 @@ class NodeMapping(OptionGeneric):
         map_controls: bool = False,
         phase_pre: int = None,
         phase_post: int = None,
-        index : list = [],
+        index: list = None,
         **params
     ):
         """
@@ -272,11 +273,7 @@ class NodeMapping(OptionGeneric):
         self.map_controls = map_controls
         self.phase_pre = phase_pre
         self.phase_post = phase_post
-        if index :
-            self.index = index
-        else :
-            self.index = []
-
+        self.index = index
 
 class NodeMappingList(OptionDict):
     def __init__(self):
@@ -289,7 +286,7 @@ class NodeMappingList(OptionDict):
         map_controls: bool = False,
         phase_pre: int = None,
         phase_post: int = None,
-        index : list = None,
+        index: list = None,
     ):
         """
         Add a new NodeMapping to the list
@@ -328,13 +325,12 @@ class NodeMappingList(OptionDict):
             index=index,
         )
 
-    def get_variable_from_phase_idx(self, ocp, NLP):
+    def get_variable_from_phase_idx(self, ocp):
+        ##### to be changed #####
         if self[0].get('q') :
             index_x = self[0].get('q').index
         if self[0].get('qddot_joints') :
             index_u = self[0].get('qddot_joints').index
-
-
 
         use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
@@ -349,15 +345,12 @@ class NodeMappingList(OptionDict):
                     use_controls_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
 
         from ..optimization.non_linear_program import NonLinearProgram
-        NLP.add(ocp, "index_x", [index_x], True, _type=list)
-        NLP.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-        NLP.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-        NLP.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
-        NLP.add(ocp, 'index_u', [index_u], True, _type = list)
 
+        NonLinearProgram.add(ocp, "index_x", [index_x], True, _type=list)
         NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
         NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
         NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+        NonLinearProgram.add(ocp, 'index_u', [index_u], True, _type=list)
 
         return use_states_from_phase_idx, use_states_dot_from_phase_idx, use_controls_from_phase_idx
 
