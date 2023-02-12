@@ -1,5 +1,5 @@
 import numpy as np
-from casadi import vertcat, DM, MX, SX
+from casadi import vertcat, horzcat, DM, MX, SX
 
 from .parameters import ParameterList, Parameter
 from ..limits.path_conditions import Bounds, InitialGuess, InitialGuessList, NoisedInitialGuess
@@ -96,7 +96,7 @@ class OptimizationVector:
     @property
     def vector(self):
         """
-        Format the x, u and p so they are in one nice (and useful) vector
+        Format the x, u and p so they are in one nice (and useful) vector for casadi solve
 
         Returns
         -------
@@ -106,46 +106,66 @@ class OptimizationVector:
         x_scaled = []
         u_scaled = []
         for nlp in self.ocp.nlp:
-            x_scaled.append([])
+            if nlp.states_phase_mapping_idx.index is not None:
+                index_x = nlp.states_phase_mapping_idx.index
+            else:
+                index_x = list(range(nlp.states.shape))
 
-            index_x = nlp.index_x
-            index_u = nlp.index_u
-            node_all = nlp.ns
-            if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                for k in range(node_all+1):
-                    x_scaled[nlp.phase_idx].append([])
-                    for liberty in range(len(self.x_scaled[nlp.phase_idx][k])):
-                        x_scaled[nlp.phase_idx][k].append(self.x_scaled[nlp.phase_idx][k][liberty])
-                    x_scaled[nlp.phase_idx][k] = vertcat(*x_scaled[nlp.phase_idx][k])
-                x_scaled[nlp.phase_idx] = vertcat(*x_scaled[nlp.phase_idx])
-            else :
-                for k in range(node_all+1) :
-                    x_scaled[nlp.phase_idx].append([])
-                    for liberty in range(len(self.x_scaled[nlp.phase_idx][k])):
-                        if liberty not in index_x :
-                            x_scaled[nlp.phase_idx][k].append(self.x_scaled[nlp.phase_idx][k][liberty])
-                    x_scaled[nlp.phase_idx][k] = vertcat(*x_scaled[nlp.phase_idx][k])
-                x_scaled[nlp.phase_idx] = vertcat(*x_scaled[nlp.phase_idx])
+            for k in range(nlp.ns + 1):
+                for liberty in range(nlp.states.shape):
+                    if nlp.states_phase_mapping_idx.phase == nlp.phase_idx:
+                        x_scaled.append(self.x_scaled[nlp.phase_idx][liberty, k])
+                # for k in range(nlp.ns + 1):
+                #     x_scaled[nlp.phase_idx].append([])
+                #     for liberty in range(len(self.x_scaled[nlp.phase_idx][k])):
+                #         x_scaled[nlp.phase_idx][k].append(self.x_scaled[nlp.phase_idx][k][liberty])
+                #     x_scaled[nlp.phase_idx][k] = vertcat(*x_scaled[nlp.phase_idx][k])
+                # x_scaled[nlp.phase_idx] = vertcat(*x_scaled[nlp.phase_idx])
+                    else:
+                        if liberty not in index_x:
+                            x_scaled.append(self.x_scaled[nlp.phase_idx][liberty, k])
+                # for k in range(nlp.ns+1) :
+                #     x_scaled[nlp.phase_idx].append([])
+                #     for liberty in range(len(self.x_scaled[nlp.phase_idx][k])):
+                #         if liberty not in index_x :
+                #             x_scaled[nlp.phase_idx][k].append(self.x_scaled[nlp.phase_idx][k][liberty])
+                #     x_scaled[nlp.phase_idx][k] = vertcat(*x_scaled[nlp.phase_idx][k])
+                # x_scaled[nlp.phase_idx] = vertcat(*x_scaled[nlp.phase_idx])
 
-            if nlp.use_controls_from_phase_idx == nlp.phase_idx :
-                u_scaled.append([])
-                for k in range(node_all):
-                    u_scaled[nlp.phase_idx].append([])
-                    for liberty in range(len(self.u_scaled[nlp.phase_idx][k])) :
-                        u_scaled[nlp.phase_idx][k].append(self.u_scaled[nlp.phase_idx][k][liberty])
-                    u_scaled[nlp.phase_idx][k] = vertcat(*u_scaled[nlp.phase_idx][k])
-                u_scaled[nlp.phase_idx] = vertcat(*u_scaled[nlp.phase_idx])
-            else :
-                if nlp.controls.shape != len(index_u):
-                    u_scaled.append([])
-                    for k in range(node_all) :
-                        u_scaled[nlp.phase_idx].append([])
-                        if self.u_scaled[nlp.phase_idx][k] :
-                            for liberty in range(len(self.u_scaled[nlp.phase_idx][k])):
-                                if liberty not in index_u :
-                                    u_scaled[nlp.phase_idx][k].append(self.u_scaled[nlp.phase_idx][k][liberty])
-                            u_scaled[nlp.phase_idx][k] = vertcat(*u_scaled[nlp.phase_idx][k])
-                    u_scaled[nlp.phase_idx] = vertcat(*u_scaled[nlp.phase_idx])
+            if nlp.controls_phase_mapping_idx.index is not None:
+                index_u = nlp.controls_phase_mapping_idx.index
+            else:
+                index_u = list(range(nlp.controls.shape))
+
+            for k in range(nlp.ns + 1):
+                if nlp.control_type != ControlType.CONSTANT or (
+                        nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
+                    for liberty in range(nlp.controls.shape):
+                        if nlp.controls_phase_mapping_idx.phase == nlp.phase_idx:
+                            u_scaled.append(self.u_scaled[nlp.phase_idx][liberty, k])
+                        else:
+                            if liberty not in index_u:
+                                u_scaled.append(self.u_scaled[nlp.phase_idx][liberty, k])
+
+            # if nlp.use_controls_from_phase_idx == nlp.phase_idx :
+            #     u_scaled.append([])
+            #     for k in range(nlp.ns):
+            #         u_scaled[nlp.phase_idx].append([])
+            #         for liberty in range(len(self.u_scaled[nlp.phase_idx][k])) :
+            #             u_scaled[nlp.phase_idx][k].append(self.u_scaled[nlp.phase_idx][k][liberty])
+            #         u_scaled[nlp.phase_idx][k] = vertcat(*u_scaled[nlp.phase_idx][k])
+            #     u_scaled[nlp.phase_idx] = vertcat(*u_scaled[nlp.phase_idx])
+            # else:
+            #     if nlp.controls.shape != len(index_u):
+            #         u_scaled.append([])
+            #         for k in range(nlp.ns) :
+            #             u_scaled[nlp.phase_idx].append([])
+            #             if self.u_scaled[nlp.phase_idx][k] :
+            #                 for liberty in range(len(self.u_scaled[nlp.phase_idx][k])):
+            #                     if liberty not in index_u :
+            #                         u_scaled[nlp.phase_idx][k].append(self.u_scaled[nlp.phase_idx][k][liberty])
+            #                 u_scaled[nlp.phase_idx][k] = vertcat(*u_scaled[nlp.phase_idx][k])
+            #         u_scaled[nlp.phase_idx] = vertcat(*u_scaled[nlp.phase_idx])
 
         ##### To be removed #####
         # Comments from L.Sechoir
@@ -512,7 +532,7 @@ class OptimizationVector:
                 if i == 0:
                     x_scaled_all = vertcat(*x_scaled[nlp.phase_idx][0])
                 else:
-                    x_scaled_all = vertcat(x_scaled_all, vertcat(*x_tp))
+                    x_scaled_all = horzcat(x_scaled_all, vertcat(*x_tp))
             self.x_scaled[nlp.phase_idx] = x_scaled_all
             if nlp.states_phase_mapping_idx.index is not None:
                 self.n_phase_x[nlp.phase_idx] = self.x_scaled[nlp.phase_idx].size()[0] - len(nlp.states_phase_mapping_idx.index)*(nlp.ns+1)
@@ -526,7 +546,7 @@ class OptimizationVector:
                 if i == 0:
                     u_scaled_all = vertcat(*u_scaled[nlp.phase_idx][0])
                 else:
-                    u_scaled_all = vertcat(u_scaled_all, vertcat(*u_tp))
+                    u_scaled_all = horzcat(u_scaled_all, vertcat(*u_tp))
             self.u_scaled[nlp.phase_idx] = u_scaled_all
             if nlp.controls_phase_mapping_idx.index is not None:
                 self.n_phase_u[nlp.phase_idx] = self.u_scaled[nlp.phase_idx].size()[0] - len(nlp.controls_phase_mapping_idx.index)*(nlp.ns+1 if nlp.control_type != ControlType.CONSTANT else nlp.ns)
