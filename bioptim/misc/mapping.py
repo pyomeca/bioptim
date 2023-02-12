@@ -235,16 +235,7 @@ class BiMappingList(OptionDict):
 class NodeMapping(OptionGeneric):
     """
     Mapping of two node sets between each other
-
-    Attributes
-    ----------
-    to_second: Mapping
-        The mapping that links the first variable to the second
-    to_first: Mapping
-        The mapping that links the second variable to the first
     """
-
-    # TODO: should take care of Node individually instead of all the phase necessarily
 
     def __init__(
         self,
@@ -258,14 +249,16 @@ class NodeMapping(OptionGeneric):
         """
         Parameters
         ----------
+        map_states: Bool
+            Should we map the states
+        map_controls: Bool
+            Or should we map the controls
         phase_pre: int
             The number of the first phase to map
         phase_post: int
             The number of the second phase to map
-        nodes_pre: Node | int | list | tuple | range
-            The indices of the nodes to map in first phase
-        nodes_post: Node | int | list | tuple | range
-            The indices of the nodes to map in second phase
+        index: list
+            The list of the index to map (ex: the index of the DoFs to map)
         """
         super(NodeMapping, self).__init__(**params)
 
@@ -273,6 +266,11 @@ class NodeMapping(OptionGeneric):
         self.map_controls = map_controls
         self.phase_pre = phase_pre
         self.phase_post = phase_post
+        self.index = index
+
+class NodeMappingIndex():
+    def __init__(self, phase: int, index: list | None):
+        self.phase = phase
         self.index = index
 
 class NodeMappingList(OptionDict):
@@ -307,6 +305,8 @@ class NodeMappingList(OptionDict):
                 "You should use either map_states=True or map_controls=True. "
                 "For now your node mapping has no effect."
             )
+        if map_states == True and map_controls == True:
+            raise ValueError("you cannot map both states and controls at the same time. If it is really what you want to do, use two different node mappings please.")
 
         if phase_pre is None or phase_post is None:
             raise ValueError("NodeMappingList should contain phase_pre and phase_post.")
@@ -326,33 +326,40 @@ class NodeMappingList(OptionDict):
         )
 
     def get_variable_from_phase_idx(self, ocp):
-        ##### to be changed #####
-        if self[0].get('q') :
-            index_x = self[0].get('q').index
-        if self[0].get('qddot_joints') :
-            index_u = self[0].get('qddot_joints').index
 
         use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+        mapped_states_idx = [None for i in range(ocp.n_phases)]
+        mapped_states_dot_idx = [None for i in range(ocp.n_phases)]
+        mapped_controls_idx = [None for i in range(ocp.n_phases)]
 
         for i in range(len(self)):
             for key in self[i].keys():
                 if self[i][key].map_states:
                     use_states_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
                     use_states_dot_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
+                    mapped_states_idx[self[i][key].phase_post] = self[i][key].index
+                    mapped_states_dot_idx[self[i][key].phase_post] = self[i][key].index
                 if self[i][key].map_controls:
                     use_controls_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
+                    mapped_controls_idx[self[i][key].phase_post] = self[i][key].index
 
         from ..optimization.non_linear_program import NonLinearProgram
 
-        NonLinearProgram.add(ocp, "index_x", [index_x], True, _type=list)
-        NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-        NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-        NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
-        NonLinearProgram.add(ocp, 'index_u', [index_u], True, _type=list)
+        states_phase_mapping_idx = []
+        states_dot_phase_mapping_idx = []
+        controls_phase_mapping_idx = []
+        for i in range(ocp.n_phases):
+            states_phase_mapping_idx += [NodeMappingIndex(use_states_from_phase_idx[i], mapped_states_idx[i])]
+            states_dot_phase_mapping_idx += [NodeMappingIndex(use_states_dot_from_phase_idx[i], mapped_states_dot_idx[i])]
+            controls_phase_mapping_idx += [NodeMappingIndex(use_controls_from_phase_idx[i], mapped_controls_idx[i])]
 
-        return use_states_from_phase_idx, use_states_dot_from_phase_idx, use_controls_from_phase_idx
+        NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+        NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+        NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
+
+        return states_phase_mapping_idx, states_dot_phase_mapping_idx, controls_phase_mapping_idx
 
     def __getitem__(self, item) -> dict | BiMapping:
         return super(NodeMappingList, self).__getitem__(item)

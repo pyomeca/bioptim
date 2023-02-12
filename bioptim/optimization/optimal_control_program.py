@@ -497,14 +497,15 @@ class OptimalControlProgram:
         if node_mappings is None:
             node_mappings = NodeMappingList()
         (
-            use_states_from_phase_idx,
-            use_states_dot_from_phase_idx,
-            use_controls_from_phase_idx,
+            states_phase_mapping_idx,
+            states_dot_phase_mapping_idx,
+            controls_phase_mapping_idx
         ) = node_mappings.get_variable_from_phase_idx(self)
 
-        self._check_variable_mapping_consistency_with_node_mapping(
-            use_states_from_phase_idx, use_controls_from_phase_idx
-        )
+        # TODO: Fix _check_variable_mapping_consistency_with_node_mapping
+        # self._check_variable_mapping_consistency_with_node_mapping(
+        #     states_phase_mapping_idx, controls_phase_mapping_idx
+        # )
 
         # Prepare the dynamics
         for i in range(self.n_phases):
@@ -568,7 +569,7 @@ class OptimalControlProgram:
     def _check_variable_mapping_consistency_with_node_mapping(
         self, use_states_from_phase_idx, use_controls_from_phase_idx
     ):
-        # TODO this feature is broken since the merge with multi_node, fix it
+        # TODO this feature is broken since the merge with multi_node, fix it, @ Pariterre?
         if (
             list(set(use_states_from_phase_idx)) != use_states_from_phase_idx
             or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx

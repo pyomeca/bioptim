@@ -849,20 +849,72 @@ class ConfigureProblem:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
         def define_cx_scaled(n_col: int) -> list:
+            """"
+            Constructs the scaled variables vector, which will be placed in nlp.....["scaled"].cx ment to call the dynamics
+            """
             _cx = [nlp.cx() for _ in range(n_col)]
             for idx in nlp.variable_mappings[name].to_first.map_idx:
                 for j in range(len(_cx)):
-                    sign = "-" if np.sign(idx) < 0 else ""
-                    _cx[j] = vertcat(
-                        _cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{j}", 1, 1)
-                    )
+                    if nlp.states_phase_mapping_idx.index is not None:
+                        if idx in nlp.states_phase_mapping_idx.index:
+                            _cx[j] = vertcat(
+                                _cx[j],
+                                ocp.nlp[nlp.states_phase_mapping_idx.phase].states[name].cx[idx])
+                        else:
+                            sign = "-" if np.sign(idx) < 0 else ""
+                            _cx[j] = vertcat(
+                                _cx[j],
+                                nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{j}", 1, 1))
+                    else:
+                        sign = "-" if np.sign(idx) < 0 else ""
+                        _cx[j] = vertcat(
+                            _cx[j],
+                            nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{j}", 1, 1))
             return _cx
 
         def define_cx_unscaled(_cx_scaled: list, scaling: np.ndarray) -> list:
+            """"
+            Constructs the unscaled (interpretable values) variables vector, which will be placed in nlp.....["unscaled"].cx
+            """
             _cx = [nlp.cx() for _ in range(len(_cx_scaled))]
-            for j in range(len(_cx_scaled)):
-                _cx[j] = _cx_scaled[j] * scaling
+            for scaling_idx, idx in enumerate(nlp.variable_mappings[name].to_first.map_idx):
+                for j in range(len(_cx_scaled)):
+                    if nlp.states_phase_mapping_idx.index is not None:
+                        if idx in nlp.states_phase_mapping_idx.index:
+                            _cx[j] = vertcat(_cx[j], _cx_scaled[j][scaling_idx])
+                        else:
+                            _cx[j] = vertcat(_cx[j], _cx_scaled[j][scaling_idx] * scaling[scaling_idx])
+                    else:
+                        _cx[j] = vertcat(_cx[j], _cx_scaled[j][scaling_idx] * scaling[scaling_idx])
             return _cx
+
+        def define_legend():
+            """
+            Defines the legend of the plots
+            """
+            legend = []
+            for idx, name_el in enumerate(name_elements):
+                if idx is not None and idx in axes_idx.map_idx:
+                    current_legend = f"{name}_{name_el}"
+                    for i in range(ocp.n_phases):
+                        if as_states:
+                            if ocp.nlp[i].states_phase_mapping_idx.index is not None:
+                                if idx in ocp.nlp[i].states_phase_mapping_idx.index:
+                                    current_legend += f"-{ocp.nlp[i].states_phase_mapping_idx.phase}"
+                                else:
+                                    current_legend += f"-{i}"
+                            else:
+                                current_legend += f"-{i}"
+                        if as_controls:
+                            if ocp.nlp[i].controls_phase_mapping_idx.index is not None:
+                                if idx in ocp.nlp[i].controls_phase_mapping_idx.index:
+                                    current_legend += f"-{ocp.nlp[i].controls_phase_mapping_idx.phase}"
+                                else:
+                                    current_legend += f"-{i}"
+                            else:
+                                current_legend += f"-{i}"
+                    legend += [current_legend]
+            return legend
 
         if ConfigureProblem._manage_fatigue_to_new_variable(
             name, name_elements, ocp, nlp, as_states, as_controls, fatigue
@@ -875,19 +927,19 @@ class ConfigureProblem:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
         copy_states = (
-            nlp.use_states_from_phase_idx is not None
-            and nlp.use_states_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_states_from_phase_idx].states
+            nlp.states_phase_mapping_idx.phase is not None
+            and nlp.states_phase_mapping_idx.phase < nlp.phase_idx
+            and name in ocp.nlp[nlp.states_phase_mapping_idx.phase].states
         )
         copy_controls = (
-            nlp.use_controls_from_phase_idx is not None
-            and nlp.use_controls_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls
+            nlp.controls_phase_mapping_idx.phase is not None
+            and nlp.controls_phase_mapping_idx.phase < nlp.phase_idx
+            and name in ocp.nlp[nlp.controls_phase_mapping_idx.phase].controls
         )
         copy_states_dot = (
-            nlp.use_states_dot_from_phase_idx is not None
-            and nlp.use_states_dot_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot
+            nlp.states_dot_phase_mapping_idx.phase is not None
+            and nlp.states_dot_phase_mapping_idx.phase  < nlp.phase_idx
+            and name in ocp.nlp[nlp.states_dot_phase_mapping_idx.phase ].states_dot
         )
 
         if as_states and name not in nlp.x_scaling:
@@ -903,21 +955,44 @@ class ConfigureProblem:
                 key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
             )
 
-        mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[name].mx]
-        mx_states_dot = [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].mx]
-        mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].mx]
-        # todo: if mapping on variables, what do we do with mapping on the nodes
-        for i in nlp.variable_mappings[name].to_second.map_idx:
+        mx_states = []
+        mx_states_dot = []
+        mx_controls = []
+        for node_mapping_idx, i in enumerate(nlp.variable_mappings[name].to_second.map_idx):
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
 
             if not copy_states:
                 mx_states.append(MX.sym(var_name, 1, 1))
+            else:
+                if nlp.states_phase_mapping_idx.index is not None:
+                    if node_mapping_idx in nlp.states_phase_mapping_idx.index:
+                        mx_states.append(ocp.nlp[nlp.states_phase_mapping_idx.phase].states[name].mx[i])
+                    else:
+                        mx_states.append(MX.sym(var_name, 1, 1))
+                else:
+                    mx_states.append(MX.sym(var_name, 1, 1))
 
             if not copy_states_dot:
                 mx_states_dot.append(MX.sym(var_name, 1, 1))
+            else:
+                if nlp.states_dot_phase_mapping_idx.index is not None:
+                    if node_mapping_idx in nlp.states_dot_phase_mapping_idx.index:
+                        mx_states_dot.append(ocp.nlp[nlp.states_dot_phase_mapping_idx.phase].states_dot[name].mx[i])
+                    else:
+                        mx_states_dot.append(MX.sym(var_name, 1, 1))
+                else:
+                    mx_states_dot.append(MX.sym(var_name, 1, 1))
 
             if not copy_controls:
                 mx_controls.append(MX.sym(var_name, 1, 1))
+            else:
+                if nlp.controls_phase_mapping_idx.index is not None:
+                    if node_mapping_idx in nlp.controls_phase_mapping_idx.index:
+                        mx_controls.append(ocp.nlp[nlp.controls_phase_mapping_idx.phase].controls[name].mx[node_mapping_idx])
+                    else:
+                        mx_controls.append(MX.sym(var_name, 1, 1))
+                else:
+                    mx_controls.append(MX.sym(var_name, 1, 1))
 
         mx_states = vertcat(*mx_states)
         mx_states_dot = vertcat(*mx_states_dot)
@@ -926,29 +1001,12 @@ class ConfigureProblem:
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
 
-        legend = []
-        for idx, name_el in enumerate(name_elements):
-            if idx is not None and idx in axes_idx.map_idx:
-                current_legend = f"{name}_{name_el}"
-                for i in range(ocp.n_phases):
-                    if as_states:
-                        current_legend += f"-{ocp.nlp[i].use_states_from_phase_idx}"
-                    if as_controls:
-                        current_legend += f"-{ocp.nlp[i].use_controls_from_phase_idx}"
-                legend += [current_legend]
+        legend = define_legend()
 
         if as_states:
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
-            cx_scaled = (
-                ocp.nlp[nlp.use_states_from_phase_idx].states[name].original_cx
-                if copy_states
-                else define_cx_scaled(n_col=n_cx)
-            )
-            cx = (
-                ocp.nlp[nlp.use_states_from_phase_idx].states[name].original_cx
-                if copy_states
-                else define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
-            )
+            cx_scaled = define_cx_scaled(n_col=n_cx)
+            cx = define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
             nlp.states["scaled"].append(name, cx_scaled, mx_states, nlp.variable_mappings[name])
             nlp.states.append_from_scaled(name, cx, nlp.states["scaled"])
 
@@ -962,16 +1020,8 @@ class ConfigureProblem:
                 )
 
         if as_controls:
-            cx_scaled = (
-                ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].original_cx
-                if copy_controls
-                else define_cx_scaled(n_col=2)
-            )
-            cx = (
-                ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].original_cx
-                if copy_controls
-                else define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
-            )
+            cx_scaled = define_cx_scaled(n_col=2)
+            cx = define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
             nlp.controls["scaled"].append(name, cx_scaled, mx_controls, nlp.variable_mappings[name])
             nlp.controls.append_from_scaled(name, cx, nlp.controls["scaled"])
 
@@ -987,16 +1037,8 @@ class ConfigureProblem:
 
         if as_states_dot:
             n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
-            cx_scaled = (
-                ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].original_cx
-                if copy_states_dot
-                else define_cx_scaled(n_col=n_cx)
-            )
-            cx = (
-                ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].original_cx
-                if copy_states_dot
-                else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
-            )
+            cx_scaled = define_cx_scaled(n_col=n_cx)
+            cx = define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
             nlp.states_dot["scaled"].append(name, cx, mx_states_dot, nlp.variable_mappings[name])
             nlp.states_dot.append_from_scaled(name, cx, nlp.states_dot["scaled"])
 
