@@ -40,21 +40,21 @@ class VariableScaling(OptionGeneric):
         """
         Repeat the scaling to match the variables vector format
         """
-        if variable_phase_mapping is not None:
-            if variable_phase_mapping.index is not None:
-                n_elements = variable_phase_mapping.index.shape[0]
-                scaling_index = variable_phase_mapping.index
-            else:
-                n_elements = self.scaling.shape[0]
-                scaling_index = np.arange(n_elements)
-        else:
-            n_elements = self.scaling.shape[0]
-            scaling_index = np.arange(n_elements)
+        # if variable_phase_mapping is not None:
+        #     if variable_phase_mapping.index is not None:
+        #         n_elements = len(variable_phase_mapping.index)
+        #         scaling_index = variable_phase_mapping.index
+        #     else:
+        #         n_elements = self.scaling.shape[0]
+        #         scaling_index = np.arange(n_elements)
+        # else:
+        #     n_elements = self.scaling.shape[0]
+        #     scaling_index = np.arange(n_elements)
 
-
+        n_elements = self.scaling.shape[0]
         scaling_vector = np.zeros((n_repeat * n_elements, 1))
         for i in range(n_repeat):
-            scaling_vector[i * n_elements: (i + 1) * n_elements] = np.reshape(self.scaling[scaling_index], (n_elements, 1))
+            scaling_vector[i * n_elements: (i + 1) * n_elements] = np.reshape(self.scaling, (n_elements, 1))
 
         return scaling_vector
 
