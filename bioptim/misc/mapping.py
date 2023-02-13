@@ -330,9 +330,9 @@ class NodeMappingList(OptionDict):
         use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
         use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-        mapped_states_idx = [None for i in range(ocp.n_phases)]
-        mapped_states_dot_idx = [None for i in range(ocp.n_phases)]
-        mapped_controls_idx = [None for i in range(ocp.n_phases)]
+        mapped_states_idx = [None for _ in range(ocp.n_phases)]
+        mapped_states_dot_idx = [None for _ in range(ocp.n_phases)]
+        mapped_controls_idx = [None for _ in range(ocp.n_phases)]
 
         for i in range(len(self)):
             for key in self[i].keys():

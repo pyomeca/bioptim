@@ -391,7 +391,7 @@ class OptimizationVector:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            if self.ocp.nlp[p].use_states_from_phase_idx == self.ocp.nlp[p].phase_idx:
+            if self.ocp.nlp[p].states_phase_mapping_idx.phase == self.ocp.nlp[p].phase_idx:
                 x_array = v_array[offset : offset + self.n_phase_x[p]].reshape(
                     (ocp.nlp[p].states["scaled"].shape, -1), order="F"
                 )
@@ -553,82 +553,6 @@ class OptimizationVector:
                 self.n_phase_u[nlp.phase_idx] = self.u_scaled[nlp.phase_idx].size()[0] - len(nlp.controls_phase_mapping_idx.index)*(nlp.ns+1 if nlp.control_type != ControlType.CONSTANT else nlp.ns)
             else:
                 self.n_phase_u[nlp.phase_idx] = self.u_scaled[nlp.phase_idx].size()[0]
-
-      ##### Comments for L.Sechoire #####
-      # To be removed
-                                   #if liberty > 0:
-                                     #   vertcat(u[nlp.phase_idx][0], u[nlp.phase_idx][1])
-                            # else:
-                                  #  u[nlp.phase_idx][k].append(
-                                   #     nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k) + '_' + str(liberty), 1, 1)
-                                  #  )
-                                  #  if len(index_u) != nlp.controls.shape:
-                                       # self.u[nlp.phase_idx][k].append(u[nlp.phase_idx][k][liberty])
-                                  #  self.u[nlp.phase_idx][k] = vertcat(self.u[nlp.phase_idx][k][0],self.u[nlp.phase_idx][k][1])
-                                    #if liberty > 0:
-                                     #   vertcat(u[nlp.phase_idx][k][0], u[nlp.phase_idx][k][1])
-
-                     #   self.u[nlp.phase_idx][k] = vertcat(*self.u[nlp.phase_idx][k])
-
-                    #u[nlp.phase_idx][k] = vertcat(*[z for z in u[nlp.phase_idx][k]])
-                #x[nlp.phase_idx][k] = vertcat(*[z for z in x[nlp.phase_idx][k]]) # vertcat(*x[nlp.phase_idx][k])
-
-           # = u[nlp.phase_idx]
-            #self.x[nlp.phase_idx] = x[nlp.phase_idx]  # pas de vertcat car on a besoin des indices
-        #
-
-
-        # for nlp in self.ocp.nlp:
-        #     for k in range(nlp.ns + 1):  # k -> k
-        #         self.x_scaled[nlp.phase_idx].append([])
-        #         for liberty in range(len(x_scaled[nlp.phase_idx][k])):
-        #             #if freedom not in index_x :
-        #             self.x_scaled[nlp.phase_idx][k].append(x_scaled[nlp.phase_idx][k][liberty])
-        #         x_scaled[nlp.phase_idx][k] = vertcat(*x_scaled[nlp.phase_idx][k])
-        #
-        #     nlp.X_scaled = x_scaled[nlp.phase_idx]
-        #     nlp.X = x[nlp.phase_idx]
-        #     self.x_scaled[nlp.phase_idx] = vertcat(
-        #         *[x_tp.reshape((-1, 1)) for x_tp in x_scaled[nlp.use_states_from_phase_idx]]
-        #     )
-        #     for k in range(nlp.ns + 1):
-        #         self.u_scaled[nlp.phase_idx].append([])
-        #         for liberty in range(len(u_scaled[nlp.phase_idx][k])):
-        #            # if liberty not in index_u :
-        #             self.u_scaled[nlp.phase_idx][k].append(u_scaled[nlp.phase_idx][k][liberty])
-        #         u_scaled[nlp.phase_idx][k] = vertcat(*u_scaled[nlp.phase_idx][k])
-        #
-        #     nlp.U_scaled = u_scaled[nlp.phase_idx]
-        #     nlp.U = u[nlp.phase_idx]
-        #     self.u_scaled[nlp.phase_idx] = vertcat(*u_scaled[nlp.use_controls_from_phase_idx])
-        #
-        #     self.n_phase_u[nlp.phase_idx] = (
-        #         len(self.u_scaled[nlp.phase_idx]) * len(self.u_scaled[nlp.phase_idx][0])
-        #         if nlp.phase_idx == nlp.use_controls_from_phase_idx else (nlp.controls.shape - len(index_u))*nlp.ns
-        #     )
-
-            ##### Comments from L.Sechoire #####
-            # To be removed
-
-            #self.x[nlp.phase_idx] = vertcat(*self.x[nlp.phase_idx])
-            #self.u[nlp.phase_idx] = vertcat(*self.u[nlp.phase_idx])
-              #  x_tp_all = MX()
-            #self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x[nlp.use_states_from_phase_idx]])
-
-
-              #  for x_tp in x[nlp.phase_idx]: # a vérifier
-               #     x_tp_all = vertcat(x_tp_all, x_tp)
-               # self.x[nlp.phase_idx] = x_tp_all
-
-
-            #self.u[nlp.phase_idx] = vertcat(*u[nlp.use_controls_from_phase_idx])
-
-
-               # u_tp_all = MX()
-                #for u_tp in u[nlp.phase_idx]:
-               #     u_tp_all = vertcat(u_tp_all, u_tp)
-               # self.u[nlp.phase_idx] = u_tp_all
-
 
         self.n_all_x = sum(self.n_phase_x)
         self.n_all_u = sum(self.n_phase_u)

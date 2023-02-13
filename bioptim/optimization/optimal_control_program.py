@@ -567,17 +567,17 @@ class OptimalControlProgram:
         return cls(**data)
 
     def _check_variable_mapping_consistency_with_node_mapping(
-        self, use_states_from_phase_idx, use_controls_from_phase_idx
+        self, states_phase_mapping_idx, controls_phase_mapping_idx
     ):
         # TODO this feature is broken since the merge with multi_node, fix it, @ Pariterre?
         if (
-            list(set(use_states_from_phase_idx)) != use_states_from_phase_idx
-            or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx
+            list(set(states_phase_mapping_idx.index)) != states_phase_mapping_idx.index
+            or list(set(controls_phase_mapping_idx.index)) != controls_phase_mapping_idx.index
         ):
             raise NotImplementedError("Mapping over phases is broken")
 
         for i in range(self.n_phases):
-            for j in [idx for idx, x in enumerate(use_states_from_phase_idx) if x == i]:
+            for j in [idx for idx, x in enumerate(states_phase_mapping_idx.index) if x == i]:
                 for key in self.nlp[i].variable_mappings.keys():
                     if key in self.nlp[j].variable_mappings.keys():
                         if (
@@ -591,7 +591,7 @@ class OptimalControlProgram:
                                 f"Mapping on {key} is different between phases {i} and {j}."
                             )
         for i in range(self.n_phases):
-            for j in [idx for idx, x in enumerate(use_controls_from_phase_idx) if x == i]:
+            for j in [idx for idx, x in enumerate(controls_phase_mapping_idx.index) if x == i]:
                 for key in self.nlp[i].variable_mappings.keys():
                     if key in self.nlp[j].variable_mappings.keys():
                         if (

@@ -211,8 +211,8 @@ class Solution:
             """
 
             self.phase_idx = nlp.phase_idx
-            self.use_states_from_phase_idx = nlp.use_states_from_phase_idx
-            self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
+            self.states_phase_mapping_idx = nlp.states_phase_mapping_idx
+            self.controls_phase_mapping_idx = nlp.controls_phase_mapping_idx
             self.model = nlp.model
             self.states = nlp.states
             self.controls = nlp.controls
@@ -1009,9 +1009,10 @@ class Solution:
 
         params = self.parameters["all"]
 
+        ##### see how to reconstruct the vector #####
         for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
-            states_phase_idx = self.ocp.nlp[p].use_states_from_phase_idx
-            controls_phase_idx = self.ocp.nlp[p].use_controls_from_phase_idx
+            states_phase_idx = self.ocp.nlp[p].states_phase_mapping_idx.phase
+            controls_phase_idx = self.ocp.nlp[p].controls_phase_mapping_idx.phase
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
             u = self._controls["unscaled"][controls_phase_idx]["all"]
