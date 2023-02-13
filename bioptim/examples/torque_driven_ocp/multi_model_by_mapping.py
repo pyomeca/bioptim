@@ -27,9 +27,15 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -200, 200, 0
 
     # Variable Mapping
-    tau_mappings = BiMappingList()
-    tau_mappings.add("tau", [None, 0], [1], phase=0)
-    tau_mappings.add("tau", [None, 0], [1], phase=1)
+    # tau_mappings = BiMappingList()
+    # tau_mappings.add("tau", [None, 0], [1], phase=0)
+    # tau_mappings.add("tau", [None, 0], [1], phase=1)
+
+    # Il y a un probleme avec le mapping et le scaling
+    # nlp.u_scaling['tau'].scaling
+    # Out[11]: array([1.])
+    # nlp.u_scaling['all'].scaling
+    # Out[12]: array([], dtype=float64)
 
     # Parameters mapping
     parameter_mappings = BiMappingList()
@@ -37,7 +43,7 @@ def prepare_ocp(
 
     # Phase mapping
     node_mappings = NodeMappingList()
-    node_mappings.add("tau", map_controls=True, phase_pre=0, phase_post=1)
+    node_mappings.add("tau", map_controls=True, phase_pre=0, phase_post=1, index=[1]) # the node mapping is applied on the index of [None, 0] in the tau_mappings
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -77,15 +83,22 @@ def prepare_ocp(
     x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
     x_init.add([0] * (bio_model[1].nb_q + bio_model[1].nb_qdot))
 
+
+    ##### To be changed back to the way it was #####
+
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * len(tau_mappings[0]["tau"].to_first), [tau_max] * len(tau_mappings[0]["tau"].to_first))
-    u_bounds.add()
+    # u_bounds.add([tau_min] * len(tau_mappings[0]["tau"].to_first), [tau_max] * len(tau_mappings[0]["tau"].to_first))
+    u_bounds.add([tau_min] * 2, [tau_max] * 2)
+    # u_bounds.add()
+    u_bounds.add([tau_min] * 2, [tau_max] * 2)
 
     # Control initial guess
     u_init = InitialGuessList()
-    u_init.add([tau_init] * len(tau_mappings[0]["tau"].to_first))
-    u_init.add()
+    # u_init.add([tau_init] * len(tau_mappings[0]["tau"].to_first))
+    u_init.add([tau_init] * 2)
+    # u_init.add()
+    u_init.add([tau_init] * 2)
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(
@@ -103,7 +116,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        variable_mappings=tau_mappings,
+        # variable_mappings=tau_mappings,
         node_mappings=node_mappings,
         phase_transitions=phase_transitions,
         parameter_mappings=parameter_mappings,

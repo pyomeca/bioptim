@@ -230,7 +230,8 @@ class OptimizationVector:
         v_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for phase, x_bound in enumerate(self.x_bounds):
             v_bounds.concatenate(
-                x_bound.scale(self.ocp.nlp[phase].x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * n_steps + 1))
+                x_bound.scale(self.ocp.nlp[phase].x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * n_steps + 1,
+                                                                             self.ocp.nlp[phase].states_phase_mapping_idx))
             )
 
         for phase, u_bound in enumerate(self.u_bounds):
@@ -639,22 +640,22 @@ class OptimizationVector:
 
         ocp = self.ocp
 
-        # Sanity check
-        for nlp in ocp.nlp:
-            if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
-            if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT:
-                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
-                else:
-                    raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
+        # # Sanity check
+        # for nlp in ocp.nlp:
+        #     if nlp.use_states_from_phase_idx == nlp.phase_idx:
+        #         nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
+        #     if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+        #         if nlp.control_type == ControlType.CONSTANT:
+        #             nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
+        #         elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+        #             nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
+        #         else:
+        #             raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
-            if nlp.use_states_from_phase_idx == nlp.phase_idx:
+            if nlp.states_phase_mapping_idx.phase == nlp.phase_idx:
                 nx = nlp.states.shape
                 if nlp.ode_solver.is_direct_collocation:
                     all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
