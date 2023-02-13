@@ -213,7 +213,7 @@ class OptimizationVector:
     @property
     def bounds(self):
         """
-        Format the x, u and p bounds so they are in one nice (and useful) vector
+        Format the x, u and p bounds so they are in one nice (and useful) vector for casadi
 
         Returns
         -------
@@ -239,10 +239,10 @@ class OptimizationVector:
                 ns = self.ocp.nlp[phase].ns + 1
             else:
                 ns = self.ocp.nlp[phase].ns
-            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling["all"].to_vector(ns)))
+            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling["all"].to_vector(ns, self.ocp.nlp[phase].controls_phase_mapping_idx)))
 
         for param in self.parameters_in_list:
-            v_bounds.concatenate(param.bounds.scale(param.scaling))
+            v_bounds.concatenate(param.bounds.scale(param.scaling, None))
 
         return v_bounds
 
@@ -640,99 +640,80 @@ class OptimizationVector:
 
         ocp = self.ocp
 
-        # # Sanity check
-        # for nlp in ocp.nlp:
-        #     if nlp.use_states_from_phase_idx == nlp.phase_idx:
-        #         nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
-        #     if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-        #         if nlp.control_type == ControlType.CONSTANT:
-        #             nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
-        #         elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-        #             nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
-        #         else:
-        #             raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
+        # Sanity check
+        for nlp in ocp.nlp:
+            if nlp.states_phase_mapping_idx.phase == nlp.phase_idx:
+                states_shape = nlp.states.shape
+            else:
+                if nlp.states_phase_mapping_idx.index is not None:
+                    states_shape = nlp.states.shape - len(nlp.states_phase_mapping_idx.index)
+                else:
+                    continue
+            nlp.x_bounds.check_and_adjust_dimensions(states_shape, nlp.ns)
+
+            if nlp.controls_phase_mapping_idx.phase == nlp.phase_idx:
+                controls_shape = nlp.controls.shape
+            else:
+                if nlp.controls_phase_mapping_idx.index is not None:
+                    controls_shape = nlp.controls.shape - len(nlp.controls_phase_mapping_idx.index)
+                else:
+                    continue
+            if nlp.control_type == ControlType.CONSTANT:
+                nlp.u_bounds.check_and_adjust_dimensions(controls_shape, nlp.ns - 1)
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                nlp.u_bounds.check_and_adjust_dimensions(controls_shape, nlp.ns)
+            else:
+                raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
-            if nlp.states_phase_mapping_idx.phase == nlp.phase_idx:
-                nx = nlp.states.shape
-                if nlp.ode_solver.is_direct_collocation:
-                    all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
-                    outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
-                    repeat = nlp.ode_solver.polynomial_degree + 1
+            if nlp.states_phase_mapping_idx.phase != nlp.phase_idx:
+                if nlp.states_phase_mapping_idx.index is not None:
+                    nx = nlp.states.shape - len(nlp.states_phase_mapping_idx.index)
                 else:
-                    all_nx = nx * (nlp.ns + 1)
-                    outer_offset = nx
-                    repeat = 1
-                x_bounds = Bounds([0] * all_nx, [0] * all_nx, interpolation=InterpolationType.CONSTANT)
-                for k in range(nlp.ns + 1):
-                    for p in range(repeat if k != nlp.ns else 1):
-                        span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
-                        point = k if k != 0 else 0 if p == 0 else 1
-                        x_bounds.min[span, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=point)
-                        x_bounds.max[span, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=point)
-
-
-            # Code from L.Sechoire
-            # else :
-            #     if nlp.index_x == [] :
-            #         index_x = [i for i in range(nlp.states.shape)]
-            #     nx = nlp.states.shape #nombre de degré de liberté
-            #     index_roots = [i for i in range(nx) if i not in index_x]
-            #     if nlp.ode_solver.is_direct_collocation:
-            #         all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
-            #         outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
-            #         repeat = nlp.ode_solver.polynomial_degree + 1
-            #     else:
-            #         all_nx = nx * (nlp.ns + 1)
-            #         outer_offset = nx
-            #         repeat = 1
-            #     x_bounds = Bounds([0] * nx, [0] * nx, interpolation=InterpolationType.CONSTANT) # définit un une liste de 0 pour initialiser le vecteur
-            #     for k in range(nlp.ns + 1):
-            #         for p in range(repeat if k != nlp.ns else 1):
-            #             #for index in index_x :
-            #             a,b = [k * outer_offset + p * len(index_roots), k * outer_offset + (p + 1) * len(index_roots)]
-            #             point = k if k != 0 else 0 if p == 0 else 1
-            #             x_bounds.min[a:b, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=point)[a:b]
-            #             x_bounds.max[a:b, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=point)[a:b]
-
-
-                self.x_bounds[i_phase] = x_bounds
+                    continue
+            else:
+                nx = nlp.states.shape
+            if nlp.ode_solver.is_direct_collocation:
+                all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
+                outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
+                repeat = nlp.ode_solver.polynomial_degree + 1
+            else:
+                all_nx = nx * (nlp.ns + 1)
+                outer_offset = nx
+                repeat = 1
+            x_bounds = Bounds([0] * all_nx, [0] * all_nx, interpolation=InterpolationType.CONSTANT)
+            for k in range(nlp.ns + 1):
+                for p in range(repeat if k != nlp.ns else 1):
+                    span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
+                    point = k if k != 0 else 0 if p == 0 else 1
+                    x_bounds.min[span, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=point)
+                    x_bounds.max[span, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=point)
+            self.x_bounds[i_phase] = x_bounds
 
             # For controls
-            if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT:
-                    ns = nlp.ns
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    ns = nlp.ns + 1
+            if nlp.controls_phase_mapping_idx.phase != nlp.phase_idx:
+                if nlp.controls_phase_mapping_idx.index is not None:
+                    nu = nlp.controls.shape - len(nlp.controls_phase_mapping_idx.index) ##### see if this works when there is a mappinf on the variables too ######
                 else:
-                    raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
+                    continue
+            else:
                 nu = nlp.controls.shape
-                all_nu = nu * ns
-                u_bounds = Bounds([0] * all_nu, [0] * all_nu, interpolation=InterpolationType.CONSTANT)
-                for k in range(ns):
-                    u_bounds.min[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
-                    u_bounds.max[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
 
-            # code from L.Sechoire
-            # else :
-            #     if nlp.index_u == [] :
-            #         index_u = [i for i in range(nlp.states.controls)]
-            #     if nlp.control_type == ControlType.CONSTANT:
-            #         ns = nlp.ns
-            #     elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-            #         ns = nlp.ns + 1
-            #     else:
-            #         raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            #     nu = nlp.controls.shape
-            #     all_nu = (len(index_u)) * ns
-            #     u_bounds = Bounds([0] * all_nu, [0] * all_nu, interpolation=InterpolationType.CONSTANT)
-            #     for k in range(ns):
-            #         u_bounds.min[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
-            #         u_bounds.max[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
-
-                self.u_bounds[i_phase] = u_bounds
+            if nlp.control_type == ControlType.CONSTANT:
+                ns = nlp.ns
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                ns = nlp.ns + 1
+            else:
+                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
+            all_nu = nu * ns
+            u_bounds = Bounds([0] * all_nu, [0] * all_nu, interpolation=InterpolationType.CONSTANT)
+            for k in range(ns):
+                u_bounds.min[k * nu: (k + 1) * nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
+                u_bounds.max[k * nu: (k + 1) * nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
+            self.u_bounds[i_phase] = u_bounds
+        return
 
     def get_ns(self, phase: int, interpolation_type: InterpolationType) -> int:
         """

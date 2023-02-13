@@ -91,14 +91,14 @@ def prepare_ocp(
     # u_bounds.add([tau_min] * len(tau_mappings[0]["tau"].to_first), [tau_max] * len(tau_mappings[0]["tau"].to_first))
     u_bounds.add([tau_min] * 2, [tau_max] * 2)
     # u_bounds.add()
-    u_bounds.add([tau_min] * 2, [tau_max] * 2)
+    u_bounds.add([tau_min] * 1, [tau_max] * 1)
 
     # Control initial guess
     u_init = InitialGuessList()
     # u_init.add([tau_init] * len(tau_mappings[0]["tau"].to_first))
     u_init.add([tau_init] * 2)
     # u_init.add()
-    u_init.add([tau_init] * 2)
+    u_init.add([tau_init] * 1)
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(
