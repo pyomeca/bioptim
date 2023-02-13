@@ -16,8 +16,8 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/double_pendulum.bioMod",
-    biorbd_model_path_modified_inertia: str = "models/double_pendulum_modified_inertia.bioMod",
+    biorbd_model_path: str = "models/triple_pendulum.bioMod",
+    biorbd_model_path_modified_inertia: str = "models/triple_pendulum_modified_inertia.bioMod",
     n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_modified_inertia))
@@ -28,8 +28,8 @@ def prepare_ocp(
 
     # Variable Mapping
     tau_mappings = BiMappingList()
-    tau_mappings.add("tau", [None, 0], [1], phase=0)
-    tau_mappings.add("tau", [None, 0], [1], phase=1)
+    tau_mappings.add("tau", [None, 0, 1], [1, 2], phase=0)
+    tau_mappings.add("tau", [None, 0, 1], [1, 2], phase=1)
 
     # Parameters mapping
     parameter_mappings = BiMappingList()
@@ -37,7 +37,8 @@ def prepare_ocp(
 
     # Phase mapping
     node_mappings = NodeMappingList()
-    node_mappings.add("tau", map_controls=True, phase_pre=0, phase_post=1)
+    # The node mapping is applied on the index [1] of [None, 0, 1] in the tau_mappings (so to the first active DoF)
+    node_mappings.add("tau", map_controls=True, phase_pre=0, phase_post=1, index=[1])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -80,12 +81,13 @@ def prepare_ocp(
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * len(tau_mappings[0]["tau"].to_first), [tau_max] * len(tau_mappings[0]["tau"].to_first))
-    u_bounds.add()
+    # u_bounds.add([tau_min] * 2, [tau_max] * 2)
+    u_bounds.add([tau_min], [tau_max])
 
     # Control initial guess
     u_init = InitialGuessList()
     u_init.add([tau_init] * len(tau_mappings[0]["tau"].to_first))
-    u_init.add()
+    u_init.add([tau_init])
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(
@@ -119,7 +121,7 @@ def main():
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    # sol.graphs()
+    sol.graphs()
 
     # --- Show results --- #
     show_solution_animation = False
@@ -127,7 +129,7 @@ def main():
         q_both = np.vstack((sol.states[0]["q"], sol.states[1]["q"]))
         import bioviz
 
-        b = bioviz.Viz("models/double_pendulum_both_inertia.bioMod")
+        b = bioviz.Viz("models/triple_pendulum_both_inertia.bioMod")
         b.load_movement(q_both)
         b.exec()
 
