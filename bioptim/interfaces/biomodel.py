@@ -203,8 +203,9 @@ class BioModel(Protocol):
         ----------
         variables: [str, ...]
            Input or list of input such as ["q"] for bounds on q ranges, ["q", "qdot"] for bounds on q and qdot ranges
-            or even ["q", "qdot", qddot"] for bounds on q, qdot and qddot ranges
-        mapping: Union[BiMapping, BiMappingList]
+           or even ["q", "qdot", qddot"] for bounds on q, qdot and qddot ranges
+            Bounds needs to be in correct order because the dynamic will be done in the order q, qdot, qddot
+        mapping: BiMapping | BiMappingList
             The mapping of q and qdot (if only q, then qdot = q)
         Returns
         -------
