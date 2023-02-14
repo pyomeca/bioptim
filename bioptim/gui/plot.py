@@ -641,22 +641,22 @@ class PlotOcp:
                     else:
                         state = np.concatenate((state, data_states[s]))
                 else:
-                    if nlp.states_phase_mapping_idx.index is not None:
-                        if s in nlp.states_phase_mapping_idx.index:
+                    if nlp.states_phase_mapping_idx.variable_mapped_index is not None:
+                        if s not in nlp.states_phase_mapping_idx.variable_mapped_index:
                             if isinstance(data_states, (list, tuple)):
                                 state = np.concatenate((state, data_states[i][s]))
                             else:
                                 state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
             for s in nlp.controls:
-                if nlp.controls_phase_mapping_idx == nlp.phase_idx:
+                if nlp.controls_phase_mapping_idx.phase == nlp.phase_idx:
                     if isinstance(data_controls, (list, tuple)):
                         control = np.concatenate((control, data_controls[i][s]))
                     else:
                         control = np.concatenate((control, data_controls[s]))
                 else:
-                    if nlp.controls_phase_mapping_idx.index is not None:
-                        if s in nlp.controls_phase_mapping_idx.index:
+                    if nlp.controls_phase_mapping_idx.variable_mapped_index is not None:
+                        if s in nlp.controls_phase_mapping_idx.variable_mapped_index:
                             if isinstance(data_controls, (list, tuple)):
                                 control = np.concatenate((control, data_controls[i][s]))
                             else:

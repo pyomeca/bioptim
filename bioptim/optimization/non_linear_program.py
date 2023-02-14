@@ -8,7 +8,7 @@ from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
 from ..misc.options import OptionList
-from ..misc.mapping import NodeMapping
+from ..misc.mapping import NodeMappingIndex
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..interfaces.biomodel import BioModel
 

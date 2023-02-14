@@ -38,7 +38,7 @@ def prepare_ocp(
     # Phase mapping
     node_mappings = NodeMappingList()
     # The node mapping is applied on the index [1] of [None, 0, 1] in the tau_mappings (so to the first active DoF)
-    node_mappings.add("tau", map_controls=True, phase_pre=0, phase_post=1, index=[1])
+    node_mappings.add("tau", map_controls=True, phase_pre=0, phase_post=1, index=[1], variable_mapping=tau_mappings[0]['tau'])
 
     # Add objective functions
     objective_functions = ObjectiveList()
