@@ -861,17 +861,17 @@ class ConfigureProblem:
                 phase_mapping = nlp.states_dot_phase_mapping_idx
                 variable = ocp.nlp[phase_mapping.phase].states_dot
             elif as_controls:
-                phase_mapping = nlp.states_phase_mapping_idx
+                phase_mapping = nlp.controls_phase_mapping_idx
                 variable = ocp.nlp[phase_mapping.phase].controls
 
             _cx = [nlp.cx() for _ in range(n_col)]
             for idx in nlp.variable_mappings[name].to_first.map_idx:
                 for j in range(len(_cx)):
-                    if phase_mapping.variable_mapped_index is not None:
+                    if phase_mapping.index is not None:
                         if idx in phase_mapping.index:
                             _cx[j] = vertcat(
                                 _cx[j],
-                                variable[name].cx[idx])
+                                variable[name].original_cx[j][phase_mapping.index.index(idx)])
                         else:
                             sign = "-" if np.sign(idx) < 0 else ""
                             _cx[j] = vertcat(
@@ -889,15 +889,17 @@ class ConfigureProblem:
             Constructs the unscaled (interpretable values) variables vector, which will be placed in nlp.....["unscaled"].cx
             """
             _cx = [nlp.cx() for _ in range(len(_cx_scaled))]
-            for scaling_idx, idx in enumerate(nlp.variable_mappings[name].to_first.map_idx):
-                for j in range(len(_cx_scaled)):
+            for j in range(len(_cx_scaled)):
+                i = 0
+                for idx in range(_cx_scaled[0].shape[0]):
                     if phase_mapping.variable_mapped_index is not None:
                         if idx in phase_mapping.variable_mapped_index:
-                            _cx[j] = vertcat(_cx[j], _cx_scaled[j][scaling_idx])
+                            _cx[j] = vertcat(_cx[j], _cx_scaled[j][idx])
                         else:
-                            _cx[j] = vertcat(_cx[j], _cx_scaled[j][scaling_idx] * scaling[scaling_idx])
+                            _cx[j] = vertcat(_cx[j], _cx_scaled[j][idx] * scaling[i])
+                            i += 1
                     else:
-                        _cx[j] = vertcat(_cx[j], _cx_scaled[j][scaling_idx] * scaling[scaling_idx])
+                        _cx[j] = vertcat(_cx[j], _cx_scaled[j][idx] * scaling[idx])
             return _cx
 
         def define_legend():
@@ -943,16 +945,28 @@ class ConfigureProblem:
         )
 
         if as_states and name not in nlp.x_scaling:
+            if nlp.states_phase_mapping_idx.variable_mapped_index is not None:
+                n_var = len(nlp.states_phase_mapping_idx.variable_mapped_index)
+            else:
+                n_var = len(nlp.variable_mappings[name].to_first.map_idx)
             nlp.x_scaling[name] = VariableScaling(
-                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+                key=name, scaling=np.ones(n_var)
             )
         if as_states_dot and name not in nlp.xdot_scaling:
+            if nlp.states_dot_phase_mapping_idx.variable_mapped_index is not None:
+                n_var = len(nlp.states_dot_phase_mapping_idx.variable_mapped_index)
+            else:
+                n_var = len(nlp.variable_mappings[name].to_first.map_idx)
             nlp.xdot_scaling[name] = VariableScaling(
-                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+                key=name, scaling=np.ones(n_var)
             )
         if as_controls and name not in nlp.u_scaling:
+            if nlp.controls_phase_mapping_idx.variable_mapped_index is not None:
+                n_var = len(nlp.controls_phase_mapping_idx.variable_mapped_index)
+            else:
+                n_var = len(nlp.variable_mappings[name].to_first.map_idx)
             nlp.u_scaling[name] = VariableScaling(
-                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
+                key=name, scaling=np.ones(n_var)
             )
 
         mx_states = []

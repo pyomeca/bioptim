@@ -36,37 +36,23 @@ class VariableScaling(OptionGeneric):
 
         return self.scaling["all"]
 
-    def to_vector(self, n_repeat: int, variable_phase_mapping):
+    def to_vector(self, n_repeat: int):
         """
         Repeat the scaling to match the variables vector format
         """
-        # if variable_phase_mapping is not None:
-        #     if variable_phase_mapping.index is not None:
-        #         n_elements = len(variable_phase_mapping.index)
-        #         scaling_index = variable_phase_mapping.index
-        #     else:
-        #         n_elements = self.scaling.shape[0]
-        #         scaling_index = np.arange(n_elements)
-        # else:
-        #     n_elements = self.scaling.shape[0]
-        #     scaling_index = np.arange(n_elements)
-
         n_elements = self.scaling.shape[0]
         scaling_vector = np.zeros((n_repeat * n_elements, 1))
         for i in range(n_repeat):
             scaling_vector[i * n_elements: (i + 1) * n_elements] = np.reshape(self.scaling, (n_elements, 1))
-
         return scaling_vector
 
     def to_array(self, n_elements: int, n_shooting: int):
         """
         Repeate the scaling to match the variables array format
         """
-
         scaling_array = np.zeros((n_elements, n_shooting))
         for i in range(n_shooting):
             scaling_array[:, i] = self.scaling
-
         return scaling_array
 
 

@@ -127,7 +127,7 @@ class RK(OdeSolverBase):
         }
         ode = {
             "x_unscaled": nlp.states.cx,
-            "x_scaled": nlp.states["scaled"].cx,
+            "x_scaled": nlp.states["scaled"].cx, ##### Here is the problem for the phase_mapping #####
             "p_unscaled": nlp.controls.cx
             if nlp.control_type == ControlType.CONSTANT
             else horzcat(nlp.controls.cx, nlp.controls.cx_end),
