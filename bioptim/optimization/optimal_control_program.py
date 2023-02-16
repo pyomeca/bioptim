@@ -612,8 +612,8 @@ class OptimalControlProgram:
         across phases, so they appear on the same graph.
         """
         dof_names_all_phases = []
-        phase_mappings = []  # [[] for _ in range(len(self.nlp))]
-        dof_names = []  # [[] for _ in range(len(self.nlp))]
+        phase_mappings = []
+        dof_names = []
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
             for legend in nlp.model.name_dof:
@@ -1285,6 +1285,28 @@ class OptimalControlProgram:
         if to_graph:
             display_graph = OcpToGraph(self)
             display_graph.print()
+
+    def get_nx_and_nu_phase_mapped(self):
+
+        nx = [None for _ in self.nlp]
+        nu = [None for _ in self.nlp]
+        for i_phase, nlp in enumerate(self.nlp):
+            if nlp.use_states_from_phase == nlp.phase_idx:
+                nx[i_phase] = nlp.states.shape
+            else:
+                if 'all' in nlp.states_phase_mapping_idx.keys():
+                    nx[i_phase] = nlp.states.shape - len(nlp.states_phase_mapping_idx['all'].index)
+                else:
+                    continue
+
+            if nlp.use_controls_from_phase == nlp.phase_idx:
+                nu[i_phase] = nlp.controls.shape
+            else:
+                if 'all' in nlp.controls_phase_mapping_idx.keys():
+                    nu[i_phase] = nlp.controls.shape - len(nlp.controls_phase_mapping_idx['all'].index)
+                else:
+                    continue
+        return nx, nu
 
     def _define_time(
         self,

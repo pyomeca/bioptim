@@ -241,10 +241,10 @@ class NodeMapping(OptionGeneric):
         self,
         map_states: bool = False,
         map_controls: bool = False,
-        phase_pre: int = None,
-        phase_post: int = None,
+        phase_pre: int = None,  # change name to reference_phase
+        phase_post: int = None,  # mapped_phase
         index: list = None,
-        variable_mapping: BiMapping = None,
+        variable_mapping: BiMappingList = None,
         **params
     ):
         """
@@ -271,7 +271,8 @@ class NodeMapping(OptionGeneric):
         self.variable_mapping = variable_mapping
 
 class NodeMappingIndex():
-    def __init__(self, phase: int = None, index: list | None = None, variable_mapped_index: BiMapping = None):
+    def __init__(self, phase: int = None, index: list | None = None, variable_mapped_index: list | None = None):
+
         self.phase = phase
         self.index = index
         if variable_mapped_index is None:
@@ -291,7 +292,7 @@ class NodeMappingList(OptionDict):
         phase_pre: int = None,
         phase_post: int = None,
         index: list = None,
-        variable_mapping: BiMapping = None,
+        variable_mapping: BiMappingList = None,
     ):
         """
         Add a new NodeMapping to the list
@@ -321,8 +322,8 @@ class NodeMappingList(OptionDict):
         if phase_pre > phase_post:
             raise ValueError("Please provide a phase_pre index value smaller than the phase_post index value.")
 
-        if not (isinstance(variable_mapping, BiMapping) or variable_mapping is None):
-            raise ValueError(f"variable_mapping (of type {type(variable_mapping)}) should be None or a BiMapping.")
+        if not (isinstance(variable_mapping, BiMappingList) or variable_mapping is None):
+            raise ValueError(f"variable_mapping (of type {type(variable_mapping)}) should be None or a BiMappingList.")
 
         super(NodeMappingList, self)._add(
             key=name,
@@ -333,44 +334,65 @@ class NodeMappingList(OptionDict):
             phase_pre=phase_pre,
             phase_post=phase_post,
             index=index,
-            variable_mapping=variable_mapping,
+            variable_mapping=variable_mapping[phase_pre][name],
         )
 
     def get_variable_from_phase_idx(self, ocp):
 
-        use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-        use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-        use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-        mapped_states_idx = [None for _ in range(ocp.n_phases)]
-        mapped_states_dot_idx = [None for _ in range(ocp.n_phases)]
-        mapped_controls_idx = [None for _ in range(ocp.n_phases)]
-        mapped_variable_states_idx = [None for _ in range(ocp.n_phases)]
-        mapped_variable_states_dot_idx = [None for _ in range(ocp.n_phases)]
-        mapped_variable_controls_idx = [None for _ in range(ocp.n_phases)]
-
-        for i in range(len(self)):
-            for key in self[i].keys():
-                if self[i][key].map_states:
-                    use_states_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
-                    use_states_dot_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
-                    mapped_states_idx[self[i][key].phase_post] = self[i][key].index
-                    mapped_states_dot_idx[self[i][key].phase_post] = self[i][key].index
-                    mapped_variable_states_dot_idx[self[i][key].phase_post] = [self[i][key].variable_mapping.to_second.map_idx[j] for j in self[i][key].index]
-                    mapped_variable_controls_idx[self[i][key].phase_post] = [self[i][key].variable_mapping.to_second.map_idx[j] for j in self[i][key].index]
-                if self[i][key].map_controls:
-                    use_controls_from_phase_idx[self[i][key].phase_post] = self[i][key].phase_pre
-                    mapped_controls_idx[self[i][key].phase_post] = self[i][key].index
-                    mapped_variable_controls_idx[self[i][key].phase_post] = [self[i][key].variable_mapping.to_second.map_idx[j] for j in self[i][key].index]
+        # use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+        # use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+        # use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+        # mapped_states_idx = [None for _ in range(ocp.n_phases)]
+        # mapped_states_dot_idx = [None for _ in range(ocp.n_phases)]
+        # mapped_controls_idx = [None for _ in range(ocp.n_phases)]
+        # mapped_variable_states_idx = [None for _ in range(ocp.n_phases)]
+        # mapped_variable_states_dot_idx = [None for _ in range(ocp.n_phases)]
+        # mapped_variable_controls_idx = [None for _ in range(ocp.n_phases)]
+        # names_states = [None for _ in range(ocp.n_phases)]
+        # names_states_dot = [None for _ in range(ocp.n_phases)]
+        # names_controls = [None for _ in range(ocp.n_phases)]
+        #
+        # for i, node_mapping in enumerate(self):
+        #     for key in node_mapping.keys():
+        #         if node_mapping[key].map_states:
+        #             use_states_from_phase_idx[node_mapping[key].phase_post] = node_mapping[key].phase_pre
+        #             use_states_dot_from_phase_idx[node_mapping[key].phase_post] = node_mapping[key].phase_pre
+        #             mapped_states_idx[node_mapping[key].phase_post] = node_mapping[key].index
+        #             mapped_states_dot_idx[node_mapping[key].phase_post] = node_mapping[key].index
+        #             mapped_variable_states_idx[node_mapping[key].phase_post] = [node_mapping[key].variable_mapping.to_second.map_idx[j] for j in node_mapping[key].index]
+        #             mapped_variable_states_dot_idx[node_mapping[key].phase_post] = [node_mapping[key].variable_mapping.to_second.map_idx[j] for j in node_mapping[key].index]
+        #             names_states[node_mapping[key].phase_post] = key
+        #             names_states_dot[node_mapping[key].phase_post] = key
+        #         if node_mapping[key].map_controls:
+        #             use_controls_from_phase_idx[node_mapping[key].phase_post] = node_mapping[key].phase_pre
+        #             mapped_controls_idx[node_mapping[key].phase_post] = node_mapping[key].index
+        #             mapped_variable_controls_idx[node_mapping[key].phase_post] = [node_mapping[key].variable_mapping.to_second.map_idx[j] for j in node_mapping[key].index]
+        #             names_controls[node_mapping[key].phase_post] = key
 
         from ..optimization.non_linear_program import NonLinearProgram
 
-        states_phase_mapping_idx = []
-        states_dot_phase_mapping_idx = []
-        controls_phase_mapping_idx = []
-        for i in range(ocp.n_phases):
-            states_phase_mapping_idx += [NodeMappingIndex(use_states_from_phase_idx[i], mapped_states_idx[i], mapped_variable_states_idx[i])]
-            states_dot_phase_mapping_idx += [NodeMappingIndex(use_states_dot_from_phase_idx[i], mapped_states_dot_idx[i], mapped_variable_states_dot_idx[i])]
-            controls_phase_mapping_idx += [NodeMappingIndex(use_controls_from_phase_idx[i], mapped_controls_idx[i], mapped_variable_controls_idx[i])]
+        # states_phase_mapping_idx = []
+        # states_dot_phase_mapping_idx = []
+        # controls_phase_mapping_idx = []
+        # for i in range(ocp.n_phases):
+        #     states_phase_mapping_idx += [NodeMappingIndex(use_states_from_phase_idx[i], mapped_states_idx[i], mapped_variable_states_idx[i], names_states[i])]
+        #     states_dot_phase_mapping_idx += [NodeMappingIndex(use_states_dot_from_phase_idx[i], mapped_states_dot_idx[i], mapped_variable_states_dot_idx[i], names_states_dot[i])]
+        #     controls_phase_mapping_idx += [NodeMappingIndex(use_controls_from_phase_idx[i], mapped_controls_idx[i], mapped_variable_controls_idx[i], names_controls[i])]
+
+
+        states_phase_mapping_idx = [{} for _ in range(ocp.n_phases)]
+        states_dot_phase_mapping_idx = [{} for _ in range(ocp.n_phases)]
+        controls_phase_mapping_idx = [{} for _ in range(ocp.n_phases)]
+        for i, node_mapping in enumerate(self):
+            for key in node_mapping.keys():
+                if node_mapping[key].map_states:
+                    states_phase_mapping_idx[node_mapping[key].phase_post][key] = NodeMappingIndex(
+                        phase=node_mapping[key].phase_pre, index=node_mapping[key].index, variable_mapped_index=[node_mapping[key].variable_mapping.to_second.map_idx[j] for j in node_mapping[key].index])
+                    states_dot_phase_mapping_idx[node_mapping[key].phase_post][key] = NodeMappingIndex(
+                        phase=node_mapping[key].phase_pre, index=node_mapping[key].index, variable_mapped_index=[node_mapping[key].variable_mapping.to_second.map_idx[j] for j in node_mapping[key].index])
+                if node_mapping[key].map_controls:
+                    controls_phase_mapping_idx[node_mapping[key].phase_post][key] = NodeMappingIndex(
+                        phase=node_mapping[key].phase_pre, index=node_mapping[key].index, variable_mapped_index=[node_mapping[key].variable_mapping.to_second.map_idx[j] for j in node_mapping[key].index])
 
         NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
         NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)

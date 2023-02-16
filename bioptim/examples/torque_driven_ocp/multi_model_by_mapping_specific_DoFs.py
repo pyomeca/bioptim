@@ -35,10 +35,13 @@ def prepare_ocp(
     parameter_mappings = BiMappingList()
     parameter_mappings.add("time", [0, 0], [0])
 
+    # Change name to phase mapping
     # Phase mapping
     node_mappings = NodeMappingList()
     # The node mapping is applied on the index [1] of [None, 0, 1] in the tau_mappings (so to the first active DoF)
-    node_mappings.add("tau", map_controls=True, phase_pre=0, phase_post=1, index=[1], variable_mapping=tau_mappings[0]['tau'])
+    node_mappings.add("tau", map_controls=True, phase_pre=0, phase_post=1, index=[1], variable_mapping=tau_mappings)
+
+    ##### Add a check for no mapping of 'q'q on phase 0 while mapping 'qdot' on phase 3 #####
 
     # Add objective functions
     objective_functions = ObjectiveList()

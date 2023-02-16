@@ -213,6 +213,8 @@ class Solution:
             self.phase_idx = nlp.phase_idx
             self.states_phase_mapping_idx = nlp.states_phase_mapping_idx
             self.controls_phase_mapping_idx = nlp.controls_phase_mapping_idx
+            self.use_states_from_phase = nlp.use_states_from_phase
+            self.use_controls_from_phase = nlp.use_controls_from_phase
             self.model = nlp.model
             self.states = nlp.states
             self.controls = nlp.controls
@@ -1012,19 +1014,19 @@ class Solution:
         for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
-            if self.ocp.nlp[p].states_phase_mapping_idx.phase == self.ocp.nlp[p].phase_idx:
-                u = self._controls["unscaled"][self.ocp.nlp[p].phase_idx]["all"]
+            if nlp.use_controls_from_phase == nlp.phase_idx:
+                u = self._controls["unscaled"][nlp.phase_idx]["all"]
             else:
-                if self.ocp.nlp[p].states_phase_mapping_idx.index is not None:
+                if 'all' in nlp.states_phase_mapping_idx.keys():
                     u = []
                     for i in range(self._states["unscaled"][p]['all'].shape[0]):
-                        if i in self.ocp.nlp[p].states_phase_mapping_idx.variable_mapped_index:
-                            u += [self._controls["unscaled"][self.ocp.nlp[p].controls_phase_mapping_idx.phase]["all"][i]]
+                        if i in nlp.states_phase_mapping_idx['all'].variable_mapped_index:
+                            u += [self._controls["unscaled"][nlp.use_controls_from_phase]["all"][i]]
                         else:
                             u += [
                                 self._controls["unscaled"][p]["all"][i]]
                 else:
-                    u = self._controls["unscaled"][self.ocp.nlp[p].phase_idx]["all"]
+                    u = self._controls["unscaled"][nlp.phase_idx]["all"]
             if integrator != SolutionIntegrator.OCP:
                 out._states["unscaled"][p]["all"] = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
@@ -1051,7 +1053,7 @@ class Solution:
 
             if shooting_type == Shooting.MULTIPLE:
                 # last node of the phase is not integrated but do exist as an independent node
-                if self.ocp.nlp[p].states_phase_mapping_idx.phase == self.ocp.nlp[p].phase_idx:
+                if nlp.use_states_from_phase == nlp.phase_idx:
                     out._states["unscaled"][p]["all"] = np.concatenate(
                         (
                             out._states["unscaled"][p]["all"],
@@ -1060,12 +1062,12 @@ class Solution:
                         axis=1,
                     )
                 else:
-                    if self.ocp.nlp[p].states_phase_mapping_idx.variable_mapped_index is not None:
+                    if nlp.states_phase_mapping_idx.variable_mapped_index is not None:
                         states_to_concatenate = np.zero((out._states["unscaled"][p]["all"].shape[1], ))
                         j = 0
                         for i in range(out._states["unscaled"][p]["all"].shape[1]):
-                            if i in self.ocp.nlp[p].states_phase_mapping_idx.variable_mapped_index:
-                                states_to_concatenate[i] = self._states["unscaled"][self.ocp.nlp[p].states_phase_mapping_idx.phase]["all"][i, -1:]
+                            if i in nlp.states_phase_mapping_idx.variable_mapped_index:
+                                states_to_concatenate[i] = self._states["unscaled"][nlp.use_states_from_phase]["all"][i, -1:]
                             else:
                                 states_to_concatenate[i] = self._states["unscaled"][p]["all"][j, -1:]
                                 j += 1
@@ -1073,7 +1075,7 @@ class Solution:
                         out._states["unscaled"][p]["all"] = np.concatenate(
                             (
                                 out._states["unscaled"][p]["all"],
-                                self._states["unscaled"][self.ocp.nlp[p].states_phase_mapping_idx.phase]["all"][:, -1:],
+                                self._states["unscaled"][nlp.use_states_from_phase]["all"][:, -1:],
                             ),
                             axis=1,
                         )
