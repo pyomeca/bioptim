@@ -497,14 +497,15 @@ class OptimalControlProgram:
         if node_mappings is None:
             node_mappings = NodeMappingList()
         (
-            use_states_from_phase_idx,
-            use_states_dot_from_phase_idx,
-            use_controls_from_phase_idx,
+            states_phase_mapping_idx,
+            states_dot_phase_mapping_idx,
+            controls_phase_mapping_idx
         ) = node_mappings.get_variable_from_phase_idx(self)
 
-        self._check_variable_mapping_consistency_with_node_mapping(
-            use_states_from_phase_idx, use_controls_from_phase_idx
-        )
+        # TODO: Fix _check_variable_mapping_consistency_with_node_mapping
+        # self._check_variable_mapping_consistency_with_node_mapping(
+        #     states_phase_mapping_idx, controls_phase_mapping_idx
+        # )
 
         # Prepare the dynamics
         for i in range(self.n_phases):
@@ -566,17 +567,17 @@ class OptimalControlProgram:
         return cls(**data)
 
     def _check_variable_mapping_consistency_with_node_mapping(
-        self, use_states_from_phase_idx, use_controls_from_phase_idx
+        self, states_phase_mapping_idx, controls_phase_mapping_idx
     ):
-        # TODO this feature is broken since the merge with multi_node, fix it
+        # TODO this feature is broken since the merge with multi_node, fix it, @ Pariterre?
         if (
-            list(set(use_states_from_phase_idx)) != use_states_from_phase_idx
-            or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx
+            list(set(states_phase_mapping_idx.index)) != states_phase_mapping_idx.index
+            or list(set(controls_phase_mapping_idx.index)) != controls_phase_mapping_idx.index
         ):
             raise NotImplementedError("Mapping over phases is broken")
 
         for i in range(self.n_phases):
-            for j in [idx for idx, x in enumerate(use_states_from_phase_idx) if x == i]:
+            for j in [idx for idx, x in enumerate(states_phase_mapping_idx.index) if x == i]:
                 for key in self.nlp[i].variable_mappings.keys():
                     if key in self.nlp[j].variable_mappings.keys():
                         if (
@@ -590,7 +591,7 @@ class OptimalControlProgram:
                                 f"Mapping on {key} is different between phases {i} and {j}."
                             )
         for i in range(self.n_phases):
-            for j in [idx for idx, x in enumerate(use_controls_from_phase_idx) if x == i]:
+            for j in [idx for idx, x in enumerate(controls_phase_mapping_idx.index) if x == i]:
                 for key in self.nlp[i].variable_mappings.keys():
                     if key in self.nlp[j].variable_mappings.keys():
                         if (
@@ -611,8 +612,8 @@ class OptimalControlProgram:
         across phases, so they appear on the same graph.
         """
         dof_names_all_phases = []
-        phase_mappings = []  # [[] for _ in range(len(self.nlp))]
-        dof_names = []  # [[] for _ in range(len(self.nlp))]
+        phase_mappings = []
+        dof_names = []
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
             for legend in nlp.model.name_dof:
@@ -1284,6 +1285,28 @@ class OptimalControlProgram:
         if to_graph:
             display_graph = OcpToGraph(self)
             display_graph.print()
+
+    def get_nx_and_nu_phase_mapped(self):
+
+        nx = [None for _ in self.nlp]
+        nu = [None for _ in self.nlp]
+        for i_phase, nlp in enumerate(self.nlp):
+            if nlp.use_states_from_phase == nlp.phase_idx:
+                nx[i_phase] = nlp.states.shape
+            else:
+                if 'all' in nlp.states_phase_mapping_idx.keys():
+                    nx[i_phase] = nlp.states.shape - len(nlp.states_phase_mapping_idx['all'].index)
+                else:
+                    continue
+
+            if nlp.use_controls_from_phase == nlp.phase_idx:
+                nu[i_phase] = nlp.controls.shape
+            else:
+                if 'all' in nlp.controls_phase_mapping_idx.keys():
+                    nu[i_phase] = nlp.controls.shape - len(nlp.controls_phase_mapping_idx['all'].index)
+                else:
+                    continue
+        return nx, nu
 
     def _define_time(
         self,

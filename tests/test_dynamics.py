@@ -7,6 +7,7 @@ from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
 from bioptim.interfaces.biorbd_model import BiorbdModel
 from bioptim.misc.enums import ControlType, RigidBodyDynamics
+from bioptim.misc.mapping import NodeMappingIndex
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector
 from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
@@ -59,12 +60,13 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -204,12 +206,13 @@ def test_torque_driven_implicit(with_contact, cx):
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -266,12 +269,13 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
 
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -331,12 +335,13 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
 
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -466,12 +471,13 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -562,12 +568,13 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
 
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -647,12 +654,13 @@ def test_soft_contacts_dynamics_errors(dynamics):
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     # Prepare the dynamics
     with pytest.raises(
@@ -688,12 +696,13 @@ def test_implicit_dynamics_errors(dynamics):
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     # Prepare the dynamics
     with pytest.raises(
@@ -731,12 +740,13 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -840,12 +850,13 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -1342,12 +1353,13 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
     np.random.seed(42)
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     # Prepare the dynamics
     if rigid_body_dynamics != RigidBodyDynamics.ODE:
@@ -1408,12 +1420,13 @@ def test_custom_dynamics(with_contact):
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     np.random.seed(42)
 

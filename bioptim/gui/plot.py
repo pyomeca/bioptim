@@ -325,6 +325,7 @@ class PlotOcp:
             if unique:
                 ax.legend(*zip(*unique))
 
+        nx, nu = self.ocp.get_nx_and_nu_phase_mapped()
         variable_sizes = []
         for i, nlp in enumerate(self.ocp.nlp):
             variable_sizes.append({})
@@ -337,8 +338,8 @@ class PlotOcp:
                             nlp.plot[key]
                             .function(
                                 np.nan,
-                                np.zeros((nlp.states.shape, 2)),
-                                np.zeros((nlp.controls.shape, 2)),
+                                np.zeros((nx[i], 2)),
+                                np.zeros((nu[i], 2)),
                                 np.zeros((nlp.parameters.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )
@@ -347,6 +348,16 @@ class PlotOcp:
                         nlp.plot[key].phase_mappings = Mapping(range(size))
                     else:
                         size = len(nlp.plot[key].phase_mappings.map_idx)
+                        if key[-7:] == '_states':
+                            name = key[:-7]
+                            if name in nlp.states_phase_mapping_idx.keys():
+                                if nlp.states_phase_mapping_idx[name].variable_mapped_index is not None:
+                                    size = len(nlp.states_phase_mapping_idx[name].variable_mapped_index)
+                        elif key[-9:] == '_controls':
+                            name = key[:-9]
+                            if name in nlp.controls_phase_mapping_idx.keys():
+                                if nlp.controls_phase_mapping_idx[name].variable_mapped_index is not None:
+                                    size = len(nlp.controls_phase_mapping_idx[name].variable_mapped_index)
                     if key not in variable_sizes[i]:
                         variable_sizes[i][key] = size
                     else:
@@ -622,7 +633,10 @@ class PlotOcp:
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                    self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
+                    if 'time' in self.ocp.parameter_mappings:
+                        self.tf[i_in_tf] = float(data_params["time"][self.ocp.parameter_mappings['time'].to_second.map_idx[i_in_time], 0])
+                    else:
+                        self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
@@ -635,18 +649,32 @@ class PlotOcp:
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
             for s in nlp.states:
-                if nlp.use_states_from_phase_idx == nlp.phase_idx:
+                if nlp.use_states_from_phase == nlp.phase_idx or 'all' in nlp.states_phase_mapping_idx.keys():
                     if isinstance(data_states, (list, tuple)):
                         state = np.concatenate((state, data_states[i][s]))
                     else:
                         state = np.concatenate((state, data_states[s]))
+                # else:
+                #     if nlp.states_phase_mapping_idx.variable_mapped_index is not None:
+                #         if s not in nlp.states_phase_mapping_idx.variable_mapped_index:
+                #             if isinstance(data_states, (list, tuple)):
+                #                 state = np.concatenate((state, data_states[i][s]))
+                #             else:
+                #                 state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
             for s in nlp.controls:
-                if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+                if nlp.use_controls_from_phase == nlp.phase_idx or 'all' in nlp.controls_phase_mapping_idx.keys():
                     if isinstance(data_controls, (list, tuple)):
                         control = np.concatenate((control, data_controls[i][s]))
                     else:
                         control = np.concatenate((control, data_controls[s]))
+                # else:
+                #     if nlp.controls_phase_mapping_idx.variable_mapped_index is not None:
+                #         if s not in nlp.controls_phase_mapping_idx.variable_mapped_index:
+                #             if isinstance(data_controls, (list, tuple)):
+                #                 control = np.concatenate((control, data_controls[i][s]))
+                #             else:
+                #                 control = np.concatenate((control, data_controls[s]))
 
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:

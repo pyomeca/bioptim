@@ -44,7 +44,7 @@ def generic_solve(interface) -> dict:
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
-    interface.sqp_nlp = {"x": interface.ocp.v.vector, "f": sum1(all_objectives), "g": all_g} # all_g : 2696  x : 2712
+    interface.sqp_nlp = {"x": interface.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
 
@@ -127,13 +127,8 @@ def generic_dispatch_bounds(interface):
 
     for nlp in interface.ocp.nlp:
         all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g_internal))
-        print(interface.get_all_penalties(nlp, nlp.g_internal))
-        print(interface.get_all_penalties(nlp, nlp.g_internal).shape)
-        print(interface.get_all_penalties(nlp, nlp.g_internal)[0])
         for g in nlp.g_internal:
-            print(g)
             for _ in g.node_idx:
-                print(g.node_idx)
                 all_g_bounds.concatenate(g.bounds)
 
         all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g_implicit))
@@ -212,15 +207,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         if _penalty.transition:
             ocp = interface.ocp
             if is_unscaled:
-                x_pre = ocp.nlp[_penalty.phase_pre_idx].X[-1]
-                x_post = ocp.nlp[_penalty.phase_post_idx].X[0][:, 0]
-                u_pre = ocp.nlp[_penalty.phase_pre_idx].U[-1]
-                u_post = ocp.nlp[_penalty.phase_post_idx].U[0]
+                x_pre = vertcat(*ocp.nlp[_penalty.phase_pre_idx].X[-1])
+                x_post = vertcat(*ocp.nlp[_penalty.phase_post_idx].X[0]) # [:, 0]
+                u_pre = vertcat(*ocp.nlp[_penalty.phase_pre_idx].U[-1])
+                u_post = vertcat(*ocp.nlp[_penalty.phase_post_idx].U[0])
             else:
-                x_pre = ocp.nlp[_penalty.phase_pre_idx].X_scaled[-1]
-                x_post = ocp.nlp[_penalty.phase_post_idx].X_scaled[0][:, 0]
-                u_pre = ocp.nlp[_penalty.phase_pre_idx].U_scaled[-1]
-                u_post = ocp.nlp[_penalty.phase_post_idx].U_scaled[0]
+                x_pre = vertcat(*ocp.nlp[_penalty.phase_pre_idx].X_scaled[-1])
+                x_post = vertcat(*ocp.nlp[_penalty.phase_post_idx].X_scaled[0]) # [:, 0]
+                u_pre = vertcat(*ocp.nlp[_penalty.phase_pre_idx].U_scaled[-1])
+                u_post = vertcat(*ocp.nlp[_penalty.phase_post_idx].U_scaled[0])
 
             _x = vertcat(x_pre, x_post)
             _u = vertcat(u_pre, u_post)
@@ -231,63 +226,73 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             mod_u1 = 1 if _penalty.second_node == Node.END else 0
 
             if is_unscaled:
-                x_first = ocp.nlp[_penalty.phase_first_idx].X[_penalty.node_idx[0]]
-                x_second = ocp.nlp[_penalty.phase_second_idx].X[_penalty.node_idx[1]][:, 0]
-                u_first = ocp.nlp[_penalty.phase_first_idx].U[_penalty.node_idx[0] - mod_u0]
-                u_second = ocp.nlp[_penalty.phase_second_idx].U[_penalty.node_idx[1] - mod_u1]
+                x_first = vertcat(*ocp.nlp[_penalty.phase_first_idx].X[_penalty.node_idx[0]])
+                x_second = vertcat(*ocp.nlp[_penalty.phase_second_idx].X[_penalty.node_idx[1]]) # [:, 0]
+                u_first = vertcat(*ocp.nlp[_penalty.phase_first_idx].U[_penalty.node_idx[0] - mod_u0])
+                u_second = vertcat(*ocp.nlp[_penalty.phase_second_idx].U[_penalty.node_idx[1] - mod_u1])
             else:
-                x_first = ocp.nlp[_penalty.phase_first_idx].X_scaled[_penalty.node_idx[0]]
-                x_second = ocp.nlp[_penalty.phase_second_idx].X_scaled[_penalty.node_idx[1]][:, 0]
-                u_first = ocp.nlp[_penalty.phase_first_idx].U_scaled[_penalty.node_idx[0] - mod_u0]
-                u_second = ocp.nlp[_penalty.phase_second_idx].U_scaled[_penalty.node_idx[1] - mod_u1]
+                x_first = vertcat(*ocp.nlp[_penalty.phase_first_idx].X_scaled[_penalty.node_idx[0]])
+                x_second = vertcat(*ocp.nlp[_penalty.phase_second_idx].X_scaled[_penalty.node_idx[1]]) # [:, 0]
+                u_first = vertcat(*ocp.nlp[_penalty.phase_first_idx].U_scaled[_penalty.node_idx[0] - mod_u0])
+                u_second = vertcat(*ocp.nlp[_penalty.phase_second_idx].U_scaled[_penalty.node_idx[1] - mod_u1])
 
             _x = vertcat(x_first, x_second)
             _u = vertcat(u_first, u_second)
         elif _penalty.integrate:
             if is_unscaled:
-                _x = nlp.X[_idx]
-                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                _x = vertcat(*nlp.X[_idx])
+                # _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                _u = vertcat(*nlp.U[_idx]) if _idx < len(nlp.U) else []
             else:
-                _x = nlp.X_scaled[_idx]
-                _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
+                _x = vertcat(*nlp.X_scaled[_idx])
+                # _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
+                _u = vertcat(*nlp.U_scaled[_idx]) if _idx < len(nlp.U_scaled) else []
         else:
             if is_unscaled:
-                _x = nlp.X[_idx][:, 0]
-                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                _x = vertcat(*nlp.X[_idx]) # [:, 0]
+                # _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                _u = vertcat(*nlp.U[_idx]) if _idx < len(nlp.U) else []
             else:
-                _x = nlp.X_scaled[_idx][:, 0]
-                _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
+                _x = vertcat(*nlp.X_scaled[_idx]) # [:, 0]
+                # _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
+                _u = vertcat(*nlp.U_scaled[_idx]) if _idx < len(nlp.U_scaled) else []
 
         if _penalty.derivative or _penalty.explicit_derivative:
             if is_unscaled:
-                x = nlp.X[_idx + 1][:, 0]
-                u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                x = vertcat(*nlp.X[_idx + 1]) # [:, 0]
+                # u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                u = vertcat(*nlp.U[_idx + 1]) if _idx + 1 < len(nlp.U) else []
             else:
-                x = nlp.X_scaled[_idx + 1][:, 0]
-                u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
+                x = vertcat(*nlp.X_scaled[_idx + 1]) # [:, 0]
+                # u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
+                u = vertcat(*nlp.U_scaled[_idx + 1]) if _idx + 1 < len(nlp.U_scaled) else []
 
             _x = horzcat(_x, x)
             _u = horzcat(_u, u)
 
         if _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
             if is_unscaled:
-                x = nlp.X[_idx + 1][:, 0]
+                x = vertcat(*nlp.X[_idx + 1]) # [:, 0]
             else:
-                x = nlp.X_scaled[_idx + 1][:, 0]
+                x = vertcat(*nlp.X_scaled[_idx + 1]) # [:, 0]
             _x = horzcat(_x, x)
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
-                    u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    # u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    u = vertcat(*nlp.U[_idx + 1]) if _idx + 1 < len(nlp.U) else []
                 else:
-                    u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
+                    # u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
+                    u = vertcat(*nlp.U_scaled[_idx + 1]) if _idx + 1 < len(nlp.U_scaled) else []
                 _u = horzcat(_u, u)
 
         if _penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
-                    u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    # u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    u = vertcat(*nlp.U[_idx + 1]) if _idx + 1 < len(nlp.U) else []
                 else:
-                    u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
+                    # u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
+                    u = vertcat(*nlp.U_scaled[_idx + 1]) if _idx + 1 < len(nlp.U_scaled) else []
                 _u = horzcat(_u, u)
         return _x, _u
 

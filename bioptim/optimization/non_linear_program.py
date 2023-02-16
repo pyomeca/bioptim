@@ -8,7 +8,7 @@ from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
 from ..misc.options import OptionList
-from ..misc.mapping import NodeMapping
+from ..misc.mapping import NodeMappingIndex
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..interfaces.biomodel import BioModel
 
@@ -145,9 +145,9 @@ class NonLinearProgram:
         self.u_init = InitialGuess()
         self.U_scaled = None
         self.U = None
-        self.use_states_from_phase_idx = NodeMapping()
-        self.use_controls_from_phase_idx = NodeMapping()
-        self.use_states_dot_from_phase_idx = NodeMapping()
+        self.states_phase_mapping_idx = NodeMappingIndex()
+        self.controls_phase_mapping_idx = NodeMappingIndex()
+        self.states_dot_phase_mapping_idx = NodeMappingIndex()
         self.controls = OptimizationVariableContainer()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()

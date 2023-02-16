@@ -13,6 +13,7 @@ from bioptim import (
     ConstraintList,
     OdeSolver,
     Solver,
+    NodeMappingIndex,
 )
 from bioptim.optimization.optimization_vector import OptimizationVector
 from .utils import TestUtils
@@ -67,12 +68,13 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     np.random.seed(42)
 
@@ -156,12 +158,13 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx):
 
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     np.random.seed(42)
 
@@ -236,12 +239,13 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, cx):
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     np.random.seed(42)
 
@@ -314,12 +318,13 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    states_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    states_dot_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    controls_phase_mapping_idx = [NodeMappingIndex(i, None) for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "states_phase_mapping_idx", states_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "states_dot_phase_mapping_idx", states_dot_phase_mapping_idx, False)
+    NonLinearProgram.add(ocp, "controls_phase_mapping_idx", controls_phase_mapping_idx, False)
 
     np.random.seed(42)
 
