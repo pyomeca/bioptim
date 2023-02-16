@@ -1,3 +1,8 @@
+"""
+This example inverts a triple pendulum with different inertia.
+The first DoF is not actuated, the second DoF in actuated with the same torque and the last DoF is independent for the two models.
+"""
+
 import numpy as np
 from bioptim import (
     MultiBiorbdModel,
@@ -9,28 +14,25 @@ from bioptim import (
     InitialGuessList,
     ObjectiveFcn,
     BiMappingList,
-    PhaseTransitionList,
-    PhaseTransitionFcn,
-    NodeMappingList,
 )
 
 
 def prepare_ocp(
     biorbd_model_path: str = "models/triple_pendulum.bioMod",
     biorbd_model_path_modified_inertia: str = "models/triple_pendulum_modified_inertia.bioMod",
-    n_shooting: tuple = (40, 40),
+    n_shooting: int = 40,
 ) -> OptimalControlProgram:
+
+    # Adding the models to the same phase
     bio_model = MultiBiorbdModel((biorbd_model_path, biorbd_model_path_modified_inertia))
 
     # Problem parameters
-    final_time = (1.5, 1.5)
+    final_time = 1.5
     tau_min, tau_max, tau_init = -200, 200, 0
 
     # Variable Mapping
     tau_mappings = BiMappingList()
     tau_mappings.add("tau", [None, 0, 1, None, 0, 2], [1, 2, 5], phase=0)
-
-    ##### Add a check for no mapping of 'q'q on phase 0 while mapping 'qdot' on phase 3 #####
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -46,7 +48,6 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
 
-    # Phase 0
     x_bounds[0][[0, 3], 0] = -np.pi
     x_bounds[0][[1, 4], 0] = 0
     x_bounds[0].min[[0, 3], 2] = np.pi - 0.1
@@ -80,7 +81,6 @@ def prepare_ocp(
 
 
 def main():
-    # Please note that this example is currently broken and will therefore raise a NotImplementedError
 
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
@@ -91,15 +91,13 @@ def main():
     sol.graphs()
 
     # --- Show results --- #
-    show_solution_animation = True # False
+    show_solution_animation = False
     if show_solution_animation:
-        q_both = np.vstack((sol.states[0]["q"], sol.states[1]["q"]))
+        q = sol.states[0]["q"]
         import bioviz
-
         b = bioviz.Viz("models/triple_pendulum_both_inertia.bioMod")
-        b.load_movement(q_both)
+        b.load_movement(q)
         b.exec()
-
 
 if __name__ == "__main__":
     main()
