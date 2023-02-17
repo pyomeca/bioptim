@@ -70,7 +70,7 @@ class Integrator:
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
         self.x_sym = ode["x_scaled"]
-        if type(ode["ode"]) != list:
+        if ode["implicit_ode"] is not None:
             self.u_sym = ode["p_scaled"]
         else:
             self.u_sym = []
@@ -301,7 +301,6 @@ class RK1(RK):
         """
 
         return x_prev + h * self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
-
 
 class RK2(RK):
     """

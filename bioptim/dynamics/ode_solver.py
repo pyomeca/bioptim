@@ -152,11 +152,19 @@ class RK(OdeSolverBase):
                 ode_opt["idx"] = idx
                 dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
             return dynamics_out
-        elif type(ode["ode"]) is list:
+        elif isinstance(ode["ode"], list):
             dynamics_out = []
+            new_ode = None
             for idx in range(len(ode["ode"])):
                 ode_opt["idx"] = idx
-                dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
+                new_ode = {
+                    "x_unscaled": ode["x_unscaled"],
+                    "x_scaled": ode["x_scaled"],
+                    "ode": ode["ode"][idx],
+                    "implicit_ode": ode["implicit_ode"],
+                }
+                dynamics_out.append(nlp.ode_solver.rk_integrator(new_ode, ode_opt))
+            return dynamics_out
         else:
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
