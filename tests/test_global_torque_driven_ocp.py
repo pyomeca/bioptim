@@ -656,3 +656,50 @@ def test_multi_model_by_constraint():
     np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([0.01132175]), decimal=6)
     np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([0.00146709]), decimal=6)
     np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([0.01132175]), decimal=6)
+
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+def test_residual_torque(ode_solver):
+    # Load track_markers
+    from bioptim.examples.torque_driven_ocp import residual_torque_actuator as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ode_solver = ode_solver()
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_2dof_2contacts.bioMod",
+        n_shooting=30,
+        final_time=2,
+        ode_solver=ode_solver,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 204.18087334169184)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (186, 1))
+    np.testing.assert_almost_equal(g, np.zeros((186, 1)))
+
+    # Check some of the results
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((0.2140175, 0.981, 0.3360075)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-0.2196496, 0.981, -0.3448498)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol)
