@@ -128,12 +128,15 @@ class RK(OdeSolverBase):
         ode = {
             "x_unscaled": nlp.states.cx,
             "x_scaled": nlp.states["scaled"].cx,
+            ##########################
+            # can be commented out if the control is not used in the dynamics
             "p_unscaled": nlp.controls.cx
             if nlp.control_type == ControlType.CONSTANT
             else horzcat(nlp.controls.cx, nlp.controls.cx_end),
             "p_scaled": nlp.controls["scaled"].cx
             if nlp.control_type == ControlType.CONSTANT
             else horzcat(nlp.controls["scaled"].cx, nlp.controls["scaled"].cx_end),
+            ##########################
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
@@ -144,6 +147,11 @@ class RK(OdeSolverBase):
                 ode_opt["idx"] = idx
                 dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
             return dynamics_out
+        elif len(ode["ode"]) != 1:
+            dynamics_out = []
+            for idx in range(len(ode["ode"])):
+                ode_opt["idx"] = idx
+                dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
         else:
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
