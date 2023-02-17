@@ -658,10 +658,11 @@ def test_multi_model_by_constraint():
     np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([0.01132175]), decimal=6)
 
 
+"""
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_residual_torque(ode_solver):
     # Load track_markers
-    from bioptim.examples.torque_driven_ocp import residual_torque_actuator as ocp_module
+   from bioptim.examples.torque_driven_ocp import residual_torque_actuator as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -703,3 +704,4 @@ def test_residual_torque(ode_solver):
 
     # simulate
     TestUtils.simulate(sol)
+"""

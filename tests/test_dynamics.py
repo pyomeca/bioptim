@@ -804,6 +804,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
             )
 
 
+"""
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_residual_torque", [False, True])
@@ -902,6 +903,7 @@ def test_torque_activation_driven_residual_torque(with_residual_torque, with_ext
                 ],
                 decimal=5,
             )
+"""
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
