@@ -18,7 +18,7 @@ class MultiBiorbdModel:
             elif isinstance(bio_model, biorbd.Model):
                 self.models.append(bio_model)
             else:
-                raise RuntimeError("Type must be a 'str' or a 'biorbd.Model'")
+                raise RuntimeError("Type must be a tuple")
 
     def deep_copy(self, *args):
         return MultiBiorbdModel(tuple(model.DeepCopy(*args) for model in self.models))     ## ???????
@@ -83,7 +83,7 @@ class MultiBiorbdModel:
             return val
 
     def homogeneous_matrices_in_child(self, model_index, *args):
-        return self.models[model_index].localJCS(*args)
+        return vertcat(*(model[model_index].localJCS(*args) for model in self.models))
 
     @property
     def mass(self) -> list[MX]:

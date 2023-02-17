@@ -24,7 +24,7 @@ def prepare_ocp(
 ) -> OptimalControlProgram:
 
     # Adding the models to the same phase
-    bio_model = MultiBiorbdModel((biorbd_model_path, biorbd_model_path_modified_inertia))
+    bio_models = MultiBiorbdModel((biorbd_model_path, biorbd_model_path_modified_inertia))
 
     # Problem parameters
     final_time = 1.5
@@ -46,7 +46,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_models.bounds_from_ranges(["q", "qdot"]))
 
     x_bounds[0][[0, 3], 0] = -np.pi
     x_bounds[0][[1, 4], 0] = 0
@@ -56,7 +56,7 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    x_init.add([0] * (bio_models.nb_q + bio_models.nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
@@ -67,7 +67,7 @@ def prepare_ocp(
     u_init.add([tau_init] * len(tau_mappings[0]["tau"].to_first))
 
     return OptimalControlProgram(
-        bio_model,
+        bio_models,
         dynamics,
         n_shooting,
         final_time,
