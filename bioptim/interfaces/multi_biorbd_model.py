@@ -37,7 +37,7 @@ class MultiBiorbdModel:
     def gravity(self) -> MX:
         return vertcat(*(model.getGravity().to_mx() for model in self.models))
 
-    def set_gravity(self, new_gravity, model_index) -> None:
+    def set_gravity(self, new_gravity, model_index=0) -> None:
         return self.models[model_index].setGravity(new_gravity)
 
     @property
@@ -48,7 +48,7 @@ class MultiBiorbdModel:
     def nb_segments(self) -> int:
         return sum(model.nbSegment() for model in self.models)
 
-    def segment_index(self, name, model_index) -> int:
+    def segment_index(self, name, model_index=0) -> int:
         return self.models[model_index].segment_index(name)     ## ???????
 
     @property
@@ -75,14 +75,14 @@ class MultiBiorbdModel:
     def segments(self) -> list[biorbd.Segment]:
         return [model.segments() for model in self.models]
 
-    def homogeneous_matrices_in_global(self, q, reference_index, model_index, inverse=False):
+    def homogeneous_matrices_in_global(self, q, reference_index, model_index=0, inverse=False):
         val = self.models[model_index].globalJCS(q, reference_index)
         if inverse:
             return val.transpose()
         else:
             return val
 
-    def homogeneous_matrices_in_child(self, model_index, *args):
+    def homogeneous_matrices_in_child(self, model_index=0, *args):
         return vertcat(*(model[model_index].localJCS(*args) for model in self.models))
 
     @property
@@ -210,10 +210,10 @@ class MultiBiorbdModel:
     def nb_markers(self) -> int:
         return sum(model.nbMarkers() for model in self.models)
 
-    def marker_index(self, name, model_index):
+    def marker_index(self, name, model_index=0):
         return biorbd.marker_index(self.models[model_index], name)
 
-    def marker(self, q, index, model_index, reference_segment_index=None) -> MX:
+    def marker(self, q, index, model_index=0, reference_segment_index=None) -> MX:
         marker = self.models[model_index].marker(q, index)
 
         if reference_segment_index is not None:
