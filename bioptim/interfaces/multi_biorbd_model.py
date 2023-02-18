@@ -3,6 +3,7 @@ from typing import Any, Callable
 import biorbd_casadi as biorbd
 from casadi import MX, vertcat, horzcat, SX, norm_fro
 
+from .biorbd_model import BiorbdModel
 from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.utils import check_version
 from ..limits.path_conditions import Bounds
@@ -20,8 +21,11 @@ class MultiBiorbdModel:
             else:
                 raise RuntimeError("Type must be a tuple")
 
+    def __getitem__(self, index):
+        return self.models[index]
+
     def deep_copy(self, *args):
-        return MultiBiorbdModel(tuple(model.DeepCopy(*args) for model in self.models))     ## ???????
+        return MultiBiorbdModel(tuple(BiorbdModel(model.DeepCopy(*args)) for model in self.models)) ## ???????
 
     @property
     def path(self) -> list[str]:
@@ -49,7 +53,7 @@ class MultiBiorbdModel:
         return sum(model.nbSegment() for model in self.models)
 
     def segment_index(self, name, model_index=0) -> int:
-        return self.models[model_index].segment_index(name)     ## ???????
+        return biorbd.segment_index(self.models[model_index], name)
 
     @property
     def nb_quaternions(self) -> int:
@@ -69,7 +73,7 @@ class MultiBiorbdModel:
 
     @property
     def nb_root(self) -> int:
-        return self.models[0].nbRoot()
+        return sum(model.nbRoot() for model in self.models)
 
     @property
     def segments(self) -> list[biorbd.Segment]:
@@ -83,29 +87,66 @@ class MultiBiorbdModel:
             return val
 
     def homogeneous_matrices_in_child(self, model_index=0, *args):
-        return vertcat(*(model[model_index].localJCS(*args) for model in self.models))
+        return self.models[model_index].localJCS(*args)
 
     @property
     def mass(self) -> list[MX]:
         return vertcat(*(model.mass().to_mx() for model in self.models))
 
     def center_of_mass(self, q) -> MX:
-        return vertcat(*(model.CoM(q, True).to_mx() for model in self.models))
+        out = MX()
+        current_q = 0
+        for model in self.models:
+            out = vertcat(out, model.CoM(q[current_q: model.nbQ() + current_q], True).to_mx())
+            current_q += model.nbQ()
+        return out
 
     def center_of_mass_velocity(self, q, qdot) -> MX:
-        return vertcat(*(model.CoMdot(q, qdot, True).to_mx() for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        for model in self.models:
+            out = vertcat(out, model.CoMdot(q[current_q: model.nbQ() + current_q], qdot[current_qdot: model.nbQdot() + current_qdot], True).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+        return out
 
     def center_of_mass_acceleration(self, q, qdot, qddot) -> MX:
-        return vertcat(*(model.CoMddot(q, qdot, qddot, True).to_mx() for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        for model in self.models:
+            out = vertcat(out, model.CoMddot(q[current_q: model.nbQ() + current_q],
+                                            qdot[current_qdot: model.nbQdot() + current_qdot],
+                                            qddot[current_qdot: model.nbQdot() + current_qdot], True).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+        return out
 
     def angular_momentum(self, q, qdot) -> MX:
-        return vertcat(*(model.angularMomentum(q, qdot, True) for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        for model in self.models:
+            out = vertcat(out, model.angularMomentum(q[current_q: model.nbQ() + current_q],
+                                            qdot[current_qdot: model.nbQdot() + current_qdot], True).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+        return out
 
     def reshape_qdot(self, q, qdot, k_stab=1) -> MX:
         return vertcat(*(model.computeQdot(q, qdot, k_stab).to_mx() for model in self.models))
 
     def segment_angular_velocity(self, q, qdot, idx) -> MX:
-        return vertcat(*(model.segmentAngularVelocity(q, qdot, idx, True) for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        for model in self.models:
+            out = vertcat(out, model.segmentAngularVelocity(q[current_q: model.nbQ() + current_q],
+                                            qdot[current_qdot: model.nbQdot() + current_qdot], True).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+        return out
 
     @property
     def name_dof(self) -> tuple[str, ...]:
@@ -135,8 +176,8 @@ class MultiBiorbdModel:
                 out.append(s.to_string())
         return tuple(out)
 
-    def soft_contact(self, *args):
-        return vertcat(*(model.softContact(*args) for model in self.models))
+    def soft_contact(self, model_index=0, *args):
+        return self.models[model_index].softContact(*args)
 
     @property
     def muscle_names(self) -> tuple[str, ...]:
@@ -151,35 +192,116 @@ class MultiBiorbdModel:
         return sum(model.nbMuscles() for model in self.models)
 
     def torque(self, tau_activations, q, qdot) -> MX:
-        return vertcat(*(model.torque(tau_activations, q, qdot).to_mx() for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        current_tau = 0
+        for model in self.models:
+            out = vertcat(out, model.torque(q[current_q: model.nbQ() + current_q],
+                                            qdot[current_qdot: model.nbQdot() + current_qdot],
+                                            tau_activations[current_tau: current_tau + model.nbGeneralizedTorque()]).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+            current_tau += model.nbGeneralizedTorque()
+            model.closeActuator()
+        return out
 
     def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
-        return vertcat(*(model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx() for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        current_qddot = 0
+        for model in self.models:
+            out = vertcat(out, model.ForwardDynamicsFreeFloatingBase(q[current_q: model.nbQ() + current_q],
+                                            qdot[current_qdot: model.nbQdot() + current_qdot],
+                                            qddot_joints[current_qddot: current_qddot + model.nbQddot() - model.nbRoot()]).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+            current_qddot += model.nbQddot() - model.nbRoot()
+        return out
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
         if external_forces is not None:
-            raise RuntimeError("Coucou")
-        return vertcat(*(model.ForwardDynamics(q, qdot, tau, external_forces, f_contacts).to_mx() for model in self.models))
+            external_forces = biorbd.to_spatial_vector(external_forces)
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        current_tau = 0
+        for model in self.models:
+            out = vertcat(out, model.ForwardDynamics(q[current_q: model.nbQ() + current_q],
+                                            qdot[current_qdot: model.nbQdot() + current_qdot],
+                                            tau[current_tau: current_tau + model.nbGeneralizedTorque()],
+                                            external_forces,
+                                            f_contacts).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+            current_tau += model.nbGeneralizedTorque()
+        return out
 
     def constrained_forward_dynamics(self, q, qdot, qddot, external_forces=None) -> MX:
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
-        return vertcat(*(model.ForwardDynamicsConstraintsDirect(q, qdot, qddot, external_forces).to_mx() for model in self.model))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        current_qddot = 0
+        for model in self.models:
+            out = vertcat(out, model.ForwardDynamicsConstraintsDirect(q[current_q: model.nbQ() + current_q],
+                                                     qdot[current_qdot: model.nbQdot() + current_qdot],
+                                                     qddot[current_qddot: current_qddot + model.nbQddot()],
+                                                     external_forces).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+            current_qddot += model.nbQddot()
+        return out
 
-    def inverse_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
-        # external_forces = self.convert_array_to_external_forces(external_forces)
+    def inverse_dynamics(self, q, qdot, qddot, external_forces=None, f_contacts=None) -> MX:
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
-        return vertcat(*(model.InverseDynamics(q, qdot, tau, external_forces, f_contacts).to_mx() for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        current_qddot = 0
+        for model in self.models:
+            out = vertcat(out, model.InverseDynamics(q[current_q: model.nbQ() + current_q],
+                                                                      qdot[
+                                                                      current_qdot: model.nbQdot() + current_qdot],
+                                                                      qddot[
+                                                                      current_qddot: current_qddot + model.nbQddot()],
+                                                                      external_forces,
+                                                                      f_contacts).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+            current_qddot += model.nbQddot()
+        return out
 
     def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, external_forces=None) -> MX:
-        # external_forces = self.convert_array_to_external_forces(external_forces)
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
-        return vertcat(*(model.ContactForcesFromForwardDynamicsConstraintsDirect(q, qdot, tau, external_forces).to_mx() for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        current_tau = 0
+        for model in self.models:
+            out = vertcat(out, model.ForwardDynamics(q[current_q: model.nbQ() + current_q],
+                                                     qdot[current_qdot: model.nbQdot() + current_qdot],
+                                                     tau[current_tau: current_tau + model.nbGeneralizedTorque()],
+                                                     external_forces).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+            current_tau += model.nbGeneralizedTorque()
+        return out
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
-        return vertcat(*(model.ComputeConstraintImpulsesDirect(q, qdot_pre_impact).to_mx() for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        for model in self.models:
+            out = vertcat(out, model.ComputeConstraintImpulsesDirect(q[current_q: model.nbQ() + current_q],
+                                            qdot_pre_impact[current_qdot: model.nbQdot() + current_qdot]).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+        return out
 
     def muscle_activation_dot(self, muscle_excitations) -> MX:
         out = MX()
@@ -201,9 +323,11 @@ class MultiBiorbdModel:
 
     def markers(self, q) -> Any | list[MX]:
         out = []
+        current_q = 0
         for model in self.models:
-            for m in model.markers(q):
+            for m in model.markers(q[current_q: model.nbQ() + current_q]):
                 out.append(m.to_mx())
+                current_q += model.nbQ()
         return out
 
     @property
@@ -215,11 +339,9 @@ class MultiBiorbdModel:
 
     def marker(self, q, index, model_index=0, reference_segment_index=None) -> MX:
         marker = self.models[model_index].marker(q, index)
-
         if reference_segment_index is not None:
             global_homogeneous_matrix = self.models[model_index].globalJCS(q, reference_segment_index)
             marker.applyRT(global_homogeneous_matrix.transpose())
-
         return marker.to_mx()
 
     @property
@@ -230,11 +352,14 @@ class MultiBiorbdModel:
     def nb_contacts(self) -> int:
         return sum(model.nbContacts() for model in self.models)
 
-    def marker_velocities(self, q, qdot, reference_index=None) -> MX: ##### ?????
+    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
         out = MX()
+        current_q = 0
+        current_qdot = 0
         for model in self.models:
             if reference_index is None:
-                vertcat(out, horzcat(*[m.to_mx() for m in model.markersVelocity(q, qdot, True)]))
+                vertcat(out, horzcat(*[m.to_mx() for m in model.markersVelocity(q[current_q: model.nbQ() + current_q],
+                                                                                qdot[current_qdot: model.nbQdot() + current_qdot], True)]))
             else:
                 homogeneous_matrix_transposed = (
                     biorbd.RotoTrans(),
@@ -245,6 +370,8 @@ class MultiBiorbdModel:
                         m.to_mx()
                         for m in model.markersVelocity(q, qdot, True)
                         if m.applyRT(homogeneous_matrix_transposed) is None]))
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
         return out
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
@@ -389,13 +516,13 @@ class MultiBiorbdModel:
                     if var == "q":
                         q_ranges += [q_range for q_range in segment.QRanges()]
 
-            for var in variables:
-                if var == "q":
-                    q_mapping = self._q_mapping(model, mapping)
-                    mapping = q_mapping
-                    x_min = [q_ranges[i].min() for i in q_mapping["q"].to_first.map_idx]
-                    x_max = [q_ranges[i].max() for i in q_mapping["q"].to_first.map_idx]
-                    out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
+        for var in variables:
+            if var == "q":
+                q_mapping = self._q_mapping(mapping)
+                mapping = q_mapping
+                x_min = [q_ranges[i].min() for i in q_mapping["q"].to_first.map_idx]
+                x_max = [q_ranges[i].max() for i in q_mapping["q"].to_first.map_idx]
+                out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
 
         for model in self.models:
             for i in range(model.nbSegment()):
@@ -404,13 +531,13 @@ class MultiBiorbdModel:
                     if var == "qdot":
                         qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
 
-            for var in variables:
-                if var == "qdot":
-                    qdot_mapping = self._qdot_mapping(model, mapping)
-                    mapping = qdot_mapping
-                    x_min = [qdot_ranges[i].min() for i in qdot_mapping["qdot"].to_first.map_idx]
-                    x_max = [qdot_ranges[i].max() for i in qdot_mapping["qdot"].to_first.map_idx]
-                    out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
+        for var in variables:
+            if var == "qdot":
+                qdot_mapping = self._qdot_mapping(mapping)
+                mapping = qdot_mapping
+                x_min = [qdot_ranges[i].min() for i in qdot_mapping["qdot"].to_first.map_idx]
+                x_max = [qdot_ranges[i].max() for i in qdot_mapping["qdot"].to_first.map_idx]
+                out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
 
         if out.shape[0] == 0:
             raise ValueError(f"Unrecognized variable ({variables}), only 'q', 'qdot' and 'qddot' are allowed")
