@@ -54,16 +54,12 @@ def test_biorbd_model():
     marker_names = models.marker_names
     muscle_names = models.muscle_names
 
-    states_mapping = BiMappingList()
-    states_mapping.add('q', [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
-    states_mapping.add('qdot', [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
-    states_mapping.add('qddot', [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
-    states_mapping.add('tau', [None, 0, 1, None, 0, 2], [1, 2, 5])
-    q_mapping = states_mapping['q']
-    qdot_mapping = states_mapping['qdot']
-    qddot_mapping = states_mapping['qddot']
-    tau_mapping = states_mapping['tau']
-
+    variable_mappings = BiMappingList()
+    variable_mappings.add('q', [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
+    variable_mappings.add('qdot', [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
+    variable_mappings.add('qddot', [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
+    variable_mappings.add('tau', [None, 0, 1, None, 0, 2], [1, 2, 5])
+    
     np.random.seed(42)
     q = MX(np.random.random((nb_q, )))
     qdot = MX(np.random.random((nb_qdot, )))
@@ -102,20 +98,21 @@ def test_biorbd_model():
     markers = Function("Markers", [], [models.markers(q)[0]])()["o0"]
     marker = Function("Marker", [], [models.marker(q[:3], index=0, model_index=0, reference_segment_index=0)])()["o0"]
     marker_index = models.marker_index("marker_3", 0)
-    marker_velocities = Function("Markerdot", [], [models.marker_velocities(q, qdot, reference_index=0)])()["o0"]
-    tau_max = models.tau_max(q, qdot)
+    marker_velocities = Function("Markerdot", [], [models.marker_velocities(q, qdot)[0, :]])()["o0"]
+    marker_velocities_single_model = Function("Markerdot", [], [models.marker_velocities(q[:3], qdot[:3], reference_index=0, model_index=0)[0, :]])()["o0"]
+    # tau_max = Function("TauMax", [], [models.tau_max(q, qdot)])()["o0"]  #TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
     # rigid_contact_acceleration = models.rigid_contact_acceleration(q, qdot, qddot, 0) # to be added when the code works
-    soft_contact_forces = models.soft_contact_forces(q, qdot)
-    reshape_fext_to_fcontact = models.reshape_fext_to_fcontact(f_ext)
-    normalize_state_quaternions = models.normalize_state_quaternions(vertcat(q, qdot))
+    soft_contact_forces = Function("SoftContactForces", [], [models.soft_contact_forces(q, qdot)])()["o0"]
+    reshape_fext_to_fcontact = Function("Fext_to_Fcontact", [], [models.reshape_fext_to_fcontact(f_ext)])()["o0"]
+    normalize_state_quaternions = Function("Fext_to_Fcontact", [], [models.normalize_state_quaternions(vertcat(q, qdot))])()["o0"]
     get_quaternion_idx = models.get_quaternion_idx()
-    contact_forces = models.contact_forces(q, qdot, tau, f_ext)
-    passive_joint_torque = models.passive_joint_torque(q, qdot)
-    q_mapping = models._q_mapping(q_mapping)
-    qdot_mapping = models._q_mapping(qdot_mapping)
-    qddot_mapping = models._q_mapping(qddot_mapping)
-    tau_mapping = models._q_mapping(tau_mapping)
-    bounds_from_ranges = models.bounds_from_ranges(['q', 'qdot'], states_mapping)
+    contact_forces = Function("Fcontact", [], [models.contact_forces(q, qdot, tau, [f_ext])])()["o0"]
+    passive_joint_torque = Function("PassiveTau", [], [models.passive_joint_torque(q, qdot)])()["o0"]
+    q_mapping = models._q_mapping(variable_mappings)
+    qdot_mapping = models._q_mapping(variable_mappings)
+    qddot_mapping = models._q_mapping(variable_mappings)
+    tau_mapping = models._q_mapping(variable_mappings)
+    bounds_from_ranges = models.bounds_from_ranges(['q', 'qdot'], variable_mappings)
 
     np.testing.assert_equal(nb_q, 6)
     np.testing.assert_equal(nb_qdot, 6)
@@ -204,4 +201,43 @@ def test_biorbd_model():
 
     np.testing.assert_equal(marker_index, 2)
 
+    for i in range(marker_velocities.shape[0]):
+        np.testing.assert_almost_equal(marker_velocities[i], DM(np.zeros((6, ))[i]), decimal=5)
 
+    for i in range(marker_velocities_single_model.shape[0]):
+        np.testing.assert_almost_equal(marker_velocities_single_model[i], DM(np.zeros((6, ))[i]), decimal=5)
+
+    np.testing.assert_equal(soft_contact_forces.shape, (0, 1))
+
+    np.testing.assert_equal(reshape_fext_to_fcontact.shape, (0, 1))
+
+    for i in range(normalize_state_quaternions.shape[0]):
+        np.testing.assert_almost_equal(normalize_state_quaternions[i], DM(np.array([0.37454, 0.950714, 0.731994, 0.598658, 0.156019, 0.155995, 0.0580836, 0.866176, 0.601115, 0.708073, 0.0205845, 0.96991])[i]), decimal=5)
+
+    np.testing.assert_equal(get_quaternion_idx, [])
+
+    for i in range(contact_forces.shape[0]):
+        np.testing.assert_almost_equal(contact_forces[i], DM(np.array([1.00257, -3.23703, 0.992444, -2.50109, -0.735689, 0.758181])[i]), decimal=5)
+
+    for i in range(passive_joint_torque.shape[0]):
+        np.testing.assert_almost_equal(passive_joint_torque[i], DM(np.zeros((6, ))[i]), decimal=5)
+
+    np.testing.assert_equal(q_mapping['q'].to_first.map_idx, [0, 1, 2, 3, 4, 5])
+    np.testing.assert_equal(qdot_mapping['qdot'].to_first.map_idx, [0, 1, 2, 3, 4, 5])
+    np.testing.assert_equal(qddot_mapping['qddot'].to_first.map_idx, [0, 1, 2, 3, 4, 5])
+    np.testing.assert_equal(tau_mapping['tau'].to_first.map_idx, [1, 2, 5])
+
+    for i in range(bounds_from_ranges.min.shape[0]):
+        for j in range(bounds_from_ranges.min.shape[1]):
+            np.testing.assert_almost_equal(bounds_from_ranges.min[i, j], DM(np.array([[-31.41592654, -31.41592654, -31.41592654],
+               [ -1.57079633,  -1.57079633,  -1.57079633],
+               [ -1.57079633,  -1.57079633,  -1.57079633],
+               [-31.41592654, -31.41592654, -31.41592654],
+               [ -1.57079633,  -1.57079633,  -1.57079633],
+               [ -1.57079633,  -1.57079633,  -1.57079633],
+               [-31.41592654, -31.41592654, -31.41592654],
+               [-31.41592654, -31.41592654, -31.41592654],
+               [-31.41592654, -31.41592654, -31.41592654],
+               [-31.41592654, -31.41592654, -31.41592654],
+               [-31.41592654, -31.41592654, -31.41592654],
+               [-31.41592654, -31.41592654, -31.41592654]])[i, j]), decimal=5)

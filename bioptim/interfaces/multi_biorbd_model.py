@@ -77,7 +77,10 @@ class MultiBiorbdModel:
 
     @property
     def segments(self) -> list[biorbd.Segment]:
-        return [model.segments() for model in self.models]
+        out = ()
+        for model in self.models:
+            out += model.segments()
+        return out
 
     def homogeneous_matrices_in_global(self, q, reference_index, model_index=0, inverse=False):
         val = self.models[model_index].globalJCS(q, reference_index)
@@ -327,7 +330,7 @@ class MultiBiorbdModel:
         for model in self.models:
             for m in model.markers(q[current_q: model.nbQ() + current_q]):
                 out.append(m.to_mx())
-                current_q += model.nbQ()
+            current_q += model.nbQ()
         return out
 
     @property
@@ -352,32 +355,34 @@ class MultiBiorbdModel:
     def nb_contacts(self) -> int:
         return sum(model.nbContacts() for model in self.models)
 
-    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
-        out = MX()
-        current_q = 0
-        current_qdot = 0
-        for model in self.models:
-            if reference_index is None:
-                vertcat(out, horzcat(*[m.to_mx() for m in model.markersVelocity(q[current_q: model.nbQ() + current_q],
+    def marker_velocities(self, q, qdot, reference_index=None, model_index=None) -> MX:
+        if model_index is None and reference_index is not None or model_index is not None and reference_index is None:
+            raise RuntimeError("If reference_index is specified, model_index must be also specified")
+
+        if reference_index is None:
+            out = MX()
+            current_q = 0
+            current_qdot = 0
+            for model in self.models:
+                out = vertcat(out, horzcat(*[m.to_mx() for m in model.markersVelocity(q[current_q: model.nbQ() + current_q],
                                                                                 qdot[current_qdot: model.nbQdot() + current_qdot], True)]))
-            else:
-                homogeneous_matrix_transposed = (
-                    biorbd.RotoTrans(),
-                    self.homogeneous_matrices_in_global(q, reference_index, inverse=True),
-                )
-                vertcat(out, horzcat(
-                    *[
-                        m.to_mx()
-                        for m in model.markersVelocity(q, qdot, True)
-                        if m.applyRT(homogeneous_matrix_transposed) is None]))
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
+                current_q += model.nbQ()
+                current_qdot += model.nbQdot()
+
+        else:
+            out = MX()
+            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(q, reference_index, model_index=model_index, inverse=True)
+            for m in self.models[model_index].markersVelocity(q, qdot):
+                if m.applyRT(homogeneous_matrix_transposed) is None:
+                    out = horzcat(out, m.to_mx())
+
         return out
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         out_max = MX()
         out_min = MX()
         for model in self.models:
+            model.closeActuator()
             torque_max, torque_min = model.torqueMax(q, qdot)
             out_max = vertcat(out_max, torque_max.to_mx())
             out_min = vertcat(out_min, torque_min.to_mx())
@@ -458,7 +463,7 @@ class MultiBiorbdModel:
     def passive_joint_torque(self, q, qdot) -> MX:
         return vertcat(*(model.passiveJointTorque(q, qdot).to_mx() for model in self.models))
 
-    def _q_mapping(self, mapping: BiMapping = None) -> BiMapping:
+    def _q_mapping(self, mapping: BiMapping | BiMappingList = None) -> BiMapping:
         if mapping is None:
             mapping = {}
         if self.nb_quaternions > 0:
