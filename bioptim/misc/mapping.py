@@ -163,16 +163,20 @@ class SelectionMapping(BiMapping):
 
     def __init__(
         self,
-        nb_dof: int,
-        list_kept_dof: list[int],
-        dependant_dof : list,
-        oppose_to_second : list = [],
-        oppose_to_first : list =[],
+        nb_dof: int = None,
+        list_kept_dof: list[int] = None,
+        dependant_dof : list = None,
+        oppose_to_second : list = None,
+        oppose_to_first : list = None,
         **params
     ):
         # verify dependant dof : impossible multiple dependancies
         master = []
         dependant = []
+
+        if not isinstance(nb_dof, int) :
+            raise ValueError(' nb_dof should be an "int" ')
+
 
         for dependancy in dependant_dof:
             if len(dependancy) < 2 :
@@ -219,7 +223,7 @@ class SelectionMapping(BiMapping):
             vector = [None for i in range(nb_dof)]
             for index_dof,dof in enumerate(list_kept_dof):
                 if dof > nb_dof :
-                    raise('error')
+                    raise RuntimeError('index in list_kept_dof must be maximally equal to nb_dof')
                 else :
                     vector[dof] = index_dof
             for dependancy in dependant_dof :
