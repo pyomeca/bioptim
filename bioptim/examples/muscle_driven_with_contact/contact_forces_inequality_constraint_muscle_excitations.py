@@ -18,6 +18,7 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BiMappingList,
+    SelectionMapping,
     BoundsList,
     Bounds,
     InitialGuessList,
@@ -31,8 +32,8 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
     dof_mapping = BiMappingList()
-    dof_mapping.add("tau", [None, None, None, 0], [3])
-
+    #dof_mapping.add("tau", [None, None, None, 0], [3])
+    dof_mapping.add(name='tau', bimapping=SelectionMapping(bio_model.nb_dof, [3], []))
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
@@ -86,7 +87,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,
