@@ -156,6 +156,85 @@ class BiMapping(OptionGeneric):
         self.to_second = to_second
         self.to_first = to_first
 
+class SelectionMapping(BiMapping):
+    """
+
+    """
+
+    def __init__(
+        self,
+        nb_dof: int,
+        list_kept_dof: list[int],
+        dependant_dof : list,
+        oppose_to_second : list = [],
+        oppose_to_first : list =[],
+        **params
+    ):
+        # verify dependant dof : impossible multiple dependancies
+        master = []
+        dependant = []
+
+        for dependancy in dependant_dof:
+            if len(dependancy) < 2 :
+                raise ValueError('Dependant_dof must contain tuple or list of size 2 ')
+            master.append(dependancy[1])
+            dependant.append(dependancy[0])
+        for i in range(len(dependant_dof)) :
+            if master[i] in dependant :
+                raise ValueError('Dependancies cant depend on others')
+
+        self.nb_dof = nb_dof
+        self.list_kept_dof = list_kept_dof
+        self.dependant_dof = dependant_dof
+        self.oppose_to_second = oppose_to_second
+        self.oppose_to_first = oppose_to_first
+
+
+        index_dof = np.array([i for i in range(1,nb_dof+1)])
+        index_dof = index_dof.reshape(nb_dof,1)
+        #index_dof = index_dof[:,np.newaxis]
+       # index_dof[][] = np.newaxis(index_dof)
+
+
+        # selection matrix
+        S = np.zeros((nb_dof,nb_dof))
+        for dof in list_kept_dof :  #simple case
+            S[dof][dof] = 1
+        for dependancies in dependant_dof :
+            S[dependancies[0]][dependancies[1]]= 1
+
+        first = S@index_dof
+        for i in range(len(first)) :
+            if first[i] != 0 :
+                first[i] = first[i] - 1
+            else :
+                first[i] = None
+
+        # def find_index(x, u) :      # only for 1D vector
+        #     for x_values in x :
+        #         for i in range(len(u)) :
+        #             if x_values == u[i] :
+
+        def build_vector_mapping(nb_dof, list_kept_dof):
+            vector = [None for i in range(nb_dof)]
+            for index_dof,dof in enumerate(list_kept_dof):
+                if dof > nb_dof :
+                    raise('error')
+                else :
+                    vector[dof] = index_dof
+            for dependancy in dependant_dof :
+                vector[dependancy[0]]= vector[dependancy[1]]
+
+            return vector
+
+
+        to_second = build_vector_mapping(nb_dof= nb_dof, list_kept_dof= list_kept_dof)
+        to_first = list_kept_dof
+
+
+
+        super().__init__(to_second=to_second, to_first=to_first, oppose_to_second=oppose_to_second, oppose_to_first=oppose_to_first)
+
 
 class BiMappingList(OptionDict):
     def __init__(self):
@@ -191,19 +270,19 @@ class BiMappingList(OptionDict):
 
         if isinstance(bimapping, BiMapping):
             if to_second is not None or to_first is not None:
-                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
+                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping_1")
             self.add(
                 name,
                 phase=phase,
-                to_second=bimapping.to_second,
-                to_first=bimapping.to_first,
-                oppose_to_second=oppose_to_second,
-                oppose_to_first=oppose_to_first,
+                to_second=bimapping.to_second.map_idx,
+                to_first=bimapping.to_first.map_idx,
+                oppose_to_second=bimapping.oppose_to_second,
+                oppose_to_first=bimapping.oppose_to_first,
             )
 
         else:
             if to_second is None or to_first is None:
-                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
+                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping_2")
             super(BiMappingList, self)._add(
                 key=name,
                 phase=phase,
@@ -212,7 +291,7 @@ class BiMappingList(OptionDict):
                 to_first=to_first,
                 oppose_to_second=oppose_to_second,
                 oppose_to_first=oppose_to_first,
-            )
+           )
 
     def variable_mapping_fill_phases(self, n_phases):
         for mappings in self.options:
