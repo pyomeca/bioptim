@@ -70,6 +70,8 @@ class ConfigureProblem:
         Configure the generalized jerks
     configure_tau(nlp, as_states: bool, as_controls: bool)
         Configure the generalized forces
+    configure_residual_tau(nlp, as_states: bool, as_controls: bool)
+        Configure the residual forces
     configure_taudot(nlp, as_states: bool, as_controls: bool)
         Configure the generalized forces derivative
     configure_muscles(nlp, as_states: bool, as_controls: bool)
@@ -380,7 +382,7 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def torque_activations_driven(ocp, nlp, with_contact=False, with_passive_torque: bool = False, with_residual_torque: bool = False):
+    def torque_activations_driven(ocp, nlp, with_contact: bool = False, with_passive_torque: bool = False, with_residual_torque: bool = False):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
@@ -480,7 +482,7 @@ class ConfigureProblem:
     ):
         """
         Configure the dynamics for a muscle driven program.
-        If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
+        If with_excitations is set to True, then the muscle activations are computed from the muscle dynamics.
         The tau from muscle is computed using the muscle activations.
         If with_residual_torque is set to True, then tau are used as supplementary force in the
         case muscles are too weak.
@@ -515,6 +517,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
         ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
+
         if with_residual_torque:
             ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, True, fatigue=fatigue)
@@ -1134,7 +1137,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_residual_tau(ocp, nlp, as_states: bool, as_controls: bool):
         """
-        Configure the generalized forces
+        Configure the residual forces
 
         Parameters
         ----------
@@ -1146,12 +1149,12 @@ class ConfigureProblem:
             If the generalized forces should be a control
         """
 
-        name = "tau_residual"
-        name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        name = "residual_tau"
+        name_residual_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
         ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp) ### @pariterre???
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_tau, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
+            name, name_residual_tau, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
         )
 
     @staticmethod

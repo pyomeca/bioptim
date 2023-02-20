@@ -220,7 +220,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_activations_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact, with_passive_torque: bool, with_residual_torque: bool,
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool, with_passive_torque: bool, with_residual_torque: bool,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -252,8 +252,8 @@ class DynamicsFunctions:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau_activation = DynamicsFunctions.get(nlp.controls["tau"], controls)
-        tau_residual = DynamicsFunctions.get(nlp.controls["tau_residual"], controls)
-
+        if with_residual_torque:
+            tau_residual = DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
         tau = nlp.model.torque(tau_activation, q, qdot)
         tau = tau + tau_residual if with_residual_torque else tau
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
