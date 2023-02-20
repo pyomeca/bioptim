@@ -270,7 +270,7 @@ class BiMappingList(OptionDict):
 
         if isinstance(bimapping, BiMapping):
             if to_second is not None or to_first is not None:
-                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping_1")
+                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
             self.add(
                 name,
                 phase=phase,
@@ -282,7 +282,7 @@ class BiMappingList(OptionDict):
 
         else:
             if to_second is None or to_first is None:
-                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping_2")
+                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
             super(BiMappingList, self)._add(
                 key=name,
                 phase=phase,
