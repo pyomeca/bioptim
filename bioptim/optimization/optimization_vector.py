@@ -310,18 +310,19 @@ class OptimizationVector:
         p_idx = 0
         for p in range(self.ocp.n_phases):
             if self.ocp.nlp[p].use_controls_from_phase_idx == self.ocp.nlp[p].phase_idx:
-                u_array = v_array[offset : offset + self.n_phase_u[p]].reshape(
-                    (ocp.nlp[p].controls["scaled"].shape, -1), order="F"
-                )
-                data_controls[p_idx]["all"] = u_array
-                offset_var = 0
-                for var in ocp.nlp[p].controls["scaled"]:
-                    data_controls[p_idx][var] = u_array[
-                        offset_var : offset_var + len(ocp.nlp[p].controls["scaled"][var]), :
-                    ]
-                    offset_var += len(ocp.nlp[p].controls["scaled"][var])
-                p_idx += 1
-                offset += self.n_phase_u[p]
+                if len(v_array[offset : offset + self.n_phase_u[p]]) != 0:
+                    u_array = v_array[offset : offset + self.n_phase_u[p]].reshape(
+                        (ocp.nlp[p].controls["scaled"].shape, -1), order="F"
+                    )
+                    data_controls[p_idx]["all"] = u_array
+                    offset_var = 0
+                    for var in ocp.nlp[p].controls["scaled"]:
+                        data_controls[p_idx][var] = u_array[
+                            offset_var : offset_var + len(ocp.nlp[p].controls["scaled"][var]), :
+                        ]
+                        offset_var += len(ocp.nlp[p].controls["scaled"][var])
+                    p_idx += 1
+                    offset += self.n_phase_u[p]
 
         offset = self.n_all_x + self.n_all_u
         scaling_offset = 0
