@@ -115,12 +115,12 @@ class RK(OdeSolverBase):
         """
 
         ode_opt = {
-            "t0": 0,
+            "t0": nlp.t0,
             "tf": nlp.dt,
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
-            "idx": 0,
+            "idx": nlp.phase_idx,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
             "defects_type": DefectType.NOT_APPLICABLE,
@@ -154,13 +154,11 @@ class RK(OdeSolverBase):
             return dynamics_out
         elif isinstance(ode["ode"], list):
             dynamics_out = []
-            new_ode = None
-            for idx in range(len(ode["ode"])):
-                ode_opt["idx"] = idx
+            for ns_idx in range(len(ode["ode"])):
                 new_ode = {
                     "x_unscaled": ode["x_unscaled"],
                     "x_scaled": ode["x_scaled"],
-                    "ode": ode["ode"][idx],
+                    "ode": ode["ode"][ns_idx],
                     "implicit_ode": ode["implicit_ode"],
                 }
                 dynamics_out.append(nlp.ode_solver.rk_integrator(new_ode, ode_opt))
