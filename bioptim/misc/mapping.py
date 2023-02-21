@@ -171,14 +171,7 @@ class SelectionMapping(BiMapping):
 
     """
 
-    def __init__(
-        self,
-        nb_dof: int = None,
-        list_kept_dof: list[int] = None,
-        dependant_dof: list = None,
-
-        **params
-    ):
+    def __init__(self, nb_dof: int = None, list_kept_dof: list[int] = None, dependant_dof: list = None, **params):
         """
         Parameters :
 
@@ -198,14 +191,14 @@ class SelectionMapping(BiMapping):
         if nb_dof is not None:
             if not isinstance(nb_dof, int):
                 raise ValueError("nb_dof should be an 'int'")
-        if list_kept_dof is not None :
-            if not isinstance(list_kept_dof,list) :
-                raise ValueError('list_kept_dof should be a list')
+        if list_kept_dof is not None:
+            if not isinstance(list_kept_dof, list):
+                raise ValueError("list_kept_dof should be a list")
 
         if dependant_dof is not None:
             if not isinstance(dependant_dof, list):
-                raise ValueError('dependant_dof should be a list')
-            if not isinstance(dependant_dof[0], list) :
+                raise ValueError("dependant_dof should be a list")
+            if not isinstance(dependant_dof[0], list):
                 dependant_dof = [dependant_dof]
             for dependancy in dependant_dof:
                 if len(dependancy) < 2:
@@ -223,7 +216,7 @@ class SelectionMapping(BiMapping):
                     raise ValueError("Dependancies cant depend on others")
 
         if len(list_kept_dof) > nb_dof:
-            raise ValueError('list_kept_dof must not contain more dofs than nb_dof')
+            raise ValueError("list_kept_dof must not contain more dofs than nb_dof")
 
         self.nb_dof = nb_dof
         self.list_kept_dof = list_kept_dof
@@ -238,30 +231,30 @@ class SelectionMapping(BiMapping):
         if dependant_dof is not None:
             for dependancy in dependant_dof:
                 selection_matrix[dependancy[0]][dependancy[1]] = 1
-                if len(dependancy) ==3:
-                    selection_matrix[dependancy[0]][dependancy[1]]*= -1
+                if len(dependancy) == 3:
+                    selection_matrix[dependancy[0]][dependancy[1]] *= -1
 
         first = selection_matrix @ index_dof
         matrix = [None for i in range(len(first))]
-        oppose =[]
+        oppose = []
         for i in range(len(first)):
             if first[i] != 0 and first[i] > 0:
                 matrix[i] = int(first[i] - 1)
             if first[i] < 0:
                 oppose.append(i)
-                matrix[i] = int(abs(first[i])-1)
-
+                matrix[i] = int(abs(first[i]) - 1)
 
         def build_to_second(x, u):
             for i in range(len(x)):
                 for j in range(len(u)):
                     if x[i] == u[j]:
                         x[i] = j
-                   # if x[i] is not None:
-                    #    if x[i] < 0:
-                        #    oppose.append(i)
+                # if x[i] is not None:
+                #    if x[i] < 0:
+                #    oppose.append(i)
 
             return x
+
         def build_vector_mapping(nb_dof, list_kept_dof):
             vector = [None for i in range(nb_dof)]
             for index_dof, dof in enumerate(list_kept_dof):
@@ -274,15 +267,14 @@ class SelectionMapping(BiMapping):
                     vector[dependancy[0]] = vector[dependancy[1]]
 
             return vector
-        to_second= build_to_second(matrix, list_kept_dof)
-        #to_second_bis=build_vector_mapping(nb_dof=nb_dof, list_kept_dof=list_kept_dof)
+
+        to_second = build_to_second(matrix, list_kept_dof)
+        # to_second_bis=build_vector_mapping(nb_dof=nb_dof, list_kept_dof=list_kept_dof)
         to_first = list_kept_dof
-        self.to_second =to_second
+        self.to_second = to_second
         self.to_first = to_first
 
-        super().__init__(
-            to_second=to_second, to_first=to_first, oppose_to_second=oppose
-        )
+        super().__init__(to_second=to_second, to_first=to_first, oppose_to_second=oppose)
 
 
 class BiMappingList(OptionDict):

@@ -68,7 +68,7 @@ def prepare_ocp(
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
     dof_mappings = BiMappingList()
-    #dof_mappings.add("q", to_second=[0, 1, None, 2, 2], to_first=[0, 1, 3], oppose_to_second=4)
+    # dof_mappings.add("q", to_second=[0, 1, None, 2, 2], to_first=[0, 1, 3], oppose_to_second=4)
     # dof_mappings.
     bimap = SelectionMapping(bio_model.nb_dof, [0, 1, 3], [[4, 3, -1]])
     dof_mappings.add("q", bimapping=bimap)

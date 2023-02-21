@@ -33,25 +33,25 @@ def test_bidirectional_mapping():
         BiMapping(1, [3, 4, 5])
     with pytest.raises(RuntimeError, match="to_first must be a Mapping class"):
         BiMapping([0, 1, 2], 3)
+
+
 def test_bidirectional_selection_mapping():
-    mapping = SelectionMapping(5, [0, 1, 3], [[4,3]])
+    mapping = SelectionMapping(5, [0, 1, 3], [[4, 3]])
 
     np.testing.assert_almost_equal(len(mapping.to_first.map_idx), 3)
     np.testing.assert_almost_equal(mapping.to_first.map_idx, [0, 1, 3])
     np.testing.assert_almost_equal(len(mapping.to_second.map_idx), 5)
-  #  np.testing.assert_almost_equal(mapping.to_second.map_idx, [0, 1, None, 2, 2]) # pb avec None car il afit la difference
+    #  np.testing.assert_almost_equal(mapping.to_second.map_idx, [0, 1, None, 2, 2]) # pb avec None car il afit la difference
 
     mapping_with_oppose = SelectionMapping(6, [3, 4, 5], [2, 3, -1])
-  #  np.testing.assert_almost_equal(mapping_with_oppose.to_second.map_idx, [None, None, 0, 0, 1, 2])
+    #  np.testing.assert_almost_equal(mapping_with_oppose.to_second.map_idx, [None, None, 0, 0, 1, 2])
     np.testing.assert_almost_equal(mapping_with_oppose.to_second.oppose, [1, 1, -1, 1, 1, 1])
     np.testing.assert_almost_equal(mapping_with_oppose.to_first.map_idx, [3, 4, 5])
-    #np.testing.assert_almost_equal(mapping_with_oppose.to_first.oppose, [1, -1, -1])
+    # np.testing.assert_almost_equal(mapping_with_oppose.to_first.oppose, [1, -1, -1])
 
-
-
-    with pytest.raises(ValueError, match='list_kept_dof must not contain more dofs than nb_dof'):
+    with pytest.raises(ValueError, match="list_kept_dof must not contain more dofs than nb_dof"):
         SelectionMapping(1, [3, 4, 5])
     with pytest.raises(ValueError, match="nb_dof should be an 'int'"):
         SelectionMapping([0, 1, 2], 3)
     with pytest.raises(ValueError, match="Each list of dependant-dof must contain 3 values max"):
-        SelectionMapping(5, [0,1,3], [4,3,-1, 1])
+        SelectionMapping(5, [0, 1, 3], [4, 3, -1, 1])
