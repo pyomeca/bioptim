@@ -58,12 +58,17 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles")
     objective_functions.add(
-        ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, first_marker="target", second_marker="COM_hand", weight=weight
+        ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS,
+        first_marker="target",
+        second_marker="COM_hand",
+        weight=weight,
     )
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True
+    )
     # raise RuntimeError("This example is broken, since contact dynamics with muscle is not implemented")
 
     # Path constraint
@@ -107,7 +112,12 @@ def main():
     Prepare and solve and animate a reaching task ocp
     """
 
-    ocp = prepare_ocp(biorbd_model_path="models/arm26_with_contact.bioMod", final_time=1, n_shooting=30, weight=1000)
+    ocp = prepare_ocp(
+        biorbd_model_path="models/arm26_with_contact.bioMod",
+        final_time=1,
+        n_shooting=30,
+        weight=1000,
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))

@@ -25,14 +25,20 @@ from bioptim import (
 
 # Load track_segment_on_rt
 spec = importlib.util.spec_from_file_location(
-    "data_to_track", str(Path(__file__).parent) + "/contact_forces_inequality_constraint_muscle.py"
+    "data_to_track",
+    str(Path(__file__).parent) + "/contact_forces_inequality_constraint_muscle.py",
 )
 data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
 def prepare_ocp(
-    biorbd_model_path, phase_time, n_shooting, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4()
+    biorbd_model_path,
+    phase_time,
+    n_shooting,
+    muscle_activations_ref,
+    contact_forces_ref,
+    ode_solver=OdeSolver.RK4(),
 ):
     # BioModel path
     bio_model = BiorbdModel(biorbd_model_path)
@@ -41,16 +47,28 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=muscle_activations_ref)
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.001)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.TRACK_CONTROL,
+        key="muscles",
+        target=muscle_activations_ref,
+    )
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref
+    )
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.001
+    )
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.001)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=0.001)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=0.001
+    )
     # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="torque", weight=0.001)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True
+    )
 
     # Path constraint
     n_q = bio_model.nb_q
@@ -107,10 +125,17 @@ def main():
         max_bound=np.inf,
     )
     sol = ocp_to_track.solve()
-    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
+    q, qdot, tau, mus = (
+        sol.states["q"],
+        sol.states["qdot"],
+        sol.controls["tau"],
+        sol.controls["muscles"],
+    )
     x = np.concatenate((q, qdot))
     u = np.concatenate((tau, mus))
-    contact_forces_ref = np.array(ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], []))
+    contact_forces_ref = np.array(
+        ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], [])
+    )
     muscle_activations_ref = mus
 
     # Track these data
