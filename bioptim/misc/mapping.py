@@ -168,6 +168,9 @@ class SelectionMapping(BiMapping):
         The mapping that links the first variable to the second
     to_first: Mapping
         The mapping that links the second variable to the first
+    oppose_to_second : int | list
+        Index to multiply by -1 of the to_second mapping
+
 
     """
 
@@ -267,12 +270,13 @@ class SelectionMapping(BiMapping):
                     vector[dependancy[0]] = vector[dependancy[1]]
 
             return vector
-
         to_second = build_to_second(matrix, list_kept_dof)
         # to_second_bis=build_vector_mapping(nb_dof=nb_dof, list_kept_dof=list_kept_dof)
         to_first = list_kept_dof
         self.to_second = to_second
         self.to_first = to_first
+        self.oppose_to_second = oppose
+        self.oppose_to_first = None
 
         super().__init__(to_second=to_second, to_first=to_first, oppose_to_second=oppose)
 
@@ -315,12 +319,22 @@ class BiMappingList(OptionDict):
             self.add(
                 name,
                 phase=phase,
-                to_second=bimapping.to_second.map_idx,
-                to_first=bimapping.to_first.map_idx,
+                to_second=bimapping.to_second,
+                to_first=bimapping.to_first,
                 oppose_to_second=oppose_to_second,
                 oppose_to_first=oppose_to_first,
             )
-
+        if isinstance(bimapping, SelectionMapping):
+            if to_second is not None or to_first is not None:
+                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
+            self.add(
+                name,
+                phase=phase,
+                to_second=bimapping.to_second.map_idx,
+                to_first=bimapping.to_first.map_idx,
+                oppose_to_second=bimapping.oppose_to_second,
+                oppose_to_first=None,
+            )
         else:
             if to_second is None or to_first is None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
