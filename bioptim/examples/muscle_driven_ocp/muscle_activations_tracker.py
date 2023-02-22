@@ -13,6 +13,12 @@ import numpy as np
 import biorbd_casadi as biorbd
 from casadi import MX, vertcat
 from matplotlib import pyplot as plt
+
+import sys
+
+sys.path.append("/home/lim/Documents/Anais/bioviz")
+sys.path.append("/home/lim/Documents/Anais/bioptim")
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -33,7 +39,10 @@ from bioptim import (
 
 
 def generate_data(
-    bio_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
+    bio_model: BiorbdModel,
+    final_time: float,
+    n_shooting: int,
+    use_residual_torque: bool = True,
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -81,22 +90,53 @@ def generate_data(
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
-    nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+    nlp.states.append(
+        "q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"]
+    )
+    nlp.states.append(
+        "qdot",
+        [symbolic_qdot, symbolic_qdot],
+        symbolic_qdot,
+        nlp.variable_mappings["qdot"],
+    )
 
-    nlp.states_dot.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
-    nlp.states_dot.append("qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"])
+    nlp.states_dot.append(
+        "qdot",
+        [symbolic_qdot, symbolic_qdot],
+        symbolic_qdot,
+        nlp.variable_mappings["qdot"],
+    )
+    nlp.states_dot.append(
+        "qddot",
+        [symbolic_qddot, symbolic_qddot],
+        symbolic_qddot,
+        nlp.variable_mappings["qddot"],
+    )
 
     if use_residual_torque:
-        nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
-    nlp.controls.append("muscles", [symbolic_mus, symbolic_mus], symbolic_mus, nlp.variable_mappings["muscles"])
+        nlp.controls.append(
+            "tau",
+            [symbolic_tau, symbolic_tau],
+            symbolic_tau,
+            nlp.variable_mappings["tau"],
+        )
+    nlp.controls.append(
+        "muscles",
+        [symbolic_mus, symbolic_mus],
+        symbolic_mus,
+        nlp.variable_mappings["muscles"],
+    )
 
     if use_residual_torque:
         nlp.variable_mappings["tau"] = BiMapping(range(n_tau), range(n_tau))
     dyn_func = DynamicsFunctions.muscles_driven
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
-    symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
+    symbolic_controls = (
+        vertcat(*(symbolic_tau, symbolic_mus))
+        if use_residual_torque
+        else vertcat(symbolic_mus)
+    )
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
@@ -188,21 +228,33 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=activations_ref)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=activations_ref
+    )
 
     if use_residual_torque:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     if kin_data_to_track == "markers":
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref[:, :, :-1])
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.TRACK_MARKERS,
+            weight=100,
+            target=markers_ref[:, :, :-1],
+        )
     elif kin_data_to_track == "q":
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=100, target=q_ref, node=Node.ALL)
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.TRACK_STATE,
+            key="q",
+            weight=100,
+            target=q_ref,
+            node=Node.ALL,
+        )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=use_residual_torque)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=use_residual_torque)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -226,9 +278,14 @@ def prepare_ocp(
             [tau_min] * bio_model.nb_tau + [activation_min] * bio_model.nb_muscles,
             [tau_max] * bio_model.nb_tau + [activation_max] * bio_model.nb_muscles,
         )
-        u_init.add([tau_init] * bio_model.nb_tau + [activation_init] * bio_model.nb_muscles)
+        u_init.add(
+            [activation_init] * bio_model.nb_muscles + [tau_init] * bio_model.nb_tau
+        )
     else:
-        u_bounds.add([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles)
+        u_bounds.add(
+            [activation_min] * bio_model.nb_muscles,
+            [activation_max] * bio_model.nb_muscles,
+        )
         u_init.add([activation_init] * bio_model.nb_muscles)
     # ------------- #
 
@@ -260,11 +317,16 @@ def main():
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(
-        bio_model, final_time, n_shooting_points, use_residual_torque=use_residual_torque
+        bio_model,
+        final_time,
+        n_shooting_points,
+        use_residual_torque=use_residual_torque,
     )
 
     # Track these data
-    bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel(
+        "models/arm26.bioMod"
+    )  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         bio_model,
         final_time,
@@ -287,16 +349,30 @@ def main():
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
-    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
+    markers_func = biorbd.to_casadi_func(
+        "ForwardKin", bio_model.markers, symbolic_states
+    )
 
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])
 
     plt.figure("Markers")
-    n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
+    n_steps_ode = (
+        ocp.nlp[0].ode_solver.steps + 1
+        if ocp.nlp[0].ode_solver.is_direct_collocation
+        else 1
+    )
     for i in range(markers.shape[1]):
-        plt.plot(np.linspace(0, final_time, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
-        plt.plot(np.linspace(0, final_time, n_shooting_points * n_steps_ode + 1), markers[:, i, :].T, "r--")
+        plt.plot(
+            np.linspace(0, final_time, n_shooting_points + 1),
+            markers_ref[:, i, :].T,
+            "k",
+        )
+        plt.plot(
+            np.linspace(0, final_time, n_shooting_points * n_steps_ode + 1),
+            markers[:, i, :].T,
+            "r--",
+        )
 
     # --- Plot --- #
     plt.show()
