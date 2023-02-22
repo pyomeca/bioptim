@@ -294,14 +294,27 @@ class ObjectiveFunction:
 
         # Dynamics must be sound within phases
         for nlp in ocp.nlp:
-            penalty = Objective(
-                ObjectiveFcn.Mayer.CONTINUITY,
-                weight=weight,
-                quadratic=True,
-                node=Node.ALL_SHOOTING,
-                penalty_type=PenaltyType.INTERNAL,
-            )
-            penalty.add_or_replace_to_penalty_pool(ocp, nlp)
+            if len(nlp.dynamics) > 0:
+                for shooting_point in range(nlp.ns):
+                    penalty = Objective(
+                        ObjectiveFcn.Mayer.CONTINUITY,
+                        weight=weight,
+                        quadratic=True,
+                        node=Node.ALL_SHOOTING,
+                        penalty_type=PenaltyType.INTERNAL,
+                        node_idx=shooting_point
+                    )
+                    penalty.add_or_replace_to_penalty_pool(ocp, nlp)
+            else:
+                for shooting_point in range(nlp.ns):
+                    penalty = Objective(
+                        ObjectiveFcn.Mayer.CONTINUITY,
+                        weight=weight,
+                        quadratic=True,
+                        node=Node.ALL_SHOOTING,
+                        penalty_type=PenaltyType.INTERNAL,
+                    )
+                    penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
     def inter_phase_continuity(ocp):
