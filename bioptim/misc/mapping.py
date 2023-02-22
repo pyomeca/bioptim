@@ -270,6 +270,7 @@ class SelectionMapping(BiMapping):
                     vector[dependancy[0]] = vector[dependancy[1]]
 
             return vector
+
         to_second = build_to_second(matrix, list_kept_dof)
         # to_second_bis=build_vector_mapping(nb_dof=nb_dof, list_kept_dof=list_kept_dof)
         to_first = list_kept_dof
