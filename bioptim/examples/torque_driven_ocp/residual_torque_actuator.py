@@ -1,10 +1,6 @@
 """
 This is an example of the use of torque actuator using a model of 2 segments and 2 degrees of freedom
 """
-import sys
-
-sys.path.append("/home/lim/Documents/Anais/bioviz")
-sys.path.append("/home/lim/Documents/Anais/bioptim")
 import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
