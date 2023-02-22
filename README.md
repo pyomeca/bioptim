@@ -1585,6 +1585,9 @@ Note the `None` are replaced by zeros.
 
 The BiMapping is no more no less than a list of two mappings that link two matrices both ways: `BiMapping(a_to_b, b_to_a)`
 
+The SelectionMapping is a subclass of BiMapping where you only have to precise the size of matrix a and the mapping to get
+the linked matrix b :`SelectionMapping(size(a), b_to_a)`
+
 ### Enum: Node
 The node targets some specific nodes of the ocp or of a phase
 
