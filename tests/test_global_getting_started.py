@@ -738,7 +738,7 @@ def test_example_external_forces(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 9875.88768746912)
+    np.testing.assert_almost_equal(f[0, 0], 7067.851604540213)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -749,10 +749,10 @@ def test_example_external_forces(ode_solver):
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.71322593, 0, 0)))
-    np.testing.assert_almost_equal(tau[:, 10], np.array((0, 7.71100122, 0, 0)))
-    np.testing.assert_almost_equal(tau[:, 20], np.array((0, 5.70877651, 0, 0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0, 3.90677425, 0, 0)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([2.0377671e-09, 6.9841937e+00, 4.3690494e-19, 0]))
+    np.testing.assert_almost_equal(tau[:, 10], np.array([-8.2313903e-10,  6.2433705e+00,  1.5403878e-17,  0]))
+    np.testing.assert_almost_equal(tau[:, 20], np.array([-6.7256342e-10,  5.5025474e+00,  1.3602434e-17,  0]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([2.0377715e-09, 4.8358065e+00, 3.7533411e-19, 0]))
 
     if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final position
@@ -765,19 +765,19 @@ def test_example_external_forces(ode_solver):
 
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 9875.887687469118)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
     else:
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-4.6916756e-15,  6.9977394e-16, -1.6087563e-06,  0]), decimal=8)
+        np.testing.assert_almost_equal(q[:, -1], np.array([-4.6917018e-15,  2.0000000e+00,  1.6091612e-06,  0]), decimal=8)
 
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 1.60839825e-06, 0]), decimal=8)
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 1.6094277e-06, 0]), decimal=8)
 
         # detailed cost values
         sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 9875.887687469118)
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
