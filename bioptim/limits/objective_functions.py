@@ -300,9 +300,8 @@ class ObjectiveFunction:
                         ObjectiveFcn.Mayer.CONTINUITY,
                         weight=weight,
                         quadratic=True,
-                        node=Node.ALL_SHOOTING,
+                        node=shooting_point,
                         penalty_type=PenaltyType.INTERNAL,
-                        node_idx=shooting_point
                     )
                     penalty.add_or_replace_to_penalty_pool(ocp, nlp)
             else:
