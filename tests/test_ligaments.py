@@ -39,7 +39,7 @@ def test_torque_driven_with_ligament(with_ligament, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/Mass_with_ligament.bioMod"
+        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -96,7 +96,7 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/Mass_with_ligament.bioMod"
+        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -153,7 +153,7 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/Mass_with_ligament.bioMod"
+        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -207,7 +207,7 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx):
 def test_muscle_driven_with_ligament(with_ligament, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/Mass_with_ligament.bioMod")
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod")
     nlp.ns = 5
     nlp.cx = cx
     nlp.x_scaling = {}
@@ -276,12 +276,12 @@ def test_muscle_driven_with_ligament(with_ligament, cx):
     ],
 )
 def test_ocp_mass_ligament(rigidbody_dynamics, with_ligament):
-    from bioptim.examples.torque_driven_ocp import ocp_masse_lig as ocp_module
+    from bioptim.examples.torque_driven_ocp import ocp_mass_with_ligament as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     # Define the problem
-    biorbd_model_path = bioptim_folder + "/models/Mass_with_ligament.bioMod"
+    biorbd_model_path = bioptim_folder + "/models/mass_point_with_ligament.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path,

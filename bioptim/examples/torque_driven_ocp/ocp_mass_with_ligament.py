@@ -1,5 +1,3 @@
-import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -14,7 +12,13 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path: str, use_sx: bool = False, ode_solver=OdeSolver.RK4(), rigidbody_dynamics=RigidBodyDynamics.ODE, with_ligament=False) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str,
+    use_sx: bool = False,
+    ode_solver=OdeSolver.RK4(),
+    rigidbody_dynamics=RigidBodyDynamics.ODE,
+    with_ligament=False
+) -> OptimalControlProgram:
     """
     Prepare the ocp
     Parameters
@@ -43,7 +47,7 @@ def prepare_ocp(biorbd_model_path: str, use_sx: bool = False, ode_solver=OdeSolv
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN,rigidbody_dynamics=rigidbody_dynamics, with_ligament=with_ligament)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics, with_ligament=with_ligament)
 
     # Path constraint
     x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
@@ -52,8 +56,8 @@ def prepare_ocp(biorbd_model_path: str, use_sx: bool = False, ode_solver=OdeSolv
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * bio_model.nb_tau ,
-        [tau_max] * bio_model.nb_tau ,
+        [tau_min] * bio_model.nb_tau,
+        [tau_max] * bio_model.nb_tau,
     )
     # Initial guess
     x_init = InitialGuessList()
@@ -77,25 +81,16 @@ def prepare_ocp(biorbd_model_path: str, use_sx: bool = False, ode_solver=OdeSolv
         use_sx=use_sx,
     )
 
+
 def main():
-
-
-    model_path = "/home/lim/Documents/Stage_Antoine/Antoine_Leroy/Optimization/bioptim/bioptim/examples/torque_driven_ocp/models/Mass_with_ligament.bioMod"
-
+    model_path = "./models/mass_point_with_ligament.bioMod"
     ocp = prepare_ocp(biorbd_model_path=model_path, with_ligament=True)
 
     # --- Solve the program --- #
-
     sol = ocp.solve()
-
     sol.graphs()
 
 
 if __name__ == "__main__":
-
-    # import bioviz
-    # b = bioviz.Viz(model_path="pendulum_with_ligament.bioMod", show_floor=False, show_muscles=True)
-    # b.exec()
-
     main()
 
