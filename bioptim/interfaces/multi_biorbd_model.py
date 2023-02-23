@@ -3,7 +3,6 @@ from typing import Any, Callable
 import biorbd_casadi as biorbd
 from casadi import MX, vertcat, horzcat, SX, norm_fro
 
-from .biorbd_model import BiorbdModel
 from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.utils import check_version
 from ..limits.path_conditions import Bounds
@@ -11,21 +10,40 @@ from ..limits.path_conditions import Bounds
 check_version(biorbd, "1.9.9", "1.10.0")
 
 class MultiBiorbdModel:
-    def __init__(self, bio_models: tuple[str | biorbd.Model, ...]):
+    def __init__(self, bio_model: tuple[str | biorbd.Model, ...] | str | biorbd.Model):
         self.models = []
-        for bio_model in bio_models:
-            if isinstance(bio_model, str):
-                self.models.append(biorbd.Model(bio_model))
-            elif isinstance(bio_model, biorbd.Model):
-                self.models.append(bio_model)
-            else:
-                raise RuntimeError("Type must be a tuple")
+        if isinstance(bio_model, str):
+            self.models.append(biorbd.Model(bio_model))
+        elif isinstance(bio_model, biorbd.Model):
+            self.models.append(bio_model)
+        elif isinstance(bio_model, tuple):
+            for model in bio_model:
+                if isinstance(model, str):
+                    self.models.append(biorbd.Model(model))
+                elif isinstance(model, biorbd.Model):
+                    self.models.append(model)
+                else:
+                    raise RuntimeError("The models should be of type 'str' or 'biorbd.Model'")
+        else:
+            raise RuntimeError("The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'")
 
     def __getitem__(self, index):
         return self.models[index]
 
-    def deep_copy(self, *args):
-        return MultiBiorbdModel(tuple(BiorbdModel(model.DeepCopy(*args)) for model in self.models)) ## ???????
+    @property
+    def model(self):
+        """
+        Returns the first model for retro-compatibility with single model definition
+
+        Returns
+        -------
+        The states data
+        """
+
+        return self.models[0]
+
+    # def deep_copy(self, *args):
+    #     return MultiBiorbdModel(tuple(MultiBiorbdModel(model.DeepCopy(*args)) for model in self.models)) ## ???????
 
     @property
     def path(self) -> list[str]:
@@ -82,7 +100,7 @@ class MultiBiorbdModel:
             out += model.segments()
         return out
 
-    def homogeneous_matrices_in_global(self, q, reference_index, model_index=0, inverse=False):
+    def homogeneous_matrices_in_global(self, q, reference_index, inverse=False, model_index=0):
         val = self.models[model_index].globalJCS(q, reference_index)
         if inverse:
             return val.transpose()
@@ -286,7 +304,7 @@ class MultiBiorbdModel:
         current_qdot = 0
         current_tau = 0
         for model in self.models:
-            out = vertcat(out, model.ForwardDynamics(q[current_q: model.nbQ() + current_q],
+            out = vertcat(out, model.ContactForcesFromForwardDynamicsConstraintsDirect(q[current_q: model.nbQ() + current_q],
                                                      qdot[current_qdot: model.nbQdot() + current_qdot],
                                                      tau[current_tau: current_tau + model.nbGeneralizedTorque()],
                                                      external_forces).to_mx())
@@ -340,7 +358,7 @@ class MultiBiorbdModel:
     def marker_index(self, name, model_index=0):
         return biorbd.marker_index(self.models[model_index], name)
 
-    def marker(self, q, index, model_index=0, reference_segment_index=None) -> MX:
+    def marker(self, q, index, reference_segment_index=None, model_index=0) -> MX:
         marker = self.models[model_index].marker(q, index)
         if reference_segment_index is not None:
             global_homogeneous_matrix = self.models[model_index].globalJCS(q, reference_segment_index)
@@ -371,7 +389,7 @@ class MultiBiorbdModel:
 
         else:
             out = MX()
-            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(q, reference_index, model_index=model_index, inverse=True)
+            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(q, reference_index, inverse=True, model_index=model_index)
             for m in self.models[model_index].markersVelocity(q, qdot):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     out = horzcat(out, m.to_mx())
@@ -389,8 +407,17 @@ class MultiBiorbdModel:
         return out_max, out_min
 
     def rigid_contact_acceleration(self, q, qdot, qddot, index) -> MX:
-        # TODO: add rigid_contact_acceleration, There is a bug in biorbd_model on this function.
-        raise NotImplementedError("rigid_contact_acceleration is not implemented yet for multi models")
+        # TODO: There is a bug here since only index 0 is call.
+        if "_X" in self.contact_names[index]:
+            index_direction = 0
+        elif "_Y" in self.contact_names[index]:
+            index_direction = 1
+        elif "_Z" in self.contact_names[index]:
+            index_direction = 2
+        else:
+            raise ValueError("Wrong index")
+        # raise NotImplementedError("rigid_contact_acceleration is not implemented yet for multi models") # @pariterre I think we should remove it if we know it is broken!
+        return self.model.rigidContactAcceleration(q, qdot, qddot, 0, True).to_mx()[index_direction]
 
     @property
     def nb_dof(self) -> int:
@@ -412,7 +439,7 @@ class MultiBiorbdModel:
                 soft_contact = self.soft_contact(i_sc)
 
                 soft_contact_forces[i_sc * 6 : (i_sc + 1) * 6, :] = (
-                    biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(self.model, q, qdot).to_mx()
+                    biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(model, q, qdot).to_mx()
                 )
             out = vertcat(out, soft_contact_forces)
         return out
@@ -509,10 +536,12 @@ class MultiBiorbdModel:
             else:
                 mapping["qddot"] = mapping["qdot"]
         return mapping
+
     def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
         out = Bounds()
         q_ranges = []
         qdot_ranges = []
+        qddot_ranges = []
 
         for model in self.models:
             for i in range(model.nbSegment()):
@@ -520,6 +549,10 @@ class MultiBiorbdModel:
                 for var in variables:
                     if var == "q":
                         q_ranges += [q_range for q_range in segment.QRanges()]
+                    elif var == "qdot":
+                        qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+                    elif var == "qddot":
+                        qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
 
         for var in variables:
             if var == "q":
@@ -528,20 +561,17 @@ class MultiBiorbdModel:
                 x_min = [q_ranges[i].min() for i in q_mapping["q"].to_first.map_idx]
                 x_max = [q_ranges[i].max() for i in q_mapping["q"].to_first.map_idx]
                 out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
-
-        for model in self.models:
-            for i in range(model.nbSegment()):
-                segment = model.segment(i)
-                for var in variables:
-                    if var == "qdot":
-                        qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-
-        for var in variables:
-            if var == "qdot":
+            elif var == "qdot":
                 qdot_mapping = self._qdot_mapping(mapping)
                 mapping = qdot_mapping
                 x_min = [qdot_ranges[i].min() for i in qdot_mapping["qdot"].to_first.map_idx]
                 x_max = [qdot_ranges[i].max() for i in qdot_mapping["qdot"].to_first.map_idx]
+                out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
+            elif var == "qddot":
+                qddot_mapping = self._qddot_mapping(mapping)
+                mapping = qddot_mapping
+                x_min = [qddot_ranges[i].min() for i in qddot_mapping["qddot"].to_first.map_idx]
+                x_max = [qddot_ranges[i].max() for i in qddot_mapping["qddot"].to_first.map_idx]
                 out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
 
         if out.shape[0] == 0:
