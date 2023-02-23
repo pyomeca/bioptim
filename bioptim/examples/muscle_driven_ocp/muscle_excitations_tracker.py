@@ -34,10 +34,7 @@ from bioptim import (
 
 
 def generate_data(
-    bio_model: BiorbdModel,
-    final_time: float,
-    n_shooting: int,
-    use_residual_torque: bool = True,
+    bio_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -91,6 +88,7 @@ def generate_data(
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
     nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
+<<<<<<< HEAD
     nlp.states.append(
         "qdot",
         [symbolic_qdot, symbolic_qdot],
@@ -102,6 +100,11 @@ def generate_data(
         [symbolic_mus_states, symbolic_mus_states],
         symbolic_mus_states,
         nlp.variable_mappings["muscles"],
+=======
+    nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+    nlp.states.append(
+        "muscles", [symbolic_mus_states, symbolic_mus_states], symbolic_mus_states, nlp.variable_mappings["muscles"]
+>>>>>>> parent of d9910e1... Blacked
     )
 
     nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
@@ -111,18 +114,8 @@ def generate_data(
         symbolic_mus_controls,
         nlp.variable_mappings["muscles"],
     )
-    nlp.states_dot.append(
-        "qdot",
-        [symbolic_qdot, symbolic_qdot],
-        symbolic_qdot,
-        nlp.variable_mappings["qdot"],
-    )
-    nlp.states_dot.append(
-        "qddot",
-        [symbolic_qddot, symbolic_qddot],
-        symbolic_qddot,
-        nlp.variable_mappings["qddot"],
-    )
+    nlp.states_dot.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+    nlp.states_dot.append("qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"])
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
@@ -213,12 +206,7 @@ def prepare_ocp(
     if use_residual_torque:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     if kin_data_to_track == "markers":
-        objective_functions.add(
-            ObjectiveFcn.Lagrange.TRACK_MARKERS,
-            node=Node.ALL,
-            weight=100,
-            target=markers_ref,
-        )
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, node=Node.ALL, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
             ObjectiveFcn.Lagrange.TRACK_STATE,
@@ -233,11 +221,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_excitations=True,
-        with_residual_torque=use_residual_torque,
-    )
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=use_residual_torque)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -248,12 +232,7 @@ def prepare_ocp(
 
     # Add muscle to the bounds
     activation_min, activation_max, activation_init = 0, 1, 0.5
-    x_bounds[0].concatenate(
-        Bounds(
-            [activation_min] * bio_model.nb_muscles,
-            [activation_max] * bio_model.nb_muscles,
-        )
-    )
+    x_bounds[0].concatenate(Bounds([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles))
     x_bounds[0][(bio_model.nb_q + bio_model.nb_qdot) :, 0] = excitations_ref[:, 0]
 
     # Initial guess
@@ -272,10 +251,7 @@ def prepare_ocp(
         )
         u_init.add([tau_init] * bio_model.nb_tau + [excitation_init] * bio_model.nb_muscles)
     else:
-        u_bounds.add(
-            [excitation_min] * bio_model.nb_muscles,
-            [excitation_max] * bio_model.nb_muscles,
-        )
+        u_bounds.add([excitation_min] * bio_model.nb_muscles, [excitation_max] * bio_model.nb_muscles)
         u_init.add([excitation_init] * bio_model.nb_muscles)
     # ------------- #
 
@@ -340,11 +316,7 @@ def main():
     n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
     for i in range(markers.shape[1]):
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
-        plt.plot(
-            np.linspace(0, 2, n_shooting_points * n_steps_ode + 1),
-            markers[:, i, :].T,
-            "r--",
-        )
+        plt.plot(np.linspace(0, 2, n_shooting_points * n_steps_ode + 1), markers[:, i, :].T, "r--")
     plt.xlabel("Time")
     plt.ylabel("Markers Position")
 

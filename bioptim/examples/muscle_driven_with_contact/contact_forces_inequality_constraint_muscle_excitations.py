@@ -39,12 +39,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_excitations=True,
-        with_residual_torque=True,
-        with_contact=True,
-    )
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=True, with_contact=True)
 
     # Constraints
     constraints = ConstraintList()
@@ -130,12 +125,7 @@ def main():
 
     names_contact_forces = ocp.nlp[0].model.contact_names
     for i, elt in enumerate(contact_forces):
-        plt.plot(
-            np.linspace(0, t, ns + 1)[:-1],
-            elt,
-            ".-",
-            label=f"{names_contact_forces[i]}",
-        )
+        plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i]}")
     plt.legend()
     plt.grid()
     plt.title("Contact forces")

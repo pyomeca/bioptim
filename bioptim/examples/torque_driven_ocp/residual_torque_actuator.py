@@ -1,6 +1,12 @@
 """
-This is an example of the use of torque actuator using a model of 2 segments and 2 degrees of freedom
+This is an example of the use of torque actuator using a model of 2segments and 2 degrees of freedom
 """
+<<<<<<< HEAD
+=======
+import sys
+sys.path.append("/home/lim/Documents/Anais/bioviz")
+sys.path.append("/home/lim/Documents/Anais/bioptim")
+>>>>>>> parent of d9910e1... Blacked
 import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
@@ -51,7 +57,11 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
+<<<<<<< HEAD
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="residual_tau", weight=100)
+=======
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_residual", weight=100)
+>>>>>>> parent of d9910e1... Blacked
 
     # Dynamics
     dynamics = DynamicsList()
@@ -75,10 +85,8 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [-1] * bio_model.nb_tau + [tau_min] * bio_model.nb_tau,
-        [1] * bio_model.nb_tau + [tau_max] * bio_model.nb_tau,
-    )
+    u_bounds.add([-1] * bio_model.nb_tau + [tau_min] * bio_model.nb_tau,
+                 [1] * bio_model.nb_tau + [tau_max] * bio_model.nb_tau)
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * bio_model.nb_tau * 2)
@@ -104,17 +112,19 @@ def main():
     Prepares and solves an ocp with torque actuators, the animates it
     """
 
-    ocp = prepare_ocp(
-        biorbd_model_path="/home/lim/Documents/Anais/bioptim/bioptim/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod",
-        n_shooting=30,
-        final_time=2,
-    )
+    ocp = prepare_ocp(biorbd_model_path=("/home/lim/Documents/Anais/bioptim/bioptim/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"),
+                      n_shooting=30,
+                      final_time=2,
+                      )
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
     sol.animate()
+    sol.print_cost()
+    print(sol.states)
+    print(sol.controls)
     sol.graphs(show_bounds=True)
 
 

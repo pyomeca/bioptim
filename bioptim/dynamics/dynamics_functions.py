@@ -153,10 +153,7 @@ class DynamicsFunctions:
                     - DynamicsFunctions.compute_qdot(
                         nlp,
                         q,
-                        DynamicsFunctions.get(
-                            nlp.states_dot["scaled"]["qdot"],
-                            nlp.states_dot["scaled"].mx_reduced,
-                        ),
+                        DynamicsFunctions.get(nlp.states_dot["scaled"]["qdot"], nlp.states_dot["scaled"].mx_reduced),
                     )
                 )
             defects[: dq.shape[0], :] = horzcat(*dq_defects)
@@ -215,10 +212,7 @@ class DynamicsFunctions:
                     for suffix in tau_suffix:
                         model = t.models.models[suffix]
                         tau_tp += (
-                            DynamicsFunctions.get(
-                                nlp.states[f"tau_{suffix}_{model.dynamics_suffix()}"],
-                                states,
-                            )[i]
+                            DynamicsFunctions.get(nlp.states[f"tau_{suffix}_{model.dynamics_suffix()}"], states)[i]
                             * model.scaling
                         )
                     tau = vertcat(tau, tau_tp)
@@ -226,13 +220,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_activations_driven(
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        nlp,
-        with_contact: bool,
-        with_passive_torque: bool,
-        with_residual_torque: bool,
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool, with_passive_torque: bool, with_residual_torque: bool,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -344,11 +332,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_torque_driven(
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        nlp,
-        with_passive_torque: bool = False,
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -385,11 +369,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_torque_activation_driven(
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        nlp,
-        with_passive_torque: bool = False,
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -468,9 +448,13 @@ class DynamicsFunctions:
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+<<<<<<< HEAD
         residual_tau = (
             DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
         )
+=======
+        residual_tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
+>>>>>>> parent of d9910e1... Blacked
 
         mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
@@ -545,9 +529,13 @@ class DynamicsFunctions:
                 dq_defects.append(
                     dq
                     - DynamicsFunctions.compute_qdot(
+<<<<<<< HEAD
                         nlp,
                         q,
                         DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced),
+=======
+                        nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced)
+>>>>>>> parent of d9910e1... Blacked
                     )
                 )
             defects[: dq.shape[0], :] = horzcat(*dq_defects)
@@ -557,11 +545,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_muscle_driven(
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        nlp,
-        with_passive_torque: bool = False,
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
@@ -646,9 +630,7 @@ class DynamicsFunctions:
         defects = MX(qdot.shape[0] + qddot.shape[0], 1)
 
         defects[: qdot.shape[0], :] = qdot - DynamicsFunctions.compute_qdot(
-            nlp,
-            q,
-            DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced),
+            nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced)
         )
         defects[qdot.shape[0] : (qdot.shape[0] + qddot_root.shape[0]), :] = floating_base_constraint
         defects[(qdot.shape[0] + qddot_root.shape[0]) :, :] = qddot_joints - DynamicsFunctions.get(
@@ -656,8 +638,7 @@ class DynamicsFunctions:
         )
 
         return DynamicsEvaluation(
-            dxdt=vertcat(qdot, qddot_root_func(q, qdot, qddot_joints), qddot_joints),
-            defects=defects,
+            dxdt=vertcat(qdot, qddot_root_func(q, qdot, qddot_joints), qddot_joints), defects=defects
         )
 
     @staticmethod
@@ -769,13 +750,7 @@ class DynamicsFunctions:
             return qdot_var.mapping.to_first.map(qddot)
 
     @staticmethod
-    def inverse_dynamics(
-        nlp: NonLinearProgram,
-        q: MX | SX,
-        qdot: MX | SX,
-        qddot: MX | SX,
-        with_contact: bool,
-    ):
+    def inverse_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, qddot: MX | SX, with_contact: bool):
         """
         Easy accessor to torques from inverse dynamics
 
