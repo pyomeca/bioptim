@@ -1015,6 +1015,7 @@ class Solution:
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
             u = self._controls["unscaled"][controls_phase_idx]["all"]
+
             if integrator != SolutionIntegrator.OCP:
                 out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
@@ -1028,8 +1029,9 @@ class Solution:
                 )
 
             else:
+                dynamics_func = nlp.dynamics * nlp.ns if len(nlp.dynamics) == 1 else nlp.dynamics
                 out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_bioptim_interface(
-                    dynamics_func=nlp.dynamics,
+                    dynamics_func=dynamics_func,
                     keep_intermediate_points=keep_intermediate_points,
                     x0=x0,
                     u=u,

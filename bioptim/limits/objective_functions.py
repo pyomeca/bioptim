@@ -294,7 +294,7 @@ class ObjectiveFunction:
 
         # Dynamics must be sound within phases
         for nlp in ocp.nlp:
-            if len(nlp.dynamics) > 0:
+            if len(nlp.dynamics) > 1:
                 for shooting_point in range(nlp.ns):
                     penalty = Objective(
                         ObjectiveFcn.Mayer.CONTINUITY,
