@@ -209,8 +209,15 @@ class MultiBiorbdModel:
                 out.append(s.to_string())
         return tuple(out)
 
-    def soft_contact(self, *args):
-        return vertcat(*(model.softContact(*args) for model in self.models))
+    def soft_contact(self, soft_contact_index, *args):
+        current_number_of_soft_contacts = 0
+        out = []
+        for model in self.models:
+            if soft_contact_index < current_number_of_soft_contacts + model.nbSoftContacts():
+                out = model.softContact(soft_contact_index - current_number_of_soft_contacts, *args)
+                break
+            current_number_of_soft_contacts += model.nbSoftContacts()
+        return out
 
     @property
     def muscle_names(self) -> tuple[str, ...]:
