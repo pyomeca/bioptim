@@ -1,7 +1,7 @@
 from casadi import MX, SX
 from typing import Protocol, Callable
 from ..misc.mapping import BiMapping, BiMappingList
-from ..interfaces.multi_biorbd_model import Bounds
+from ..interfaces.biorbd_model import Bounds
 
 
 class BioModel(Protocol):

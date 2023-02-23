@@ -20,7 +20,7 @@ from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 
 from ..interfaces.biomodel import BioModel
-from ..interfaces.multi_biorbd_model import MultiBiorbdModel
+from ..interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,

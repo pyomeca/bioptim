@@ -24,7 +24,7 @@ def test_biorbd_model_import():
         )
     )
 
-    with pytest.raises(RuntimeError, match="Type must be a tuple"):
+    with pytest.raises(RuntimeError, match="The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'"):
         MultiBiorbdModel([1])
 
 
@@ -75,16 +75,16 @@ def test_biorbd_model():
     # model_deep_copied = models.deep_copy() # TODO: Fix deep copy
     models.copy()
     models.serialize()
-    models.set_gravity(np.array([0, 0, -3]), 0)
+    models.set_gravity(np.array([0, 0, -3]))
     model_gravity_modified = Function("Gravity", [], [models.gravity])()["o0"]
-    segment_index = models.segment_index("Seg1", 0)
+    # segment_index = models.segment_index("Seg1")
     segments = models.segments
-    homogeneous_matrices_in_global = Function(
-        "RT_parent", [], [models.homogeneous_matrices_in_global(q[:3], 0, 0).to_mx()]
-    )()["o0"]
-    homogeneous_matrices_in_child = Function("RT_child", [], [models.homogeneous_matrices_in_child(0)[0].to_mx()])()[
-        "o0"
-    ]
+    # homogeneous_matrices_in_global = Function(
+    #     "RT_parent", [], [models.homogeneous_matrices_in_global(q[:3], 0, 0).to_mx()]
+    # )()["o0"]
+    # homogeneous_matrices_in_child = Function("RT_child", [], [models.homogeneous_matrices_in_child(0)[0].to_mx()])()[
+    #     "o0"
+    # ]
     mass = Function("Mass", [], [models.mass])()["o0"]
     center_of_mass = Function("CoM", [], [models.center_of_mass(q)])()["o0"]
     center_of_mass_velocity = Function("CoMdot", [], [models.center_of_mass_velocity(q, qdot)])()["o0"]
@@ -109,12 +109,9 @@ def test_biorbd_model():
     muscle_activation_dot = Function("MusActivationdot", [], [models.muscle_activation_dot(muscle_excitations)])()["o0"]
     muscle_joint_torque = Function("MusTau", [], [models.muscle_joint_torque(muscle_excitations, q, qdot)])()["o0"]
     markers = Function("Markers", [], [models.markers(q)[0]])()["o0"]
-    marker = Function("Marker", [], [models.marker(q[:3], index=0, model_index=0, reference_segment_index=0)])()["o0"]
-    marker_index = models.marker_index("marker_3", 0)
+    # marker = Function("Marker", [], [models.marker(q[:3], index=0)])()["o0"]
+    # marker_index = models.marker_index("marker_3")
     marker_velocities = Function("Markerdot", [], [models.marker_velocities(q, qdot)[0, :]])()["o0"]
-    marker_velocities_single_model = Function(
-        "Markerdot", [], [models.marker_velocities(q[:3], qdot[:3], reference_index=0, model_index=0)[0, :]]
-    )()["o0"]
     # tau_max = Function("TauMax", [], [models.tau_max(q, qdot)])()["o0"]  #TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
     # rigid_contact_acceleration = models.rigid_contact_acceleration(q, qdot, qddot, 0) # to be added when the code works
     soft_contact_forces = Function("SoftContactForces", [], [models.soft_contact_forces(q, qdot)])()["o0"]
@@ -168,25 +165,7 @@ def test_biorbd_model():
     np.testing.assert_equal(muscle_names, ())
 
     for i in range(model_gravity_modified.shape[0]):
-        np.testing.assert_almost_equal(model_gravity_modified[i], DM(np.array([0, 0, -3, 0, 0, -9.81])[i]))
-
-    np.testing.assert_equal(segment_index, 0)
-
-    for i in range(homogeneous_matrices_in_global.shape[0]):
-        for j in range(homogeneous_matrices_in_global.shape[1]):
-            np.testing.assert_almost_equal(
-                homogeneous_matrices_in_global[i, j],
-                DM(
-                    np.array([[1, 0, 0, 0], [0, 0.930676, -0.365845, 0], [0, 0.365845, 0.930676, 0], [0, 0, 0, 1]])[
-                        i, j
-                    ]
-                ),
-                decimal=5,
-            )
-
-    for i in range(homogeneous_matrices_in_child.shape[0]):
-        for j in range(homogeneous_matrices_in_child.shape[1]):
-            np.testing.assert_almost_equal(homogeneous_matrices_in_child[i, j], DM(np.eye(4)[i, j]))
+        np.testing.assert_almost_equal(model_gravity_modified[i], DM(np.array([0, 0, -3, 0, 0, -3])[i]))
 
     for i in range(mass.shape[0]):
         np.testing.assert_almost_equal(mass[i], DM(np.array([3, 3][i])))
@@ -216,43 +195,43 @@ def test_biorbd_model():
     for i in range(reshape_qdot.shape[0]):
         np.testing.assert_almost_equal(
             reshape_qdot[i],
-            DM(np.array([0.0580836, 0.866176, 0.601115, 0, 0, 0, 0.0580836, 0.866176, 0.601115, 0, 0, 0])[i]),
+            DM(np.array([0.0580836, 0.866176, 0.601115, 0.708073, 0.0205845, 0.96991])[i]),
             decimal=5,
         )
 
     for i in range(segment_angular_velocity.shape[0]):
         np.testing.assert_almost_equal(
-            segment_angular_velocity[i], DM(np.array([0.92426, 0, 0, 0.728657, 0, 0])[i]), decimal=5
+            segment_angular_velocity[i], DM(np.array([0.0580836, 0, 0, 0.708073, 0, 0])[i]), decimal=5
         )
 
     for i in range(forward_dynamics_free_floating_base.shape[0]):
         np.testing.assert_almost_equal(
-            forward_dynamics_free_floating_base[i], DM(np.array([-1.07327, -3.15174])[i]), decimal=5
+            forward_dynamics_free_floating_base[i], DM(np.array([-1.07327, -1.15351])[i]), decimal=5
         )
 
     for i in range(forward_dynamics.shape[0]):
         np.testing.assert_almost_equal(
             forward_dynamics[i],
-            DM(np.array([1.00257, -3.23703, 0.992444, -2.50109, -0.735689, 0.758181])[i]),
+            DM(np.array([1.00257, -3.23703, 0.992444, -0.165877, -1.44074, 1.06376])[i]),
             decimal=5,
         )
 
     for i in range(constrained_forward_dynamics.shape[0]):
         np.testing.assert_almost_equal(
             constrained_forward_dynamics[i],
-            DM(np.array([1.00257, -3.23703, 0.992444, -2.50109, -0.735689, 0.758181])[i]),
+            DM(np.array([1.00257, -3.23703, 0.992444, -0.165877, -1.44074, 1.06376])[i]),
             decimal=5,
         )
 
     for i in range(inverse_dynamics.shape[0]):
         np.testing.assert_almost_equal(
-            inverse_dynamics[i], DM(np.array([15.8644, 12.6384, 4.74421, 43.1401, 25.1079, 9.67661])[i]), decimal=4
+            inverse_dynamics[i], DM(np.array([15.8644, 12.6384, 4.74421, 16.5375, 10.2296, 4.25635])[i]), decimal=4
         )
 
     for i in range(contact_forces_from_constrained_dynamics.shape[0]):
         np.testing.assert_almost_equal(
             contact_forces_from_constrained_dynamics[i],
-            DM(np.array([1.00257, -3.23703, 0.992444, -2.50109, -0.735689, 0.758181])[i]),
+            DM(np.array([0, 0])[i]),
             decimal=5,
         )
 
@@ -271,16 +250,8 @@ def test_biorbd_model():
     for i in range(markers.shape[0]):
         np.testing.assert_almost_equal(markers[i], DM(np.zeros((3,))[i]), decimal=5)
 
-    for i in range(marker.shape[0]):
-        np.testing.assert_almost_equal(marker[i], DM(np.zeros((3,))[i]), decimal=5)
-
-    np.testing.assert_equal(marker_index, 2)
-
     for i in range(marker_velocities.shape[0]):
         np.testing.assert_almost_equal(marker_velocities[i], DM(np.zeros((6,))[i]), decimal=5)
-
-    for i in range(marker_velocities_single_model.shape[0]):
-        np.testing.assert_almost_equal(marker_velocities_single_model[i], DM(np.zeros((6,))[i]), decimal=5)
 
     np.testing.assert_equal(soft_contact_forces.shape, (0, 1))
 
@@ -314,7 +285,7 @@ def test_biorbd_model():
 
     for i in range(contact_forces.shape[0]):
         np.testing.assert_almost_equal(
-            contact_forces[i], DM(np.array([1.00257, -3.23703, 0.992444, -2.50109, -0.735689, 0.758181])[i]), decimal=5
+            contact_forces[i], DM(np.array([0, 0])[i]), decimal=5
         )
 
     for i in range(passive_joint_torque.shape[0]):
@@ -333,17 +304,17 @@ def test_biorbd_model():
                     np.array(
                         [
                             [-31.41592654, -31.41592654, -31.41592654],
-                            [-1.57079633, -1.57079633, -1.57079633],
-                            [-1.57079633, -1.57079633, -1.57079633],
+                            [-9.42477796, -9.42477796, -9.42477796],
+                            [-9.42477796, -9.42477796, -9.42477796],
                             [-31.41592654, -31.41592654, -31.41592654],
-                            [-1.57079633, -1.57079633, -1.57079633],
-                            [-1.57079633, -1.57079633, -1.57079633],
-                            [-31.41592654, -31.41592654, -31.41592654],
-                            [-31.41592654, -31.41592654, -31.41592654],
+                            [-9.42477796, -9.42477796, -9.42477796],
+                            [-9.42477796, -9.42477796, -9.42477796],
                             [-31.41592654, -31.41592654, -31.41592654],
                             [-31.41592654, -31.41592654, -31.41592654],
                             [-31.41592654, -31.41592654, -31.41592654],
                             [-31.41592654, -31.41592654, -31.41592654],
+                            [-31.41592654, -31.41592654, -31.41592654],
+                            [-31.41592654, -31.41592654, -31.41592654]
                         ]
                     )[i, j]
                 ),

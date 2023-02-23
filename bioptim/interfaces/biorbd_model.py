@@ -12,20 +12,16 @@ check_version(biorbd, "1.9.9", "1.10.0")
 class MultiBiorbdModel:
     def __init__(self, bio_model: tuple[str | biorbd.Model, ...]):
         self.models = []
-        if isinstance(bio_model, str):
-            self.models.append(biorbd.Model(bio_model))
-        elif isinstance(bio_model, biorbd.Model):
-            self.models.append(bio_model)
-        elif isinstance(bio_model, tuple):
-            for model in bio_model:
-                if isinstance(model, str):
-                    self.models.append(biorbd.Model(model))
-                elif isinstance(model, biorbd.Model):
-                    self.models.append(model)
-                else:
-                    raise RuntimeError("The models should be of type 'str' or 'biorbd.Model'")
-        else:
+        if not isinstance(bio_model, tuple):
             raise RuntimeError("The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'")
+
+        for model in bio_model:
+            if isinstance(model, str):
+                self.models.append(biorbd.Model(model))
+            elif isinstance(model, biorbd.Model):
+                self.models.append(model)
+            else:
+                raise RuntimeError("The models should be of type 'str' or 'biorbd.Model'")
 
     def __getitem__(self, index):
         return self.models[index]
@@ -633,7 +629,7 @@ class BiorbdModel(MultiBiorbdModel):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise RuntimeError("The model should be of type 'str' or 'biorbd.Model'")
 
-        super(BiorbdModel, self).__init__(tuple(bio_model))
+        super(BiorbdModel, self).__init__(tuple([bio_model]))
 
     @property
     def model(self):
@@ -692,3 +688,14 @@ class BiorbdModel(MultiBiorbdModel):
                     out = horzcat(out, m.to_mx())
 
             return out
+
+    @property
+    def path(self) -> list[str]:
+        # This is for retro compatibility with bioviz in animate
+        return self.model.path().relativePath().to_string()
+
+    def copy(self):
+        return BiorbdModel(self.path)
+
+    def serialize(self) -> tuple[Callable, dict]:
+        return BiorbdModel, dict(bio_model=self.path)
