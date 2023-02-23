@@ -671,12 +671,12 @@ class BiorbdModel(MultiBiorbdModel):
 
         if reference_index is None:
             return horzcat(
-                    *(
+                    *[
                         m.to_mx()
                         for m in self.model.markersVelocity(q, qdot, True,
                         )
-                    )
-                ),
+                    ]
+                )
 
         else:
             out = MX()
