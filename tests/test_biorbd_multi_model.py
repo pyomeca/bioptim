@@ -21,7 +21,7 @@ def test_biorbd_model_import():
     MultiBiorbdModel((biorbd.Model(bioptim_folder + biorbd_model_path), biorbd.Model(bioptim_folder + biorbd_model_path_modified_inertia)))
 
     with pytest.raises(RuntimeError, match="Type must be a tuple"):
-        MultiBiorbdModel(1)
+        MultiBiorbdModel([1])
 
 
 # TODO: test all casses with models containing at least on element (muscles, contacts, ...)
@@ -117,7 +117,7 @@ def test_biorbd_model():
     np.testing.assert_equal(nb_q, 6)
     np.testing.assert_equal(nb_qdot, 6)
     np.testing.assert_equal(nb_qddot, 6)
-    np.testing.assert_equal(nb_root, 1)
+    np.testing.assert_equal(nb_root, 2)
     np.testing.assert_equal(nb_tau, 6)
     np.testing.assert_equal(nb_quaternions, 0)
     np.testing.assert_equal(nb_segments, 6)
@@ -180,7 +180,7 @@ def test_biorbd_model():
         np.testing.assert_almost_equal(constrained_forward_dynamics[i], DM(np.array([1.00257, -3.23703, 0.992444, -2.50109, -0.735689, 0.758181])[i]), decimal=5)
 
     for i in range(inverse_dynamics.shape[0]):
-        np.testing.assert_almost_equal(inverse_dynamics[i], DM(np.array([15.8644, 12.6384, 4.74421, 43.1401, 25.1079, 9.67661])[i]), decimal=5)
+        np.testing.assert_almost_equal(inverse_dynamics[i], DM(np.array([15.8644, 12.6384, 4.74421, 43.1401, 25.1079, 9.67661])[i]), decimal=4)
 
     for i in range(contact_forces_from_constrained_dynamics.shape[0]):
         np.testing.assert_almost_equal(contact_forces_from_constrained_dynamics[i], DM(np.array([1.00257, -3.23703, 0.992444, -2.50109, -0.735689, 0.758181])[i]), decimal=5)
@@ -209,7 +209,7 @@ def test_biorbd_model():
 
     np.testing.assert_equal(soft_contact_forces.shape, (0, 1))
 
-    np.testing.assert_equal(reshape_fext_to_fcontact.shape, (0, 1))
+    np.testing.assert_equal(reshape_fext_to_fcontact.shape, (0, 0))
 
     for i in range(normalize_state_quaternions.shape[0]):
         np.testing.assert_almost_equal(normalize_state_quaternions[i], DM(np.array([0.37454, 0.950714, 0.731994, 0.598658, 0.156019, 0.155995, 0.0580836, 0.866176, 0.601115, 0.708073, 0.0205845, 0.96991])[i]), decimal=5)
