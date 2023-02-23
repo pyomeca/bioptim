@@ -28,10 +28,10 @@ endsegment
 segment Seg2
     parent Seg1
     rotations	x
+    ranges
+        -3*pi 3*pi
     rtinmatrix 0
     rt 0 0 0 xyz 0 0 -1
-    ranges
-        -pi/2 pi/2
     mass 1
     inertia
         0.0391  0.0000	0.0000
@@ -56,10 +56,10 @@ endsegment
 segment Seg3
     parent Seg2
     rotations	x
+    ranges
+        -3*pi 3*pi
     rtinmatrix 0
     rt 0 0 0 xyz 0 0 -1
-    ranges
-        -pi/2 pi/2
     mass 1
     inertia
         0.0391  0.0000	0.0000
