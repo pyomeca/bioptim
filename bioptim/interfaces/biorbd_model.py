@@ -10,6 +10,9 @@ from ..misc.mapping import BiMapping, BiMappingList
 check_version(biorbd, "1.9.9", "1.10.0")
 
 class MultiBiorbdModel:
+    """
+    This class allows to define multiple biorbd models for the same phase.
+    """
     def __init__(self, bio_model: tuple[str | biorbd.Model, ...]):
         self.models = []
         if not isinstance(bio_model, tuple):
