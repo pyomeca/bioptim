@@ -39,9 +39,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True
-    )
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
 
     # Constraints
     constraints = ConstraintList()
@@ -77,17 +75,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * len(dof_mapping["tau"].to_first)
-        + [activation_min] * bio_model.nb_muscles,
-        [tau_max] * len(dof_mapping["tau"].to_first)
-        + [activation_max] * bio_model.nb_muscles,
+        [tau_min] * len(dof_mapping["tau"].to_first) + [activation_min] * bio_model.nb_muscles,
+        [tau_max] * len(dof_mapping["tau"].to_first) + [activation_max] * bio_model.nb_muscles,
     )
 
     u_init = InitialGuessList()
-    u_init.add(
-        [tau_init] * len(dof_mapping["tau"].to_first)
-        + [activation_init] * bio_model.nb_muscles
-    )
+    u_init.add([tau_init] * len(dof_mapping["tau"].to_first) + [activation_init] * bio_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(

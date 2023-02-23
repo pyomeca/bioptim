@@ -90,9 +90,7 @@ def generate_data(
     }
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states.append(
-        "q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"]
-    )
+    nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
     nlp.states.append(
         "qdot",
         [symbolic_qdot, symbolic_qdot],
@@ -106,9 +104,7 @@ def generate_data(
         nlp.variable_mappings["muscles"],
     )
 
-    nlp.controls.append(
-        "tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"]
-    )
+    nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
     nlp.controls.append(
         "muscles",
         [symbolic_mus_controls, symbolic_mus_controls],
@@ -213,9 +209,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(
-        ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=excitations_ref
-    )
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=excitations_ref)
     if use_residual_torque:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     if kin_data_to_track == "markers":
@@ -276,9 +270,7 @@ def prepare_ocp(
             [tau_min] * bio_model.nb_tau + [excitation_min] * bio_model.nb_muscles,
             [tau_max] * bio_model.nb_tau + [excitation_max] * bio_model.nb_muscles,
         )
-        u_init.add(
-            [tau_init] * bio_model.nb_tau + [excitation_init] * bio_model.nb_muscles
-        )
+        u_init.add([tau_init] * bio_model.nb_tau + [excitation_init] * bio_model.nb_muscles)
     else:
         u_bounds.add(
             [excitation_min] * bio_model.nb_muscles,
@@ -313,14 +305,10 @@ def main():
     use_residual_torque = True
 
     # Generate random data to fit
-    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(
-        bio_model, final_time, n_shooting_points
-    )
+    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(bio_model, final_time, n_shooting_points)
 
     # Track these data
-    bio_model = BiorbdModel(
-        "models/arm26.bioMod"
-    )  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         bio_model,
         final_time,
@@ -344,18 +332,12 @@ def main():
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
-    markers_func = biorbd.to_casadi_func(
-        "ForwardKin", bio_model.markers, symbolic_states
-    )
+    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])
 
     plt.figure("Markers")
-    n_steps_ode = (
-        ocp.nlp[0].ode_solver.steps + 1
-        if ocp.nlp[0].ode_solver.is_direct_collocation
-        else 1
-    )
+    n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
     for i in range(markers.shape[1]):
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
         plt.plot(

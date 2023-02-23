@@ -84,9 +84,7 @@ def generate_data(
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states.append(
-        "q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"]
-    )
+    nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
     nlp.states.append(
         "qdot",
         [symbolic_qdot, symbolic_qdot],
@@ -126,11 +124,7 @@ def generate_data(
     dyn_func = DynamicsFunctions.muscles_driven
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
-    symbolic_controls = (
-        vertcat(*(symbolic_tau, symbolic_mus))
-        if use_residual_torque
-        else vertcat(symbolic_mus)
-    )
+    symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
@@ -222,9 +216,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(
-        ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=activations_ref
-    )
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=activations_ref)
 
     if use_residual_torque:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -272,9 +264,7 @@ def prepare_ocp(
             [tau_min] * bio_model.nb_tau + [activation_min] * bio_model.nb_muscles,
             [tau_max] * bio_model.nb_tau + [activation_max] * bio_model.nb_muscles,
         )
-        u_init.add(
-            [activation_init] * bio_model.nb_muscles + [tau_init] * bio_model.nb_tau
-        )
+        u_init.add([activation_init] * bio_model.nb_muscles + [tau_init] * bio_model.nb_tau)
     else:
         u_bounds.add(
             [activation_min] * bio_model.nb_muscles,
@@ -318,9 +308,7 @@ def main():
     )
 
     # Track these data
-    bio_model = BiorbdModel(
-        "models/arm26.bioMod"
-    )  # To allow for non free variable, the model must be reloaded
+    bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         bio_model,
         final_time,
@@ -343,19 +331,13 @@ def main():
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
-    markers_func = biorbd.to_casadi_func(
-        "ForwardKin", bio_model.markers, symbolic_states
-    )
+    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
 
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])
 
     plt.figure("Markers")
-    n_steps_ode = (
-        ocp.nlp[0].ode_solver.steps + 1
-        if ocp.nlp[0].ode_solver.is_direct_collocation
-        else 1
-    )
+    n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
     for i in range(markers.shape[1]):
         plt.plot(
             np.linspace(0, final_time, n_shooting_points + 1),

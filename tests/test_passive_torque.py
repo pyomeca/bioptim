@@ -45,8 +45,7 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -73,15 +72,9 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -188,8 +181,7 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -217,15 +209,9 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx):
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -278,14 +264,11 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 @pytest.mark.parametrize("with_residual_torque", [False, True])
-def test_torque_activation_driven_with_passive_torque(
-    with_passive_torque, with_residual_torque, cx
-):
+def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_residual_torque, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -311,15 +294,9 @@ def test_torque_activation_driven_with_passive_torque(
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -402,10 +379,7 @@ def test_torque_activation_driven_with_passive_torque(
 def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynamics, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod"
-    )
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
     nlp.x_scaling = {}
@@ -431,15 +405,9 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -551,9 +519,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
                 np.array([37.2828933, 0.0]),
                 decimal=6,
             )
-            np.testing.assert_almost_equal(
-                tau[:, -2], np.array([-4.9490898, 0.0]), decimal=6
-            )
+            np.testing.assert_almost_equal(tau[:, -2], np.array([-4.9490898, 0.0]), decimal=6)
 
         else:
             # initial and final position

@@ -42,9 +42,7 @@ class DynamicsFunctions:
     """
 
     @staticmethod
-    def custom(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> DynamicsEvaluation:
+    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> DynamicsEvaluation:
         """
         Interface to custom dynamic function provided by the user.
 
@@ -114,11 +112,7 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-        tau = (
-            tau + nlp.model.passive_joint_torque(q, qdot)
-            if with_passive_torque
-            else tau
-        )
+        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -126,9 +120,7 @@ class DynamicsFunctions:
         ):
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(
-                nlp.controls["qddot"], controls
-            )
+            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
         elif (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
             or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
@@ -137,9 +129,7 @@ class DynamicsFunctions:
             dxdt[nlp.states["q"].index, :] = dq
             qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
             dxdt[nlp.states["qdot"].index, :] = qddot
-            dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(
-                nlp.controls["qdddot"], controls
-            )
+            dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
         else:
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
             dxdt = MX(nlp.states.shape, ddq.shape[1])
@@ -152,12 +142,8 @@ class DynamicsFunctions:
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
         if not with_contact and fatigue is None:
-            qddot = DynamicsFunctions.get(
-                nlp.states_dot["qddot"], nlp.states_dot["scaled"].mx_reduced
-            )
-            tau_id = DynamicsFunctions.inverse_dynamics(
-                nlp, q, qdot, qddot, with_contact
-            )
+            qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot["scaled"].mx_reduced)
+            tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
             defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
             dq_defects = []
@@ -180,9 +166,7 @@ class DynamicsFunctions:
         return DynamicsEvaluation(dxdt, defects)
 
     @staticmethod
-    def __get_fatigable_tau(
-        nlp: NonLinearProgram, states: MX, controls: MX, fatigue: FatigueList
-    ) -> MX:
+    def __get_fatigable_tau(nlp: NonLinearProgram, states: MX, controls: MX, fatigue: FatigueList) -> MX:
         """
         Apply the forward dynamics including (or not) the torque fatigue
 
@@ -202,9 +186,7 @@ class DynamicsFunctions:
         The generalized accelerations
         """
 
-        tau_var, tau_mx = (
-            (nlp.controls, controls) if "tau" in nlp.controls else (nlp.states, states)
-        )
+        tau_var, tau_mx = (nlp.controls, controls) if "tau" in nlp.controls else (nlp.states, states)
         tau = DynamicsFunctions.get(tau_var["tau"], tau_mx)
         if fatigue is not None and "tau" in fatigue:
             tau_fatigue = fatigue["tau"]
@@ -213,30 +195,19 @@ class DynamicsFunctions:
             # Only homogeneous state_only is implemented yet
             n_state_only = sum([t.models.state_only for t in tau_fatigue])
             if 0 < n_state_only < len(fatigue["tau"]):
-                raise NotImplementedError(
-                    "fatigue list without homogeneous state_only flag is not supported yet"
-                )
-            apply_to_joint_dynamics = sum(
-                [t.models.apply_to_joint_dynamics for t in tau_fatigue]
-            )
+                raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
+            apply_to_joint_dynamics = sum([t.models.apply_to_joint_dynamics for t in tau_fatigue])
             if 0 < n_state_only < len(fatigue["tau"]):
                 raise NotImplementedError(
                     "fatigue list without homogeneous apply_to_joint_dynamics flag is not supported yet"
                 )
             if apply_to_joint_dynamics != 0:
-                raise NotImplementedError(
-                    "apply_to_joint_dynamics is not implemented for joint torque"
-                )
+                raise NotImplementedError("apply_to_joint_dynamics is not implemented for joint torque")
 
             if not tau_fatigue[0].models.split_controls and "tau" in nlp.controls:
                 pass
             elif tau_fatigue[0].models.state_only:
-                tau = sum(
-                    [
-                        DynamicsFunctions.get(tau_var[f"tau_{suffix}"], tau_mx)
-                        for suffix in tau_suffix
-                    ]
-                )
+                tau = sum([DynamicsFunctions.get(tau_var[f"tau_{suffix}"], tau_mx) for suffix in tau_suffix])
             else:
                 tau = MX()
                 for i, t in enumerate(tau_fatigue):
@@ -297,11 +268,7 @@ class DynamicsFunctions:
             tau_residual = DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
         tau = nlp.model.torque(tau_activation, q, qdot)
         tau = tau + tau_residual if with_residual_torque else tau
-        tau = (
-            tau + nlp.model.passive_joint_torque(q, qdot)
-            if with_passive_torque
-            else tau
-        )
+        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
@@ -349,11 +316,7 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
 
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
-        tau = (
-            tau + nlp.model.passive_joint_torque(q, qdot)
-            if with_passive_torque
-            else tau
-        )
+        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
@@ -375,9 +338,7 @@ class DynamicsFunctions:
             dxdt = MX(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
             dxdt[nlp.states["qdot"].index, :] = ddq
-            dxdt[nlp.states["tau"].index, :] = horzcat(
-                *[dtau for _ in range(ddq.shape[1])]
-            )
+            dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
@@ -411,30 +372,14 @@ class DynamicsFunctions:
             The contact forces that ensure no acceleration at these contact points
         """
 
-        q_nlp, q_var = (
-            (nlp.states["q"], states)
-            if "q" in nlp.states
-            else (nlp.controls["q"], controls)
-        )
-        qdot_nlp, qdot_var = (
-            (nlp.states["qdot"], states)
-            if "qdot" in nlp.states
-            else (nlp.controls["qdot"], controls)
-        )
-        tau_nlp, tau_var = (
-            (nlp.states["tau"], states)
-            if "tau" in nlp.states
-            else (nlp.controls["tau"], controls)
-        )
+        q_nlp, q_var = (nlp.states["q"], states) if "q" in nlp.states else (nlp.controls["q"], controls)
+        qdot_nlp, qdot_var = (nlp.states["qdot"], states) if "qdot" in nlp.states else (nlp.controls["qdot"], controls)
+        tau_nlp, tau_var = (nlp.states["tau"], states) if "tau" in nlp.states else (nlp.controls["tau"], controls)
 
         q = DynamicsFunctions.get(q_nlp, q_var)
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau = DynamicsFunctions.get(tau_nlp, tau_var)
-        tau = (
-            tau + nlp.model.passive_joint_torque(q, qdot)
-            if with_passive_torque
-            else tau
-        )
+        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
 
         return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
@@ -468,30 +413,14 @@ class DynamicsFunctions:
             The contact forces that ensure no acceleration at these contact points
         """
 
-        q_nlp, q_var = (
-            (nlp.states["q"], states)
-            if "q" in nlp.states
-            else (nlp.controls["q"], controls)
-        )
-        qdot_nlp, qdot_var = (
-            (nlp.states["qdot"], states)
-            if "qdot" in nlp.states
-            else (nlp.controls["qdot"], controls)
-        )
-        tau_nlp, tau_var = (
-            (nlp.states["tau"], states)
-            if "tau" in nlp.states
-            else (nlp.controls["tau"], controls)
-        )
+        q_nlp, q_var = (nlp.states["q"], states) if "q" in nlp.states else (nlp.controls["q"], controls)
+        qdot_nlp, qdot_var = (nlp.states["qdot"], states) if "qdot" in nlp.states else (nlp.controls["qdot"], controls)
+        tau_nlp, tau_var = (nlp.states["tau"], states) if "tau" in nlp.states else (nlp.controls["tau"], controls)
         q = DynamicsFunctions.get(q_nlp, q_var)
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau_activations = DynamicsFunctions.get(tau_nlp, tau_var)
         tau = nlp.model.torque(tau_activations, q, qdot)
-        tau = (
-            tau + nlp.model.passive_joint_torque(q, qdot)
-            if with_passive_torque
-            else tau
-        )
+        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
 
         return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
@@ -540,16 +469,10 @@ class DynamicsFunctions:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         residual_tau = (
-            DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-            if with_residual_torque
-            else None
+            DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
         )
 
-        mus_act_nlp, mus_act = (
-            (nlp.states, states)
-            if "muscles" in nlp.states
-            else (nlp.controls, controls)
-        )
+        mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
         fatigue_states = None
         if fatigue is not None and "muscles" in fatigue:
@@ -562,9 +485,7 @@ class DynamicsFunctions:
                 raise NotImplementedError(
                     f"{fatigue_name} list without homogeneous state_only flag is not supported yet"
                 )
-            apply_to_joint_dynamics = sum(
-                [m.models.apply_to_joint_dynamics for m in mus_fatigue]
-            )
+            apply_to_joint_dynamics = sum([m.models.apply_to_joint_dynamics for m in mus_fatigue])
             if 0 < apply_to_joint_dynamics < len(fatigue["muscles"]):
                 raise NotImplementedError(
                     f"{fatigue_name} list without homogeneous apply_to_joint_dynamics flag is not supported yet"
@@ -581,24 +502,14 @@ class DynamicsFunctions:
                         raise ValueError(f"{fatigue_name} must be of all same types")
 
             if n_state_only == 0:
-                mus_activations = DynamicsFunctions.get(
-                    nlp.states[f"muscles_{dyn_suffix}"], states
-                )
+                mus_activations = DynamicsFunctions.get(nlp.states[f"muscles_{dyn_suffix}"], states)
 
             if apply_to_joint_dynamics > 0:
-                fatigue_states = DynamicsFunctions.get(
-                    nlp.states[f"muscles_{fatigue_suffix}"], states
-                )
-        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(
-            nlp, q, qdot, mus_activations, fatigue_states
-        )
+                fatigue_states = DynamicsFunctions.get(nlp.states[f"muscles_{fatigue_suffix}"], states)
+        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        tau = (
-            tau + nlp.model.passive_joint_torque(q, qdot)
-            if with_passive_torque
-            else tau
-        )
+        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
@@ -606,9 +517,7 @@ class DynamicsFunctions:
             ddq = DynamicsFunctions.get(nlp.controls["qddot"], controls)
             dxdt = MX(nlp.states.shape, 1)
             dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(
-                nlp.controls["qddot"], controls
-            )
+            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
         else:
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
             dxdt = MX(nlp.states.shape, ddq.shape[1])
@@ -619,9 +528,7 @@ class DynamicsFunctions:
         if has_excitation:
             mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
             dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations)
-            dxdt[nlp.states["muscles"].index, :] = horzcat(
-                *[dmus for _ in range(ddq.shape[1])]
-            )
+            dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
 
         if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
@@ -629,12 +536,8 @@ class DynamicsFunctions:
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
         if not with_contact and fatigue is None:
-            qddot = DynamicsFunctions.get(
-                nlp.states_dot["qddot"], nlp.states_dot.mx_reduced
-            )
-            tau_id = DynamicsFunctions.inverse_dynamics(
-                nlp, q, qdot, qddot, with_contact
-            )
+            qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
+            tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
             defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
             dq_defects = []
@@ -644,9 +547,7 @@ class DynamicsFunctions:
                     - DynamicsFunctions.compute_qdot(
                         nlp,
                         q,
-                        DynamicsFunctions.get(
-                            nlp.states_dot["qdot"], nlp.states_dot.mx_reduced
-                        ),
+                        DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced),
                     )
                 )
             defects[: dq.shape[0], :] = horzcat(*dq_defects)
@@ -686,28 +587,14 @@ class DynamicsFunctions:
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        residual_tau = (
-            DynamicsFunctions.get(nlp.controls["tau"], controls)
-            if "tau" in nlp.controls
-            else None
-        )
+        residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls) if "tau" in nlp.controls else None
 
-        mus_act_nlp, mus_act = (
-            (nlp.states, states)
-            if "muscles" in nlp.states
-            else (nlp.controls, controls)
-        )
+        mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
-        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(
-            nlp, q, qdot, mus_activations
-        )
+        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        tau = (
-            tau + nlp.model.passive_joint_torque(q, qdot)
-            if with_passive_torque
-            else tau
-        )
+        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
 
         return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
@@ -747,22 +634,14 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
 
-        qddot_root = nlp.model.forward_dynamics_free_floating_base(
-            q, qdot, qddot_joints
-        )
-        qddot_root_func = Function(
-            "qddot_root_func", [q, qdot, qddot_joints], [qddot_root]
-        ).expand()
+        qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
+        qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
 
         # defects
-        qddot_root = DynamicsFunctions.get(
-            nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced
-        )
+        qddot_root = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
         qddot = vertcat(qddot_root, qddot_joints)
 
-        floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot)[
-            : nlp.model.nb_root
-        ]
+        floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot)[: nlp.model.nb_root]
 
         defects = MX(qdot.shape[0] + qddot.shape[0], 1)
 
@@ -771,12 +650,8 @@ class DynamicsFunctions:
             q,
             DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced),
         )
-        defects[
-            qdot.shape[0] : (qdot.shape[0] + qddot_root.shape[0]), :
-        ] = floating_base_constraint
-        defects[
-            (qdot.shape[0] + qddot_root.shape[0]) :, :
-        ] = qddot_joints - DynamicsFunctions.get(
+        defects[qdot.shape[0] : (qdot.shape[0] + qddot_root.shape[0]), :] = floating_base_constraint
+        defects[(qdot.shape[0] + qddot_root.shape[0]) :, :] = qddot_joints - DynamicsFunctions.get(
             nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced
         )
 
@@ -821,9 +696,7 @@ class DynamicsFunctions:
         for param in nlp.parameters:
             # Call the pre dynamics function
             if param.function:
-                param.function(
-                    nlp.model, parameters[offset : offset + param.size], **param.params
-                )
+                param.function(nlp.model, parameters[offset : offset + param.size], **param.params)
                 offset += param.size
 
     @staticmethod

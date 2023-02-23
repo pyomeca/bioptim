@@ -38,8 +38,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -67,15 +66,9 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -109,9 +102,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                         -16.3059315,
                     ],
                 )
-                np.testing.assert_almost_equal(
-                    contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121]
-                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
 
             else:
                 np.testing.assert_almost_equal(
@@ -127,9 +118,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                         -0.2359716,
                     ],
                 )
-                np.testing.assert_almost_equal(
-                    contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124]
-                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
         else:
             if with_external_force:
@@ -177,9 +166,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                         0.3232029,
                     ],
                 )
-                np.testing.assert_almost_equal(
-                    contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121]
-                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
             else:
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
@@ -194,9 +181,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                         0.7290072,
                     ],
                 )
-                np.testing.assert_almost_equal(
-                    contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124]
-                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
         else:
             if with_external_force:
@@ -244,9 +229,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                         0.3232029,
                     ],
                 )
-                np.testing.assert_almost_equal(
-                    contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121]
-                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
             else:
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
@@ -261,9 +244,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                         0.7290072,
                     ],
                 )
-                np.testing.assert_almost_equal(
-                    contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124]
-                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
         else:
             if with_external_force:
@@ -302,8 +283,7 @@ def test_torque_driven_implicit(with_contact, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -332,15 +312,9 @@ def test_torque_driven_implicit(with_contact, cx):
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -368,9 +342,7 @@ def test_torque_driven_implicit(with_contact, cx):
             ],
         )
 
-        np.testing.assert_almost_equal(
-            contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124]
-        )
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
         np.testing.assert_almost_equal(
@@ -395,8 +367,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -426,15 +397,9 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -462,9 +427,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
             ],
         )
 
-        np.testing.assert_almost_equal(
-            contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124]
-        )
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
         np.testing.assert_almost_equal(
@@ -489,8 +452,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -519,15 +481,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -565,9 +521,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
                     0.3232029,
                 ],
             )
-            np.testing.assert_almost_equal(
-                contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121]
-            )
+            np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
         else:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
@@ -586,9 +540,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
                     0.72900717,
                 ],
             )
-            np.testing.assert_almost_equal(
-                contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124]
-            )
+            np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
         if with_external_force:
@@ -635,8 +587,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -665,15 +616,9 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -708,9 +653,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
                 0.8714606,
             ],
         )
-        np.testing.assert_almost_equal(
-            contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124]
-        )
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
     else:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -738,14 +681,11 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_derivative_driven_soft_contacts_dynamics(
-    with_contact, cx, implicit_contact
-):
+def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -774,15 +714,9 @@ def test_torque_derivative_driven_soft_contacts_dynamics(
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -814,9 +748,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(
             ],
         )
 
-        np.testing.assert_almost_equal(
-            contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124]
-        )
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
         np.testing.assert_almost_equal(
@@ -846,8 +778,7 @@ def test_soft_contacts_dynamics_errors(dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
@@ -868,23 +799,14 @@ def test_soft_contacts_dynamics_errors(dynamics):
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(
-            f"{dynamics.name.lower()}() got an unexpected keyword argument "
-            "'soft_contacts_dynamics'"
-        ),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'soft_contacts_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 
@@ -897,8 +819,7 @@ def test_implicit_dynamics_errors(dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
@@ -919,23 +840,14 @@ def test_implicit_dynamics_errors(dynamics):
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(
-            f"{dynamics.name.lower()}() got an unexpected keyword argument "
-            "'rigidbody_dynamics'"
-        ),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'rigidbody_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 
@@ -947,8 +859,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -972,15 +883,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -1015,9 +920,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
                 ],
                 decimal=5,
             )
-            np.testing.assert_almost_equal(
-                contact_out[:, 0], [109.8086936, 3790.3932439, -3571.7858574]
-            )
+            np.testing.assert_almost_equal(contact_out[:, 0], [109.8086936, 3790.3932439, -3571.7858574])
         else:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
@@ -1033,9 +936,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
                 ],
                 decimal=5,
             )
-            np.testing.assert_almost_equal(
-                contact_out[:, 0], [-7.88958997, 329.70828173, -263.55516549]
-            )
+            np.testing.assert_almost_equal(contact_out[:, 0], [-7.88958997, 329.70828173, -263.55516549])
 
     else:
         if with_external_force:
@@ -1080,8 +981,7 @@ def test_torque_activation_driven_with_residual_torque(
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -1107,15 +1007,9 @@ def test_torque_activation_driven_with_residual_torque(
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -1208,10 +1102,7 @@ def test_muscle_driven(
 ):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod"
-    )
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
 
@@ -1241,15 +1132,9 @@ def test_muscle_driven(
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
@@ -1267,9 +1152,7 @@ def test_muscle_driven(
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
-    if (
-        with_contact
-    ):  # Warning this test is a bit bogus, there since the model does not have contacts
+    if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
             if with_residual_torque:
                 if with_excitations:
@@ -1796,10 +1679,7 @@ def test_muscle_driven(
 def test_joints_acceleration_driven(cx, rigid_body_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/double_pendulum.bioMod"
-    )
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
     nlp.ns = 5
     nlp.cx = cx
 
@@ -1827,15 +1707,9 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     if rigid_body_dynamics != RigidBodyDynamics.ODE:
@@ -1854,16 +1728,12 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
         x_out = np.array(nlp.dynamics_func(states, controls, params))
 
         # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
-        np.testing.assert_almost_equal(
-            x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289]
-        )
+        np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
 
 
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact):
-    def custom_dynamic(
-        states, controls, parameters, nlp, with_contact=False
-    ) -> DynamicsEvaluation:
+    def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> DynamicsEvaluation:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
@@ -1877,20 +1747,15 @@ def test_custom_dynamics(with_contact):
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
         ConfigureProblem.configure_tau(ocp, nlp, False, True)
-        ConfigureProblem.configure_dynamics_function(
-            ocp, nlp, custom_dynamic, with_contact=with_contact
-        )
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_contact=with_contact)
 
         if with_contact:
-            ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_driven
-            )
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
@@ -1914,15 +1779,9 @@ def test_custom_dynamics(with_contact):
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(
-        ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False
-    )
-    NonLinearProgram.add(
-        ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False
-    )
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -1950,9 +1809,7 @@ def test_custom_dynamics(with_contact):
                 -0.2359716,
             ],
         )
-        np.testing.assert_almost_equal(
-            contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124]
-        )
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
         np.testing.assert_almost_equal(

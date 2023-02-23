@@ -9,9 +9,7 @@ def test__acados__cube():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", n_shooting=10, tf=2
-    )
+    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", n_shooting=10, tf=2)
 
 
 def test__acados__pendulum():
@@ -167,9 +165,7 @@ def test__getting_started__example_external_forces():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod"
-    )
+    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod")
 
 
 def test__getting_started__example_inequality_constraint():
@@ -180,8 +176,7 @@ def test__getting_started__example_inequality_constraint():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder
-        + "/../torque_driven_ocp/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/../torque_driven_ocp/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         n_shooting=10,
         min_bound=50,
@@ -199,9 +194,7 @@ def test__getting_started__example_multiphase():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=True
-    )
+    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=True)
 
 
 def test__getting_started__example_multinode_constraints():
@@ -394,8 +387,7 @@ def test__torque_driven_ocp__multi_model_by_constraint():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
-        biorbd_model_path_modified_inertia=bioptim_folder
-        + "/models/double_pendulum_modified_inertia.bioMod",
+        biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
         n_shooting=(5, 5),
     )
 
@@ -408,8 +400,7 @@ def test__torque_driven_ocp__multi_model_by_mapping():
     with pytest.raises(NotImplementedError, match="Mapping over phases is broken"):
         ocp_module.prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
-            biorbd_model_path_modified_inertia=bioptim_folder
-            + "/models/double_pendulum_modified_inertia.bioMod",
+            biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
             n_shooting=(5, 5),
         )
 
@@ -423,8 +414,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
-        biorbd_model_path_withTranslations=bioptim_folder
-        + "/models/double_pendulum_with_translations.bioMod",
+        biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
     )
 
@@ -437,8 +427,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds()
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path_withTranslations=bioptim_folder
-        + "/models/double_pendulum_with_translations.bioMod",
+        biorbd_model_path_withTranslations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
     )
 
@@ -448,9 +437,7 @@ def test__torque_driven_ocp__spring_load():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/mass_point.bioMod"
-    )
+    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/mass_point.bioMod")
 
 
 def test__torque_driven_ocp__track_markers_2D_pendulum():

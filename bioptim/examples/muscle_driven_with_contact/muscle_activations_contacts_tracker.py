@@ -52,23 +52,15 @@ def prepare_ocp(
         key="muscles",
         target=muscle_activations_ref,
     )
-    objective_functions.add(
-        ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref
-    )
-    objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.001
-    )
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.001)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.001)
-    objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=0.001
-    )
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=0.001)
     # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="torque", weight=0.001)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True
-    )
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
 
     # Path constraint
     n_q = bio_model.nb_q
@@ -133,9 +125,7 @@ def main():
     )
     x = np.concatenate((q, qdot))
     u = np.concatenate((tau, mus))
-    contact_forces_ref = np.array(
-        ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], [])
-    )
+    contact_forces_ref = np.array(ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], []))
     muscle_activations_ref = mus
 
     # Track these data
