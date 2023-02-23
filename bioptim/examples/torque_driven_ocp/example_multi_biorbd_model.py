@@ -22,7 +22,6 @@ def prepare_ocp(
     biorbd_model_path_modified_inertia: str = "models/triple_pendulum_modified_inertia.bioMod",
     n_shooting: int = 40,
 ) -> OptimalControlProgram:
-
     # Adding the models to the same phase
     bio_models = MultiBiorbdModel((biorbd_model_path, biorbd_model_path_modified_inertia))
 

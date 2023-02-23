@@ -690,15 +690,23 @@ def test_example_multi_biorbd_model():
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
-    np.testing.assert_almost_equal(states["q"][:, 0], np.array([-3.14159265,  0.        ,  0.        , -3.14159265,  0.        ,
-        0.        ]), decimal=6)
-    np.testing.assert_almost_equal(states["q"][:, -1], np.array([3.04159269, 0.        , 0.        , 3.04159263, 0.        ,
-       0.        ]), decimal=6)
+    np.testing.assert_almost_equal(
+        states["q"][:, 0], np.array([-3.14159265, 0.0, 0.0, -3.14159265, 0.0, 0.0]), decimal=6
+    )
+    np.testing.assert_almost_equal(
+        states["q"][:, -1], np.array([3.04159269, 0.0, 0.0, 3.04159263, 0.0, 0.0]), decimal=6
+    )
     # initial and final velocities
-    np.testing.assert_almost_equal(states["qdot"][:, 0], np.array([ 0.68393893, -3.68327489, 12.42316192,  0.51926882, -2.357144  ,
-        6.70711972]), decimal=6)
-    np.testing.assert_almost_equal(states["qdot"][:, -1], np.array([  5.60448522,  -6.8216716 ,  -2.67798337,   8.19342278,
-       -14.96109815,   5.09036753]), decimal=6)
+    np.testing.assert_almost_equal(
+        states["qdot"][:, 0],
+        np.array([0.68393893, -3.68327489, 12.42316192, 0.51926882, -2.357144, 6.70711972]),
+        decimal=6,
+    )
+    np.testing.assert_almost_equal(
+        states["qdot"][:, -1],
+        np.array([5.60448522, -6.8216716, -2.67798337, 8.19342278, -14.96109815, 5.09036753]),
+        decimal=6,
+    )
     # initial and final controls
-    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.29650275,  0.06035777,  0.63748976]), decimal=6)
-    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.4604867 ,  0.07872906, -0.00264369]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.29650275, 0.06035777, 0.63748976]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.4604867, 0.07872906, -0.00264369]), decimal=6)

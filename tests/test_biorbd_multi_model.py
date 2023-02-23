@@ -24,7 +24,9 @@ def test_biorbd_model_import():
         )
     )
 
-    with pytest.raises(RuntimeError, match="The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'"):
+    with pytest.raises(
+        RuntimeError, match="The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'"
+    ):
         MultiBiorbdModel([1])
 
 
@@ -284,9 +286,7 @@ def test_biorbd_model():
     np.testing.assert_equal(get_quaternion_idx, [])
 
     for i in range(contact_forces.shape[0]):
-        np.testing.assert_almost_equal(
-            contact_forces[i], DM(np.array([0, 0])[i]), decimal=5
-        )
+        np.testing.assert_almost_equal(contact_forces[i], DM(np.array([0, 0])[i]), decimal=5)
 
     for i in range(passive_joint_torque.shape[0]):
         np.testing.assert_almost_equal(passive_joint_torque[i], DM(np.zeros((6,))[i]), decimal=5)
@@ -314,7 +314,7 @@ def test_biorbd_model():
                             [-31.41592654, -31.41592654, -31.41592654],
                             [-31.41592654, -31.41592654, -31.41592654],
                             [-31.41592654, -31.41592654, -31.41592654],
-                            [-31.41592654, -31.41592654, -31.41592654]
+                            [-31.41592654, -31.41592654, -31.41592654],
                         ]
                     )[i, j]
                 ),

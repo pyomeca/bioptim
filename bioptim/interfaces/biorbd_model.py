@@ -9,10 +9,12 @@ from ..misc.mapping import BiMapping, BiMappingList
 
 check_version(biorbd, "1.9.9", "1.10.0")
 
+
 class MultiBiorbdModel:
     """
     This class allows to define multiple biorbd models for the same phase.
     """
+
     def __init__(self, bio_model: tuple[str | biorbd.Model, ...]):
         self.models = []
         if not isinstance(bio_model, tuple):
@@ -160,8 +162,12 @@ class MultiBiorbdModel:
         current_q = 0
         current_qdot = 0
         for model in self.models:
-            out = vertcat(out, model.computeQdot(q[current_q: current_q + model.nbQ()],
-                                                 qdot[current_qdot: current_qdot + model.nbQdot()], k_stab).to_mx())
+            out = vertcat(
+                out,
+                model.computeQdot(
+                    q[current_q : current_q + model.nbQ()], qdot[current_qdot : current_qdot + model.nbQdot()], k_stab
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
         return out
@@ -174,7 +180,10 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.segmentAngularVelocity(
-                    q[current_q : model.nbQ() + current_q], qdot[current_qdot : model.nbQdot() + current_qdot], idx, True,
+                    q[current_q : model.nbQ() + current_q],
+                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    idx,
+                    True,
                 ).to_mx(),
             )
             current_q += model.nbQ()
@@ -240,7 +249,7 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.torque(
-                    tau_activations[current_tau: model.nbGeneralizedTorque() + current_tau],
+                    tau_activations[current_tau : model.nbGeneralizedTorque() + current_tau],
                     q[current_q : model.nbQ() + current_q],
                     qdot[current_qdot : model.nbQdot() + current_qdot],
                 ).to_mx(),
@@ -281,9 +290,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.ForwardDynamics(
-                    q[current_q: model.nbQ() + current_q],
-                    qdot[current_qdot: model.nbQdot() + current_qdot],
-                    tau[current_tau: current_tau + model.nbGeneralizedTorque()],
+                    q[current_q : model.nbQ() + current_q],
+                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    tau[current_tau : current_tau + model.nbGeneralizedTorque()],
                     external_forces,
                     f_contacts,
                 ).to_mx(),
@@ -634,8 +643,8 @@ class BiorbdModel(MultiBiorbdModel):
     """
     This class allows to define a biorbd model.
     """
-    def __init__(self, bio_model: str | biorbd.Model):
 
+    def __init__(self, bio_model: str | biorbd.Model):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise RuntimeError("The model should be of type 'str' or 'biorbd.Model'")
 
@@ -676,22 +685,25 @@ class BiorbdModel(MultiBiorbdModel):
             marker.applyRT(global_homogeneous_matrix.transpose())
         return marker.to_mx()
 
-
     def marker_velocities(self, q, qdot, reference_index=None) -> MX:
-
         if reference_index is None:
             return horzcat(
-                    *[
-                        m.to_mx()
-                        for m in self.model.markersVelocity(q, qdot, True,
-                        )
-                    ]
-                )
+                *[
+                    m.to_mx()
+                    for m in self.model.markersVelocity(
+                        q,
+                        qdot,
+                        True,
+                    )
+                ]
+            )
 
         else:
             out = MX()
             homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
-                q, reference_index, inverse=True,
+                q,
+                reference_index,
+                inverse=True,
             )
             for m in self.model.markersVelocity(q, qdot):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
