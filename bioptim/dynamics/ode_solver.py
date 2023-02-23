@@ -71,8 +71,8 @@ class OdeSolverBase:
         nlp.dynamics = nlp.ode_solver.integrator(ocp, nlp)
         if len(nlp.dynamics) != 1 and ocp.n_threads != 1:
             raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")
-        # if len(nlp.dynamics) == 1:
-        #     nlp.dynamics = nlp.dynamics * nlp.ns
+        if len(nlp.dynamics) == 1:
+            nlp.dynamics = nlp.dynamics * nlp.ns
 
 
 class RK(OdeSolverBase):

@@ -1029,9 +1029,8 @@ class Solution:
                 )
 
             else:
-                dynamics_func = nlp.dynamics * nlp.ns if len(nlp.dynamics) == 1 else nlp.dynamics
                 out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_bioptim_interface(
-                    dynamics_func=dynamics_func,
+                    dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
                     x0=x0,
                     u=u,
