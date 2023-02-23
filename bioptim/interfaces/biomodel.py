@@ -1,7 +1,7 @@
 from casadi import MX, SX
 from typing import Protocol, Callable
 from ..misc.mapping import BiMapping, BiMappingList
-from ..interfaces.biorbd_model import Bounds
+from ..interfaces.multi_biorbd_model import Bounds
 
 
 class BioModel(Protocol):
@@ -14,7 +14,7 @@ class BioModel(Protocol):
     gravity: MX
     """Get the gravity vector"""
 
-    def set_gravity(self, new_gravity):
+    def set_gravity(self, new_gravity, model_index: int = 0):
         """Set the gravity vector"""
 
     nb_tau: int
@@ -23,7 +23,7 @@ class BioModel(Protocol):
     nb_segments: int
     """Get the number of segment"""
 
-    def segment_index(self, segment_name) -> int:
+    def segment_index(self, segment_name, model_index: int = 0) -> int:
         """Get the segment index from its name"""
 
     nb_quaternions: int
@@ -47,7 +47,7 @@ class BioModel(Protocol):
     segments: tuple
     """Get all segments"""
 
-    def homogeneous_matrices_in_global(self, q, reference_idx, inverse=False) -> tuple:
+    def homogeneous_matrices_in_global(self, q, reference_idx, inverse=False, model_index: int = 0) -> tuple:
         """
         Get the homogeneous matrices of all segments in the world frame,
         such as: P_R0 = T_R0_R1 * P_R1
@@ -56,14 +56,14 @@ class BioModel(Protocol):
         P_R1 the position of any point P in the segment R1 frame.
         """
 
-    homogeneous_matrices_in_child: tuple
-    """
-    Get the homogeneous matrices of all segments in their parent frame,
-    such as: P_R1 = T_R1_R2 * P_R2
-    with P_R1 the position of any point P in the segment R1 frame,
-    with P_R2 the position of any point P in the segment R2 frame,
-    T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
-    """
+    def homogeneous_matrices_in_child(self, model_index: int = 0) -> tuple:
+        """
+        Get the homogeneous matrices of all segments in their parent frame,
+        such as: P_R1 = T_R1_R2 * P_R2
+        with P_R1 the position of any point P in the segment R1 frame,
+        with P_R2 the position of any point P in the segment R2 frame,
+        T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
+        """
 
     mass: MX
     """Get the mass of the model"""
@@ -128,7 +128,7 @@ class BioModel(Protocol):
     def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
         """Get the muscular joint torque"""
 
-    def marker(self, q, marker_index: int, reference_frame_idx: int = None) -> MX:
+    def marker(self, q, marker_index: int, reference_frame_idx: int = None, model_index: int = 0) -> MX:
         """Get the position of a marker"""
 
     def markers(self, q) -> MX:
@@ -137,13 +137,13 @@ class BioModel(Protocol):
     nb_markers: int
     """Get the number of markers of the model"""
 
-    def marker_index(self, name) -> int:
+    def marker_index(self, name, model_index: int = 0) -> int:
         """Get the index of a marker"""
 
     nb_rigid_contacts: int
     """Get the number of rigid contacts"""
 
-    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
+    def marker_velocities(self, q, qdot, reference_index=None, model_index: int = None) -> MX:
         """Get the marker velocities of the model"""
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
