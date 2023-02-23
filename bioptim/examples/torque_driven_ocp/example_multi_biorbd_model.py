@@ -22,7 +22,6 @@ def prepare_ocp(
     biorbd_model_path_modified_inertia: str = "models/triple_pendulum_modified_inertia.bioMod",
     n_shooting: int = 40,
 ) -> OptimalControlProgram:
-
     # Adding the models to the same phase
     bio_models = MultiBiorbdModel((biorbd_model_path, biorbd_model_path_modified_inertia))
 
@@ -82,7 +81,6 @@ def prepare_ocp(
 
 
 def main():
-
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 
@@ -96,9 +94,11 @@ def main():
     if show_solution_animation:
         q = sol.states[0]["q"]
         import bioviz
+
         b = bioviz.Viz("models/triple_pendulum_both_inertia.bioMod")
         b.load_movement(q)
         b.exec()
+
 
 if __name__ == "__main__":
     main()

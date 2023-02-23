@@ -9,6 +9,7 @@ from ..limits.path_conditions import Bounds
 
 check_version(biorbd, "1.9.9", "1.10.0")
 
+
 class MultiBiorbdModel:
     def __init__(self, bio_model: tuple[str | biorbd.Model, ...] | str | biorbd.Model):
         self.models = []
@@ -118,7 +119,7 @@ class MultiBiorbdModel:
         out = MX()
         current_q = 0
         for model in self.models:
-            out = vertcat(out, model.CoM(q[current_q: model.nbQ() + current_q], True).to_mx())
+            out = vertcat(out, model.CoM(q[current_q : model.nbQ() + current_q], True).to_mx())
             current_q += model.nbQ()
         return out
 
@@ -127,7 +128,12 @@ class MultiBiorbdModel:
         current_q = 0
         current_qdot = 0
         for model in self.models:
-            out = vertcat(out, model.CoMdot(q[current_q: model.nbQ() + current_q], qdot[current_qdot: model.nbQdot() + current_qdot], True).to_mx())
+            out = vertcat(
+                out,
+                model.CoMdot(
+                    q[current_q : model.nbQ() + current_q], qdot[current_qdot : model.nbQdot() + current_qdot], True
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
         return out
@@ -137,9 +143,15 @@ class MultiBiorbdModel:
         current_q = 0
         current_qdot = 0
         for model in self.models:
-            out = vertcat(out, model.CoMddot(q[current_q: model.nbQ() + current_q],
-                                            qdot[current_qdot: model.nbQdot() + current_qdot],
-                                            qddot[current_qdot: model.nbQdot() + current_qdot], True).to_mx())
+            out = vertcat(
+                out,
+                model.CoMddot(
+                    q[current_q : model.nbQ() + current_q],
+                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    qddot[current_qdot : model.nbQdot() + current_qdot],
+                    True,
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
         return out
@@ -149,8 +161,12 @@ class MultiBiorbdModel:
         current_q = 0
         current_qdot = 0
         for model in self.models:
-            out = vertcat(out, model.angularMomentum(q[current_q: model.nbQ() + current_q],
-                                            qdot[current_qdot: model.nbQdot() + current_qdot], True).to_mx())
+            out = vertcat(
+                out,
+                model.angularMomentum(
+                    q[current_q : model.nbQ() + current_q], qdot[current_qdot : model.nbQdot() + current_qdot], True
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
         return out
@@ -163,8 +179,12 @@ class MultiBiorbdModel:
         current_q = 0
         current_qdot = 0
         for model in self.models:
-            out = vertcat(out, model.segmentAngularVelocity(q[current_q: model.nbQ() + current_q],
-                                            qdot[current_qdot: model.nbQdot() + current_qdot], True).to_mx())
+            out = vertcat(
+                out,
+                model.segmentAngularVelocity(
+                    q[current_q : model.nbQ() + current_q], qdot[current_qdot : model.nbQdot() + current_qdot], True
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
         return out
@@ -218,9 +238,14 @@ class MultiBiorbdModel:
         current_qdot = 0
         current_tau = 0
         for model in self.models:
-            out = vertcat(out, model.torque(q[current_q: model.nbQ() + current_q],
-                                            qdot[current_qdot: model.nbQdot() + current_qdot],
-                                            tau_activations[current_tau: current_tau + model.nbGeneralizedTorque()]).to_mx())
+            out = vertcat(
+                out,
+                model.torque(
+                    q[current_q : model.nbQ() + current_q],
+                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    tau_activations[current_tau : current_tau + model.nbGeneralizedTorque()],
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
             current_tau += model.nbGeneralizedTorque()
@@ -233,9 +258,14 @@ class MultiBiorbdModel:
         current_qdot = 0
         current_qddot = 0
         for model in self.models:
-            out = vertcat(out, model.ForwardDynamicsFreeFloatingBase(q[current_q: model.nbQ() + current_q],
-                                            qdot[current_qdot: model.nbQdot() + current_qdot],
-                                            qddot_joints[current_qddot: current_qddot + model.nbQddot() - model.nbRoot()]).to_mx())
+            out = vertcat(
+                out,
+                model.ForwardDynamicsFreeFloatingBase(
+                    q[current_q : model.nbQ() + current_q],
+                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    qddot_joints[current_qddot : current_qddot + model.nbQddot() - model.nbRoot()],
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
             current_qddot += model.nbQddot() - model.nbRoot()
@@ -249,11 +279,16 @@ class MultiBiorbdModel:
         current_qdot = 0
         current_tau = 0
         for model in self.models:
-            out = vertcat(out, model.ForwardDynamics(q[current_q: model.nbQ() + current_q],
-                                            qdot[current_qdot: model.nbQdot() + current_qdot],
-                                            tau[current_tau: current_tau + model.nbGeneralizedTorque()],
-                                            external_forces,
-                                            f_contacts).to_mx())
+            out = vertcat(
+                out,
+                model.ForwardDynamics(
+                    q[current_q : model.nbQ() + current_q],
+                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    tau[current_tau : current_tau + model.nbGeneralizedTorque()],
+                    external_forces,
+                    f_contacts,
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
             current_tau += model.nbGeneralizedTorque()
@@ -267,10 +302,15 @@ class MultiBiorbdModel:
         current_qdot = 0
         current_qddot = 0
         for model in self.models:
-            out = vertcat(out, model.ForwardDynamicsConstraintsDirect(q[current_q: model.nbQ() + current_q],
-                                                     qdot[current_qdot: model.nbQdot() + current_qdot],
-                                                     qddot[current_qddot: current_qddot + model.nbQddot()],
-                                                     external_forces).to_mx())
+            out = vertcat(
+                out,
+                model.ForwardDynamicsConstraintsDirect(
+                    q[current_q : model.nbQ() + current_q],
+                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    qddot[current_qddot : current_qddot + model.nbQddot()],
+                    external_forces,
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
             current_qddot += model.nbQddot()
@@ -284,13 +324,16 @@ class MultiBiorbdModel:
         current_qdot = 0
         current_qddot = 0
         for model in self.models:
-            out = vertcat(out, model.InverseDynamics(q[current_q: model.nbQ() + current_q],
-                                                                      qdot[
-                                                                      current_qdot: model.nbQdot() + current_qdot],
-                                                                      qddot[
-                                                                      current_qddot: current_qddot + model.nbQddot()],
-                                                                      external_forces,
-                                                                      f_contacts).to_mx())
+            out = vertcat(
+                out,
+                model.InverseDynamics(
+                    q[current_q : model.nbQ() + current_q],
+                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    qddot[current_qddot : current_qddot + model.nbQddot()],
+                    external_forces,
+                    f_contacts,
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
             current_qddot += model.nbQddot()
@@ -304,10 +347,15 @@ class MultiBiorbdModel:
         current_qdot = 0
         current_tau = 0
         for model in self.models:
-            out = vertcat(out, model.ContactForcesFromForwardDynamicsConstraintsDirect(q[current_q: model.nbQ() + current_q],
-                                                     qdot[current_qdot: model.nbQdot() + current_qdot],
-                                                     tau[current_tau: current_tau + model.nbGeneralizedTorque()],
-                                                     external_forces).to_mx())
+            out = vertcat(
+                out,
+                model.ContactForcesFromForwardDynamicsConstraintsDirect(
+                    q[current_q : model.nbQ() + current_q],
+                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    tau[current_tau : current_tau + model.nbGeneralizedTorque()],
+                    external_forces,
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
             current_tau += model.nbGeneralizedTorque()
@@ -318,8 +366,13 @@ class MultiBiorbdModel:
         current_q = 0
         current_qdot = 0
         for model in self.models:
-            out = vertcat(out, model.ComputeConstraintImpulsesDirect(q[current_q: model.nbQ() + current_q],
-                                            qdot_pre_impact[current_qdot: model.nbQdot() + current_qdot]).to_mx())
+            out = vertcat(
+                out,
+                model.ComputeConstraintImpulsesDirect(
+                    q[current_q : model.nbQ() + current_q],
+                    qdot_pre_impact[current_qdot : model.nbQdot() + current_qdot],
+                ).to_mx(),
+            )
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
         return out
@@ -346,7 +399,7 @@ class MultiBiorbdModel:
         out = []
         current_q = 0
         for model in self.models:
-            for m in model.markers(q[current_q: model.nbQ() + current_q]):
+            for m in model.markers(q[current_q : model.nbQ() + current_q]):
                 out.append(m.to_mx())
             current_q += model.nbQ()
         return out
@@ -382,14 +435,27 @@ class MultiBiorbdModel:
             current_q = 0
             current_qdot = 0
             for model in self.models:
-                out = vertcat(out, horzcat(*[m.to_mx() for m in model.markersVelocity(q[current_q: model.nbQ() + current_q],
-                                                                                qdot[current_qdot: model.nbQdot() + current_qdot], True)]))
+                out = vertcat(
+                    out,
+                    horzcat(
+                        *[
+                            m.to_mx()
+                            for m in model.markersVelocity(
+                                q[current_q : model.nbQ() + current_q],
+                                qdot[current_qdot : model.nbQdot() + current_qdot],
+                                True,
+                            )
+                        ]
+                    ),
+                )
                 current_q += model.nbQ()
                 current_qdot += model.nbQdot()
 
         else:
             out = MX()
-            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(q, reference_index, inverse=True, model_index=model_index)
+            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
+                q, reference_index, inverse=True, model_index=model_index
+            )
             for m in self.models[model_index].markersVelocity(q, qdot):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     out = horzcat(out, m.to_mx())
