@@ -31,7 +31,7 @@ class MultiBiorbdModel:
         return self.models[index]
 
     # def deep_copy(self, *args):
-    #     return MultiBiorbdModel(tuple(MultiBiorbdModel(model.DeepCopy(*args)) for model in self.models)) ## ???????
+    #     return MultiBiorbdModel(tuple(MultiBiorbdModel(model.DeepCopy(*args)) for model in self.models)) #@pariterre ??
 
     @property
     def path(self) -> list[str]:
@@ -167,7 +167,7 @@ class MultiBiorbdModel:
             current_qdot += model.nbQdot()
         return out
 
-    def segment_angular_velocity(self, q, qdot, idx) -> MX: ##### ??
+    def segment_angular_velocity(self, q, qdot, idx) -> MX:
         out = MX()
         current_q = 0
         current_qdot = 0
@@ -175,7 +175,7 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.segmentAngularVelocity(
-                    q[current_q : model.nbQ() + current_q], qdot[current_qdot : model.nbQdot() + current_qdot], True
+                    q[current_q : model.nbQ() + current_q], qdot[current_qdot : model.nbQdot() + current_qdot], idx, True,
                 ).to_mx(),
             )
             current_q += model.nbQ()
