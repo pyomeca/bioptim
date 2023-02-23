@@ -172,7 +172,15 @@ class MultiBiorbdModel:
         return out
 
     def reshape_qdot(self, q, qdot, k_stab=1) -> MX:
-        return vertcat(*(model.computeQdot(q, qdot, k_stab).to_mx() for model in self.models))
+        out = MX()
+        current_q = 0
+        current_qdot = 0
+        for model in self.models:
+            out = vertcat(out, model.computeQdot(q[current_q: current_q + model.nbQ()],
+                                                 qdot[current_qdot: current_qdot + model.nbQdot()], k_stab).to_mx())
+            current_q += model.nbQ()
+            current_qdot += model.nbQdot()
+        return out
 
     def segment_angular_velocity(self, q, qdot, idx) -> MX:
         out = MX()
@@ -241,9 +249,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.torque(
+                    tau_activations[current_tau: model.nbGeneralizedTorque() + current_tau],
                     q[current_q : model.nbQ() + current_q],
                     qdot[current_qdot : model.nbQdot() + current_qdot],
-                    tau_activations[current_tau : current_tau + model.nbGeneralizedTorque()],
                 ).to_mx(),
             )
             current_q += model.nbQ()
@@ -282,9 +290,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.ForwardDynamics(
-                    q[current_q : model.nbQ() + current_q],
-                    qdot[current_qdot : model.nbQdot() + current_qdot],
-                    tau[current_tau : current_tau + model.nbGeneralizedTorque()],
+                    q[current_q: model.nbQ() + current_q],
+                    qdot[current_qdot: model.nbQdot() + current_qdot],
+                    tau[current_tau: current_tau + model.nbGeneralizedTorque()],
                     external_forces,
                     f_contacts,
                 ).to_mx(),
@@ -292,6 +300,19 @@ class MultiBiorbdModel:
             current_q += model.nbQ()
             current_qdot += model.nbQdot()
             current_tau += model.nbGeneralizedTorque()
+
+        # import casadi as cas
+        # Q_symb = cas.MX.sym('Q', 3)
+        # Qdot_symb = cas.MX.sym('Qdot', 3)
+        # Tau_symb = cas.MX.sym('Tau', 3)
+        # func = cas.Function('FD', [q[current_q : model.nbQ() + current_q], qdot[current_qdot : model.nbQdot() + current_qdot], tau[current_tau : current_tau + model.nbGeneralizedTorque()]], [model.ForwardDynamics(
+        #             q[current_q : model.nbQ() + current_q],
+        #             qdot[current_qdot : model.nbQdot() + current_qdot],
+        #             tau[current_tau : current_tau + model.nbGeneralizedTorque()],
+        #             external_forces,
+        #             f_contacts,
+        #         ).to_mx()])
+        # func()
         return out
 
     def constrained_forward_dynamics(self, q, qdot, qddot, external_forces=None) -> MX:
