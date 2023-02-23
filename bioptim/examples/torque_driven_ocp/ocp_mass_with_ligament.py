@@ -40,6 +40,7 @@ def prepare_ocp(
     number_shooting_points = 100
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
+    qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -55,16 +56,23 @@ def prepare_ocp(
     x_bounds[1, 0] = 0
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [tau_min] * bio_model.nb_tau,
-        [tau_max] * bio_model.nb_tau,
-    )
+    u_init = InitialGuessList()
+
+    if rigidbody_dynamics == RigidBodyDynamics.ODE:
+        u_bounds.add(
+            [tau_min] * bio_model.nb_tau,
+            [tau_max] * bio_model.nb_tau,
+        )
+        u_init.add([tau_init] * bio_model.nb_tau)
+    else:
+        u_bounds.add(
+            [tau_min] * bio_model.nb_tau + [qddot_min] * bio_model.nb_qddot,
+            [tau_max] * bio_model.nb_tau + [qddot_max] * bio_model.nb_qddot,
+        )
+        u_init.add([tau_init] * bio_model.nb_tau + [qddot_init] * bio_model.nb_qddot)
     # Initial guess
     x_init = InitialGuessList()
     x_init.add([0]*bio_model.nb_q + [0]*bio_model.nb_qdot)
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model.nb_tau)
 
     return OptimalControlProgram(
         bio_model,

@@ -299,73 +299,73 @@ def test_ocp_mass_ligament(rigidbody_dynamics, with_ligament):
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_ligament:
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
             # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
+            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
             # initial and final controls
             np.testing.assert_almost_equal(
                 tau[:, 0],
-                np.array([37.2828933, 0.0]),
+                np.array([2.158472e-16]),
                 decimal=6,
             )
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-4.9490898, 0.0]), decimal=6)
+            np.testing.assert_almost_equal(tau[:, -2], np.array([1.423733e-17]), decimal=6)
 
         else:
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(q[:, -1], np.array([-3.1415927]))
             # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
+            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(qdot[:, -1], np.array([-7.2608855]))
             # initial and final controls
             np.testing.assert_almost_equal(
                 tau[:, 0],
-                np.array([-70.3481693, 0.0]),
+                np.array([24.594638]),
                 decimal=6,
             )
             np.testing.assert_almost_equal(
                 tau[:, -2],
-                np.array([-35.5389502, 0.0]),
+                np.array([0.123591]),
                 decimal=6,
             )
 
     else:
         if with_ligament:
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
             # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
+            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
             # initial and final controls
             np.testing.assert_almost_equal(
                 tau[:, 0],
-                np.array([37.2828933, 0.0]),
+                np.array([2.158472e-16]),
                 decimal=6,
             )
             np.testing.assert_almost_equal(
                 tau[:, -2],
-                np.array([-4.9490898, 0.0]),
+                np.array([1.423733e-17]),
                 decimal=6,
             )
 
         else:
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(q[:, -1], np.array([-3.1415927]))
             # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
+            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(qdot[:, -1], np.array([-7.2608855]))
             # initial and final controls
             np.testing.assert_almost_equal(
                 tau[:, 0],
-                np.array([-70.3481693, 0.0]),
+                np.array([24.594638]),
                 decimal=6,
             )
             np.testing.assert_almost_equal(
                 tau[:, -2],
-                np.array([-35.5389502, 0.0]),
+                np.array([0.123591]),
                 decimal=6,
             )
