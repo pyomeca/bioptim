@@ -661,26 +661,22 @@ def test_example_multi_biorbd_model():
 
     # initial and final position
     np.testing.assert_almost_equal(
-        states["q"][:, 0], np.array([-3.14159265,  0.        ,  0.        , -3.14159265,  0.        ,
-        0.        ]), decimal=6
+        states["q"][:, 0], np.array([-3.14159265, 0.0, 0.0, -3.14159265, 0.0, 0.0]), decimal=6
     )
     np.testing.assert_almost_equal(
-        states["q"][:, -1], np.array([3.05279505, 0.        , 0.        , 3.04159266, 0.        ,
-       0.        ]), decimal=6
+        states["q"][:, -1], np.array([3.05279505, 0.0, 0.0, 3.04159266, 0.0, 0.0]), decimal=6
     )
     # initial and final velocities
     np.testing.assert_almost_equal(
         states["qdot"][:, 0],
-        np.array([ 15.68385811, -31.25068304,  19.2317873 ,  15.63939216,
-       -31.4159265 ,  19.91541457]),
+        np.array([15.68385811, -31.25068304, 19.2317873, 15.63939216, -31.4159265, 19.91541457]),
         decimal=6,
     )
     np.testing.assert_almost_equal(
         states["qdot"][:, -1],
-        np.array([ 15.90689541, -30.54499528,  16.03701393,  15.96682325,
-       -30.89799758,  16.70457477]),
+        np.array([15.90689541, -30.54499528, 16.03701393, 15.96682325, -30.89799758, 16.70457477]),
         decimal=6,
     )
     # initial and final controls
-    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.48437131,  0.0249894 ,  0.38051993]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.48437131, 0.0249894, 0.38051993]), decimal=6)
     np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.00235227, -0.02192184, -0.00709896]), decimal=6)
