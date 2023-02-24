@@ -159,7 +159,123 @@ def test_pendulum(ode_solver, use_sx, n_threads):
 
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
+def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
+    from bioptim.examples.getting_started import example_save_and_load as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ode_solver = ode_solver()
+
+    if isinstance(ode_solver, OdeSolver.IRK):
+        if use_sx:
+            with pytest.raises(RuntimeError, match="use_sx=True and OdeSolver.IRK are not yet compatible"):
+                ocp_module.prepare_ocp(
+                    biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                    final_time=1,
+                    n_shooting=30,
+                    n_threads=n_threads,
+                    use_sx=use_sx,
+                    ode_solver=ode_solver,
+                )
+        else:
+            ocp = ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                final_time=1,
+                n_shooting=30,
+                n_threads=n_threads,
+                use_sx=use_sx,
+                ode_solver=ode_solver,
+            )
+            sol = ocp.solve()
+
+            # Check objective function value
+            f = np.array(sol.cost)
+            np.testing.assert_equal(f.shape, (1, 1))
+
+            # Check constraints
+            g = np.array(sol.constraints)
+            np.testing.assert_equal(g.shape, (120, 1))
+            np.testing.assert_almost_equal(g, np.zeros((120, 1)))
+
+            # Check some of the results
+            q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
+
+            # initial and final position
+            np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+            np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+            # initial and final velocities
+            np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+            np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+            # save and load
+            TestUtils.save_and_load(sol, ocp, True)
+
+            # simulate
+            TestUtils.simulate(sol)
+    else:
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+            final_time=1,
+            n_shooting=30,
+            n_threads=n_threads,
+            use_sx=use_sx,
+            ode_solver=ode_solver,
+        )
+        sol = ocp.solve()
+
+        # Check objective function value
+        is_collocation = isinstance(ode_solver, OdeSolver.COLLOCATION) and not isinstance(ode_solver, OdeSolver.IRK)
+        f = np.array(sol.cost)
+        np.testing.assert_equal(f.shape, (1, 1))
+        if isinstance(ode_solver, OdeSolver.RK8):
+            np.testing.assert_almost_equal(f[0, 0], 9.821989132327003)
+        elif is_collocation:
+            pass
+        else:
+            np.testing.assert_almost_equal(f[0, 0], 9.834017207589055)
+
+        # Check constraints
+        g = np.array(sol.constraints)
+        if is_collocation:
+            np.testing.assert_equal(g.shape, (600, 1))
+            np.testing.assert_almost_equal(g, np.zeros((600, 1)))
+        else:
+            np.testing.assert_equal(g.shape, (120, 1))
+            np.testing.assert_almost_equal(g, np.zeros((120, 1)))
+
+        # Check some of the results
+        q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
+
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+        # initial and final controls
+        if isinstance(ode_solver, OdeSolver.RK8):
+            np.testing.assert_almost_equal(tau[:, 0], np.array((5.67291529, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-11.71262836, 0)))
+        elif is_collocation:
+            pass
+        else:
+            np.testing.assert_almost_equal(tau[:, 0], np.array((5.72227268, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-11.62799294, 0)))
+
+        # save and load
+        TestUtils.save_and_load(sol, ocp, True)
+
+        # simulate
+        TestUtils.simulate(sol)
+
+
+@pytest.mark.parametrize("n_threads", [1, 2])
+@pytest.mark.parametrize("use_sx", [False, True])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK8])
 def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
