@@ -1,3 +1,8 @@
+"""
+This is a simple example in which a mass is dropped and held by a ligament that plays the role of a spring without
+damping, it uses the model mass_point_with_ligament.bioMod
+"""
+
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -17,7 +22,7 @@ def prepare_ocp(
     use_sx: bool = False,
     ode_solver=OdeSolver.RK4(),
     rigidbody_dynamics=RigidBodyDynamics.ODE,
-    with_ligament=False
+    with_ligament=False,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -72,7 +77,7 @@ def prepare_ocp(
         u_init.add([tau_init] * bio_model.nb_tau + [qddot_init] * bio_model.nb_qddot)
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0]*bio_model.nb_q + [0]*bio_model.nb_qdot)
+    x_init.add([0] * bio_model.nb_q + [0] * bio_model.nb_qdot)
 
     return OptimalControlProgram(
         bio_model,
@@ -101,4 +106,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

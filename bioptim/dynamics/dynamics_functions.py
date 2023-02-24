@@ -224,7 +224,13 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_activations_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact, with_passive_torque: bool, with_ligament: bool,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_contact,
+        with_passive_torque: bool,
+        with_ligament: bool,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -339,7 +345,12 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_torque_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False, with_ligament: bool = False,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -379,7 +390,12 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_torque_activation_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False, with_ligament: bool = False,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -550,7 +566,12 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_muscle_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False, with_ligament: bool = False,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.

@@ -390,7 +390,13 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def torque_activations_driven(ocp, nlp, with_contact=False, with_passive_torque: bool = False, with_ligament: bool = False,):
+    def torque_activations_driven(
+        ocp,
+        nlp,
+        with_contact=False,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
+    ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity

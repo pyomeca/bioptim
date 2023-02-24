@@ -314,7 +314,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def qddot_equals_forward_dynamics(
-            _: Constraint, all_pn: PenaltyNodeList, with_contact: bool, with_passive_torque: bool, with_ligament: bool, **unused_param
+            _: Constraint,
+            all_pn: PenaltyNodeList,
+            with_contact: bool,
+            with_passive_torque: bool,
+            with_ligament: bool,
+            **unused_param,
         ):
             """
             Compute the difference between symbolic joint accelerations and forward dynamic results
@@ -360,7 +365,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def tau_equals_inverse_dynamics(
-            _: Constraint, all_pn: PenaltyNodeList, with_contact: bool, with_passive_torque: bool, with_ligament: bool, **unused_param
+            _: Constraint,
+            all_pn: PenaltyNodeList,
+            with_contact: bool,
+            with_passive_torque: bool,
+            with_ligament: bool,
+            **unused_param,
         ):
             """
             Compute the difference between symbolic joint torques and inverse dynamic results

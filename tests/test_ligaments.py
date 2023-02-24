@@ -1,4 +1,3 @@
-import biorbd_casadi
 import pytest
 
 import numpy as np
@@ -54,9 +53,7 @@ def test_torque_driven_with_ligament(with_ligament, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=RigidBodyDynamics.ODE, with_ligament=with_ligament
-        ),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=RigidBodyDynamics.ODE, with_ligament=with_ligament),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -81,12 +78,12 @@ def test_torque_driven_with_ligament(with_ligament, cx):
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
-            [  0.1559945, -47.2537196],
+            [0.1559945, -47.2537196],
         )
     else:
         np.testing.assert_almost_equal(
             x_out[:, 0],
-            [ 0.1559945, -9.7997078],
+            [0.1559945, -9.7997078],
         )
 
 
@@ -138,12 +135,12 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx):
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
-            [ 0.1559945, -47.2537196,   0.1834045],
+            [0.1559945, -47.2537196, 0.1834045],
         )
     else:
         np.testing.assert_almost_equal(
             x_out[:, 0],
-            [ 0.1559945, -9.7997078,  0.1834045],
+            [0.1559945, -9.7997078, 0.1834045],
         )
 
 
@@ -191,13 +188,13 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx):
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
-            [  0.155995, -46.234787],
+            [0.155995, -46.234787],
             decimal=6,
         )
     else:
         np.testing.assert_almost_equal(
             x_out[:, 0],
-            [ 0.15599, -8.78078],
+            [0.15599, -8.78078],
             decimal=5,
         )
 
@@ -207,7 +204,9 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx):
 def test_muscle_driven_with_ligament(with_ligament, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod")
+    nlp.model = BiorbdModel(
+        TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_ligament.bioMod"
+    )
     nlp.ns = 5
     nlp.cx = cx
     nlp.x_scaling = {}
@@ -251,15 +250,16 @@ def test_muscle_driven_with_ligament(with_ligament, cx):
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
-            [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
+            [2.0584494e-02, 1.8340451e-01, -6.0300944e00, -9.4582028e01],
             decimal=6,
         )
     else:
         np.testing.assert_almost_equal(
             x_out[:, 0],
-            [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
+            [2.0584494e-02, 1.8340451e-01, -7.3880194e00, -9.0642142e01],
             decimal=6,
         )
+
 
 @pytest.mark.parametrize(
     "rigidbody_dynamics",
@@ -299,10 +299,10 @@ def test_ocp_mass_ligament(rigidbody_dynamics, with_ligament):
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_ligament:
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
             np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
             # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
             np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
             # initial and final controls
             np.testing.assert_almost_equal(
@@ -314,10 +314,10 @@ def test_ocp_mass_ligament(rigidbody_dynamics, with_ligament):
 
         else:
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
             np.testing.assert_almost_equal(q[:, -1], np.array([-3.1415927]))
             # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
             np.testing.assert_almost_equal(qdot[:, -1], np.array([-7.2608855]))
             # initial and final controls
             np.testing.assert_almost_equal(
@@ -334,10 +334,10 @@ def test_ocp_mass_ligament(rigidbody_dynamics, with_ligament):
     else:
         if with_ligament:
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
             np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
             # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
             np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
             # initial and final controls
             np.testing.assert_almost_equal(
@@ -353,10 +353,10 @@ def test_ocp_mass_ligament(rigidbody_dynamics, with_ligament):
 
         else:
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
             np.testing.assert_almost_equal(q[:, -1], np.array([-3.1415927]))
             # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.]))
+            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
             np.testing.assert_almost_equal(qdot[:, -1], np.array([-7.2608855]))
             # initial and final controls
             np.testing.assert_almost_equal(
