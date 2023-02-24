@@ -308,9 +308,10 @@ class OptimizationVector:
 
         offset = self.n_all_x
         p_idx = 0
-        for p in range(self.ocp.n_phases):
-            if self.ocp.nlp[p].use_controls_from_phase_idx == self.ocp.nlp[p].phase_idx:
-                if len(v_array[offset : offset + self.n_phase_u[p]]) != 0:
+
+        if self.n_all_u != 0:
+            for p in range(self.ocp.n_phases):
+                if self.ocp.nlp[p].use_controls_from_phase_idx == self.ocp.nlp[p].phase_idx:
                     u_array = v_array[offset : offset + self.n_phase_u[p]].reshape(
                         (ocp.nlp[p].controls["scaled"].shape, -1), order="F"
                     )

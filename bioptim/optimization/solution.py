@@ -1014,10 +1014,7 @@ class Solution:
             controls_phase_idx = self.ocp.nlp[p].use_controls_from_phase_idx
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
-            if self._controls["unscaled"][controls_phase_idx] == {}:
-                u = np.array([])
-            else:
-                u = self._controls["unscaled"][controls_phase_idx]["all"]
+            u = np.array([]) if nlp.controls.shape == 0 else self._controls["unscaled"][controls_phase_idx]["all"]
             if integrator != SolutionIntegrator.OCP:
                 out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,

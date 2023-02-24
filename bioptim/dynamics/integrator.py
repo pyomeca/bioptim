@@ -70,7 +70,7 @@ class Integrator:
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
         self.x_sym = ode["x_scaled"]
-        if ode["implicit_ode"] is not None:
+        if "p_scale" in ode.keys():
             self.u_sym = ode["p_scaled"]
         else:
             self.u_sym = []

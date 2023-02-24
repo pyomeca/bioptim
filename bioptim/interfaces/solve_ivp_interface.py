@@ -347,11 +347,8 @@ def solve_ivp_bioptim_interface(
 
     for s, func in enumerate(dynamics_func):
         u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
+        u_controls = [] if not u else u[:, u_slice]
         # y always contains [x0, xf] of the interval
-        if len(u.shape) != 1:
-            u_controls = u[:, u_slice]
-        else:
-            u_controls = u
         y = np.concatenate(
             (
                 np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)

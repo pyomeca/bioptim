@@ -115,17 +115,17 @@ class RK(OdeSolverBase):
         """
 
         ode_opt = {
-            "t0": nlp.t0,
+            "t0": 0,
             "tf": nlp.dt,
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
-            "idx": nlp.phase_idx,
+            "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
             "defects_type": DefectType.NOT_APPLICABLE,
         }
-        if type(ocp.nlp[0].dynamics_func) != list:
+        if nlp.controls.shape != 0:
             ode = {
                 "x_unscaled": nlp.states.cx,
                 "x_scaled": nlp.states["scaled"].cx,
