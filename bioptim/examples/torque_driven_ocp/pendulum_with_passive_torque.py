@@ -10,9 +10,7 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    InitialGuessList,
     InitialGuess,
-    BoundsList,
     ObjectiveFcn,
     Objective,
     OdeSolver,
@@ -20,6 +18,7 @@ from bioptim import (
     Solver,
     BiorbdModel,
     RigidBodyDynamics,
+    Bounds,
 )
 
 
@@ -28,7 +27,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     ode_solver: OdeSolver = OdeSolver.RK4(),
-    rigidbody_dynamics=RigidBodyDynamics.ODE,
+    rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
     with_passive_torque=False,
 ) -> OptimalControlProgram:
     """
@@ -83,23 +82,21 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
     qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
-    u_init = InitialGuessList()
-    u_bounds = BoundsList()
-
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
-        u_bounds.add(
+        u_bounds = Bounds(
             [tau_min] * bio_model.nb_tau,
             [tau_max] * bio_model.nb_tau,
         )
-        u_init.add([tau_init] * bio_model.nb_tau)
+        u_init = InitialGuess([tau_init] * bio_model.nb_tau)
         u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
     else:
-        u_bounds.add(
+        u_bounds = Bounds(
             [tau_min] * bio_model.nb_tau + [qddot_min] * bio_model.nb_qddot,
             [tau_max] * bio_model.nb_tau + [qddot_max] * bio_model.nb_qddot,
         )
-        u_init.add([tau_init] * bio_model.nb_tau + [qddot_init] * bio_model.nb_qddot)
+        u_init = InitialGuess([tau_init] * bio_model.nb_tau + [qddot_init] * bio_model.nb_qddot)
+        u_bounds[1, :] = 0
 
     return OptimalControlProgram(
         bio_model,

@@ -28,17 +28,8 @@ endsegment
     endmarker
 
 passivetorque Seg1
-	type exponential
+	type constant
 	dof RotX
-	k1 -1.5
-	k2 0
-	b1 -10
-	b2 0
-	taueq 4
-	wmax 16
-	qmid 0
-	deltap 0
-	sv 1
-	pbeta 8
+	torque 1
 endpassivetorque
 
