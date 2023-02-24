@@ -653,8 +653,8 @@ def test_example_multi_biorbd_model():
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (60, 1))
-    np.testing.assert_almost_equal(g, np.zeros((60, 1)), decimal=6)
+    np.testing.assert_equal(g.shape, (240, 1))
+    np.testing.assert_almost_equal(g, np.zeros((240, 1)), decimal=6)
 
     # Check some of the results
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate

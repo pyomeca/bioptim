@@ -381,8 +381,8 @@ def test__torque_driven_ocp__multi_model_by_mapping():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "models/double_pendulum.bioMod",
-        biorbd_model_path_modified_inertia=bioptim_folder + "models/double_pendulum_modified_inertia.bioMod",
+        biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
+        biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
         n_shooting=40,
     )
 
