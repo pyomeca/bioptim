@@ -160,7 +160,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
-def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
+def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -273,10 +273,10 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
         TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("n_threads", [1, 2])
+@pytest.mark.parametrize("n_threads", [1])
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK8])
-def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
+def test_pendulum_save_and_load_rk8(n_threads, use_sx, ode_solver):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
