@@ -33,10 +33,7 @@ from bioptim import (
 
 
 def generate_data(
-    bio_model: BiorbdModel,
-    final_time: float,
-    n_shooting: int,
-    use_residual_torque: bool = True,
+    bio_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -85,39 +82,14 @@ def generate_data(
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
     nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
-    nlp.states.append(
-        "qdot",
-        [symbolic_qdot, symbolic_qdot],
-        symbolic_qdot,
-        nlp.variable_mappings["qdot"],
-    )
+    nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
 
-    nlp.states_dot.append(
-        "qdot",
-        [symbolic_qdot, symbolic_qdot],
-        symbolic_qdot,
-        nlp.variable_mappings["qdot"],
-    )
-    nlp.states_dot.append(
-        "qddot",
-        [symbolic_qddot, symbolic_qddot],
-        symbolic_qddot,
-        nlp.variable_mappings["qddot"],
-    )
+    nlp.states_dot.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+    nlp.states_dot.append("qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"])
 
     if use_residual_torque:
-        nlp.controls.append(
-            "tau",
-            [symbolic_tau, symbolic_tau],
-            symbolic_tau,
-            nlp.variable_mappings["tau"],
-        )
-    nlp.controls.append(
-        "muscles",
-        [symbolic_mus, symbolic_mus],
-        symbolic_mus,
-        nlp.variable_mappings["muscles"],
-    )
+        nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
+    nlp.controls.append("muscles", [symbolic_mus, symbolic_mus], symbolic_mus, nlp.variable_mappings["muscles"])
 
     if use_residual_torque:
         nlp.variable_mappings["tau"] = BiMapping(range(n_tau), range(n_tau))
@@ -222,19 +194,9 @@ def prepare_ocp(
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     if kin_data_to_track == "markers":
-        objective_functions.add(
-            ObjectiveFcn.Lagrange.TRACK_MARKERS,
-            weight=100,
-            target=markers_ref[:, :, :-1],
-        )
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref[:, :, :-1])
     elif kin_data_to_track == "q":
-        objective_functions.add(
-            ObjectiveFcn.Lagrange.TRACK_STATE,
-            key="q",
-            weight=100,
-            target=q_ref,
-            node=Node.ALL,
-        )
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=100, target=q_ref, node=Node.ALL)
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 

@@ -99,12 +99,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads):
         np.testing.assert_almost_equal(tau[:, 0], np.array([2.13121740e-06, -5.61544104e-06]))
         np.testing.assert_almost_equal(tau[:, -2], np.array([-8.44568436e-07, 2.61276733e-06]))
         np.testing.assert_almost_equal(
-<<<<<<< HEAD
-            mus[:, 0],
-            np.array([0.77133409, 0.02085475, 0.63363328, 0.74881837, 0.49851642, 0.22482234]),
-=======
             mus[:, 0], np.array([0.77133409, 0.02085475, 0.63363328, 0.74881837, 0.49851642, 0.22482234])
->>>>>>> parent of d9910e1... Blacked
         )
         np.testing.assert_almost_equal(
             mus[:, -2],
@@ -318,38 +313,19 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0.23632381, -9.11739593]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
-<<<<<<< HEAD
-            mus_states[:, 0],
-            np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665]),
-        )
-        np.testing.assert_almost_equal(
-            mus_states[:, -1],
-            np.array([0.5193721, 0.50851183, 0.6051374, 0.43719123, 0.59329003, 0.59971324]),
-=======
             mus_states[:, 0], np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665])
         )
         np.testing.assert_almost_equal(
             mus_states[:, -1], np.array([0.5193721, 0.50851183, 0.6051374, 0.43719123, 0.59329003, 0.59971324])
->>>>>>> parent of d9910e1... Blacked
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([6.66733699e-05, 6.40935259e-06]))
         np.testing.assert_almost_equal(tau[:, -2], np.array([5.67398982e-05, -5.00305009e-05]))
-<<<<<<< HEAD
-        np.testing.assert_almost_equal(
-            mus_controls[:, 0],
-            np.array([0.76677771, 0.02174135, 0.633964, 0.74879614, 0.49849973, 0.22512206]),
-        )
-        np.testing.assert_almost_equal(
-            mus_controls[:, -2],
-            np.array([0.44112329, 0.43426359, 0.61784926, 0.51301095, 0.65031982, 0.60125901]),
-=======
         np.testing.assert_almost_equal(
             mus_controls[:, 0], np.array([0.76677771, 0.02174135, 0.633964, 0.74879614, 0.49849973, 0.22512206])
         )
         np.testing.assert_almost_equal(
             mus_controls[:, -2], np.array([0.44112329, 0.43426359, 0.61784926, 0.51301095, 0.65031982, 0.60125901])
->>>>>>> parent of d9910e1... Blacked
         )
 
     elif ode_solver == OdeSolver.COLLOCATION:
@@ -363,38 +339,19 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0.23629081, -9.11724989]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
-<<<<<<< HEAD
-            mus_states[:, 0],
-            np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665]),
-        )
-        np.testing.assert_almost_equal(
-            mus_states[:, -1],
-            np.array([0.5193701, 0.50851049, 0.60513389, 0.4371962, 0.59328742, 0.59971041]),
-=======
             mus_states[:, 0], np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665])
         )
         np.testing.assert_almost_equal(
             mus_states[:, -1], np.array([0.5193701, 0.50851049, 0.60513389, 0.4371962, 0.59328742, 0.59971041])
->>>>>>> parent of d9910e1... Blacked
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([6.66635743e-05, 6.40977127e-06]))
         np.testing.assert_almost_equal(tau[:, -2], np.array([5.67472786e-05, -5.00632439e-05]))
-<<<<<<< HEAD
-        np.testing.assert_almost_equal(
-            mus_controls[:, 0],
-            np.array([0.76677035, 0.02197853, 0.6339604, 0.74878751, 0.49849609, 0.22513587]),
-        )
-        np.testing.assert_almost_equal(
-            mus_controls[:, -2],
-            np.array([0.44112149, 0.43426245, 0.61784649, 0.51301426, 0.6503179, 0.60125632]),
-=======
         np.testing.assert_almost_equal(
             mus_controls[:, 0], np.array([0.76677035, 0.02197853, 0.6339604, 0.74878751, 0.49849609, 0.22513587])
         )
         np.testing.assert_almost_equal(
             mus_controls[:, -2], np.array([0.44112149, 0.43426245, 0.61784649, 0.51301426, 0.6503179, 0.60125632])
->>>>>>> parent of d9910e1... Blacked
         )
 
     elif ode_solver == OdeSolver.RK4:
@@ -408,38 +365,19 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0.23472979, -9.11352557]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
-<<<<<<< HEAD
-            mus_states[:, 0],
-            np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665]),
-        )
-        np.testing.assert_almost_equal(
-            mus_states[:, -1],
-            np.array([0.51939095, 0.50853479, 0.6051437, 0.4371827, 0.59328557, 0.59973123]),
-=======
             mus_states[:, 0], np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665])
         )
         np.testing.assert_almost_equal(
             mus_states[:, -1], np.array([0.51939095, 0.50853479, 0.6051437, 0.4371827, 0.59328557, 0.59973123])
->>>>>>> parent of d9910e1... Blacked
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([6.72188259e-05, 5.01548712e-06]))
         np.testing.assert_almost_equal(tau[:, -2], np.array([5.74813746e-05, -5.17061496e-05]))
-<<<<<<< HEAD
-        np.testing.assert_almost_equal(
-            mus_controls[:, 0],
-            np.array([0.76676674, 0.02172467, 0.63396249, 0.74880157, 0.49850197, 0.22513888]),
-        )
-        np.testing.assert_almost_equal(
-            mus_controls[:, -2],
-            np.array([0.44110908, 0.43426931, 0.6178526, 0.51300672, 0.65031742, 0.60126635]),
-=======
         np.testing.assert_almost_equal(
             mus_controls[:, 0], np.array([0.76676674, 0.02172467, 0.63396249, 0.74880157, 0.49850197, 0.22513888])
         )
         np.testing.assert_almost_equal(
             mus_controls[:, -2], np.array([0.44110908, 0.43426931, 0.6178526, 0.51300672, 0.65031742, 0.60126635])
->>>>>>> parent of d9910e1... Blacked
         )
 
     else:
@@ -515,23 +453,6 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0.2362817, -9.11728306]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
-<<<<<<< HEAD
-            mus_states[:, 0],
-            np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665]),
-        )
-        np.testing.assert_almost_equal(
-            mus_states[:, -1],
-            np.array([0.51937086, 0.50851233, 0.60513767, 0.43719097, 0.59328989, 0.59971401]),
-        )
-        # initial and final controls
-        np.testing.assert_almost_equal(
-            mus_controls[:, 0],
-            np.array([0.76677683, 0.02174148, 0.63396384, 0.74879658, 0.49849991, 0.22512315]),
-        )
-        np.testing.assert_almost_equal(
-            mus_controls[:, -2],
-            np.array([0.44112273, 0.43426381, 0.61784939, 0.51301078, 0.65031973, 0.6012593]),
-=======
             mus_states[:, 0], np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665])
         )
         np.testing.assert_almost_equal(
@@ -543,7 +464,6 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
         )
         np.testing.assert_almost_equal(
             mus_controls[:, -2], np.array([0.44112273, 0.43426381, 0.61784939, 0.51301078, 0.65031973, 0.6012593])
->>>>>>> parent of d9910e1... Blacked
         )
 
     elif ode_solver == OdeSolver.COLLOCATION:
@@ -557,23 +477,6 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0.23624873, -9.11713708]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
-<<<<<<< HEAD
-            mus_states[:, 0],
-            np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665]),
-        )
-        np.testing.assert_almost_equal(
-            mus_states[:, -1],
-            np.array([0.51936886, 0.50851099, 0.60513415, 0.43719595, 0.59328728, 0.59971118]),
-        )
-        # initial and final controls
-        np.testing.assert_almost_equal(
-            mus_controls[:, 0],
-            np.array([0.76676948, 0.02197866, 0.63396025, 0.74878795, 0.49849627, 0.22513696]),
-        )
-        np.testing.assert_almost_equal(
-            mus_controls[:, -2],
-            np.array([0.44112094, 0.43426268, 0.61784662, 0.5130141, 0.6503178, 0.60125662]),
-=======
             mus_states[:, 0], np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665])
         )
         np.testing.assert_almost_equal(
@@ -585,7 +488,6 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
         )
         np.testing.assert_almost_equal(
             mus_controls[:, -2], np.array([0.44112094, 0.43426268, 0.61784662, 0.5130141, 0.6503178, 0.60125662])
->>>>>>> parent of d9910e1... Blacked
         )
 
     elif ode_solver == OdeSolver.RK4:
@@ -599,23 +501,6 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0.23468676, -9.11340941]))
         # initial and final muscle state
         np.testing.assert_almost_equal(
-<<<<<<< HEAD
-            mus_states[:, 0],
-            np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665]),
-        )
-        np.testing.assert_almost_equal(
-            mus_states[:, -1],
-            np.array([0.51938967, 0.50853531, 0.60514397, 0.43718244, 0.59328542, 0.59973203]),
-        )
-        # initial and final controls
-        np.testing.assert_almost_equal(
-            mus_controls[:, 0],
-            np.array([0.76676586, 0.02172479, 0.63396233, 0.74880202, 0.49850216, 0.22514]),
-        )
-        np.testing.assert_almost_equal(
-            mus_controls[:, -2],
-            np.array([0.44110851, 0.43426954, 0.61785274, 0.51300655, 0.65031733, 0.60126665]),
-=======
             mus_states[:, 0], np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665])
         )
         np.testing.assert_almost_equal(
@@ -627,7 +512,6 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
         )
         np.testing.assert_almost_equal(
             mus_controls[:, -2], np.array([0.44110851, 0.43426954, 0.61785274, 0.51300655, 0.65031733, 0.60126665])
->>>>>>> parent of d9910e1... Blacked
         )
 
     else:

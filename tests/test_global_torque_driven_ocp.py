@@ -399,12 +399,7 @@ def test_trampo_quaternions():
 
     # initial and final position
     np.testing.assert_almost_equal(
-<<<<<<< HEAD
-        q[:, 0],
-        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0]),
-=======
         q[:, 0], np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0])
->>>>>>> parent of d9910e1... Blacked
     )
     np.testing.assert_almost_equal(
         q[:, -1],
@@ -548,25 +543,14 @@ def test_phase_transition_uneven_variable_number_by_mapping():
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([3.14, 0.0]))
     np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([7.93025703, 0.31520724]))
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([0.0, 0.0, 7.93025703, 0.31520724]))
-<<<<<<< HEAD
-    np.testing.assert_almost_equal(
-        states[1]["q"][:, -1],
-        np.array([-0.2593021, 10.0000001, 9.49212256, -0.1382893]),
-    )
-=======
     np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([-0.2593021, 10.0000001, 9.49212256, -0.1382893]))
->>>>>>> parent of d9910e1... Blacked
+
     # initial and final velocities
     np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([1.89770078, 18.62453707]))
     np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([16.56293494, -16.83711551]))
     np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([0.0, 0.0, 16.56293494, -16.83711551]))
     np.testing.assert_almost_equal(
-<<<<<<< HEAD
-        states[1]["qdot"][:, -1],
-        np.array([-1.28658849, 6.05426872, -0.20069993, 1.56293712]),
-=======
         states[1]["qdot"][:, -1], np.array([-1.28658849, 6.05426872, -0.20069993, 1.56293712])
->>>>>>> parent of d9910e1... Blacked
     )
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([-0.01975067]))
@@ -675,11 +659,10 @@ def test_multi_model_by_constraint():
     np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([0.01132175]), decimal=6)
 
 
-"""
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_residual_torque(ode_solver):
     # Load track_markers
-   from bioptim.examples.torque_driven_ocp import residual_torque_actuator as ocp_module
+    from bioptim.examples.torque_driven_ocp import residual_torque_actuator as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -721,4 +704,3 @@ def test_residual_torque(ode_solver):
 
     # simulate
     TestUtils.simulate(sol)
-"""

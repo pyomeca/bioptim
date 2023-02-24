@@ -41,15 +41,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-<<<<<<< HEAD
-    objective_functions.add(
-        ObjectiveFcn.Lagrange.TRACK_CONTROL,
-        key="muscles",
-        target=muscle_activations_ref,
-    )
-=======
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=muscle_activations_ref)
->>>>>>> parent of d9910e1... Blacked
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.001)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.001)

@@ -88,23 +88,9 @@ def generate_data(
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
     nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
-<<<<<<< HEAD
-    nlp.states.append(
-        "qdot",
-        [symbolic_qdot, symbolic_qdot],
-        symbolic_qdot,
-        nlp.variable_mappings["qdot"],
-    )
-    nlp.states.append(
-        "muscles",
-        [symbolic_mus_states, symbolic_mus_states],
-        symbolic_mus_states,
-        nlp.variable_mappings["muscles"],
-=======
     nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
     nlp.states.append(
         "muscles", [symbolic_mus_states, symbolic_mus_states], symbolic_mus_states, nlp.variable_mappings["muscles"]
->>>>>>> parent of d9910e1... Blacked
     )
 
     nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])

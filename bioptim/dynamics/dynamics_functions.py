@@ -220,7 +220,13 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_activations_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool, with_passive_torque: bool, with_residual_torque: bool,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_contact: bool,
+        with_passive_torque: bool,
+        with_residual_torque: bool,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -252,10 +258,11 @@ class DynamicsFunctions:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau_activation = DynamicsFunctions.get(nlp.controls["tau"], controls)
+
         if with_residual_torque:
             tau_residual = DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
         tau = nlp.model.torque(tau_activation, q, qdot)
-        tau = tau + tau_residual if with_residual_torque else tau
+        tau = (tau + tau_residual) if with_residual_torque else tau
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
@@ -448,13 +455,9 @@ class DynamicsFunctions:
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-<<<<<<< HEAD
         residual_tau = (
             DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
         )
-=======
-        residual_tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
->>>>>>> parent of d9910e1... Blacked
 
         mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
@@ -529,13 +532,7 @@ class DynamicsFunctions:
                 dq_defects.append(
                     dq
                     - DynamicsFunctions.compute_qdot(
-<<<<<<< HEAD
-                        nlp,
-                        q,
-                        DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced),
-=======
                         nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced)
->>>>>>> parent of d9910e1... Blacked
                     )
                 )
             defects[: dq.shape[0], :] = horzcat(*dq_defects)

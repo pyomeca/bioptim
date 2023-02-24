@@ -320,14 +320,7 @@ class ConfigureProblem:
             which soft contact dynamic should be used
 
         """
-<<<<<<< HEAD
-        if rigidbody_dynamics not in (
-            RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
-            RigidBodyDynamics.ODE,
-        ):
-=======
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
->>>>>>> parent of d9910e1... Blacked
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         if nlp.model.nb_soft_contacts != 0:
@@ -389,7 +382,9 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def torque_activations_driven(ocp, nlp, with_contact: bool = False, with_passive_torque: bool = False, with_residual_torque: bool = False):
+    def torque_activations_driven(
+        ocp, nlp, with_contact: bool = False, with_passive_torque: bool = False, with_residual_torque: bool = False
+    ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
@@ -413,8 +408,10 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
         ConfigureProblem.configure_tau(ocp, nlp, False, True)
+
         if with_residual_torque:
             ConfigureProblem.configure_residual_tau(ocp, nlp, False, True)
+
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -518,14 +515,7 @@ class ConfigureProblem:
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
-<<<<<<< HEAD
-        if rigidbody_dynamics not in (
-            RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
-            RigidBodyDynamics.ODE,
-        ):
-=======
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
->>>>>>> parent of d9910e1... Blacked
             raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
@@ -1165,11 +1155,7 @@ class ConfigureProblem:
 
         name = "residual_tau"
         name_residual_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
-<<<<<<< HEAD
-        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)  ### @pariterre???
-=======
-        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp) ### @pariterre???
->>>>>>> parent of d9910e1... Blacked
+        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_residual_tau, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
