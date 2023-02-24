@@ -649,8 +649,7 @@ def test_example_multi_biorbd_model():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 26.79658183467536
-)
+    np.testing.assert_almost_equal(f[0, 0], 26.79658183467536)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -662,26 +661,22 @@ def test_example_multi_biorbd_model():
 
     # initial and final position
     np.testing.assert_almost_equal(
-        states["q"][:, 0], np.array([-3.14159265,  0.        ,  0.        , -3.14159265,  0.        ,
-        0.        ]), decimal=6
+        states["q"][:, 0], np.array([-3.14159265, 0.0, 0.0, -3.14159265, 0.0, 0.0]), decimal=6
     )
     np.testing.assert_almost_equal(
-        states["q"][:, -1], np.array([3.04159266, 0.        , 0.        , 3.24159265, 0.        ,
-       0.        ]), decimal=6
+        states["q"][:, -1], np.array([3.04159266, 0.0, 0.0, 3.24159265, 0.0, 0.0]), decimal=6
     )
     # initial and final velocities
     np.testing.assert_almost_equal(
         states["qdot"][:, 0],
-        np.array([  3.66832048, -10.24459155,  21.85101787,   3.29397174,
-       -10.27189204,  23.6416394 ]),
+        np.array([3.66832048, -10.24459155, 21.85101787, 3.29397174, -10.27189204, 23.6416394]),
         decimal=6,
     )
     np.testing.assert_almost_equal(
         states["qdot"][:, -1],
-        np.array([  4.35439865, -11.67495577,  22.06009809,   2.01299335,
-        -7.53633802,  22.11419119]),
+        np.array([4.35439865, -11.67495577, 22.06009809, 2.01299335, -7.53633802, 22.11419119]),
         decimal=6,
     )
     # initial and final controls
-    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.82537681,  0.10196087,  0.00109589]), decimal=6)
-    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.11680628,  0.04092828,  0.1228703 ]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.82537681, 0.10196087, 0.00109589]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.11680628, 0.04092828, 0.1228703]), decimal=6)
