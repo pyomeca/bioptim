@@ -1539,7 +1539,7 @@ class Solution:
                 running_total += val_weighted
 
                 if penalty.node != Node.TRANSITION:
-                    node_name = f"{penalty.node[0]}" if isinstance(penalty.node[0], int) else penalty.node[0].name
+                    node_name = str(penalty.node[0]) if isinstance(penalty.node[0], int) else penalty.node[0].name
                 else:
                     node_name = penalty.node.name
 
