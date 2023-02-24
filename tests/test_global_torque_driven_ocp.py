@@ -580,36 +580,6 @@ def test_multi_model_by_mapping():
         )
     return  # TODO: when it is not broken anymore, the following results should be good
 
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 2.07020992)
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
-
-    # Check some of the results
-    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
-
-    # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159296, 0.0]), decimal=3)
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.04159271, 0.0]), decimal=6)
-    # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([11.47768245, 26.16790572]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([11.52232512, 26.06343438]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([10.54030594, 28.30202101]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([10.594124, 28.17553337]), decimal=6)
-    # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([0.01906557]), decimal=6)
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-0.00619146]), decimal=6)
-    np.testing.assert_equal(controls[1], {})
-
 
 def test_multi_model_by_constraint():
     # Load multi_model_by_constraint
@@ -659,7 +629,7 @@ def test_multi_model_by_constraint():
 
 
 def test_example_multi_biorbd_model():
-    # Load multi_model_by_constraint
+    # Load example_multi_biorbd_model
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -672,14 +642,15 @@ def test_example_multi_biorbd_model():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
-        n_shooting=5,
+        n_shooting=10,
     )
     sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 35.97795440202232)
+    np.testing.assert_almost_equal(f[0, 0], 26.79658183467536
+)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -691,22 +662,26 @@ def test_example_multi_biorbd_model():
 
     # initial and final position
     np.testing.assert_almost_equal(
-        states["q"][:, 0], np.array([-3.14159265, 0.0, 0.0, -3.14159265, 0.0, 0.0]), decimal=6
+        states["q"][:, 0], np.array([-3.14159265,  0.        ,  0.        , -3.14159265,  0.        ,
+        0.        ]), decimal=6
     )
     np.testing.assert_almost_equal(
-        states["q"][:, -1], np.array([3.04159269, 0.0, 0.0, 3.04159263, 0.0, 0.0]), decimal=6
+        states["q"][:, -1], np.array([3.04159266, 0.        , 0.        , 3.24159265, 0.        ,
+       0.        ]), decimal=6
     )
     # initial and final velocities
     np.testing.assert_almost_equal(
         states["qdot"][:, 0],
-        np.array([0.68393893, -3.68327489, 12.42316192, 0.51926882, -2.357144, 6.70711972]),
+        np.array([  3.66832048, -10.24459155,  21.85101787,   3.29397174,
+       -10.27189204,  23.6416394 ]),
         decimal=6,
     )
     np.testing.assert_almost_equal(
         states["qdot"][:, -1],
-        np.array([5.60448522, -6.8216716, -2.67798337, 8.19342278, -14.96109815, 5.09036753]),
+        np.array([  4.35439865, -11.67495577,  22.06009809,   2.01299335,
+        -7.53633802,  22.11419119]),
         decimal=6,
     )
     # initial and final controls
-    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.29650275, 0.06035777, 0.63748976]), decimal=6)
-    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.4604867, 0.07872906, -0.00264369]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.82537681,  0.10196087,  0.00109589]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.11680628,  0.04092828,  0.1228703 ]), decimal=6)
