@@ -117,8 +117,6 @@ def main():
     # --- Show results --- #
     sol.animate()
     sol.print_cost()
-    print(sol.states)
-    print(sol.controls)
     sol.graphs(show_bounds=True)
 
 

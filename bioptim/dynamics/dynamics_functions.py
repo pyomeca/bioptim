@@ -263,7 +263,7 @@ class DynamicsFunctions:
             tau_residual = DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
         tau = nlp.model.torque(tau_activation, q, qdot)
         tau = (tau + tau_residual) if with_residual_torque else tau
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
+        tau = (tau + nlp.model.passive_joint_torque(q, qdot)) if with_passive_torque else tau
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 

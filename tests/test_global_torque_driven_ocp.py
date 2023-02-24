@@ -3,11 +3,9 @@ Test for file IO
 """
 import os
 import pytest
-
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver, BiorbdModel
-
 from .utils import TestUtils
 
 
@@ -660,9 +658,9 @@ def test_multi_model_by_constraint():
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_residual_torque(ode_solver):
+def test_torque_activation_driven(ode_solver):
     # Load track_markers
-    from bioptim.examples.torque_driven_ocp import residual_torque_actuator as ocp_module
+    from bioptim.examples.torque_driven_ocp import torque_activation_driven as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
