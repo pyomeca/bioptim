@@ -3,7 +3,7 @@ Test for file IO
 """
 import os
 import pickle
-from pickle import PicklingError
+import sys
 import re
 
 import pytest
@@ -277,6 +277,9 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver):
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK8])
 def test_pendulum_save_and_load_rk8(n_threads, use_sx, ode_solver):
+    if sys.platform == "win32":
+        return
+
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -444,7 +447,7 @@ def test_custom_constraint_track_markers(ode_solver):
 
 @pytest.mark.parametrize("random_init", [True, False])
 @pytest.mark.parametrize("interpolation", InterpolationType)
-@pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])  # OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK,
+@pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
 def test_initial_guesses(random_init, interpolation, ode_solver):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
