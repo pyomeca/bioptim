@@ -580,6 +580,24 @@ def test_multi_model_by_mapping():
         )
     return  # TODO: when it is not broken anymore, the following results should be good
 
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
+    # Check some of the results
+    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
+    # initial and final position
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159296, 0.0]), decimal=3)
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.04159271, 0.0]), decimal=6)
+    # initial and final velocities
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([11.47768245, 26.16790572]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([11.52232512, 26.06343438]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([10.54030594, 28.30202101]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([10.594124, 28.17553337]), decimal=6)
+    # initial and final controls
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([0.01906557]), decimal=6)
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-0.00619146]), decimal=6)
+    np.testing.assert_equal(controls[1], {})
+
 
 def test_multi_model_by_constraint():
     # Load multi_model_by_constraint

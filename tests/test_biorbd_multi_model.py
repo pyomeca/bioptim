@@ -25,7 +25,7 @@ def test_biorbd_model_import():
     )
 
     with pytest.raises(
-        RuntimeError, match="The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'"
+        NotImplementedError, match="The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'"
     ):
         MultiBiorbdModel([1])
 
@@ -68,6 +68,7 @@ def test_biorbd_model():
     np.random.seed(42)
     q = MX(np.random.random((nb_q,)))
     qdot = MX(np.random.random((nb_qdot,)))
+    qddot = MX(np.random.random((nb_qddot,)))
     tau = MX(np.random.random((nb_tau,)))
     qddot_joints = MX(np.random.random((nb_tau - nb_root,)))
     f_ext = MX(6)
@@ -79,14 +80,21 @@ def test_biorbd_model():
     models.serialize()
     models.set_gravity(np.array([0, 0, -3]))
     model_gravity_modified = Function("Gravity", [], [models.gravity])()["o0"]
-    # segment_index = models.segment_index("Seg1")
+
+    with pytest.raises(NotImplementedError, match="segment_index is not implemented for MultiBiorbdModel"):
+        segment_index = models.segment_index("Seg1")
+
     segments = models.segments
-    # homogeneous_matrices_in_global = Function(
-    #     "RT_parent", [], [models.homogeneous_matrices_in_global(q[:3], 0, 0).to_mx()]
-    # )()["o0"]
-    # homogeneous_matrices_in_child = Function("RT_child", [], [models.homogeneous_matrices_in_child(0)[0].to_mx()])()[
-    #     "o0"
-    # ]
+
+    with pytest.raises(NotImplementedError, match="homogeneous_matrices_in_global is not implemented for MultiBiorbdModel"):
+        homogeneous_matrices_in_global = Function(
+            "RT_parent", [], [models.homogeneous_matrices_in_global(q[:3], 0, 0).to_mx()]
+        )()["o0"]
+
+    with pytest.raises(NotImplementedError, match="homogeneous_matrices_in_child is not implemented for MultiBiorbdModel"):
+        homogeneous_matrices_in_child = Function("RT_child", [], [models.homogeneous_matrices_in_child(0)[0].to_mx()])()[
+            "o0"
+        ]
     mass = Function("Mass", [], [models.mass])()["o0"]
     center_of_mass = Function("CoM", [], [models.center_of_mass(q)])()["o0"]
     center_of_mass_velocity = Function("CoMdot", [], [models.center_of_mass_velocity(q, qdot)])()["o0"]
@@ -94,8 +102,11 @@ def test_biorbd_model():
     angular_momentum = Function("AngMom", [], [models.angular_momentum(q, qdot)])()["o0"]
     reshape_qdot = Function("GetQdot", [], [models.reshape_qdot(q, qdot, 1)])()["o0"]
     segment_angular_velocity = Function("SegmentAngMom", [], [models.segment_angular_velocity(q, qdot, 0)])()["o0"]
-    # soft_contact = Function("SoftContact", [], [models.soft_contact(0, 0)])()["o0"]  # TODO: Fix soft contact (biorbd call error)
-    # torque = Function("TorqueFromActivation", [], [models.torque(tau, q, qdot)])()["o0"]  #TODO: Fix torque (Close the actuator model before calling torqueMax)
+    soft_contact = Function("SoftContact", [], [models.soft_contact(0, 0)])()["o0"]  # TODO: Fix soft contact (biorbd call error)
+
+    with pytest.raises(RuntimeError, match="Close the actuator model before calling torqueMax"):
+        torque = Function("TorqueFromActivation", [], [models.torque(tau, q, qdot)])()["o0"]  #TODO: Fix torque (Close the actuator model before calling torqueMax)
+
     forward_dynamics_free_floating_base = Function(
         "RootForwardDynamics", [], [models.forward_dynamics_free_floating_base(q, qdot, qddot_joints)]
     )()["o0"]
@@ -111,11 +122,21 @@ def test_biorbd_model():
     muscle_activation_dot = Function("MusActivationdot", [], [models.muscle_activation_dot(muscle_excitations)])()["o0"]
     muscle_joint_torque = Function("MusTau", [], [models.muscle_joint_torque(muscle_excitations, q, qdot)])()["o0"]
     markers = Function("Markers", [], [models.markers(q)[0]])()["o0"]
-    # marker = Function("Marker", [], [models.marker(q[:3], index=0)])()["o0"]
-    # marker_index = models.marker_index("marker_3")
+
+    with pytest.raises(NotImplementedError, match="marker is not implemented yet for MultiBiorbdModel"):
+        marker = Function("Marker", [], [models.marker(q[:3], index=0)])()["o0"]
+
+    with pytest.raises(NotImplementedError, match="marker_index is not implemented yet for MultiBiorbdModel"):
+        marker_index = models.marker_index("marker_3")
+
     marker_velocities = Function("Markerdot", [], [models.marker_velocities(q, qdot)[0, :]])()["o0"]
-    # tau_max = Function("TauMax", [], [models.tau_max(q, qdot)])()["o0"]  #TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
-    # rigid_contact_acceleration = models.rigid_contact_acceleration(q, qdot, qddot, 0) # to be added when the code works
+
+    with pytest.raises(RuntimeError, match="All dof must have their actuators set"):
+        tau_max = Function("TauMax", [], [models.tau_max(q, qdot)])()["o0"]  #TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
+
+    with pytest.raises(IndexError, match="tuple index out of range"):
+        rigid_contact_acceleration = models.rigid_contact_acceleration(q, qdot, qddot, 0) # TODO: to be added when the code works
+
     soft_contact_forces = Function("SoftContactForces", [], [models.soft_contact_forces(q, qdot)])()["o0"]
     reshape_fext_to_fcontact = Function("Fext_to_Fcontact", [], [models.reshape_fext_to_fcontact(f_ext)])()["o0"]
     normalize_state_quaternions = Function(
@@ -206,28 +227,30 @@ def test_biorbd_model():
             segment_angular_velocity[i], DM(np.array([0.0580836, 0, 0, 0.708073, 0, 0])[i]), decimal=5
         )
 
+    np.testing.assert_equal(soft_contact.shape, (0, 0))
+
     for i in range(forward_dynamics_free_floating_base.shape[0]):
         np.testing.assert_almost_equal(
-            forward_dynamics_free_floating_base[i], DM(np.array([-1.07327, -1.15351])[i]), decimal=5
+            forward_dynamics_free_floating_base[i], DM(np.array([-1.16626, -0.997219])[i]), decimal=5
         )
 
     for i in range(forward_dynamics.shape[0]):
         np.testing.assert_almost_equal(
             forward_dynamics[i],
-            DM(np.array([1.00257, -3.23703, 0.992444, -0.165877, -1.44074, 1.06376])[i]),
+            DM(np.array([1.06535, -3.78598, 2.27888, -0.348228, -0.778017, 0.113326])[i]),
             decimal=5,
         )
 
     for i in range(constrained_forward_dynamics.shape[0]):
         np.testing.assert_almost_equal(
             constrained_forward_dynamics[i],
-            DM(np.array([1.00257, -3.23703, 0.992444, -0.165877, -1.44074, 1.06376])[i]),
+            DM(np.array([1.06535, -3.78598, 2.27888, -0.348228, -0.778017, 0.113326])[i]),
             decimal=5,
         )
 
     for i in range(inverse_dynamics.shape[0]):
         np.testing.assert_almost_equal(
-            inverse_dynamics[i], DM(np.array([15.8644, 12.6384, 4.74421, 16.5375, 10.2296, 4.25635])[i]), decimal=4
+            inverse_dynamics[i], DM(np.array([13.2861, 11.6096, 4.70426, 15.4236, 9.54273, 3.96254])[i]), decimal=4
         )
 
     for i in range(contact_forces_from_constrained_dynamics.shape[0]):
