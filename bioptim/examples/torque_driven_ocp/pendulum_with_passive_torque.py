@@ -90,13 +90,18 @@ def prepare_ocp(
         u_init = InitialGuess([tau_init] * bio_model.nb_tau)
         u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    else:
+    elif (
+        rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+        or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+    ):
         u_bounds = Bounds(
             [tau_min] * bio_model.nb_tau + [qddot_min] * bio_model.nb_qddot,
             [tau_max] * bio_model.nb_tau + [qddot_max] * bio_model.nb_qddot,
         )
         u_init = InitialGuess([tau_init] * bio_model.nb_tau + [qddot_init] * bio_model.nb_qddot)
         u_bounds[1, :] = 0
+    else:
+        raise NotImplementedError("dynamic not implemented yet")
 
     return OptimalControlProgram(
         bio_model,
