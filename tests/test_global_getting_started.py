@@ -277,7 +277,7 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver):
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK8])
 def test_pendulum_save_and_load_rk8(n_threads, use_sx, ode_solver):
-    if sys.platform == "win32":
+    if sys.platform == "win32":  # it works but not with the CI
         return
 
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
