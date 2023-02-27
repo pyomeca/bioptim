@@ -1,6 +1,7 @@
 import numpy as np
 from bioptim import BiMapping
 
+
 class SelectionMapping(BiMapping):
     """
     Mapping of two index sets according to the indexes that are independent
@@ -15,7 +16,13 @@ class SelectionMapping(BiMapping):
         Index to multiply by -1 of the to_second mapping
     """
 
-    def __init__(self, nb_elements: int = None, independent_indices: tuple[int] = None, dependencies: tuple[Dependency, ...] = None, **params):
+    def __init__(
+        self,
+        nb_elements: int = None,
+        independent_indices: tuple[int] = None,
+        dependencies: tuple[Dependency, ...] = None,
+        **params
+    ):
 
         """
         Parameters
@@ -73,7 +80,7 @@ class SelectionMapping(BiMapping):
         if dependencies is not None:
             for dependancy in dependencies:
                 selection_matrix[dependancy.dependent_index][dependancy.reference_index] = 1
-                if dependancy.factor is not None :
+                if dependancy.factor is not None:
                     selection_matrix[dependancy.dependent_index][dependancy.reference_index] *= dependancy.factor
 
         first = selection_matrix @ index_dof
@@ -86,7 +93,7 @@ class SelectionMapping(BiMapping):
                 oppose.append(i)
                 dependency_matrix[i] = int(abs(first[i]) - 1)
 
-        def build_to_second(dependency_matrix: list, independent_indices: list ):
+        def build_to_second(dependency_matrix: list, independent_indices: list):
             """
             Build the to_second vector used in BiMapping thanks to the dependency matrix of the elements in the system
             and the vector of independent indices
@@ -109,7 +116,7 @@ class SelectionMapping(BiMapping):
                         dependency_matrix[i] = j
             return dependency_matrix
 
-        to_second = build_to_second(dependency_matrix=dependency_matrix, independent_indices= independent_indices)
+        to_second = build_to_second(dependency_matrix=dependency_matrix, independent_indices=independent_indices)
         to_first = independent_indices
         self.to_second = to_second
         self.to_first = to_first
@@ -119,8 +126,7 @@ class SelectionMapping(BiMapping):
         super().__init__(to_second=to_second, to_first=to_first, oppose_to_second=oppose)
 
 
-
-class Dependancy():
+class Dependancy:
     """
     Class that defines the dependency of two elements by their indices
 
@@ -150,19 +156,16 @@ class Dependancy():
         """
         if dependent_index is not None:
             if not isinstance(dependent_index, int):
-                raise ValueError('dependent_index must be an int')
+                raise ValueError("dependent_index must be an int")
         if reference_index is not None:
             if not isinstance(reference_index, int):
-                raise ValueError('referent_index must be an int')
+                raise ValueError("referent_index must be an int")
         if factor is not None:
             if not isinstance(factor, int):
-                raise ValueError('factor must be an int')
+                raise ValueError("factor must be an int")
             if factor != 1 and factor != -1:
-                raise ValueError('factor can only be -1 ')
-
+                raise ValueError("factor can only be -1 ")
 
         self.dependent_index = dependent_index
         self.reference_index = reference_index
         self.factor = factor
-
-
