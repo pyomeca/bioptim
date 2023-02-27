@@ -472,8 +472,8 @@ def test__getting_started__example_variable_scaling():
     )
 
 
-def test__torque_driven_ocp__residual_torque():
-    from bioptim.examples.torque_driven_ocp import residual_torque_actuator as ocp_module
+def test__torque_driven_ocp__torque_activation_driven():
+    from bioptim.examples.torque_driven_ocp import torque_activation_driven as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 

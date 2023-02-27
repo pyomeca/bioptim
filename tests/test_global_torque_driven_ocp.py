@@ -677,28 +677,28 @@ def test_torque_activation_driven(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 204.18087334169184)
+    np.testing.assert_almost_equal(f[0, 0], 0.04880295023323905, decimal=3)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (186, 1))
-    np.testing.assert_almost_equal(g, np.zeros((186, 1)))
+    np.testing.assert_equal(g.shape, (120, 1))
+    np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+    np.testing.assert_almost_equal(q[:, 0], np.array((-0.75,  0.75)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((3., 0.75)))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0., 0.)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0., 0.)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0.2140175, 0.981, 0.3360075)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-0.2196496, 0.981, -0.3448498)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.2256539,  0.0681475)), decimal=3)
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-0.0019898, -0.0238914)), decimal=3)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol)
+    TestUtils.simulate(sol, decimal_value=4)
