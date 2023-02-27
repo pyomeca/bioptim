@@ -69,12 +69,14 @@ def prepare_ocp(
             [tau_max] * bio_model.nb_tau,
         )
         u_init.add([tau_init] * bio_model.nb_tau)
-    else:
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         u_bounds.add(
             [tau_min] * bio_model.nb_tau + [qddot_min] * bio_model.nb_qddot,
             [tau_max] * bio_model.nb_tau + [qddot_max] * bio_model.nb_qddot,
         )
         u_init.add([tau_init] * bio_model.nb_tau + [qddot_init] * bio_model.nb_qddot)
+    else:
+        raise NotImplementedError("other dynamics are not implemented yet")
     # Initial guess
     x_init = InitialGuessList()
     x_init.add([0] * bio_model.nb_q + [0] * bio_model.nb_qdot)
