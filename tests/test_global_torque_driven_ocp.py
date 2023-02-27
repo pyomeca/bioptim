@@ -688,13 +688,13 @@ def test_torque_activation_driven(ode_solver):
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((-0.75,  0.75)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((3., 0.75)))
+    np.testing.assert_almost_equal(q[:, 0], np.array((-0.75, 0.75)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((3.0, 0.75)))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0., 0.)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0., 0.)))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0.0, 0.0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0.0, 0.0)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.2256539,  0.0681475)), decimal=3)
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.2256539, 0.0681475)), decimal=3)
     np.testing.assert_almost_equal(tau[:, -2], np.array((-0.0019898, -0.0238914)), decimal=3)
 
     # save and load
