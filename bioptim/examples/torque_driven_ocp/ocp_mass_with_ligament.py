@@ -69,7 +69,10 @@ def prepare_ocp(
             [tau_max] * bio_model.nb_tau,
         )
         u_init.add([tau_init] * bio_model.nb_tau)
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+    elif (
+        rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+        or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+    ):
         u_bounds.add(
             [tau_min] * bio_model.nb_tau + [qddot_min] * bio_model.nb_qddot,
             [tau_max] * bio_model.nb_tau + [qddot_max] * bio_model.nb_qddot,
