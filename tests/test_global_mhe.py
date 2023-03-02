@@ -4,6 +4,8 @@ Test for file IO
 import os
 import sys
 import numpy as np
+import pytest
+
 from bioptim import Solver
 
 
@@ -46,7 +48,8 @@ def test_cyclic_nmpc():
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.01984925, -3.09892348, 0.23160067)), decimal=6)
 
 
-def test_multi_cyclic_nmpc():
+@pytest.mark.parametrize("get_final_cycles", [True, False])
+def test_multi_cyclic_nmpc(get_final_cycles):
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
@@ -72,6 +75,7 @@ def test_multi_cyclic_nmpc():
         n_cycles_simultaneous=n_cycles_simultaneous,
         get_all_iterations=True,
         get_cycles=True,
+        get_final_cycles=get_final_cycles,
     )
 
     # Check some of the results
@@ -110,6 +114,8 @@ def test_multi_cyclic_nmpc():
         assert s.time[-1] == 2.0
 
     # check some result of the third structure
+    assert len(sol[2]) == 4 if get_final_cycles else 3
+
     for s in sol[2]:
         states, controls = s.states, s.controls
         q = states["q"]

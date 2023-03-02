@@ -518,7 +518,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         self,
         update_function=None,
         get_cycles: bool = False,
-        get_final_cylces: bool = False,
+        get_final_cycles: bool = False,
         **extra_options,
     ) -> Solution | tuple:
         """
@@ -530,7 +530,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             A function that will be called at each iteration of the optimization.
         get_cycles: bool
             If True, the solution of each cycle will be returned.
-        get_final_cylces: bool
+        get_final_cycles: bool
             If True, The cycles of the final windows will be returned with other cycles.
         """
         get_all_iterations = extra_options["get_all_iterations"] if "get_all_iterations" in extra_options else False
@@ -551,9 +551,9 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                 _states, _controls = self.export_cycles(sol)
                 cycle_solutions.append(self._initialize_one_cycle(_states, _controls))
 
-            if get_final_cylces:
+            if get_final_cycles:
                 for cycle_number in range(1, self.n_cycles):
-                    _states, _controls = self.export_cycles(solution[0], cycle_number=cycle_number)
+                    _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
                     cycle_solutions.append(self._initialize_one_cycle(_states, _controls))
 
             final_solution.append(cycle_solutions)
