@@ -136,7 +136,7 @@ class MultinodeConstraint(Constraint):
             g_to_add_to[self.list_index] = []
 
 
-class AllnodeConstraint(Constraint):
+class AllNodeConstraint(Constraint):
     """
     A placeholder for a multi node constraints
 
@@ -171,7 +171,6 @@ class AllnodeConstraint(Constraint):
         phase_idx: int,
         allnode_constraint: Callable | Any = None,
         custom_function: Callable = None,
-        all_node: Node | int,
         min_bound: float = 0,
         max_bound: float = 0,
         weight: float = 0,
@@ -193,16 +192,11 @@ class AllnodeConstraint(Constraint):
             force_allnode = True
             del params["force_allnode"]
 
-        if not isinstance(allnode_constraint, AllnodeConstraintFcn) and not force_allnode:
+        if not isinstance(allnode_constraint, AllNodeConstraintFcn) and not force_allnode:
             custom_function = allnode_constraint
-            allnode_constraint = AllnodeConstraintFcn.CUSTOM
+            allnode_constraint = AllNodeConstraintFcn.CUSTOM
         super(Constraint, self).__init__(penalty=allnode_constraint, custom_function=custom_function, **params)
 
-        if all_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
-            if not isinstance(all_node, int):
-                raise NotImplementedError(
-                    "Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
-                )
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
@@ -210,9 +204,6 @@ class AllnodeConstraint(Constraint):
         self.weight = weight
         self.quadratic = True
         self.phase_idx = phase_idx
-        #self.phase_all_idx = phase_all_idx
-        self.all_node = self.all_node
-        self.node = self.all_node
         self.dt = 1
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL
@@ -313,14 +304,14 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
         return full_phase_multinode_constraint
 
 
-class AllnodeConstraintList(UniquePerPhaseOptionList):
+class AllNodeConstraintList(UniquePerPhaseOptionList):
     """
     A list of All Node Constraint
 
     Methods
     -------
     add(self, transition: Callable | PhaseTransitionFcn, phase: int = -1, **extra_arguments)
-        Add a new AllConstraint to the list
+        Add a new AllNodeConstraint to the list
     print(self)
         Print the AllConstraintList to the console
     prepare_allnode_constraint(self, ocp) -> list
@@ -339,16 +330,16 @@ class AllnodeConstraintList(UniquePerPhaseOptionList):
             Any parameters to pass to Constraint
         """
 
-        if not isinstance(allnode_constraint, AllnodeConstraintFcn):
+        if not isinstance(allnode_constraint, AllNodeConstraintFcn):
             extra_arguments["custom_function"] = allnode_constraint
-            allnode_constraint = AllnodeConstraintFcn.CUSTOM
-        super(AllnodeConstraintList, self)._add(
-            option_type=AllnodeConstraint, allnode_constraint=allnode_constraint, phase=1, **extra_arguments
+            allnode_constraint = AllNodeConstraintFcn.CUSTOM
+        super(AllNodeConstraintList, self)._add(
+            option_type=AllNodeConstraint, allnode_constraint=allnode_constraint, phase=1, **extra_arguments
         )
 
     def print(self):
         """
-        Print the MultinodeConstraintList to the console
+        Print the AllNodeConstraintList to the console
         """
         raise NotImplementedError("Printing of AllConstraintList is not ready yet")
 
@@ -607,7 +598,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return multinode_constraint.custom_function(multinode_constraint, nlp_pre, nlp_post, **extra_params)
 
 
-class AllConstraintFunctions(PenaltyFunctionAbstract):
+class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
     """
     Internal implementation of the phase transitions
     """
@@ -625,7 +616,7 @@ class AllConstraintFunctions(PenaltyFunctionAbstract):
 
             Parameters
             ----------
-            allnode_constraint: AllnodeConstraint
+            allnode_constraint: AllNodeConstraint
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements
@@ -660,11 +651,11 @@ class MultinodeConstraintFcn(FcnEnum):
         return MultinodeConstraintFunctions
 
 
-class AllnodeConstraintFcn(FcnEnum):
+class AllNodeConstraintFcn(FcnEnum):
     """
     Selection of valid allnode constraint functions
     """
-    CUSTOM = (AllConstraintFunctions.Functions.custom,)
+    CUSTOM = (AllNodeConstraintFunctions.Functions.custom,)
 
     @staticmethod
     def get_type():
@@ -672,4 +663,4 @@ class AllnodeConstraintFcn(FcnEnum):
         Returns the type of the penalty
         """
 
-        return AllConstraintFunctions
+        return AllNodeConstraintFunctions
