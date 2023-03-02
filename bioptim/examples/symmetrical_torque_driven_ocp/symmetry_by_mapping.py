@@ -32,6 +32,7 @@ from bioptim import (
     DynamicsFcn,
     BiMappingList,
     SelectionMapping,
+    Dependency,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -76,7 +77,6 @@ def prepare_ocp(
         independent_indices=(0, 1, 3),
         dependencies=(Dependency(dependent_index=4, reference_index=3, factor=-1),),
     )
-    bimap = SelectionMapping(bio_model.nb_dof, [0, 1, 3], [[4, 3, -1]])
     dof_mappings.add("q", bimapping=bimap)
     # For convenience, if only q is defined, qdot and tau are automatically defined too
     # While computing the derivatives, the states is 6 dimensions (3 for q and 3 for qdot) and controls is 3 dimensions
