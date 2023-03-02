@@ -286,6 +286,7 @@ class Dependency:
         self.reference_index = reference_index
         self.factor = factor
 
+
 class SelectionMapping(BiMapping):
     """
     Mapping of two index sets according to the indexes that are independent
@@ -408,8 +409,6 @@ class SelectionMapping(BiMapping):
         self.oppose_to_first = None
 
         super().__init__(to_second=to_second, to_first=to_first, oppose_to_second=oppose)
-
-
 
 
 class NodeMapping(OptionGeneric):
