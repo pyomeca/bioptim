@@ -329,7 +329,7 @@ class SelectionMapping(BiMapping):
 
         # verify dependant dof : impossible multiple dependancies
         master = []
-        dependant = []
+        dependent = []
 
         if nb_elements is not None:
             if not isinstance(nb_elements, int):
@@ -343,10 +343,10 @@ class SelectionMapping(BiMapping):
                 raise ValueError("dependencies should be a tuple of Dependency class ")
             for dependency in dependencies:
                 master.append(dependency.dependent_index)
-                dependant.append(dependency.reference_index)
+                dependent.append(dependency.reference_index)
 
             for i in range(len(dependencies)):
-                if master[i] in dependant:
+                if master[i] in dependent:
                     raise ValueError("Dependancies cant depend on others")
 
         if len(independent_indices) > nb_elements:
@@ -360,8 +360,9 @@ class SelectionMapping(BiMapping):
         index_dof = index_dof.reshape(nb_elements, 1)
 
         selection_matrix = np.zeros((nb_elements, nb_elements))
-        for element in independent_indices:  # simple case
-            selection_matrix[element][element] = 1
+        for element in independent_indices: # simple case
+            if element not in master:
+                selection_matrix[element][element] = 1
         if dependencies is not None:
             for dependency in dependencies:
                 selection_matrix[dependency.dependent_index][dependency.reference_index] = 1
