@@ -181,7 +181,8 @@ class ConfigureProblem:
             A list of fatigue elements
 
         """
-
+        if with_contact and nlp.model.nb_contacts == 0:
+            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
         if nlp.model.nb_soft_contacts != 0:
             if (
                 soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
@@ -320,6 +321,9 @@ class ConfigureProblem:
             which soft contact dynamic should be used
 
         """
+        if with_contact and nlp.model.nb_contacts == 0:
+            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
+
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
@@ -404,6 +408,9 @@ class ConfigureProblem:
             If the dynamic with a residual torque should be used
 
         """
+
+        if with_contact and nlp.model.nb_contacts == 0:
+            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -511,6 +518,8 @@ class ConfigureProblem:
             which rigidbody dynamics should be used
 
         """
+        if with_contact and nlp.model.nb_contacts == 0:
+            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
 
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
