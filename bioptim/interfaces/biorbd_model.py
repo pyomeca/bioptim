@@ -44,6 +44,33 @@ class MultiBiorbdModel:
     def serialize(self) -> tuple[Callable, dict]:
         return MultiBiorbdModel, dict(bio_model=tuple(path for path in self.path))
 
+    def variable_index(self, variable: str, model_index: int) -> slice:
+        if variable == 'q':
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbQ()
+            return slice(current_idx, current_idx + self.models[model_index].nbQ())
+        elif variable == 'qdot':
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbQdot()
+            return slice(current_idx, current_idx + self.models[model_index].nbQdot())
+        elif variable == 'qddot':
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbQddot()
+            return slice(current_idx, current_idx + self.models[model_index].nbQddot())
+        elif variable == 'qddot_joints':
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbQddot() - model.nbRoot()
+            return slice(current_idx, current_idx + self.models[model_index].nbQddot() - self.models[model_index].nbRoot())
+        elif variable == 'tau':
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbGeneralizedTorque()
+            return slice(current_idx, current_idx + self.models[model_index].nbGeneralizedTorque())
+
     @property
     def gravity(self) -> MX:
         return vertcat(*(model.getGravity().to_mx() for model in self.models))
@@ -103,91 +130,69 @@ class MultiBiorbdModel:
 
     def center_of_mass(self, q) -> MX:
         out = MX()
-        current_q = 0
-        for model in self.models:
-            out = vertcat(out, model.CoM(q[current_q : model.nbQ() + current_q], True).to_mx())
-            current_q += model.nbQ()
+        for i, model in enumerate(self.models):
+            out = vertcat(out, model.CoM(q[self.variable_index('q', i)], True).to_mx())
         return out
 
     def center_of_mass_velocity(self, q, qdot) -> MX:
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.CoMdot(
-                    q[current_q : model.nbQ() + current_q], qdot[current_qdot : model.nbQdot() + current_qdot], True
+                    q[self.variable_index('q', i)], qdot[self.variable_index('qdot', i)], True
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
         return out
 
     def center_of_mass_acceleration(self, q, qdot, qddot) -> MX:
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.CoMddot(
-                    q[current_q : model.nbQ() + current_q],
-                    qdot[current_qdot : model.nbQdot() + current_qdot],
-                    qddot[current_qdot : model.nbQdot() + current_qdot],
+                    q[self.variable_index('q', i)],
+                    qdot[self.variable_index('qdot', i)],
+                    qddot[self.variable_index('qddot', i)],
                     True,
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
         return out
 
     def angular_momentum(self, q, qdot) -> MX:
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.angularMomentum(
-                    q[current_q : model.nbQ() + current_q], qdot[current_qdot : model.nbQdot() + current_qdot], True
+                    q[self.variable_index('q', i)], qdot[self.variable_index('qdot', i)], True
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
         return out
 
     def reshape_qdot(self, q, qdot, k_stab=1) -> MX:
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.computeQdot(
-                    q[current_q : current_q + model.nbQ()], qdot[current_qdot : current_qdot + model.nbQdot()], k_stab
+                    q[self.variable_index('q', i)], qdot[self.variable_index('qdot', i)], k_stab
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
         return out
 
     def segment_angular_velocity(self, q, qdot, idx) -> MX:
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.segmentAngularVelocity(
-                    q[current_q : model.nbQ() + current_q],
-                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    q[self.variable_index('q', i)],
+                    qdot[self.variable_index('qdot', i)],
                     idx,
                     True,
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
         return out
 
     @property
@@ -242,147 +247,107 @@ class MultiBiorbdModel:
 
     def torque(self, tau_activations, q, qdot) -> MX:
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        current_tau = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.torque(
-                    tau_activations[current_tau : model.nbGeneralizedTorque() + current_tau],
-                    q[current_q : model.nbQ() + current_q],
-                    qdot[current_qdot : model.nbQdot() + current_qdot],
+                    tau_activations[self.variable_index('tau', i)],
+                    q[self.variable_index('q', i)],
+                    qdot[self.variable_index('qdot', i)],
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
-            current_tau += model.nbGeneralizedTorque()
             model.closeActuator()
         return out
 
     def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        current_qddot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.ForwardDynamicsFreeFloatingBase(
-                    q[current_q : model.nbQ() + current_q],
-                    qdot[current_qdot : model.nbQdot() + current_qdot],
-                    qddot_joints[current_qddot : current_qddot + model.nbQddot() - model.nbRoot()],
+                    q[self.variable_index('q', i)],
+                    qdot[self.variable_index('q', i)],
+                    qddot_joints[self.variable_index('qddot_joints', i)],
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
-            current_qddot += model.nbQddot() - model.nbRoot()
         return out
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        current_tau = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.ForwardDynamics(
-                    q[current_q : model.nbQ() + current_q],
-                    qdot[current_qdot : model.nbQdot() + current_qdot],
-                    tau[current_tau : current_tau + model.nbGeneralizedTorque()],
+                    q[self.variable_index('q', i)],
+                    qdot[self.variable_index('qdot', i)],
+                    tau[self.variable_index('tau', i)],
                     external_forces,
                     f_contacts,
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
-            current_tau += model.nbGeneralizedTorque()
         return out
 
     def constrained_forward_dynamics(self, q, qdot, qddot, external_forces=None) -> MX:
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        current_qddot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.ForwardDynamicsConstraintsDirect(
-                    q[current_q : model.nbQ() + current_q],
-                    qdot[current_qdot : model.nbQdot() + current_qdot],
-                    qddot[current_qddot : current_qddot + model.nbQddot()],
+                    q[self.variable_index('q', i)],
+                    qdot[self.variable_index('qdot', i)],
+                    qddot[self.variable_index('qddot', i)],
                     external_forces,
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
-            current_qddot += model.nbQddot()
         return out
 
     def inverse_dynamics(self, q, qdot, qddot, external_forces=None, f_contacts=None) -> MX:
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        current_qddot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.InverseDynamics(
-                    q[current_q : model.nbQ() + current_q],
-                    qdot[current_qdot : model.nbQdot() + current_qdot],
-                    qddot[current_qddot : current_qddot + model.nbQddot()],
+                    q[self.variable_index('q', i)],
+                    qdot[self.variable_index('qdot', i)],
+                    qddot[self.variable_index('qddot', i)],
                     external_forces,
                     f_contacts,
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
-            current_qddot += model.nbQddot()
         return out
 
     def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, external_forces=None) -> MX:
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        current_tau = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.ContactForcesFromForwardDynamicsConstraintsDirect(
-                    q[current_q : model.nbQ() + current_q],
-                    qdot[current_qdot : model.nbQdot() + current_qdot],
-                    tau[current_tau : current_tau + model.nbGeneralizedTorque()],
+                    q[self.variable_index('q', i)],
+                    qdot[self.variable_index('q', i)],
+                    tau[self.variable_index('q', i)],
                     external_forces,
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
-            current_tau += model.nbGeneralizedTorque()
         return out
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 model.ComputeConstraintImpulsesDirect(
-                    q[current_q : model.nbQ() + current_q],
-                    qdot_pre_impact[current_qdot : model.nbQdot() + current_qdot],
+                    q[self.variable_index('q', i)],
+                    qdot_pre_impact[self.variable_index('qdot', i)],
                 ).to_mx(),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
         return out
 
     def muscle_activation_dot(self, muscle_excitations) -> MX:
@@ -405,11 +370,9 @@ class MultiBiorbdModel:
 
     def markers(self, q) -> Any | list[MX]:
         out = []
-        current_q = 0
-        for model in self.models:
-            for m in model.markers(q[current_q : model.nbQ() + current_q]):
+        for i, model in enumerate(self.models):
+            for m in model.markers(q[self.variable_index('q', i)]):
                 out.append(m.to_mx())
-            current_q += model.nbQ()
         return out
 
     @property
@@ -435,24 +398,20 @@ class MultiBiorbdModel:
             raise RuntimeError("marker_velocities is not implemented yet with reference_index for MultiBiorbdModel")
 
         out = MX()
-        current_q = 0
-        current_qdot = 0
-        for model in self.models:
+        for i, model in enumerate(self.models):
             out = vertcat(
                 out,
                 horzcat(
                     *[
                         m.to_mx()
                         for m in model.markersVelocity(
-                            q[current_q : model.nbQ() + current_q],
-                            qdot[current_qdot : model.nbQdot() + current_qdot],
+                            q[self.variable_index('q', i)],
+                            qdot[self.variable_index('qdot', i)],
                             True,
                         )
                     ]
                 ),
             )
-            current_q += model.nbQ()
-            current_qdot += model.nbQdot()
         return out
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
