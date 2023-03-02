@@ -25,7 +25,7 @@ def test_biorbd_model_import():
     )
 
     with pytest.raises(
-        NotImplementedError, match="The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'"
+        RuntimeError, match="The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'"
     ):
         MultiBiorbdModel([1])
 
