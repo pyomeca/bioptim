@@ -512,6 +512,13 @@ class OptimalControlProgram:
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
+        self.isdef_x_init = False
+        self.isdef_u_init = False
+        self.isdef_x_bounds = False
+        self.isdef_u_bounds = False
+
+        self.update_bounds(x_bounds, u_bounds)
+        self.update_initial_guess(x_init, u_init)
         # Define the actual NLP problem
         self.v.define_ocp_shooting_points()
 
@@ -528,14 +535,6 @@ class OptimalControlProgram:
                 ContinuityConstraintFunctions.continuity(self)
             else:
                 ContinuityObjectiveFunctions.continuity(self, state_continuity_weight)
-
-        self.isdef_x_init = False
-        self.isdef_u_init = False
-        self.isdef_x_bounds = False
-        self.isdef_u_bounds = False
-
-        self.update_bounds(x_bounds, u_bounds)
-        self.update_initial_guess(x_init, u_init)
 
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
