@@ -306,6 +306,18 @@ class OptimizationVariable:
             )
         return self.parent_list.cx_end[self.index, :]
 
+    @property
+    def cx_all(self):
+        """
+        The CX of the variable
+        """
+
+        if self.parent_list is None:
+            raise RuntimeError(
+                "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
+            )
+        return self.parent_list.cx_all[self.index, :]
+
 
 class OptimizationVariableList:
     """
@@ -344,6 +356,7 @@ class OptimizationVariableList:
         self.elements: list = []
         self.fake_elements: list = []
         self._cx: MX | SX | np.ndarray = np.array([])
+        self._cx_all: MX | SX | np.ndarray = np.array([])
         self._cx_end: MX | SX | np.ndarray = np.array([])
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
@@ -391,6 +404,7 @@ class OptimizationVariableList:
     def __setitem__(self, key, value: OptimizationVariable):
         self.elements.append(value)
 
+# Surement a modifier
     def get_cx(self, key, cx_type):
         if key == "all":
             return self.cx if cx_type == CXStep.CX_START else self.cx_end
@@ -481,6 +495,14 @@ class OptimizationVariableList:
         """
 
         return self._cx[:, 0]
+
+    @property
+    def cx_all(self):
+        """
+        The cx of all elements together
+        """
+
+        return self._cx_all[:, 0]
 
     @property
     def cx_end(self):
@@ -656,6 +678,14 @@ class OptimizationVariableContainer:
         """
 
         return self.optimization_variable["unscaled"].cx
+
+    @property
+    def cx_all(self):
+        """
+        The cx of all elements together
+        """
+
+        return self.optimization_variable["unscaled"].cx_all
 
     @property
     def cx_intermediates_list(self):
