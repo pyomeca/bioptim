@@ -200,8 +200,6 @@ from .misc.enums import (
     MagnitudeType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
-
-# from .misc.selection_mapping import SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram

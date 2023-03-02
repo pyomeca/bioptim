@@ -19,6 +19,7 @@ from bioptim import (
     DynamicsFcn,
     BiMappingList,
     SelectionMapping,
+    Dependency,
     BoundsList,
     Bounds,
     InitialGuessList,
@@ -32,6 +33,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
     dof_mapping = BiMappingList()
+    
     # adds a bimapping to bimappinglist
     # dof_mapping.add("tau", [None, None, None, 0], [3])
     # easier way is to use SelectionMapping which is a subclass of biMapping
