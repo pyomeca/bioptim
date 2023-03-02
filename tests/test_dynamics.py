@@ -123,8 +123,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             contact_out = np.array(nlp.contact_forces_func(states, controls, params))
             if with_external_force:
                 np.testing.assert_almost_equal(
-                    x_out[:, 0],
-                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                    x_out[:, 0], [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029]
                 )
                 np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
             else:
@@ -149,8 +148,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             contact_out = np.array(nlp.contact_forces_func(states, controls, params))
             if with_external_force:
                 np.testing.assert_almost_equal(
-                    x_out[:, 0],
-                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                    x_out[:, 0], [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029]
                 )
                 np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
             else:
@@ -598,7 +596,6 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
                 0.7290072,
             ],
         )
-
         np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
@@ -805,12 +802,124 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
+@pytest.mark.parametrize("with_residual_torque", [False, True])
+@pytest.mark.parametrize("with_external_force", [False, True])
+@pytest.mark.parametrize("with_passive_torque", [False, True])
+def test_torque_activation_driven_with_residual_torque(
+    with_residual_torque, with_external_force, with_passive_torque, cx
+):
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = BiorbdModel(
+        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"
+    )
+    nlp.ns = 5
+    nlp.cx = cx
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_residual_torque=with_residual_torque),
+        False,
+    )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    np.random.seed(42)
+    if with_external_force:
+        external_forces = np.random.rand(6, nlp.model.nb_segments, nlp.ns)
+        external_forces = np.transpose(external_forces, (2, 0, 1))
+        external_forces = [[external_forces[i, :, :] for i in range(nlp.ns)]]
+        NonLinearProgram.add(ocp, "external_forces", external_forces, False)
+
+    # Prepare the dynamics
+    ConfigureProblem.initialize(ocp, nlp)
+
+    # Test the results
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    params = np.random.rand(nlp.parameters.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params))
+
+    if with_residual_torque:
+        if with_external_force:
+            if with_passive_torque:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.77224, 0.72901, 81.74916, 283.31896],
+                    decimal=5,
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.77224, 0.72901, 81.74916, 283.31896],
+                    decimal=5,
+                )
+        else:
+            if with_passive_torque:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.020584, 0.183405, 55.393940, 54.222523],
+                    decimal=5,
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.020584, 0.183405, 55.393940, 54.222523],
+                    decimal=5,
+                )
+
+    else:
+        if with_external_force:
+            if with_passive_torque:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.77224, 0.72901, 81.30983, 264.69109],
+                    decimal=5,
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.77224, 0.72901, 81.30983, 264.69109],
+                    decimal=5,
+                )
+        else:
+            if with_passive_torque:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.020584, 0.183405, 55.204243, 24.411235],
+                    decimal=5,
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.020584, 0.183405, 55.204243, 24.411235],
+                    decimal=5,
+                )
+
+
+@pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-@pytest.mark.parametrize("with_torque", [False, True])
+@pytest.mark.parametrize("with_residual_torque", [False, True])
 @pytest.mark.parametrize("with_excitations", [False, True])
 @pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
-def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, rigidbody_dynamics, cx):
+def test_muscle_driven(
+    with_excitations, with_contact, with_residual_torque, with_external_force, rigidbody_dynamics, cx
+):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
@@ -831,7 +940,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
         "dynamics_type",
         Dynamics(
             DynamicsFcn.MUSCLE_DRIVEN,
-            with_torque=with_torque,
+            with_residual_torque=with_residual_torque,
             with_excitations=with_excitations,
             with_contact=with_contact,
             rigidbody_dynamics=rigidbody_dynamics,
@@ -865,7 +974,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            if with_torque:
+            if with_residual_torque:
                 if with_excitations:
                     if with_external_force:
                         np.testing.assert_almost_equal(
@@ -970,7 +1079,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             decimal=6,
                         )
         else:
-            if with_torque:
+            if with_residual_torque:
                 if with_excitations:
                     if with_external_force:
                         np.testing.assert_almost_equal(
@@ -1090,7 +1199,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                         )
     else:
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            if with_torque:
+            if with_residual_torque:
                 if with_excitations:
                     if with_external_force:
                         np.testing.assert_almost_equal(
@@ -1195,7 +1304,7 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
                             decimal=6,
                         )
         else:
-            if with_torque:
+            if with_residual_torque:
                 if with_excitations:
                     if with_external_force:
                         np.testing.assert_almost_equal(
