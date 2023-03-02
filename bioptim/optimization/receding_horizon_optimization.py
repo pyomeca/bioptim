@@ -518,8 +518,21 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         self,
         update_function=None,
         get_cycles: bool = False,
+        get_final_cylces: bool = False,
         **extra_options,
     ) -> Solution | tuple:
+        """
+
+
+        Parameters
+        ----------
+        update_function: callable
+            A function that will be called at each iteration of the optimization.
+        get_cycles: bool
+            If True, the solution of each cycle will be returned.
+        get_final_cylces: bool
+            If True, The cycles of the final windows will be returned with other cycles.
+        """
         get_all_iterations = extra_options["get_all_iterations"] if "get_all_iterations" in extra_options else False
         extra_options["get_all_iterations"] = True if get_cycles else False
 
@@ -538,13 +551,20 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                 _states, _controls = self.export_cycles(sol)
                 cycle_solutions.append(self._initialize_one_cycle(_states, _controls))
 
+            if get_final_cylces:
+                for cycle_number in range(1, self.n_cycles):
+                    _states, _controls = self.export_cycles(solution[0], cycle_number=cycle_number)
+                    cycle_solutions.append(self._initialize_one_cycle(_states, _controls))
+
             final_solution.append(cycle_solutions)
 
         return tuple(final_solution) if len(final_solution) > 1 else final_solution[0]
 
-    def export_cycles(self, sol: Solution):
-        states = sol.states["all"][:, 0 : self.cycle_len + 1]
-        controls = sol.controls["all"][:, 0 : self.cycle_len + 1]
+    def export_cycles(self, sol: Solution, cycle_number: int = 0) -> tuple:
+        """ Exports the solution of the desired cycle from the full window solution"""
+        window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len + 1)
+        states = sol.states["all"][:, window_slice]
+        controls = sol.controls["all"][:, window_slice]
         return states, controls
 
     def _initialize_solution(self, states: list, controls: list):
