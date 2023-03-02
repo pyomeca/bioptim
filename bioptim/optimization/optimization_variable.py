@@ -480,7 +480,7 @@ class OptimizationVariableList:
         The cx of all elements together (starting point)
         """
 
-        return self._cx[:, 0] if self.shape != 0 else []
+        return [] if self.shape == 0 else self._cx[:, 0]
 
     @property
     def cx_end(self):
@@ -488,7 +488,7 @@ class OptimizationVariableList:
         The cx of all elements together (ending point)
         """
 
-        return self._cx_end[:, 0] if self.shape != 0 else []
+        return [] if self.shape == 0 else self._cx_end[:, 0]
 
     @property
     def cx_intermediates_list(self):

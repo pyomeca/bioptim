@@ -70,10 +70,7 @@ class Integrator:
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
         self.x_sym = ode["x_scaled"]
-        if "p_scale" in ode.keys():
-            self.u_sym = ode["p_scaled"]
-        else:
-            self.u_sym = []
+        self.u_sym = ode["p_scaled"] if "p_scale" in ode.keys() else []
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
@@ -300,7 +297,8 @@ class RK1(RK):
         The next integrate states
         """
 
-        return x_prev + h * self.fun(x_prev, self.get_u(u, t), p)  #[:, self.idx]
+        return x_prev + h * self.fun(x_prev, self.get_u(u, t), p)  # [:, self.idx]
+
 
 class RK2(RK):
     """

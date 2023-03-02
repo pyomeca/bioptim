@@ -510,7 +510,6 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
-        for i in range(self.n_phases):
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
         self.isdef_x_init = False

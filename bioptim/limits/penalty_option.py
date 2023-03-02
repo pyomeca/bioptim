@@ -424,6 +424,7 @@ class PenaltyOption(OptionGeneric):
                 control_cx_scaled = horzcat(control_cx_scaled, all_pn.nlp.controls["scaled"].cx_end)
 
         param_cx = nlp.cx(nlp.parameters.cx)
+
         if isinstance(nlp.controls.cx, list):
             if len(nlp.controls.cx) == 0:
                 control_cx_scaled = nlp.cx(nlp.controls.cx)
