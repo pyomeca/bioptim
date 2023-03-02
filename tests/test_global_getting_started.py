@@ -69,16 +69,45 @@ def test_pendulum(ode_solver, use_sx, n_threads):
     np.testing.assert_equal(f.shape, (1, 1))
     if isinstance(ode_solver, OdeSolver.RK8):
         np.testing.assert_almost_equal(f[0, 0], 41.57063948309302)
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.57063948309302)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.5010317, 0.6824593])
+
     elif isinstance(ode_solver, OdeSolver.IRK):
         np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 65.8236055171619)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.5536468, -0.4129719])
+
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(f[0, 0], 46.667345680854794)
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 46.667345680854794)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.1780507, 0.3254202])
+
     elif isinstance(ode_solver, OdeSolver.RK1):
         np.testing.assert_almost_equal(f[0, 0], 47.360621044913245)
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 47.360621044913245)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.1463538, 0.0215651])
+
     elif isinstance(ode_solver, OdeSolver.RK2):
         np.testing.assert_almost_equal(f[0, 0], 76.24887695462857)
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 76.24887695462857)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.652476, -0.496652])
+
     else:
         np.testing.assert_almost_equal(f[0, 0], 41.58259426)
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 41.58259426)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.4961208, 0.6764171])
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -170,7 +199,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
             # Check some of the results
-            q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+            q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
 
             # initial and final position
             np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -217,7 +246,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # Check some of the results
-        q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+        q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -279,6 +308,10 @@ def test_custom_constraint_track_markers(ode_solver):
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516129, 9.81, 2.27903226)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-1.45161291, 9.81, -2.27903226)))
+
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
     else:
         # Check objective function value
         f = np.array(sol.cost)
@@ -288,10 +321,15 @@ def test_custom_constraint_track_markers(ode_solver):
         np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
 
+
+@pytest.mark.parametrize("random_init", [True, False])
 @pytest.mark.parametrize("interpolation", InterpolationType)
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_initial_guesses(interpolation, ode_solver):
+@pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])  # OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK,
+def test_initial_guesses(random_init, interpolation, ode_solver):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -299,13 +337,28 @@ def test_initial_guesses(interpolation, ode_solver):
     ode_solver = ode_solver()
 
     np.random.seed(42)
+
+    if interpolation == InterpolationType.ALL_POINTS and ode_solver.is_direct_shooting:
+        with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS must only be used with direct collocation"):
+            _ = ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+                final_time=1,
+                n_shooting=5,
+                random_init=random_init,
+                initial_guess=interpolation,
+                ode_solver=ode_solver,
+            )
+        return
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         final_time=1,
         n_shooting=5,
+        random_init=random_init,
         initial_guess=interpolation,
         ode_solver=ode_solver,
     )
+
     sol = ocp.solve()
 
     # Check objective function value
@@ -315,11 +368,15 @@ def test_initial_guesses(interpolation, ode_solver):
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (36, 1))
-    np.testing.assert_almost_equal(g, np.zeros((36, 1)))
+    if ode_solver.is_direct_collocation:
+        np.testing.assert_equal(g.shape, (156, 1))
+        np.testing.assert_almost_equal(g, np.zeros((156, 1)))
+    else:
+        np.testing.assert_equal(g.shape, (36, 1))
+        np.testing.assert_almost_equal(g, np.zeros((36, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0]))
@@ -332,7 +389,7 @@ def test_initial_guesses(interpolation, ode_solver):
     np.testing.assert_almost_equal(tau[:, -2], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    if interpolation == InterpolationType.CUSTOM:
+    if interpolation == InterpolationType.CUSTOM and random_init == False:
         with pytest.raises(AttributeError, match="'PathCondition' object has no attribute 'custom_function'"):
             TestUtils.save_and_load(sol, ocp, True)
     else:
@@ -340,6 +397,10 @@ def test_initial_guesses(interpolation, ode_solver):
 
     # simulate
     TestUtils.simulate(sol)
+
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13954.735000000004)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -389,6 +450,10 @@ def test_cyclic_objective(ode_solver):
     # simulate
     TestUtils.simulate(sol)
 
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13224.252515047212)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_cyclic_constraint(ode_solver):
@@ -436,6 +501,10 @@ def test_cyclic_constraint(ode_solver):
 
     # simulate
     TestUtils.simulate(sol)
+
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 78921.61000000013)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -493,6 +562,13 @@ def test_phase_transitions(ode_solver):
     ):
         TestUtils.simulate(sol)
 
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 14769.760808687663)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 38218.35341602849)
+    np.testing.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 34514.48724963841)
+    np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 21941.02244926652)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_parameter_optimization(ode_solver):
@@ -523,7 +599,12 @@ def test_parameter_optimization(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((320, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_xyz"]
+    q, qdot, tau, gravity = (
+        sol.states["q"],
+        sol.states["qdot"],
+        sol.controls["tau"],
+        sol.parameters["gravity_xyz"],
+    )
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -546,6 +627,10 @@ def test_parameter_optimization(ode_solver):
         # gravity parameter
         np.testing.assert_almost_equal(gravity, np.array([[0, 0.05059018, -9.8065527]]).T)
 
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 357.32088196158827)
+
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
@@ -559,6 +644,10 @@ def test_parameter_optimization(ode_solver):
         # gravity parameter
         np.testing.assert_almost_equal(gravity, np.array([[0.0, 0.05059018, -9.8065527]]).T)
 
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 357.32088196158827)
+
     else:
         # Check objective function value
         f = np.array(sol.cost)
@@ -571,6 +660,10 @@ def test_parameter_optimization(ode_solver):
 
         # gravity parameter
         np.testing.assert_almost_equal(gravity, np.array([[0, 0.05059018, -9.8065527]]).T)
+
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 357.32088196158827)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -623,6 +716,10 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516129, 9.81, 2.27903226)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((-1.45161291, 9.81, -2.27903226)))
 
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_example_external_forces(ode_solver):
@@ -658,7 +755,6 @@ def test_example_external_forces(ode_solver):
     np.testing.assert_almost_equal(tau[:, -2], np.array((0, 3.90677425, 0, 0)))
 
     if isinstance(ode_solver, OdeSolver.IRK):
-
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)), decimal=5)
         np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)), decimal=5)
@@ -666,8 +762,11 @@ def test_example_external_forces(ode_solver):
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)), decimal=5)
         np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)), decimal=5)
-    else:
 
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 9875.887687469118)
+    else:
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)))
         np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)))
@@ -675,6 +774,10 @@ def test_example_external_forces(ode_solver):
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
         np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
+
+        # detailed cost values
+        sol.detailed_cost_values()
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 9875.887687469118)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -707,7 +810,11 @@ def test_example_multiphase(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states, controls, states_no_intermediate = (
+        sol.states,
+        sol.controls,
+        sol.states_no_intermediate,
+    )
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array((1, 0, 0)))
@@ -741,9 +848,152 @@ def test_example_multiphase(ode_solver):
 
     # Test warm start
     if ode_solver == OdeSolver.COLLOCATION:
-        TestUtils.assert_warm_start(ocp, sol, state_decimal=0)
+        with pytest.raises(
+            NotImplementedError,
+            match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
+        ):
+            TestUtils.assert_warm_start(ocp, sol, state_decimal=0)
+        return
     else:
         TestUtils.assert_warm_start(ocp, sol)
+
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19397.605252449728)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 48129.27750487157)
+    np.testing.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 0.0)
+    np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 38560.82580432337)
+
+    # state no intermediate
+    np.testing.assert_almost_equal(states_no_intermediate[0]["q"][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states_no_intermediate[0]["q"][:, -1], np.array((2, 0, 0.0078695)))
+    if ode_solver == OdeSolver.RK4:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
+            np.array((1.5000000e00, 3.3040241e-17, 3.9347424e-03)),
+        )
+    elif ode_solver == OdeSolver.RK8:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
+            np.array((1.5000000e00, 4.6362903e-17, 3.9347424e-03)),
+        )
+    elif ode_solver == OdeSolver.IRK:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
+            np.array((1.5000000e00, -4.4586581e-17, 3.9347424e-03)),
+        )
+    elif ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
+            np.array([1.5000000e00, -2.4992262e-16, 3.9347423e-03]),
+        )
+    else:
+        raise Exception("ode solver not supported for this test")
+
+    np.testing.assert_almost_equal(states_no_intermediate[1]["q"][:, 0], np.array((2, 0, 0.0078695)))
+    np.testing.assert_almost_equal(states_no_intermediate[1]["q"][:, -1], np.array((1, 0, 0)))
+    if ode_solver == OdeSolver.RK4:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
+            np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
+        )
+    elif ode_solver == OdeSolver.RK8:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
+            np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
+        )
+    elif ode_solver == OdeSolver.IRK:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
+            np.array((1.5070658e00, -5.0200022e-17, 3.5555768e-02)),
+        )
+    elif ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
+            np.array((1.5070658e00, -2.8260005e-15, 3.5555768e-02)),
+        )
+    else:
+        raise Exception("ode solver not supported for this test")
+
+    np.testing.assert_almost_equal(states_no_intermediate[2]["q"][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states_no_intermediate[2]["q"][:, -1], np.array((2, 0, 1.57)))
+
+    if ode_solver == OdeSolver.RK4:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
+            np.array((1.4945492e00, 1.4743187e-17, 7.6060664e-01)),
+        )
+    elif ode_solver == OdeSolver.RK8:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
+            np.array((1.4945492e00, 2.8290382e-17, 7.6060664e-01)),
+        )
+    elif ode_solver == OdeSolver.IRK:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
+            np.array((1.4945492e00, 3.1188726e-16, 7.6060664e-01)),
+        )
+    elif ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_almost_equal(
+            states_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
+            np.array((1.4945492e00, 9.6246483e-16, 7.6060664e-01)),
+        )
+    else:
+        raise Exception("ode solver not supported for this test")
+
+    sol_merged = sol.merge_phases()
+    states_no_intermediate = sol_merged.states_no_intermediate
+
+    np.testing.assert_almost_equal(states_no_intermediate["q"][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states_no_intermediate["q"][:, ocp.nlp[0].ns], np.array((2, 0, 0.0078695)))
+    np.testing.assert_almost_equal(states_no_intermediate["q"][:, ocp.nlp[0].ns + ocp.nlp[1].ns], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states_no_intermediate["q"][:, -1], np.array((2, 0, 1.57)))
+
+    if ode_solver == OdeSolver.RK4:
+        np.testing.assert_almost_equal(
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
+            np.array((1.5000000e00, 3.3040241e-17, 3.9347424e-03)),
+        )
+    elif ode_solver == OdeSolver.RK8:
+        np.testing.assert_almost_equal(
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
+            np.array((1.5000000e00, 4.6362903e-17, 3.9347424e-03)),
+        )
+    elif ode_solver == OdeSolver.IRK:
+        np.testing.assert_almost_equal(
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
+            np.array((1.5000000e00, -4.4586581e-17, 3.9347424e-03)),
+        )
+    elif ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_almost_equal(
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
+            np.array([1.5000000e00, -2.4992262e-16, 3.9347423e-03]),
+        )
+    else:
+        raise Exception("ode solver not supported for this test")
+
+    if ode_solver == OdeSolver.RK4:
+        np.testing.assert_almost_equal(
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
+            np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
+        )
+    elif ode_solver == OdeSolver.RK8:
+        np.testing.assert_almost_equal(
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
+            np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
+        )
+    elif ode_solver == OdeSolver.IRK:
+        np.testing.assert_almost_equal(
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
+            np.array((1.5070658e00, -5.0200022e-17, 3.5555768e-02)),
+        )
+    elif ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_almost_equal(
+            states_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
+            np.array((1.5070658e00, -2.8260005e-15, 3.5555768e-02)),
+        )
+    else:
+        raise Exception("ode solver not supported for this test")
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
@@ -796,6 +1046,10 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
     # simulate
     TestUtils.simulate(sol)
 
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.19216241950659244)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
@@ -847,6 +1101,10 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     # simulate
     TestUtils.simulate(sol)
 
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.2005516965424669)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_multinode_constraints(ode_solver):
@@ -885,6 +1143,201 @@ def test_multinode_constraints(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.4968523, 9.81, 0.0236434]))
     np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-0.3839688, 9.81, -0.6037517]))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+
+def test_multistart():
+    from bioptim.examples.getting_started import example_multistart as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    multi_start = ocp_module.prepare_multi_start(
+        bio_model_path=[bioptim_folder + "/models/pendulum.bioMod"],
+        final_time=[1],
+        n_shooting=[5, 10],
+        seed=[2, 1],
+    )
+    multi_start.solve()
+
+    with open("pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
+        multi_start_0 = pickle.load(file)
+    with open("pendulum_multi_start_random_states_5_1.pkl", "rb") as file:
+        multi_start_1 = pickle.load(file)
+    with open("pendulum_multi_start_random_states_10_2.pkl", "rb") as file:
+        multi_start_2 = pickle.load(file)
+    with open("pendulum_multi_start_random_states_10_1.pkl", "rb") as file:
+        multi_start_3 = pickle.load(file)
+
+    np.testing.assert_almost_equal(
+        multi_start_0,
+        np.array(
+            [
+                [0.0, -0.9, 0.29797487, -0.38806564, -0.47779319, 0.0],
+                [0.0, 1.49880317, -2.51761362, -2.93013488, 1.52221264, 3.14],
+                [0.0, 0.85313852, -19.827228, 17.92813608, 22.24092358, 0.0],
+                [0.0, -26.41165363, 0.32962156, -27.31385448, -4.51620735, 0.0],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        multi_start_1,
+        np.array(
+            [
+                [0.0, 1.32194696, -0.9, -0.9, -0.9, 0.0],
+                [0.0, -1.94074114, -1.29725818, 0.48778547, -1.01543168, 3.14],
+                [0.0, 23.75781921, -29.6951133, 10.71078955, -5.19589251, 0.0],
+                [0.0, -18.96884288, 18.89633855, 29.42174252, -11.72290462, 0.0],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        multi_start_2,
+        np.array(
+            [
+                [
+                    0.00000000e00,
+                    -9.00000000e-01,
+                    2.97974867e-01,
+                    -3.88065644e-01,
+                    -4.77793187e-01,
+                    -9.00000000e-01,
+                    -9.00000000e-01,
+                    7.15625798e-01,
+                    -9.00000000e-01,
+                    -9.00000000e-01,
+                    0.00000000e00,
+                ],
+                [
+                    0.00000000e00,
+                    -4.59200384e00,
+                    1.70627704e-01,
+                    -3.96544560e00,
+                    3.58562722e00,
+                    4.44818472e00,
+                    -7.24220374e-02,
+                    4.35502007e00,
+                    -5.28233073e00,
+                    6.59243127e-02,
+                    3.14000000e00,
+                ],
+                [
+                    0.00000000e00,
+                    -2.53507102e01,
+                    -2.34262299e01,
+                    6.07868704e00,
+                    -1.72151737e01,
+                    -2.46963310e01,
+                    -1.75736793e01,
+                    -9.43569280e00,
+                    -2.02397204e00,
+                    -1.87400258e01,
+                    0.00000000e00,
+                ],
+                [
+                    0.00000000e00,
+                    3.29032823e-01,
+                    -7.10674433e00,
+                    1.84497854e01,
+                    5.02681081e00,
+                    -2.12184048e01,
+                    1.26136419e01,
+                    2.91886052e01,
+                    5.25347819e-04,
+                    2.44742674e01,
+                    0.00000000e00,
+                ],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        multi_start_3,
+        np.array(
+            [
+                [0.0, 1.32194696, -0.9, -0.9, -0.9, -0.9, -0.9, -0.92663564, -0.61939515, 0.2329004, 0.0],
+                [
+                    0.0,
+                    -3.71396256,
+                    4.75156384,
+                    -5.93902266,
+                    2.14215791,
+                    -1.0391785,
+                    0.73751814,
+                    -4.51903101,
+                    -3.79376858,
+                    3.77926771,
+                    3.14,
+                ],
+                [
+                    0.0,
+                    12.08398633,
+                    23.64922791,
+                    24.7938679,
+                    -26.07244114,
+                    -28.96204213,
+                    -20.74516657,
+                    23.75939422,
+                    -25.23661272,
+                    -4.95695411,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    12.05599463,
+                    -11.59149477,
+                    11.71819889,
+                    21.02515105,
+                    -30.26684018,
+                    15.71703084,
+                    30.71604811,
+                    15.59270793,
+                    -13.79511083,
+                    0.0,
+                ],
+            ]
+        ),
+    )
+
+
+def test_example_variable_scaling():
+    from bioptim.examples.getting_started import example_variable_scaling as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        final_time=1 / 10,
+        n_shooting=30,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 31609.83406760166)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (120, 1))
+    np.testing.assert_almost_equal(g, np.zeros((120, 1)))
+
+    # Check some of the results
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([-1000.00000999, 0.0]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([-1000.00000999, 0.0]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)

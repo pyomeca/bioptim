@@ -5,13 +5,13 @@ import pytest
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     ControlType,
     OdeSolver,
@@ -55,7 +55,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     if marker_in_first_coordinates_system:
@@ -92,9 +92,9 @@ def prepare_ocp(
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Path constraint
-    nq = biorbd_model.nbQ()
+    nq = bio_model.nb_q
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0].min[nq:, :] = -10
     x_bounds[0].max[nq:, :] = 10
 
@@ -105,13 +105,13 @@ def prepare_ocp(
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init.add([tau_init] * bio_model.nb_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

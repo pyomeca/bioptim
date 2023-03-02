@@ -9,13 +9,13 @@ the values, while the latter is the most common way to define optimal time
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -51,7 +51,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -64,10 +64,10 @@ def prepare_ocp(
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Path constraint
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, [0, -1]] = 0
     x_bounds[0][n_q - 1, -1] = 3.14
 
@@ -76,7 +76,7 @@ def prepare_ocp(
     x_init.add([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
@@ -88,7 +88,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

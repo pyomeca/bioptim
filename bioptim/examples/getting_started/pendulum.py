@@ -9,19 +9,18 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 
-import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     ObjectiveFcn,
     Objective,
     OdeSolver,
     CostType,
     Solver,
+    BiorbdModel,
 )
 
 
@@ -56,7 +55,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -65,17 +64,17 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
@@ -83,7 +82,7 @@ def prepare_ocp(
     u_init = InitialGuess([tau_init] * n_tau)
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -109,6 +108,9 @@ def main():
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
 
+    # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
+    # ocp.check_conditioning()
+
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
@@ -117,7 +119,8 @@ def main():
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol.print()
+    sol.detailed_cost_values()
+    sol.print_cost()
     sol.animate(n_frames=100)
 
 

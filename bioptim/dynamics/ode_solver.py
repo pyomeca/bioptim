@@ -1,9 +1,9 @@
-from typing import Union, Callable
+from typing import Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
 from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, DefectType
 
 
 class OdeSolverBase:
@@ -16,7 +16,7 @@ class OdeSolverBase:
         The number of integration steps
     steps_scipy: int
         Number of steps while integrating with scipy
-    rk_integrator: Union[RK4, RK8, IRK]
+    rk_integrator: RK4 | RK8 | IRK
         The corresponding integrator class
     is_direct_collocation: bool
         indicating if the ode solver is direct collocation method
@@ -96,6 +96,7 @@ class RK(OdeSolverBase):
         super(RK, self).__init__()
         self.steps = n_integration_steps
         self.is_direct_shooting = True
+        self.defects_type = DefectType.NOT_APPLICABLE
 
     def integrator(self, ocp, nlp) -> list:
         """
@@ -122,16 +123,22 @@ class RK(OdeSolverBase):
             "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
+            "defects_type": DefectType.NOT_APPLICABLE,
         }
         ode = {
-            "x": nlp.states.cx,
-            "p": nlp.controls.cx
+            "x_unscaled": nlp.states.cx,
+            "x_scaled": nlp.states["scaled"].cx,
+            "p_unscaled": nlp.controls.cx
             if nlp.control_type == ControlType.CONSTANT
             else horzcat(nlp.controls.cx, nlp.controls.cx_end),
+            "p_scaled": nlp.controls["scaled"].cx
+            if nlp.control_type == ControlType.CONSTANT
+            else horzcat(nlp.controls["scaled"].cx, nlp.controls["scaled"].cx_end),
             "ode": nlp.dynamics_func,
+            "implicit_ode": nlp.implicit_dynamics_func,
         }
 
-        if nlp.external_forces:
+        if len(nlp.external_forces) != 0:
             dynamics_out = []
             for idx in range(len(nlp.external_forces)):
                 ode_opt["idx"] = idx
@@ -141,7 +148,7 @@ class RK(OdeSolverBase):
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
     def __str__(self):
-        ode_solver_string = f"{self.rk_integrator.__name__}\n{self.steps} step"
+        ode_solver_string = f"{self.rk_integrator.__name__} {self.steps} step"
         if self.steps > 1:
             ode_solver_string += "s"
 
@@ -225,6 +232,10 @@ class OdeSolver:
         ----------
         polynomial_degree: int
             The degree of the implicit RK
+        method : str
+            The method of interpolation ("legendre" or "radau")
+        defects_type: DefectType
+            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
 
         Methods
         -------
@@ -232,7 +243,9 @@ class OdeSolver:
             The interface of the OdeSolver to the corresponding integrator
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre"):
+        def __init__(
+            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+        ):
             """
             Parameters
             ----------
@@ -244,6 +257,7 @@ class OdeSolver:
             self.polynomial_degree = polynomial_degree
             self.rk_integrator = COLLOCATION
             self.method = method
+            self.defects_type = defects_type
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
@@ -266,16 +280,19 @@ class OdeSolver:
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
 
-            if nlp.model.nbQuat() > 0:
+            if nlp.model.nb_quaternions > 0:
                 raise NotImplementedError(
                     "Quaternions can't be used with IRK yet. If you get this error, please notify the "
                     "developers and ping @EveCharbie"
                 )
 
             ode = {
-                "x": [nlp.states.cx] + nlp.states.cx_intermediates_list,
-                "p": nlp.controls.cx,
+                "x_unscaled": [nlp.states.cx] + nlp.states.cx_intermediates_list,
+                "x_scaled": [nlp.states["scaled"].cx] + nlp.states["scaled"].cx_intermediates_list,
+                "p_unscaled": nlp.controls.cx,
+                "p_scaled": nlp.controls["scaled"].cx,
                 "ode": nlp.dynamics_func,
+                "implicit_ode": nlp.implicit_dynamics_func,
             }
             ode_opt = {
                 "t0": 0,
@@ -287,11 +304,12 @@ class OdeSolver:
                 "control_type": nlp.control_type,
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
                 "method": self.method,
+                "defects_type": self.defects_type,
             }
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
         def __str__(self):
-            return f"{self.rk_integrator.__name__}\n{self.method}\n{self.polynomial_degree}"
+            return f"{self.rk_integrator.__name__} {self.method} {self.polynomial_degree}"
 
     class IRK(COLLOCATION):
         """
@@ -301,6 +319,10 @@ class OdeSolver:
         ----------
         polynomial_degree: int
             The degree of the implicit RK
+        method: str
+            The method of interpolation ("legendre" or "radau")
+        defects_type: DefectType
+            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
 
         Methods
         -------
@@ -308,7 +330,9 @@ class OdeSolver:
             The interface of the OdeSolver to the corresponding integrator
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre"):
+        def __init__(
+            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+        ):
             """
             Parameters
             ----------
@@ -316,7 +340,9 @@ class OdeSolver:
                 The degree of the implicit RK
             """
 
-            super(OdeSolver.IRK, self).__init__(polynomial_degree=polynomial_degree, method=method)
+            super(OdeSolver.IRK, self).__init__(
+                polynomial_degree=polynomial_degree, method=method, defects_type=defects_type
+            )
             self.rk_integrator = IRK
             self.is_direct_collocation = False
             self.is_direct_shooting = True
@@ -354,6 +380,7 @@ class OdeSolver:
             self.is_direct_collocation = False
             self.is_direct_shooting = True
             self.steps = 1
+            self.defects_type = DefectType.NOT_APPLICABLE
 
         def integrator(self, ocp, nlp) -> list:
             """
@@ -380,9 +407,9 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "x": nlp.states.cx,
-                "p": nlp.controls.cx,
-                "ode": nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx),
+                "x": nlp.states["scaled"].cx,
+                "p": nlp.controls["scaled"].cx,
+                "ode": nlp.dynamics_func(nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
 
@@ -391,15 +418,15 @@ class OdeSolver:
             return [
                 Function(
                     "integrator",
-                    [nlp.states.cx, nlp.controls.cx, nlp.parameters.cx],
-                    self._adapt_integrator_output(integrator_func, nlp.states.cx, nlp.controls.cx),
+                    [nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx],
+                    self._adapt_integrator_output(integrator_func, nlp.states["scaled"].cx, nlp.controls["scaled"].cx),
                     ["x0", "p", "params"],
                     ["xf", "xall"],
                 )
             ]
 
         @staticmethod
-        def _adapt_integrator_output(integrator_func: Callable, x0: Union[MX, SX], p: Union[MX, SX]):
+        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX):
             """
             Interface to make xf and xall as outputs
 
@@ -407,9 +434,9 @@ class OdeSolver:
             ----------
             integrator_func: Callable
                 Handler on a CasADi function
-            x0: Union[MX, SX]
+            x0: MX | SX
                 Symbolic variable of states
-            p: Union[MX, SX]
+            p: MX | SX
                 Symbolic variable of controls
 
             Returns

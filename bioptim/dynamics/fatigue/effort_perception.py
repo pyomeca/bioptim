@@ -64,6 +64,10 @@ class EffortPerception(MuscleFatigue):
     def dynamics_suffix() -> str:
         return ""
 
+    @staticmethod
+    def fatigue_suffix() -> str:
+        return "mf"
+
 
 class TauEffortPerception(TauFatigue):
     """
@@ -80,7 +84,9 @@ class TauEffortPerception(TauFatigue):
             The Michaud model for the positive tau
         """
 
-        super(TauEffortPerception, self).__init__(minus=minus, plus=plus, state_only=True, **kwargs)
+        super(TauEffortPerception, self).__init__(
+            minus=minus, plus=plus, state_only=True, apply_to_joint_dynamics=False, **kwargs
+        )
 
     @staticmethod
     def default_state_only():
@@ -89,3 +95,7 @@ class TauEffortPerception(TauFatigue):
     @staticmethod
     def dynamics_suffix() -> str:
         return "effort"
+
+    @staticmethod
+    def fatigue_suffix() -> str:
+        return "fatigue"

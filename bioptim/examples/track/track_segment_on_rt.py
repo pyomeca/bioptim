@@ -7,6 +7,7 @@ any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
 
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsList,
@@ -16,7 +17,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -45,7 +45,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -61,28 +61,28 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment="seg_rt", rt=0)
 
     # Path constraint
-    nq = biorbd_model.nbQ()
+    nq = bio_model.nb_q
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][2, [0, -1]] = [-1.57, 1.57]
     x_bounds[0][nq:, [0, -1]] = 0
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init.add([tau_init] * bio_model.nb_tau)
 
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

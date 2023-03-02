@@ -21,13 +21,13 @@ import casadi as cas
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     MovingHorizonEstimator,
     Dynamics,
     DynamicsFcn,
     Objective,
     ObjectiveFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     InterpolationType,
     Solver,
@@ -35,52 +35,52 @@ from bioptim import (
 )
 
 
-def states_to_markers(biorbd_model, states):
-    nq = biorbd_model.nbQ()
-    n_mark = biorbd_model.nbMarkers()
+def states_to_markers(bio_model, states):
+    nq = bio_model.nb_q
+    n_mark = bio_model.nb_markers
     q = cas.MX.sym("q", nq)
-    markers_func = biorbd.to_casadi_func("makers", biorbd_model.markers, q)
+    markers_func = biorbd.to_casadi_func("makers", bio_model.markers, q)
     return np.array(markers_func(states[:nq, :])).reshape((3, n_mark, -1), order="F")
 
 
-def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False):
+def generate_data(bio_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False):
     def pendulum_ode(t, x, u):
         return np.concatenate((x[nq:, np.newaxis], qddot_func(x[:nq], x[nq:], u)))[:, 0]
 
-    nq = biorbd_model.nbQ()
+    nq = bio_model.nb_q
     q = cas.MX.sym("q", nq)
     qdot = cas.MX.sym("qdot", nq)
     tau = cas.MX.sym("tau", nq)
-    qddot_func = biorbd.to_casadi_func("forw_dyn", biorbd_model.ForwardDynamics, q, qdot, tau)
+    qddot_func = biorbd.to_casadi_func("forw_dyn", bio_model.forward_dynamics, q, qdot, tau)
 
     # Simulated data
     dt = tf / n_shoot
-    controls = np.zeros((biorbd_model.nbGeneralizedTorque(), n_shoot))  # Control trajectory
+    controls = np.zeros((bio_model.nb_tau, n_shoot))  # Control trajectory
     controls[0, :] = (-np.ones(n_shoot) + np.sin(np.linspace(0, tf, num=n_shoot))) * t_max
-    states = np.zeros((biorbd_model.nbQ() + biorbd_model.nbQdot(), n_shoot))  # State trajectory
+    states = np.zeros((bio_model.nb_q + bio_model.nb_qdot, n_shoot))  # State trajectory
 
     for n in range(n_shoot):
         sol = solve_ivp(pendulum_ode, [0, dt], x0, args=(controls[:, n],))
         states[:, n] = x0
         x0 = sol["y"][:, -1]
     states[:, -1] = x0
-    markers = states_to_markers(biorbd_model, states[: biorbd_model.nbQ(), :])
+    markers = states_to_markers(bio_model, states[: bio_model.nb_q, :])
 
     # Simulated noise
     np.random.seed(42)
-    noise = (np.random.randn(3, biorbd_model.nbMarkers(), n_shoot) - 0.5) * noise_std
+    noise = (np.random.randn(3, bio_model.nb_markers, n_shoot) - 0.5) * noise_std
     markers_noised = markers + noise
 
     if show_plots:
         q_plot = plt.plot(states[:nq, :].T)
         dq_plot = plt.plot(states[nq:, :].T, "--")
-        name_dof = [name.to_string() for name in biorbd_model.nameDof()]
+        name_dof = bio_model.name_dof
         plt.legend(q_plot + dq_plot, name_dof + ["d" + name for name in name_dof])
         plt.title("Real position and velocity trajectories")
 
         plt.figure()
         marker_plot = plt.plot(markers[1, :, :].T, markers[2, :, :].T)
-        plt.legend(marker_plot, [i.to_string() for i in biorbd_model.markerNames()])
+        plt.legend(marker_plot, bio_model.marker_names())
         plt.gca().set_prop_cycle(None)
         plt.plot(markers_noised[1, :, :].T, markers_noised[2, :, :].T, "x")
         plt.title("2D plot of markers trajectories + noise")
@@ -89,18 +89,18 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
     return states, markers, markers_noised, controls
 
 
-def prepare_mhe(biorbd_model, window_len, window_duration, max_torque, x_init, u_init):
+def prepare_mhe(bio_model, window_len, window_duration, max_torque, x_init, u_init):
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, node=Node.ALL, weight=1000, list_index=0)
 
     return MovingHorizonEstimator(
-        biorbd_model,
+        bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,
         objective_functions=new_objectives,
         x_init=InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME),
         u_init=InitialGuess(u_init, interpolation=InterpolationType.EACH_FRAME),
-        x_bounds=QAndQDotBounds(biorbd_model),
+        x_bounds=bio_model.bounds_from_ranges(["q", "qdot"]),
         u_bounds=Bounds([-max_torque, 0.0], [max_torque, 0.0]),
         n_threads=4,
     )
@@ -132,7 +132,7 @@ def get_solver_options(solver):
 
 def main():
     biorbd_model_path = "models/cart_pendulum.bioMod"
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     solver = Solver.ACADOS()  # or Solver.IPOPT()
     final_time = 5
@@ -145,16 +145,16 @@ def main():
     noise_std = 0.05  # STD of noise added to measurements
     torque_max = 2  # Max torque applied to the model
     states, markers, markers_noised, controls = generate_data(
-        biorbd_model, final_time, x0, torque_max, n_shoot_per_second * final_time, noise_std, show_plots=False
+        bio_model, final_time, x0, torque_max, n_shoot_per_second * final_time, noise_std, show_plots=False
     )
 
-    x_init = np.zeros((biorbd_model.nbQ() * 2, window_len + 1))
-    u_init = np.zeros((biorbd_model.nbQ(), window_len))
+    x_init = np.zeros((bio_model.nb_q * 2, window_len + 1))
+    u_init = np.zeros((bio_model.nb_q, window_len))
     torque_max = 5  # Give a bit of slack on the max torque
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path)
     mhe = prepare_mhe(
-        biorbd_model,
+        bio_model,
         window_len=window_len,
         window_duration=window_duration,
         max_torque=torque_max,
@@ -179,7 +179,7 @@ def main():
     print(f"Average real time per iteration of MHE : {sol.real_time_to_optimize / (n_frames_total - 1)} s.")
     print(f"Norm of the error on state = {np.linalg.norm(states[:, :n_frames_total] - sol.states['all'])}")
 
-    markers_estimated = states_to_markers(biorbd_model, sol.states["all"])
+    markers_estimated = states_to_markers(bio_model, sol.states["all"])
 
     plt.plot(
         markers_noised[1, :, :n_frames_total].T,

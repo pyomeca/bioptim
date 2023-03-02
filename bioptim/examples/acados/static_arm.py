@@ -8,13 +8,13 @@ ACADOS and Ipopt.
 import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
     DynamicsList,
     DynamicsFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     InitialGuess,
     Solver,
@@ -24,8 +24,8 @@ from bioptim import (
 
 def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=False, n_threads=1):
     # --- Options --- #
-    # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    # BioModel path
+    bio_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -50, 50, 0
     muscle_min, muscle_max, muscle_init = 0, 1, 0.5
 
@@ -45,28 +45,28 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, 0] = (1.0, 1.0, 0, 0)
 
     # Initial guess
     if x_warm is None:
-        x_init = InitialGuess([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
+        x_init = InitialGuess([1.57] * bio_model.nb_q + [0] * bio_model.nb_qdot)
     else:
         x_init = InitialGuess(x_warm, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
-        [tau_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
+        [tau_min] * bio_model.nb_tau + [muscle_min] * bio_model.nb_muscles,
+        [tau_max] * bio_model.nb_tau + [muscle_max] * bio_model.nb_muscles,
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([tau_init] * bio_model.nb_tau + [muscle_init] * bio_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -85,7 +85,7 @@ def main():
     warm_start_ipopt_from_acados_solution = False
 
     # --- Solve the program using ACADOS --- #
-    ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
+    ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=1, n_shooting=100, use_sx=True)
 
     solver_acados = Solver.ACADOS()
     solver_acados.set_convergence_tolerance(1e-3)
@@ -96,7 +96,7 @@ def main():
     x_warm = sol_acados["qqdot"] if warm_start_ipopt_from_acados_solution else None
     ocp_ipopt = prepare_ocp(
         biorbd_model_path="models/arm26.bioMod",
-        final_time=2,
+        final_time=1,
         x_warm=x_warm,
         n_shooting=51,
         use_sx=False,
@@ -117,7 +117,7 @@ def main():
     print("\n\n")
     print("Results using ACADOS")
     print(f"Final objective: {np.nansum(sol_acados.cost)}")
-    sol_acados.print()
+    sol_acados.print_cost()
     print(f"Time to solve: {sol_acados.real_time_to_optimize}sec")
     print(f"")
 
@@ -126,7 +126,7 @@ def main():
         f"warm started from ACADOS solution"
     )
     print(f"Final objective : {np.nansum(sol_ipopt.cost)}")
-    sol_ipopt.print()
+    sol_ipopt.print_cost()
     print(f"Time to solve: {sol_ipopt.real_time_to_optimize}sec")
     print(f"")
 

@@ -7,11 +7,10 @@ sufficient.
 More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE_DRIVEN using a custom dynamics
 """
 
-from typing import Union
-
-from casadi import MX, SX
+from casadi import MX, SX, vertcat
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsList,
@@ -23,31 +22,31 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     OdeSolver,
     NonLinearProgram,
     Solver,
+    DynamicsEvaluation,
 )
 
 
 def custom_dynamic(
-    states: Union[MX, SX],
-    controls: Union[MX, SX],
-    parameters: Union[MX, SX],
+    states: MX | SX,
+    controls: MX | SX,
+    parameters: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
-) -> tuple:
+) -> DynamicsEvaluation:
     """
     The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
 
     Parameters
     ----------
-    states: Union[MX, SX]
+    states: MX | SX
         The state of the system
-    controls: Union[MX, SX]
+    controls: MX | SX
         The controls of the system
-    parameters: Union[MX, SX]
+    parameters: MX | SX
         The parameters acting on the system
     nlp: NonLinearProgram
         A reference to the phase
@@ -56,19 +55,22 @@ def custom_dynamic(
 
     Returns
     -------
-    The derivative of the states in the tuple[Union[MX, SX]] format
+    The derivative of the states in the tuple[MX | SX] format
     """
 
-    DynamicsFunctions.apply_parameters(parameters, nlp)
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
-    ddq = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+    ddq = nlp.model.forward_dynamics(q, qdot, tau)
 
-    return dq, ddq
+    # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
+    # as the first argument of DynamicsEvaluation or
+    # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
+    # which may be useful for IRK or COLLOCATION integrators
+    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1):
@@ -86,9 +88,9 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_addit
         An example of an extra parameter sent by the user
     """
 
-    ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, my_additional_factor=my_additional_factor)
 
 
@@ -119,8 +121,8 @@ def prepare_ocp(
     """
 
     # --- Options --- #
-    # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    # BioModel path
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -143,23 +145,23 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint
-    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+    u_bounds = Bounds([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
-    u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
 
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,

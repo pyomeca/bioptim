@@ -63,10 +63,16 @@ def test_multi_cyclic_nmpc():
         n_cycles_to_advance=n_cycles_to_advance,
         max_torque=50,
     )
-    sol = nmpc.solve(update_functions, solver=Solver.IPOPT(), n_cycles_simultaneous=n_cycles_simultaneous)
+    sol = nmpc.solve(
+        update_functions,
+        solver=Solver.IPOPT(),
+        n_cycles_simultaneous=n_cycles_simultaneous,
+        get_all_iterations=True,
+        get_cycles=True,
+    )
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states, controls = sol[0].states, sol[0].controls
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
@@ -81,3 +87,34 @@ def test_multi_cyclic_nmpc():
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.00992505, 4.88488618, 2.4400698)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.00992505, 9.18387711, 5.22418771)), decimal=6)
+
+    # check time
+    assert sol[0].time.shape == (n_cycles_total * cycle_len,)
+    assert sol[0].time[0] == 0
+    assert sol[0].time[-1] == 2.95
+
+    # check some results of the second structure
+    for s in sol[1]:
+        states, controls = s.states, s.controls
+        q = states["q"]
+
+        # initial and final position
+        np.testing.assert_equal(q.shape, (3, 41))
+
+        # check time
+        assert s.time.shape == (41,)
+        assert s.time[0] == 0
+        assert s.time[-1] == 2.0
+
+    # check some result of the third structure
+    for s in sol[2]:
+        states, controls = s.states, s.controls
+        q = states["q"]
+
+        # initial and final position
+        np.testing.assert_equal(q.shape, (3, 21))
+
+        # check time
+        assert s.time.shape == (21,)
+        assert s.time[0] == 0
+        assert s.time[-1] == 1.0

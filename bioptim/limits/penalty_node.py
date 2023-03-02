@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Any
 
 from casadi import MX, SX, vertcat
 
@@ -10,7 +10,17 @@ class PenaltyNodeList:
     A placeholder for the required elements to compute a penalty (all time)
     """
 
-    def __init__(self, ocp, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX, list]):
+    def __init__(
+        self,
+        ocp,
+        nlp: NonLinearProgram,
+        t: list,
+        x: list,
+        u: list,
+        x_scaled: list,
+        u_scaled: list,
+        p: MX | SX | list,
+    ):
         """
         Parameters
         ----------
@@ -24,7 +34,11 @@ class PenaltyNodeList:
             References to the state variables
         u: list
             References to the control variables
-        p: Union[MX, SX]
+        x_scaled: list
+            References to the scaled state variables
+        u_scaled: list
+            References to the scaled control variables
+        p: MX | SX | list
             References to the parameter variables
         """
 
@@ -33,6 +47,8 @@ class PenaltyNodeList:
         self.t = t
         self.x = x
         self.u = u
+        self.x_scaled = x_scaled
+        self.u_scaled = u_scaled
         self.p = vertcat(p) if p is not None else p
 
     def __len__(self):

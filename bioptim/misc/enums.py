@@ -19,6 +19,7 @@ class SolverType(Enum):
 
     IPOPT = "Ipopt"
     ACADOS = "ACADOS"
+    SQP = "SqpMethod"
     NONE = None
 
 
@@ -46,9 +47,10 @@ class InterpolationType(Enum):
     CONSTANT = 0  # All values are set (time independent)
     CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT = 1  # All values are set, with the first and last defined to another one
     LINEAR = 2  # Linear interpolation between first and last
-    EACH_FRAME = 3  # Each values are provided by the user
-    SPLINE = 4  # Cubic spline interpolation
-    CUSTOM = 5  # Interpolation via a used-defined custom function
+    EACH_FRAME = 3  # Each value is provided by the user
+    ALL_POINTS = 4  # Values at all collocation points are provided by the user
+    SPLINE = 5  # Cubic spline interpolation
+    CUSTOM = 6  # Interpolation via a used-defined custom function
 
 
 class Shooting(Enum):
@@ -61,7 +63,7 @@ class Shooting(Enum):
 
     MULTIPLE = "Multiple"
     SINGLE = "Single"
-    SINGLE_CONTINUOUS = "Single continuous"
+    SINGLE_DISCONTINUOUS_PHASE = "Single discontinuous phase"
 
 
 class CostType(Enum):
@@ -110,7 +112,7 @@ class SolutionIntegrator(Enum):
     Selection of integrator to use integrate function
     """
 
-    DEFAULT = "DEFAULT"
+    OCP = "OCP"
     SCIPY_RK23 = "RK23"
     SCIPY_RK45 = "RK45"
     SCIPY_DOP853 = "DOP853"
@@ -118,11 +120,58 @@ class SolutionIntegrator(Enum):
     SCIPY_LSODA = "LSODA"
 
 
+class PenaltyType(Enum):  # it's more of a "Category" than "Type"
+    """
+    Selection of penalty types
+    """
+
+    USER = "user"
+    INTERNAL = "internal"
+
+
 class ConstraintType(Enum):
     """
     Selection of constraint types
     """
 
-    USER = "user"
-    INTERNAL = "internal"
     IMPLICIT = "implicit"
+
+
+class IntegralApproximation(Enum):
+    """
+    Selection of integral approximation
+    """
+
+    DEFAULT = "default"
+    RECTANGLE = "rectangle"
+    TRAPEZOIDAL = "trapezoidal"
+    TRUE_TRAPEZOIDAL = "true_trapezoidal"
+
+
+class SoftContactDynamics(Enum):
+    ODE = "ode"
+    CONSTRAINT = "constraint"
+
+
+class RigidBodyDynamics(Enum):
+    ODE = "ode"
+    DAE_INVERSE_DYNAMICS = "dae_inverse_dynamics"
+    DAE_FORWARD_DYNAMICS = "dae_forward_dynamics"
+    DAE_INVERSE_DYNAMICS_JERK = "dae_inverse_dynamics_jerk"
+    DAE_FORWARD_DYNAMICS_JERK = "dae_forward_dynamics_jerk"
+
+
+class DefectType(Enum):
+    EXPLICIT = "explicit"
+    IMPLICIT = "implicit"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class CXStep(Enum):
+    CX_START = "cx_start"
+    CX_END = "cx_end"
+
+
+class MagnitudeType(Enum):
+    RELATIVE = "relative"
+    ABSOLUTE = "absolute"

@@ -9,7 +9,7 @@ import pytest
 from casadi import Function, MX
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver
+from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel
 from bioptim.limits.penalty import PenaltyOption
 
 import matplotlib
@@ -33,6 +33,18 @@ def test_plot_graphs_one_phase():
     sol.graphs(automatically_organize=False)
 
 
+def test_plot_check_conditioning():
+    # Load graphs check conditioning
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=False)
+    ocp.check_conditioning()
+    sol = ocp.solve()
+    sol.graphs(automatically_organize=False)
+
+
 def test_plot_merged_graphs():
     # Load graphs_one_phase
     from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
@@ -41,27 +53,29 @@ def test_plot_merged_graphs():
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    biorbd_model = biorbd.Model(model_path)
+    bio_model = BiorbdModel(model_path)
     final_time = 0.1
     n_shooting = 5
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(biorbd_model, final_time, n_shooting)
+    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(bio_model, final_time, n_shooting)
 
-    biorbd_model = biorbd.Model(model_path)  # To prevent from free variable, the model must be reloaded
+    bio_model = BiorbdModel(model_path)  # To prevent from free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
-        biorbd_model,
+        bio_model,
         final_time,
         n_shooting,
         markers_ref,
         muscle_excitations_ref,
-        x_ref[: biorbd_model.nbQ(), :].T,
+        x_ref[: bio_model.nb_q, :].T,
         ode_solver=OdeSolver.RK4(),
         use_residual_torque=True,
         kin_data_to_track="markers",
     )
-    sol = ocp.solve()
+    solver = Solver.IPOPT()
+    solver.set_maximum_iterations(1)
+    sol = ocp.solve(solver)
     sol.graphs(automatically_organize=False)
 
 
@@ -124,7 +138,11 @@ def test_add_new_plot():
     os.remove(save_name)
 
 
-def test_plot_graphs_for_implicit_constraints():
+@pytest.mark.parametrize(
+    "rigidbody_dynamics",
+    [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
+)
+def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics):
     from bioptim.examples.getting_started import example_implicit_dynamics as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -133,12 +151,33 @@ def test_plot_graphs_for_implicit_constraints():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         n_shooting=5,
         final_time=1,
-        implicit_dynamics=True,
+        rigidbody_dynamics=rigidbody_dynamics,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
     if sys.platform != "linux":
         sol.graphs(automatically_organize=False)
+
+
+def test_implicit_example():
+    from bioptim.examples.getting_started import example_implicit_dynamics as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    sol_implicit = ocp_module.solve_ocp(
+        rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
+        max_iter=1,
+        model_path=bioptim_folder + "/models/pendulum.bioMod",
+    )
+    sol_semi_explicit = ocp_module.solve_ocp(
+        rigidbody_dynamics=RigidBodyDynamics.DAE_FORWARD_DYNAMICS,
+        max_iter=1,
+        model_path=bioptim_folder + "/models/pendulum.bioMod",
+    )
+    sol_explicit = ocp_module.solve_ocp(
+        rigidbody_dynamics=RigidBodyDynamics.ODE, max_iter=1, model_path=bioptim_folder + "/models/pendulum.bioMod"
+    )
+    ocp_module.prepare_plots(sol_implicit, sol_semi_explicit, sol_explicit)
 
 
 def test_console_objective_functions():
@@ -187,40 +226,40 @@ def test_console_objective_functions():
 
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
-    sol.print()
+    sol.print_cost()
     expected_output = (
         "Solver reported time: 1.2345 sec\n"
         "Real time: 5.4321 sec\n"
         "\n"
         "---- COST FUNCTION VALUES ----\n"
         "PHASE 0\n"
-        "MINIMIZE_CONTROL:  60.00 (weighted 120.0)\n"
+        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
         "\n"
         "PHASE 1\n"
-        "MINIMIZE_CONTROL:  90.00 (weighted 180.0)\n"
-        "minimize_difference:  6.00 (weighted 9.0)\n"
+        "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
+        "Mayer.CUSTOM: 9.0 (non weighted  6.00)\n"
         "\n"
         "PHASE 2\n"
-        "MINIMIZE_CONTROL:  60.00 (weighted 120.0)\n"
+        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
         "\n"
         "Sum cost functions: 429.0\n"
         "------------------------------\n"
         "\n"
         "--------- CONSTRAINTS ---------\n"
         "PHASE 0\n"
-        "CONTINUITY: 420.0\n"
-        "PHASE_TRANSITION 0->1: 27.0\n"
-        "SUPERIMPOSE_MARKERS: 6.0\n"
-        "SUPERIMPOSE_MARKERS: 9.0\n"
+        "ConstraintFcn.CONTINUITY: 420.0\n"
+        "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 9.0\n"
         "\n"
         "PHASE 1\n"
-        "CONTINUITY: 630.0\n"
-        "PHASE_TRANSITION 1->2: 27.0\n"
-        "SUPERIMPOSE_MARKERS: 6.0\n"
+        "ConstraintFcn.CONTINUITY: 630.0\n"
+        "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
         "\n"
         "PHASE 2\n"
-        "CONTINUITY: 420.0\n"
-        "SUPERIMPOSE_MARKERS: 6.0\n"
+        "ConstraintFcn.CONTINUITY: 420.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
         "\n"
         "------------------------------\n"
     )

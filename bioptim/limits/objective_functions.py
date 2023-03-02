@@ -1,9 +1,9 @@
-from typing import Callable, Union, Any
-from enum import Enum
+from typing import Callable, Any
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node
+from ..misc.enums import Node, IntegralApproximation, PenaltyType
+from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
 
@@ -16,9 +16,9 @@ class Objective(PenaltyOption):
         """
         Parameters
         ----------
-        objective: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, Callable[OptimalControlProgram, MX]]
+        objective: ObjectiveFcn.Lagrange | ObjectiveFcn.Mayer | Callable[OptimalControlProgram, MX]
             The chosen objective function
-        custom_type: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, Callable]
+        custom_type: ObjectiveFcn.Lagrange | ObjectiveFcn.Mayer | Callable
             When objective is a custom defined function, one must specify if the custom_type is Mayer or Lagrange
         phase: int
             At which phase this objective function must be applied
@@ -48,16 +48,36 @@ class Objective(PenaltyOption):
                     "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
                 )
 
+        # sanity check on the integration method
+        if isinstance(objective, ObjectiveFcn.Lagrange):
+            if "integration_rule" not in params.keys() or params["integration_rule"] == IntegralApproximation.DEFAULT:
+                params["integration_rule"] = IntegralApproximation.RECTANGLE
+        elif isinstance(objective, ObjectiveFcn.Mayer):
+            if "integration_rule" in params.keys() and params["integration_rule"] != IntegralApproximation.DEFAULT:
+                raise ValueError(
+                    "Mayer objective functions cannot be integrated, "
+                    "remove the argument "
+                    "integration_rule"
+                    " or use a Lagrange objective function"
+                )
+        elif isinstance(objective, ObjectiveFcn.Parameter):
+            pass
+
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
-    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
+    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList | list | tuple):
         if isinstance(all_pn, (list, tuple)):
-            pool = all_pn[0].nlp.J if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.J
-        else:
+            all_pn = all_pn[0]
+
+        if self.penalty_type == PenaltyType.INTERNAL:
+            pool = all_pn.nlp.J_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.J_internal
+        elif self.penalty_type == PenaltyType.USER:
             pool = all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+        else:
+            raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self
 
-    def clear_penalty(self, ocp, nlp):
+    def ensure_penalty_sanity(self, ocp, nlp):
         """
         Resets a objective function. A negative penalty index creates a new empty objective function.
 
@@ -69,24 +89,26 @@ class Objective(PenaltyOption):
             A reference to the current phase of the ocp
         """
 
-        if nlp:
-            j_to_add_to = nlp.J
+        if self.penalty_type == PenaltyType.INTERNAL:
+            J_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+        elif self.penalty_type == PenaltyType.USER:
+            J_to_add_to = nlp.J if nlp else ocp.J
         else:
-            j_to_add_to = ocp.J
+            raise ValueError(f"Invalid Type of objective {self.penalty_type}")
 
         if self.list_index < 0:
             # Add a new one
-            for i, j in enumerate(j_to_add_to):
+            for i, j in enumerate(J_to_add_to):
                 if not j:
                     self.list_index = i
                     return
             else:
-                j_to_add_to.append([])
-                self.list_index = len(j_to_add_to) - 1
+                J_to_add_to.append([])
+                self.list_index = len(J_to_add_to) - 1
         else:
-            while self.list_index >= len(j_to_add_to):
-                j_to_add_to.append([])
-            j_to_add_to[self.list_index] = []
+            while self.list_index >= len(J_to_add_to):
+                J_to_add_to.append([])
+            J_to_add_to[self.list_index] = []
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         if self.type.get_type() == ObjectiveFunction.LagrangeFunction:
@@ -109,19 +131,19 @@ class ObjectiveList(OptionList):
 
     Methods
     -------
-    add(self, constraint: Union[Callable, "ConstraintFcn"], **extra_arguments)
+    add(self, constraint: Callable | "ConstraintFcn", **extra_arguments)
         Add a new Constraint to the list
     print(self):
         Print the ObjectiveList to the console
     """
 
-    def add(self, objective: Union[Callable, Objective, Any], **extra_arguments: Any):
+    def add(self, objective: Callable | Objective | Any, **extra_arguments: Any):
         """
         Add a new objective function to the list
 
         Parameters
         ----------
-        objective: Union[Callable, Objective, ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer]
+        objective: Callable | Objective | ObjectiveFcn.Lagrange | ObjectiveFcn.Mayer
             The chosen objective function
         extra_arguments: dict
             Any parameters to pass to ObjectiveFcn
@@ -246,7 +268,7 @@ class ObjectiveFunction:
 
         Parameters
         ----------
-        ocp_or_nlp: Union[OptimalControlProgram, NonLinearProgram]
+        ocp_or_nlp: OptimalControlProgram  NonLinearProgram
             The reference to where to find J
         list_index: int
             The index in J
@@ -257,7 +279,69 @@ class ObjectiveFunction:
         if list_index >= len(ocp_or_nlp.J) or list_index < 0:
             raise ValueError("'list_index' must be defined properly")
 
-        ocp_or_nlp.J[list_index].target = new_target
+        ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, list | tuple) else new_target
+
+    @staticmethod
+    def inner_phase_continuity(ocp, weight: float):
+        """
+        Add continuity objectives between each nodes of a phase.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
+        # Dynamics must be sound within phases
+        for nlp in ocp.nlp:
+            penalty = Objective(
+                ObjectiveFcn.Mayer.CONTINUITY,
+                weight=weight,
+                quadratic=True,
+                node=Node.ALL_SHOOTING,
+                penalty_type=PenaltyType.INTERNAL,
+            )
+            penalty.add_or_replace_to_penalty_pool(ocp, nlp)
+
+    @staticmethod
+    def inter_phase_continuity(ocp):
+        """
+        Add phase transitions between two phases.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+        for pt in ocp.phase_transitions:
+            # Dynamics must be respected between phases
+            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
+
+    @staticmethod
+    def node_equalities(ocp):
+        """
+        Add multi node constraints between chosen phases.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+        for mnc in ocp.multinode_constraints:
+            # Equality constraint between nodes
+            first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
+            second_node_name = (
+                f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
+            )
+            mnc.name = (
+                f"NODE_EQUALITY "
+                f"Phase {mnc.phase_first_idx} Node {first_node_name}"
+                f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
+            )
+            mnc.list_index = -1
+            mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
 
 
 class ObjectiveFcn:
@@ -265,7 +349,7 @@ class ObjectiveFcn:
     Selection of valid objective functions
     """
 
-    class Lagrange(Enum):
+    class Lagrange(FcnEnum):
         """
         Selection of valid Lagrange objective functions
 
@@ -309,7 +393,7 @@ class ObjectiveFcn:
             """
             return ObjectiveFunction.LagrangeFunction
 
-    class Mayer(Enum):
+    class Mayer(FcnEnum):
         """
         Selection of valid Mayer objective functions
 
@@ -319,6 +403,7 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
+        CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
@@ -329,6 +414,7 @@ class ObjectiveFcn:
         TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
         PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+        MINIMIZE_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
         MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyFunctionAbstract.Functions.minimize_predicted_com_height,)
         MINIMIZE_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
         MINIMIZE_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
@@ -346,7 +432,7 @@ class ObjectiveFcn:
             """
             return ObjectiveFunction.MayerFunction
 
-    class Parameter(Enum):
+    class Parameter(FcnEnum):
         """
         Selection of valid Parameters objective functions
 
@@ -364,3 +450,31 @@ class ObjectiveFcn:
             Returns the type of the penalty
             """
             return ObjectiveFunction.ParameterFunction
+
+
+class ContinuityObjectiveFunctions:
+    """
+    Interface between continuity and objective
+    """
+
+    @staticmethod
+    def continuity(ocp, weight):
+        """
+        The declaration of inner- and inter-phase continuity objectives
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
+        ObjectiveFunction.inner_phase_continuity(ocp, weight)
+
+        # Dynamics must be respected between phases
+        ObjectiveFunction.inter_phase_continuity(ocp)
+
+        # TODO: multinode_anything shouldn't be handled by "continuity".
+        # Keeping multinode_constraint here because otherwise they wouldn't be added when state continuity is an
+        # objective, should REALLY be changed.
+        if ocp.multinode_constraints:
+            ObjectiveFunction.node_equalities(ocp)

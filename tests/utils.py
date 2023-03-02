@@ -10,6 +10,7 @@ import pytest
 from casadi import MX
 import biorbd_casadi as biorbd
 from bioptim import (
+    BiorbdModel,
     OptimalControlProgram,
     BiMapping,
     Mapping,
@@ -76,7 +77,7 @@ class TestUtils:
             for key in dir(first_elem):
                 TestUtils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
         else:
-            if not callable(first_elem) and not isinstance(first_elem, (MX, biorbd.Model)):
+            if not callable(first_elem) and not isinstance(first_elem, (MX, BiorbdModel)):
                 try:
                     elem_loaded = np.asarray(first_elem, dtype=float)
                     elem_original = np.array(second_elem, dtype=float)
@@ -110,18 +111,31 @@ class TestUtils:
     def simulate(sol, decimal_value=7):
         sol_merged = sol.merge_phases()
         if sum([nlp.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
-            with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
-                sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
+            with pytest.raises(
+                ValueError,
+                match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            ):
+                sol.integrate(
+                    merge_phases=True,
+                    shooting_type=Shooting.SINGLE,
+                    keep_intermediate_points=True,
+                    integrator=SolutionIntegrator.OCP,
+                )
             return
 
         sol_single = sol.integrate(
             merge_phases=True,
-            shooting_type=Shooting.SINGLE_CONTINUOUS,
+            shooting_type=Shooting.SINGLE,
             keep_intermediate_points=True,
-            integrator=SolutionIntegrator.DEFAULT,
+            integrator=SolutionIntegrator.OCP,
         )
 
         # Evaluate the final error of the single shooting integration versus the finale node
         np.testing.assert_almost_equal(
-            sol_merged.states["all"][:, -1], sol_single.states["all"][:, -1], decimal=decimal_value
+            sol_merged.states["all"][:, -1],
+            sol_single.states["all"][:, -1],
+            decimal=decimal_value,
         )

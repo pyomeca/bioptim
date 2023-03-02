@@ -1,12 +1,10 @@
-from typing import Union
-
 import numpy as np
 
 from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
-from ..limits.path_conditions import PathCondition
+from ..limits.path_conditions import PathCondition, Bounds
 from ..optimization.parameters import Parameter
-from ..misc.enums import Node
+from ..misc.enums import Node, InterpolationType
 
 
 class GraphAbstract:
@@ -15,7 +13,7 @@ class GraphAbstract:
     """
     Methods
     -------
-    _vector_layout_structure(self, vector: Union[list, np.array], decimal: int)
+    _vector_layout_structure(self, vector: list | np.ndarray, decimal: int)
         Main structure of the method _vector_layout()
     _vector_layout(self, vector: list, size: int)
         Resize vector content for display task
@@ -50,13 +48,13 @@ class GraphAbstract:
 
         self.ocp = ocp
 
-    def _vector_layout_structure(self, vector: Union[list, np.array], decimal: int):
+    def _vector_layout_structure(self, vector: list | np.ndarray, decimal: int):
         """
-        Main structure of the next method _vector_layout(self, vector: Union[list, np.array], size: int, param: bool)
+        Main structure of the next method _vector_layout(self, vector: list | np.ndarray, size: int, param: bool)
 
         Parameters
         ----------
-        vector: Union[list, np.array]
+        vector: list | np.ndarray
             The vector to be condensed
         decimal: int
             Number of decimals
@@ -68,13 +66,13 @@ class GraphAbstract:
                 condensed_vector += f"... {self._return_line}... "
         return condensed_vector
 
-    def _vector_layout(self, vector: Union[list, np.array, int]):
+    def _vector_layout(self, vector: list | np.ndarray | int):
         """
         Resize vector content for display task
 
         Parameters
         ----------
-        vector: Union[list, np.array]
+        vector: list | np.ndarray | int
             The vector to be condensed
         """
 
@@ -192,18 +190,16 @@ class GraphAbstract:
             for i in obj.node_idx:
                 if isinstance(obj.type, ObjectiveFcn.Mayer):
                     mayer_str = ""
-                    mayer_objective: Union[list, tuple] = (
-                        [obj.node[0]] if isinstance(obj.node, (list, tuple)) else [obj.node]
-                    )
+                    mayer_objective: list | tuple = [obj.node[0]] if isinstance(obj.node, (list, tuple)) else [obj.node]
                     if obj.target is not None:
                         if obj.quadratic:
                             mayer_str += (
-                                f"({obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])})"
+                                f"({obj.name} - {self._vector_layout(obj.target[0][:, obj.node_idx.index(i)])})"
                                 f"{self._squared}{self._return_line}"
                             )
                         else:
                             mayer_str += (
-                                f"{obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}"
+                                f"{obj.name} - {self._vector_layout(obj.target[0][:, obj.node_idx.index(i)])}"
                                 f"{self._return_line}"
                             )
                     else:
@@ -250,7 +246,7 @@ class GraphAbstract:
 
         initial_guess_str = self._structure_scaling_parameter(parameter.initial_guess.init, parameter)
         min_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
-        max_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
+        max_bound_str = self._structure_scaling_parameter(parameter.bounds.max, parameter)
 
         scaling = [parameter.scaling[i][0] for i in range(parameter.size)]
         scaling_str = f"{self._vector_layout(scaling)}"
@@ -308,15 +304,40 @@ class OcpToConsole(GraphAbstract):
     -------
     print(self)
         Print ocp structure in the console
+    print_bounds(self, phase_idx: int, bounds: Bounds, col_name: list[str])
+        Print ocp bounds in the console
+    print_bounds_table(bounds: Bounds, col_name: list[str], title: list[str]):
+        Print bounds row
+
     """
 
     def print(self):
         """
         Print ocp structure in the console
         """
-
         for phase_idx in range(self.ocp.n_phases):
-            print(f"PHASE {phase_idx}")
+            print(f"PHASE: {phase_idx}")
+            print(f"**********")
+            print(f"BOUNDS:")
+            print(f"STATES: InterpolationType.{self.ocp.nlp[phase_idx].x_bounds.type.name}")
+            self.print_bounds(
+                phase_idx,
+                self.ocp.nlp[phase_idx].x_bounds,
+                [
+                    self.ocp.nlp[phase_idx].states.cx[i].name()
+                    for i in range(self.ocp.nlp[phase_idx].states.cx.shape[0])
+                ],
+            )
+            print(f"**********")
+            print(f"CONTROLS: InterpolationType.{self.ocp.nlp[phase_idx].u_bounds.type.name}")
+            self.print_bounds(
+                phase_idx,
+                self.ocp.nlp[phase_idx].u_bounds,
+                [
+                    self.ocp.nlp[phase_idx].controls.cx[i].name()
+                    for i in range(self.ocp.nlp[phase_idx].controls.cx.shape[0])
+                ],
+            )
             print(f"**********")
             print(f"PARAMETERS: ")
             print("")
@@ -335,7 +356,7 @@ class OcpToConsole(GraphAbstract):
                 print("")
             print("")
             print(f"**********")
-            print(f"MODEL: {self.ocp.original_values['biorbd_model'][phase_idx]}")
+            print(f"MODEL: {self.ocp.original_values['bio_model'][phase_idx]}")
             print(f"PHASE DURATION: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s")
             print(f"SHOOTING NODES : {self.ocp.nlp[phase_idx].ns}")
             print(f"DYNAMICS: {self.ocp.nlp[phase_idx].dynamics_type.type.name}")
@@ -369,9 +390,70 @@ class OcpToConsole(GraphAbstract):
                         print(f"*** Implicit Constraint: {constraint.name}")
                 print("")
 
+    def print_bounds(self, phase_idx: int, bounds: Bounds, col_name: list[str]):
+        """
+        Print ocp bounds in the console
+
+        Parameters
+        ----------
+        phase_idx: int
+            The phase index
+        bounds: Bounds
+            The controls or states bounds
+        col_name: list[str]
+            The list of controls or states name
+        """
+        nlp = self.ocp.nlp[phase_idx]
+
+        if bounds.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+            title = ["", "Beginning", "Middle", "End"]
+        elif bounds.type == InterpolationType.CONSTANT:
+            title = ["", "Bounds"]
+        elif bounds.type == InterpolationType.LINEAR:
+            title = ["", "Beginning", "End"]
+        else:
+            raise NotImplementedError(
+                "Print bounds function has been implemented only with the following enums"
+                ": InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, "
+                "InterpolationType.CONSTANT and InterpolationType.LINEAR."
+            )
+        self.print_bounds_table(bounds, col_name, title)
+
+    @staticmethod
+    def print_bounds_table(bounds: Bounds, col_name: list[str], title: list[str]):
+        """
+        Print bounds table
+
+        Parameters
+        ----------
+        bounds: Bounds
+            The controls or states bounds
+        col_name: list[str]
+            The list of states names
+        title: list[str]
+            The list of column's title
+        """
+        gap = 20  # length of a column printed in the console
+
+        max_bounds = np.round(np.array(bounds.max.tolist()), 3)
+        min_bounds = np.round(np.array(bounds.min.tolist()), 3)
+
+        first_col_length = len(max(col_name, key=len))
+
+        title_row = f"{title[0]}" + (first_col_length - len(title[0]) + 2) * " "
+        for n in range(len(title) - 1):
+            title_row += f"{title[n + 1]}" + (gap - len(title[n + 1])) * " "
+        print(title_row)
+        for h in range(bounds.shape[0]):
+            table_row = col_name[h] + (first_col_length - len(col_name[h]) + 2) * " "
+            for j in range(len(min_bounds[h])):
+                row_element = f"[{min_bounds[h][j]}, {max_bounds[h][j]}]"
+                row_element += (gap - row_element.__len__()) * " "
+                table_row += row_element
+            print(table_row)
+
 
 class OcpToGraph(GraphAbstract):
-
     _return_line = "<br/>"
     _squared = "<sup>2</sup>"
     """
@@ -536,10 +618,7 @@ class OcpToGraph(GraphAbstract):
             The index of the current phase
         """
 
-        node_str = (
-            f"<b>Model</b>: {self.ocp.nlp[phase_idx].model.path().filename().to_string()}"
-            f".{self.ocp.nlp[phase_idx].model.path().extension().to_string()}<br/>"
-        )
+        node_str = f"<b>BioModel</b>: {type(self.ocp.nlp[phase_idx].model)}<br/>"
         node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
         node_str += f"<b>Dynamics</b>: {self.ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"

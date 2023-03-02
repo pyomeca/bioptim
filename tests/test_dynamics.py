@@ -2,15 +2,15 @@ import pytest
 import re
 
 import numpy as np
-from casadi import MX, SX
-import biorbd_casadi as biorbd
+from casadi import MX, SX, vertcat
 from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
-from bioptim.interfaces.biorbd_interface import BiorbdInterface
-from bioptim.misc.enums import ControlType
+from bioptim.interfaces.biorbd_model import BiorbdModel
+from bioptim.misc.enums import ControlType, RigidBodyDynamics
 from bioptim.optimization.non_linear_program import NonLinearProgram
 from bioptim.optimization.optimization_vector import OptimizationVector
 from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
+from bioptim.dynamics.dynamics_evaluation import DynamicsEvaluation
 from bioptim.limits.constraints import ConstraintList
 from .utils import TestUtils
 
@@ -26,25 +26,52 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_driven(with_contact, with_external_force, cx):
+@pytest.mark.parametrize(
+    "rigidbody_dynamics",
+    [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
+)
+def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    NonLinearProgram.add(ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact), False)
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=with_contact,
+            rigidbody_dynamics=rigidbody_dynamics,
+        ),
+        False,
+    )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        external_forces = np.random.rand(6, nlp.model.nb_segments, nlp.ns)
+        external_forces = np.transpose(external_forces, (2, 0, 1))
+        external_forces = [[external_forces[i, :, :] for i in range(nlp.ns)]]
+        NonLinearProgram.add(ocp, "external_forces", external_forces, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -54,32 +81,95 @@ def test_torque_driven(with_contact, with_external_force, cx):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
+    if rigidbody_dynamics == RigidBodyDynamics.ODE:
+        if with_contact:
+            contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, -7.7700092, -7.5782306, 21.7073786, -16.3059315],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
 
-    if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(states, controls, params))
-        if with_external_force:
-            np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.8631034, 0.3251833, 0.1195942, 0.4937956, -7.7700092, -7.5782306, 21.7073786, -16.3059315],
-            )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
-        else:
-            np.testing.assert_almost_equal(
-                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
-            )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
-    else:
-        if with_external_force:
-            np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.86310343, 0.32518332, 0.11959425, 0.4937956, 0.30731739, -9.97912778, 1.15263778, 36.02430956],
-            )
         else:
-            np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
-            )
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.86310343, 0.32518332, 0.11959425, 0.4937956, 0.30731739, -9.97912778, 1.15263778, 36.02430956],
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [
+                        0.61185289,
+                        0.78517596,
+                        0.60754485,
+                        0.80839735,
+                        -0.30241366,
+                        -10.38503791,
+                        1.60445173,
+                        35.80238642,
+                    ],
+                )
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+        if with_contact:
+            contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+
+        else:
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                )
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        if with_contact:
+            contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
+                )
+                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+
+        else:
+            if with_external_force:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.8631034, 0.3251833, 0.1195942, 0.4937956, 0.8074402, 0.4271078, 0.417411, 0.3232029],
+                )
+            else:
+                np.testing.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                )
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
@@ -87,24 +177,39 @@ def test_torque_driven(with_contact, with_external_force, cx):
 def test_torque_driven_implicit(with_contact, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    nlp.phase_idx = 0
 
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, implicit_dynamics=True),
+        Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=with_contact,
+            rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
+        ),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -134,27 +239,39 @@ def test_torque_driven_implicit(with_contact, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_driven_implicit_soft_contacts(with_contact, cx, implicit_contact):
+def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * (2 + 3), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    nlp.phase_idx = 0
 
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, implicit_soft_contacts=implicit_contact),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact),
         False,
     )
+
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -187,26 +304,46 @@ def test_torque_driven_implicit_soft_contacts(with_contact, cx, implicit_contact
 def test_torque_derivative_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    nlp.phase_idx = 0
 
     NonLinearProgram.add(
-        ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact), False
+        ocp,
+        "dynamics_type",
+        Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+            with_contact=with_contact,
+        ),
+        False,
     )
+
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        external_forces = np.random.rand(6, nlp.model.nb_segments, nlp.ns)
+        external_forces = np.transpose(external_forces, (2, 0, 1))
+        external_forces = [[external_forces[i, :, :] for i in range(nlp.ns)]]
+        NonLinearProgram.add(ocp, "external_forces", external_forces, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -302,22 +439,39 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
 def test_torque_derivative_driven_implicit(with_contact, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
+
     nlp.phase_idx = 0
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 2))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 2))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, implicit_dynamics=True),
+        Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+            with_contact=with_contact,
+            rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
+        ),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -380,27 +534,40 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_derivative_driven_implicit_soft_contacts(with_contact, cx, implicit_contact):
+def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * (2 + 3), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
         Dynamics(
-            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, implicit_soft_contacts=implicit_contact
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact
         ),
         False,
     )
+
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -458,60 +625,80 @@ def test_torque_derivative_driven_implicit_soft_contacts(with_contact, cx, impli
     "dynamics",
     [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
 )
-def test_implicit_soft_contacts_errors(dynamics):
+def test_soft_contacts_dynamics_errors(dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
 
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, implicit_soft_contacts=True),
+        Dynamics(dynamics, soft_contacts_dynamics=True),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_soft_contacts'"),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'soft_contacts_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 
 
 @pytest.mark.parametrize(
     "dynamics",
-    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
+    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN],
 )
 def test_implicit_dynamics_errors(dynamics):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
 
-    nlp.u_bounds = np.zeros((nlp.model.nbQ() * 4, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, implicit_dynamics=True),
+        Dynamics(dynamics, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
     with pytest.raises(
         TypeError,
-        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'implicit_dynamics'"),
+        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'rigidbody_dynamics'"),
     ):
         ConfigureProblem.initialize(ocp, nlp)
 
@@ -522,23 +709,41 @@ def test_implicit_dynamics_errors(dynamics):
 def test_torque_activation_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
-        ocp, "dynamics_type", Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact), False
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact),
+        False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        external_forces = np.random.rand(6, nlp.model.nb_segments, nlp.ns)
+        external_forces = np.transpose(external_forces, (2, 0, 1))
+        external_forces = [[external_forces[i, :, :] for i in range(nlp.ns)]]
+        NonLinearProgram.add(ocp, "external_forces", external_forces, False)
 
     # Prepare the dynamics
     ConfigureProblem.initialize(ocp, nlp)
@@ -604,17 +809,21 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("with_torque", [False, True])
 @pytest.mark.parametrize("with_excitations", [False, True])
-def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, cx):
+@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
+def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, rigidbody_dynamics, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
-        TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod"
-    )
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2 + nlp.model.nbMuscles(), 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbMuscles(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+    nlp.phase_idx = 0
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -625,16 +834,27 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
             with_torque=with_torque,
             with_excitations=with_excitations,
             with_contact=with_contact,
+            rigidbody_dynamics=rigidbody_dynamics,
         ),
         False,
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = [np.random.rand(6, nlp.model.nbSegment(), nlp.ns)]
-        nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
+        nlp.external_forces = np.random.rand(nlp.ns, 6, nlp.model.nb_segments)
+        nlp.external_forces = [nlp.external_forces[i, :, :] for i in range(nlp.ns)]
 
     # Prepare the dynamics
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        pass
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -644,222 +864,511 @@ def test_muscle_driven(with_excitations, with_contact, with_torque, with_externa
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
-        if with_torque:
-            if with_excitations:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            0.6158501,
-                            0.50313626,
-                            0.64241928,
-                            1.46421499,
-                            -45.27535002,
-                            73.61890834,
-                            46.87928022,
-                            -1.80189035,
-                            53.3914525,
-                            48.30056919,
-                            63.69373374,
-                            -28.15700995,
-                        ],
-                    )
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+            if with_torque:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                0.7009691,
+                                0.0848377,
+                                0.9472486,
+                                46.8792802,
+                                -1.8018903,
+                                53.3914525,
+                                48.3005692,
+                                63.6937337,
+                                -28.1570099,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.183405,
+                                0.611853,
+                                0.785176,
+                                0.249292,
+                                0.289751,
+                                0.871461,
+                                8.606308,
+                                3.194336,
+                                29.740561,
+                                -20.275423,
+                                -23.246778,
+                                -41.913501,
+                            ],
+                            decimal=6,
+                        )
                 else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            1.83404510e-01,
-                            6.11852895e-01,
-                            7.85175961e-01,
-                            -9.06144782e00,
-                            2.93915658e02,
-                            -9.24229516e02,
-                            8.60630831e00,
-                            3.19433638e00,
-                            2.97405608e01,
-                            -2.02754226e01,
-                            -2.32467778e01,
-                            -4.19135012e01,
-                        ],
-                        decimal=6,
-                    )
-            else:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [6.15850098e-01, 5.03136259e-01, 6.42419278e-01, -7.67236491e00, 2.30765930e02, -7.34713354e02],
-                        decimal=6,
-                    )
-                else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -3.57374110e00, 1.13519647e02, -4.07165959e02],
-                        decimal=6,
-                    )
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.61585, 0.503136, 0.642419, 0.895523, 0.319314, 0.448446],
+                            decimal=6,
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.183405, 0.611853, 0.785176, 0.729007, 0.863103, 0.325183],
+                            decimal=6,
+                        )
 
+            else:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                0.791579,
+                                0.5495289,
+                                0.1429917,
+                                55.6555782,
+                                50.4705269,
+                                0.3602559,
+                                58.9237749,
+                                29.7009419,
+                                -15.1353494,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                1.19594246e-01,
+                                4.93795596e-01,
+                                3.14291857e-02,
+                                -7.72228930e00,
+                                -1.13759732e01,
+                                9.51906209e01,
+                                4.45077128e00,
+                                -5.20261014e00,
+                                -2.80864106e01,
+                            ],
+                            decimal=6,
+                        )
+                else:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.6158501, 0.5031363, 0.6424193, 0.9905051, 0.9307573, 0.1031239],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
+                            decimal=6,
+                        )
         else:
-            if with_excitations:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            0.6158501,
-                            0.50313626,
-                            0.64241928,
-                            1.31194581,
-                            -50.56193318,
-                            82.71912199,
-                            55.65557816,
-                            50.47052688,
-                            0.36025589,
-                            58.92377491,
-                            29.70094194,
-                            -15.13534937,
-                        ],
-                    )
+            if with_torque:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                1.7685411,
+                                -54.335106,
+                                102.170402,
+                                46.8792802,
+                                -1.8018903,
+                                53.3914525,
+                                48.3005692,
+                                63.6937337,
+                                -28.1570099,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -3.94658983e00,
+                                1.23227027e02,
+                                -4.38936797e02,
+                                8.60630831e00,
+                                3.19433638e00,
+                                2.97405608e01,
+                                -2.02754226e01,
+                                -2.32467778e01,
+                                -4.19135012e01,
+                            ],
+                            decimal=6,
+                        )
                 else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            1.83404510e-01,
-                            6.11852895e-01,
-                            7.85175961e-01,
-                            -9.49194254e00,
-                            3.03909766e02,
-                            -9.56600268e02,
-                            -7.72228930e00,
-                            -1.13759732e01,
-                            9.51906209e01,
-                            4.45077128e00,
-                            -5.20261014e00,
-                            -2.80864106e01,
-                        ],
-                        decimal=6,
-                    )
-            else:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [0.6158501, 0.50313626, 0.64241928, 1.31194581, -50.56193318, 82.71912199],
-                    )
-                else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -9.49194254e00, 3.03909766e02, -9.56600268e02],
-                        decimal=6,
-                    )
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                6.15850098e-01,
+                                5.03136259e-01,
+                                6.42419278e-01,
+                                -5.27793227e00,
+                                1.57668597e02,
+                                -5.16345913e02,
+                            ],
+                            decimal=6,
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.183405, 0.611853, 0.785176, -0.867138, 22.511947, -153.294775],
+                            decimal=6,
+                        )
 
+            else:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                1.6162719,
+                                -59.6216891,
+                                111.2706156,
+                                55.6555782,
+                                50.4705269,
+                                0.3602559,
+                                58.9237749,
+                                29.7009419,
+                                -15.1353494,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -4.37708456e00,
+                                1.33221135e02,
+                                -4.71307550e02,
+                                -7.72228930e00,
+                                -1.13759732e01,
+                                9.51906209e01,
+                                4.45077128e00,
+                                -5.20261014e00,
+                                -2.80864106e01,
+                            ],
+                            decimal=6,
+                        )
+                else:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.6158501, 0.50313626, 0.64241928, 1.61627195, -59.62168912, 111.27061562],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -4.37708456e00,
+                                1.33221135e02,
+                                -4.71307550e02,
+                            ],
+                            decimal=6,
+                        )
     else:
-        if with_torque:
-            if with_excitations:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            0.6158501,
-                            0.50313626,
-                            0.64241928,
-                            1.46421499,
-                            -45.27535002,
-                            73.61890834,
-                            46.87928022,
-                            -1.80189035,
-                            53.3914525,
-                            48.30056919,
-                            63.69373374,
-                            -28.15700995,
-                        ],
-                    )
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+            if with_torque:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                0.7009691,
+                                0.0848377,
+                                0.9472486,
+                                46.8792802,
+                                -1.8018903,
+                                53.3914525,
+                                48.3005692,
+                                63.6937337,
+                                -28.1570099,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.183405,
+                                0.611853,
+                                0.785176,
+                                0.249292,
+                                0.289751,
+                                0.871461,
+                                8.606308,
+                                3.194336,
+                                29.740561,
+                                -20.275423,
+                                -23.246778,
+                                -41.913501,
+                            ],
+                            decimal=6,
+                        )
                 else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            1.83404510e-01,
-                            6.11852895e-01,
-                            7.85175961e-01,
-                            -9.06144782e00,
-                            2.93915658e02,
-                            -9.24229516e02,
-                            8.60630831e00,
-                            3.19433638e00,
-                            2.97405608e01,
-                            -2.02754226e01,
-                            -2.32467778e01,
-                            -4.19135012e01,
-                        ],
-                        decimal=6,
-                    )
-            else:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [6.15850098e-01, 5.03136259e-01, 6.42419278e-01, -7.67236491e00, 2.30765930e02, -7.34713354e02],
-                        decimal=6,
-                    )
-                else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -3.57374110e00, 1.13519647e02, -4.07165959e02],
-                        decimal=6,
-                    )
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.61585, 0.503136, 0.642419, 0.895523, 0.319314, 0.448446],
+                            decimal=6,
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.183405, 0.611853, 0.785176, 0.729007, 0.863103, 0.325183],
+                            decimal=6,
+                        )
 
-        else:
-            if with_excitations:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            0.6158501,
-                            0.50313626,
-                            0.64241928,
-                            1.31194581,
-                            -50.56193318,
-                            82.71912199,
-                            55.65557816,
-                            50.47052688,
-                            0.36025589,
-                            58.92377491,
-                            29.70094194,
-                            -15.13534937,
-                        ],
-                    )
-                else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [
-                            1.83404510e-01,
-                            6.11852895e-01,
-                            7.85175961e-01,
-                            -9.49194254e00,
-                            3.03909766e02,
-                            -9.56600268e02,
-                            -7.72228930e00,
-                            -1.13759732e01,
-                            9.51906209e01,
-                            4.45077128e00,
-                            -5.20261014e00,
-                            -2.80864106e01,
-                        ],
-                        decimal=6,
-                    )
             else:
-                if with_external_force:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [0.6158501, 0.50313626, 0.64241928, 1.31194581, -50.56193318, 82.71912199],
-                    )
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.50313626,
+                                0.64241928,
+                                0.79157904,
+                                0.54952888,
+                                0.14299168,
+                                55.65557816,
+                                50.47052688,
+                                0.36025589,
+                                58.92377491,
+                                29.70094194,
+                                -15.13534937,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                1.19594246e-01,
+                                4.93795596e-01,
+                                3.14291857e-02,
+                                -7.72228930e00,
+                                -1.13759732e01,
+                                9.51906209e01,
+                                4.45077128e00,
+                                -5.20261014e00,
+                                -2.80864106e01,
+                            ],
+                            decimal=6,
+                        )
                 else:
-                    np.testing.assert_almost_equal(
-                        x_out[:, 0],
-                        [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -9.49194254e00, 3.03909766e02, -9.56600268e02],
-                        decimal=6,
-                    )
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.6158501, 0.5031363, 0.6424193, 0.9905051, 0.9307573, 0.1031239],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
+                            decimal=6,
+                        )
+        else:
+            if with_torque:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                1.7685411,
+                                -54.335106,
+                                102.170402,
+                                46.8792802,
+                                -1.8018903,
+                                53.3914525,
+                                48.3005692,
+                                63.6937337,
+                                -28.1570099,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -3.94658983e00,
+                                1.23227027e02,
+                                -4.38936797e02,
+                                8.60630831e00,
+                                3.19433638e00,
+                                2.97405608e01,
+                                -2.02754226e01,
+                                -2.32467778e01,
+                                -4.19135012e01,
+                            ],
+                            decimal=6,
+                        )
+                else:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                6.15850098e-01,
+                                5.03136259e-01,
+                                6.42419278e-01,
+                                -5.27793227e00,
+                                1.57668597e02,
+                                -5.16345913e02,
+                            ],
+                            decimal=6,
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.18340451, 0.61185289, 0.78517596, -0.8671376, 22.51194682, -153.29477496],
+                            decimal=6,
+                        )
+
+            else:
+                if with_excitations:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                0.6158501,
+                                0.5031363,
+                                0.6424193,
+                                1.6162719,
+                                -59.6216891,
+                                111.2706156,
+                                55.6555782,
+                                50.4705269,
+                                0.3602559,
+                                58.9237749,
+                                29.7009419,
+                                -15.1353494,
+                            ],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -4.37708456e00,
+                                1.33221135e02,
+                                -4.71307550e02,
+                                -7.72228930e00,
+                                -1.13759732e01,
+                                9.51906209e01,
+                                4.45077128e00,
+                                -5.20261014e00,
+                                -2.80864106e01,
+                            ],
+                            decimal=6,
+                        )
+                else:
+                    if with_external_force:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [0.6158501, 0.50313626, 0.64241928, 1.61627195, -59.62168912, 111.27061562],
+                        )
+                    else:
+                        np.testing.assert_almost_equal(
+                            x_out[:, 0],
+                            [
+                                1.83404510e-01,
+                                6.11852895e-01,
+                                7.85175961e-01,
+                                -4.37708456e00,
+                                1.33221135e02,
+                                -4.71307550e02,
+                            ],
+                            decimal=6,
+                        )
+
+
+@pytest.mark.parametrize("cx", [MX, SX])
+@pytest.mark.parametrize("rigid_body_dynamics", RigidBodyDynamics)
+def test_joints_acceleration_driven(cx, rigid_body_dynamics):
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
+    nlp.ns = 5
+    nlp.cx = cx
+
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, rigidbody_dynamics=rigid_body_dynamics),
+        False,
+    )
+    np.random.seed(42)
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    # Prepare the dynamics
+    if rigid_body_dynamics != RigidBodyDynamics.ODE:
+        with pytest.raises(NotImplementedError, match=re.escape("Implicit dynamics not implemented yet.")):
+            ConfigureProblem.initialize(ocp, nlp)
+    else:
+        ConfigureProblem.initialize(ocp, nlp)
+
+        # Test the results
+        states = np.random.rand(nlp.states.shape, nlp.ns)
+        controls = np.random.rand(nlp.controls.shape, nlp.ns)
+        params = np.random.rand(nlp.parameters.shape, nlp.ns)
+        x_out = np.array(nlp.dynamics_func(states, controls, params))
+
+        # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
+        np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
 
 
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact):
-    def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> tuple:
-        DynamicsFunctions.apply_parameters(parameters, nlp)
+    def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> DynamicsEvaluation:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
@@ -867,12 +1376,12 @@ def test_custom_dynamics(with_contact):
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        return dq, ddq
+        return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
     def configure(ocp, nlp, with_contact=None):
-        ConfigureProblem.configure_q(nlp, True, False)
-        ConfigureProblem.configure_qdot(nlp, True, False)
-        ConfigureProblem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, True, False)
+        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
+        ConfigureProblem.configure_tau(ocp, nlp, False, True)
         ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_contact=with_contact)
 
         if with_contact:
@@ -880,19 +1389,31 @@ def test_custom_dynamics(with_contact):
 
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(
+    nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
 
-    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = {}
+    nlp.xdot_scaling = {}
+    nlp.u_scaling = {}
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp, "dynamics_type", Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact), False
     )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
