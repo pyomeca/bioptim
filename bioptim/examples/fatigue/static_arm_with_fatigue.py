@@ -134,7 +134,9 @@ def prepare_ocp(
                 raise ValueError("fatigue_type not implemented")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue_dynamics, with_torque=torque_level > 0)
+    dynamics = Dynamics(
+        DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue_dynamics, with_residual_torque=torque_level > 0
+    )
 
     # Add objective functions
     objective_functions = ObjectiveList()
