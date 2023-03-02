@@ -561,7 +561,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         return tuple(final_solution) if len(final_solution) > 1 else final_solution[0]
 
     def export_cycles(self, sol: Solution, cycle_number: int = 0) -> tuple:
-        """ Exports the solution of the desired cycle from the full window solution"""
+        """Exports the solution of the desired cycle from the full window solution"""
         window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len + 1)
         states = sol.states["all"][:, window_slice]
         controls = sol.controls["all"][:, window_slice]
