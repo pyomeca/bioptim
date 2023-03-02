@@ -25,15 +25,15 @@ from bioptim import (
     CostType,
     Solver,
     BiorbdModel,
-    MultinodeConstraintList,
-    MultinodeConstraint,
+    AllNodeConstraintList,
+    AllNodeConstraint,
     NonLinearProgram,
     Node
 )
 
 
-def custom_multinode_constraint(
-    multinode_constraint: MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
+def custom_allnode_constraint(
+    allnode_constraint: AllNodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
@@ -44,8 +44,8 @@ def custom_multinode_constraint(
 
     Parameters
     ----------
-    multinode_constraint: MultinodeConstraint
-        The placeholder for the multinode_constraint
+    allnode_constraint: AllNodeConstraint
+        The placeholder for the allnode_constraint
     nlp_pre: NonLinearProgram
         The nonlinear program of the pre phase
     nlp_post: NonLinearProgram
@@ -60,10 +60,10 @@ def custom_multinode_constraint(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-    states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+    #states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+    #states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
-    return states_pre * coef - states_post
+    return # A modifier
 
 
 def prepare_ocp(
@@ -124,13 +124,10 @@ def prepare_ocp(
     u_init = InitialGuess([tau_init] * n_tau)
 
     ### New
-    multinode_constraints = MultinodeConstraintList()
-    multinode_constraints.add(
-        custom_multinode_constraint,
-        phase_first_idx=0,
-        phase_second_idx=0,
-        first_node=2,
-        second_node=3,
+    allnode_constraints = AllNodeConstraintList()
+    allnode_constraints.add(
+        custom_allnode_constraint,
+        phase_idx=0,
         weight=0.1,
         coef=0.1,
     )
@@ -145,7 +142,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        multinode_constraints=multinode_constraints,
+        allnode_constraints=allnode_constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
