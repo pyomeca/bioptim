@@ -86,15 +86,19 @@ def test_biorbd_model():
 
     segments = models.segments
 
-    with pytest.raises(NotImplementedError, match="homogeneous_matrices_in_global is not implemented for MultiBiorbdModel"):
+    with pytest.raises(
+        NotImplementedError, match="homogeneous_matrices_in_global is not implemented for MultiBiorbdModel"
+    ):
         homogeneous_matrices_in_global = Function(
             "RT_parent", [], [models.homogeneous_matrices_in_global(q[:3], 0, 0).to_mx()]
         )()["o0"]
 
-    with pytest.raises(NotImplementedError, match="homogeneous_matrices_in_child is not implemented for MultiBiorbdModel"):
-        homogeneous_matrices_in_child = Function("RT_child", [], [models.homogeneous_matrices_in_child(0)[0].to_mx()])()[
-            "o0"
-        ]
+    with pytest.raises(
+        NotImplementedError, match="homogeneous_matrices_in_child is not implemented for MultiBiorbdModel"
+    ):
+        homogeneous_matrices_in_child = Function(
+            "RT_child", [], [models.homogeneous_matrices_in_child(0)[0].to_mx()]
+        )()["o0"]
     mass = Function("Mass", [], [models.mass])()["o0"]
     center_of_mass = Function("CoM", [], [models.center_of_mass(q)])()["o0"]
     center_of_mass_velocity = Function("CoMdot", [], [models.center_of_mass_velocity(q, qdot)])()["o0"]
@@ -102,10 +106,14 @@ def test_biorbd_model():
     angular_momentum = Function("AngMom", [], [models.angular_momentum(q, qdot)])()["o0"]
     reshape_qdot = Function("GetQdot", [], [models.reshape_qdot(q, qdot, 1)])()["o0"]
     segment_angular_velocity = Function("SegmentAngMom", [], [models.segment_angular_velocity(q, qdot, 0)])()["o0"]
-    soft_contact = Function("SoftContact", [], [models.soft_contact(0, 0)])()["o0"]  # TODO: Fix soft contact (biorbd call error)
+    soft_contact = Function("SoftContact", [], [models.soft_contact(0, 0)])()[
+        "o0"
+    ]  # TODO: Fix soft contact (biorbd call error)
 
     with pytest.raises(RuntimeError, match="Close the actuator model before calling torqueMax"):
-        torque = Function("TorqueFromActivation", [], [models.torque(tau, q, qdot)])()["o0"]  #TODO: Fix torque (Close the actuator model before calling torqueMax)
+        torque = Function("TorqueFromActivation", [], [models.torque(tau, q, qdot)])()[
+            "o0"
+        ]  # TODO: Fix torque (Close the actuator model before calling torqueMax)
 
     forward_dynamics_free_floating_base = Function(
         "RootForwardDynamics", [], [models.forward_dynamics_free_floating_base(q, qdot, qddot_joints)]
@@ -132,10 +140,14 @@ def test_biorbd_model():
     marker_velocities = Function("Markerdot", [], [models.marker_velocities(q, qdot)[0, :]])()["o0"]
 
     with pytest.raises(RuntimeError, match="All dof must have their actuators set"):
-        tau_max = Function("TauMax", [], [models.tau_max(q, qdot)])()["o0"]  #TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
+        tau_max = Function("TauMax", [], [models.tau_max(q, qdot)])()[
+            "o0"
+        ]  # TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
 
     with pytest.raises(IndexError, match="tuple index out of range"):
-        rigid_contact_acceleration = models.rigid_contact_acceleration(q, qdot, qddot, 0) # TODO: to be added when the code works
+        rigid_contact_acceleration = models.rigid_contact_acceleration(
+            q, qdot, qddot, 0
+        )  # TODO: to be added when the code works
 
     soft_contact_forces = Function("SoftContactForces", [], [models.soft_contact_forces(q, qdot)])()["o0"]
     reshape_fext_to_fcontact = Function("Fext_to_Fcontact", [], [models.reshape_fext_to_fcontact(f_ext)])()["o0"]
