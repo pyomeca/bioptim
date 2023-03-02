@@ -45,27 +45,29 @@ class MultiBiorbdModel:
         return MultiBiorbdModel, dict(bio_model=tuple(path for path in self.path))
 
     def variable_index(self, variable: str, model_index: int) -> slice:
-        if variable == 'q':
+        if variable == "q":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbQ()
             return slice(current_idx, current_idx + self.models[model_index].nbQ())
-        elif variable == 'qdot':
+        elif variable == "qdot":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbQdot()
             return slice(current_idx, current_idx + self.models[model_index].nbQdot())
-        elif variable == 'qddot':
+        elif variable == "qddot":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbQddot()
             return slice(current_idx, current_idx + self.models[model_index].nbQddot())
-        elif variable == 'qddot_joints':
+        elif variable == "qddot_joints":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbQddot() - model.nbRoot()
-            return slice(current_idx, current_idx + self.models[model_index].nbQddot() - self.models[model_index].nbRoot())
-        elif variable == 'tau':
+            return slice(
+                current_idx, current_idx + self.models[model_index].nbQddot() - self.models[model_index].nbRoot()
+            )
+        elif variable == "tau":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbGeneralizedTorque()
@@ -131,7 +133,7 @@ class MultiBiorbdModel:
     def center_of_mass(self, q) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
-            out = vertcat(out, model.CoM(q[self.variable_index('q', i)], True).to_mx())
+            out = vertcat(out, model.CoM(q[self.variable_index("q", i)], True).to_mx())
         return out
 
     def center_of_mass_velocity(self, q, qdot) -> MX:
@@ -139,9 +141,7 @@ class MultiBiorbdModel:
         for i, model in enumerate(self.models):
             out = vertcat(
                 out,
-                model.CoMdot(
-                    q[self.variable_index('q', i)], qdot[self.variable_index('qdot', i)], True
-                ).to_mx(),
+                model.CoMdot(q[self.variable_index("q", i)], qdot[self.variable_index("qdot", i)], True).to_mx(),
             )
         return out
 
@@ -151,9 +151,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.CoMddot(
-                    q[self.variable_index('q', i)],
-                    qdot[self.variable_index('qdot', i)],
-                    qddot[self.variable_index('qddot', i)],
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                    qddot[self.variable_index("qddot", i)],
                     True,
                 ).to_mx(),
             )
@@ -165,7 +165,7 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.angularMomentum(
-                    q[self.variable_index('q', i)], qdot[self.variable_index('qdot', i)], True
+                    q[self.variable_index("q", i)], qdot[self.variable_index("qdot", i)], True
                 ).to_mx(),
             )
         return out
@@ -175,9 +175,7 @@ class MultiBiorbdModel:
         for i, model in enumerate(self.models):
             out = vertcat(
                 out,
-                model.computeQdot(
-                    q[self.variable_index('q', i)], qdot[self.variable_index('qdot', i)], k_stab
-                ).to_mx(),
+                model.computeQdot(q[self.variable_index("q", i)], qdot[self.variable_index("qdot", i)], k_stab).to_mx(),
             )
         return out
 
@@ -187,8 +185,8 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.segmentAngularVelocity(
-                    q[self.variable_index('q', i)],
-                    qdot[self.variable_index('qdot', i)],
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
                     idx,
                     True,
                 ).to_mx(),
@@ -251,9 +249,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.torque(
-                    tau_activations[self.variable_index('tau', i)],
-                    q[self.variable_index('q', i)],
-                    qdot[self.variable_index('qdot', i)],
+                    tau_activations[self.variable_index("tau", i)],
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
                 ).to_mx(),
             )
             model.closeActuator()
@@ -265,9 +263,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.ForwardDynamicsFreeFloatingBase(
-                    q[self.variable_index('q', i)],
-                    qdot[self.variable_index('q', i)],
-                    qddot_joints[self.variable_index('qddot_joints', i)],
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("q", i)],
+                    qddot_joints[self.variable_index("qddot_joints", i)],
                 ).to_mx(),
             )
         return out
@@ -280,9 +278,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.ForwardDynamics(
-                    q[self.variable_index('q', i)],
-                    qdot[self.variable_index('qdot', i)],
-                    tau[self.variable_index('tau', i)],
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                    tau[self.variable_index("tau", i)],
                     external_forces,
                     f_contacts,
                 ).to_mx(),
@@ -297,9 +295,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.ForwardDynamicsConstraintsDirect(
-                    q[self.variable_index('q', i)],
-                    qdot[self.variable_index('qdot', i)],
-                    qddot[self.variable_index('qddot', i)],
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                    qddot[self.variable_index("qddot", i)],
                     external_forces,
                 ).to_mx(),
             )
@@ -313,9 +311,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.InverseDynamics(
-                    q[self.variable_index('q', i)],
-                    qdot[self.variable_index('qdot', i)],
-                    qddot[self.variable_index('qddot', i)],
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                    qddot[self.variable_index("qddot", i)],
                     external_forces,
                     f_contacts,
                 ).to_mx(),
@@ -330,9 +328,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.ContactForcesFromForwardDynamicsConstraintsDirect(
-                    q[self.variable_index('q', i)],
-                    qdot[self.variable_index('q', i)],
-                    tau[self.variable_index('q', i)],
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("q", i)],
+                    tau[self.variable_index("q", i)],
                     external_forces,
                 ).to_mx(),
             )
@@ -344,8 +342,8 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.ComputeConstraintImpulsesDirect(
-                    q[self.variable_index('q', i)],
-                    qdot_pre_impact[self.variable_index('qdot', i)],
+                    q[self.variable_index("q", i)],
+                    qdot_pre_impact[self.variable_index("qdot", i)],
                 ).to_mx(),
             )
         return out
@@ -371,7 +369,7 @@ class MultiBiorbdModel:
     def markers(self, q) -> Any | list[MX]:
         out = []
         for i, model in enumerate(self.models):
-            for m in model.markers(q[self.variable_index('q', i)]):
+            for m in model.markers(q[self.variable_index("q", i)]):
                 out.append(m.to_mx())
         return out
 
@@ -405,8 +403,8 @@ class MultiBiorbdModel:
                     *[
                         m.to_mx()
                         for m in model.markersVelocity(
-                            q[self.variable_index('q', i)],
-                            qdot[self.variable_index('qdot', i)],
+                            q[self.variable_index("q", i)],
+                            qdot[self.variable_index("qdot", i)],
                             True,
                         )
                     ]
