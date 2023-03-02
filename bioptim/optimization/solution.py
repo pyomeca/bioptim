@@ -1015,6 +1015,7 @@ class Solution:
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
             u = self._controls["unscaled"][controls_phase_idx]["all"]
+
             if integrator != SolutionIntegrator.OCP:
                 out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
@@ -1537,6 +1538,11 @@ class Solution:
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
 
+                if penalty.node != Node.TRANSITION:
+                    node_name = f"{penalty.node[0]}" if isinstance(penalty.node[0], int) else penalty.node[0].name
+                else:
+                    node_name = penalty.node.name
+
                 self.detailed_cost += [
                     {
                         "name": penalty.type.__str__(),
@@ -1550,7 +1556,7 @@ class Solution:
                         "integration_rule": penalty.integration_rule.name,
                         "weight": penalty.weight,
                         "expand": penalty.expand,
-                        "node": penalty.node[0].name if penalty.node != Node.TRANSITION else penalty.node.name,
+                        "node": node_name,
                     }
                 ]
                 if print_only_weighted:

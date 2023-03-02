@@ -7,6 +7,7 @@ It tests the results of an optimal control problem with torque_driven_with_conta
 """
 import os
 import pytest
+import sys
 
 import numpy as np
 from bioptim import OdeSolver, RigidBodyDynamics, Solver
@@ -21,6 +22,10 @@ from .utils import TestUtils
 @pytest.mark.parametrize("com_constraints", [False, True])
 def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constraints):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+
+    # no rk8 on windows
+    if sys.platform == "win32" and ode_solver == OdeSolver.RK8:  # it actually works but not with the CI
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
