@@ -1,7 +1,7 @@
 """
 This is a basic example on how to use inverse optimal control to recover the weightings from an optimal reaching task.
 
-Please note that this example is dependant on the external library Platypus which can be installed through
+Please note that this example is dependent on the external library Platypus which can be installed through
 conda install -c conda-forge platypus-opt
 """
 
@@ -18,7 +18,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -26,6 +25,7 @@ from bioptim import (
     ConstraintFcn,
     Node,
     CostType,
+    BiorbdModel,
 )
 
 # # Load track_segment_on_rt
@@ -40,7 +40,7 @@ def prepare_ocp(weights, coefficients):
 
     # Parameters of the problem
     biorbd_model_path = "models/multiple_pendulum.bioMod"
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = (BiorbdModel(biorbd_model_path))
     phase_time = 1.5
     n_shooting = 30
     tau_min, tau_max, tau_init = -25, 25, 0
@@ -53,13 +53,15 @@ def prepare_ocp(weights, coefficients):
     # angle acceleration (minimize_states_velocity, derivative=True)
     # Torque change (minimize_torques, derivative=True)
     if coefficients[0] * weights[0] != 0:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True, weight=coefficients[0]*weights[0])
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=coefficients[0]*weights[0])
+    if coefficients[1] * weights[0] != 0:
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True, weight=coefficients[1]*weights[0])
     # Effort/Snap (minimize_jerks, derivative=True)
     # Geodesic/hand trajectory (minimize_marker, derivative=True, mayer)
-    if coefficients[1] * weights[1] != 0:
-        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, node=Node.ALL_SHOOTING, derivative=True, weight=coefficients[1]*weights[1])
+    # if coefficients[2] * weights[1] != 0:
+    #     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, node=Node.ALL_SHOOTING, derivative=True, weight=coefficients[2]*weights[1])
     # Energy (norm(qdot*tau))
-    if coefficients[2] * weights[2] != 0:
+    if coefficients[2] * weights[0] != 0:
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, min_bound=0.5, max_bound=5, weight=coefficients[2]*weights[2])
 
     # Constraints
@@ -72,12 +74,12 @@ def prepare_ocp(weights, coefficients):
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
 
     # Path constraint
-    n_q = biorbd_model.nbQ()
+    n_q = biorbd_model.nb_q
     n_qdot = n_q
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=biorbd_model.bounds_from_ranges(["q", "qdot"]))
 
     # Initial guess
     x_init = InitialGuessList()
@@ -86,12 +88,12 @@ def prepare_ocp(weights, coefficients):
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * biorbd_model.nbGeneralizedTorque(),
-        [tau_max] * biorbd_model.nbGeneralizedTorque(),
+        [tau_min] * biorbd_model.nb_tau,
+        [tau_max] * biorbd_model.nb_tau,
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model.nb_tau)
 
     # ------------- #
 
@@ -155,23 +157,23 @@ def main():
     ocp_to_track.add_plot_penalty(CostType.ALL)
     solver = Solver.IPOPT()
     solver.set_linear_solver("ma57")
-    solver.set_print_level(0)
+    # solver.set_print_level(0)
     sol_to_track = ocp_to_track.solve(solver)
     q_to_track, qdot_to_track, tau_to_track = sol_to_track.states["q"], sol_to_track.states["qdot"], sol_to_track.controls["tau"]
     print("+++++++++++++++++++++++++++ weights_to_track generated +++++++++++++++++++++++++++")
     # sol_to_track.animate()
-    #
-    # # Find coefficients of the objective using Pareto
-    # coefficients = []
-    # for i in range(len(weights_to_track)):
-    #     weights_pareto = [0, 0, 0]
-    #     weights_pareto[i] = 1
-    #     ocp_pareto = prepare_ocp(weights=weights_pareto, coefficients=[1, 1, 1])
-    #     sol_pareto = ocp_pareto.solve(solver)
-    #     sol_pareto.print()
-    #     # sol_pareto.animate()
-    #     coefficients.append(sol_pareto.cost)
-    # print("+++++++++++++++++++++++++++ coefficients generated +++++++++++++++++++++++++++")
+
+    # Find coefficients of the objective using Pareto
+    coefficients = []
+    for i in range(len(weights_to_track)):
+        weights_pareto = [0, 0, 0]
+        weights_pareto[i] = 1
+        ocp_pareto = prepare_ocp(weights=weights_pareto, coefficients=[1, 1, 1])
+        sol_pareto = ocp_pareto.solve(solver)
+        sol_pareto.print()
+        # sol_pareto.animate()
+        coefficients.append(sol_pareto.cost)
+    print("+++++++++++++++++++++++++++ coefficients generated +++++++++++++++++++++++++++")
 
     # Retrieving weights using IOCP
     global i_inverse
@@ -190,7 +192,7 @@ def main():
 
     epsilon = 1e-6
     diff = 1000
-    while i_inverse < 1000 and diff > epsilon:
+    while i_inverse < 1 and diff > epsilon: # 1000
         olf_pop_f = np.min(pop.get_f())
         pop = algo.evolve(pop)
         diff = olf_pop_f - np.min(pop.get_f())
