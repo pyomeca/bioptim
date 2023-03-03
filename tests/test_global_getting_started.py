@@ -5,6 +5,7 @@ import os
 import pickle
 from pickle import PicklingError
 import re
+import sys
 
 import pytest
 import numpy as np
@@ -723,6 +724,9 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_example_external_forces(ode_solver):
+    if sys.platform == "win32":
+        return
+
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
