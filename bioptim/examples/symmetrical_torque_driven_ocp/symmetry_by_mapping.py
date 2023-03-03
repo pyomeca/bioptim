@@ -69,6 +69,7 @@ def prepare_ocp(
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
     dof_mappings = BiMappingList()
+
     # adds a bimapping to bimappinglist
     dof_mappings.add("q", to_second=[0, 1, None, 2, 2], to_first=[0, 1, 3], oppose_to_second=4)
     # easier way is to use SelectionMapping which is a subclass of biMapping

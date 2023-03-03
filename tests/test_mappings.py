@@ -53,4 +53,3 @@ def test_bidirectional_selection_mapping():
         SelectionMapping(1, (3, 4, 5))
     with pytest.raises(ValueError, match="nb_dof should be an 'int'"):
         SelectionMapping((0, 1, 2), 3)
-

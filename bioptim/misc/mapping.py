@@ -249,25 +249,23 @@ class Dependency:
     Attributes
     ----------
     dependent_index: int
-        the index of the dependent variable
+        The index of the dependent variable
     reference_index: int
-        the index of the variable on which relies the dependent variable
+        The index of the variable on which relies the dependent variable
     factor : int
-        the factor that multiplies the dependent element
-
+        The factor that multiplies the dependent element
     """
 
     def __init__(self, dependent_index: int = None, reference_index: int = None, factor: int = None):
-
         """
         Parameters
         ----------
         dependent_index : int
-            the index of the element that depends on another
+            The index of the element that depends on another
         reference_index : int
-            the index of the element on which the afore-mentionned element relies
+            The index of the element on which the afore-mentionned element relies
         factor : int
-            the factor that multiplies the dependent element
+            The factor that multiplies the dependent element
 
         """
         if dependent_index is not None:
@@ -299,6 +297,14 @@ class SelectionMapping(BiMapping):
         The mapping that links the second variable to the first
     oppose_to_second : int | list
         Index to multiply by -1 of the to_second mapping
+    nb_elements : int
+        The number of elements, such as the number of dof in a model
+    independent_indices : tuple
+        The indices of the elements that are independent of others
+    dependencies : Dependency class
+        Contains the dependencies of the elements between them and the factor
+    they are multiplied by if needed,only 1 or -1 is acceptable for now
+
     """
 
     def __init__(
@@ -308,23 +314,23 @@ class SelectionMapping(BiMapping):
         dependencies: tuple[Dependency, ...] = None,
         **params
     ):
-
         """
+        Initializes the class SelectionMapping
+
         Parameters
         ----------
         nb_elements : int
-            the number of elements, such as the number of dof in a model
+            The number of elements, such as the number of dof in a model
         independent_indices : tuple
-            the indices of the elements that are independent of others
+            The indices of the elements that are independent of others
         dependencies : Dependency class
-            contains the dependencies of the elements between them and the factor
+            Contains the dependencies of the elements between them and the factor
         they are multiplied by if needed,only 1 or -1 is acceptable for now
-        params
 
         Methods
         -------
-        build_to_second(dependency_matrix: list, independent_indices: list) -> list
-            build the to_second vector used in BiMapping
+        _build_to_second(dependency_matrix: list, independent_indices: list) -> list
+            build the second vector that defines the mapping
         """
 
         # verify dependant dof : impossible multiple dependancies
@@ -347,7 +353,7 @@ class SelectionMapping(BiMapping):
 
             for i in range(len(dependencies)):
                 if master[i] in dependent:
-                    raise ValueError("Dependancies cant depend on others")
+                    raise ValueError("dependencies cant depend on others")
 
         if len(independent_indices) > nb_elements:
             raise ValueError("independent_indices must not contain more elements than nb_elements")
@@ -360,7 +366,7 @@ class SelectionMapping(BiMapping):
         index_dof = index_dof.reshape(nb_elements, 1)
 
         selection_matrix = np.zeros((nb_elements, nb_elements))
-        for element in independent_indices: # simple case
+        for element in independent_indices:  # simple case
             if element not in master:
                 selection_matrix[element][element] = 1
         if dependencies is not None:
@@ -379,7 +385,8 @@ class SelectionMapping(BiMapping):
                 oppose.append(i)
                 dependency_matrix[i] = int(abs(first[i]) - 1)
 
-        def build_to_second(dependency_matrix: list, independent_indices: list):
+        @staticmethod
+        def _build_to_second(dependency_matrix: list, independent_indices: list):
             """
             Build the to_second vector used in BiMapping thanks to the dependency matrix of the elements in the system
             and the vector of independent indices
@@ -402,7 +409,7 @@ class SelectionMapping(BiMapping):
                         dependency_matrix[i] = j
             return dependency_matrix
 
-        to_second = build_to_second(dependency_matrix=dependency_matrix, independent_indices=independent_indices)
+        to_second = _build_to_second(dependency_matrix=dependency_matrix, independent_indices=independent_indices)
         to_first = independent_indices
         self.to_second = to_second
         self.to_first = to_first
