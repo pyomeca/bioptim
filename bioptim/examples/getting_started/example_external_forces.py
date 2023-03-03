@@ -74,6 +74,7 @@ def prepare_ocp(
     # External forces. external_forces is of len 1 because there is only one phase.
     # The array inside it is 6x2x30 since there is [Mx, My, Mz, Fx, Fy, Fz] for the two externalforceindex for each node
     external_forces = [[np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T for _ in range(n_shooting)]]
+    external_forces[0][4] = np.array([[0, 0, 0, 0, 0, -22], [0, 0, 0, 0, 0, 52]]).T
 
     # Path constraint
     x_bounds = BoundsList()

@@ -1,3 +1,4 @@
+import os
 import pytest
 import re
 
@@ -1546,4 +1547,57 @@ def test_custom_dynamics(with_contact):
         np.testing.assert_almost_equal(
             x_out[:, 0],
             [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
+        )
+
+
+@pytest.mark.parametrize(
+    "dynamics_fcn",
+    [
+        DynamicsFcn.TORQUE_DRIVEN,
+        DynamicsFcn.MUSCLE_DRIVEN,
+        DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+        DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+    ],
+)
+def test_with_contact_error(dynamics_fcn):
+    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim import ObjectiveList, Bounds, InitialGuess, OdeSolver, OptimalControlProgram
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    bio_model = BiorbdModel(bioptim_folder + "/models/pendulum.bioMod")
+
+    # Add objective functions
+    objective_functions = ObjectiveList()
+
+    # Dynamics
+    dynamics = Dynamics(dynamics_fcn, with_contact=True)
+
+    # Path constraint
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
+
+    # Initial guess
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
+    x_init = InitialGuess([0] * (n_q + n_qdot))
+
+    # Define control path constraint
+    n_tau = bio_model.nb_tau
+    u_bounds = Bounds([100] * n_tau, [100] * n_tau)
+    u_bounds[1, :] = 0  # Prevent the model from actively rotate
+
+    u_init = InitialGuess([0] * n_tau)
+
+    with pytest.raises(ValueError, match="No contact defined in the .bioMod, set with_contact to False"):
+        OptimalControlProgram(
+            bio_model=bio_model,
+            dynamics=dynamics,
+            n_shooting=5,
+            phase_time=1,
+            x_init=x_init,
+            u_init=u_init,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            objective_functions=objective_functions,
+            ode_solver=OdeSolver.RK4(),
         )
