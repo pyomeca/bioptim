@@ -1123,7 +1123,7 @@ def test_example_multiphase(ode_solver):
 def test_contact_forces_inequality_greater_than_constraint(ode_solver):
     if sys.platform == "win32" and ode_solver == OdeSolver.IRK:
         return
-    
+
     from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)

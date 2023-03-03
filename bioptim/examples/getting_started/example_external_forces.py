@@ -26,7 +26,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    
     InitialGuessList,
     OdeSolver,
     Solver,
