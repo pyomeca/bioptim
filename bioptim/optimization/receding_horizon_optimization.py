@@ -1,3 +1,4 @@
+from copy import deepcopy
 from itertools import chain
 from math import inf
 from typing import Callable
@@ -576,6 +577,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
             ode_solver=self.nlp[0].ode_solver,
+            objective_functions=deepcopy(self.original_values["objective_functions"]),
+            constraints=deepcopy(self.original_values["constraints"]),
+            multinode_constraints=deepcopy(self.original_values["multinode_constraints"]),
+            phase_transitions=deepcopy(self.original_values["phase_transitions"]),
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
             phase_time=(self.cycle_len * self.total_optimization_run - 1) * self.nlp[0].dt,
             skip_continuity=True,
@@ -592,11 +597,18 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         _states = InitialGuess(states, interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(controls, interpolation=InterpolationType.EACH_FRAME)
 
-        model_class = self.original_values["bio_model"][0][0]
-        model_initializer = self.original_values["bio_model"][0][1]
+        original_values = self.original_values
+
+        model_class = original_values["bio_model"][0][0]
+        model_initializer = original_values["bio_model"][0][1]
+
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
-            dynamics=self.original_values["dynamics"][0],
+            dynamics=original_values["dynamics"][0],
+            objective_functions=deepcopy(original_values["objective_functions"]),
+            constraints=deepcopy(original_values["constraints"]),
+            multinode_constraints=deepcopy(original_values["multinode_constraints"]),
+            phase_transitions=deepcopy(original_values["phase_transitions"]),
             ode_solver=self.nlp[0].ode_solver,
             n_shooting=self.cycle_len,
             phase_time=self.cycle_len * self.nlp[0].dt,
@@ -604,7 +616,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             x_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
             xdot_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
             u_scaling=VariableScaling(key="all", scaling=np.ones((controls.shape[0],))),
-            use_sx=self.original_values["use_sx"],
+            use_sx=original_values["use_sx"],
         )
         return Solution(solution_ocp, [_states, _controls])
 
