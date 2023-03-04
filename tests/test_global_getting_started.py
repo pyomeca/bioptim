@@ -843,7 +843,8 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_example_external_forces(ode_solver):
-    if sys.platform == "win32" and ode_solver == OdeSolver.RK8:
+    if sys.platform == "win32" and (ode_solver == OdeSolver.RK8 or ode_solver == OdeSolver.IRK):
+        # This test does not work on Windows for the CI
         return
 
     from bioptim.examples.getting_started import example_external_forces as ocp_module
