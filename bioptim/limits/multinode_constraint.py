@@ -334,7 +334,7 @@ class AllNodeConstraintList(UniquePerPhaseOptionList):
             extra_arguments["custom_function"] = allnode_constraint
             allnode_constraint = AllNodeConstraintFcn.CUSTOM
         super(AllNodeConstraintList, self)._add(
-            option_type=AllNodeConstraint, allnode_constraint=allnode_constraint, phase=1, **extra_arguments
+            option_type=AllNodeConstraint, allnode_constraint=allnode_constraint, phase=-1, **extra_arguments
         )
 
     def print(self):
@@ -358,13 +358,13 @@ class AllNodeConstraintList(UniquePerPhaseOptionList):
         """
         full_phase_allnode_constraint = []
         for mnc in self:
-            if mnc.phase_all_idx >= ocp.n_phases:
+            if mnc.phase_idx >= ocp.n_phases:
                 raise RuntimeError("Phase index of the allnode_constraint is higher than the number of phases")
-            if mnc.phase_all_idx < 0:
+            if mnc.phase_idx < 0:
                 raise RuntimeError("Phase index of the allnode_constraint need to be positive")
 
             if mnc.weight:
-                mnc.base = ObjectiveFunction.MayerFunction
+                mnc.base = ObjectiveFunction.LagrangeFunction
 
             full_phase_allnode_constraint.append(mnc)
 
@@ -626,7 +626,7 @@ class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
             The expected difference between the last and first node provided by the user
             """
 
-            nlp_all = all_pn[:].nlp
+            nlp_all = all_pn.nlp
             return allnode_constraint.custom_function(allnode_constraint, nlp_all, **extra_params)
 
 

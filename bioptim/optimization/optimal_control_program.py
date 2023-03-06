@@ -29,7 +29,7 @@ from ..limits.constraints import (
     ContinuityConstraintFunctions,
 )
 from ..limits.phase_transition import PhaseTransitionList
-from ..limits.multinode_constraint import MultinodeConstraintList
+from ..limits.multinode_constraint import MultinodeConstraintList, AllNodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
@@ -161,6 +161,7 @@ class OptimalControlProgram:
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
+        allnode_constraints: AllNodeConstraintList = None,
         x_scaling: VariableScaling | VariableScalingList = None,
         xdot_scaling: VariableScaling | VariableScalingList = None,
         u_scaling: VariableScaling | VariableScalingList = None,
@@ -263,6 +264,7 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "multinode_constraints": multinode_constraints,
+            "allnode_constraints": allnode_constraints,
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
@@ -405,6 +407,11 @@ class OptimalControlProgram:
         elif not isinstance(multinode_constraints, MultinodeConstraintList):
             raise RuntimeError("multinode_constraints should be built from an MultinodeConstraintList")
 
+        if allnode_constraints is None:
+            allnode_constraints = AllNodeConstraintList()
+        elif not isinstance(allnode_constraints, AllNodeConstraintList):
+            raise RuntimeError("allnode_constraints should be built from an AllNodeConstraintList")
+
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
         elif not isinstance(ode_solver, OdeSolverBase):
@@ -528,6 +535,7 @@ class OptimalControlProgram:
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
         # TODO: multinode_whatever should be handled the same way as constraints and objectives
         self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
+        self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
             if not state_continuity_weight:

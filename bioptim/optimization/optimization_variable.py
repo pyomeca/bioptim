@@ -404,7 +404,6 @@ class OptimizationVariableList:
     def __setitem__(self, key, value: OptimizationVariable):
         self.elements.append(value)
 
-# Surement a modifier
     def get_cx(self, key, cx_type):
         if key == "all":
             return self.cx if cx_type == CXStep.CX_START else self.cx_end

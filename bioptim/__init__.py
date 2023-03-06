@@ -114,6 +114,10 @@ MultinodeConstraintList
     A list of MultinodeConstraint
 MultinodeConstraintListFcn
     Selection of valid phase MultinodeConstraint functions
+AllNodeConstraintList
+    A list of AllNodeConstraint
+AllNodeConstraintListFcn
+    Selection of valid phase AllNodeConstraint functions
 
 # --- Mapping indices between vector --- #
 Mapping
@@ -172,7 +176,7 @@ from .interfaces.biorbd_model import BiorbdModel
 from .interfaces.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
-from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
+from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint, AllNodeConstraintFcn, AllNodeConstraintList, AllNodeConstraint
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import (
     BoundsList,

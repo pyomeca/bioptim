@@ -33,37 +33,26 @@ from bioptim import (
 
 
 def custom_allnode_constraint(
-    allnode_constraint: AllNodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
-) -> MX:
+    allnode_constraint: AllNodeConstraint, nlp_all: NonLinearProgram) -> MX:
     """
-    The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
-    determine the transition. If coef=1, then this function mimics the PhaseTransitionFcn.CONTINUOUS
-
-    coef is a user defined extra variables and can be anything. It is to show how to pass variables from the
-    PhaseTransitionList to that function
+    The constraint of the transition.
 
     Parameters
     ----------
     allnode_constraint: AllNodeConstraint
         The placeholder for the allnode_constraint
-    nlp_pre: NonLinearProgram
-        The nonlinear program of the pre phase
-    nlp_post: NonLinearProgram
-        The nonlinear program of the post phase
-    coef: float
-        The coefficient of the phase transition (makes no physical sens)
+    nlp_all: NonLinearProgram
+        The nonlinear program of the phase
 
     Returns
     -------
     The constraint such that: c(x) = 0
     """
 
-    # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
-    # mapping stuff (it is merely for the sake of example how to use the mappings)
-    #states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-    #states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+    #states_all = allnode_constraint.states_mapping.to_second.map(nlp_all.states.cx_all)
+    states_all = allnode_constraint(nlp_all.states.cx_all)
 
-    return # A modifier
+    return states_all
 
 
 def prepare_ocp(
@@ -129,7 +118,7 @@ def prepare_ocp(
         custom_allnode_constraint,
         phase_idx=0,
         weight=0.1,
-        coef=0.1,
+        node=Node.ALL,
     )
 
     return OptimalControlProgram(
@@ -167,8 +156,8 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
-    # sol.graphs()
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
     sol.detailed_cost_values()
