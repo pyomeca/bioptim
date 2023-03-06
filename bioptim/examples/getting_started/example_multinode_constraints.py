@@ -5,6 +5,11 @@ Extra constraints are defined between specific nodes of phases.
 It is designed to show how one can define a multinode constraints and objectives in a multiphase optimal control program
 """
 
+import sys
+sys.path.append("/home/lim/Documents/Anais/bioviz")
+sys.path.append("/home/lim/Documents/Anais/bioptim")
+
+
 from casadi import MX
 import biorbd_casadi as biorbd
 from bioptim import (

@@ -405,6 +405,17 @@ class PenaltyOption(OptionGeneric):
             state_cx_scaled = vertcat(states_pre_scaled, states_post_scaled)
             control_cx_scaled = vertcat(controls_pre_scaled, controls_post_scaled)
 
+        elif self.allnode_constraint:
+            ocp = all_pn.ocp
+            nlp = all_pn[0].nlp
+            nlp_all = all_pn.nlp
+            name = self.name
+            states_all_scaled = all_pn.nlp.states["scaled"].cx_all
+            controls_all_scaled = all_pn.nlp.controls["scaled"].cx_all
+            state_cx_scaled = vertcat(states_all_scaled)
+            control_cx_scaled = vertcat(controls_all_scaled)
+
+
         else:
             ocp = all_pn.ocp
             nlp = all_pn.nlp

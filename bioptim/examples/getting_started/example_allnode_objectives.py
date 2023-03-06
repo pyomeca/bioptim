@@ -118,7 +118,6 @@ def prepare_ocp(
         custom_allnode_constraint,
         phase_idx=0,
         weight=0.1,
-        node=Node.ALL,
     )
 
     return OptimalControlProgram(

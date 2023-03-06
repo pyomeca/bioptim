@@ -363,8 +363,8 @@ class AllNodeConstraintList(UniquePerPhaseOptionList):
             if mnc.phase_idx < 0:
                 raise RuntimeError("Phase index of the allnode_constraint need to be positive")
 
-            if mnc.weight:
-                mnc.base = ObjectiveFunction.LagrangeFunction
+            if mnc.weight: # ajouter un check, sinon mettre 1
+                mnc.base = ObjectiveFunction.LagrangeFunction # a elever
 
             full_phase_allnode_constraint.append(mnc)
 

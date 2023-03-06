@@ -244,6 +244,8 @@ class OptimizationVariable:
         The CX of the variable (starting point)
     cx_end(self)
         The CX of the variable (ending point)
+    cx_all(self)
+        The CX of the variable (all phase)
     """
 
     def __init__(
@@ -407,6 +409,8 @@ class OptimizationVariableList:
     def get_cx(self, key, cx_type):
         if key == "all":
             return self.cx if cx_type == CXStep.CX_START else self.cx_end
+        elif cx_type == CXStep.CX_ALL:
+            return self.cx_all
         else:
             return self[key].cx if cx_type == CXStep.CX_START else self[key].cx_end
 
@@ -446,6 +450,7 @@ class OptimizationVariableList:
 
         index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
         self._cx = vertcat(self._cx, cx[0])
+        #self._cx_all = vertcat(self._cx_all, cx[:])
         self._cx_end = vertcat(self._cx_end, cx[-1])
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
@@ -476,6 +481,7 @@ class OptimizationVariableList:
         """
 
         self._cx = vertcat(self._cx, cx[0])
+        self._cx_all = vertcat(self._cx_all, cx[:])
         self._cx_end = vertcat(self._cx_end, cx[-1])
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
