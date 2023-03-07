@@ -146,8 +146,6 @@ def test_biorbd_model():
 
     # TODO: add a model with a contact to test this function
     # rigid_contact_acceleration = models.rigid_contact_acceleration(q, qdot, qddot, 0, 0)
-            q, qdot, qddot, 0
-        )  # TODO: to be added when the code works
 
     soft_contact_forces = Function("SoftContactForces", [], [models.soft_contact_forces(q, qdot)])()["o0"]
     reshape_fext_to_fcontact = Function("Fext_to_Fcontact", [], [models.reshape_fext_to_fcontact(f_ext)])()["o0"]
