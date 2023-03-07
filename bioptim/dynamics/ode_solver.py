@@ -306,7 +306,15 @@ class OdeSolver:
                 "method": self.method,
                 "defects_type": self.defects_type,
             }
-            return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+
+            if len(nlp.external_forces) != 0:
+                dynamics_out = []
+                for idx in range(len(nlp.external_forces)):
+                    ode_opt["idx"] = idx
+                    dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
+                return dynamics_out
+            else:
+                return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
         def __str__(self):
             return f"{self.rk_integrator.__name__} {self.method} {self.polynomial_degree}"

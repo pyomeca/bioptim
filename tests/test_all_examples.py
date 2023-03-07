@@ -482,3 +482,15 @@ def test__getting_started__example_variable_scaling():
         final_time=1 / 10,
         n_shooting=30,
     )
+
+
+def test__torque_driven_ocp__torque_activation_driven():
+    from bioptim.examples.torque_driven_ocp import torque_activation_driven as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_2dof_2contacts.bioMod",
+        final_time=2,
+        n_shooting=30,
+    )
