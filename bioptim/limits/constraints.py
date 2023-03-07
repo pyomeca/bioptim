@@ -424,7 +424,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return nlp.mx_to_cx("inverse_dynamics", tau_id - tau, *var)
 
         @staticmethod
-        def implicit_marker_acceleration(_: Constraint, all_pn: PenaltyNodeList, contact_index: int, contact_axis: int, **unused_param):
+        def implicit_marker_acceleration(
+            _: Constraint, all_pn: PenaltyNodeList, contact_index: int, contact_axis: int, **unused_param
+        ):
             """
             Compute the acceleration of the contact node to set it at zero
 

@@ -419,7 +419,7 @@ class MultiBiorbdModel:
             rigid_contact_index(0) = (1, 2)
         """
         for i, model in enumerate(self.models):
-            if contact_index in self.variable_index('contact', i):
+            if contact_index in self.variable_index("contact", i):
                 model_selected = model
         return model_selected.rigidContactAxisIdx(contact_index)
 
@@ -456,7 +456,7 @@ class MultiBiorbdModel:
 
     def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
         for i, model in enumerate(self.models):
-            if contact_index in self.variable_index('contact', i):
+            if contact_index in self.variable_index("contact", i):
                 model_selected = model
         return model.rigidContactAcceleration(q, qdot, qddot, contact_index, True).to_mx()[contact_axis]
 
