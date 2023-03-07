@@ -408,7 +408,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return nlp.mx_to_cx("inverse_dynamics", tau_id - tau, *var)
 
         @staticmethod
-        def implicit_marker_acceleration(_: Constraint, all_pn: PenaltyNodeList, contact_index: int, **unused_param):
+        def implicit_marker_acceleration(_: Constraint, all_pn: PenaltyNodeList, contact_index: int, contact_axis: int, **unused_param):
             """
             Compute the acceleration of the contact node to set it at zero
 
@@ -430,7 +430,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
 
             # TODO get the index of the marker
-            contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, contact_index)
+            contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, contact_index, contact_axis)
 
             var = []
             var.extend([nlp.states[key] for key in nlp.states])

@@ -144,8 +144,8 @@ def test_biorbd_model():
             "o0"
         ]  # TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
 
-    with pytest.raises(IndexError, match="tuple index out of range"):
-        rigid_contact_acceleration = models.rigid_contact_acceleration(
+    # TODO: add a model with a contact to test this function
+    # rigid_contact_acceleration = models.rigid_contact_acceleration(q, qdot, qddot, 0, 0)
             q, qdot, qddot, 0
         )  # TODO: to be added when the code works
 

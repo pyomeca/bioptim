@@ -149,7 +149,7 @@ class BioModel(Protocol):
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         """Get the maximum torque"""
 
-    def rigid_contact_acceleration(self, q, qdot, qddot, index) -> MX:
+    def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
         """Get the rigid contact acceleration"""
 
     marker_names: tuple[str, ...]
@@ -189,7 +189,7 @@ class BioModel(Protocol):
 
         Returns
         -------
-        The contact forces MX of size [nb_contacts, 1], or [nb_contacts, n_frames] if external_forces is not None
+        The contact forces MX of size [nb_rigid_contacts, 1], or [nb_rigid_contacts, n_frames] if external_forces is not None
         """
 
     def passive_joint_torque(self, q, qdot) -> MX:

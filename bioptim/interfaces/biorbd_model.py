@@ -44,34 +44,39 @@ class MultiBiorbdModel:
     def serialize(self) -> tuple[Callable, dict]:
         return MultiBiorbdModel, dict(bio_model=tuple(path for path in self.path))
 
-    def variable_index(self, variable: str, model_index: int) -> slice:
+    def variable_index(self, variable: str, model_index: int) -> range:
         if variable == "q":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbQ()
-            return slice(current_idx, current_idx + self.models[model_index].nbQ())
+            return range(current_idx, current_idx + self.models[model_index].nbQ())
         elif variable == "qdot":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbQdot()
-            return slice(current_idx, current_idx + self.models[model_index].nbQdot())
+            return range(current_idx, current_idx + self.models[model_index].nbQdot())
         elif variable == "qddot":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbQddot()
-            return slice(current_idx, current_idx + self.models[model_index].nbQddot())
+            return range(current_idx, current_idx + self.models[model_index].nbQddot())
         elif variable == "qddot_joints":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbQddot() - model.nbRoot()
-            return slice(
+            return range(
                 current_idx, current_idx + self.models[model_index].nbQddot() - self.models[model_index].nbRoot()
             )
         elif variable == "tau":
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbGeneralizedTorque()
-            return slice(current_idx, current_idx + self.models[model_index].nbGeneralizedTorque())
+            return range(current_idx, current_idx + self.models[model_index].nbGeneralizedTorque())
+        elif variable == "contact":
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbRigidContacts()
+            return range(current_idx, current_idx + self.models[model_index].nbRigidContacts())
 
     @property
     def gravity(self) -> MX:
@@ -385,11 +390,38 @@ class MultiBiorbdModel:
 
     @property
     def nb_rigid_contacts(self) -> int:
+        """
+        Returns the number of rigid contacts.
+        Example:
+            First contact with axis YZ
+            Second contact with axis Z
+            nb_rigid_contacts = 2
+        """
         return sum(model.nbRigidContacts() for model in self.models)
 
     @property
     def nb_contacts(self) -> int:
+        """
+        Returns the number of contact index.
+        Example:
+            First contact with axis YZ
+            Second contact with axis Z
+            nb_contacts = 3
+        """
         return sum(model.nbContacts() for model in self.models)
+
+    def rigid_contact_index(self, contact_index) -> tuple:
+        """
+        Returns the axis index of this specific rigid contact.
+        Example:
+            First contact with axis YZ
+            Second contact with axis Z
+            rigid_contact_index(0) = (1, 2)
+        """
+        for i, model in enumerate(self.models):
+            if contact_index in self.variable_index('contact', i):
+                model_selected = model
+        return model_selected.rigidContactAxisIdx(contact_index)
 
     def marker_velocities(self, q, qdot, reference_index=None) -> MX:
         if reference_index is not None:
@@ -422,18 +454,11 @@ class MultiBiorbdModel:
             out_min = vertcat(out_min, torque_min.to_mx())
         return out_max, out_min
 
-    def rigid_contact_acceleration(self, q, qdot, qddot, index) -> MX:
-        # TODO: There is a bug here since only index 0 is call.
-        if "_X" in self.contact_names[index]:
-            index_direction = 0
-        elif "_Y" in self.contact_names[index]:
-            index_direction = 1
-        elif "_Z" in self.contact_names[index]:
-            index_direction = 2
-        else:
-            raise ValueError("Wrong index")
-        # raise NotImplementedError("rigid_contact_acceleration is not implemented yet for multi models") # @pariterre I think we should remove it if we know it is broken!
-        return self.model.rigidContactAcceleration(q, qdot, qddot, 0, True).to_mx()[index_direction]
+    def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
+        for i, model in enumerate(self.models):
+            if contact_index in self.variable_index('contact', i):
+                model_selected = model
+        return model.rigidContactAcceleration(q, qdot, qddot, contact_index, True).to_mx()[contact_axis]
 
     @property
     def nb_dof(self) -> int:
