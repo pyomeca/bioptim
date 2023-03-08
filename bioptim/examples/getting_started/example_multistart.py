@@ -19,7 +19,7 @@ from bioptim import (
     Solution,
     MagnitudeType,
 )
-
+import os
 
 def prepare_ocp(
     bio_model_path: str,
@@ -104,7 +104,7 @@ def prepare_ocp(
     return ocp
 
 
-def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_shooting: int, seed: int):
+def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_shooting: int, seed: int, only_save_filename : bool = False):
     """
     Solving the ocp
     Parameters
@@ -119,14 +119,21 @@ def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_sho
         The number of shooting points to define int the direct multiple shooting program
     seed: int
         The seed to use for the random initial guess
+    only_save_filename: bool
+        True if you want to return only the name of the file without saving, else False
     """
     # OptimalControlProgram.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
+    filename = f"pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl"
+    if only_save_filename == True :
+        return filename
+
     states = sol.states["all"]
-    with open(f"pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl", "wb") as file:
+    #save_folder = '/home/mickaelbegon/Documents'
+    with open(f"{save_folder}/{filename}", "wb") as file:
         pickle.dump(states, file)
 
 
-def prepare_multi_start(bio_model_path: list, final_time: list, n_shooting: list, seed: list) -> MultiStart:
+def prepare_multi_start(bio_model_path: list, final_time: list, n_shooting: list, seed: list,  already_done_filenames: list, single_process_debug_flag: bool) -> MultiStart:
     """
     The initialization of the multi-start
     """
@@ -139,13 +146,17 @@ def prepare_multi_start(bio_model_path: list, final_time: list, n_shooting: list
         final_time=final_time,
         n_shooting=n_shooting,
         seed=seed,
+        already_done_filenames=already_done_filenames,
+        single_process_debug_flag=single_process_debug_flag
     )
 
 
 def main():
     # --- Prepare the multi-start and run it --- #
+    save_folder = '/home/mickaelbegon/Documents/Stage_Lisa/Sol'
+    already_done_filenames = os.listdir(f"{save_folder}")
     multi_start = prepare_multi_start(
-        bio_model_path=["models/pendulum.bioMod"], final_time=[1], n_shooting=[30, 40, 50], seed=[0, 1, 2, 3]
+        bio_model_path=["models/pendulum.bioMod"], final_time=[1], n_shooting=[30, 40, 50], seed=[0, 1, 2, 3], already_done_filenames=already_done_filenames, single_process_debug_flag=False,
     )
     multi_start.solve()
 
