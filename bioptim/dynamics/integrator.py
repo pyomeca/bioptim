@@ -297,7 +297,7 @@ class RK1(RK):
         The next integrate states
         """
 
-        return x_prev + h * self.fun(x_prev, self.get_u(u, t), p)  # [:, self.idx]
+        return x_prev + h * self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
 
 
 class RK2(RK):
