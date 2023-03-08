@@ -1107,8 +1107,8 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_multinode_constraints(ode_solver):
-    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
+def test_binode_constraints(ode_solver):
+    from bioptim.examples.getting_started import example_binode_constraints as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 

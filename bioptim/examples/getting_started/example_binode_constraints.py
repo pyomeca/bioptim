@@ -2,7 +2,7 @@
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement and
 a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
 Extra constraints are defined between specific nodes of phases.
-It is designed to show how one can define a multinode constraints and objectives in a multiphase optimal control program
+It is designed to show how one can define a binode constraints and objectives in a multiphase optimal control program
 """
 
 import sys
@@ -27,9 +27,9 @@ from bioptim import (
     OdeSolver,
     Node,
     Solver,
-    MultinodeConstraintList,
-    MultinodeConstraintFcn,
-    MultinodeConstraint,
+    BinodeConstraintList,
+    BinodeConstraintFcn,
+    BinodeConstraint,
     NonLinearProgram,
 )
 
@@ -80,10 +80,10 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2)
 
     # Constraints
-    multinode_constraints = MultinodeConstraintList()
+    binode_constraints = BinodeConstraintList()
     # hard constraint
-    multinode_constraints.add(
-        MultinodeConstraintFcn.STATES_EQUALITY,
+    binode_constraints.add(
+        BinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=Node.START,
@@ -91,8 +91,8 @@ def prepare_ocp(
         key="all",
     )
     # Objectives with the weight as an argument
-    multinode_constraints.add(
-        MultinodeConstraintFcn.STATES_EQUALITY,
+    binode_constraints.add(
+        BinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=0,
         phase_second_idx=2,
         first_node=2,
@@ -101,8 +101,8 @@ def prepare_ocp(
         key="all",
     )
     # Objectives with the weight as an argument
-    multinode_constraints.add(
-        MultinodeConstraintFcn.STATES_EQUALITY,
+    binode_constraints.add(
+        BinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.MID,
@@ -111,8 +111,8 @@ def prepare_ocp(
         key="all",
     )
     # Objectives with the weight as an argument
-    multinode_constraints.add(
-        custom_multinode_constraint,
+    binode_constraints.add(
+        custom_binode_constraint,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.MID,
@@ -161,13 +161,13 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
-        multinode_constraints=multinode_constraints,
+        binode_constraints=binode_constraints,
         ode_solver=ode_solver,
     )
 
 
-def custom_multinode_constraint(
-    multinode_constraint: MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
+def custom_binode_constraint(
+    binode_constraint: BinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
@@ -178,8 +178,8 @@ def custom_multinode_constraint(
 
     Parameters
     ----------
-    multinode_constraint: MultinodeConstraint
-        The placeholder for the multinode_constraint
+    binode_constraint: BinodeConstraint
+        The placeholder for the binode_constraint
     nlp_pre: NonLinearProgram
         The nonlinear program of the pre phase
     nlp_post: NonLinearProgram
@@ -194,8 +194,8 @@ def custom_multinode_constraint(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-    states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+    states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
     return states_pre * coef - states_post
 

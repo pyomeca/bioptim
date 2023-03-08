@@ -29,7 +29,7 @@ from ..limits.constraints import (
     ContinuityConstraintFunctions,
 )
 from ..limits.phase_transition import PhaseTransitionList
-from ..limits.multinode_constraint import MultinodeConstraintList, AllNodeConstraintList
+from ..limits.multinode_constraint import BinodeConstraintList, AllNodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
@@ -160,7 +160,7 @@ class OptimalControlProgram:
         node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
-        multinode_constraints: MultinodeConstraintList = None,
+        binode_constraints: BinodeConstraintList = None,
         allnode_constraints: AllNodeConstraintList = None,
         x_scaling: VariableScaling | VariableScalingList = None,
         xdot_scaling: VariableScaling | VariableScalingList = None,
@@ -263,7 +263,7 @@ class OptimalControlProgram:
             "node_mappings": node_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
-            "multinode_constraints": multinode_constraints,
+            "binode_constraints": binode_constraints,
             "allnode_constraints": allnode_constraints,
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
@@ -402,10 +402,10 @@ class OptimalControlProgram:
         elif not isinstance(phase_transitions, PhaseTransitionList):
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
-        if multinode_constraints is None:
-            multinode_constraints = MultinodeConstraintList()
-        elif not isinstance(multinode_constraints, MultinodeConstraintList):
-            raise RuntimeError("multinode_constraints should be built from an MultinodeConstraintList")
+        if binode_constraints is None:
+            binode_constraints = BinodeConstraintList()
+        elif not isinstance(binode_constraints, BinodeConstraintList):
+            raise RuntimeError("binode_constraints should be built from an BinodeConstraintList")
 
         if allnode_constraints is None:
             allnode_constraints = AllNodeConstraintList()
@@ -533,8 +533,8 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-        # TODO: multinode_whatever should be handled the same way as constraints and objectives
-        self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
+        # TODO: binode_whatever should be handled the same way as constraints and objectives
+        self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
         self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
@@ -575,7 +575,7 @@ class OptimalControlProgram:
     def _check_variable_mapping_consistency_with_node_mapping(
         self, use_states_from_phase_idx, use_controls_from_phase_idx
     ):
-        # TODO this feature is broken since the merge with multi_node, fix it
+        # TODO this feature is broken since the merge with bi_node, fix it
         if (
             list(set(use_states_from_phase_idx)) != use_states_from_phase_idx
             or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx
@@ -971,7 +971,7 @@ class OptimalControlProgram:
             u /= u_scaling
 
             out = []
-            if penalty.transition or penalty.multinode_constraint:
+            if penalty.transition or penalty.binode_constraint:
                 out.append(
                     penalty.weighted_function_non_threaded(
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt

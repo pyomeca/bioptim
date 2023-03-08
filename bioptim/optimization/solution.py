@@ -1406,7 +1406,7 @@ class Solution:
             else penalty.dt
         )
 
-        if penalty.multinode_constraint:
+        if penalty.binode_constraint:
             penalty.node_idx = [penalty.node_idx]
 
         for idx in penalty.node_idx:
@@ -1428,7 +1428,7 @@ class Solution:
                             self._controls["scaled"][phase_post]["all"][:, 0],
                         )
                     )
-                elif penalty.multinode_constraint:
+                elif penalty.binode_constraint:
                     x = np.concatenate(
                         (
                             self._states["scaled"][penalty.phase_first_idx]["all"][:, idx[0]],

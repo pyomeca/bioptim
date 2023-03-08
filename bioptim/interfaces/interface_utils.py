@@ -219,7 +219,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
             _x = vertcat(x_pre, x_post)
             _u = vertcat(u_pre, u_post)
-        elif _penalty.multinode_constraint:
+        elif _penalty.binode_constraint:
             ocp = interface.ocp
             # Make an exception to the fact that U is not available for the last node
             mod_u0 = 1 if _penalty.first_node == Node.END else 0

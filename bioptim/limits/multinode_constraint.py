@@ -11,16 +11,16 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
-class MultinodeConstraint(Constraint):
+class BinodeConstraint(Constraint):
     """
-    A placeholder for a multi node constraints
+    A placeholder for a binode constraints
 
     Attributes
     ----------
     min_bound: list
-        The minimal bound of the multi node constraints
+        The minimal bound of the binode constraints
     max_bound: list
-        The maximal bound of the multi node constraints
+        The maximal bound of the binode constraints
     bounds: Bounds
         The bounds (will be filled with min_bound/max_bound)
     weight: float
@@ -39,8 +39,8 @@ class MultinodeConstraint(Constraint):
         The delta time
     node_idx: int
         The index of the node in nlp pre
-    multinode_constraint: Callable | Any
-        The nature of the cost function is the multi node constraint
+    binode_constraint: Callable | Any
+        The nature of the cost function is the bi node constraint
     penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
     """
@@ -51,7 +51,7 @@ class MultinodeConstraint(Constraint):
         phase_second_idx: int,
         first_node: Node | int,
         second_node: Node | int,
-        multinode_constraint: Callable | Any = None,
+        binode_constraint: Callable | Any = None,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
@@ -67,33 +67,34 @@ class MultinodeConstraint(Constraint):
             Generic parameters for options
         """
 
-        force_multinode = False
-        if "force_multinode" in params:
+        force_binode = False
+        if "force_binode" in params:
             # This is a hack to circumvent the apparatus that moves the functions to a custom function
             # It is necessary for PhaseTransition
-            force_multinode = True
-            del params["force_multinode"]
+            force_binode = True
+            del params["force_binode"]
 
-        if not isinstance(multinode_constraint, MultinodeConstraintFcn) and not force_multinode:
-            custom_function = multinode_constraint
-            multinode_constraint = MultinodeConstraintFcn.CUSTOM
-        super(Constraint, self).__init__(penalty=multinode_constraint, custom_function=custom_function, **params)
+        if not isinstance(binode_constraint, BinodeConstraintFcn) and not force_binode:
+            custom_function = binode_constraint
+            binode_constraint = BinodeConstraintFcn.CUSTOM
+        super(Constraint, self).__init__(penalty=binode_constraint, custom_function=custom_function, **params)
 
         if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
             if not isinstance(first_node, int):
                 raise NotImplementedError(
-                    "Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
+                    "Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
                 )
         if second_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
             if not isinstance(second_node, int):
                 raise NotImplementedError(
-                    "Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
+                    "Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
                 )
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
-        self.multinode_constraint = True
+        self.binode_constraint = True
+        self.allnode_constraint = True
         self.weight = weight
         self.quadratic = True
         self.phase_first_idx = phase_first_idx
@@ -138,14 +139,14 @@ class MultinodeConstraint(Constraint):
 
 class AllNodeConstraint(Constraint):
     """
-    A placeholder for a multi node constraints
+    A placeholder for a binode constraints
 
     Attributes
     ----------
     min_bound: list
-        The minimal bound of the multi node constraints
+        The minimal bound of the binode constraints
     max_bound: list
-        The maximal bound of the multi node constraints
+        The maximal bound of the binode constraints
     bounds: Bounds
         The bounds (will be filled with min_bound/max_bound)
     weight: float
@@ -161,7 +162,7 @@ class AllNodeConstraint(Constraint):
     node_idx: int
         The index of the node in nlp pre
     allnode_constraint: Callable | Any
-        The nature of the cost function is the multi node constraint
+        The nature of the cost function is the binode constraint
     penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
     """
@@ -201,6 +202,7 @@ class AllNodeConstraint(Constraint):
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.allnode_constraint = True
+        self.binode_constraint = False
         self.weight = weight
         self.quadratic = True
         self.phase_idx = phase_idx
@@ -237,46 +239,46 @@ class AllNodeConstraint(Constraint):
             g_to_add_to[self.list_index] = []
 
 
-class MultinodeConstraintList(UniquePerPhaseOptionList):
+class BinodeConstraintList(UniquePerPhaseOptionList):
     """
-    A list of Multi Node Constraint
+    A list of Bi Node Constraint
 
     Methods
     -------
     add(self, transition: Callable | PhaseTransitionFcn, phase: int = -1, **extra_arguments)
-        Add a new MultinodeConstraint to the list
+        Add a new BinodeConstraint to the list
     print(self)
-        Print the MultinodeConstraintList to the console
-    prepare_multinode_constraint(self, ocp) -> list
-        Configure all the multinode_constraint and put them in a list
+        Print the BinodeConstraintList to the console
+    prepare_binode_constraint(self, ocp) -> list
+        Configure all the binode_constraint and put them in a list
     """
 
-    def add(self, multinode_constraint: Any, **extra_arguments: Any):
+    def add(self, binode_constraint: Any, **extra_arguments: Any):
         """
-        Add a new MultinodeConstraint to the list
+        Add a new BiNodeConstraint to the list
 
         Parameters
         ----------
-        multinode_constraint: Callable | MultinodeConstraintFcn
+        binode_constraint: Callable | BinodeConstraintFcn
             The chosen phase transition
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
 
-        if not isinstance(multinode_constraint, MultinodeConstraintFcn):
-            extra_arguments["custom_function"] = multinode_constraint
-            multinode_constraint = MultinodeConstraintFcn.CUSTOM
-        super(MultinodeConstraintList, self)._add(
-            option_type=MultinodeConstraint, multinode_constraint=multinode_constraint, phase=-1, **extra_arguments
+        if not isinstance(binode_constraint, BinodeConstraintFcn):
+            extra_arguments["custom_function"] = binode_constraint
+            binode_constraint = BinodeConstraintFcn.CUSTOM
+        super(BinodeConstraintList, self)._add(
+            option_type=BinodeConstraint, binode_constraint=binode_constraint, phase=-1, **extra_arguments
         )
 
     def print(self):
         """
-        Print the MultinodeConstraintList to the console
+        Print the BiNodeConstraintList to the console
         """
-        raise NotImplementedError("Printing of MultinodeConstraintList is not ready yet")
+        raise NotImplementedError("Printing of BiNodeConstraintList is not ready yet")
 
-    def prepare_multinode_constraints(self, ocp) -> list:
+    def prepare_binode_constraints(self, ocp) -> list:
         """
         Configure all the phase transitions and put them in a list
 
@@ -287,21 +289,21 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
 
         Returns
         -------
-        The list of all the multi_node constraints prepared
+        The list of all the bi_node constraints prepared
         """
-        full_phase_multinode_constraint = []
+        full_phase_binode_constraint = []
         for mnc in self:
             if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
-                raise RuntimeError("Phase index of the multinode_constraint is higher than the number of phases")
+                raise RuntimeError("Phase index of the binode_constraint is higher than the number of phases")
             if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
-                raise RuntimeError("Phase index of the multinode_constraint need to be positive")
+                raise RuntimeError("Phase index of the binode_constraint need to be positive")
 
             if mnc.weight:
                 mnc.base = ObjectiveFunction.MayerFunction
 
-            full_phase_multinode_constraint.append(mnc)
+            full_phase_binode_constraint.append(mnc)
 
-        return full_phase_multinode_constraint
+        return full_phase_binode_constraint
 
 
 class AllNodeConstraintList(UniquePerPhaseOptionList):
@@ -372,24 +374,24 @@ class AllNodeConstraintList(UniquePerPhaseOptionList):
 
 
 
-class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
+class BinodeConstraintFunctions(PenaltyFunctionAbstract):
     """
     Internal implementation of the phase transitions
     """
 
     class Functions:
         """
-        Implementation of all the Multi Node Constraint
+        Implementation of all the Binode Constraint
         """
 
         @staticmethod
-        def states_equality(multinode_constraint, all_pn, key: str = "all"):
+        def states_equality(binode_constraint, all_pn, key: str = "all"):
             """
             The most common continuity function, that is state before equals state after
 
             Parameters
             ----------
-            multinode_constraint : MultinodeConstraint
+            binode_constraint : BinodeConstraint
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements
@@ -400,8 +402,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.get_cx(key, CXStep.CX_END))
-            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.get_cx(key, CXStep.CX_START))
+            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.get_cx(key, CXStep.CX_END))
+            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.get_cx(key, CXStep.CX_START))
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -413,13 +415,13 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return states_pre - states_post
 
         @staticmethod
-        def controls_equality(multinode_constraint, all_pn, key: str = "all"):
+        def controls_equality(binode_constraint, all_pn, key: str = "all"):
             """
             The controls before equals controls after
 
             Parameters
             ----------
-            multinode_constraint : MultinodeConstraint
+            binode_constraint : BinodeConstraint
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements
@@ -443,13 +445,13 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return controls_pre - controls_post
 
         @staticmethod
-        def com_equality(multinode_constraint, all_pn):
+        def com_equality(binode_constraint, all_pn):
             """
             The centers of mass are equals for the specified phases and the specified nodes
 
             Parameters
             ----------
-            multinode_constraint : MultinodeConstraint
+            binode_constraint : BinodeConstraint
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements
@@ -460,8 +462,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
             states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
             states_post_sym = vertcat(*states_post_sym_list)
@@ -487,13 +489,13 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
-        def com_velocity_equality(multinode_constraint, all_pn):
+        def com_velocity_equality(binode_constraint, all_pn):
             """
             The centers of mass velocity are equals for the specified phases and the specified nodes
 
             Parameters
             ----------
-            multinode_constraint : MultinodeConstraint
+            binode_constraint : BinodeConstraint
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements
@@ -504,8 +506,8 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = multinode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-            states_post = multinode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
 
             states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
             states_post_sym = vertcat(*states_post_sym_list)
@@ -533,13 +535,13 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
-        def time_equality(multinode_constraint, all_pn):
+        def time_equality(binode_constraint, all_pn):
             """
             The duration of one phase must be the same as the duration of another phase
 
             Parameters
             ----------
-            multinode_constraint : MultinodeConstraint
+            binode_constraint : BinodeConstraint
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements
@@ -578,13 +580,13 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return time_pre - time_post
 
         @staticmethod
-        def custom(multinode_constraint, all_pn, **extra_params):
+        def custom(binode_constraint, all_pn, **extra_params):
             """
             Calls the custom transition function provided by the user
 
             Parameters
             ----------
-            multinode_constraint: MultinodeConstraint
+            binode_constraint: BinodeConstraint
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements
@@ -595,7 +597,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            return multinode_constraint.custom_function(multinode_constraint, nlp_pre, nlp_post, **extra_params)
+            return binode_constraint.custom_function(binode_constraint, nlp_pre, nlp_post, **extra_params)
 
 
 class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
@@ -605,7 +607,7 @@ class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
 
     class Functions:
         """
-        Implementation of all the Multi Node Constraint
+        Implementation of all the Binode Constraint
         """
 
 
@@ -630,17 +632,17 @@ class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
             return allnode_constraint.custom_function(allnode_constraint, nlp_all, **extra_params)
 
 
-class MultinodeConstraintFcn(FcnEnum):
+class BinodeConstraintFcn(FcnEnum):
     """
-    Selection of valid multinode constraint functions
+    Selection of valid binode constraint functions
     """
 
-    STATES_EQUALITY = (MultinodeConstraintFunctions.Functions.states_equality,)
-    CONTROLS_EQUALITY = (MultinodeConstraintFunctions.Functions.controls_equality,)
-    CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
-    COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
-    COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
-    TIME_CONSTRAINT = (MultinodeConstraintFunctions.Functions.time_equality,)
+    STATES_EQUALITY = (BinodeConstraintFunctions.Functions.states_equality,)
+    CONTROLS_EQUALITY = (BinodeConstraintFunctions.Functions.controls_equality,)
+    CUSTOM = (BinodeConstraintFunctions.Functions.custom,)
+    COM_EQUALITY = (BinodeConstraintFunctions.Functions.com_equality,)
+    COM_VELOCITY_EQUALITY = (BinodeConstraintFunctions.Functions.com_velocity_equality,)
+    TIME_CONSTRAINT = (BinodeConstraintFunctions.Functions.time_equality,)
 
     @staticmethod
     def get_type():
@@ -648,7 +650,7 @@ class MultinodeConstraintFcn(FcnEnum):
         Returns the type of the penalty
         """
 
-        return MultinodeConstraintFunctions
+        return BinodeConstraintFunctions
 
 
 class AllNodeConstraintFcn(FcnEnum):

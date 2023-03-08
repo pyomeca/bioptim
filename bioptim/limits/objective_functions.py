@@ -329,7 +329,7 @@ class ObjectiveFunction:
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for mnc in ocp.multinode_constraints:
+        for mnc in ocp.binode_constraints:
             # Equality constraint between nodes
             first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
             second_node_name = (
@@ -473,8 +473,8 @@ class ContinuityObjectiveFunctions:
         # Dynamics must be respected between phases
         ObjectiveFunction.inter_phase_continuity(ocp)
 
-        # TODO: multinode_anything shouldn't be handled by "continuity".
-        # Keeping multinode_constraint here because otherwise they wouldn't be added when state continuity is an
+        # TODO: binode_anything shouldn't be handled by "continuity".
+        # Keeping binode_constraint here because otherwise they wouldn't be added when state continuity is an
         # objective, should REALLY be changed.
-        if ocp.multinode_constraints:
+        if ocp.binode_constraints:
             ObjectiveFunction.node_equalities(ocp)

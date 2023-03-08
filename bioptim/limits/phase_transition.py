@@ -3,7 +3,7 @@ from warnings import warn
 
 from casadi import vertcat, MX
 
-from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
+from .multinode_constraint import BinodeConstraint, BinodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
@@ -12,7 +12,7 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
-class PhaseTransition(MultinodeConstraint):
+class PhaseTransition(BinodeConstraint):
     """
     A placeholder for a transition of state
 
@@ -62,12 +62,12 @@ class PhaseTransition(MultinodeConstraint):
             phase_second_idx=None,
             first_node=Node.END,
             second_node=Node.START,
-            multinode_constraint=transition,
+            binode_constraint=transition,
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
             weight=weight if weight is not None else 0,
-            force_multinode=True,
+            force_binode=True,
             **params,
         )
 
@@ -187,7 +187,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
+            return BinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
 
         @staticmethod
         def discontinuous(transition, all_pn):
@@ -225,7 +225,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
+            return BinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
 
         @staticmethod
         def impact(transition, all_pn):
@@ -295,7 +295,7 @@ class PhaseTransitionFcn(FcnEnum):
     DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
-    CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
+    CUSTOM = (BinodeConstraintFunctions.Functions.custom,)
 
     @staticmethod
     def get_type():

@@ -566,7 +566,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
-        for mnc in ocp.multinode_constraints:
+        for mnc in ocp.binode_constraints:
             # Equality constraint between nodes
             first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
             second_node_name = (
@@ -675,5 +675,5 @@ class ContinuityConstraintFunctions:
         # Dynamics must be respected between phases
         ConstraintFunction.inter_phase_continuity(ocp)
 
-        if ocp.multinode_constraints:  # TODO: they shouldn't be added here
+        if ocp.binode_constraints:  # TODO: they shouldn't be added here
             ConstraintFunction.node_equalities(ocp)
