@@ -589,8 +589,11 @@ class PlotOcp:
         """
 
         plt.show()
+    @staticmethod
+    def save():
 
-    def update_data(self, v: dict):
+
+    def update_data(self, v: dict, save_path):
         """
         Update ydata from the variable a solution structure
 
@@ -819,7 +822,7 @@ class PlotOcp:
                         y[:, :] = val
                     self.__append_to_ydata(y)
 
-        self.__update_axes()
+        self.__update_axes(save_path)
 
     def __update_xdata(self):
         """
@@ -867,7 +870,7 @@ class PlotOcp:
         for y in data:
             self.ydata.append(y)
 
-    def __update_axes(self):
+    def __update_axes(self, save_path):
         """
         Update the plotted data from ydata
         """
@@ -875,11 +878,14 @@ class PlotOcp:
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
 
+
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
                     p.set_ydata(y[cmp])
             else:
                 plot[2].set_ydata(y)
+
+
 
         for p in self.plots_vertical_lines:
             p.set_ydata((np.nan, np.nan))
@@ -908,6 +914,10 @@ class PlotOcp:
 
         for fig in self.all_figures:
             fig.set_tight_layout(True)
+
+        #for i, plot in enumerate(self.plots):
+          #  plot.plt.savefig("/home/mickaelbegon/Documents/Stage_Lisa/AnthropoImpactOnTech/Solutions_vrille_et_demi/,
+          #           dpi=500)
 
     @staticmethod
     def __compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:
