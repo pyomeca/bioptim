@@ -128,7 +128,7 @@ def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_sho
         return filename
 
     states = sol.states["all"]
-    #save_folder = '/home/mickaelbegon/Documents'
+    save_folder = '/home/mickaelbegon/Documents/Stage_Lisa/Sol'
     with open(f"{save_folder}/{filename}", "wb") as file:
         pickle.dump(states, file)
 
