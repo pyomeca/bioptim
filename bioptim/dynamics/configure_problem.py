@@ -242,15 +242,17 @@ class ConfigureProblem:
                 # at the first shooting node
                 node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
                 ConfigureProblem.configure_contact_forces(ocp, nlp, False, True)
-                for ii in range(nlp.model.nb_contacts):
-                    ocp.implicit_constraints.add(
-                        ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
-                        with_contact=with_contact,
-                        contact_index=ii,
-                        node=node,
-                        constraint_type=ConstraintType.IMPLICIT,
-                        phase=nlp.phase_idx,
-                    )
+                for ii in range(nlp.model.nb_rigid_contacts):
+                    for jj in nlp.model.rigid_contact_index(ii):
+                        ocp.implicit_constraints.add(
+                            ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
+                            with_contact=with_contact,
+                            contact_index=ii,
+                            contact_axis=jj,
+                            node=node,
+                            constraint_type=ConstraintType.IMPLICIT,
+                            phase=nlp.phase_idx,
+                        )
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK

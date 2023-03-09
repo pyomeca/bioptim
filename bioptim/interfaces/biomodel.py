@@ -56,14 +56,14 @@ class BioModel(Protocol):
         P_R1 the position of any point P in the segment R1 frame.
         """
 
-    homogeneous_matrices_in_child: tuple
-    """
-    Get the homogeneous matrices of all segments in their parent frame,
-    such as: P_R1 = T_R1_R2 * P_R2
-    with P_R1 the position of any point P in the segment R1 frame,
-    with P_R2 the position of any point P in the segment R2 frame,
-    T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
-    """
+    def homogeneous_matrices_in_child(self) -> tuple:
+        """
+        Get the homogeneous matrices of all segments in their parent frame,
+        such as: P_R1 = T_R1_R2 * P_R2
+        with P_R1 the position of any point P in the segment R1 frame,
+        with P_R2 the position of any point P in the segment R2 frame,
+        T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
+        """
 
     mass: MX
     """Get the mass of the model"""
@@ -149,7 +149,7 @@ class BioModel(Protocol):
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         """Get the maximum torque"""
 
-    def rigid_contact_acceleration(self, q, qdot, qddot, index) -> MX:
+    def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
         """Get the rigid contact acceleration"""
 
     marker_names: tuple[str, ...]
@@ -189,7 +189,7 @@ class BioModel(Protocol):
 
         Returns
         -------
-        The contact forces MX of size [nb_contacts, 1], or [nb_contacts, n_frames] if external_forces is not None
+        The contact forces MX of size [nb_rigid_contacts, 1], or [nb_rigid_contacts, n_frames] if external_forces is not None
         """
 
     def passive_joint_torque(self, q, qdot) -> MX:

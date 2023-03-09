@@ -564,7 +564,7 @@ OptimalControlProgram(
 )
 ```
 Of these, only the first 4 are mandatory.
-`bio_model` is the model loaded such with class such as BiorbdModel or a custom class.
+`bio_model` is the model loaded such with class such as BiorbdModel, MultiBiorbdModel, or a custom class.
 In the case of a multiphase optimization, one model per phase should be passed in a list.
 `dynamics` is the dynamics of the system during each phase (see The dynamics section).
 `n_shooting` is the number of shooting point of the direct multiple shooting (method) for each phase.
@@ -672,12 +672,19 @@ They can be used as is, or can be modified to add new features.
 
 ### Class: BiorbdModel
 
-The `BiorbdModel` class is implementating a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
+The `BiorbdModel` class is implementing a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
 ```python
 bio_model = BiorbdModel("path/to/model.bioMod")
 bio_model.marker_names  # for example returns the marker names
 # if the methods is not interfaced, it can be accessed through
 bio_model.model.markerNames()
+```
+
+### Class: MultiBiorbdModel
+
+The `MultiBiorbdModel` class is implementing BioModel of multiple models of biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
+```python
+bio_model = MultiBiorbdModel(("path/to/model.bioMod", "path/to/other/model.bioMod"))
 ```
 
 ### Class: CustomModel

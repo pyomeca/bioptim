@@ -220,7 +220,7 @@ def test_maximize_predicted_height_CoM_rigidbody_dynamics(rigidbody_dynamics):
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         np.testing.assert_almost_equal(f[0, 0], 0.9695327421106931)
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        np.testing.assert_almost_equal(f[0, 0], 1.6940665057034097)
+        np.testing.assert_almost_equal(f[0, 0], 1.691190510518052)
 
     # Check constraints
     g = np.array(sol.constraints)
