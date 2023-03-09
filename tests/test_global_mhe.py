@@ -5,7 +5,6 @@ import os
 import sys
 import numpy as np
 import pytest
-
 from bioptim import Solver
 
 
@@ -136,6 +135,9 @@ def test_multi_cyclic_nmpc_get_final():
 
 
 def test_multi_cyclic_nmpc_not_get_final():
+    if sys.platform == "win32":  # cannot run on windows with the ci
+        return
+
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
