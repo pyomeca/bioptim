@@ -1608,6 +1608,10 @@ Note the `None` are replaced by zeros.
 
 The BiMapping is no more no less than a list of two mappings that link two matrices both ways: `BiMapping(a_to_b, b_to_a)`
 
+The SelectionMapping is a subclass of BiMapping where you only have to precise the size of the first matrix, 
+and the mapping b_to_a to get the second matrix from the first, if some elements depend on others 
+you can add an argument dependencies :`SelectionMapping(size(int), b_to_a; tuple[int, int, ...], dependencies :tuple([int, int, bool]))`
+
 ### Enum: Node
 The node targets some specific nodes of the ocp or of a phase
 

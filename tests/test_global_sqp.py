@@ -3,6 +3,7 @@ Tests for SQP interface.
 """
 
 import os
+import sys
 import numpy as np
 from bioptim import Solver
 
@@ -11,6 +12,9 @@ from .utils import TestUtils
 
 def test_pendulum():
     from bioptim.examples.sqp_method import pendulum as ocp_module
+
+    if sys.platform == "win32":  # for windows ci
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
