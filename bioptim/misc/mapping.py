@@ -410,7 +410,7 @@ class SelectionMapping(BiMapping):
             return dependency_matrix
 
         to_second = _build_to_second(dependency_matrix=dependency_matrix, independent_indices=independent_indices)
-        to_first = independent_indices
+        to_first = list(independent_indices)
         self.to_second = to_second
         self.to_first = to_first
         self.oppose_to_second = oppose
