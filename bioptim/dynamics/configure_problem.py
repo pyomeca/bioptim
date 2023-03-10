@@ -156,6 +156,7 @@ class ConfigureProblem:
         nlp,
         with_contact: bool = False,
         with_passive_torque: bool = False,
+        with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
@@ -171,8 +172,10 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        with_passive_torque : bool
+        with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
@@ -231,6 +234,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
                 with_contact=with_contact,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
             if with_contact:
                 # qddot is continuous with RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
@@ -238,15 +242,17 @@ class ConfigureProblem:
                 # at the first shooting node
                 node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
                 ConfigureProblem.configure_contact_forces(ocp, nlp, False, True)
-                for ii in range(nlp.model.nb_contacts):
-                    ocp.implicit_constraints.add(
-                        ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
-                        with_contact=with_contact,
-                        contact_index=ii,
-                        node=node,
-                        constraint_type=ConstraintType.IMPLICIT,
-                        phase=nlp.phase_idx,
-                    )
+                for ii in range(nlp.model.nb_rigid_contacts):
+                    for jj in nlp.model.rigid_contact_index(ii):
+                        ocp.implicit_constraints.add(
+                            ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
+                            with_contact=with_contact,
+                            contact_index=ii,
+                            contact_axis=jj,
+                            node=node,
+                            constraint_type=ConstraintType.IMPLICIT,
+                            phase=nlp.phase_idx,
+                        )
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
@@ -259,6 +265,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 phase=nlp.phase_idx,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
 
         # Declared soft contacts controls
@@ -277,6 +284,7 @@ class ConfigureProblem:
                 fatigue=fatigue,
                 rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
 
         # Configure the contact forces
@@ -299,6 +307,7 @@ class ConfigureProblem:
         nlp,
         with_contact=False,
         with_passive_torque: bool = False,
+        with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
     ):
@@ -315,6 +324,8 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
@@ -371,6 +382,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
 
         if with_contact:
@@ -387,7 +399,12 @@ class ConfigureProblem:
 
     @staticmethod
     def torque_activations_driven(
-        ocp, nlp, with_contact: bool = False, with_passive_torque: bool = False, with_residual_torque: bool = False
+        ocp,
+        nlp,
+        with_contact: bool = False,
+        with_passive_torque: bool = False,
+        with_residual_torque: bool = False,
+        with_ligament: bool = False,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
@@ -406,6 +423,8 @@ class ConfigureProblem:
             If the dynamic with passive torque should be used
         with_residual_torque: bool
             If the dynamic with a residual torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
 
         """
 
@@ -429,6 +448,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 with_passive_torque=with_passive_torque,
                 with_residual_torque=with_residual_torque,
+                with_ligament=with_ligament,
             )
 
         if with_contact:
@@ -489,6 +509,7 @@ class ConfigureProblem:
         with_residual_torque: bool = False,
         with_contact: bool = False,
         with_passive_torque: bool = False,
+        with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ):
         """
@@ -514,6 +535,8 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
 
@@ -543,6 +566,7 @@ class ConfigureProblem:
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
 
         if nlp.dynamics_type.dynamic_function:
@@ -556,6 +580,7 @@ class ConfigureProblem:
                 fatigue=fatigue,
                 with_residual_torque=with_residual_torque,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
                 rigidbody_dynamics=rigidbody_dynamics,
             )
 

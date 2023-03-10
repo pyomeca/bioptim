@@ -168,7 +168,7 @@ from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver
 from .interfaces.solver_options import Solver
-from .interfaces.biorbd_model import BiorbdModel
+from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from .interfaces.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
@@ -200,7 +200,7 @@ from .misc.enums import (
     MagnitudeType,
     MultiCyclicCycleSolutions,
 )
-from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList
+from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram

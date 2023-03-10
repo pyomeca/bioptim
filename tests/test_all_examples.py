@@ -375,6 +375,18 @@ def test__torque_driven_ocp__multi_model_by_mapping():
         )
 
 
+def test__torque_driven_ocp__multi_biorbd_model():
+    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/triple_pendulum.bioMod",
+        biorbd_model_path_modified_inertia=bioptim_folder + "/models/triple_pendulum_modified_inertia.bioMod",
+        n_shooting=40,
+    )
+
+
 def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping():
     from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
 

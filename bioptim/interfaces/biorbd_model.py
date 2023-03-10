@@ -1,260 +1,489 @@
-from typing import Any, Callable
+from typing import Callable, Any
 
 import biorbd_casadi as biorbd
-from casadi import MX, horzcat, vertcat, SX, norm_fro
+from casadi import SX, MX, vertcat, horzcat, norm_fro
 
-from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.utils import check_version
 from ..limits.path_conditions import Bounds
+from ..misc.mapping import BiMapping, BiMappingList
 
 check_version(biorbd, "1.9.9", "1.10.0")
 
 
-class BiorbdModel:
-    def __init__(self, bio_model: str | biorbd.Model):
-        if isinstance(bio_model, str):
-            self.model = biorbd.Model(bio_model)
-        elif isinstance(bio_model, biorbd.Model):
-            self.model = bio_model
-        else:
-            raise RuntimeError("Type must be a 'str' or a 'biorbd.Model'")
+class MultiBiorbdModel:
+    """
+    This class allows to define multiple biorbd models for the same phase.
+    """
 
-    def deep_copy(self, *args):
-        return BiorbdModel(self.model.DeepCopy(*args))
+    def __init__(self, bio_model: tuple[str | biorbd.Model, ...]):
+        self.models = []
+        if not isinstance(bio_model, tuple):
+            raise RuntimeError("The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'")
+
+        for model in bio_model:
+            if isinstance(model, str):
+                self.models.append(biorbd.Model(model))
+            elif isinstance(model, biorbd.Model):
+                self.models.append(model)
+            else:
+                raise RuntimeError("The models should be of type 'str' or 'biorbd.Model'")
+
+    def __getitem__(self, index):
+        return self.models[index]
+
+    # def deep_copy(self, *args):
+    #     return MultiBiorbdModel(tuple(MultiBiorbdModel(model.DeepCopy(*args)) for model in self.models)) #@pariterre ??
 
     @property
-    def path(self) -> str:
-        return self.model.path().relativePath().to_string()
+    def path(self) -> list[str]:
+        return [model.path().relativePath().to_string() for model in self.models]
 
     def copy(self):
-        return BiorbdModel(self.path)
+        return MultiBiorbdModel(tuple(path for path in self.path))
 
     def serialize(self) -> tuple[Callable, dict]:
-        return BiorbdModel, dict(bio_model=self.path)
+        return MultiBiorbdModel, dict(bio_model=tuple(path for path in self.path))
+
+    def variable_index(self, variable: str, model_index: int) -> range:
+        if variable == "q":
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbQ()
+            return range(current_idx, current_idx + self.models[model_index].nbQ())
+        elif variable == "qdot":
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbQdot()
+            return range(current_idx, current_idx + self.models[model_index].nbQdot())
+        elif variable == "qddot":
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbQddot()
+            return range(current_idx, current_idx + self.models[model_index].nbQddot())
+        elif variable == "qddot_joints":
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbQddot() - model.nbRoot()
+            return range(
+                current_idx, current_idx + self.models[model_index].nbQddot() - self.models[model_index].nbRoot()
+            )
+        elif variable == "tau":
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbGeneralizedTorque()
+            return range(current_idx, current_idx + self.models[model_index].nbGeneralizedTorque())
+        elif variable == "contact":
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbRigidContacts()
+            return range(current_idx, current_idx + self.models[model_index].nbRigidContacts())
 
     @property
     def gravity(self) -> MX:
-        return self.model.getGravity().to_mx()
+        return vertcat(*(model.getGravity().to_mx() for model in self.models))
 
     def set_gravity(self, new_gravity) -> None:
-        return self.model.setGravity(new_gravity)
+        for model in self.models:
+            model.setGravity(new_gravity)
+        return
 
     @property
     def nb_tau(self) -> int:
-        return self.model.nbGeneralizedTorque()
+        return sum(model.nbGeneralizedTorque() for model in self.models)
 
     @property
     def nb_segments(self) -> int:
-        return self.model.nbSegment()
+        return sum(model.nbSegment() for model in self.models)
 
     def segment_index(self, name) -> int:
-        return biorbd.segment_index(self.model, name)
+        raise NotImplementedError("segment_index is not implemented for MultiBiorbdModel")
 
     @property
     def nb_quaternions(self) -> int:
-        return self.model.nbQuat()
+        return sum(model.nbQuat() for model in self.models)
 
     @property
     def nb_q(self) -> int:
-        return self.model.nbQ()
+        return sum(model.nbQ() for model in self.models)
 
     @property
     def nb_qdot(self) -> int:
-        return self.model.nbQdot()
+        return sum(model.nbQdot() for model in self.models)
 
     @property
     def nb_qddot(self) -> int:
-        return self.model.nbQddot()
+        return sum(model.nbQddot() for model in self.models)
 
     @property
     def nb_root(self) -> int:
-        return self.model.nbRoot()
+        return sum(model.nbRoot() for model in self.models)
 
     @property
     def segments(self) -> list[biorbd.Segment]:
-        return self.model.segments()
+        out = ()
+        for model in self.models:
+            out += model.segments()
+        return out
 
     def homogeneous_matrices_in_global(self, q, reference_index, inverse=False):
-        val = self.model.globalJCS(q, reference_index)
-        if inverse:
-            return val.transpose()
-        else:
-            return val
+        raise NotImplementedError("homogeneous_matrices_in_global is not implemented for MultiBiorbdModel")
 
     def homogeneous_matrices_in_child(self, *args):
-        return self.model.localJCS(*args)
+        raise NotImplementedError("homogeneous_matrices_in_child is not implemented for MultiBiorbdModel")
 
     @property
-    def mass(self) -> MX:
-        return self.model.mass().to_mx()
+    def mass(self) -> list[MX]:
+        return vertcat(*(model.mass().to_mx() for model in self.models))
 
     def center_of_mass(self, q) -> MX:
-        return self.model.CoM(q, True).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(out, model.CoM(q[self.variable_index("q", i)], True).to_mx())
+        return out
 
     def center_of_mass_velocity(self, q, qdot) -> MX:
-        return self.model.CoMdot(q, qdot, True).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.CoMdot(q[self.variable_index("q", i)], qdot[self.variable_index("qdot", i)], True).to_mx(),
+            )
+        return out
 
     def center_of_mass_acceleration(self, q, qdot, qddot) -> MX:
-        return self.model.CoMddot(q, qdot, qddot, True).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.CoMddot(
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                    qddot[self.variable_index("qddot", i)],
+                    True,
+                ).to_mx(),
+            )
+        return out
 
     def angular_momentum(self, q, qdot) -> MX:
-        return self.model.angularMomentum(q, qdot, True)
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.angularMomentum(
+                    q[self.variable_index("q", i)], qdot[self.variable_index("qdot", i)], True
+                ).to_mx(),
+            )
+        return out
 
     def reshape_qdot(self, q, qdot, k_stab=1) -> MX:
-        return self.model.computeQdot(q, qdot, k_stab).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.computeQdot(q[self.variable_index("q", i)], qdot[self.variable_index("qdot", i)], k_stab).to_mx(),
+            )
+        return out
 
     def segment_angular_velocity(self, q, qdot, idx) -> MX:
-        return self.model.segmentAngularVelocity(q, qdot, idx, True)
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.segmentAngularVelocity(
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                    idx,
+                    True,
+                ).to_mx(),
+            )
+        return out
 
     @property
     def name_dof(self) -> tuple[str, ...]:
-        return tuple(s.to_string() for s in self.model.nameDof())
+        out = []
+        for model in self.models:
+            for s in model.nameDof():
+                out.append(s.to_string())
+        return tuple(out)
 
     @property
     def contact_names(self) -> tuple[str, ...]:
-        return tuple(s.to_string() for s in self.model.contactNames())
+        out = []
+        for model in self.models:
+            for s in model.contactNames():
+                out.append(s.to_string())
+        return tuple(out)
 
     @property
     def nb_soft_contacts(self) -> int:
-        return self.model.nbSoftContacts()
+        return sum(model.nbSoftContacts() for model in self.models)
 
     @property
     def soft_contact_names(self) -> tuple[str, ...]:
-        return tuple(s.to_string() for s in self.model.softContactNames())
+        out = []
+        for model in self.models:
+            for s in model.softContactNames():
+                out.append(s.to_string())
+        return tuple(out)
 
-    def soft_contact(self, *args):
-        return self.model.softContact(*args)
+    def soft_contact(self, soft_contact_index, *args):
+        current_number_of_soft_contacts = 0
+        out = []
+        for model in self.models:
+            if soft_contact_index < current_number_of_soft_contacts + model.nbSoftContacts():
+                out = model.softContact(soft_contact_index - current_number_of_soft_contacts, *args)
+                break
+            current_number_of_soft_contacts += model.nbSoftContacts()
+        return out
 
     @property
     def muscle_names(self) -> tuple[str, ...]:
-        return tuple(s.to_string() for s in self.model.muscleNames())
+        out = []
+        for model in self.models:
+            for s in model.muscleNames():
+                out.append(s.to_string())
+        return tuple(out)
 
     @property
     def nb_muscles(self) -> int:
-        return self.model.nbMuscles()
+        return sum(model.nbMuscles() for model in self.models)
 
     def torque(self, tau_activations, q, qdot) -> MX:
-        return self.model.torque(tau_activations, q, qdot).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.torque(
+                    tau_activations[self.variable_index("tau", i)],
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                ).to_mx(),
+            )
+            model.closeActuator()
+        return out
 
     def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
-        return self.model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.ForwardDynamicsFreeFloatingBase(
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("q", i)],
+                    qddot_joints[self.variable_index("qddot_joints", i)],
+                ).to_mx(),
+            )
+        return out
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
-        # external_forces = self.convert_array_to_external_forces(external_forces)
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
-        return self.model.ForwardDynamics(q, qdot, tau, external_forces, f_contacts).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.ForwardDynamics(
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                    tau[self.variable_index("tau", i)],
+                    external_forces,
+                    f_contacts,
+                ).to_mx(),
+            )
+        return out
 
     def constrained_forward_dynamics(self, q, qdot, qddot, external_forces=None) -> MX:
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
-        return self.model.ForwardDynamicsConstraintsDirect(q, qdot, qddot, external_forces).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.ForwardDynamicsConstraintsDirect(
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                    qddot[self.variable_index("qddot", i)],
+                    external_forces,
+                ).to_mx(),
+            )
+        return out
 
-    def inverse_dynamics(self, q, qdot, qddot, external_forces=None, f_contacts: biorbd.VecBiorbdVector = None) -> MX:
-        # external_forces = self.convert_array_to_external_forces(external_forces)
+    def inverse_dynamics(self, q, qdot, qddot, external_forces=None, f_contacts=None) -> MX:
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
-        return self.model.InverseDynamics(q, qdot, qddot, external_forces, f_contacts).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.InverseDynamics(
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("qdot", i)],
+                    qddot[self.variable_index("qddot", i)],
+                    external_forces,
+                    f_contacts,
+                ).to_mx(),
+            )
+        return out
 
     def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, external_forces=None) -> MX:
-        # external_forces = self.convert_array_to_external_forces(external_forces)
         if external_forces is not None:
             external_forces = biorbd.to_spatial_vector(external_forces)
-        return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(q, qdot, tau, external_forces).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.ContactForcesFromForwardDynamicsConstraintsDirect(
+                    q[self.variable_index("q", i)],
+                    qdot[self.variable_index("q", i)],
+                    tau[self.variable_index("q", i)],
+                    external_forces,
+                ).to_mx(),
+            )
+        return out
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
-        return self.model.ComputeConstraintImpulsesDirect(q, qdot_pre_impact).to_mx()
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                model.ComputeConstraintImpulsesDirect(
+                    q[self.variable_index("q", i)],
+                    qdot_pre_impact[self.variable_index("qdot", i)],
+                ).to_mx(),
+            )
+        return out
 
     def muscle_activation_dot(self, muscle_excitations) -> MX:
-        muscle_states = self.model.stateSet()
-        for k in range(self.model.nbMuscles()):
-            muscle_states[k].setExcitation(muscle_excitations[k])
-        return self.model.activationDot(muscle_states).to_mx()
+        out = MX()
+        for model in self.models:
+            muscle_states = model.stateSet()
+            for k in range(model.nbMuscles()):
+                muscle_states[k].setExcitation(muscle_excitations[k])
+            out = vertcat(out, model.activationDot(muscle_states).to_mx())
+        return out
 
     def muscle_joint_torque(self, activations, q, qdot) -> MX:
-        muscles_states = self.model.stateSet()
-        for k in range(self.model.nbMuscles()):
-            muscles_states[k].setActivation(activations[k])
-
-        return self.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
+        out = MX()
+        for model in self.models:
+            muscles_states = model.stateSet()
+            for k in range(model.nbMuscles()):
+                muscles_states[k].setActivation(activations[k])
+            out = vertcat(out, model.muscularJointTorque(muscles_states, q, qdot).to_mx())
+        return out
 
     def markers(self, q) -> Any | list[MX]:
-        return [m.to_mx() for m in self.model.markers(q)]
+        out = []
+        for i, model in enumerate(self.models):
+            for m in model.markers(q[self.variable_index("q", i)]):
+                out.append(m.to_mx())
+        return out
 
     @property
     def nb_markers(self) -> int:
-        return self.model.nbMarkers()
+        return sum(model.nbMarkers() for model in self.models)
 
     def marker_index(self, name):
-        return biorbd.marker_index(self.model, name)
+        raise NotImplementedError("marker_index is not implemented yet for MultiBiorbdModel")
 
     def marker(self, q, index, reference_segment_index=None) -> MX:
-        marker = self.model.marker(q, index)
-
-        if reference_segment_index is not None:
-            global_homogeneous_matrix = self.model.globalJCS(q, reference_segment_index)
-            marker.applyRT(global_homogeneous_matrix.transpose())
-
-        return marker.to_mx()
+        raise NotImplementedError("marker is not implemented yet for MultiBiorbdModel")
 
     @property
     def nb_rigid_contacts(self) -> int:
-        return self.model.nbRigidContacts()
+        """
+        Returns the number of rigid contacts.
+        Example:
+            First contact with axis YZ
+            Second contact with axis Z
+            nb_rigid_contacts = 2
+        """
+        return sum(model.nbRigidContacts() for model in self.models)
 
     @property
     def nb_contacts(self) -> int:
-        return self.model.nbContacts()
+        """
+        Returns the number of contact index.
+        Example:
+            First contact with axis YZ
+            Second contact with axis Z
+            nb_contacts = 3
+        """
+        return sum(model.nbContacts() for model in self.models)
+
+    def rigid_contact_index(self, contact_index) -> tuple:
+        """
+        Returns the axis index of this specific rigid contact.
+        Example:
+            First contact with axis YZ
+            Second contact with axis Z
+            rigid_contact_index(0) = (1, 2)
+        """
+        for i, model in enumerate(self.models):
+            if contact_index in self.variable_index("contact", i):
+                model_selected = model
+        return model_selected.rigidContactAxisIdx(contact_index)
 
     def marker_velocities(self, q, qdot, reference_index=None) -> MX:
-        if reference_index is None:
-            return horzcat(*[m.to_mx() for m in self.model.markersVelocity(q, qdot, True)])
-        else:
-            homogeneous_matrix_transposed = (
-                biorbd.RotoTrans(),
-                self.homogeneous_matrices_in_global(q, reference_index, inverse=True),
+        if reference_index is not None:
+            raise RuntimeError("marker_velocities is not implemented yet with reference_index for MultiBiorbdModel")
+
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                horzcat(
+                    *[
+                        m.to_mx()
+                        for m in model.markersVelocity(
+                            q[self.variable_index("q", i)],
+                            qdot[self.variable_index("qdot", i)],
+                            True,
+                        )
+                    ]
+                ),
             )
-        return horzcat(
-            *[
-                m.to_mx()
-                for m in self.model.markersVelocity(q, qdot, True)
-                if m.applyRT(homogeneous_matrix_transposed) is None
-            ]
-        )
+        return out
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
-        torque_max, torque_min = self.model.torqueMax(q, qdot)
-        return torque_max.to_mx(), torque_min.to_mx()
+        out_max = MX()
+        out_min = MX()
+        for model in self.models:
+            model.closeActuator()
+            torque_max, torque_min = model.torqueMax(q, qdot)
+            out_max = vertcat(out_max, torque_max.to_mx())
+            out_min = vertcat(out_min, torque_min.to_mx())
+        return out_max, out_min
 
-    def rigid_contact_acceleration(self, q, qdot, qddot, index) -> MX:
-        # TODO: There is a bug here since only index 0 is call.
-
-        if "_X" in self.contact_names[index]:
-            index_direction = 0
-        elif "_Y" in self.contact_names[index]:
-            index_direction = 1
-        elif "_Z" in self.contact_names[index]:
-            index_direction = 2
-        else:
-            raise ValueError("Wrong index")
-        return self.model.rigidContactAcceleration(q, qdot, qddot, 0, True).to_mx()[index_direction]
+    def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
+        for i, model in enumerate(self.models):
+            if contact_index in self.variable_index("contact", i):
+                model_selected = model
+        return model.rigidContactAcceleration(q, qdot, qddot, contact_index, True).to_mx()[contact_axis]
 
     @property
     def nb_dof(self) -> int:
-        return self.model.nbDof()
+        return sum(model.nbDof() for model in self.models)
 
     @property
     def marker_names(self) -> tuple[str, ...]:
-        return tuple(s.to_string() for s in self.model.markerNames())
+        out = []
+        for model in self.models:
+            for s in model.markerNames():
+                out.append(s.to_string())
+        return tuple(out)
 
     def soft_contact_forces(self, q, qdot) -> MX:
-        soft_contact_forces = MX.zeros(self.nb_soft_contacts * 6, 1)
-        for i_sc in range(self.nb_soft_contacts):
-            soft_contact = self.soft_contact(i_sc)
+        out = MX()
+        for model in self.models:
+            soft_contact_forces = MX.zeros(self.nb_soft_contacts * 6, 1)
+            for i_sc in range(self.nb_soft_contacts):
+                soft_contact = self.soft_contact(i_sc)
 
-            soft_contact_forces[i_sc * 6 : (i_sc + 1) * 6, :] = (
-                biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(self.model, q, qdot).to_mx()
-            )
-        return soft_contact_forces
+                soft_contact_forces[i_sc * 6 : (i_sc + 1) * 6, :] = (
+                    biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(model, q, qdot).to_mx()
+                )
+            out = vertcat(out, soft_contact_forces)
+        return out
 
     def reshape_fext_to_fcontact(self, fext: MX) -> biorbd.VecBiorbdVector:
         count = 0
@@ -264,7 +493,6 @@ class BiorbdModel:
             idx = [i + count for i in range(n_f_contact)]
             f_contact_vec.append(fext[idx])
             count = count + n_f_contact
-
         return f_contact_vec
 
     def normalize_state_quaternions(self, x: MX | SX) -> MX | SX:
@@ -301,7 +529,10 @@ class BiorbdModel:
             return self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=None)
 
     def passive_joint_torque(self, q, qdot) -> MX:
-        return self.model.passiveJointTorque(q, qdot).to_mx()
+        return vertcat(*(model.passiveJointTorque(q, qdot).to_mx() for model in self.models))
+
+    def ligament_joint_torque(self, q, qdot) -> MX:
+        return self.model.ligamentsJointTorque(q, qdot).to_mx()
 
     def _q_mapping(self, mapping: BiMapping = None) -> BiMapping:
         if mapping is None:
@@ -356,15 +587,16 @@ class BiorbdModel:
         qdot_ranges = []
         qddot_ranges = []
 
-        for i in range(self.nb_segments):
-            segment = self.segments[i]
-            for var in variables:
-                if var == "q":
-                    q_ranges += [q_range for q_range in segment.QRanges()]
-                if var == "qdot":
-                    qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-                if var == "qddot":
-                    qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
+        for model in self.models:
+            for i in range(model.nbSegment()):
+                segment = model.segment(i)
+                for var in variables:
+                    if var == "q":
+                        q_ranges += [q_range for q_range in segment.QRanges()]
+                    elif var == "qdot":
+                        qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+                    elif var == "qddot":
+                        qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
 
         for var in variables:
             if var == "q":
@@ -373,14 +605,12 @@ class BiorbdModel:
                 x_min = [q_ranges[i].min() for i in q_mapping["q"].to_first.map_idx]
                 x_max = [q_ranges[i].max() for i in q_mapping["q"].to_first.map_idx]
                 out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
-
             elif var == "qdot":
                 qdot_mapping = self._qdot_mapping(mapping)
                 mapping = qdot_mapping
                 x_min = [qdot_ranges[i].min() for i in qdot_mapping["qdot"].to_first.map_idx]
                 x_max = [qdot_ranges[i].max() for i in qdot_mapping["qdot"].to_first.map_idx]
                 out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
-
             elif var == "qddot":
                 qddot_mapping = self._qddot_mapping(mapping)
                 mapping = qddot_mapping
@@ -392,3 +622,87 @@ class BiorbdModel:
             raise ValueError(f"Unrecognized variable ({variables}), only 'q', 'qdot' and 'qddot' are allowed")
 
         return out
+
+
+class BiorbdModel(MultiBiorbdModel):
+    """
+    This class allows to define a biorbd model.
+    """
+
+    def __init__(self, bio_model: str | biorbd.Model):
+        if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
+            raise RuntimeError("The model should be of type 'str' or 'biorbd.Model'")
+
+        super(BiorbdModel, self).__init__(tuple([bio_model]))
+
+    @property
+    def model(self):
+        """
+        Returns the first model for retro-compatibility with single model definition
+
+        Returns
+        -------
+        The states data
+        """
+
+        return self.models[0]
+
+    def segment_index(self, name) -> int:
+        return biorbd.segment_index(self.model, name)
+
+    def homogeneous_matrices_in_global(self, q, reference_index, inverse=False):
+        val = self.model.globalJCS(q, reference_index)
+        if inverse:
+            return val.transpose()
+        else:
+            return val
+
+    def homogeneous_matrices_in_child(self, *args):
+        return self.model.localJCS(*args)
+
+    def marker_index(self, name):
+        return biorbd.marker_index(self.model, name)
+
+    def marker(self, q, index, reference_segment_index=None) -> MX:
+        marker = self.model.marker(q, index)
+        if reference_segment_index is not None:
+            global_homogeneous_matrix = self.model.globalJCS(q, reference_segment_index)
+            marker.applyRT(global_homogeneous_matrix.transpose())
+        return marker.to_mx()
+
+    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
+        if reference_index is None:
+            return horzcat(
+                *[
+                    m.to_mx()
+                    for m in self.model.markersVelocity(
+                        q,
+                        qdot,
+                        True,
+                    )
+                ]
+            )
+
+        else:
+            out = MX()
+            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
+                q,
+                reference_index,
+                inverse=True,
+            )
+            for m in self.model.markersVelocity(q, qdot):
+                if m.applyRT(homogeneous_matrix_transposed) is None:
+                    out = horzcat(out, m.to_mx())
+
+            return out
+
+    @property
+    def path(self) -> list[str]:
+        # This is for retro compatibility with bioviz in animate
+        return self.model.path().relativePath().to_string()
+
+    def copy(self):
+        return BiorbdModel(self.path)
+
+    def serialize(self) -> tuple[Callable, dict]:
+        return BiorbdModel, dict(bio_model=self.path)
