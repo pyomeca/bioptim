@@ -72,7 +72,7 @@ def test_multi_cyclic_nmpc_get_final():
         solver=Solver.IPOPT(),
         n_cycles_simultaneous=n_cycles_simultaneous,
         get_all_iterations=True,
-        cycle_solutions=MultiCyclicCycleSolutions.ALL_CYCLES
+        cycle_solutions=MultiCyclicCycleSolutions.ALL_CYCLES,
     )
 
     # Check some of the results
