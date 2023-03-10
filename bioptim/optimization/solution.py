@@ -1315,9 +1315,9 @@ class Solution:
         if save_path:
             titles = ["q_states", "qdot_states", "qddot_states", "OBJECTIVES", "CONSTRAINTS"]
             for i, fig in enumerate(plot_ocp.all_figures):
-                # fig.savefig(f'{save_path}')
+                #fig.savefig(f'{save_path}')
                 fig.savefig(f"{save_path}/{titles[i]}" + ".png", dpi=300)
-                clear
+
 
     def animate(
         self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any

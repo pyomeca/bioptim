@@ -591,9 +591,14 @@ class PlotOcp:
         plt.show()
     @staticmethod
     def save():
+        """
 
+        Returns
+        -------
 
-    def update_data(self, v: dict, save_path):
+        """
+
+    def update_data(self, v: dict):
         """
         Update ydata from the variable a solution structure
 
@@ -822,7 +827,7 @@ class PlotOcp:
                         y[:, :] = val
                     self.__append_to_ydata(y)
 
-        self.__update_axes(save_path)
+        self.__update_axes()
 
     def __update_xdata(self):
         """
@@ -870,7 +875,7 @@ class PlotOcp:
         for y in data:
             self.ydata.append(y)
 
-    def __update_axes(self, save_path):
+    def __update_axes(self):
         """
         Update the plotted data from ydata
         """
