@@ -3,13 +3,76 @@ from warnings import warn
 
 from casadi import vertcat, MX
 
-from .multinode_constraint import BinodeConstraint, BinodeConstraintFunctions
+from .multinode_constraint import BinodeConstraint, BinodeConstraintFunctions # AllNodeConstraint, AllNodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
+
+
+class PhaseTransition(BinodeConstraint):
+    """
+    A placeholder for a transition of state
+
+    Attributes
+    ----------
+    min_bound: list
+        The minimal bound of the phase transition
+    max_bound: list
+        The maximal bound of the phase transition
+    bounds: Bounds
+        The bounds (will be filled with min_bound/max_bound)
+    weight: float
+        The weight of the cost function
+    quadratic: bool
+        If the objective function is quadratic
+    phase_pre_idx: int
+        The index of the phase right before the transition
+    phase_post_idx: int
+        The index of the phase right after the transition
+    node: Node
+        The kind of node
+    dt: float
+        The delta time
+    node_idx: int
+        The index of the node in nlp pre
+    transition: bool
+        The nature of the cost function is transition
+    penalty_type: PenaltyType
+        If the penalty is from the user or from bioptim (implicit or internal)
+    """
+
+    def __init__(
+        self,
+        phase_pre_idx: int = None,
+        transition: Callable | Any = None,
+        weight: float = 0,
+        custom_function: Callable = None,
+        min_bound: float = 0,
+        max_bound: float = 0,
+        **params: Any,
+    ):
+        if not isinstance(transition, PhaseTransitionFcn):
+            custom_function = transition
+            transition = PhaseTransitionFcn.CUSTOM
+        super(PhaseTransition, self).__init__(
+            phase_first_idx=phase_pre_idx,
+            phase_second_idx=None,
+            first_node=Node.END,
+            second_node=Node.START,
+            binode_constraint=transition,
+            custom_function=custom_function,
+            min_bound=min_bound,
+            max_bound=max_bound,
+            weight=weight if weight is not None else 0,
+            force_binode=True,
+            **params,
+        )
+
+        self.node = Node.TRANSITION
+        self.transition = True
 
 
 class PhaseTransition(BinodeConstraint):
