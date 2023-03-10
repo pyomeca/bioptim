@@ -194,6 +194,13 @@ def test__getting_started__example_binode_constraints():
 
     ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod")
 
+def test__getting_started__example_allnode_constraints():
+    from bioptim.examples.getting_started import example_allnode_objectives as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "models/pendulum.bioMod")
+
 
 def test__getting_started__example_optimal_time():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module

@@ -1147,6 +1147,47 @@ def test_binode_constraints(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+def test_allnode_objectives(ode_solver):
+    from bioptim.examples.getting_started import example_allnode_objectives as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ode_solver = ode_solver()
+
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "models/pendulum.bioMod", ode_solver=ode_solver)
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 106090.89337001556)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (3036, 1))
+    np.testing.assert_almost_equal(g, np.zeros((3036, 1)))
+
+    # Check some of the results
+    states, controls = sol.states, sol.controls
+
+    # initial and final position
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([1.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(states[-1]["q"][:, -1], np.array([2.0, 0.0, 1.57]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(states[-1]["qdot"][:, -1], np.array([0.0, 0.0, 0.0]))
+
+    # equality Node.START phase 0 and 2
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], states[2]["q"][:, 0])
+
+    # initial and final controls
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.4968523, 9.81, 0.0236434]))
+    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-0.3839688, 9.81, -0.6037517]))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
 
 def test_multistart():
     from bioptim.examples.getting_started import example_multistart as ocp_module
