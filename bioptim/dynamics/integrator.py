@@ -70,7 +70,7 @@ class Integrator:
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
         self.x_sym = ode["x_scaled"]
-        self.u_sym = ode["p_scaled"] if "p_scale" in ode.keys() else []
+        self.u_sym = ode["p_scaled"] # if "p_scale" in ode.keys() else []
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
