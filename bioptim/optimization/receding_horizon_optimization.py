@@ -12,7 +12,7 @@ from ..dynamics.configure_problem import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
-from ..misc.enums import SolverType, InterpolationType
+from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions
 from ..interfaces.solver_options import Solver
 from ..optimization.optimization_variable import VariableScaling
 from ..interfaces.biomodel import BioModel
@@ -518,8 +518,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def solve(
         self,
         update_function=None,
-        get_cycles: bool = False,
-        get_final_cycles: bool = False,
+        cycle_solutions: MultiCyclicCycleSolutions = MultiCyclicCycleSolutions.NONE,
         **extra_options,
     ) -> Solution | tuple:
         """
@@ -529,13 +528,11 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         ----------
         update_function: callable
             A function that will be called at each iteration of the optimization.
-        get_cycles: bool
-            If True, the solution of each cycle will be returned.
-        get_final_cycles: bool
-            If True, The cycles of the final windows will be returned with other cycles.
+        cycle_solutions: MultiCyclicCycleSolutions
+            The extra solutions to return, e.g. none, the solution of each cycle, all cycles of the terminal window.
         """
         get_all_iterations = extra_options["get_all_iterations"] if "get_all_iterations" in extra_options else False
-        extra_options["get_all_iterations"] = True if get_cycles else False
+        extra_options["get_all_iterations"] = True if cycle_solutions is not MultiCyclicCycleSolutions.NONE else False
 
         solution = super(MultiCyclicRecedingHorizonOptimization, self).solve(
             update_function=update_function, **extra_options
@@ -546,18 +543,18 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         if get_all_iterations:
             final_solution.append(solution[1])
 
-        if get_cycles:
-            cycle_solutions = []
+        if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
+            cycle_solutions_output = []
             for sol in solution[1]:
                 _states, _controls = self.export_cycles(sol)
-                cycle_solutions.append(self._initialize_one_cycle(_states, _controls))
+                cycle_solutions_output.append(self._initialize_one_cycle(_states, _controls))
 
-            if get_final_cycles:
-                for cycle_number in range(1, self.n_cycles):
-                    _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
-                    cycle_solutions.append(self._initialize_one_cycle(_states, _controls))
+        if cycle_solutions == MultiCyclicCycleSolutions.ALL_CYCLES:
+            for cycle_number in range(1, self.n_cycles):
+                _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
+                cycle_solutions_output.append(self._initialize_one_cycle(_states, _controls))
 
-            final_solution.append(cycle_solutions)
+        final_solution.append(cycle_solutions_output)
 
         return tuple(final_solution) if len(final_solution) > 1 else final_solution[0]
 

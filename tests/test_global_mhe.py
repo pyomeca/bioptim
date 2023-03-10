@@ -5,7 +5,7 @@ import os
 import sys
 import numpy as np
 import pytest
-from bioptim import Solver
+from bioptim import Solver, MultiCyclicCycleSolutions
 
 
 def test_cyclic_nmpc():
@@ -72,8 +72,7 @@ def test_multi_cyclic_nmpc_get_final():
         solver=Solver.IPOPT(),
         n_cycles_simultaneous=n_cycles_simultaneous,
         get_all_iterations=True,
-        get_cycles=True,
-        get_final_cycles=True,
+        cycle_solutions=MultiCyclicCycleSolutions.ALL_CYCLES
     )
 
     # Check some of the results
@@ -162,8 +161,7 @@ def test_multi_cyclic_nmpc_not_get_final():
         solver=Solver.IPOPT(_max_iter=0),
         n_cycles_simultaneous=n_cycles_simultaneous,
         get_all_iterations=True,
-        get_cycles=True,
-        get_final_cycles=False,
+        cycle_solutions=MultiCyclicCycleSolutions.FIRST_CYCLES,
     )
 
     # check some result of the third structure
