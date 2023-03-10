@@ -554,7 +554,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                 _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
                 cycle_solutions_output.append(self._initialize_one_cycle(_states, _controls))
 
-        final_solution.append(cycle_solutions_output)
+        if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
+            final_solution.append(cycle_solutions_output)
 
         return tuple(final_solution) if len(final_solution) > 1 else final_solution[0]
 
