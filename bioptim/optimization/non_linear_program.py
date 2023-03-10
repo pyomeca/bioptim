@@ -27,6 +27,8 @@ class NonLinearProgram:
         The control type for the current nlp
     cx: MX | SX
         The type of symbolic variable that is used
+    cx_end: MX | SX
+        The type of symbolic variable that is used
     dt: float
         The delta time of the current phase
     dynamics: list[ODE_SOLVER]
@@ -115,6 +117,7 @@ class NonLinearProgram:
         self.soft_contact_forces_func = None
         self.control_type = ControlType.NONE
         self.cx = None
+        self.cx_end = None
         self.dt = None
         self.dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
@@ -169,8 +172,10 @@ class NonLinearProgram:
         self.plot = {}
         self.cx = cx
         self.states["scaled"]._cx = self.cx()
+        self.states["scaled"]._cx_end = self.cx()
         self.states._cx = self.cx()
         self.controls["scaled"]._cx = self.cx()
+        self.controls["scaled"]._cx_end = self.cx()
         self.controls._cx = self.cx()
         self.J = []
         self.g = []
