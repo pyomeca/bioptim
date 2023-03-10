@@ -26,7 +26,7 @@ from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
     Constraint,
-    ContinuityConstraintFunctions,
+    #ContinuityConstraintFunctions,
 )
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import BinodeConstraintList, AllNodeConstraintList
@@ -540,9 +540,11 @@ class OptimalControlProgram:
         if not skip_continuity:
             if not state_continuity_weight:
                 # Inner- and inter-phase continuity
-                ContinuityConstraintFunctions.continuity(self)
+                # ContinuityConstraintFunctions.continuity(self)
+                OptimalControlProgram.continuity(self)
             else:
                 ContinuityObjectiveFunctions.continuity(self, state_continuity_weight)
+                # ContinuityObjectiveFunctions.continuity(self, state_continuity_weight)
 
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
@@ -1432,3 +1434,49 @@ class OptimalControlProgram:
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
 
         self.program_changed = True
+
+    def node_equalities(ocp):
+        """
+        Add multi node constraints between chosen phases.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
+        for mnc in ocp.binode_constraints:
+            # Equality constraint between nodes
+            first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
+            second_node_name = (
+                f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
+            )
+            mnc.name = (
+                f"NODE_EQUALITY "
+                f"Phase {mnc.phase_first_idx} Node {first_node_name}"
+                f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
+            )
+            mnc.list_index = -1
+            mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
+
+        for mnc in ocp.allnode_constraints:
+            mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_idx])
+
+
+    def continuity(ocp):
+        """
+        The declaration of inner- and inter-phase continuity constraints
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
+        ConstraintFunction.inner_phase_continuity(ocp)
+
+        # Dynamics must be respected between phases
+        ConstraintFunction.inter_phase_continuity(ocp)
+
+        if ocp.binode_constraints or ocp.allnode_constraints:
+            OptimalControlProgram.node_equalities(ocp)
