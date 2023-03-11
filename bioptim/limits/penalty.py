@@ -666,6 +666,8 @@ class PenaltyFunctionAbstract:
                 u = nlp.controls.cx
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 u = horzcat(nlp.controls.cx, nlp.controls.cx_end)
+            elif nlp.control_type == ControlType.NONE:
+                u = []
             else:
                 raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
 
