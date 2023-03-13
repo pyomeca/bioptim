@@ -25,10 +25,10 @@ from bioptim import (
     BiMappingList,
 )
 
-def prepare_ocp(weights, coefficients, biorbd_model_path="models/double_pendulum.bioMod"):
 
+def prepare_ocp(weights, coefficients, biorbd_model_path="models/double_pendulum.bioMod"):
     # Parameters of the problem
-    biorbd_model = (BiorbdModel(biorbd_model_path))
+    biorbd_model = BiorbdModel(biorbd_model_path)
     phase_time = 1.5
     n_shooting = 30
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -40,11 +40,18 @@ def prepare_ocp(weights, coefficients, biorbd_model_path="models/double_pendulum
     # Add objective functions
     objective_functions = ObjectiveList()
     if coefficients[0] * weights[0] != 0:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=coefficients[0]*weights[0])
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=coefficients[0] * weights[0])
     if coefficients[1] * weights[1] != 0:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True, weight=coefficients[1]*weights[1])
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True, weight=coefficients[1] * weights[1]
+        )
     if coefficients[2] * weights[2] != 0:
-        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, node=Node.ALL_SHOOTING, derivative=True, weight=coefficients[2]*weights[2])
+        objective_functions.add(
+            ObjectiveFcn.Mayer.MINIMIZE_MARKERS,
+            node=Node.ALL_SHOOTING,
+            derivative=True,
+            weight=coefficients[2] * weights[2],
+        )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -99,6 +106,7 @@ class prepare_iocp:
         - get_nobj: The function returning the number of objectives
         - get_bounds: The function returning the bounds on the weightings
     """
+
     def __init__(self, coefficients, solver, q_to_track, qdot_to_track, tau_to_track):
         self.coefficients = coefficients
         self.solver = solver
@@ -115,10 +123,16 @@ class prepare_iocp:
         i_inverse += 1
         ocp = prepare_ocp(weights, self.coefficients)
         sol = ocp.solve(self.solver)
-        print(f"+++++++++++++++++++++++++++ Optimized the {i_inverse}th ocp in the inverse algo +++++++++++++++++++++++++++")
+        print(
+            f"+++++++++++++++++++++++++++ Optimized the {i_inverse}th ocp in the inverse algo +++++++++++++++++++++++++++"
+        )
         if sol.status == 0:
             q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-            return [np.sum((self.q_to_track - q) ** 2) + np.sum((self.qdot_to_track - qdot) ** 2) + np.sum((self.tau_to_track[:, :-1] - tau[:, :-1]) ** 2)]
+            return [
+                np.sum((self.q_to_track - q) ** 2)
+                + np.sum((self.qdot_to_track - qdot) ** 2)
+                + np.sum((self.tau_to_track[:, :-1] - tau[:, :-1]) ** 2)
+            ]
         else:
             return [1000000]
 
@@ -130,7 +144,6 @@ class prepare_iocp:
 
 
 def main():
-
     # Generate data using OCP
     weights_to_track = [0.4, 0.3, 0.3]
     ocp_to_track = prepare_ocp(weights=weights_to_track, coefficients=[1, 1, 1])
@@ -138,7 +151,11 @@ def main():
     solver = Solver.IPOPT()
     solver.set_linear_solver("ma57")
     sol_to_track = ocp_to_track.solve(solver)
-    q_to_track, qdot_to_track, tau_to_track = sol_to_track.states["q"], sol_to_track.states["qdot"], sol_to_track.controls["tau"]
+    q_to_track, qdot_to_track, tau_to_track = (
+        sol_to_track.states["q"],
+        sol_to_track.states["qdot"],
+        sol_to_track.controls["tau"],
+    )
     print("+++++++++++++++++++++++++++ weights_to_track generated +++++++++++++++++++++++++++")
 
     # Find coefficients of the objective using Pareto
@@ -168,19 +185,35 @@ def main():
         pop_weights = pop.get_x()[np.argmin(pop.get_f())]
 
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    print("The optimizaed weight are : ", pop_weights[0] * coefficients[0], '/',
-                                          pop_weights[1] * coefficients[1], '/',
-                                          pop_weights[2] * coefficients[2])
-    print("The tracked weight are : ", weights_to_track[0] * coefficients[0], '/',
-                                       weights_to_track[1] * coefficients[1], '/',
-                                       weights_to_track[2] * coefficients[2])
-    print("The weight difference is : ", (pop_weights[0] - weights_to_track[0]) / weights_to_track[0] * 100, '% / ',
-                                         (pop_weights[1] - weights_to_track[1]) / weights_to_track[1] * 100, '% / ',
-                                         (pop_weights[2] - weights_to_track[2]) / weights_to_track[2] * 100, '%')
-
+    print(
+        "The optimizaed weight are : ",
+        pop_weights[0] * coefficients[0],
+        "/",
+        pop_weights[1] * coefficients[1],
+        "/",
+        pop_weights[2] * coefficients[2],
+    )
+    print(
+        "The tracked weight are : ",
+        weights_to_track[0] * coefficients[0],
+        "/",
+        weights_to_track[1] * coefficients[1],
+        "/",
+        weights_to_track[2] * coefficients[2],
+    )
+    print(
+        "The weight difference is : ",
+        (pop_weights[0] - weights_to_track[0]) / weights_to_track[0] * 100,
+        "% / ",
+        (pop_weights[1] - weights_to_track[1]) / weights_to_track[1] * 100,
+        "% / ",
+        (pop_weights[2] - weights_to_track[2]) / weights_to_track[2] * 100,
+        "%",
+    )
 
     # Compare the kinematics
     import biorbd
+
     ocp_final = prepare_ocp(weights=pop_weights, coefficients=coefficients)
     sol_final = ocp_final.solve(solver)
     q_final, qdot_final, tau_final = sol_final.states["q"], sol_final.states["qdot"], sol_final.controls["tau"]
@@ -195,20 +228,23 @@ def main():
         markers_final[1, i, :] = m.markers(q_final[:, i])[3].to_array()
 
     fig, axs = plt.subplots(2, 1)
-    axs[0].plot(markers_to_track[0, :, 1], markers_to_track[0, :, 2], '-r', label='Tracked reference')
-    axs[1].plot(markers_to_track[1, :, 1], markers_to_track[1, :, 2], '-r', label='Tracked reference')
-    axs[0].plot(markers_final[0, :, 1], markers_final[0, :, 2], '--b', label='Solution with optimal weightings')
-    axs[1].plot(markers_final[1, :, 1], markers_final[1, :, 2], '--b', label='Solution with optimal weightings')
+    axs[0].plot(markers_to_track[0, :, 1], markers_to_track[0, :, 2], "-r", label="Tracked reference")
+    axs[1].plot(markers_to_track[1, :, 1], markers_to_track[1, :, 2], "-r", label="Tracked reference")
+    axs[0].plot(markers_final[0, :, 1], markers_final[0, :, 2], "--b", label="Solution with optimal weightings")
+    axs[1].plot(markers_final[1, :, 1], markers_final[1, :, 2], "--b", label="Solution with optimal weightings")
     axs[0].legend()
-    axs[0].set_title("Marker trajectory of the reference problem and the final solution generated with the optimal solutions.")
-    axs[0].set_xlabel('y [m]')
-    axs[0].set_ylabel('Z [m]')
-    axs[1].set_xlabel('y [m]')
-    axs[1].set_ylabel('Z [m]')
+    axs[0].set_title(
+        "Marker trajectory of the reference problem and the final solution generated with the optimal solutions."
+    )
+    axs[0].set_xlabel("y [m]")
+    axs[0].set_ylabel("Z [m]")
+    axs[1].set_xlabel("y [m]")
+    axs[1].set_ylabel("Z [m]")
     plt.show()
 
     sol_to_track.animate()
     sol_final.animate()
+
 
 if __name__ == "__main__":
     main()
