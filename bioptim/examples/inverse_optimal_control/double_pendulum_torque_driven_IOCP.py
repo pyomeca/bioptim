@@ -29,10 +29,9 @@ from bioptim import (
     BiMappingList,
 )
 
-def prepare_ocp(weights, coefficients):
+def prepare_ocp(weights, coefficients, biorbd_model_path="models/double_pendulum.bioMod"):
 
     # Parameters of the problem
-    biorbd_model_path = "models/double_pendulum.bioMod"
     biorbd_model = (BiorbdModel(biorbd_model_path))
     phase_time = 1.5
     n_shooting = 30
