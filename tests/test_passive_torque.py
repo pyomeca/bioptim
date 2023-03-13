@@ -61,7 +61,9 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
         ocp,
         "dynamics_type",
         Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics, with_passive_torque=with_passive_torque
+            DynamicsFcn.TORQUE_DRIVEN,
+            rigidbody_dynamics=rigidbody_dynamics,
+            with_passive_torque=with_passive_torque,
         ),
         False,
     )
@@ -87,44 +89,30 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_passive_torque:
             np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.6118529, 0.785176, 0.6075449, 0.8083973, -5.0261535, -10.5570666, 18.569191, 24.2237134],
+                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -5.0261535, -10.5570666, 18.569191, 24.2237134]
             )
         else:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
-                [
-                    0.61185289,
-                    0.78517596,
-                    0.60754485,
-                    0.80839735,
-                    -0.30241366,
-                    -10.38503791,
-                    1.60445173,
-                    35.80238642,
-                ],
+                [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
             )
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         if with_passive_torque:
             np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
             )
         else:
             np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
             )
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:
             np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
             )
         else:
             np.testing.assert_almost_equal(
-                x_out[:, 0],
-                [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
+                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
             )
 
 
@@ -150,7 +138,10 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_passive_torque=with_passive_torque),
+        Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+            with_passive_torque=with_passive_torque,
+        ),
         False,
     )
 
@@ -213,7 +204,8 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx):
 
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
-def test_torque_activation_driven_with_passive_torque(with_passive_torque, cx):
+@pytest.mark.parametrize("with_residual_torque", [False, True])
+def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_residual_torque, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = BiorbdModel(
@@ -231,7 +223,11 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, cx):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_passive_torque=with_passive_torque),
+        Dynamics(
+            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+            with_passive_torque=with_passive_torque,
+            with_residual_torque=with_residual_torque,
+        ),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -253,36 +249,69 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, cx):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
-    if with_passive_torque:
-        np.testing.assert_almost_equal(
-            x_out[:, 0],
-            [
-                6.1185289472e-01,
-                7.8517596139e-01,
-                6.0754485190e-01,
-                8.0839734812e-01,
-                -2.8550037341e01,
-                -5.8375374025e01,
-                1.4440375924e02,
-                3.6537329536e03,
-            ],
-            decimal=6,
-        )
+    if with_residual_torque:
+        if with_passive_torque:
+            np.testing.assert_almost_equal(
+                x_out[:, 0],
+                [
+                    0.6118528947,
+                    0.7851759614,
+                    0.6075448519,
+                    0.8083973481,
+                    -28.6265970388,
+                    -58.7530113476,
+                    145.0864163235,
+                    3682.9683657415,
+                ],
+                decimal=5,
+            )
+        else:
+            np.testing.assert_almost_equal(
+                x_out[:, 0],
+                [
+                    0.6118528947,
+                    0.7851759614,
+                    0.6075448519,
+                    0.8083973481,
+                    -23.9028572107,
+                    -58.5809826745,
+                    128.1216770837,
+                    3694.5470387809,
+                ],
+                decimal=5,
+            )
+
     else:
-        np.testing.assert_almost_equal(
-            x_out[:, 0],
-            [
-                6.11852895e-01,
-                7.85175961e-01,
-                6.07544852e-01,
-                8.08397348e-01,
-                -2.38262975e01,
-                -5.82033454e01,
-                1.27439020e02,
-                3.66531163e03,
-            ],
-            decimal=5,
-        )
+        if with_passive_torque:
+            np.testing.assert_almost_equal(
+                x_out[:, 0],
+                [
+                    6.1185289472e-01,
+                    7.8517596139e-01,
+                    6.0754485190e-01,
+                    8.0839734812e-01,
+                    -2.8550037341e01,
+                    -5.8375374025e01,
+                    1.4440375924e02,
+                    3.6537329536e03,
+                ],
+                decimal=6,
+            )
+        else:
+            np.testing.assert_almost_equal(
+                x_out[:, 0],
+                [
+                    6.11852895e-01,
+                    7.85175961e-01,
+                    6.07544852e-01,
+                    8.08397348e-01,
+                    -2.38262975e01,
+                    -5.82033454e01,
+                    1.27439020e02,
+                    3.66531163e03,
+                ],
+                decimal=5,
+            )
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
@@ -364,32 +393,15 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
         else:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
-                [
-                    1.83404510e-01,
-                    6.11852895e-01,
-                    7.85175961e-01,
-                    -4.37708456e00,
-                    1.33221135e02,
-                    -4.71307550e02,
-                ],
+                [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -4.37708456e00, 1.33221135e02, -4.71307550e02],
                 decimal=6,
             )
 
 
 @pytest.mark.parametrize(
-    "rigidbody_dynamics",
-    [
-        RigidBodyDynamics.DAE_FORWARD_DYNAMICS,
-        RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
-    ],
+    "rigidbody_dynamics", [RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS]
 )
-@pytest.mark.parametrize(
-    "with_passive_torque",
-    [
-        False,
-        True,
-    ],
-)
+@pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
     from bioptim.examples.torque_driven_ocp import pendulum_with_passive_torque as ocp_module
 
@@ -397,14 +409,14 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
 
     # Define the problem
     biorbd_model_path = bioptim_folder + "/models/pendulum_with_passive_torque.bioMod"
-    final_time = 0.1
-    n_shooting = 5
+    final_time = 1
+    n_shooting = 30
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path,
         final_time,
         n_shooting,
-        rigidbody_dynamics=RigidBodyDynamics.ODE,
+        rigidbody_dynamics=rigidbody_dynamics,
         with_passive_torque=with_passive_torque,
     )
     solver = Solver.IPOPT()
@@ -426,10 +438,10 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
             # initial and final controls
             np.testing.assert_almost_equal(
                 tau[:, 0],
-                np.array([37.2828933, 0.0]),
+                np.array([-1.071535, 0.0]),
                 decimal=6,
             )
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-4.9490898, 0.0]), decimal=6)
+            np.testing.assert_almost_equal(tau[:, -2], np.array([-19.422394, 0.0]), decimal=6)
 
         else:
             # initial and final position
@@ -441,12 +453,12 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
             # initial and final controls
             np.testing.assert_almost_equal(
                 tau[:, 0],
-                np.array([-70.3481693, 0.0]),
+                np.array([2.531529, 0.0]),
                 decimal=6,
             )
             np.testing.assert_almost_equal(
                 tau[:, -2],
-                np.array([-35.5389502, 0.0]),
+                np.array([-18.254416, 0.0]),
                 decimal=6,
             )
 
@@ -461,12 +473,12 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
             # initial and final controls
             np.testing.assert_almost_equal(
                 tau[:, 0],
-                np.array([37.2828933, 0.0]),
+                np.array([1.587319, 0.0]),
                 decimal=6,
             )
             np.testing.assert_almost_equal(
                 tau[:, -2],
-                np.array([-4.9490898, 0.0]),
+                np.array([-39.19793, 0.0]),
                 decimal=6,
             )
 
@@ -480,11 +492,11 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque):
             # initial and final controls
             np.testing.assert_almost_equal(
                 tau[:, 0],
-                np.array([-70.3481693, 0.0]),
+                np.array([2.606971, 0.0]),
                 decimal=6,
             )
             np.testing.assert_almost_equal(
                 tau[:, -2],
-                np.array([-35.5389502, 0.0]),
+                np.array([-24.611219, 0.0]),
                 decimal=6,
             )

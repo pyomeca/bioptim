@@ -36,6 +36,8 @@ Otherwise, please open a new issue explaining what you are currently working on 
 
 As soon as possible, you are asked to open a pull-request (see below) with a short but descriptive name. 
 Unless that pull-request is ready to be merged, please tag it as `work in progress` by adding `[WIP]` at the beginning of the pull-request name.
+If you are ready to get your PR reviewed, you can add the tag `ready to review` by adding `[RTR]`.
+If you think your PR is ready for the last review, please use the tag `ready to merge` by adding `[RTM]`.
 Send commits that are as small as possible; 1 to 10 lines is probably a good guess, with again short but descriptive commit names. 
 Be aware of the review done by the maintainers, they will contain useful tips and advice that should be integrated ASAP. 
 Once you have responded to a specific comment, please respond `Done!` and tag it as resolved.
