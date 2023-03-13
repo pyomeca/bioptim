@@ -318,7 +318,7 @@ class OptimizationVariable:
             raise RuntimeError(
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
             )
-        return self.parent_list.cx_all  #[self.index, :]
+        return self.parent_list.cx_all[self.index, :]  #[self.index, :]
 
 
 class OptimizationVariableList:
@@ -363,7 +363,8 @@ class OptimizationVariableList:
         self.fake_elements: list = []
         self._cx: MX | SX | np.ndarray = np.array([])
         self._cx_end: MX | SX | np.ndarray = np.array([])
-        self._cx_all: list = []
+        #self._cx_all: list = []
+        self._cx_all: MX | SX | np.ndarray = np.array([])
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
 
@@ -458,10 +459,7 @@ class OptimizationVariableList:
         index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
         self._cx = vertcat(self._cx, cx[0])
         self._cx_end = vertcat(self._cx_end, cx[-1])
-        # for i in range(len(cx)):
-        #     self._cx_all[i] = vertcat(self._cx_all[i], cx[i])
-        for i, a in enumerate(cx[:]):
-            self._cx_all.append(a)
+        self._cx_all = vertcat(self._cx_all, *cx)
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
                 self._cx_intermediates.append(c)
@@ -497,12 +495,8 @@ class OptimizationVariableList:
                 self._cx_intermediates.append(c)
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
-        # for i in range(len(cx)):
-        #     self._cx_all[i] = vertcat(self._cx_all[i], cx[i])
-        for i, a in enumerate(cx[:]):
-            self._cx_all.append(a)
+        self._cx_all = vertcat(self._cx_all, *cx)
         self.mx_reduced = scaled_optimization_variable.mx_reduced
-
         var = scaled_optimization_variable[name]
         self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
 
