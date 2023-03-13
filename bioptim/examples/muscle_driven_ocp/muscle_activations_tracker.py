@@ -202,7 +202,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=use_residual_torque)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=use_residual_torque)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -228,7 +228,10 @@ def prepare_ocp(
         )
         u_init.add([tau_init] * bio_model.nb_tau + [activation_init] * bio_model.nb_muscles)
     else:
-        u_bounds.add([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles)
+        u_bounds.add(
+            [activation_min] * bio_model.nb_muscles,
+            [activation_max] * bio_model.nb_muscles,
+        )
         u_init.add([activation_init] * bio_model.nb_muscles)
     # ------------- #
 
@@ -260,7 +263,10 @@ def main():
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(
-        bio_model, final_time, n_shooting_points, use_residual_torque=use_residual_torque
+        bio_model,
+        final_time,
+        n_shooting_points,
+        use_residual_torque=use_residual_torque,
     )
 
     # Track these data
@@ -295,8 +301,16 @@ def main():
     plt.figure("Markers")
     n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
     for i in range(markers.shape[1]):
-        plt.plot(np.linspace(0, final_time, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
-        plt.plot(np.linspace(0, final_time, n_shooting_points * n_steps_ode + 1), markers[:, i, :].T, "r--")
+        plt.plot(
+            np.linspace(0, final_time, n_shooting_points + 1),
+            markers_ref[:, i, :].T,
+            "k",
+        )
+        plt.plot(
+            np.linspace(0, final_time, n_shooting_points * n_steps_ode + 1),
+            markers[:, i, :].T,
+            "r--",
+        )
 
     # --- Plot --- #
     plt.show()

@@ -21,10 +21,10 @@ def test_biorbd_model_import():
 
     BiorbdModel(biorbd.Model(bioptim_folder + model_path))
 
-    with pytest.raises(RuntimeError, match="Type must be a 'str' or a 'biorbd.Model'"):
+    with pytest.raises(RuntimeError, match="The model should be of type 'str' or 'biorbd.Model'"):
         BiorbdModel(1)
 
-    with pytest.raises(RuntimeError, match="Type must be a 'str' or a 'biorbd.Model'"):
+    with pytest.raises(RuntimeError, match="The model should be of type 'str' or 'biorbd.Model'"):
         BiorbdModel([])
 
 
