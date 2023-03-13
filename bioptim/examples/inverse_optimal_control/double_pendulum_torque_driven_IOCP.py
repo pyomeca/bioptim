@@ -9,7 +9,6 @@ conda install -c conda-forge pygmo
 import pygmo as pg
 import numpy as np
 import matplotlib.pyplot as plt
-from IPython import embed
 
 from bioptim import (
     OptimalControlProgram,
@@ -19,10 +18,7 @@ from bioptim import (
     ObjectiveFcn,
     BoundsList,
     InitialGuessList,
-    OdeSolver,
     Solver,
-    ConstraintList,
-    ConstraintFcn,
     Node,
     CostType,
     BiorbdModel,
@@ -96,6 +92,13 @@ def prepare_ocp(weights, coefficients, biorbd_model_path="models/double_pendulum
 
 
 class prepare_iocp:
+    """
+    This class must be defined by the user to match the data to track.
+    It must containt the following methods:
+        - fitness: The function returning the fitness of the solution
+        - get_nobj: The function returning the number of objectives
+        - get_bounds: The function returning the bounds on the weightings
+    """
     def __init__(self, coefficients, solver, q_to_track, qdot_to_track, tau_to_track):
         self.coefficients = coefficients
         self.solver = solver
@@ -104,10 +107,13 @@ class prepare_iocp:
         self.tau_to_track = tau_to_track
 
     def fitness(self, weights):
+        """
+        This function returns how well did the weightings allow to fit the data to track.
+        The OCP is solved in this function.
+        """
         global i_inverse
         i_inverse += 1
         ocp = prepare_ocp(weights, self.coefficients)
-        # ocp.add_plot_penalty(CostType.ALL)
         sol = ocp.solve(self.solver)
         print(f"+++++++++++++++++++++++++++ Optimized the {i_inverse}th ocp in the inverse algo +++++++++++++++++++++++++++")
         if sol.status == 0:

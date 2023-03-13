@@ -111,6 +111,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [Track](#track)
 - [Moving estimation horizon](#moving-estimation-horizon)
 - [Acados](#acados)
+- [Inverse_optimal_control](#inverse_optimal_control)
 
 [Citing](#Citing)
 
@@ -162,6 +163,7 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [`Ipopt`](https://github.com/coin-or/Ipopt)
 - [`Acados`](https://github.com/acados/acados)
 - [pyqtgraph](https://www.pyqtgraph.org/)
+- [pygmo](https://esa.github.io/pygmo2/) (only for inverse optimal control)
 
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
@@ -2369,6 +2371,18 @@ This is a basic example on how to use biorbd model driven by muscle to perform a
 The arm must reach a marker while minimizing the muscles activity and the states. We solve the problem using both 
 `acados` and `ipotpt`.
 
+## Inverse optimal control
+In this section, you will find an example to implement inverse optimal control with `bioptim`. 
+
+### The double_pendulum_torque_driven_IOCP.py file
+This is a basic example of a rigid double pendulum which have to circle around a fixed point.
+The movement is inspired from the motion of gymnasts on the bar apparatus.
+This example is separated in three parts:
+- The first part is the definition of the problem. The problem is solved with specific weightings.
+- The second part solves the problem with only one objective at a time to for the pareto front.
+- The thirs part solves the inverse optimal control problem aiming to retrieve the initial weightings.
+A the end of the example, the markers trajectories are plotted to show that the movement is the same.
+ 
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
 @article{michaud2022bioptim,
