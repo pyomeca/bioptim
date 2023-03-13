@@ -185,7 +185,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Mac - Installing dependencies with conda
 Equivalently for MacOSX:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
+conda install casadi 'rbdl' 'biorbd' 'bioviz' python-graphviz -cconda-forge
 ```
 Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`.
 The `Acados` installation script is `[ROOT_BIOPTIM]/external/acados_install_mac.sh`.
@@ -199,7 +199,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Windows - Installing dependencies with conda
 Equivalently for Windows:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
+conda install casadi 'rbdl' 'biorbd' 'bioviz' python-graphviz -cconda-forge
 ```
 There isn't any `Anaconda` nor `pip3` package of `Acados`.
 If one wants to use the `Acados` solver on Windows, they must compile it by themselves.
@@ -633,6 +633,7 @@ The `Solver` class can be used to select the nonlinear solver to solve the ocp:
 
 - IPOPT
 - ACADOS
+- SQP method
 
 Note that options can be passed to the solver parameter.
 One can refer to the documentation of their respective chosen solver to know which options exist.
@@ -1627,6 +1628,7 @@ It is perfectly designed for MHE and NMPC problems.
 The accepted values are:
 - ̀`Ipopt`
 - ̀`Acados`
+- ̀`SQP`
 
 ### Enum: ControlType
 The type the controls are. 
