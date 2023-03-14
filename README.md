@@ -2398,7 +2398,7 @@ dynamics out there (the joint torque driven), it defines an objective function a
 ### The static_arm.py file
 This is a basic example on how to use biorbd model driven by muscle to perform an optimal reaching task.
 The arm must reach a marker while minimizing the muscles activity and the states. We solve the problem using both 
-`acados` and `ipotpt`.
+`acados` and `ipopt`.
 
 ## Inverse optimal control
 In this section, you will find an example to implement inverse optimal control with `bioptim`. 
