@@ -494,3 +494,15 @@ def test__torque_driven_ocp__torque_activation_driven():
         final_time=2,
         n_shooting=30,
     )
+
+
+def test__inverse_optimal_control__double_pendulum_torque_driven_IOCP():
+    from bioptim.examples.inverse_optimal_control import double_pendulum_torque_driven_IOCP as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        weights=[0.4, 0.3, 0.3],
+        coefficients=[1, 1, 1],
+        biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
+    )
