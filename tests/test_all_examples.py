@@ -496,7 +496,7 @@ def test__torque_driven_ocp__torque_activation_driven():
     )
 
 
-def test__inverse_optimal_control__doublep_endulum_torque_driven_IOCP():
+def test__inverse_optimal_control__double_pendulum_torque_driven_IOCP():
     from bioptim.examples.inverse_optimal_control import double_pendulum_torque_driven_IOCP as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)

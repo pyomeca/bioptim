@@ -111,7 +111,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [Track](#track)
 - [Moving estimation horizon](#moving-estimation-horizon)
 - [Acados](#acados)
-- [Inverse_optimal_control](#inverse_optimal_control)
+- [Inverse optimal control](#inverse-optimal-control)
 
 [Citing](#Citing)
 
