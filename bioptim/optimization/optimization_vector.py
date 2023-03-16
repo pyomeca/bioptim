@@ -352,7 +352,7 @@ class OptimizationVector:
             x_scaled.append([])
             u.append([])
             u_scaled.append([])
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.NONE):
+            if nlp.control_type not in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.NONE):
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):

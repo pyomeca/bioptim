@@ -1257,7 +1257,7 @@ class Solution:
         """
 
         for p, nlp in enumerate(self.ocp.nlp):
-            if nlp.control_type == ControlType.CONSTANT:
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 for key in self._controls["scaled"][p]:
                     self._controls["scaled"][p][key] = np.concatenate(
                         (

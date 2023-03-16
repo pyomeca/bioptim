@@ -139,22 +139,11 @@ class RK(OdeSolverBase):
             "implicit_ode": nlp.implicit_dynamics_func,
         }
 
-        if len(nlp.external_forces) != 0:
+        if ode["ode"].size2_out("xdot") > 1:
             dynamics_out = []
-            for idx in range(len(nlp.external_forces)):
+            for idx in range(nlp.ns):
                 ode_opt["idx"] = idx
                 dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
-            return dynamics_out
-        elif nlp.control_type == ControlType.NONE and len(nlp.external_forces) == 0:
-            dynamics_out = []
-            for ns_idx in range(len(ode["ode"])):
-                new_ode = {
-                    "x_unscaled": ode["x_unscaled"],
-                    "x_scaled": ode["x_scaled"],
-                    "ode": ode["ode"][ns_idx],
-                    "implicit_ode": ode["implicit_ode"],
-                }
-                dynamics_out.append(nlp.ode_solver.rk_integrator(new_ode, ode_opt))
             return dynamics_out
         else:
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
