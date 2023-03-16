@@ -4,12 +4,6 @@ a the at different marker at the end of each phase. Moreover a constraint on the
 Extra constraints are defined between specific nodes of phases.
 It is designed to show how one can define a binode constraints and objectives in a multiphase optimal control program
 """
-
-import sys
-sys.path.append("/home/lim/Documents/Anais/bioviz")
-sys.path.append("/home/lim/Documents/Anais/bioptim")
-
-
 from casadi import MX
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -35,7 +29,8 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
+        biorbd_model_path: str = "models/cube.bioMod",
+        ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -194,9 +189,8 @@ def custom_binode_constraint(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-    states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
-
+    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx[-1])
+    states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx[0])
     return states_pre * coef - states_post
 
 
@@ -210,9 +204,9 @@ def main():
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     sol.print_cost()
-    sol.graphs()
+    # sol.graphs()
     # --- Show results --- #
-    sol.animate()
+    #sol.animate()
 
 
 if __name__ == "__main__":
