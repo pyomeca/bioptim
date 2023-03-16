@@ -114,10 +114,12 @@ class Integrator:
         The control at a given time
         """
 
-        if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.NONE:
+        if self.control_type == ControlType.CONSTANT:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
+        elif self.control_type == ControlType.NONE:
+            return np.ndarray([])
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 

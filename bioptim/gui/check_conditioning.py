@@ -39,8 +39,6 @@ def check_conditioning(ocp):
         else:
             raise RuntimeError(f"{nlp.control_type} ControlType not implemented yet")
 
-        return u
-
     def jacobian_hessian_constraints():
         """
         Returns

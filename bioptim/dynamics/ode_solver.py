@@ -145,7 +145,7 @@ class RK(OdeSolverBase):
                 ode_opt["idx"] = idx
                 dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
             return dynamics_out
-        elif isinstance(ode["ode"], list) and len(nlp.external_forces) == 0:
+        elif nlp.control_type == ControlType.NONE and len(nlp.external_forces) == 0:
             dynamics_out = []
             for ns_idx in range(len(ode["ode"])):
                 new_ode = {
