@@ -938,14 +938,7 @@ class ConfigureProblem:
                 legend += [current_legend]
 
         if as_states:
-            # n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
-            # cx_scaled = (
-            #     ocp.nlp[nlp.use_states_from_phase_idx].states[name].original_cx
-            #     if copy_states
-            #     else define_cx_scaled(n_col=n_cx)
-            # )
-
-            n_cx = (nlp.ode_solver.polynomial_degree + 2) * nlp.ns if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else nlp.ns
+            n_cx = (nlp.ode_solver.polynomial_degree + 2) * (nlp.ns + 1) if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else nlp.ns + 1
             cx_scaled = (
                 ocp.nlp[nlp.use_states_from_phase_idx].states[name].original_cx
                 if copy_states
@@ -969,15 +962,10 @@ class ConfigureProblem:
                 )
 
         if as_controls:
-            # cx_scaled = (
-            #     ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].original_cx
-            #     if copy_controls
-            #     else define_cx_scaled(n_col=2)
-            # )
             cx_scaled = (
                 ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].original_cx
                 if copy_controls
-                else define_cx_scaled(n_col=nlp.ns)
+                else define_cx_scaled(n_col=nlp.ns + 1)
             )
             cx = (
                 ocp.nlp[nlp.use_controls_from_phase_idx].controls[name].original_cx
@@ -998,13 +986,7 @@ class ConfigureProblem:
                 )
 
         if as_states_dot:
-            # n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
-            # cx_scaled = (
-            #     ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].original_cx
-            #     if copy_states_dot
-            #     else define_cx_scaled(n_col=n_cx)
-            # )
-            n_cx = (nlp.ode_solver.polynomial_degree + 1) * nlp.ns if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else nlp.ns
+            n_cx = (nlp.ode_solver.polynomial_degree + 1) * (nlp.ns + 1) if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else nlp.ns + 1
             cx_scaled = (
                 ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[name].original_cx
                 if copy_states_dot
