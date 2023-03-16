@@ -1273,8 +1273,6 @@ class Solution:
                         ),
                         axis=1,
                     )
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS or nlp.control_type == ControlType.NONE:
-                pass
             else:
                 raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
 

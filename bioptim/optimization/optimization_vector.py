@@ -352,7 +352,7 @@ class OptimizationVector:
             x_scaled.append([])
             u.append([])
             u_scaled.append([])
-            if nlp.control_type != ControlType.CONSTANT and nlp.control_type != ControlType.LINEAR_CONTINUOUS and nlp.control_type != ControlType.NONE:
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.NONE):
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
@@ -416,12 +416,10 @@ class OptimizationVector:
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT:
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
-                elif nlp.control_type == ControlType.NONE:
-                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
                 else:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
@@ -450,7 +448,7 @@ class OptimizationVector:
 
             # For controls
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT or nlp.control_type == ControlType.NONE:
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     ns = nlp.ns
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     ns = nlp.ns + 1
@@ -505,7 +503,7 @@ class OptimizationVector:
                 nlp.x_init.check_and_adjust_dimensions(nlp.states.shape, ns)
 
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT or nlp.control_type == ControlType.NONE:
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
@@ -541,7 +539,7 @@ class OptimizationVector:
 
             # For controls
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT or nlp.control_type == ControlType.NONE:
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     ns = nlp.ns
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     ns = nlp.ns + 1

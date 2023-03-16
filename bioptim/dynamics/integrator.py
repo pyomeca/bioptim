@@ -70,7 +70,7 @@ class Integrator:
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
         self.x_sym = ode["x_scaled"]
-        self.u_sym = ode["p_scaled"] if ode_opt["control_type"] is not ControlType.NONE else []
+        self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
@@ -119,7 +119,7 @@ class Integrator:
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
         elif self.control_type == ControlType.NONE:
-            return np.ndarray([])
+            return np.ndarray(0)
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
