@@ -1257,7 +1257,7 @@ class Solution:
         """
 
         for p, nlp in enumerate(self.ocp.nlp):
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.NONE):
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 for key in self._controls["scaled"][p]:
                     self._controls["scaled"][p][key] = np.concatenate(
                         (
@@ -1273,6 +1273,8 @@ class Solution:
                         ),
                         axis=1,
                     )
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                pass
             else:
                 raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
 
