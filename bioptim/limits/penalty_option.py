@@ -425,10 +425,6 @@ class PenaltyOption(OptionGeneric):
 
         param_cx = nlp.cx(nlp.parameters.cx)
 
-        if nlp.control_type == ControlType.NONE:
-            control_cx_scaled = nlp.cx(nlp.controls.cx)
-            # todo: verify and explain why
-
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
         self.function = nlp.to_casadi_func(

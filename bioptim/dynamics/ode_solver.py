@@ -129,10 +129,14 @@ class RK(OdeSolverBase):
         ode = {
             "x_unscaled": nlp.states.cx,
             "x_scaled": nlp.states["scaled"].cx,
-            "p_unscaled": MX() if nlp.control_type == ControlType.NONE else nlp.controls.cx
+            "p_unscaled": MX()
+            if nlp.control_type == ControlType.NONE
+            else nlp.controls.cx
             if nlp.control_type == ControlType.CONSTANT
             else horzcat(nlp.controls.cx, nlp.controls.cx_end),
-            "p_scaled": MX() if nlp.control_type == ControlType.NONE else nlp.controls["scaled"].cx
+            "p_scaled": MX()
+            if nlp.control_type == ControlType.NONE
+            else nlp.controls["scaled"].cx
             if nlp.control_type == ControlType.CONSTANT
             else horzcat(nlp.controls["scaled"].cx, nlp.controls["scaled"].cx_end),
             "ode": nlp.dynamics_func,

@@ -32,7 +32,7 @@ def check_conditioning(ocp):
         The control at a given time
         """
 
-        if nlp.control_type == ControlType.CONSTANT or nlp.control_type == ControlType.NONE:
+        if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
             return u
         elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt

@@ -322,7 +322,7 @@ class OptimizationVariableList:
     mx_reduced: MX
         The reduced MX to the size of _cx
     _casadi_symbolic_callable: Callable
-        The casadi symbolic for the optimization
+        The casadi symbolic type used for the optimization (MX or SX)
 
     Methods
     -------
@@ -484,6 +484,7 @@ class OptimizationVariableList:
         """
 
         return self._casadi_symbolic_callable([]) if self.shape == 0 else self._cx[:, 0]
+
     @property
     def cx_end(self):
         """
@@ -576,7 +577,6 @@ class OptimizationVariableList:
 class OptimizationVariableContainer:
     def __init__(self, variable_scaled=None, variables_unscaled=None, casadi_symbolic_callable: Callable = None):
         self._casadi_symbolic_callable = casadi_symbolic_callable
-
         if variable_scaled is None:
             variable_scaled = OptimizationVariableList()
             variable_scaled._casadi_symbolic_callable = self._casadi_symbolic_callable
