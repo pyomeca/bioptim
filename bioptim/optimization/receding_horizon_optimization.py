@@ -1,3 +1,4 @@
+from copy import deepcopy
 from itertools import chain
 from math import inf
 from typing import Callable
@@ -11,7 +12,7 @@ from ..dynamics.configure_problem import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
-from ..misc.enums import SolverType, InterpolationType
+from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions
 from ..interfaces.solver_options import Solver
 from ..optimization.optimization_variable import VariableScaling
 from ..interfaces.biomodel import BioModel
@@ -517,11 +518,21 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def solve(
         self,
         update_function=None,
-        get_cycles: bool = False,
+        cycle_solutions: MultiCyclicCycleSolutions = MultiCyclicCycleSolutions.NONE,
         **extra_options,
     ) -> Solution | tuple:
+        """
+
+
+        Parameters
+        ----------
+        update_function: callable
+            A function that will be called at each iteration of the optimization.
+        cycle_solutions: MultiCyclicCycleSolutions
+            The extra solutions to return, e.g. none, the solution of each cycle, all cycles of the terminal window.
+        """
         get_all_iterations = extra_options["get_all_iterations"] if "get_all_iterations" in extra_options else False
-        extra_options["get_all_iterations"] = True if get_cycles else False
+        extra_options["get_all_iterations"] = True if cycle_solutions is not MultiCyclicCycleSolutions.NONE else False
 
         solution = super(MultiCyclicRecedingHorizonOptimization, self).solve(
             update_function=update_function, **extra_options
@@ -532,19 +543,27 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         if get_all_iterations:
             final_solution.append(solution[1])
 
-        if get_cycles:
-            cycle_solutions = []
+        if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
+            cycle_solutions_output = []
             for sol in solution[1]:
                 _states, _controls = self.export_cycles(sol)
-                cycle_solutions.append(self._initialize_one_cycle(_states, _controls))
+                cycle_solutions_output.append(self._initialize_one_cycle(_states, _controls))
 
-            final_solution.append(cycle_solutions)
+        if cycle_solutions == MultiCyclicCycleSolutions.ALL_CYCLES:
+            for cycle_number in range(1, self.n_cycles):
+                _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
+                cycle_solutions_output.append(self._initialize_one_cycle(_states, _controls))
+
+        if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
+            final_solution.append(cycle_solutions_output)
 
         return tuple(final_solution) if len(final_solution) > 1 else final_solution[0]
 
-    def export_cycles(self, sol: Solution):
-        states = sol.states["all"][:, 0 : self.cycle_len + 1]
-        controls = sol.controls["all"][:, 0 : self.cycle_len + 1]
+    def export_cycles(self, sol: Solution, cycle_number: int = 0) -> tuple:
+        """Exports the solution of the desired cycle from the full window solution"""
+        window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len + 1)
+        states = sol.states["all"][:, window_slice]
+        controls = sol.controls["all"][:, window_slice]
         return states, controls
 
     def _initialize_solution(self, states: list, controls: list):
@@ -556,6 +575,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
             ode_solver=self.nlp[0].ode_solver,
+            objective_functions=deepcopy(self.original_values["objective_functions"]),
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
             phase_time=(self.cycle_len * self.total_optimization_run - 1) * self.nlp[0].dt,
             skip_continuity=True,
@@ -572,11 +592,15 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         _states = InitialGuess(states, interpolation=InterpolationType.EACH_FRAME)
         _controls = InitialGuess(controls, interpolation=InterpolationType.EACH_FRAME)
 
-        model_class = self.original_values["bio_model"][0][0]
-        model_initializer = self.original_values["bio_model"][0][1]
+        original_values = self.original_values
+
+        model_class = original_values["bio_model"][0][0]
+        model_initializer = original_values["bio_model"][0][1]
+
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
-            dynamics=self.original_values["dynamics"][0],
+            dynamics=original_values["dynamics"][0],
+            objective_functions=deepcopy(original_values["objective_functions"]),
             ode_solver=self.nlp[0].ode_solver,
             n_shooting=self.cycle_len,
             phase_time=self.cycle_len * self.nlp[0].dt,
@@ -584,7 +608,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             x_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
             xdot_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
             u_scaling=VariableScaling(key="all", scaling=np.ones((controls.shape[0],))),
-            use_sx=self.original_values["use_sx"],
+            use_sx=original_values["use_sx"],
         )
         return Solution(solution_ocp, [_states, _controls])
 

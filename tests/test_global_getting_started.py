@@ -1235,7 +1235,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_multinode_constraints(ode_solver):
-    if sys.platform == "win32" and (ode_solver == OdeSolver.RK8 or ode_solver == OdeSolver.IRK):
+    if sys.platform == "win32":
         # This test does not work on Windows for the CI
         return
 

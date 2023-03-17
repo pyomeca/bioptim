@@ -12,4 +12,5 @@ dependencies:
 - packaging
 - python-graphviz
 - pyqtgraph
+- pygmo
 

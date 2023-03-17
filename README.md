@@ -111,6 +111,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [Track](#track)
 - [Moving estimation horizon](#moving-estimation-horizon)
 - [Acados](#acados)
+- [Inverse optimal control](#inverse-optimal-control)
 
 [Citing](#Citing)
 
@@ -162,6 +163,7 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [`Ipopt`](https://github.com/coin-or/Ipopt)
 - [`Acados`](https://github.com/acados/acados)
 - [pyqtgraph](https://www.pyqtgraph.org/)
+- [pygmo](https://esa.github.io/pygmo2/) (only for inverse optimal control)
 
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
@@ -183,7 +185,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Mac - Installing dependencies with conda
 Equivalently for MacOSX:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
+conda install casadi 'rbdl' 'biorbd' 'bioviz' python-graphviz -cconda-forge
 ```
 Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`.
 The `Acados` installation script is `[ROOT_BIOPTIM]/external/acados_install_mac.sh`.
@@ -197,7 +199,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Windows - Installing dependencies with conda
 Equivalently for Windows:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
+conda install casadi 'rbdl' 'biorbd' 'bioviz' python-graphviz -cconda-forge
 ```
 There isn't any `Anaconda` nor `pip3` package of `Acados`.
 If one wants to use the `Acados` solver on Windows, they must compile it by themselves.
@@ -631,6 +633,7 @@ The `Solver` class can be used to select the nonlinear solver to solve the ocp:
 
 - IPOPT
 - ACADOS
+- SQP method
 
 Note that options can be passed to the solver parameter.
 One can refer to the documentation of their respective chosen solver to know which options exist.
@@ -1652,6 +1655,7 @@ It is perfectly designed for MHE and NMPC problems.
 The accepted values are:
 - ̀`Ipopt`
 - ̀`Acados`
+- ̀`SQP`
 
 ### Enum: ControlType
 The type the controls are. 
@@ -2394,8 +2398,20 @@ dynamics out there (the joint torque driven), it defines an objective function a
 ### The static_arm.py file
 This is a basic example on how to use biorbd model driven by muscle to perform an optimal reaching task.
 The arm must reach a marker while minimizing the muscles activity and the states. We solve the problem using both 
-`acados` and `ipotpt`.
+`acados` and `ipopt`.
 
+## Inverse optimal control
+In this section, you will find an example to implement inverse optimal control with `bioptim`. 
+
+### The double_pendulum_torque_driven_IOCP.py file
+This is a basic example of a rigid double pendulum which have to circle around a fixed point.
+The movement is inspired from the motion of gymnasts on the bar apparatus.
+This example is separated in three parts:
+- The first part is the definition of the problem. The problem is solved with specific weightings.
+- The second part solves the problem with only one objective at a time to for the pareto front.
+- The thirs part solves the inverse optimal control problem aiming to retrieve the initial weightings.
+A the end of the example, the markers trajectories are plotted to show that the movement is the same.
+ 
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
 @article{michaud2022bioptim,

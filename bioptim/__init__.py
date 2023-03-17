@@ -198,6 +198,7 @@ from .misc.enums import (
     SoftContactDynamics,
     DefectType,
     MagnitudeType,
+    MultiCyclicCycleSolutions,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart
