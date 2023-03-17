@@ -1,6 +1,6 @@
 import numpy as np
 from casadi import MX, SX, vertcat
-
+from typing import Callable
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric, OptionDict
 from ..misc.enums import CXStep
@@ -321,6 +321,8 @@ class OptimizationVariableList:
         The symbolic MX or SX of the list (ending point)
     mx_reduced: MX
         The reduced MX to the size of _cx
+    _casadi_symbolic_callable: Callable
+        The casadi symbolic for the optimization
 
     Methods
     -------
@@ -347,6 +349,7 @@ class OptimizationVariableList:
         self._cx_end: MX | SX | np.ndarray = np.array([])
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
+        self._casadi_symbolic_callable = None
 
     def __getitem__(self, item: int | str | list | range):
         """
@@ -480,15 +483,14 @@ class OptimizationVariableList:
         The cx of all elements together (starting point)
         """
 
-        return [] if self.shape == 0 else self._cx[:, 0]
-
+        return self._casadi_symbolic_callable([]) if self.shape == 0 else self._cx[:, 0]
     @property
     def cx_end(self):
         """
         The cx of all elements together (ending point)
         """
 
-        return [] if self.shape == 0 else self._cx_end[:, 0]
+        return self._casadi_symbolic_callable([]) if self.shape == 0 else self._cx_end[:, 0]
 
     @property
     def cx_intermediates_list(self):
@@ -572,11 +574,15 @@ class OptimizationVariableList:
 
 
 class OptimizationVariableContainer:
-    def __init__(self, variable_scaled=None, variables_unscaled=None):
+    def __init__(self, variable_scaled=None, variables_unscaled=None, casadi_symbolic_callable: Callable = None):
+        self._casadi_symbolic_callable = casadi_symbolic_callable
+
         if variable_scaled is None:
             variable_scaled = OptimizationVariableList()
+            variable_scaled._casadi_symbolic_callable = self._casadi_symbolic_callable
         if variables_unscaled is None:
             variables_unscaled = OptimizationVariableList()
+            variable_scaled._casadi_symbolic_callable = self._casadi_symbolic_callable
         self.optimization_variable = {"scaled": variable_scaled, "unscaled": variables_unscaled}
 
     def __getitem__(self, item: int | str | list | range):
@@ -590,6 +596,13 @@ class OptimizationVariableContainer:
             self.optimization_variable[item] = value
         else:
             self.optimization_variable["unscaled"][item] = value
+
+    def _set_casadi_symbolic_callable(self, casadi_symbolic_callable: Callable = None):
+        if casadi_symbolic_callable is None:
+            raise ValueError()
+        self._casadi_symbolic_callable = casadi_symbolic_callable
+        self.optimization_variable["scaled"]._casadi_symbolic_callable = self._casadi_symbolic_callable
+        self.optimization_variable["unscaled"]._casadi_symbolic_callable = self._casadi_symbolic_callable
 
     def keys(self):
         return self.optimization_variable["unscaled"].keys()
