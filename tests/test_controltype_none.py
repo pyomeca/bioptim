@@ -1,522 +1,180 @@
 """
-This script implements a custom model to work with bioptim. Bioptim has a deep connection with biorbd,
-but it is possible to use bioptim without biorbd. This is an example of how to use bioptim with a custom model.
+Test for file IO.
 """
+
 from typing import Callable
+from casadi import vertcat, MX, Function, sum1, horzcat
 import numpy as np
-from casadi import MX, exp, vertcat
+from bioptim import (
+    BoundsList,
+    ConfigureProblem,
+    ConstraintFcn,
+    ConstraintList,
+    ControlType,
+    DynamicsEvaluation,
+    DynamicsFunctions,
+    DynamicsList,
+    InitialGuessList,
+    InterpolationType,
+    ObjectiveFcn,
+    ObjectiveList,
+    OdeSolver,
+    OptimalControlProgram,
+    Node,
+    NonLinearProgram,
+    Shooting,
+    Solver,
+)
+from .utils import TestUtils
 
 
-class DingModel:
+class NonControledMethod:
     """
     This is a custom model that inherits from bioptim.CustomModel
     As CustomModel is an abstract class, some methods must be implemented.
     """
 
     def __init__(self, name: str = None):
+        self.a = 0
+        self.b = 0
+        self.c = 0
         self._name = name
-        # custom values for the example
-        self.tauc = 0.020  # Value from Ding's experimentation [1] (s)
-        self.r0_km_relationship = 1.04  # (unitless)
-        # Different values for each person :
-        self.alpha_a = -4.0 * 10e-7  # Value from Ding's experimentation [1] (s^-2)
-        self.alpha_tau1 = 2.1 * 10e-5  # Value from Ding's experimentation [1] (N^-1)
-        self.tau2 = 0.060  # Close value from Ding's experimentation [2] (s)
-        self.tau_fat = 127  # Value from Ding's experimentation [1] (s)
-        self.alpha_km = 1.9 * 10e-8  # Value from Ding's experimentation [1] (s^-1.N^-1)
-        self.a_rest = 3009  # Value from Ding's experimentation [1] (N.s-1)
-        self.tau1_rest = 0.050957  # Value from Ding's experimentation [1] (s)
-        self.km_rest = 0.103  # Value from Ding's experimentation [1] (unitless)
 
-        # TODO : Fix the error at the beginning of the F curve
-        # Works better with RK4 or RK8, COLLOCATION methode doesn't work
-        # TODO : Constrain nodes for constant stimulation interval
-        # Where to code, in prepare ocp, create a new constrain func ?
-        # TODO : Add intensity as parameter to the model
-
-    def standard_rest_values(self) -> np.array:
-        """
-        Returns
-        -------
-        The rested values of Cn, F, A, Tau1, Km
-        """
-        return np.array([[0], [0], [self.a_rest], [self.tau1_rest], [self.km_rest]])
-
-    # ---- Absolutely needed methods ---- #
     def serialize(self) -> tuple[Callable, dict]:
         # This is where you can serialize your model
         # This is useful if you want to save your model and load it later
-        return DingModel, dict()  # todo : pas compris comment remplir le dict
+        return NonControledMethod, dict()
 
-    # essai de dict : dict(("tauc", self.tauc), ("a_rest", self.a_rest), ("tau1_rest", self.tau1_rest),
-    #                      ("km_rest", self.km_rest), ("tau2", self.tau2), ("alpha_a", self.alpha_a),
-    #                      ("alpha_tau1", self.alpha_tau1),("alpha_km", self.alpha_km),("tau_fat", self.tau_fat))
-
-    # ---- Needed for the example ---- #
     @property
     def name_dof(self):
-        return ["cn", "f", "a", "tau1", "km"]
+        return ["a", "b", "c"]
 
     @property
     def nb_state(self):
-        return 5
+        return 3
 
     @property
     def name(self):
         return self._name
 
     def system_dynamics(
-        self, cn: MX, f: MX, a: MX, tau1: MX, km: MX, t: MX, t_stim_prev: list[MX]
+        self,
+        a: MX,
+        b: MX,
+        c: MX,
+        t: MX,
+        t_phase: MX,
     ) -> MX:
         """
         The system dynamics is the function that describes the model.
-
-        Parameters
-        ----------
-        cn: MX
-            The value of the ca_troponin_complex (unitless)
-        f: MX
-            The value of the force (N)
-        a: MX
-            The value of the scaling factor (unitless)
-        tau1: MX
-            The value of the time_state_force_no_cross_bridge (ms)
-        km: MX
-            The value of the cross_bridges (unitless)
-        t: MX
-            The current time at which the dynamics is evaluated (ms)
-        t_stim_prev: list[MX]
-            The list of the time of the previous stimulations (ms)
 
         Returns
         -------
         The value of the derivative of each state dx/dt at the current time t
         """
-        # from Ding's 2003 article
-        r0 = km + MX(self.r0_km_relationship)  # Simplification
-        cn_dot = self.cn_dot_fun(cn, r0, t, t_stim_prev)  # Equation n°1
-        f_dot = self.f_dot_fun(cn, f, a, tau1, km)  # Equation n°2
-        a_dot = self.a_dot_fun(a, f)  # Equation n°5
-        tau1_dot = self.tau1_dot_fun(tau1, f)  # Equation n°9
-        km_dot = self.km_dot_fun(km, f)  # Equation n°11
+        a_dot = 100 + b
+        b_dot = a / ((t - t_phase) + 1)
+        c_dot = a * b + c
+        return vertcat(a_dot, b_dot, c_dot)
 
-        return vertcat(cn_dot, f_dot, a_dot, tau1_dot, km_dot)
-
-    def exp_time_fun(self, t: MX, t_stim_i: MX):
-        """
-        Parameters
-        ----------
-        t: MX
-            The current time at which the dynamics is evaluated (ms)
-        t_stim_i: MX
-            Time when the stimulation i occurred (ms)
-
-        Returns
-        -------
-        A part of the n°1 equation
-        """
-        return exp(-(t - t_stim_i) / self.tauc)  # Eq from [1]
-
-    def ri_fun(self, r0: MX, time_between_stim: MX):
-        """
-        Parameters
-        ----------
-        r0: MX
-            Mathematical term characterizing the magnitude of enhancement in CN from the following stimuli (unitless)
-        time_between_stim: MX
-            Time between the last stimulation i and the current stimulation i (ms)
-
-        Returns
-        -------
-        A part of the n°1 equation
-        """
-        return 1 + (r0 - 1) * exp(time_between_stim / self.tauc)  # Eq from [1]
-
-    def cn_sum_fun(self, r0: MX, t: MX, t_stim_prev: list[MX]):
-        """
-        Parameters
-        ----------
-        r0: MX
-            Mathematical term characterizing the magnitude of enhancement in CN from the following stimuli (unitless)
-        t: MX
-            The current time at which the dynamics is evaluated (ms)
-        t_stim_prev: list[MX]
-            The list of the time of the previous stimulations (ms)
-
-        Returns
-        -------
-        A part of the n°1 equation
-        """
-        sum_multiplier = 0
-
-        for i in range(len(t_stim_prev)):  # Eq from [1]
-            if i == 0:  # Eq from Bakir et al.
-                ri = 1
-            else:
-                previous_phase_time = t_stim_prev[i] - t_stim_prev[i - 1]
-                ri = self.ri_fun(r0, previous_phase_time)
-
-            exp_time = self.exp_time_fun(t, t_stim_prev[i])
-            sum_multiplier += ri * exp_time
-        return sum_multiplier
-
-    def cn_dot_fun(self, cn: MX, r0: MX, t: MX, t_stim_prev: list[MX]):
-        """
-        Parameters
-        ----------
-        cn: MX
-            The previous step value of ca_troponin_complex (unitless)
-        r0: MX
-            Mathematical term characterizing the magnitude of enhancement in CN from the following stimuli (unitless)
-        t: MX
-            The current time at which the dynamics is evaluated (ms)
-        t_stim_prev: list[MX]
-            The list of the time of the previous stimulations (ms)
-
-        Returns
-        -------
-        The value of the derivative ca_troponin_complex (unitless)
-        """
-        sum_multiplier = self.cn_sum_fun(r0, t, t_stim_prev)
-
-        return (1 / self.tauc) * sum_multiplier - (cn / self.tauc)  # Eq(1)
-
-    def f_dot_fun(self, cn: MX, f: MX, a: MX, tau1: MX, km: MX):
-        """
-        Parameters
-        ----------
-        cn: MX
-            The previous step value of ca_troponin_complex (unitless)
-        f: MX
-            The previous step value of force (N)
-        a: MX
-            The previous step value of scaling factor (unitless)
-        tau1: MX
-            The previous step value of time_state_force_no_cross_bridge (ms)
-        km: MX
-            The previous step value of cross_bridges (unitless)
-
-        Returns
-        -------
-        The value of the derivative force (N)
-        """
-        return a * (cn / (km + cn)) - (f / (tau1 + self.tau2 * (cn / (km + cn))))  # Eq(2)
-
-    def a_dot_fun(self, a: MX, f: MX):
-        """
-        Parameters
-        ----------
-        a: MX
-            The previous step value of scaling factor (unitless)
-        f: MX
-            The previous step value of force (N)
-
-        Returns
-        -------
-        The value of the derivative scaling factor (unitless)
-        """
-        return -(a - self.a_rest) / self.tau_fat + self.alpha_a * f  # Eq(5)
-
-    def tau1_dot_fun(self, tau1: MX, f: MX):
-        """
-        Parameters
-        ----------
-        tau1: MX
-            The previous step value of time_state_force_no_cross_bridge (ms)
-        f: MX
-            The previous step value of force (N)
-
-        Returns
-        -------
-        The value of the derivative time_state_force_no_cross_bridge (ms)
-        """
-        return -(tau1 - self.tau1_rest) / self.tau_fat + self.alpha_tau1 * f  # Eq(9)
-
-    def km_dot_fun(self, km: MX, f: MX):
-        """
-        Parameters
-        ----------
-        km: MX
-            The previous step value of cross_bridges (unitless)
-        f: MX
-            The previous step value of force (N)
-
-        Returns
-        -------
-        The value of the derivative cross_bridges (unitless)
-        """
-        return -(km - self.km_rest) / self.tau_fat + self.alpha_km * f  # Eq(11)
-
-
-def custom_dynamics(
-    states: MX,
-    controls: MX,
-    parameters: MX,
-    nlp: NonLinearProgram,
-    t=None,
-) -> DynamicsEvaluation:
-    """
-    Functional electrical stimulation dynamic
-
-    Parameters
-    ----------
-    states: MX | SX
-        The state of the system CN, F, A, Tau1, Km
-    controls: MX | SX
-        The controls of the system, none
-    parameters: MX | SX
-        The parameters acting on the system, final time of each phase
-    nlp: NonLinearProgram
-        A reference to the phase
-    t: MX
-        Current node time, this t is used to set the dynamics and as to be a symbolic
-    Returns
-    -------
-    The derivative of the states in the tuple[MX | SX]] format
-    """
-
-    t_stim_prev = []  # Every stimulation instant before the current phase, i.e.: the beginning of each phase
-
-    for i in range(nlp.phase_idx+1):
-        t_stim_prev.append(sum1(nlp.parameters.mx[0: i]))
-
-    return DynamicsEvaluation(
-        dxdt=nlp.model.system_dynamics(
-            cn=states[0],
-            f=states[1],
-            a=states[2],
-            tau1=states[3],
-            km=states[4],
-            t=t,
-            t_stim_prev=t_stim_prev,
-        ),
-        defects=None,
-    )
-
-
-def custom_configure_dynamics_function(ocp, nlp, **extra_params):
-    """
-    Configure the dynamics of the system
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    **extra_params: t
-        t: MX
-            Current node time
-    """
-
-    global dynamics_eval_horzcat
-    nlp.parameters = ocp.v.parameters_in_list
-    DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
-
-    # Gets the t0 time for the current phase
-    t0_phase_in_ocp = sum1(nlp.parameters.mx[0: nlp.phase_idx])
-    # Gets every time node for the current phase
-
-    for i in range(nlp.ns):
-        t_node_in_phase = nlp.parameters.mx[nlp.phase_idx] / (nlp.ns + 1) * i
-        t_node_in_ocp = t0_phase_in_ocp + t_node_in_phase
-        extra_params["t"] = t_node_in_ocp
-
-        dynamics_eval = custom_dynamics(
-            nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx, nlp, **extra_params
+    def custom_dynamics(
+        self,
+        states: MX,
+        controls: MX,
+        parameters: MX,
+        nlp: NonLinearProgram,
+        t=None,
+    ) -> DynamicsEvaluation:
+        t_phase = nlp.parameters.mx[-1]
+        return DynamicsEvaluation(
+            dxdt=nlp.model.system_dynamics(a=states[0], b=states[1], c=states[2], t=t, t_phase=t_phase),
+            defects=None,
         )
 
-        dynamics_eval_horzcat = horzcat(dynamics_eval.dxdt) if i == 0 else horzcat(dynamics_eval_horzcat, dynamics_eval.dxdt)
+    def custom_configure_dynamics_function(self, ocp, nlp, **extra_params):
+        """
+        Configure the dynamics of the system
+        """
 
-    nlp.dynamics_func = Function(
-        "ForwardDyn",
-        [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
-        [dynamics_eval_horzcat],
-        ["x", "u", "p"],
-        ["xdot"],
-    )
+        global dynamics_eval_horzcat
+        nlp.parameters = ocp.v.parameters_in_list
+        DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
+        # Gets the t0 time for the current phase
+        t0_phase_in_ocp = sum1(nlp.parameters.mx[0 : nlp.phase_idx])
+        # Gets every time node for the current phase
 
-def declare_ding_variables(ocp: OptimalControlProgram, nlp: NonLinearProgram):
-    """
-    Tell the program which variables are states and controls.
-    The user is expected to use the ConfigureProblem.configure_xxx functions.
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    """
-    configure_ca_troponin_complex(ocp, nlp, as_states=True, as_controls=False)
-    configure_force(ocp, nlp, as_states=True, as_controls=False)
-    configure_scaling_factor(ocp, nlp, as_states=True, as_controls=False)
-    configure_time_state_force_no_cross_bridge(ocp, nlp, as_states=True, as_controls=False)
-    configure_cross_bridges(ocp, nlp, as_states=True, as_controls=False)
+        for i in range(nlp.ns):
+            t_node_in_phase = nlp.parameters.mx[nlp.phase_idx] / (nlp.ns + 1) * i
+            t_node_in_ocp = t0_phase_in_ocp + t_node_in_phase
+            extra_params["t"] = t_node_in_ocp
 
-    t = MX.sym("t")  # t needs a symbolic value to start computing in custom_configure_dynamics_function
+            dynamics_eval = self.custom_dynamics(
+                nlp.states["scaled"].mx_reduced,
+                nlp.controls["scaled"].mx_reduced,
+                nlp.parameters.mx,
+                nlp,
+                **extra_params
+            )
 
-    custom_configure_dynamics_function(ocp, nlp, t=t)
+            dynamics_eval_horzcat = (
+                horzcat(dynamics_eval.dxdt) if i == 0 else horzcat(dynamics_eval_horzcat, dynamics_eval.dxdt)
+            )
 
+        nlp.dynamics_func = Function(
+            "ForwardDyn",
+            [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
+            [dynamics_eval_horzcat],
+            ["x", "u", "p"],
+            ["xdot"],
+        )
 
-def configure_ca_troponin_complex(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
-    """
-    Configure a new variable of the Ca+ troponin complex (unitless)
+    def declare_variables(self, ocp: OptimalControlProgram, nlp: NonLinearProgram):
+        name = "a"
+        name_a = [name]
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_a,
+            ocp,
+            nlp,
+            as_states=True,
+            as_controls=False,
+            as_states_dot=False,
+        )
 
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    as_states: bool
-        If the generalized coordinates should be a state
-    as_controls: bool
-        If the generalized coordinates should be a control
-    as_states_dot: bool
-        If the generalized velocities should be a state_dot
-    """
-    name = "Cn"
-    name_cn = [name]
-    ConfigureProblem.configure_new_variable(
-        name,
-        name_cn,
-        ocp,
-        nlp,
-        as_states,
-        as_controls,
-        as_states_dot,
-    )
+        name = "b"
+        name_b = [name]
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_b,
+            ocp,
+            nlp,
+            as_states=True,
+            as_controls=False,
+            as_states_dot=False,
+        )
 
+        name = "c"
+        name_c = [name]
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_c,
+            ocp,
+            nlp,
+            as_states=True,
+            as_controls=False,
+            as_states_dot=False,
+        )
 
-def configure_force(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
-    """
-    Configure a new variable of the force (N)
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    as_states: bool
-        If the generalized coordinates should be a state
-    as_controls: bool
-        If the generalized coordinates should be a control
-    as_states_dot: bool
-        If the generalized velocities should be a state_dot
-    """
-    name = "F"
-    name_f = [name]
-    ConfigureProblem.configure_new_variable(
-        name,
-        name_f,
-        ocp,
-        nlp,
-        as_states,
-        as_controls,
-        as_states_dot,
-    )
-
-
-def configure_scaling_factor(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
-    """
-    Configure a new variable of the scaling factor (N/ms)
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    as_states: bool
-        If the generalized coordinates should be a state
-    as_controls: bool
-        If the generalized coordinates should be a control
-    as_states_dot: bool
-        If the generalized velocities should be a state_dot
-    """
-    name = "A"
-    name_a = [name]
-    ConfigureProblem.configure_new_variable(
-        name,
-        name_a,
-        ocp,
-        nlp,
-        as_states,
-        as_controls,
-        as_states_dot,
-    )
-
-
-def configure_time_state_force_no_cross_bridge(
-    ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False
-):
-    """
-    Configure a new variable for time constant of force decline at the absence of strongly bound cross-bridges (ms)
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    as_states: bool
-        If the generalized coordinates should be a state
-    as_controls: bool
-        If the generalized coordinates should be a control
-    as_states_dot: bool
-        If the generalized velocities should be a state_dot
-    """
-    name = "Tau1"
-    name_tau1 = [name]
-    ConfigureProblem.configure_new_variable(
-        name,
-        name_tau1,
-        ocp,
-        nlp,
-        as_states,
-        as_controls,
-        as_states_dot,
-    )
-
-
-def configure_cross_bridges(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
-    """
-    Configure a new variable for sensitivity of strongly bound cross-bridges to Cn (unitless)
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    as_states: bool
-        If the generalized coordinates should be a state
-    as_controls: bool
-        If the generalized coordinates should be a control
-    as_states_dot: bool
-        If the generalized velocities should be a state_dot
-    """
-    name = "Km"
-    name_km = [name]
-    ConfigureProblem.configure_new_variable(
-        name,
-        name_km,
-        ocp,
-        nlp,
-        as_states,
-        as_controls,
-        as_states_dot,
-    )
+        t = MX.sym("t")  # t needs a symbolic value to start computing in custom_configure_dynamics_function
+        self.custom_configure_dynamics_function(ocp, nlp, t=t)
 
 
 def prepare_ocp(
-        n_stim: int,
-        time_min: list,
-        time_max: list,
-        stim_freq: int,
-        ode_solver: OdeSolver = OdeSolver.RK2(n_integration_steps=1),
+    n_phase: int,
+    time_min: list,
+    time_max: list,
+    ode_solver: OdeSolver = OdeSolver.RK4(n_integration_steps=1),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -534,68 +192,46 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-
-    ding_models = [DingModel() for i in range(n_stim)]  # Gives DingModel as model for n phases
-    n_shooting = [5 for i in range(n_stim)]  # Gives m node shooting for my n phases problem
-    final_time = [0.01 for i in range(n_stim)]  # Set the final time for all my n phases
+    custom_model = NonControledMethod()
+    models = [custom_model for i in range(n_phase)]  # Gives custom_model as model for n phases
+    n_shooting = [5 for i in range(n_phase)]  # Gives m node shooting for my n phases problem
+    final_time = [0.01 for i in range(n_phase)]  # Set the final time for all my n phases
 
     # Creates the system's dynamic for my n phases
     dynamics = DynamicsList()
-    for i in range(n_stim):
-        dynamics.add(declare_ding_variables, dynamic_function=custom_dynamics, phase=i)
+    for i in range(n_phase):
+        dynamics.add(custom_model.declare_variables, dynamic_function=custom_model.custom_dynamics, phase=i)
 
     # Creates the constraint for my n phases
     constraints = ConstraintList()
-    for i in range(n_stim):
+    for i in range(n_phase):
         constraints.add(
             ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[i], max_bound=time_max[i], phase=i
         )
 
-    # Frequency test
-    # for i in range(n_stim):
-    #     constraints.add(
-    #         ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=1, max_bound=0.01, phase=i
-    #     )
-
     objective_functions = ObjectiveList()
-    # Objective function to target force
-    # for i in range(n_stim):
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_STATE, target=250, key="F", node=Node.END, quadratic=True, weight=1,
-        phase=9)
-
-    # Objective function to minimize muscle fatigue
-    # for i in range(n_stim):
-    #     objective_functions.add(
-    #         ObjectiveFcn.Mayer.MINIMIZE_STATE, target=3009, key="A", node=Node.END, quadratic=True, weight=1,
-    #         phase=i)
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, target=5, key="c", node=Node.END, quadratic=True, weight=1, phase=9
+    )
 
     # Sets the bound for all the phases
     x_bounds = BoundsList()
+    x_min_start = np.array([[0], [0], [0]])
 
-    x_min_start = ding_models[0].standard_rest_values()  # Model initial values
-    x_max_start = ding_models[0].standard_rest_values()  # Model initial values
-
-    # Model execution lower bound values (Cn, F, Tau1, Km, cannot be lower than their initial values)
-    x_min_middle = ding_models[0].standard_rest_values()
-    x_min_middle[2] = 0  # Model execution lower bound values (A, will decrease from fatigue and cannot be lower than 0)
+    x_max_start = np.array([[0], [0], [0]])
+    x_min_middle = np.array([[0], [0], [0]])
     x_min_end = x_min_middle
-
-    x_max_middle = ding_models[0].standard_rest_values()
-    x_max_middle[0:2] = 1000
-    x_max_middle[3:5] = 1
+    x_max_middle = np.array([[0], [0], [0]])
+    x_max_middle[0:3] = 1000
     x_max_end = x_max_middle
-
     x_start_min = np.concatenate((x_min_start, x_min_middle, x_min_end), axis=1)
     x_start_max = np.concatenate((x_max_start, x_max_middle, x_max_end), axis=1)
-
     x_min_start = x_min_middle
     x_max_start = x_max_middle
-
     x_after_start_min = np.concatenate((x_min_start, x_min_middle, x_min_end), axis=1)
     x_after_start_max = np.concatenate((x_max_start, x_max_middle, x_max_end), axis=1)
 
-    for i in range(n_stim):
+    for i in range(n_phase):
         if i == 0:
             x_bounds.add(
                 x_start_min, x_start_max, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
@@ -608,22 +244,22 @@ def prepare_ocp(
             )
 
     x_init = InitialGuessList()
-    for i in range(n_stim):
-        x_init.add(ding_models[0].standard_rest_values())
+    for i in range(n_phase):
+        x_init.add(np.array([[0], [0], [0]]))
 
     u_bounds = BoundsList()
-    for i in range(n_stim):
+    for i in range(n_phase):
         u_bounds.add([], [])
 
     u_init = InitialGuessList()
-    for i in range(n_stim):
+    for i in range(n_phase):
         u_init.add([])
 
     return OptimalControlProgram(
-        ding_models,
+        models,
         dynamics,
         n_shooting,
-        final_time,  # frequency
+        final_time,
         x_init,
         u_init,
         x_bounds,
@@ -641,52 +277,265 @@ def test_main_control_type_none():
     Prepare and solve and animate a reaching task ocp
     """
     # number of stimulation corresponding to phases
-    n = 20
-    # minimum time between two phase (stimulation)
+    n = 10
+    # minimum time between two phase
     time_min = [0.01 for _ in range(n)]
-    # maximum time between two phase (stimulation)
+    # maximum time between two phase
     time_max = [0.1 for _ in range(n)]
-    ocp = prepare_ocp(n_stim=n, time_min=time_min, time_max=time_max, stim_freq=33)
-
-    # ocp = prepare_ocp(n_stim=n, stim_freq=33)
-
-    ocp.print(to_console=True, to_graph=True)
-
-
+    ocp = prepare_ocp(n_phase=n, time_min=time_min, time_max=time_max)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
-    # re-integrate the solution
-    # simulate()
-
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], -143.5854887928483)
+    np.testing.assert_almost_equal(f[0, 0], 1.0546674423227002e-12)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
-
-    # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-
-    # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0.37791617, 3.70167396, 10.0, 10.0]), decimal=2)
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.37675299, -3.40771446, 10.0, 10.0]), decimal=2)
-    # initial and final controls
+    np.testing.assert_equal(g.shape, (187, 1))
     np.testing.assert_almost_equal(
-        tau[:, 0], np.array([-4.52595667e-02, 9.25475333e-01, -4.34001849e-08, -9.24667407e01]), decimal=2
+        g,
+        np.array(
+            [
+                [8.88178420e-16],
+                [-3.46944695e-18],
+                [-3.79470760e-19],
+                [0.00000000e00],
+                [-2.77555756e-17],
+                [-5.63785130e-18],
+                [0.00000000e00],
+                [0.00000000e00],
+                [-2.08166817e-17],
+                [0.00000000e00],
+                [-1.11022302e-16],
+                [-6.24500451e-17],
+                [1.77635684e-15],
+                [-1.11022302e-16],
+                [-1.52655666e-16],
+                [0.00000000e00],
+                [0.00000000e00],
+                [0.00000000e00],
+                [9.65386567e-02],
+                [-1.06581410e-14],
+                [-8.99280650e-14],
+                [-1.65839564e-13],
+                [-2.84217094e-14],
+                [-2.36255460e-13],
+                [-5.93303184e-13],
+                [-5.32907052e-14],
+                [-3.75810494e-13],
+                [-1.21935795e-12],
+                [-7.99360578e-14],
+                [-5.08593168e-13],
+                [-2.07489581e-12],
+                [-1.11910481e-13],
+                [-6.35047570e-13],
+                [-3.19000382e-12],
+                [0.00000000e00],
+                [0.00000000e00],
+                [0.00000000e00],
+                [5.69680479e-02],
+                [-1.06581410e-14],
+                [-4.55191440e-14],
+                [-4.68514116e-13],
+                [-1.06581410e-14],
+                [-4.61852778e-14],
+                [-4.94271291e-13],
+                [-1.06581410e-14],
+                [-4.66293670e-14],
+                [-5.21027665e-13],
+                [-1.06581410e-14],
+                [-4.68514116e-14],
+                [-5.48672219e-13],
+                [-1.42108547e-14],
+                [-4.72955008e-14],
+                [-5.77093928e-13],
+                [0.00000000e00],
+                [0.00000000e00],
+                [0.00000000e00],
+                [1.66599664e-02],
+                [-7.10542736e-15],
+                [-1.64313008e-14],
+                [-3.67039732e-13],
+                [-3.55271368e-15],
+                [-1.62092562e-14],
+                [-3.78141962e-13],
+                [-7.10542736e-15],
+                [-1.62092562e-14],
+                [-3.90132371e-13],
+                [-7.10542736e-15],
+                [-1.62092562e-14],
+                [-4.02122780e-13],
+                [-3.55271368e-15],
+                [-1.64313008e-14],
+                [-4.13891144e-13],
+                [0.00000000e00],
+                [0.00000000e00],
+                [0.00000000e00],
+                [1.36970015e-02],
+                [-7.10542736e-15],
+                [-7.54951657e-15],
+                [-3.42170736e-13],
+                [0.00000000e00],
+                [-7.54951657e-15],
+                [-3.49942297e-13],
+                [-7.10542736e-15],
+                [-7.32747196e-15],
+                [-3.58157948e-13],
+                [-3.55271368e-15],
+                [-7.32747196e-15],
+                [-3.66595643e-13],
+                [-3.55271368e-15],
+                [-7.77156117e-15],
+                [-3.74589249e-13],
+                [0.00000000e00],
+                [0.00000000e00],
+                [0.00000000e00],
+                [1.26197006e-02],
+                [-3.55271368e-15],
+                [-3.55271368e-15],
+                [-3.37729844e-13],
+                [-3.55271368e-15],
+                [-3.55271368e-15],
+                [-3.44169138e-13],
+                [-3.55271368e-15],
+                [-3.55271368e-15],
+                [-3.50830476e-13],
+                [0.00000000e00],
+                [-3.55271368e-15],
+                [-3.57935903e-13],
+                [-3.55271368e-15],
+                [-3.55271368e-15],
+                [-3.64153152e-13],
+                [0.00000000e00],
+                [0.00000000e00],
+                [0.00000000e00],
+                [1.20589659e-02],
+                [-3.55271368e-15],
+                [-1.33226763e-15],
+                [-3.41504602e-13],
+                [-3.55271368e-15],
+                [-8.88178420e-16],
+                [-3.46389584e-13],
+                [-3.55271368e-15],
+                [-1.33226763e-15],
+                [-3.52162743e-13],
+                [-3.55271368e-15],
+                [-1.33226763e-15],
+                [-3.58379992e-13],
+                [-3.55271368e-15],
+                [-8.88178420e-16],
+                [-3.64153152e-13],
+                [0.00000000e00],
+                [0.00000000e00],
+                [0.00000000e00],
+                [1.17137752e-02],
+                [-3.55271368e-15],
+                [0.00000000e00],
+                [-3.48165941e-13],
+                [-3.55271368e-15],
+                [4.44089210e-16],
+                [-3.53495011e-13],
+                [-3.55271368e-15],
+                [4.44089210e-16],
+                [-3.58379992e-13],
+                [-3.55271368e-15],
+                [0.00000000e00],
+                [-3.63709063e-13],
+                [-3.55271368e-15],
+                [0.00000000e00],
+                [-3.69038133e-13],
+                [0.00000000e00],
+                [0.00000000e00],
+                [0.00000000e00],
+                [1.14792488e-02],
+                [0.00000000e00],
+                [1.33226763e-15],
+                [-3.57047725e-13],
+                [-3.55271368e-15],
+                [1.33226763e-15],
+                [-3.61932706e-13],
+                [0.00000000e00],
+                [8.88178420e-16],
+                [-3.66817687e-13],
+                [0.00000000e00],
+                [8.88178420e-16],
+                [-3.71258579e-13],
+                [0.00000000e00],
+                [1.33226763e-15],
+                [-3.76587650e-13],
+                [0.00000000e00],
+                [0.00000000e00],
+                [0.00000000e00],
+                [1.13091730e-02],
+                [-3.55271368e-15],
+                [2.22044605e-15],
+                [-3.70370401e-13],
+                [-3.55271368e-15],
+                [1.33226763e-15],
+                [-3.74811293e-13],
+                [0.00000000e00],
+                [2.22044605e-15],
+                [-3.78364007e-13],
+                [0.00000000e00],
+                [1.77635684e-15],
+                [-3.82804899e-13],
+                [0.00000000e00],
+                [1.33226763e-15],
+                [-3.88133969e-13],
+                [1.11844907e-02],
+            ]
+        ),
+    )
+
+    # Check some results
+    # first phase
+    np.testing.assert_almost_equal(
+        sol.states[0]["a"][0], np.array([0.0, 1.93089445, 3.86250911, 5.79554351, 7.73067582, 9.66856407]), decimal=2
     )
     np.testing.assert_almost_equal(
-        tau[:, -2], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01]), decimal=2
+        sol.states[0]["b"][0], np.array([0.0, 0.01885085, 0.07450486, 0.16582235, 0.2917295, 0.45121394]), decimal=2
+    )
+    np.testing.assert_almost_equal(
+        sol.states[0]["c"][0], np.array([0.0, 0.00017626, 0.00280773, 0.01415365, 0.044552, 0.10835496]), decimal=2
     )
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
+    # intermediate phase
+    np.testing.assert_almost_equal(
+        sol.states[5]["a"][0],
+        np.array([19.76647875, 20.01192073, 20.25746084, 20.50310011, 20.74883957, 20.99468026]),
+        decimal=2,
+    )
+    np.testing.assert_almost_equal(
+        sol.states[5]["b"][0],
+        np.array([1.74723366, 1.78770329, 1.8286031, 1.86993181, 1.91168818, 1.95387098]),
+        decimal=2,
+    )
+    np.testing.assert_almost_equal(
+        sol.states[5]["c"][0],
+        np.array([1.80854721, 1.89779906, 1.9902922, 2.08610429, 2.18531387, 2.28800045]),
+        decimal=2,
+    )
 
-    # simulate
-    TestUtils.simulate(sol)
+    # last phase
+    np.testing.assert_almost_equal(
+        sol.states[9]["a"][0],
+        np.array([24.52324217, 24.75280044, 24.98245916, 25.21221914, 25.44208114, 25.67204593]),
+        decimal=2,
+    )
+    np.testing.assert_almost_equal(
+        sol.states[9]["b"][0],
+        np.array([2.60114035, 2.64587979, 2.69096794, 2.73640393, 2.78218689, 2.82831598]),
+        decimal=2,
+    )
+    np.testing.assert_almost_equal(
+        sol.states[9]["c"][0],
+        np.array([4.18665929, 4.34078482, 4.49910564, 4.66169752, 4.82863693, 5.00000103]),
+        decimal=2,
+    )
 
+
+if __name__ == "__main__":
+    test_main_control_type_none()

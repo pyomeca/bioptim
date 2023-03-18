@@ -598,8 +598,8 @@ class OptimizationVariableContainer:
             self.optimization_variable["unscaled"][item] = value
 
     def _set_casadi_symbolic_callable(self, casadi_symbolic_callable: Callable = None):
-        if casadi_symbolic_callable is None:
-            raise ValueError()
+        if casadi_symbolic_callable is None and not isinstance(casadi_symbolic_callable, Callable):
+            raise ValueError("This entry should be either casadi.MX or casadi.SX")
         self._casadi_symbolic_callable = casadi_symbolic_callable
         self.optimization_variable["scaled"]._casadi_symbolic_callable = self._casadi_symbolic_callable
         self.optimization_variable["unscaled"]._casadi_symbolic_callable = self._casadi_symbolic_callable
