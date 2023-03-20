@@ -662,12 +662,10 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):
             nlp = all_pn.nlp
-            if nlp.control_type == ControlType.CONSTANT:
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 u = nlp.controls.cx
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 u = horzcat(nlp.controls.cx, nlp.controls.cx_end)
-            elif nlp.control_type == ControlType.NONE:
-                u = []
             else:
                 raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
 
