@@ -188,8 +188,8 @@ class BiMappingList(OptionDict):
         bimapping: BiMapping
             The BiMapping to copy
         """
-
-        if isinstance(bimapping, BiMapping):
+        # Here `type` is used instead of `isinstance` because of the `SelectionMapping` inherits from `BiMapping`
+        if type(bimapping) is BiMapping:
             if to_second is not None or to_first is not None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
             self.add(
@@ -200,7 +200,8 @@ class BiMappingList(OptionDict):
                 oppose_to_second=oppose_to_second,
                 oppose_to_first=oppose_to_first,
             )
-        if isinstance(bimapping, SelectionMapping):
+        # Here `type` is used instead of `isinstance` because of the `SelectionMapping` inherits from `BiMapping`
+        elif type(bimapping) is SelectionMapping:
             if to_second is not None or to_first is not None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
             self.add(
