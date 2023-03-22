@@ -35,7 +35,7 @@ from .utils import TestUtils
 
 
 def minimize_difference(all_pn: PenaltyNodeList):
-    return all_pn[0].nlp.controls["tau"].cx_end - all_pn[1].nlp.controls["tau"].cx
+    return all_pn[0].nlp.controls["tau"].cx[-1] - all_pn[1].nlp.controls["tau"].cx[0]
 
 
 def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str) -> MX:
