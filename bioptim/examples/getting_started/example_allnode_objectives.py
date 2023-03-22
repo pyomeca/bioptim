@@ -27,8 +27,9 @@ from bioptim import (
     BiorbdModel,
     AllNodeConstraintList,
     AllNodeConstraint,
+    AllNodeConstraintFcn,
     NonLinearProgram,
-    Node
+    Node,
 )
 
 
@@ -46,14 +47,10 @@ def custom_allnode_constraint(
 
     Returns
     -------
-    The constraint such that: c(x) = 0
     """
 
-    #states_all = allnode_constraint.states_mapping.to_second.map(nlp_all.states.cx_all)
-    states_all = allnode_constraint(nlp_all.states.cx_all)
-
+    states_all = nlp_all.states.cx
     return states_all
-
 
 def prepare_ocp(
     biorbd_model_path: str,
@@ -112,12 +109,13 @@ def prepare_ocp(
 
     u_init = InitialGuess([tau_init] * n_tau)
 
-    ### New
+    # Contraint
     allnode_constraints = AllNodeConstraintList()
     allnode_constraints.add(
         custom_allnode_constraint,
         phase_idx=0,
         weight=0.1,
+        node=Node.ALL,
     )
 
     return OptimalControlProgram(
