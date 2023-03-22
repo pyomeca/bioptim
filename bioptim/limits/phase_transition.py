@@ -258,8 +258,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = nlp_post.model.copy()
 
-            if nlp_post.model.nb_contacts == 0:
-                warn("The chosen model does not have any contact")
+            if nlp_post.model.nb_rigid_contacts == 0:
+                warn("The chosen model does not have any rigid contact")
 
             # Todo scaled?
             q_pre = nlp_pre.states["q"].mx

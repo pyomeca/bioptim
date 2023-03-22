@@ -34,7 +34,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     elif with_muscles:
         bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True)
+        dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True)
         nx = bio_model.nb_q + bio_model.nb_qdot
         nu = bio_model.nb_tau + bio_model.nb_muscles
     elif with_contact:
