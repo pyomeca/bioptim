@@ -5,6 +5,7 @@ from typing import Callable
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..interfaces.solver_options import Solver
 
+
 class MultiStart:
     """
     The main class to define a multi-start. This class executes the optimal control problems with the possibility to
@@ -77,6 +78,7 @@ class MultiStart:
     def solve_ocp_func(self, args):
         def return_true(x, y):
             return True
+
         if self.should_solve == None:
             self.should_solve = return_true
         if self.should_solve(self, args):
