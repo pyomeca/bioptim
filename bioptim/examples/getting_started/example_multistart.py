@@ -3,6 +3,8 @@ An example of how to use multi-start to find local minima from different initial
 This example is a variation of the pendulum example in getting_started/pendulum.py.
 """
 import pickle
+import os
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -19,7 +21,6 @@ from bioptim import (
     Solution,
     MagnitudeType,
 )
-import os
 
 def prepare_ocp(
     bio_model_path: str,
