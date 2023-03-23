@@ -69,6 +69,7 @@ class Integrator:
         self.t_span = ode_opt["t0"], ode_opt["tf"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
+        self.cx_list = ode_opt["cx_list"]
         self.x_sym = ode["x_scaled"]
         self.u_sym = ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
@@ -77,6 +78,7 @@ class Integrator:
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
         self.control_type = ode_opt["control_type"]
+        self.node_index = ode_opt["node_index"]
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
         self.function = None
@@ -237,10 +239,10 @@ class RK(Integrator):
         The derivative of the states
         """
 
-        u = controls
-        x = self.cx(states.shape[0], self.n_step + 1)
+        u = controls[self.node_index]
+        x = self.cx(states[0].shape[0], self.n_step + 1)
         p = params
-        x[:, 0] = states
+        x[:, 0] = states[self.node_index]
 
         for i in range(1, self.n_step + 1):
             t_norm_init = (i - 1) / self.n_step  # normalized time
