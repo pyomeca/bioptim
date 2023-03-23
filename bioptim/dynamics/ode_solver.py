@@ -67,12 +67,16 @@ class OdeSolverBase:
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
         """
+        nlp.dynamics = []
 
-        nlp.dynamics = nlp.ode_solver.integrator(ocp, nlp)
-        if len(nlp.dynamics) != 1 and ocp.n_threads != 1:
-            raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")
-        if len(nlp.dynamics) == 1:
-            nlp.dynamics = nlp.dynamics * nlp.ns
+        for node_index in range(nlp.ns + 1):
+            nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp, node_index))
+
+        # nlp.dynamics = nlp.ode_solver.integrator(ocp, nlp)
+        # if len(nlp.dynamics) != 1 and ocp.n_threads != 1:
+        #     raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")
+        # if len(nlp.dynamics) == 1:
+        #     nlp.dynamics = nlp.dynamics * nlp.ns
 
 
 class RK(OdeSolverBase):
@@ -98,7 +102,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp) -> list:
+    def integrator(self, ocp, nlp, node_index) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -108,6 +112,8 @@ class RK(OdeSolverBase):
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the nlp
+        node_index:
+            Index of the node
 
         Returns
         -------
@@ -120,32 +126,36 @@ class RK(OdeSolverBase):
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
+            "cx_list": nlp.states.cx_list,
+            "node_index": node_index,
             "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
             "defects_type": DefectType.NOT_APPLICABLE,
         }
+
         ode = {
-            "x_unscaled": nlp.states.cx,
-            "x_scaled": nlp.states["scaled"].cx,
-            "p_unscaled": nlp.controls.cx
+            "x_unscaled": nlp.states.cx_list,
+            "x_scaled": nlp.states["scaled"].cx_list,
+            "p_unscaled": nlp.controls.cx_list
+            if nlp.control_type == ControlType.CONSTANT     # TODO: free variable
+            else horzcat(nlp.controls.cx[0], nlp.controls.cx[-1]),
+            "p_scaled": nlp.controls["scaled"].cx_list
             if nlp.control_type == ControlType.CONSTANT
-            else horzcat(nlp.controls.cx, nlp.controls.cx_end),
-            "p_scaled": nlp.controls["scaled"].cx
-            if nlp.control_type == ControlType.CONSTANT
-            else horzcat(nlp.controls["scaled"].cx, nlp.controls["scaled"].cx_end),
+            else horzcat(nlp.controls["scaled"].cx[0], nlp.controls["scaled"].cx[-1]),
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
+        return nlp.ode_solver.rk_integrator(ode, ode_opt)
 
-        if len(nlp.external_forces) != 0:
-            dynamics_out = []
-            for idx in range(len(nlp.external_forces)):
-                ode_opt["idx"] = idx
-                dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
-            return dynamics_out
-        else:
-            return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+        # if len(nlp.external_forces) != 0:
+        #     dynamics_out = []
+        #     for idx in range(len(nlp.external_forces)):
+        #         ode_opt["idx"] = idx
+        #         dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
+        #     return dynamics_out
+        # else:
+        #     return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
     def __str__(self):
         ode_solver_string = f"{self.rk_integrator.__name__} {self.steps} step"
@@ -287,10 +297,10 @@ class OdeSolver:
                 )
 
             ode = {
-                "x_unscaled": [nlp.states.cx] + nlp.states.cx_intermediates_list,
-                "x_scaled": [nlp.states["scaled"].cx] + nlp.states["scaled"].cx_intermediates_list,
-                "p_unscaled": nlp.controls.cx,
-                "p_scaled": nlp.controls["scaled"].cx,
+                "x_unscaled": [nlp.states.cx[0]] + nlp.states.cx_intermediates_list,
+                "x_scaled": [nlp.states["scaled"].cx[0]] + nlp.states["scaled"].cx_intermediates_list,
+                "p_unscaled": nlp.controls.cx[0],
+                "p_scaled": nlp.controls["scaled"].cx[0],
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }

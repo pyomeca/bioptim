@@ -75,69 +75,6 @@ class PhaseTransition(BinodeConstraint):
         self.transition = True
 
 
-class PhaseTransition(BinodeConstraint):
-    """
-    A placeholder for a transition of state
-
-    Attributes
-    ----------
-    min_bound: list
-        The minimal bound of the phase transition
-    max_bound: list
-        The maximal bound of the phase transition
-    bounds: Bounds
-        The bounds (will be filled with min_bound/max_bound)
-    weight: float
-        The weight of the cost function
-    quadratic: bool
-        If the objective function is quadratic
-    phase_pre_idx: int
-        The index of the phase right before the transition
-    phase_post_idx: int
-        The index of the phase right after the transition
-    node: Node
-        The kind of node
-    dt: float
-        The delta time
-    node_idx: int
-        The index of the node in nlp pre
-    transition: bool
-        The nature of the cost function is transition
-    penalty_type: PenaltyType
-        If the penalty is from the user or from bioptim (implicit or internal)
-    """
-
-    def __init__(
-        self,
-        phase_pre_idx: int = None,
-        transition: Callable | Any = None,
-        weight: float = 0,
-        custom_function: Callable = None,
-        min_bound: float = 0,
-        max_bound: float = 0,
-        **params: Any,
-    ):
-        if not isinstance(transition, PhaseTransitionFcn):
-            custom_function = transition
-            transition = PhaseTransitionFcn.CUSTOM
-        super(PhaseTransition, self).__init__(
-            phase_first_idx=phase_pre_idx,
-            phase_second_idx=None,
-            first_node=Node.END,
-            second_node=Node.START,
-            binode_constraint=transition,
-            custom_function=custom_function,
-            min_bound=min_bound,
-            max_bound=max_bound,
-            weight=weight if weight is not None else 0,
-            force_binode=True,
-            **params,
-        )
-
-        self.node = Node.TRANSITION
-        self.transition = True
-
-
 class PhaseTransitionList(UniquePerPhaseOptionList):
     """
     A list of PhaseTransition
@@ -200,6 +137,15 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
         existing_phases = []
+
+        for pt in self:
+            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                continue
+            # Dynamics must be respected between phases
+            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
+
         for pt in self:
             if pt.phase_pre_idx is None:
                 if pt.type == PhaseTransitionFcn.CYCLIC:
@@ -221,6 +167,8 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             else:
                 full_phase_transitions[idx_phase] = pt
         return full_phase_transitions
+
+
 
 
 class PhaseTransitionFunctions(PenaltyFunctionAbstract):
@@ -330,23 +278,22 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
 
             val = []
-            cx_end = []
             cx = []
             for key in nlp_pre.states:
                 cx_end = vertcat(
-                    cx_end,
-                    nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end),
+                    cx[-1],
+                    nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx[-1]),
                 )
-                cx = vertcat(cx, nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx))
+                cx_start = vertcat(cx[0], nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx[0]))
                 post_mx = nlp_post.states[key].mx
                 continuity = nlp_post.states["qdot"].mapping.to_first.map(
                     qdot_impact - post_mx if key == "qdot" else nlp_pre.states[key].mx - post_mx
                 )
                 val = vertcat(val, continuity)
 
-            name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
-            return func
+                name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
+                func = nlp_pre.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx_start)
+                return func
 
 
 class PhaseTransitionFcn(FcnEnum):

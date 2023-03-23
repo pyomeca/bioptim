@@ -520,41 +520,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return nlp.mx_to_cx("forward_dynamics", nlp.controls["fext"].mx - soft_contact_force, *var)
 
-    @staticmethod
-    def inner_phase_continuity(ocp):
-        """
-        Add continuity constraints between each nodes of a phase.
 
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        """
-
-        # Dynamics must be sound within phases
-        for nlp in ocp.nlp:
-            penalty = Constraint(ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
-            penalty.add_or_replace_to_penalty_pool(ocp, nlp)
-
-    @staticmethod
-    def inter_phase_continuity(ocp):
-        """
-        Add phase transition constraints between two phases.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        """
-        from ..limits.phase_transition import PhaseTransitionFcn
-
-        for pt in ocp.phase_transitions:
-            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
-                continue
-            # Dynamics must be respected between phases
-            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-            pt.list_index = -1
-            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
+class MultinodeConstraintsFunctions:
 
     @staticmethod
     def node_equalities(ocp):
@@ -587,6 +554,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     @staticmethod
     def penalty_nature() -> str:
         return "constraints"
+
 
 
 class ConstraintFcn(FcnEnum):
@@ -628,6 +596,27 @@ class ConstraintFcn(FcnEnum):
 
         return ConstraintFunction
 
+#
+# class MultinodeConstraintFcn(FcnEnum):
+#     """
+#     Selection of valid constraint functions
+#
+#     Methods
+#     -------
+#     def get_type() -> Callable
+#         Returns the type of the penalty
+#     """
+#     CUSTOM = (PenaltyFunctionAbstract.MultinodeConstraintsFunctions.custom,)
+#
+#
+#     @staticmethod
+#     def get_type():
+#         """
+#         Returns the type of the penalty
+#         """
+#
+#         return ConstraintFunction
+
 
 class ImplicitConstraintFcn(FcnEnum):
     """
@@ -652,28 +641,3 @@ class ImplicitConstraintFcn(FcnEnum):
         """
 
         return ConstraintFunction
-
-
-class ContinuityConstraintFunctions:
-    """
-    Interface between continuity and constraint
-    """
-
-    @staticmethod
-    def continuity(ocp):
-        """
-        The declaration of inner- and inter-phase continuity constraints
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        """
-
-        ConstraintFunction.inner_phase_continuity(ocp)
-
-        # Dynamics must be respected between phases
-        ConstraintFunction.inter_phase_continuity(ocp)
-
-        if ocp.binode_constraints:  # TODO: they shouldn't be added here
-            ConstraintFunction.node_equalities(ocp)
