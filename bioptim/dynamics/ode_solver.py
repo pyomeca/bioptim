@@ -139,14 +139,11 @@ class RK(OdeSolverBase):
             "implicit_ode": nlp.implicit_dynamics_func,
         }
 
-        if ode["ode"].size2_out("xdot") > 1:
-            dynamics_out = []
-            for idx in range(nlp.ns):
-                ode_opt["idx"] = idx
-                dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
-            return dynamics_out
-        else:
-            return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+        dynamics_out = []
+        for idx in range(ode["ode"].size2_out("xdot")):  # TODO: after Anais has her PR accepted, change that to NS
+            ode_opt["idx"] = idx
+            dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
+        return dynamics_out
 
     def __str__(self):
         ode_solver_string = f"{self.rk_integrator.__name__} {self.steps} step"
