@@ -94,7 +94,7 @@ class BinodeConstraint(Constraint):
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
         self.binode_constraint = True
-        self.allnode_constraint = True
+        self.allnode_constraint = False
         self.weight = weight
         self.quadratic = True
         self.phase_first_idx = phase_first_idx
@@ -170,6 +170,7 @@ class AllNodeConstraint(Constraint):
     def __init__(
         self,
         phase_idx: int,
+        node: Node | int,
         allnode_constraint: Callable | Any = None,
         custom_function: Callable = None,
         min_bound: float = 0,
@@ -188,8 +189,6 @@ class AllNodeConstraint(Constraint):
 
         force_allnode = False
         if "force_allnode" in params:
-            # This is a hack to circumvent the apparatus that moves the functions to a custom function
-            # It is necessary for PhaseTransition
             force_allnode = True
             del params["force_allnode"]
 
@@ -197,6 +196,12 @@ class AllNodeConstraint(Constraint):
             custom_function = allnode_constraint
             allnode_constraint = AllNodeConstraintFcn.CUSTOM
         super(Constraint, self).__init__(penalty=allnode_constraint, custom_function=custom_function, **params)
+
+        if node is not Node.ALL:
+            if not isinstance(node, int):
+                raise NotImplementedError(
+                    "Allnode Constraint only works with Node.ALL"
+                )
 
         self.min_bound = min_bound
         self.max_bound = max_bound
@@ -206,6 +211,7 @@ class AllNodeConstraint(Constraint):
         self.weight = weight
         self.quadratic = True
         self.phase_idx = phase_idx
+        self.node = node
         self.dt = 1
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL
@@ -365,8 +371,8 @@ class AllNodeConstraintList(UniquePerPhaseOptionList):
             if mnc.phase_idx < 0:
                 raise RuntimeError("Phase index of the allnode_constraint need to be positive")
 
-            if mnc.weight: # ajouter un check, sinon mettre 1
-                mnc.base = ObjectiveFunction.LagrangeFunction # a elever
+            if not mnc.weight: # ajouter un check, sinon mettre 1
+                mnc.base = 1
 
             full_phase_allnode_constraint.append(mnc)
 
@@ -555,7 +561,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 param_name = all_pn[0].nlp.parameters.cx[i].name()
                 if param_name == "time_phase_" + str(all_pn[0].nlp.phase_idx):
                     time_pre_idx = all_pn[0].nlp.phase_idx
-            if time_pre_idx == None:
+            if time_pre_idx is None:
                 raise RuntimeError(
                     f"Time constraint can't be established since the first phase has no time parameter. "
                     f"\nTime parameter can be added with : "
@@ -568,7 +574,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 param_name = all_pn[1].nlp.parameters.cx[i].name()
                 if param_name == "time_phase_" + str(all_pn[1].nlp.phase_idx):
                     time_post_idx = all_pn[1].nlp.phase_idx
-            if time_post_idx == None:
+            if time_post_idx is None:
                 raise RuntimeError(
                     f"Time constraint can't be established since the second phase has no time parameter. Time parameter "
                     f"can be added with : objective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
@@ -604,12 +610,10 @@ class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
     """
     Internal implementation of the phase transitions
     """
-
     class Functions:
         """
-        Implementation of all the Binode Constraint
+        Implementation of all the AllNode Constraint
         """
-
 
         @staticmethod
         def custom(allnode_constraint, all_pn, **extra_params):
@@ -629,6 +633,7 @@ class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_all = all_pn.nlp
+
             return allnode_constraint.custom_function(allnode_constraint, nlp_all, **extra_params)
 
 
