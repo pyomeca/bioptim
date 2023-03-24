@@ -5,6 +5,8 @@ This example is a variation of the pendulum example in getting_started/pendulum.
 import pickle
 import os
 
+from typing import Callable, Any
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -21,7 +23,6 @@ from bioptim import (
     Solution,
     MagnitudeType,
 )
-
 
 def prepare_ocp(
     bio_model_path: str,
@@ -104,12 +105,10 @@ def prepare_ocp(
     ocp.add_plot_penalty(CostType.ALL)
 
     return ocp
-
-
 def save_results(
     sol: Solution,
     biorbd_model_path: str,
-    final_time: float,
+    final_time: int,
     n_shooting: int,
     seed: int,
     only_save_filename: bool = False,
@@ -132,53 +131,58 @@ def save_results(
         True if you want to return only the name of the file without saving, else False
     """
     # OptimalControlProgram.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
-    filename = f"pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl"
+    bio_model = biorbd_model_path.split('/')[-1].removesuffix('.bioMod')
+    filename = f"pendulum_multi_start_random_states_{bio_model}_{n_shooting}_{seed}.pkl"
     if only_save_filename == True:
         return filename
-
     states = sol.states["all"]
-    save_folder = "/home/mickaelbegon/Documents/Stage_Lisa/Sol"
+    save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
     with open(f"{save_folder}/{filename}", "wb") as file:
         pickle.dump(states, file)
 
+def should_solve(args,save_results=save_results):
+    """
+    Check if the filename already appears in the folder where files are saved, if not ocp must be solved
+    """
+    save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
+    already_done_filenames = os.listdir(f"{save_folder}")
+    return save_results([None], *args, only_save_filename=True) not in already_done_filenames
 
 def prepare_multi_start(
-    bio_model_path: list,
-    final_time: list,
-    n_shooting: list,
-    seed: list,
-    already_done_filenames: list,
-    single_process_debug_flag: bool,
+    combinatorial_parameters: dict[tuple,...],
+    n_pools: int = 1,
+
 ) -> MultiStart:
     """
     The initialization of the multi-start
     """
     return MultiStart(
-        prepare_ocp,
-        solver=Solver.IPOPT(show_online_optim=False),  # You cannot use show_online_optim with multi-start
+        combinatorial_parameters=combinatorial_parameters,
+        prepare_ocp_callback=prepare_ocp,
         post_optimization_callback=save_results,
-        n_pools=4,
-        bio_model_path=bio_model_path,
-        final_time=final_time,
-        n_shooting=n_shooting,
-        seed=seed,
-        already_done_filenames=already_done_filenames,
-        single_process_debug_flag=single_process_debug_flag,
+        should_solve_callback=should_solve,
+        solver=Solver.IPOPT(show_online_optim=False),  # You cannot use show_online_optim with multi-start
+        n_pools=n_pools,
     )
 
 
 def main():
     # --- Prepare the multi-start and run it --- #
-    save_folder = "/home/mickaelbegon/Documents/Stage_Lisa/Sol"
+    save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
     already_done_filenames = os.listdir(f"{save_folder}")
+
+    bio_model_path = ["models/pendulum.bioMod"]
+    final_time = [1]
+    n_shooting = [30, 40, 50]
+    seed = [0, 1, 2, 3]
+
+    combinatorial_parameters = {'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,
+                                'seed': seed}
     multi_start = prepare_multi_start(
-        bio_model_path=["models/pendulum.bioMod"],
-        final_time=[1],
-        n_shooting=[30, 40, 50],
-        seed=[0, 1, 2, 3],
-        already_done_filenames=already_done_filenames,
-        single_process_debug_flag=False,
+        combinatorial_parameters=combinatorial_parameters,
+        n_pools=4
     )
+
     multi_start.solve()
 
 

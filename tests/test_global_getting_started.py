@@ -1283,13 +1283,13 @@ def test_multistart():
     from bioptim.examples.getting_started import example_multistart as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    multi_start = ocp_module.prepare_multi_start(
-        bio_model_path=[bioptim_folder + "/models/pendulum.bioMod"],
-        final_time=[1],
-        n_shooting=[5, 10],
-        seed=[2, 1],
-    )
+    bio_model_path = [bioptim_folder + "/models/pendulum.bioMod"]
+    final_time = [1]
+    n_shooting = [5, 10]
+    seed = [2, 1]
+    comibinatorial_parameters={'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,'seed': seed}
+    multi_start = ocp_module.prepare_multi_start(combinatorial_parameters=comibinatorial_parameters
+                                                 )
     multi_start.solve()
 
     with open("pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
