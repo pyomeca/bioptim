@@ -176,9 +176,9 @@ class NonLinearProgram:
         self.g = []
         self.g_internal = []
         self.casadi_func = {}
-        self.controls.cx_constructor(self.cx)
-        self.states.cx_constructor(self.cx)
-        self.states_dot.cx_constructor(self.cx)
+        self.controls._set_cx_constructor(self.cx)
+        self.states._set_cx_constructor(self.cx)
+        self.states_dot._set_cx_constructor(self.cx)
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
