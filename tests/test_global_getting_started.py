@@ -1282,13 +1282,15 @@ def test_multinode_constraints(ode_solver):
 def test_multistart():
     from bioptim.examples.getting_started import example_multistart as ocp_module
 
+    from bioptim import MultiStart
+
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     bio_model_path = [bioptim_folder + "/models/pendulum.bioMod"]
     final_time = [1]
     n_shooting = [5, 10]
     seed = [2, 1]
-    comibinatorial_parameters={'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,'seed': seed}
-    multi_start = ocp_module.prepare_multi_start(combinatorial_parameters=comibinatorial_parameters
+    combinatorial_parameters={'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,'seed': seed}
+    multi_start = ocp_module.prepare_multi_start(combinatorial_parameters=combinatorial_parameters
                                                  )
     multi_start.solve()
 
@@ -1432,6 +1434,16 @@ def test_multistart():
             ]
         ),
     )
+    # multistart_1= Multistart(
+    # )
+    # assert len(combinatorial_parameters) == 4
+    #
+    #
+    # with pytest.raises(ValueError, match="independent_indices must not contain more elements than nb_elements"):
+    #     SelectionMapping(1, (3, 4, 5))
+    # with pytest.raises(ValueError, match="nb_dof should be an 'int'"):
+    #     SelectionMapping((0, 1, 2), 3)
+
 
 
 def test_example_variable_scaling():

@@ -48,7 +48,8 @@ class MultiStart:
         n_pools: int
             The number of pools to be used for multi-threading. If 1 is sent, then the built-in for loop is used
         """
-
+        # errors : post, prep,
+       # if prepare_ocp_callback ==
         self.prepare_ocp_callback = prepare_ocp_callback
         self.post_optimization_callback = post_optimization_callback
         self.should_solve_callback = should_solve_callback

@@ -137,6 +137,7 @@ def save_results(
         return filename
     states = sol.states["all"]
     save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
+
     with open(f"{save_folder}/{filename}", "wb") as file:
         pickle.dump(states, file)
 
@@ -150,7 +151,6 @@ def should_solve(args,save_results=save_results):
 
 def prepare_multi_start(
     combinatorial_parameters: dict[tuple,...],
-    #save_folder: str,
     n_pools: int = 1,
 
 ) -> MultiStart:
@@ -169,6 +169,9 @@ def prepare_multi_start(
 
 def main():
     # --- Prepare the multi-start and run it --- #
+
+
+    global save_folder
     save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
     already_done_filenames = os.listdir(f"{save_folder}")
 
@@ -182,7 +185,6 @@ def main():
     multi_start = prepare_multi_start(
         combinatorial_parameters=combinatorial_parameters,
         n_pools=4,
-        #save_folder= save_folder,
     )
 
     multi_start.solve()
