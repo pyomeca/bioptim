@@ -830,7 +830,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
     nlp.X_scaled = nlp.X
     nlp.U_scaled = nlp.U
     tp = OptimizationVariableList()
-    tp._casadi_symbolic_callable = MX
+    tp.cx_constructor = MX
     tp.append("param", [MX(), MX()], MX(), BiMapping([], []))
     nlp.parameters = tp["param"]
 
