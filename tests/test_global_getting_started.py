@@ -1292,13 +1292,13 @@ def test_multistart():
                                                  )
     multi_start.solve()
 
-    with open("pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
+    with open("/home/laseche/Documents/Stage_Lisa/Lisa/Sol/pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
         multi_start_0 = pickle.load(file)
-    with open("pendulum_multi_start_random_states_5_1.pkl", "rb") as file:
+    with open("/home/laseche/Documents/Stage_Lisa/Lisa/Sol/pendulum_multi_start_random_states_5_1.pkl", "rb") as file:
         multi_start_1 = pickle.load(file)
-    with open("pendulum_multi_start_random_states_10_2.pkl", "rb") as file:
+    with open("/home/laseche/Documents/Stage_Lisa/Lisa/Sol/pendulum_multi_start_random_states_10_2.pkl", "rb") as file:
         multi_start_2 = pickle.load(file)
-    with open("pendulum_multi_start_random_states_10_1.pkl", "rb") as file:
+    with open("/home/laseche/Documents/Stage_Lisa/Lisa/Sol/pendulum_multi_start_random_states_10_1.pkl", "rb") as file:
         multi_start_3 = pickle.load(file)
 
     np.testing.assert_almost_equal(

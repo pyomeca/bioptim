@@ -132,7 +132,7 @@ def save_results(
     """
     # OptimalControlProgram.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
     bio_model = biorbd_model_path.split('/')[-1].removesuffix('.bioMod')
-    filename = f"pendulum_multi_start_random_states_{bio_model}_{n_shooting}_{seed}.pkl"
+    filename = f"pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl"
     if only_save_filename == True:
         return filename
     states = sol.states["all"]
@@ -150,6 +150,7 @@ def should_solve(args,save_results=save_results):
 
 def prepare_multi_start(
     combinatorial_parameters: dict[tuple,...],
+    #save_folder: str,
     n_pools: int = 1,
 
 ) -> MultiStart:
@@ -180,7 +181,8 @@ def main():
                                 'seed': seed}
     multi_start = prepare_multi_start(
         combinatorial_parameters=combinatorial_parameters,
-        n_pools=4
+        n_pools=4,
+        #save_folder= save_folder,
     )
 
     multi_start.solve()
