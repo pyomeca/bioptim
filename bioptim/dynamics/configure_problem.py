@@ -1166,7 +1166,7 @@ class ConfigureProblem:
 
         name = "tau"
         name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
+        ConfigureProblem._adjust_mapping(name, ["taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_tau, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
