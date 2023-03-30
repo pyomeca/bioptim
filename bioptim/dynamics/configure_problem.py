@@ -76,8 +76,6 @@ class ConfigureProblem:
         Configure the generalized forces derivative
     configure_muscles(nlp, as_states: bool, as_controls: bool)
         Configure the muscles
-    _adjust_mapping(key_to_adjust: str, reference_keys: list, nlp)
-        Automatic mapping duplicator basing the values on the another mapping
     """
 
     @staticmethod
@@ -796,12 +794,6 @@ class ConfigureProblem:
         for i, meta_suffix in enumerate(meta_suffixes):
             var_names_with_suffix.append(f"{name}_{meta_suffix}" if not multi_interface else f"{name}")
 
-            try:
-                ConfigureProblem._adjust_mapping(var_names_with_suffix[-1], [name], nlp)
-            except RuntimeError as message:
-                if message.args[0] != "Could not adjust mapping with the reference_keys provided":
-                    raise RuntimeError(message)
-
             if split_controls:
                 ConfigureProblem.configure_new_variable(
                     var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
@@ -827,7 +819,6 @@ class ConfigureProblem:
 
             for p, params in enumerate(fatigue_suffix):
                 name_tp = f"{var_names_with_suffix[-1]}_{params}"
-                ConfigureProblem._adjust_mapping(name_tp, [var_names_with_suffix[-1]], nlp)
                 ConfigureProblem.configure_new_variable(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
                 nlp.plot[name_tp] = CustomPlot(
                     lambda t, x, u, p, key, mod: mod * x[nlp.states[key].index, :],
@@ -1095,7 +1086,6 @@ class ConfigureProblem:
 
         name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qdot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
@@ -1120,7 +1110,6 @@ class ConfigureProblem:
 
         name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q", "qdot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qddot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
@@ -1143,7 +1132,6 @@ class ConfigureProblem:
 
         name = "qdddot"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "qddot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
@@ -1166,7 +1154,6 @@ class ConfigureProblem:
 
         name = "tau"
         name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_tau, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
@@ -1189,7 +1176,6 @@ class ConfigureProblem:
 
         name = "residual_tau"
         name_residual_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_residual_tau, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
@@ -1237,7 +1223,6 @@ class ConfigureProblem:
 
         name = "taudot"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot", "tau"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
@@ -1314,40 +1299,6 @@ class ConfigureProblem:
             combine_state_control_plot=True,
             fatigue=fatigue,
         )
-
-    @staticmethod
-    def _adjust_mapping(key_to_adjust: str, reference_keys: list, nlp):
-        """
-        Automatic mapping duplicator basing the values on the another mapping
-
-        Parameters
-        ----------
-        key_to_adjust: str
-            The name of the variable to create if not already defined
-        reference_keys: list[str]
-            The reference keys, as soon one is found, it is used and the function returns
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-
-        if key_to_adjust not in nlp.variable_mappings:
-            for n in reference_keys:
-                if n in nlp.variable_mappings:
-                    if n == "q":
-                        q_map = list(nlp.variable_mappings[n].to_first.map_idx)
-                        target = list(range(nlp.model.nb_q))
-                        if nlp.model.nb_quaternions > 0:
-                            if q_map != target:
-                                raise RuntimeError(
-                                    "It is not possible to define a q mapping without a qdot or tau mapping"
-                                    "while the model has quaternions"
-                                )
-                            target = list(range(nlp.model.nb_qdot))
-                        nlp.variable_mappings[key_to_adjust] = BiMapping(target, target)
-                    else:
-                        nlp.variable_mappings[key_to_adjust] = nlp.variable_mappings[n]
-                    return
-            raise RuntimeError("Could not adjust mapping with the reference_keys provided")
 
     @staticmethod
     def _apply_phase_mapping(ocp, nlp, name):

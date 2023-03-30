@@ -79,6 +79,8 @@ def prepare_ocp(
         dependencies=(Dependency(dependent_index=4, reference_index=3, factor=-1),),
     )
     dof_mappings.add("q", bimapping=bimap)
+    dof_mappings.add("qdot", bimapping=bimap)
+    dof_mappings.add("tau", bimapping=bimap)
     # For convenience, if only q is defined, qdot and tau are automatically defined too
     # While computing the derivatives, the states is 6 dimensions (3 for q and 3 for qdot) and controls is 3 dimensions
     # However, the forward dynamics ([q, qdot, tau] => qddot) needs 5 dimensions vectors (due to the chosen model)
