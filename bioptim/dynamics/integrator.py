@@ -36,7 +36,7 @@ class Integrator:
     step_time: float
         The time of the full integration
     h: float
-        The time of the an integration step
+        The time of the integration step
     function = casadi.Function
         The CasADi graph of the integration
 
@@ -70,7 +70,7 @@ class Integrator:
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
         self.x_sym = ode["x_scaled"]
-        self.u_sym = ode["p_scaled"]
+        self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
@@ -118,6 +118,8 @@ class Integrator:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
+        elif self.control_type == ControlType.NONE:
+            return np.ndarray(0)
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 

@@ -308,20 +308,22 @@ class OptimizationVector:
 
         offset = self.n_all_x
         p_idx = 0
-        for p in range(self.ocp.n_phases):
-            if self.ocp.nlp[p].use_controls_from_phase_idx == self.ocp.nlp[p].phase_idx:
-                u_array = v_array[offset : offset + self.n_phase_u[p]].reshape(
-                    (ocp.nlp[p].controls["scaled"].shape, -1), order="F"
-                )
-                data_controls[p_idx]["all"] = u_array
-                offset_var = 0
-                for var in ocp.nlp[p].controls["scaled"]:
-                    data_controls[p_idx][var] = u_array[
-                        offset_var : offset_var + len(ocp.nlp[p].controls["scaled"][var]), :
-                    ]
-                    offset_var += len(ocp.nlp[p].controls["scaled"][var])
-                p_idx += 1
-                offset += self.n_phase_u[p]
+
+        if self.ocp.nlp[0].control_type in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS):
+            for p in range(self.ocp.n_phases):
+                if self.ocp.nlp[p].use_controls_from_phase_idx == self.ocp.nlp[p].phase_idx:
+                    u_array = v_array[offset : offset + self.n_phase_u[p]].reshape(
+                        (ocp.nlp[p].controls["scaled"].shape, -1), order="F"
+                    )
+                    data_controls[p_idx]["all"] = u_array
+                    offset_var = 0
+                    for var in ocp.nlp[p].controls["scaled"]:
+                        data_controls[p_idx][var] = u_array[
+                            offset_var : offset_var + len(ocp.nlp[p].controls["scaled"][var]), :
+                        ]
+                        offset_var += len(ocp.nlp[p].controls["scaled"][var])
+                    p_idx += 1
+                    offset += self.n_phase_u[p]
 
         offset = self.n_all_x + self.n_all_u
         scaling_offset = 0
@@ -350,7 +352,7 @@ class OptimizationVector:
             x_scaled.append([])
             u.append([])
             u_scaled.append([])
-            if nlp.control_type != ControlType.CONSTANT and nlp.control_type != ControlType.LINEAR_CONTINUOUS:
+            if nlp.control_type not in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.NONE):
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
@@ -414,7 +416,7 @@ class OptimizationVector:
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT:
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
@@ -446,7 +448,7 @@ class OptimizationVector:
 
             # For controls
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT:
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     ns = nlp.ns
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     ns = nlp.ns + 1
@@ -501,7 +503,7 @@ class OptimizationVector:
                 nlp.x_init.check_and_adjust_dimensions(nlp.states.shape, ns)
 
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT:
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
@@ -537,7 +539,7 @@ class OptimizationVector:
 
             # For controls
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type == ControlType.CONSTANT:
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     ns = nlp.ns
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     ns = nlp.ns + 1

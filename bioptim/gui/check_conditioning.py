@@ -32,14 +32,12 @@ def check_conditioning(ocp):
         The control at a given time
         """
 
-        if nlp.control_type == ControlType.CONSTANT:
+        if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
             return u
         elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
         else:
             raise RuntimeError(f"{nlp.control_type} ControlType not implemented yet")
-
-        return u
 
     def jacobian_hessian_constraints():
         """
