@@ -335,7 +335,6 @@ class OptimizationVariableList:
         self.fake_elements: list = []
         self._cx: MX | SX | np.ndarray = np.array([])
         self._cx_end: MX | SX | np.ndarray = np.array([])
-        # self._cx_list: list = []
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
 
@@ -388,8 +387,6 @@ class OptimizationVariableList:
                 return self.cx[0]
             elif cx_type == CXStep.CX_END:
                 return self.cx[1]
-            elif cx_type == CXStep.CX_ALL:
-                return self.cx
         else:
             return self[key].cx[0] if cx_type == CXStep.CX_START else self[key].cx[-1]
 
@@ -431,23 +428,6 @@ class OptimizationVariableList:
         self._cx = vertcat(self._cx, cx[0])
         self._cx_end = vertcat(self._cx_end, cx[1])
 
-        # cx_per_variable = MX()
-        # for i in range(len(cx)):
-        #     if i == 0:
-        #         cx_per_variable = cx[i]
-        #     else:
-        #         cx_per_variable = horzcat(cx_per_variable, cx[i])
-        # if self._cx.shape == (0, ):
-        #     self._cx = cx_per_variable
-        # else:
-        #     self._cx = vertcat(self._cx, cx_per_variable)
-        #
-        # for i, c in enumerate(cx):
-        #     if i >= len(self._cx_list):
-        #         self._cx_list.append(c)
-        #     else:
-        #         self._cx_list[i] = vertcat(self._cx_list[i], c)
-
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
                 self._cx_intermediates.append(c)
@@ -478,23 +458,6 @@ class OptimizationVariableList:
 
         self._cx = vertcat(self._cx, cx[0])
         self._cx_end = vertcat(self._cx_end, cx[1])
-
-        # cx_per_variable = MX()
-        # for i in range(len(cx)):
-        #     if i == 0:
-        #         cx_per_variable = cx[i]
-        #     else:
-        #         cx_per_variable = horzcat(cx_per_variable, cx[i])
-        # if self._cx.shape == (0, ):
-        #     self._cx = cx_per_variable
-        # else:
-        #     self._cx = vertcat(self._cx, cx_per_variable)
-        #
-        # for i, c in enumerate(cx):
-        #     if i >= len(self._cx_list):
-        #         self._cx_list.append(c)
-        #     else:
-        #         self._cx_list[i] = vertcat(self._cx_list[i], c)
 
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
@@ -531,13 +494,6 @@ class OptimizationVariableList:
 
         return self._cx_intermediates
 
-    # @property
-    # def cx_list(self):
-    #     """
-    #     The cx of all elements together (starting point)
-    #     """
-    #
-    #     return self._cx_list
 
     @property
     def mx(self):
@@ -706,12 +662,6 @@ class OptimizationVariableContainer:
 
         return self.optimization_variable["unscaled"].cx[:, 0]
 
-    # @property
-    # def cx_list(self):
-    #     """
-    #     The cx starting point
-    #     """
-    #     return self.optimization_variable["unscaled"].cx_list
 
     """"autre a coder"""
 

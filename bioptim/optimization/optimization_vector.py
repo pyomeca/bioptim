@@ -359,13 +359,13 @@ class OptimizationVector:
                         x_scaled[nlp.phase_idx].append(
                             nlp.cx.sym(
                                 "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
-                                nlp.states["scaled"].shape,
+                                nlp.states[0]["scaled"].shape,
                                 nlp.ode_solver.polynomial_degree + 1,
                             )
                         )
                     else:
                         x_scaled[nlp.phase_idx].append(
-                            nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states["scaled"].shape, 1)
+                            nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states[0]["scaled"].shape, 1)
                         )
                     x[nlp.phase_idx].append(x_scaled[nlp.phase_idx][k] * nlp.x_scaling["all"].scaling)
                 else:
@@ -377,7 +377,7 @@ class OptimizationVector:
                         nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                     ):
                         u_scaled[nlp.phase_idx].append(
-                            nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls["scaled"].shape, 1)
+                            nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls[0]["scaled"].shape, 1)
                         )
                         u[nlp.phase_idx].append(u_scaled[nlp.phase_idx][0] * nlp.u_scaling["all"].scaling)
                 else:
@@ -412,12 +412,12 @@ class OptimizationVector:
         # Sanity check
         for nlp in ocp.nlp:
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
+                nlp.x_bounds.check_and_adjust_dimensions(nlp.states[0].shape, nlp.ns)
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                 if nlp.control_type == ControlType.CONSTANT:
-                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
+                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls[0].shape, nlp.ns - 1)
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
+                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls[0].shape, nlp.ns)
                 else:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
@@ -425,7 +425,7 @@ class OptimizationVector:
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                nx = nlp.states.shape
+                nx = nlp.states[0].shape
                 if nlp.ode_solver.is_direct_collocation:
                     all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                     outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
@@ -452,7 +452,7 @@ class OptimizationVector:
                     ns = nlp.ns + 1
                 else:
                     raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-                nu = nlp.controls.shape
+                nu = nlp.controls[0].shape
                 all_nu = nu * ns
                 u_bounds = Bounds([0] * all_nu, [0] * all_nu, interpolation=InterpolationType.CONSTANT)
                 for k in range(ns):
@@ -498,13 +498,13 @@ class OptimizationVector:
                 if nlp.ode_solver.is_direct_shooting:
                     if nlp.x_init.type == InterpolationType.ALL_POINTS:
                         raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                nlp.x_init.check_and_adjust_dimensions(nlp.states.shape, ns)
+                nlp.x_init.check_and_adjust_dimensions(nlp.states[0].shape, ns)
 
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                 if nlp.control_type == ControlType.CONSTANT:
-                    nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
+                    nlp.u_init.check_and_adjust_dimensions(nlp.controls[0].shape, nlp.ns - 1)
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
+                    nlp.u_init.check_and_adjust_dimensions(nlp.controls[0].shape, nlp.ns)
                 else:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
@@ -512,7 +512,7 @@ class OptimizationVector:
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                nx = nlp.states.shape
+                nx = nlp.states[0].shape
                 if nlp.ode_solver.is_direct_collocation and nlp.x_init.type != InterpolationType.EACH_FRAME:
                     all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                     outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
@@ -543,7 +543,7 @@ class OptimizationVector:
                     ns = nlp.ns + 1
                 else:
                     raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-                nu = nlp.controls.shape
+                nu = nlp.controls[0].shape
                 all_nu = nu * ns
                 u_init = InitialGuess([0] * all_nu, interpolation=InterpolationType.CONSTANT)
                 for k in range(ns):

@@ -106,8 +106,8 @@ class DynamicsFunctions:
             The derivative of the states and the defects of the implicit dynamics
         """
 
-        q = DynamicsFunctions.get(nlp.states["q"], states)
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        q = DynamicsFunctions.get(nlp.states[0]["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
@@ -132,9 +132,9 @@ class DynamicsFunctions:
             dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
         else:
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
-            dxdt = MX(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+            dxdt = MX(nlp.states[0].shape, ddq.shape[1])
+            dxdt[nlp.states[0]["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+            dxdt[nlp.states[0]["qdot"].index, :] = ddq
 
         if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
@@ -142,7 +142,7 @@ class DynamicsFunctions:
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
         if not with_contact and fatigue is None:
-            qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot["scaled"].mx_reduced)
+            qddot = DynamicsFunctions.get(nlp.states_dot[0]["qddot"], nlp.states_dot[0]["scaled"].mx_reduced)
             tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
             defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
@@ -153,7 +153,7 @@ class DynamicsFunctions:
                     - DynamicsFunctions.compute_qdot(
                         nlp,
                         q,
-                        DynamicsFunctions.get(nlp.states_dot["scaled"]["qdot"], nlp.states_dot["scaled"].mx_reduced),
+                        DynamicsFunctions.get(nlp.states_dot[0]["scaled"]["qdot"], nlp.states_dot[0]["scaled"].mx_reduced),
                     )
                 )
             defects[: dq.shape[0], :] = horzcat(*dq_defects)
@@ -183,7 +183,7 @@ class DynamicsFunctions:
         The generalized accelerations
         """
 
-        tau_var, tau_mx = (nlp.controls, controls) if "tau" in nlp.controls else (nlp.states, states)
+        tau_var, tau_mx = (nlp.controls[0], controls) if "tau" in nlp.controls[0] else (nlp.states[0], states)
         tau = DynamicsFunctions.get(tau_var["tau"], tau_mx)
         if fatigue is not None and "tau" in fatigue:
             tau_fatigue = fatigue["tau"]
@@ -683,7 +683,7 @@ class DynamicsFunctions:
         The derivative of q
         """
 
-        q_nlp = nlp.states["q"] if "q" in nlp.states else nlp.controls["q"]
+        q_nlp = nlp.states[0]["q"] if "q" in nlp.states[0] else nlp.controls[0]["q"]
         return q_nlp.mapping.to_first.map(nlp.model.reshape_qdot(q, qdot))
 
     @staticmethod
@@ -714,7 +714,7 @@ class DynamicsFunctions:
         -------
         The derivative of qdot
         """
-        qdot_var = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
+        qdot_var = nlp.states[0]["qdot"] if "qdot" in nlp.states[0] else nlp.controls[0]["qdot"]
 
         if nlp.external_forces:
             dxdt = MX(len(qdot_var.mapping.to_first), nlp.ns)
