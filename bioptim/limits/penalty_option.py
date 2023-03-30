@@ -567,7 +567,7 @@ class PenaltyOption(OptionGeneric):
 
         """
 
-        def plot_function(t, x, u, p):
+        def plot_function(t, x, u, p, *penalty):
             if isinstance(t, (list, tuple)):
                 return self.target_to_plot[:, [self.node_idx.index(_t) for _t in t]]
             else:
@@ -578,16 +578,28 @@ class PenaltyOption(OptionGeneric):
                 plot_type = PlotType.STEP
             else:
                 plot_type = PlotType.POINT
-
-            all_pn.ocp.add_plot(
-                self.target_plot_name,
-                plot_function,
-                color="tab:red",
-                plot_type=plot_type,
-                phase=all_pn.nlp.phase_idx,
-                axes_idx=Mapping(self.rows),
-                node_idx=self.node_idx,
-            )
+            if plot_type == PlotType.POINT:
+                all_pn.ocp.add_plot(
+                    self.target_plot_name,
+                    plot_function,
+                    penalty = self,
+                    color="tab:red",
+                    plot_type=plot_type,
+                    phase=all_pn.nlp.phase_idx,
+                    axes_idx=Mapping(self.rows),
+                    node_idx=self.node_idx,
+                )
+            else :
+                all_pn.ocp.add_plot(
+                    self.target_plot_name,
+                    plot_function,
+                   # penalty=self,
+                    color="tab:red",
+                    plot_type=plot_type,
+                    phase=all_pn.nlp.phase_idx,
+                    axes_idx=Mapping(self.rows),
+                    node_idx=self.node_idx,
+                )
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         """
