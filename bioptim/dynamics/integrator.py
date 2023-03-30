@@ -69,7 +69,6 @@ class Integrator:
         self.t_span = ode_opt["t0"], ode_opt["tf"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
-        self.cx_list = ode_opt["cx_list"]
         self.x_sym = ode["x_scaled"]
         self.u_sym = ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
@@ -152,7 +151,7 @@ class Integrator:
 
         self.function = Function(
             "integrator",
-            [self.x_sym, self.u_sym, self.param_sym],
+            [self.x_sym[0], self.u_sym[0], self.param_sym],
             self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall"],
@@ -239,10 +238,10 @@ class RK(Integrator):
         The derivative of the states
         """
 
-        u = controls[self.node_index]
-        x = self.cx(states[0].shape[0], self.n_step + 1)
+        u = controls
+        x = self.cx(states.shape[0], self.n_step + 1)
         p = params
-        x[:, 0] = states[self.node_index]
+        x[:, 0] = states
 
         for i in range(1, self.n_step + 1):
             t_norm_init = (i - 1) / self.n_step  # normalized time
@@ -701,7 +700,7 @@ class IRK(COLLOCATION):
 
         self.function = Function(
             "integrator",
-            [self.x_sym[0], self.u_sym, self.param_sym],
+            [self.x_sym[0], self.u_sym[0], self.param_sym],
             self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall"],
