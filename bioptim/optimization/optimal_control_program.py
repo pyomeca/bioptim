@@ -28,7 +28,6 @@ from ..limits.constraints import (
     ConstraintList,
     Constraint,
     MultinodeConstraintsFunctions,
-    ContinuityConstraintFunctions,
 )
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import BinodeConstraintList, AllNodeConstraintList

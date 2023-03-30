@@ -425,8 +425,8 @@ class OptimizationVariableList:
         """
 
         index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
-        self._cx = vertcat(self._cx, cx[0])
-        self._cx_end = vertcat(self._cx_end, cx[1])
+        self._cx = cx[0]
+        self._cx_end = cx[1]
 
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
@@ -456,8 +456,8 @@ class OptimizationVariableList:
             The scaled optimization variable associated with this variable
         """
 
-        self._cx = vertcat(self._cx, cx[0])
-        self._cx_end = vertcat(self._cx_end, cx[1])
+        self._cx = cx[0]
+        self._cx_end = cx[1]
 
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
@@ -487,7 +487,7 @@ class OptimizationVariableList:
 
 
     @property
-    def cx_intermediates_list(self):
+    def cx_intermediates(self):
         """
         The cx of all elements together (starting point)
         """

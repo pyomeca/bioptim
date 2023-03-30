@@ -204,6 +204,11 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         return target_out
 
     def get_x_and_u_at_idx(_penalty, _idx, is_unscaled):
+
+
+        """
+        TODO: Change here
+        """
         if _penalty.transition:
             ocp = interface.ocp
             if is_unscaled:

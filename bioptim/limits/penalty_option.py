@@ -677,44 +677,27 @@ class PenaltyOption(OptionGeneric):
             self.ensure_penalty_sanity(ocp, all_pn[0].nlp)
 
         elif self.allnode_constraint:
-            all_pn = []
-            self.node_list = self.node
+            #all_pn = []
             # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
             # self.transition = True
             self.dt = 1
-            # self.phase_pre_idx
-            # self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
-            if not self.states_mapping:
-                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
-            self.node = self.node_list[0]
+            #if not self.states_mapping:
+            #    self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
             nlp = ocp.nlp[self.phase_idx]
-            all_pn.append(self._get_penalty_node_list(ocp, nlp))
-
-            # reset the node list
-            self.node = self.node_list
-
-            penalty_type.validate_penalty_time_index(self, all_pn[0])
-            self.node_idx = [all_pn[0].t[0]]
-            self.ensure_penalty_sanity(ocp, all_pn[0].nlp)
-
-            # all_pn = []
-            # # Make sure the penalty behave like a AllNodeConstraint, even though it may be an Objective or Constraint
-            # # self.transition = True
-            # self.dt = 1
-            # if not self.states_mapping:
-            #     self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
-            # nlp = ocp.nlp[self.phase_idx]
-            #
-            # all_pn.append()
-            #
-            # penalty_function = self.type(self, all_pn, **self.params)
-            # self.set_penalty(penalty_function, all_pn)
+            #all_pn.append(self._get_penalty_node_list(ocp, nlp))
+            all_pn = self._get_penalty_node_list(ocp, nlp)
+            penalty_type.validate_penalty_time_index(self, all_pn)
+            # self.node_idx = [all_pn[0].t[0]] # t?
+            penalty_type.validate_penalty_time_index(self, all_pn)
+            self.node_idx = all_pn.t
+            self.ensure_penalty_sanity(ocp, all_pn.nlp)
 
         else:
             all_pn = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, all_pn)
             self.ensure_penalty_sanity(all_pn.ocp, all_pn.nlp)
-            self.dt = penalty_type.get_dt(all_pn.nlp)
+            #self.dt = penalty_type.get_dt(all_pn.nlp)
+            self.dt = 1
             self.node_idx = (
                 all_pn.t[:-1]
                 if (
@@ -804,4 +787,4 @@ class PenaltyOption(OptionGeneric):
         x_scaled = [nlp.X_scaled[idx] for idx in t]
         u = [nlp.U[idx] for idx in t if idx != nlp.ns]
         u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
-        return PenaltyNodeList(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx)
+        return PenaltyNodeList(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx)    #nlp.parameters.cx[0]

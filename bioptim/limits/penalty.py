@@ -663,9 +663,9 @@ class PenaltyFunctionAbstract:
         def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):
             nlp = all_pn.nlp
             if nlp.control_type == ControlType.CONSTANT:
-                u = nlp.controls.cx[0]
+                u = nlp.controls[0].cx[0]
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                u = horzcat(nlp.controls.cx[0], nlp.controls.cx[-1])
+                u = horzcat(nlp.controls[0].cx[0], nlp.controls[0].cx[-1])
             else:
                 raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
 
@@ -676,9 +676,9 @@ class PenaltyFunctionAbstract:
 
             node_idx = penalty.node_idx[0] if len(penalty.node_idx) == 1 else 0 #else 0
 
-            continuity = nlp.states.cx_list[-1]
+            continuity = nlp.states[0].cx[-1]
             if nlp.ode_solver.is_direct_collocation:
-                cx = horzcat(*([nlp.states.cx_list[0]] + nlp.states.cx_intermediates_list))
+                cx = horzcat(*([nlp.states[0].cx[0]] + nlp.states.cx_intermediates_list))
                 continuity -= nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx[0])["xf"]
                 continuity = vertcat(
                     continuity, nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx[0])["defects"]
@@ -686,8 +686,7 @@ class PenaltyFunctionAbstract:
                 penalty.integrate = True
 
             else:
-                continuity -= nlp.dynamics[node_idx][0](x0=nlp.states.cx_list[0][0], p=u, params=nlp.states.cx_list[0][0])["xf"]
-                # TODO: if cx = MX() / continuity -= nlp.dynamics[node_idx](x0=nlp.states.cx[0], p=u, params=nlp.parameters.cx[0])["xf"]
+                continuity -= nlp.dynamics[node_idx](x0=nlp.states[0].cx[0], p=u, params=nlp.states[0].cx[0])["xf"]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
