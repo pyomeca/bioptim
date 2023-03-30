@@ -706,3 +706,4 @@ class BiorbdModel(MultiBiorbdModel):
 
     def serialize(self) -> tuple[Callable, dict]:
         return BiorbdModel, dict(bio_model=self.path)
+
