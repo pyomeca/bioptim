@@ -27,8 +27,6 @@ class NonLinearProgram:
         The control type for the current nlp
     cx: MX | SX
         The type of symbolic variable that is used
-    cx_end: MX | SX
-        The type of symbolic variable that is used
     dt: float
         The delta time of the current phase
     dynamics: list[ODE_SOLVER]
@@ -117,7 +115,6 @@ class NonLinearProgram:
         self.soft_contact_forces_func = None
         self.control_type = ControlType.NONE
         self.cx = None
-        self.cx_end = None
         self.dt = None
         self.dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
@@ -151,13 +148,13 @@ class NonLinearProgram:
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
-        self.controls = OptimizationVariableContainer()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
         self.X_scaled = None
         self.X = None
         self.states = OptimizationVariableContainer()
         self.states_dot = OptimizationVariableContainer()
+        self.controls = OptimizationVariableContainer()
 
     def initialize(self, cx: Callable = None):
         """
@@ -169,18 +166,35 @@ class NonLinearProgram:
             The type of casadi variable
 
         """
+        # self.controls._set_cx(self.cx)
+        # self.states._set_cx(self.cx)
+        # self.states_dot._set_cx(self.cx)
+
         self.plot = {}
         self.cx = cx
-        self.states["scaled"]._cx = self.cx()
-        self.states["scaled"]._cx_end = self.cx()
-        self.states._cx = self.cx()
-        self.controls["scaled"]._cx = self.cx()
-        self.controls["scaled"]._cx_end = self.cx()
-        self.controls._cx = self.cx()
         self.J = []
         self.g = []
         self.g_internal = []
         self.casadi_func = {}
+        self.states = [self.cx() for _ in range(self.ns + 1)]
+        self.states_dot = [self.cx() for _ in range(self.ns + 1)]
+        self.controls = [self.cx() for _ in range(self.ns + 1)]
+        for node_index in range(self.ns + 1):
+            self.states[node_index] = OptimizationVariableContainer()
+            self.states[node_index]._cx = self.cx()
+            self.states[node_index]["scaled"]._cx = self.cx()
+            self.states[node_index]["unscaled"]._cx = self.cx()
+
+            self.states_dot[node_index] = OptimizationVariableContainer()
+            self.states_dot[node_index]._cx = self.cx()
+            self.states_dot[node_index]["scaled"]._cx = self.cx()
+            self.states_dot[node_index]["unscaled"]._cx = self.cx()
+
+            self.controls[node_index] = OptimizationVariableContainer()
+            self.controls[node_index]._cx = self.cx()
+            self.controls[node_index]["scaled"]._cx = self.cx()
+            self.controls[node_index]["unscaled"]._cx = self.cx()
+
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
