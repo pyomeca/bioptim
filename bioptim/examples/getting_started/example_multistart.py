@@ -5,7 +5,6 @@ This example is a variation of the pendulum example in getting_started/pendulum.
 import pickle
 import os
 
-from typing import Callable, Any
 
 from bioptim import (
     BiorbdModel,
@@ -108,9 +107,10 @@ def prepare_ocp(
 def save_results(
     sol: Solution,
     biorbd_model_path: str,
-    final_time: int,
+    final_time: float,
     n_shooting: int,
     seed: int,
+    save_folder: str,
     only_save_filename: bool = False,
 ):
     """
@@ -136,22 +136,23 @@ def save_results(
     if only_save_filename == True:
         return filename
     states = sol.states["all"]
-    save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
+  #  save_folder = "./temporary_results/"
 
     with open(f"{save_folder}/{filename}", "wb") as file:
         pickle.dump(states, file)
 
-def should_solve(args,save_results=save_results):
+def should_solve(args, save_folder,save_results=save_results):
     """
     Check if the filename already appears in the folder where files are saved, if not ocp must be solved
     """
-    save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
+    #save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
     already_done_filenames = os.listdir(f"{save_folder}")
     return save_results([None], *args, only_save_filename=True) not in already_done_filenames
 
 def prepare_multi_start(
     combinatorial_parameters: dict[tuple,...],
     n_pools: int = 1,
+    save_folder: str = None,
 
 ) -> MultiStart:
     """
@@ -161,7 +162,7 @@ def prepare_multi_start(
         combinatorial_parameters=combinatorial_parameters,
         prepare_ocp_callback=prepare_ocp,
         post_optimization_callback=save_results,
-        should_solve_callback=should_solve,
+        should_solve_callback=lambda *args, **kwargs: should_solve(*args, **kwargs, save_folder=save_folder),
         solver=Solver.IPOPT(show_online_optim=False),  # You cannot use show_online_optim with multi-start
         n_pools=n_pools,
     )
@@ -170,9 +171,12 @@ def prepare_multi_start(
 def main():
     # --- Prepare the multi-start and run it --- #
 
+    #Creates a folder to save the solutions
+    save_folder = "./temporary_solutions"
+    os.mkdir(f"{save_folder}")
 
-    global save_folder
-    save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
+#    global save_folder
+    #save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
     already_done_filenames = os.listdir(f"{save_folder}")
 
     bio_model_path = ["models/pendulum.bioMod"]
@@ -185,10 +189,13 @@ def main():
     multi_start = prepare_multi_start(
         combinatorial_parameters=combinatorial_parameters,
         n_pools=4,
+        save_folder=save_folder,
     )
 
     multi_start.solve()
 
+    #Delete the solutions
+    #os.rmdir(f"path/{save_folder}")
 
 if __name__ == "__main__":
     main()
