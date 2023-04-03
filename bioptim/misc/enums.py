@@ -175,3 +175,13 @@ class CXStep(Enum):
 class MagnitudeType(Enum):
     RELATIVE = "relative"
     ABSOLUTE = "absolute"
+
+
+class MultiCyclicCycleSolutions(Enum):
+    """
+    Selection of extra solution for multi cyclic receding horizon optimization
+    """
+
+    NONE = "none"
+    FIRST_CYCLES = "first_cycles"
+    ALL_CYCLES = "all_cycles"

@@ -63,7 +63,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True, with_contact=True)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
     # raise RuntimeError("This example is broken, since contact dynamics with muscle is not implemented")
 
     # Path constraint

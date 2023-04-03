@@ -18,6 +18,8 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BiMappingList,
+    SelectionMapping,
+    Dependency,
     BoundsList,
     Bounds,
     InitialGuessList,
@@ -31,15 +33,23 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
     dof_mapping = BiMappingList()
-    dof_mapping.add("tau", [None, None, None, 0], [3])
 
+    # adds a bimapping to bimappinglist
+    # dof_mapping.add("tau", [None, None, None, 0], [3])
+    # easier way is to use SelectionMapping which is a subclass of biMapping
+    bimap = SelectionMapping(
+        nb_elements=bio_model.nb_dof,
+        independent_indices=(3,),
+        dependencies=(Dependency(dependent_index=None, reference_index=None, factor=None),),
+    )
+    dof_mapping.add(name="tau", bimapping=bimap)
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_torque=True, with_contact=True)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=True, with_contact=True)
 
     # Constraints
     constraints = ConstraintList()
@@ -86,7 +96,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,

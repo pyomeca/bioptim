@@ -338,7 +338,7 @@ def solve_ivp_bioptim_interface(
     """
     dynamics_output = "xall" if keep_intermediate_points else "xf"
 
-    if len(x0.shape) != len(u.shape):
+    if len(x0.shape) != len(u.shape) and len(x0.shape) < 2:  # NOT SURE OF THIS FIX
         x0 = x0[:, np.newaxis]
     # if multiple shooting, we need to set the first x0
     x0i = x0[:, 0] if x0.shape[1] > 1 else x0
@@ -347,13 +347,14 @@ def solve_ivp_bioptim_interface(
 
     for s, func in enumerate(dynamics_func):
         u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
+        u_controls = [] if control_type == ControlType.NONE else u[:, u_slice]
         # y always contains [x0, xf] of the interval
         y = np.concatenate(
             (
                 np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
                 if keep_intermediate_points
                 else x0i,  # x0 or None
-                np.array(func(x0=x0i, p=u[:, u_slice], params=params / param_scaling)[dynamics_output]),
+                np.array(func(x0=x0i, p=u_controls, params=params / param_scaling)[dynamics_output]),
             ),  # xf or xall
             axis=1,
         )

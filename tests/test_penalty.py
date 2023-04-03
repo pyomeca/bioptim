@@ -15,6 +15,7 @@ from bioptim import (
     Constraint,
     Node,
     RigidBodyDynamics,
+    ControlType,
 )
 from bioptim.limits.penalty_node import PenaltyNodeList
 from bioptim.limits.penalty import PenaltyOption
@@ -33,7 +34,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     elif with_muscles:
         bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True)
+        dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True)
         nx = bio_model.nb_q + bio_model.nb_qdot
         nu = bio_model.nb_tau + bio_model.nb_muscles
     elif with_contact:
@@ -822,12 +823,14 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
 @pytest.mark.parametrize("ns", [1, 10, 11])
 def test_PenaltyFunctionAbstract_get_node(node, ns):
     nlp = NLP()
+    nlp.control_type = ControlType.CONSTANT
     nlp.ns = ns
     nlp.X = np.linspace(0, -10, ns + 1)
     nlp.U = np.linspace(10, 19, ns)
     nlp.X_scaled = nlp.X
     nlp.U_scaled = nlp.U
     tp = OptimizationVariableList()
+    tp.cx_constructor = MX
     tp.append("param", [MX(), MX()], MX(), BiMapping([], []))
     nlp.parameters = tp["param"]
 

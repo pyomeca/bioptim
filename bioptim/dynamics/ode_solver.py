@@ -133,24 +133,23 @@ class RK(OdeSolverBase):
             "x_unscaled": nlp.states[0].cx,
             "x_scaled": nlp.states[0]["scaled"].cx,
             "p_unscaled": nlp.controls[0].cx
-            if nlp.control_type == ControlType.CONSTANT     # TODO: free variable
-            else horzcat(nlp.controls[0].cx[0], nlp.controls[0].cx[-1]),
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
+            else horzcat(nlp.controls[0].cx[0], nlp.controls[0].cx[-1]),    # TODO : Garder cx[0] ou cx_start ?
             "p_scaled": nlp.controls[0]["scaled"].cx
-            if nlp.control_type == ControlType.CONSTANT
-            else horzcat(nlp.controls[0]["scaled"].cx[0], nlp.controls[0]["scaled"].cx[-1]),
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
+            else horzcat(nlp.controls[0]["scaled"].cx[0], nlp.controls[0]["scaled"].cx[-1]),    # TODO: Garder cx[0] ou cx_start ?
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
-        return nlp.ode_solver.rk_integrator(ode, ode_opt)
+        # return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
-        # if len(nlp.external_forces) != 0:
-        #     dynamics_out = []
-        #     for idx in range(len(nlp.external_forces)):
-        #         ode_opt["idx"] = idx
-        #         dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
-        #     return dynamics_out
-        # else:
-        #     return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+
+        dynamics_out = []
+        for idx in range(ode["ode"].size2_out("xdot")):  # TODO: after Anais has her PR accepted, change that to NS
+            ode_opt["idx"] = idx
+            dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
+        return dynamics_out
+
 
     def __str__(self):
         ode_solver_string = f"{self.rk_integrator.__name__} {self.steps} step"
@@ -312,7 +311,15 @@ class OdeSolver:
                 "method": self.method,
                 "defects_type": self.defects_type,
             }
-            return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+
+            if len(nlp.external_forces) == 0:
+                return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+
+            dynamics_out = []
+            for idx in range(len(nlp.external_forces)):
+                ode_opt["idx"] = idx
+                dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
+            return dynamics_out
 
         def __str__(self):
             return f"{self.rk_integrator.__name__} {self.method} {self.polynomial_degree}"

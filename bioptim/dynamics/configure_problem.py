@@ -44,12 +44,12 @@ class ConfigureProblem:
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
         relationship
     muscle_driven(
-        ocp, nlp, with_excitations: bool = False, with_torque: bool = False, with_contact: bool = False
+        ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False
     )
         Configure the dynamics for a muscle driven program.
         If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
         The tau from muscle is computed using the muscle activations.
-        If with_torque is set to True, then tau are used as supplementary force in the
+        If with_residual_torque is set to True, then tau are used as supplementary force in the
         case muscles are too weak.
     configure_dynamics_function(ocp, nlp, dyn_func, **extra_params)
         Configure the dynamics of the system
@@ -71,12 +71,12 @@ class ConfigureProblem:
         Configure the generalized jerks
     configure_tau(nlp, as_states: bool, as_controls: bool)
         Configure the generalized forces
+    configure_residual_tau(nlp, as_states: bool, as_controls: bool)
+        Configure the residual forces
     configure_taudot(nlp, as_states: bool, as_controls: bool)
         Configure the generalized forces derivative
     configure_muscles(nlp, as_states: bool, as_controls: bool)
         Configure the muscles
-    _adjust_mapping(key_to_adjust: str, reference_keys: list, nlp)
-        Automatic mapping duplicator basing the values on the another mapping
     """
 
     @staticmethod
@@ -155,6 +155,7 @@ class ConfigureProblem:
         nlp,
         with_contact: bool = False,
         with_passive_torque: bool = False,
+        with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
@@ -170,8 +171,10 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        with_passive_torque : bool
+        with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
@@ -180,7 +183,8 @@ class ConfigureProblem:
             A list of fatigue elements
 
         """
-
+        if with_contact and nlp.model.nb_contacts == 0:
+            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
         if nlp.model.nb_soft_contacts != 0:
             if (
                 soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
@@ -229,6 +233,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
                 with_contact=with_contact,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
             if with_contact:
                 # qddot is continuous with RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
@@ -236,15 +241,17 @@ class ConfigureProblem:
                 # at the first shooting node
                 node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
                 ConfigureProblem.configure_contact_forces(ocp, nlp, False, True)
-                for ii in range(nlp.model.nb_contacts):
-                    ocp.implicit_constraints.add(
-                        ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
-                        with_contact=with_contact,
-                        contact_index=ii,
-                        node=node,
-                        constraint_type=ConstraintType.IMPLICIT,
-                        phase=nlp.phase_idx,
-                    )
+                for ii in range(nlp.model.nb_rigid_contacts):
+                    for jj in nlp.model.rigid_contact_index(ii):
+                        ocp.implicit_constraints.add(
+                            ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
+                            with_contact=with_contact,
+                            contact_index=ii,
+                            contact_axis=jj,
+                            node=node,
+                            constraint_type=ConstraintType.IMPLICIT,
+                            phase=nlp.phase_idx,
+                        )
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
@@ -257,6 +264,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 phase=nlp.phase_idx,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
 
         # Declared soft contacts controls
@@ -275,6 +283,7 @@ class ConfigureProblem:
                 fatigue=fatigue,
                 rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
 
         # Configure the contact forces
@@ -297,6 +306,7 @@ class ConfigureProblem:
         nlp,
         with_contact=False,
         with_passive_torque: bool = False,
+        with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
     ):
@@ -313,12 +323,17 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
 
         """
+        if with_contact and nlp.model.nb_contacts == 0:
+            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
+
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
@@ -366,6 +381,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
 
         if with_contact:
@@ -381,7 +397,14 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def torque_activations_driven(ocp, nlp, with_contact=False, with_passive_torque: bool = False):
+    def torque_activations_driven(
+        ocp,
+        nlp,
+        with_contact: bool = False,
+        with_passive_torque: bool = False,
+        with_residual_torque: bool = False,
+        with_ligament: bool = False,
+    ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
@@ -397,11 +420,22 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_residual_torque: bool
+            If the dynamic with a residual torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
+
         """
+
+        if with_contact and nlp.model.nb_contacts == 0:
+            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
         ConfigureProblem.configure_tau(ocp, nlp, False, True)
+
+        if with_residual_torque:
+            ConfigureProblem.configure_residual_tau(ocp, nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -412,6 +446,8 @@ class ConfigureProblem:
                 DynamicsFunctions.torque_activations_driven,
                 with_contact=with_contact,
                 with_passive_torque=with_passive_torque,
+                with_residual_torque=with_residual_torque,
+                with_ligament=with_ligament,
             )
 
         if with_contact:
@@ -469,16 +505,17 @@ class ConfigureProblem:
         nlp,
         with_excitations: bool = False,
         fatigue: FatigueList = None,
-        with_torque: bool = False,
+        with_residual_torque: bool = False,
         with_contact: bool = False,
         with_passive_torque: bool = False,
+        with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ):
         """
         Configure the dynamics for a muscle driven program.
-        If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
+        If with_excitations is set to True, then the muscle activations are computed from the muscle dynamics.
         The tau from muscle is computed using the muscle activations.
-        If with_torque is set to True, then tau are used as supplementary force in the
+        If with_residual_torque is set to True, then tau are used as supplementary force in the
         case muscles are too weak.
 
         Parameters
@@ -491,18 +528,22 @@ class ConfigureProblem:
             If the dynamic should include the muscle dynamics
         fatigue: FatigueList
             The list of fatigue parameters
-        with_torque: bool
+        with_residual_torque: bool
             If the dynamic should be added with residual torques
         with_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
 
         """
+        if with_contact and nlp.model.nb_contacts == 0:
+            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
 
-        if fatigue is not None and "tau" in fatigue and not with_torque:
+        if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
@@ -511,7 +552,8 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
         ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
-        if with_torque:
+
+        if with_residual_torque:
             ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, True, fatigue=fatigue)
 
@@ -523,6 +565,7 @@ class ConfigureProblem:
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
             )
 
         if nlp.dynamics_type.dynamic_function:
@@ -534,8 +577,9 @@ class ConfigureProblem:
                 DynamicsFunctions.muscles_driven,
                 with_contact=with_contact,
                 fatigue=fatigue,
-                with_torque=with_torque,
+                with_residual_torque=with_residual_torque,
                 with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
                 rigidbody_dynamics=rigidbody_dynamics,
             )
 
@@ -751,12 +795,6 @@ class ConfigureProblem:
         for i, meta_suffix in enumerate(meta_suffixes):
             var_names_with_suffix.append(f"{name}_{meta_suffix}" if not multi_interface else f"{name}")
 
-            try:
-                ConfigureProblem._adjust_mapping(var_names_with_suffix[-1], [name], nlp)
-            except RuntimeError as message:
-                if message.args[0] != "Could not adjust mapping with the reference_keys provided":
-                    raise RuntimeError(message)
-
             if split_controls:
                 ConfigureProblem.configure_new_variable(
                     var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
@@ -782,7 +820,6 @@ class ConfigureProblem:
 
             for p, params in enumerate(fatigue_suffix):
                 name_tp = f"{var_names_with_suffix[-1]}_{params}"
-                ConfigureProblem._adjust_mapping(name_tp, [var_names_with_suffix[-1]], nlp)
                 ConfigureProblem.configure_new_variable(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
                 nlp.plot[name_tp] = CustomPlot(
                     lambda t, x, u, p, key, mod: mod * x[nlp.states[key].index, :],
@@ -1136,7 +1173,6 @@ class ConfigureProblem:
 
         name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qdot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
@@ -1161,7 +1197,6 @@ class ConfigureProblem:
 
         name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q", "qdot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_qddot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
@@ -1184,7 +1219,6 @@ class ConfigureProblem:
 
         name = "qdddot"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["q", "qdot", "qddot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
@@ -1207,10 +1241,31 @@ class ConfigureProblem:
 
         name = "tau"
         name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot", "taudot"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
             name, name_tau, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
+        )
+
+    @staticmethod
+    def configure_residual_tau(ocp, nlp, as_states: bool, as_controls: bool):
+        """
+        Configure the residual forces
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized forces should be a state
+        as_controls: bool
+            If the generalized forces should be a control
+        """
+
+        name = "residual_tau"
+        name_residual_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
+        ConfigureProblem.configure_new_variable(
+            name, name_residual_tau, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1255,7 +1310,6 @@ class ConfigureProblem:
 
         name = "taudot"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        ConfigureProblem._adjust_mapping(name, ["qdot", "tau"], nlp)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
@@ -1332,40 +1386,6 @@ class ConfigureProblem:
             combine_state_control_plot=True,
             fatigue=fatigue,
         )
-
-    @staticmethod
-    def _adjust_mapping(key_to_adjust: str, reference_keys: list, nlp):
-        """
-        Automatic mapping duplicator basing the values on the another mapping
-
-        Parameters
-        ----------
-        key_to_adjust: str
-            The name of the variable to create if not already defined
-        reference_keys: list[str]
-            The reference keys, as soon one is found, it is used and the function returns
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-
-        if key_to_adjust not in nlp.variable_mappings:
-            for n in reference_keys:
-                if n in nlp.variable_mappings:
-                    if n == "q":
-                        q_map = list(nlp.variable_mappings[n].to_first.map_idx)
-                        target = list(range(nlp.model.nb_q))
-                        if nlp.model.nb_quaternions > 0:
-                            if q_map != target:
-                                raise RuntimeError(
-                                    "It is not possible to define a q mapping without a qdot or tau mapping"
-                                    "while the model has quaternions"
-                                )
-                            target = list(range(nlp.model.nb_qdot))
-                        nlp.variable_mappings[key_to_adjust] = BiMapping(target, target)
-                    else:
-                        nlp.variable_mappings[key_to_adjust] = nlp.variable_mappings[n]
-                    return
-            raise RuntimeError("Could not adjust mapping with the reference_keys provided")
 
     @staticmethod
     def _apply_phase_mapping(ocp, nlp, name):

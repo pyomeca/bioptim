@@ -31,6 +31,8 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BiMappingList,
+    SelectionMapping,
+    Dependency,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -67,7 +69,18 @@ def prepare_ocp(
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
     dof_mappings = BiMappingList()
+
+    # adds a bimapping to bimappinglist
     dof_mappings.add("q", to_second=[0, 1, None, 2, 2], to_first=[0, 1, 3], oppose_to_second=4)
+    # easier way is to use SelectionMapping which is a subclass of biMapping
+    bimap = SelectionMapping(
+        nb_elements=bio_model.nb_dof,
+        independent_indices=(0, 1, 3),
+        dependencies=(Dependency(dependent_index=4, reference_index=3, factor=-1),),
+    )
+    dof_mappings.add("q", bimapping=bimap)
+    dof_mappings.add("qdot", bimapping=bimap)
+    dof_mappings.add("tau", bimapping=bimap)
     # For convenience, if only q is defined, qdot and tau are automatically defined too
     # While computing the derivatives, the states is 6 dimensions (3 for q and 3 for qdot) and controls is 3 dimensions
     # However, the forward dynamics ([q, qdot, tau] => qddot) needs 5 dimensions vectors (due to the chosen model)

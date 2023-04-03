@@ -662,7 +662,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):
             nlp = all_pn.nlp
-            if nlp.control_type == ControlType.CONSTANT:
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 u = nlp.controls[0].cx[0]
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 u = horzcat(nlp.controls[0].cx[0], nlp.controls[0].cx[-1])
@@ -674,11 +674,17 @@ class PenaltyFunctionAbstract:
 
             penalty.expand = all_pn.nlp.dynamics_type.expand
 
-            node_idx = penalty.node_idx[0] if len(penalty.node_idx) == 1 else 0 #else 0
+            if len(penalty.node_idx) > 1:
+                raise NotImplementedError(
+                    f"Length of node index superior to 1 is not implemented yet,"
+                    f" actual length {len(penalty.node_idx[0])} "
+                )
 
-            continuity = nlp.states[0].cx[-1]
+            node_idx = penalty.node_idx[0] if len(penalty.node_idx) == 1 else 0
+
+            continuity = nlp.states[0].cx[-1] # TODO: cx[-1] ou cx_end ?
             if nlp.ode_solver.is_direct_collocation:
-                cx = horzcat(*([nlp.states[0].cx[0]] + nlp.states.cx_intermediates_list))
+                cx = horzcat(*([nlp.states[0].cx[0]] + nlp.states.cx_intermediates_list)) # TODO: cx[0] ou cx
                 continuity -= nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx[0])["xf"]
                 continuity = vertcat(
                     continuity, nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx[0])["defects"]

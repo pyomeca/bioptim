@@ -21,6 +21,7 @@ from ..gui.graph import OcpToConsole, OcpToGraph
 
 
 from ..interfaces.biomodel import BioModel
+from ..interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -143,7 +144,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: list | tuple | BioModel,
+        bio_model: list | tuple | BioModel | MultiBiorbdModel,
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,

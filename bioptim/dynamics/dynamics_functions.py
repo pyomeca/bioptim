@@ -75,6 +75,7 @@ class DynamicsFunctions:
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
+        with_ligament: bool,
         rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
     ) -> DynamicsEvaluation:
@@ -93,8 +94,10 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
-        with_passive_torque : bool
+        with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         fatigue : FatigueList
@@ -113,6 +116,7 @@ class DynamicsFunctions:
 
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -220,7 +224,14 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_activations_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact, with_passive_torque: bool
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_contact: bool,
+        with_passive_torque: bool,
+        with_residual_torque: bool,
+        with_ligament: bool,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -239,7 +250,10 @@ class DynamicsFunctions:
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
-
+        with_residual_torque: bool
+            If the dynamic should be added with residual torques
+        with_ligament: bool
+            If the dynamic with ligament should be used
 
         Returns
         ----------
@@ -249,10 +263,16 @@ class DynamicsFunctions:
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau_activations = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        tau_activation = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        tau = nlp.model.torque(tau_activations, q, qdot)
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
+        tau = nlp.model.torque(tau_activation, q, qdot)
+        if with_passive_torque:
+            tau += nlp.model.passive_joint_torque(q, qdot)
+        if with_residual_torque:
+            tau += DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
+        if with_ligament:
+            tau += nlp.model.ligament_joint_torque(q, qdot)
+
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
@@ -269,6 +289,7 @@ class DynamicsFunctions:
         rigidbody_dynamics: RigidBodyDynamics,
         with_contact: bool,
         with_passive_torque: bool,
+        with_ligament: bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -289,6 +310,8 @@ class DynamicsFunctions:
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
 
         Returns
         ----------
@@ -301,6 +324,7 @@ class DynamicsFunctions:
 
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
@@ -328,7 +352,12 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_torque_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -343,8 +372,10 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_passive_torque : bool
+        with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
 
         Returns
         ----------
@@ -360,12 +391,18 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau = DynamicsFunctions.get(tau_nlp, tau_var)
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
         return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
     @staticmethod
     def forces_from_torque_activation_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -380,8 +417,10 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_passive_torque : bool
+        with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
 
         Returns
         ----------
@@ -397,6 +436,7 @@ class DynamicsFunctions:
         tau_activations = DynamicsFunctions.get(tau_nlp, tau_var)
         tau = nlp.model.torque(tau_activations, q, qdot)
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
         return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
@@ -408,8 +448,9 @@ class DynamicsFunctions:
         nlp,
         with_contact: bool,
         with_passive_torque: bool = False,
+        with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-        with_torque: bool = False,
+        with_residual_torque: bool = False,
         fatigue=None,
     ) -> DynamicsEvaluation:
         """
@@ -429,11 +470,13 @@ class DynamicsFunctions:
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         fatigue: FatigueDynamicsList
             To define fatigue elements
-        with_torque: bool
+        with_residual_torque: bool
             If the dynamic should be added with residual torques
 
         Returns
@@ -444,7 +487,9 @@ class DynamicsFunctions:
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        residual_tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_torque else None
+        residual_tau = (
+            DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
+        )
 
         mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
@@ -484,6 +529,7 @@ class DynamicsFunctions:
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
@@ -529,7 +575,12 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_muscle_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_passive_torque: bool = False
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
@@ -544,9 +595,10 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_passive_torque : bool
+        with_passive_torque: bool
             If the dynamic with passive torque should be used
-
+        with_ligament: bool
+            If the dynamic with ligament should be used
         Returns
         ----------
         MX.sym
@@ -563,6 +615,7 @@ class DynamicsFunctions:
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
         return nlp.model.contact_forces(q, qdot, tau, nlp.external_forces)
 
