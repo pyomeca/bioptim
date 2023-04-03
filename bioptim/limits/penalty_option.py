@@ -431,8 +431,8 @@ class PenaltyOption(OptionGeneric):
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                state_cx_scaled = horzcat(state_cx_scaled, all_pn.nlp.states[0]["scaled"].cx_end)
-                control_cx_scaled = horzcat(control_cx_scaled, all_pn.nlp.controls[0]["scaled"].cx_end)
+                state_cx_scaled = horzcat(state_cx_scaled, all_pn.nlp.states[0]["scaled"].cx_end)   # TODO: [0] to [node_index]
+                control_cx_scaled = horzcat(control_cx_scaled, all_pn.nlp.controls[0]["scaled"].cx_end) # TODO: [0] to [node_index]
 
         param_cx = nlp.cx(nlp.parameters.cx)
 
@@ -444,12 +444,12 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded = self.function
 
         if self.derivative:
-            state_cx_scaled = horzcat(all_pn.nlp.states[0]["scaled"].cx[-1], all_pn.nlp.states[0]["scaled"].cx)
-            control_cx_scaled = horzcat(all_pn.nlp.controls[0]["scaled"].cx[-1], all_pn.nlp.controls[0]["scaled"].cx)
+            state_cx_scaled = horzcat(all_pn.nlp.states[0]["scaled"].cx[-1], all_pn.nlp.states[0]["scaled"].cx) # TODO: [0] to [node_index]
+            control_cx_scaled = horzcat(all_pn.nlp.controls[0]["scaled"].cx[-1], all_pn.nlp.controls[0]["scaled"].cx)   # TODO: [0] to [node_index]
             self.function = biorbd.to_casadi_func(
                 f"{name}",
-                self.function(all_pn.nlp.states[0]["scaled"].cx[-1], all_pn.nlp.controls[0]["scaled"].cx_end, param_cx)
-                - self.function(all_pn.nlp.states[0]["scaled"].cx[0], all_pn.nlp.controls[0]["scaled"].cx, param_cx),
+                self.function(all_pn.nlp.states[0]["scaled"].cx[-1], all_pn.nlp.controls[0]["scaled"].cx_end, param_cx) # TODO: [0] to [node_index]
+                - self.function(all_pn.nlp.states[0]["scaled"].cx[0], all_pn.nlp.controls[0]["scaled"].cx, param_cx),   # TODO: [0] to [node_index]
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -474,26 +474,26 @@ class PenaltyOption(OptionGeneric):
             # Hypothesis: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
             state_cx_scaled = (
-                horzcat(all_pn.nlp.states[0]["scaled"].cx, all_pn.nlp.states[0]["scaled"].cx_end)
+                horzcat(all_pn.nlp.states[0]["scaled"].cx, all_pn.nlp.states[0]["scaled"].cx_end)   # TODO: [0] to [node_index]
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else all_pn.nlp.states[0]["scaled"].cx
             )
             state_cx = (
-                horzcat(all_pn.nlp.states[0].cx, all_pn.nlp.states[0].cx_end)
+                horzcat(all_pn.nlp.states[0].cx, all_pn.nlp.states[0].cx_end)   # TODO: [0] to [node_index]
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else all_pn.nlp.states[0].cx
             )
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx_scaled = (
-                horzcat(all_pn.nlp.controls[0]["scaled"].cx)
+                horzcat(all_pn.nlp.controls[0]["scaled"].cx)    # TODO: [0] to [node_index]
                 if nlp.control_type == ControlType.CONSTANT
                 else horzcat(all_pn.nlp.controls[0]["scaled"].cx, all_pn.nlp.controls[0]["scaled"].cx_end)
             )
             control_cx = (
                 horzcat(all_pn.nlp.controls[0].cx)
                 if nlp.control_type == ControlType.CONSTANT
-                else horzcat(all_pn.nlp.controls[0].cx, all_pn.nlp.controls[0].cx_end)
+                else horzcat(all_pn.nlp.controls[0].cx, all_pn.nlp.controls[0].cx_end)  # TODO: [0] to [node_index]
             )
             control_cx_end_scaled = get_u(nlp, control_cx_scaled, dt_cx)
             control_cx_end = get_u(nlp, control_cx, dt_cx)
@@ -506,7 +506,7 @@ class PenaltyOption(OptionGeneric):
                 f"{name}",
                 (
                     (
-                        self.function(all_pn.nlp.states[0]["scaled"].cx, all_pn.nlp.controls[0]["scaled"].cx, param_cx)
+                        self.function(all_pn.nlp.states[0]["scaled"].cx, all_pn.nlp.controls[0]["scaled"].cx, param_cx) # TODO: [0] to [node_index]
                         - target_cx[:, 0]
                     )
                     ** exponent
@@ -629,7 +629,7 @@ class PenaltyOption(OptionGeneric):
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(range(nlp.states[0].shape), range(nlp.states[0].shape))
+                self.states_mapping = BiMapping(range(nlp.states[0].shape), range(nlp.states[0].shape)) # TODO: [0] to [node_index]
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
@@ -653,7 +653,7 @@ class PenaltyOption(OptionGeneric):
             # self.phase_pre_idx
             # self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(range(nlp.states[0].shape), range(nlp.states[0].shape))
+                self.states_mapping = BiMapping(range(nlp.states[0].shape), range(nlp.states[0].shape)) # TODO: [0] to [node_index]
             self.node = self.node_list[0]
             nlp = ocp.nlp[self.phase_first_idx]
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
@@ -676,7 +676,7 @@ class PenaltyOption(OptionGeneric):
             self.node_idx = [all_pn[0].t[0], all_pn[1].t[0]]
             self.ensure_penalty_sanity(ocp, all_pn[0].nlp)
 
-        elif self.allnode_constraint:
+        elif self.allnode_constraint:   # TODO: Peut etre a changer
             #all_pn = []
             # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
             # self.transition = True

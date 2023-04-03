@@ -3,7 +3,7 @@ from warnings import warn
 
 from casadi import vertcat, MX
 
-from .multinode_constraint import BinodeConstraint, BinodeConstraintFunctions # AllNodeConstraint, AllNodeConstraintFunctions
+from .multinode_constraint import BinodeConstraint, BinodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
@@ -284,7 +284,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                     cx[-1],
                     nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx[-1]),
                 )
-                cx_start = vertcat(cx[0], nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx[0]))
+                cx_start = vertcat(cx[0], nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx[0]))   # TODO: Rewrite
                 post_mx = nlp_post.states[key].mx
                 continuity = nlp_post.states["qdot"].mapping.to_first.map(
                     qdot_impact - post_mx if key == "qdot" else nlp_pre.states[key].mx - post_mx

@@ -70,7 +70,7 @@ class OdeSolverBase:
         nlp.dynamics = []
         for node_index in range(nlp.ns + 1):
             if ocp.n_threads != 1:
-                raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")
+                raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")  # TODO: verify if it's solved
             else:
                 nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp, node_index))
 
@@ -134,10 +134,10 @@ class RK(OdeSolverBase):
             "x_scaled": nlp.states[0]["scaled"].cx,
             "p_unscaled": nlp.controls[0].cx
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
-            else horzcat(nlp.controls[0].cx[0], nlp.controls[0].cx[-1]),    # TODO : Garder cx[0] ou cx_start ?
+            else horzcat(nlp.controls[0].cx[0], nlp.controls[0].cx[-1]),    # TODO : [0] to [node_index]
             "p_scaled": nlp.controls[0]["scaled"].cx
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
-            else horzcat(nlp.controls[0]["scaled"].cx[0], nlp.controls[0]["scaled"].cx[-1]),    # TODO: Garder cx[0] ou cx_start ?
+            else horzcat(nlp.controls[0]["scaled"].cx[0], nlp.controls[0]["scaled"].cx[-1]),    # TODO: [0] to [node_index]
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
@@ -292,10 +292,10 @@ class OdeSolver:
                 )
 
             ode = {
-                "x_unscaled": [nlp.states.cx[0]] + nlp.states.cx_intermediates_list,
-                "x_scaled": [nlp.states["scaled"].cx[0]] + nlp.states["scaled"].cx_intermediates_list,
-                "p_unscaled": nlp.controls.cx[0],
-                "p_scaled": nlp.controls["scaled"].cx[0],
+                "x_unscaled": [nlp.states[0].cx[0]] + nlp.states[0].cx_intermediates_list,  # TODO: [0] to [node_index]
+                "x_scaled": [nlp.states[0]["scaled"].cx[0]] + nlp.states[0]["scaled"].cx_intermediates_list,
+                "p_unscaled": nlp.controls[0].cx[0],
+                "p_scaled": nlp.controls[0]["scaled"].cx[0],
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -305,6 +305,7 @@ class OdeSolver:
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
+                "node_index": node_index,
                 "idx": 0,
                 "control_type": nlp.control_type,
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
@@ -421,19 +422,19 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "x": nlp.states["scaled"].cx,
-                "p": nlp.controls["scaled"].cx,
-                "ode": nlp.dynamics_func(nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx),
+                "x": nlp.states[0]["scaled"].cx,    # TODO: [0] to [node_index]
+                "p": nlp.controls[0]["scaled"].cx,
+                "ode": nlp.dynamics_func(nlp.states[0]["scaled"].cx, nlp.controls[0]["scaled"].cx, nlp.parameters.cx),
             }
-            ode_opt = {"t0": 0, "tf": nlp.dt}
+            ode_opt = {"t0": 0, "tf": nlp.dt, "node_index": node_index}
 
             integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
 
             return [
                 Function(
                     "integrator",
-                    [nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx],
-                    self._adapt_integrator_output(integrator_func, nlp.states["scaled"].cx, nlp.controls["scaled"].cx),
+                    [nlp.states[0]["scaled"].cx, nlp.controls[0]["scaled"].cx, nlp.parameters.cx],
+                    self._adapt_integrator_output(integrator_func, nlp.states[0]["scaled"].cx, nlp.controls[0]["scaled"].cx),
                     ["x0", "p", "params"],
                     ["xf", "xall"],
                 )

@@ -29,6 +29,7 @@ from bioptim import (
 
 def minimize_difference(all_pn: PenaltyNode):
     return all_pn[0].nlp.controls.cx[-1] - all_pn[1].nlp.controls.cx[0]
+        # TODO: node_index= all_pn.node_index, all_pn[0].nlp.controls[node_index].cx_end
 
 
 def prepare_ocp(

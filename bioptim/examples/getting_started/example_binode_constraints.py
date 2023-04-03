@@ -204,7 +204,7 @@ def main():
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     sol.print_cost()
-    # sol.graphs()
+    # sol.graphs()  # TODO : Restore that
     # --- Show results --- #
     #sol.animate()
 

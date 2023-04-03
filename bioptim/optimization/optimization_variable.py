@@ -675,7 +675,7 @@ class OptimizationVariableContainer:
         The cx of all elements together (starting point)
         """
 
-        return self.optimization_variable["unscaled"].cx[:, 0]
+        return self.optimization_variable["unscaled"].cx[:, 0]  # TODO: A modifier
 
 
     """"autre a coder"""
