@@ -50,6 +50,7 @@ class MultiStart:
         """
         # errors : post, prep,
        # if prepare_ocp_callback ==
+
         self.prepare_ocp_callback = prepare_ocp_callback
         self.post_optimization_callback = post_optimization_callback
         self.should_solve_callback = should_solve_callback

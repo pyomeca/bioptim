@@ -104,21 +104,24 @@ def prepare_ocp(
     ocp.add_plot_penalty(CostType.ALL)
 
     return ocp
+
+
+
 def save_results(
     sol: Solution,
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
     seed: int,
-    save_folder: str,
+    # save_folder: str,
     only_save_filename: bool = False,
-):
+) -> None :
     """
     Solving the ocp
     Parameters
     ----------
     sol: Solution
-        The solution to the ocp at the current pool
+        The solution to the ocp at the current poolf
     biorbd_model_path: str
         The path to the biorbd model
     final_time: float
@@ -136,43 +139,43 @@ def save_results(
     if only_save_filename == True:
         return filename
     states = sol.states["all"]
-  #  save_folder = "./temporary_results/"
+    save_folder = "./temporary_results"
 
     with open(f"{save_folder}/{filename}", "wb") as file:
         pickle.dump(states, file)
 
-def should_solve(args, save_folder,save_results=save_results):
+def should_solve(args,save_results=save_results):
     """
     Check if the filename already appears in the folder where files are saved, if not ocp must be solved
     """
-    #save_folder = "/home/laseche/Documents/Stage_Lisa/Lisa/Sol"
+    save_folder = "./temporary_results"
     already_done_filenames = os.listdir(f"{save_folder}")
     return save_results([None], *args, only_save_filename=True) not in already_done_filenames
 
 def prepare_multi_start(
-    combinatorial_parameters: dict[tuple,...],
+    combinatorial_parameters: dict,
     n_pools: int = 1,
-    save_folder: str = None,
-
 ) -> MultiStart:
     """
     The initialization of the multi-start
     """
+    # def lambda_save_results(*args, **kwargs):
+    #     return save_results(*args, **kwargs, save_folder=save_folder)
+
     return MultiStart(
         combinatorial_parameters=combinatorial_parameters,
         prepare_ocp_callback=prepare_ocp,
         post_optimization_callback=save_results,
-        should_solve_callback=lambda *args, **kwargs: should_solve(*args, **kwargs, save_folder=save_folder),
+        should_solve_callback=should_solve,
         solver=Solver.IPOPT(show_online_optim=False),  # You cannot use show_online_optim with multi-start
         n_pools=n_pools,
     )
-
 
 def main():
     # --- Prepare the multi-start and run it --- #
 
     #Creates a folder to save the solutions
-    save_folder = "./temporary_solutions"
+    save_folder = "./temporary_results"
     os.mkdir(f"{save_folder}")
 
 #    global save_folder
@@ -181,21 +184,20 @@ def main():
 
     bio_model_path = ["models/pendulum.bioMod"]
     final_time = [1]
-    n_shooting = [30, 40, 50]
+    n_shooting = [3, 4, 5]
     seed = [0, 1, 2, 3]
 
     combinatorial_parameters = {'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,
                                 'seed': seed}
     multi_start = prepare_multi_start(
         combinatorial_parameters=combinatorial_parameters,
-        n_pools=4,
-        save_folder=save_folder,
+        n_pools=2,
     )
 
     multi_start.solve()
 
-    #Delete the solutions
-    #os.rmdir(f"path/{save_folder}")
+    # Delete the solutions
+    os.rmdir(f"{save_folder}")
 
 if __name__ == "__main__":
     main()
