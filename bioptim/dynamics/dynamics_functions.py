@@ -655,8 +655,17 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
 
+
         qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
-        qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
+        if len(nlp.model.models) >1 :
+            # multi_model_reorder_dynamics(qddot_joinst, qddot_rootself)
+            qddot = []
+            for i in range(len(nlp.model.models)):
+                qddot.append(qddot_joints[i]+qddot_root[i])
+
+        # qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
+            qddot_root_func = Function("qddot_root_func", [q, qdot, qddot]).expand()
+
 
         # defects
         qddot_root = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)

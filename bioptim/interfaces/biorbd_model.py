@@ -262,6 +262,14 @@ class MultiBiorbdModel:
             model.closeActuator()
         return out
 
+    # def multi_model_reorder_dynamics(self, qddot_joints, qddot_rootself):
+    #     qddot = []
+    #     for i in range(len(self.models)):
+    #         qddot[i] = qddot_joints[i]+qddot_rootself[i]
+    #     return qddot
+
+
+
     def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
@@ -274,6 +282,7 @@ class MultiBiorbdModel:
                 ).to_mx(),
             )
         return out
+
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
         if external_forces is not None:
