@@ -657,14 +657,31 @@ class DynamicsFunctions:
 
 
         qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
-        if len(nlp.model.models) >1 :
-            # multi_model_reorder_dynamics(qddot_joinst, qddot_rootself)
-            qddot = []
-            for i in range(len(nlp.model.models)):
-                qddot.append(qddot_joints[i]+qddot_root[i])
+        # if len(nlp.model.models) >1 :
+        #     # multi_model_reorder_dynamics(qddot_joinst, qddot_rootself)
+        #
+        #     #
+        #     for i in range(len(nlp.model.models)):
+        #
+        #         # else :
+        #         #     qddot = (vertcat(qddot_joints[i * nb_qddot:(i + 1) * nb_qddot],
+        #         #                      qddot_root[i * nb_qddot_root:(i + 1) * nb_qddot_root]))
+        #     #     # qddot = vertcat(qddot)i = 2
+        #         qddot[-1], qddot_joints[i * nb_qddot:(i + 1) * nb_qddot
 
-        # qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
-            qddot_root_func = Function("qddot_root_func", [q, qdot, qddot]).expand()
+        # for i in range(len(nlp.model.models)):
+        qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
+
+        #     qddot_root_func = Function("qddot_root_func", [q, qdot], qddot).expand()
+        # def reorder(qddot_root, qddot_joints) :
+        #     qddot = []
+        #     nb_qddot_joints = qddot_joints.shape[0] // len(nlp.model.models)
+        #     nb_qddot_root = nlp.model.models[0].nbRoot() // len(nlp.model.models)
+        #     for i in range(nlp.model.models):
+        #         qddot.append(qddot_root[i * nb_qddot_root:(i + 1) * nb_qddot_root])
+        #         qddot = vertcat(qddot[-1], (qddot_joints[i * nb_qddot_joints:(i + 1) * nb_qddot_joints]))
+        #     return qddot
+        # reorder(qddot_root_func(q, qdot, qddot_joints), qddot_joints)
 
 
         # defects
@@ -682,7 +699,7 @@ class DynamicsFunctions:
         defects[(qdot.shape[0] + qddot_root.shape[0]) :, :] = qddot_joints - DynamicsFunctions.get(
             nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced
         )
-
+        # for i in range(len(nlp.model.models)):
         return DynamicsEvaluation(
             dxdt=vertcat(qdot, qddot_root_func(q, qdot, qddot_joints), qddot_joints), defects=defects
         )
