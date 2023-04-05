@@ -408,8 +408,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.get_cx(key, CXStep.CX_END))
-            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.get_cx(key, CXStep.CX_START))
+            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].get_cx(key, CXStep.CX_END))   # TODO: [0] to [node_index]
+            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states[0].get_cx(key, CXStep.CX_START))    # TODO: [0] to [node_index]
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -438,8 +438,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            controls_pre = nlp_pre.controls.get_cx(key, CXStep.CX_END)
-            controls_post = nlp_post.controls.get_cx(key, CXStep.CX_START)
+            controls_pre = nlp_pre.controls[0].get_cx(key, CXStep.CX_END)   # TODO: [0] to [node_index]
+            controls_post = nlp_post.controls[0].get_cx(key, CXStep.CX_START)   # TODO: [0] to [node_index]
 
             if controls_pre.shape != controls_post.shape:
                 raise RuntimeError(
@@ -468,10 +468,10 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].cx_end)   # TODO: [0] to [node_index]
+            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states[0].cx_start)  # TODO: [0] to [node_index]
 
-            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]]  # TODO: [0] to [node_index]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -481,11 +481,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com = nlp_pre.model.center_of_mass(states_pre[nlp_pre.states["q"].index, :])
+            pre_com = nlp_pre.model.center_of_mass(states_pre[nlp_pre.states[0]["q"].index, :]) # TODO: [0] to [node_index]
             post_com = nlp_post.model.center_of_mass(states_post_sym_list[0])
 
-            pre_states_cx = nlp_pre.states.cx_end
-            post_states_cx = nlp_post.states.cx
+            pre_states_cx = nlp_pre.states[0].cx_end    # TODO: [0] to [node_index]
+            post_states_cx = nlp_post.states[0].cx_start  # TODO: [0] to [node_index]
 
             return nlp_pre.to_casadi_func(
                 "com_equality",
@@ -512,10 +512,10 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
-            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx)
+            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].cx_end)   # TODO: [0] to [node_index]
+            states_post = binode_constraint.states_mapping.to_first.map(nlp_post[0].states.cx_start)    # TODO: [0] to [node_index]
 
-            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[key].mx.shape) for key in nlp_post.states]
+            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]]  # TODO: [0] to [node_index]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -526,12 +526,12 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             pre_com_dot = nlp_pre.model.center_of_mass_velocity(
-                states_pre[nlp_pre.states["q"].index, :], states_pre[nlp_pre.states["qdot"].index, :]
+                states_pre[nlp_pre.states[0]["q"].index, :], states_pre[nlp_pre.states[0]["qdot"].index, :] # TODO: [0] to [node_index]
             )
             post_com_dot = nlp_post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
-            pre_states_cx = nlp_pre.states.cx_end
-            post_states_cx = nlp_post.states.cx
+            pre_states_cx = nlp_pre.states[0].cx_end    # TODO: [0] to [node_index]
+            post_states_cx = nlp_post.states[0].cx_start    # TODO: [0] to [node_index]
 
             return nlp_pre.to_casadi_func(
                 "com_dot_equality",

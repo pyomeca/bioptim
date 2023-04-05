@@ -49,7 +49,7 @@ def custom_allnode_constraint(
     -------
     """
 
-    states_all = nlp_all.states.cx
+    states_all = nlp_all.states.cx  # TODO: prendre l'ensemble des cx_start ?
     return states_all
 
 def prepare_ocp(

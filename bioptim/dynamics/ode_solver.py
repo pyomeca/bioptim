@@ -71,8 +71,10 @@ class OdeSolverBase:
         for node_index in range(nlp.ns + 1):
             if ocp.n_threads != 1:
                 raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")  # TODO: verify if it's solved
+            if len(nlp.dynamics) == 1:
+                nlp.dynamics = nlp.dynamics * nlp.ns
             else:
-                nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp, node_index))
+                nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp, node_index)[0])
 
 
 class RK(OdeSolverBase):
@@ -130,14 +132,14 @@ class RK(OdeSolverBase):
         }
 
         ode = {
-            "x_unscaled": nlp.states[0].cx,
-            "x_scaled": nlp.states[0]["scaled"].cx,
-            "p_unscaled": nlp.controls[0].cx
+            "x_unscaled": nlp.states[0].cx_start,
+            "x_scaled": nlp.states[0]["scaled"].cx_start,
+            "p_unscaled": nlp.controls[0].cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
-            else horzcat(nlp.controls[0].cx[0], nlp.controls[0].cx[-1]),    # TODO : [0] to [node_index]
-            "p_scaled": nlp.controls[0]["scaled"].cx
+            else horzcat(nlp.controls[0].cx_start, nlp.controls[0].cx_end),    # TODO : [0] to [node_index]
+            "p_scaled": nlp.controls[0]["scaled"].cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
-            else horzcat(nlp.controls[0]["scaled"].cx[0], nlp.controls[0]["scaled"].cx[-1]),    # TODO: [0] to [node_index]
+            else horzcat(nlp.controls[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_end),    # TODO: [0] to [node_index]
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
@@ -292,10 +294,10 @@ class OdeSolver:
                 )
 
             ode = {
-                "x_unscaled": [nlp.states[0].cx[0]] + nlp.states[0].cx_intermediates_list,  # TODO: [0] to [node_index]
-                "x_scaled": [nlp.states[0]["scaled"].cx[0]] + nlp.states[0]["scaled"].cx_intermediates_list,
-                "p_unscaled": nlp.controls[0].cx[0],
-                "p_scaled": nlp.controls[0]["scaled"].cx[0],
+                "x_unscaled": [nlp.states[0].cx_start] + nlp.states[0].cx_intermediates_list,  # TODO: [0] to [node_index]
+                "x_scaled": [nlp.states[0]["scaled"].cx_start] + nlp.states[0]["scaled"].cx_intermediates_list,
+                "p_unscaled": nlp.controls[0].cx_start,
+                "p_scaled": nlp.controls[0]["scaled"].cx_start,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -422,9 +424,9 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "x": nlp.states[0]["scaled"].cx,    # TODO: [0] to [node_index]
-                "p": nlp.controls[0]["scaled"].cx,
-                "ode": nlp.dynamics_func(nlp.states[0]["scaled"].cx, nlp.controls[0]["scaled"].cx, nlp.parameters.cx),
+                "x": nlp.states[0]["scaled"].cx_start,    # TODO: [0] to [node_index]
+                "p": nlp.controls[0]["scaled"].cx_start,
+                "ode": nlp.dynamics_func(nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt, "node_index": node_index}
 
@@ -433,8 +435,8 @@ class OdeSolver:
             return [
                 Function(
                     "integrator",
-                    [nlp.states[0]["scaled"].cx, nlp.controls[0]["scaled"].cx, nlp.parameters.cx],
-                    self._adapt_integrator_output(integrator_func, nlp.states[0]["scaled"].cx, nlp.controls[0]["scaled"].cx),
+                    [nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx],
+                    self._adapt_integrator_output(integrator_func, nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start),
                     ["x0", "p", "params"],
                     ["xf", "xall"],
                 )

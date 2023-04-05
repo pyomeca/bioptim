@@ -540,25 +540,21 @@ class OptimalControlProgram:
         self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
 
         # TODO: add inner_phase here
-        # self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
+        self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
             if not state_continuity_weight:
-                # Inner- and inter-phase continuity
-                for nlp in self.nlp:   #in ocp.nlp
+                # Inner-phase continuity
+                for nlp in self.nlp:
                     for shooting_node in range(nlp.ns):
                         penalty = Constraint(ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL)
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
-            # else:
-            #     #ContinuityObjectiveFunctions.continuity(self, state_continuity_weight)
-            #     for shooting_node in range(nlp.ns):
-            #         penalty = Constraint(ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL) # TODO: Le mettre en objectif
-            #         penalty.add_or_replace_to_penalty_pool(self, nlp)
-        #PhaseTransitionList.prepare_phase_transitions(self, ocp=self)
+            else:
+                ContinuityObjectiveFunctions.continuity(self, state_continuity_weight)
 
-        if self.binode_constraints:
-            MultinodeConstraintsFunctions.node_equalities(self)
-        if self.allnode_constraints:
+        self.phase_transitions = ConstraintFunction.inter_phase_continuity(self)
+
+        if self.binode_constraints or self.allnode_constraints:
             MultinodeConstraintsFunctions.node_equalities(self)
 
         # Prepare constraints
@@ -735,7 +731,6 @@ class OptimalControlProgram:
             for constraints_in_phase in new_constraint:
                 for constraint in constraints_in_phase:
                     self.__modify_penalty(constraint)
-
         else:
             raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
@@ -778,12 +773,12 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states:
+            for key in nlp.states[0]:   # TODO: [0] to [node_index]
                 if f"{key}_states" in nlp.plot:
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
-            for key in nlp.controls:
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[0][key].index]   # TODO: [0] to [node_index]
+            for key in nlp.controls[0]: # TODO: [0] to [node_index]
                 if f"{key}_controls" in nlp.plot:
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[0][key].index]   # TODO: [0] to [node_index]
 
     def update_initial_guess(
         self,

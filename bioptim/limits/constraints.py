@@ -234,7 +234,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
 
-            contact = all_pn.nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+            contact = all_pn.nlp.contact_forces_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx)   # TODO: [0] to [node_index]
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
                 tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
@@ -271,24 +271,24 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
 
-            bound = nlp.model.tau_max(nlp.states["q"].mx, nlp.states["qdot"].mx)
+            bound = nlp.model.tau_max(nlp.states[0]["q"].mx, nlp.states[0]["qdot"].mx)    # TODO: [0] to [node_index]
             min_bound = nlp.mx_to_cx(
                 "min_bound",
-                nlp.controls["tau"].mapping.to_first.map(bound[1]),
-                nlp.states["q"],
-                nlp.states["qdot"],
+                nlp.controls[0]["tau"].mapping.to_first.map(bound[1]),  # TODO: [0] to [node_index]
+                nlp.states[0]["q"], # TODO: [0] to [node_index]
+                nlp.states[0]["qdot"],  # TODO: [0] to [node_index]
             )
             max_bound = nlp.mx_to_cx(
                 "max_bound",
-                nlp.controls["tau"].mapping.to_first.map(bound[0]),
-                nlp.states["q"],
-                nlp.states["qdot"],
+                nlp.controls[0]["tau"].mapping.to_first.map(bound[0]),  # TODO: [0] to [node_index]
+                nlp.states[0]["q"], # TODO: [0] to [node_index]
+                nlp.states[0]["qdot"],  # TODO: [0] to [node_index]
             )
             if min_torque:
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
 
-            value = vertcat(nlp.controls["tau"].cx + min_bound, nlp.controls["tau"].cx - max_bound)
+            value = vertcat(nlp.controls[0]["tau"].cx_start + min_bound, nlp.controls[0]["tau"].cx_start - max_bound)  # TODO: [0] to [node_index]
 
             n_rows = constraint.rows if constraint.rows else int(value.shape[0] / 2)
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
@@ -342,14 +342,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             nlp = all_pn.nlp
-            q = nlp.states["q"].mx
-            qdot = nlp.states["qdot"].mx
+            q = nlp.states[0]["q"].mx   # TODO: [0] to [node_index]
+            qdot = nlp.states[0]["qdot"].mx # TODO: [0] to [node_index]
             passive_torque = nlp.model.passive_joint_torque(q, qdot)
-            tau = nlp.states["tau"].mx if "tau" in nlp.states else nlp.controls["tau"].mx
+            tau = nlp.states[0]["tau"].mx if "tau" in nlp.states[0] else nlp.controls["tau"].mx    # TODO: [0] to [node_index]
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
-            qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls else nlp.states["qddot"].mx
+            qddot = nlp.controls[0]["qddot"].mx if "qddot" in nlp.controls[0] else nlp.states[0]["qddot"].mx    # TODO: [0] to [node_index]
             if with_contact:
                 model = nlp.model.copy()
                 qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
@@ -357,8 +357,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 qddot_fd = nlp.model.forward_dynamics(q, qdot, tau)
 
             var = []
-            var.extend([nlp.states[key] for key in nlp.states])
-            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([nlp.states[0][key] for key in nlp.states[0]])   # TODO: [0] to [node_index]
+            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])   # TODO: [0] to [node_index]
             var.extend([param for param in nlp.parameters])
 
             return nlp.mx_to_cx("forward_dynamics", qddot - qddot_fd, *var)
@@ -393,10 +393,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             nlp = all_pn.nlp
-            q = nlp.states["q"].mx
-            qdot = nlp.states["qdot"].mx
-            tau = nlp.states["tau"].mx if "tau" in nlp.states else nlp.controls["tau"].mx
-            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
+            q = nlp.states[0]["q"].mx   # TODO: [0] to [node_index]
+            qdot = nlp.states[0]["qdot"].mx # TODO: [0] to [node_index]
+            tau = nlp.states[0]["tau"].mx if "tau" in nlp.states[0] else nlp.controls[0]["tau"].mx  # TODO: [0] to [node_index]
+            qddot = nlp.states[0]["qddot"].mx if "qddot" in nlp.states[0] else nlp.controls[0]["qddot"].mx  # TODO: [0] to [node_index]
             passive_torque = nlp.model.passive_joint_torque(q, qdot)
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
@@ -408,7 +408,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
             if with_contact:
                 # todo: this should be done internally in BiorbdModel
-                f_contact = nlp.controls["fext"].mx if "fext" in nlp.controls else nlp.states["fext"].mx
+                f_contact = nlp.controls[0]["fext"].mx if "fext" in nlp.controls[0] else nlp.states[0]["fext"].mx   # TODO: [0] to [node_index]
                 f_contact_vec = nlp.model.reshape_fext_to_fcontact(f_contact)
 
                 tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)
@@ -417,8 +417,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tau_id = nlp.model.inverse_dynamics(q, qdot, qddot)
 
             var = []
-            var.extend([nlp.states[key] for key in nlp.states])
-            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([nlp.states[0][key] for key in nlp.states[0]])   # TODO: [0] to [node_index]
+            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])   # TODO: [0] to [node_index]
             var.extend([param for param in nlp.parameters])
 
             return nlp.mx_to_cx("inverse_dynamics", tau_id - tau, *var)
@@ -443,16 +443,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             nlp = all_pn.nlp
-            q = nlp.states["q"].mx
-            qdot = nlp.states["qdot"].mx
-            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
+            q = nlp.states[0]["q"].mx   # TODO: [0] to [node_index]
+            qdot = nlp.states[0]["qdot"].mx # TODO: [0] to [node_index]
+            qddot = nlp.states[0]["qddot"].mx if "qddot" in nlp.states[0] else nlp.controls[0]["qddot"].mx  # TODO: [0] to [node_index]
 
             # TODO get the index of the marker
             contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, contact_index, contact_axis)
 
             var = []
-            var.extend([nlp.states[key] for key in nlp.states])
-            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([nlp.states[0][key] for key in nlp.states[0]])   # TODO: [0] to [node_index]
+            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])   # TODO: [0] to [node_index]
             var.extend([nlp.parameters[key] for key in nlp.parameters])
 
             return nlp.mx_to_cx("contact_acceleration", contact_acceleration, *var)
@@ -480,17 +480,17 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             nlp = all_pn.nlp
-            q = nlp.states["q"].mx
-            qdot = nlp.states["qdot"].mx
-            muscle_activations = nlp.controls["muscles"].mx
+            q = nlp.states[0]["q"].mx   # TODO: [0] to [node_index]
+            qdot = nlp.states[0]["qdot"].mx # TODO: [0] to [node_index]
+            muscle_activations = nlp.controls[0]["muscles"].mx  # TODO: [0] to [node_index]
             muscles_states = nlp.model.state_set()
             passive_torque = nlp.model.passive_joint_torque(q, qdot)
-            for k in range(len(nlp.controls["muscles"])):
+            for k in range(len(nlp.controls[0]["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
             muscle_tau = nlp.model.muscle_joint_torque(muscles_states, q, qdot)
             muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
             muscle_tau = muscle_tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else muscle_tau
-            qddot = nlp.states["qddot"].mx if "qddot" in nlp.states else nlp.controls["qddot"].mx
+            qddot = nlp.states[0]["qddot"].mx if "qddot" in nlp.states[0] else nlp.controls[0]["qddot"].mx  # TODO: [0] to [node_index]
 
             if nlp.external_forces:
                 raise NotImplementedError(
@@ -502,8 +502,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau_id = nlp.model.inverse_dynamics(q, qdot, qddot)
 
             var = []
-            var.extend([nlp.states[key] for key in nlp.states])
-            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([nlp.states[0][key] for key in nlp.states[0]])   # TODO: [0] to [node_index]
+            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])   # TODO: [0] to [node_index]
             var.extend([param for param in nlp.parameters])
 
             return nlp.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
@@ -531,16 +531,45 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
 
-            soft_contact_all = nlp.soft_contact_forces_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)
+            soft_contact_all = nlp.soft_contact_forces_func(nlp.states[0].mx, nlp.controls[0].mx, nlp.parameters.mx)    # TODO: [0] to [node_index]
             soft_contact_force = soft_contact_all[force_idx]
 
             var = []
-            var.extend([nlp.states[key] for key in nlp.states])
-            var.extend([nlp.controls[key] for key in nlp.controls])
+            var.extend([nlp.states[0][key] for key in nlp.states[0]])   # TODO: [0] to [node_index]
+            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])   # TODO: [0] to [node_index]
             var.extend([param for param in nlp.parameters])
 
-            return nlp.mx_to_cx("forward_dynamics", nlp.controls["fext"].mx - soft_contact_force, *var)
+            return nlp.mx_to_cx("forward_dynamics", nlp.controls[0]["fext"].mx - soft_contact_force, *var)  # TODO: [0] to [node_index]
 
+    @staticmethod
+    def inter_phase_continuity(ocp):    # TODO: Ne fonctionne pas bien
+        """
+        Add phase transition constraints between two phases.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+        from ..limits.phase_transition import PhaseTransitionFcn
+
+        for pt in ocp.phase_transitions:
+            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                continue
+            # Dynamics must be respected between phases
+            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
+
+            # return ocp.phase_transitions
+
+    @staticmethod
+    def get_dt(_):
+        return 1
+
+    @staticmethod
+    def penalty_nature() -> str:
+        return "constraints"
 
 class MultinodeConstraintsFunctions:
 

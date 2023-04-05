@@ -166,9 +166,6 @@ class NonLinearProgram:
             The type of casadi variable
 
         """
-        # self.controls._set_cx(self.cx)
-        # self.states._set_cx(self.cx)
-        # self.states_dot._set_cx(self.cx)
 
         self.plot = {}
         self.cx = cx
@@ -177,31 +174,9 @@ class NonLinearProgram:
         self.g_internal = []
         self.casadi_func = {}
 
-        self.states = [self.cx() for _ in range(self.ns + 1)]
-        self.states_dot = [self.cx() for _ in range(self.ns + 1)]
-        self.controls = [self.cx() for _ in range(self.ns + 1)]
-
-        # for node_index in range(self.ns + 1):
-        #     self.states[node_index] = OptimizationVariableContainer()
-        #     self.states[node_index]._cx = self.cx()
-        #     self.states[node_index]["scaled"]._cx = self.cx()
-        #     self.states[node_index]["unscaled"]._cx = self.cx()
-        #
-        #     self.states_dot[node_index] = OptimizationVariableContainer()
-        #     self.states_dot[node_index]._cx = self.cx()
-        #     self.states_dot[node_index]["scaled"]._cx = self.cx()
-        #     self.states_dot[node_index]["unscaled"]._cx = self.cx()
-        #
-        #     self.controls[node_index] = OptimizationVariableContainer()
-        #     self.controls[node_index]._cx = self.cx()
-        #     self.controls[node_index]["scaled"]._cx = self.cx()
-        #     self.controls[node_index]["unscaled"]._cx = self.cx()
-
-        for node_index in range(self.ns + 1):
-            self.controls[node_index]._set_cx_constructor(self.cx)
-            self.states[node_index]._set_cx_constructor(self.cx)
-            self.states_dot[node_index]._set_cx_constructor(self.cx)
-
+        self.states = self.states._set_states_and_controls(n_shooting=self.ns + 1, cx=self.cx)
+        self.states_dot = self.states_dot._set_states_and_controls(n_shooting=self.ns + 1, cx=self.cx)
+        self.controls = self.controls._set_states_and_controls(n_shooting=self.ns + 1, cx=self.cx)
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):

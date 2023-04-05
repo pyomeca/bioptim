@@ -122,18 +122,18 @@ class DynamicsFunctions:
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
         ):
-            dxdt = MX(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+            dxdt = MX(nlp.states[0].shape, 1)
+            dxdt[nlp.states[0]["q"].index, :] = dq
+            dxdt[nlp.states[0]["qdot"].index, :] = DynamicsFunctions.get(nlp.controls[0]["qddot"], controls)    # TODO: [0] to [node_index]
         elif (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
             or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
         ):
             dxdt = MX(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
-            dxdt[nlp.states["qdot"].index, :] = qddot
-            dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
+            dxdt[nlp.states[0]["q"].index, :] = dq
+            qddot = DynamicsFunctions.get(nlp.states[0]["qddot"], states)
+            dxdt[nlp.states[0]["qdot"].index, :] = qddot
+            dxdt[nlp.states[0]["qddot"].index, :] = DynamicsFunctions.get(nlp.controls[0]["qdddot"], controls)  # TODO: [0] to [node_index]
         else:
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
             dxdt = MX(nlp.states[0].shape, ddq.shape[1])
@@ -261,15 +261,15 @@ class DynamicsFunctions:
             The derivative of the states and the defects of the implicit dynamics
         """
 
-        q = DynamicsFunctions.get(nlp.states["q"], states) # TODO: A changer ?
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau_activation = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        q = DynamicsFunctions.get(nlp.states[0]["q"], states) # TODO: A changer ?
+        qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)
+        tau_activation = DynamicsFunctions.get(nlp.controls[0]["tau"], controls)
 
         tau = nlp.model.torque(tau_activation, q, qdot)
         if with_passive_torque:
             tau += nlp.model.passive_joint_torque(q, qdot)
         if with_residual_torque:
-            tau += DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
+            tau += DynamicsFunctions.get(nlp.controls[0]["residual_tau"], controls)
         if with_ligament:
             tau += nlp.model.ligament_joint_torque(q, qdot)
 
@@ -319,34 +319,34 @@ class DynamicsFunctions:
             The derivative of the states and the defects of the implicit dynamics
         """
 
-        q = DynamicsFunctions.get(nlp.states["q"], states)
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        q = DynamicsFunctions.get(nlp.states[0]["q"], states)   # TODO: [0] to [node_index]
+        qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)
 
-        tau = DynamicsFunctions.get(nlp.states["tau"], states)
+        tau = DynamicsFunctions.get(nlp.states[0]["tau"], states)
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
+        dtau = DynamicsFunctions.get(nlp.controls[0]["taudot"], controls)
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
         ):
-            ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
-            dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
+            ddq = DynamicsFunctions.get(nlp.states[0]["qddot"], states)
+            dddq = DynamicsFunctions.get(nlp.controls[0]["qdddot"], controls)
 
             dxdt = MX(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = ddq
-            dxdt[nlp.states["qddot"].index, :] = dddq
-            dxdt[nlp.states["tau"].index, :] = dtau
+            dxdt[nlp.states[0]["q"].index, :] = dq
+            dxdt[nlp.states[0]["qdot"].index, :] = ddq
+            dxdt[nlp.states[0]["qddot"].index, :] = dddq
+            dxdt[nlp.states[0]["tau"].index, :] = dtau
         else:
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
-            dxdt = MX(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
-            dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
+            dxdt = MX(nlp.states[0].shape, ddq.shape[1])
+            dxdt[nlp.states[0]["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+            dxdt[nlp.states[0]["qdot"].index, :] = ddq
+            dxdt[nlp.states[0]["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
@@ -485,8 +485,8 @@ class DynamicsFunctions:
             The derivative of the states and the defects of the implicit dynamics
         """
 
-        q = DynamicsFunctions.get(nlp.states["q"], states)
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        q = DynamicsFunctions.get(nlp.states[0]["q"], states)   # TODO: [0] to [node_index]
+        qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)
         residual_tau = (
             DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
         )
@@ -534,38 +534,38 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            ddq = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+            ddq = DynamicsFunctions.get(nlp.controls[0]["qddot"], controls) # TODO: [0] to [node_index]
             dxdt = MX(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
+            dxdt[nlp.states[0]["q"].index, :] = dq
+            dxdt[nlp.states[0]["qdot"].index, :] = DynamicsFunctions.get(nlp.controls[0]["qddot"], controls)
         else:
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
             dxdt = MX(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+            dxdt[nlp.states[0]["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+            dxdt[nlp.states[0]["qdot"].index, :] = ddq
 
-        has_excitation = True if "muscles" in nlp.states else False
+        has_excitation = True if "muscles" in nlp.states[0] else False  # TODO: [0] to [node_index]
         if has_excitation:
-            mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+            mus_excitations = DynamicsFunctions.get(nlp.controls[0]["muscles"], controls)
             dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations)
-            dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
+            dxdt[nlp.states[0]["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
 
         if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
-        if not with_contact and fatigue is None:
-            qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
+        if not with_contact and fatigue is None:    # TODO: [0] to [node_index]
+            qddot = DynamicsFunctions.get(nlp.states_dot[0]["qddot"], nlp.states_dot[0].mx_reduced)
             tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
             defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
             dq_defects = []
-            for _ in range(tau_id.shape[1]):
+            for _ in range(tau_id.shape[1]):    # TODO: [0] to [node_index]
                 dq_defects.append(
                     dq
                     - DynamicsFunctions.compute_qdot(
-                        nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced)
+                        nlp, q, DynamicsFunctions.get(nlp.states_dot[0]["qdot"], nlp.states_dot[0].mx_reduced)
                     )
                 )
             defects[: dq.shape[0], :] = horzcat(*dq_defects)
@@ -605,11 +605,11 @@ class DynamicsFunctions:
             The contact forces that ensure no acceleration at these contact points
         """
 
-        q = DynamicsFunctions.get(nlp.states["q"], states)
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls) if "tau" in nlp.controls else None
+        q = DynamicsFunctions.get(nlp.states[0]["q"], states)   # TODO: [0] to [node_index]
+        qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)
+        residual_tau = DynamicsFunctions.get(nlp.controls[0]["tau"], controls) if "tau" in nlp.controls[0] else None
 
-        mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
+        mus_act_nlp, mus_act = (nlp.states[0], states) if "muscles" in nlp.states[0] else (nlp.controls[0], controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
@@ -651,15 +651,15 @@ class DynamicsFunctions:
         if rigidbody_dynamics != RigidBodyDynamics.ODE:
             raise NotImplementedError("Implicit dynamics not implemented yet.")
 
-        q = DynamicsFunctions.get(nlp.states["q"], states)
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
+        q = DynamicsFunctions.get(nlp.states[0]["q"], states)  # TODO: [0] to [node_index]
+        qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)
+        qddot_joints = DynamicsFunctions.get(nlp.controls[0]["qddot_joints"], controls)
 
         qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
         qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
 
         # defects
-        qddot_root = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
+        qddot_root = DynamicsFunctions.get(nlp.states_dot[0]["qddot_roots"], nlp.states_dot[0].mx_reduced)
         qddot = vertcat(qddot_root, qddot_joints)
 
         floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot)[: nlp.model.nb_root]
@@ -667,11 +667,11 @@ class DynamicsFunctions:
         defects = MX(qdot.shape[0] + qddot.shape[0], 1)
 
         defects[: qdot.shape[0], :] = qdot - DynamicsFunctions.compute_qdot(
-            nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced)
+            nlp, q, DynamicsFunctions.get(nlp.states_dot[0]["qdot"], nlp.states_dot[0].mx_reduced)
         )
         defects[qdot.shape[0] : (qdot.shape[0] + qddot_root.shape[0]), :] = floating_base_constraint
         defects[(qdot.shape[0] + qddot_root.shape[0]) :, :] = qddot_joints - DynamicsFunctions.get(
-            nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced
+            nlp.states_dot[0]["qddot_joints"], nlp.states_dot[0].mx_reduced
         )
 
         return DynamicsEvaluation(
@@ -811,9 +811,9 @@ class DynamicsFunctions:
 
         if len(nlp.external_forces) != 0:
             if "tau" in nlp.states:
-                tau_shape = nlp.states["tau"].mx.shape[0]
+                tau_shape = nlp.states[0]["tau"].mx.shape[0]    # TODO: A changer ? # TODO: [0] to [node_index]
             elif "tau" in nlp.controls:
-                tau_shape = nlp.controls["tau"].mx.shape[0]
+                tau_shape = nlp.controls[0]["tau"].mx.shape[0]
             else:
                 tau_shape = nlp.model.nb_tau
             tau = MX(tau_shape, nlp.ns)

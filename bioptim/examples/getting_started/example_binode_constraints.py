@@ -189,8 +189,8 @@ def custom_binode_constraint(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx[-1])
-    states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx[0])
+    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+    states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx_start)
     return states_pre * coef - states_post
 
 

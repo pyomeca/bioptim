@@ -655,11 +655,11 @@ class ConfigureProblem:
 
         nlp.contact_forces_func = Function(
             "contact_forces_func",
-            [nlp.states["scaled"].mx_reduced, nlp.controls["scaled"].mx_reduced, nlp.parameters.mx],
+            [nlp.states[0]["scaled"].mx_reduced, nlp.controls[0]["scaled"].mx_reduced, nlp.parameters.mx], # TODO: [0] to [node_index]
             [
                 dyn_func(
-                    nlp.states["scaled"].mx_reduced,
-                    nlp.controls["scaled"].mx_reduced,
+                    nlp.states[0]["scaled"].mx_reduced,    # TODO: [0] to [node_index]
+                    nlp.controls[0]["scaled"].mx_reduced,
                     nlp.parameters.mx,
                     nlp,
                     **extra_params,
@@ -887,7 +887,7 @@ class ConfigureProblem:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
         def define_cx_scaled(n_col: int, n_shooting: int) -> list:
-            _cx = [[] for _ in range(n_shooting + 1)]
+            _cx = [nlp.cx() for _ in range(n_shooting + 1)]
             for node_index in range(n_shooting + 1):
                 _cx[node_index] = [nlp.cx() for _ in range(n_col)]
             for idx in nlp.variable_mappings[name].to_first.map_idx:
@@ -935,17 +935,17 @@ class ConfigureProblem:
         copy_states = (
             nlp.use_states_from_phase_idx is not None
             and nlp.use_states_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_states_from_phase_idx].states
+            and name in ocp.nlp[nlp.use_states_from_phase_idx].states[0]    # TODO: [0] to [node_index]
         )
         copy_controls = (
             nlp.use_controls_from_phase_idx is not None
             and nlp.use_controls_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls
+            and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls[0]    # TODO: [0] to [node_index]
         )
         copy_states_dot = (
             nlp.use_states_dot_from_phase_idx is not None
             and nlp.use_states_dot_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot
+            and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0]    # TODO: [0] to [node_index]
         )
 
         if as_states and name not in nlp.x_scaling:
