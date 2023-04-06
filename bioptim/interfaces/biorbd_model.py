@@ -291,7 +291,7 @@ class MultiBiorbdModel:
         for i, model in enumerate(self.models):
             q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
             qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
-            qddot_joints_biorbd = self.transform_to_generalized_accelerations(qddot_joints[self.variable_index("qddot", i)])
+            qddot_joints_biorbd = self.transform_to_generalized_accelerations(qddot_joints[self.variable_index("qddot_joints", i)])
             out = vertcat(
                 out,
                 model.ForwardDynamicsFreeFloatingBase(
