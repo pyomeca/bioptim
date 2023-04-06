@@ -1444,9 +1444,13 @@ def test_multistart():
     with pytest.raises(ValueError, match='save_folder must be an str'):
         ocp_module.prepare_multi_start(combinatorial_parameters=combinatorial_parameters, save_folder=5,
                                        )
+
     with pytest.raises(ValueError, match='combinatorial_parameters must be a dictionary'):
         ocp_module.prepare_multi_start(combinatorial_parameters=[combinatorial_parameters], save_folder=save_folder,
                                        )
+    # Delete the solutions
+    shutil.rmtree(f'{save_folder}')
+
 def test_example_variable_scaling():
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
 
