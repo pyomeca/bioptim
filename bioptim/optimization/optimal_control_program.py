@@ -538,8 +538,6 @@ class OptimalControlProgram:
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
         # TODO: binode_whatever should be handled the same way as constraints and objectives
         self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
-
-        # TODO: add inner_phase here
         self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:

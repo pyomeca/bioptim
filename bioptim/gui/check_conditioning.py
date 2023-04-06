@@ -64,7 +64,7 @@ def check_conditioning(ocp):
 
                 for axis in range(
                     0,
-                    constraints.function(phase.states.cx, phase.controls.cx, phase.parameters.cx).shape[0],
+                    constraints.function(phase.states[0].cx_start, phase.controls[0].cx_start, phase.parameters.cx).shape[0],   # TODO: [0] to [node_index]
                 ):
                     # depends if there are parameters
                     if phase.parameters.shape == 0:
@@ -75,8 +75,8 @@ def check_conditioning(ocp):
                     list_constraints.append(
                         jacobian(
                             constraints.function(
-                                phase.states.cx,
-                                phase.controls.cx,
+                                phase.states[0].cx_start,   # TODO: [0] to [node_index]
+                                phase.controls[0].cx_start, # TODO: [0] to [node_index]
                                 phase.parameters.cx,
                             )[axis],
                             vertcat_obj,

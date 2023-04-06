@@ -69,12 +69,10 @@ class OdeSolverBase:
         """
         nlp.dynamics = []
         for node_index in range(nlp.ns + 1):
-            if ocp.n_threads != 1:
+            if ocp.n_threads != 1 and ocp.n_threads != 1:
                 raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")  # TODO: verify if it's solved
-            if len(nlp.dynamics) == 1:
-                nlp.dynamics = nlp.dynamics * nlp.ns
             else:
-                nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp, node_index)[0])
+                nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp, node_index))
 
 
 class RK(OdeSolverBase):
@@ -143,8 +141,8 @@ class RK(OdeSolverBase):
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
-        # return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
+        return nlp.ode_solver.rk_integrator(ode, ode_opt)
 
         dynamics_out = []
         for idx in range(ode["ode"].size2_out("xdot")):  # TODO: after Anais has her PR accepted, change that to NS

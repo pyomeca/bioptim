@@ -337,8 +337,8 @@ class PlotOcp:
                             nlp.plot[key]
                             .function(
                                 np.nan,
-                                np.zeros((nlp.states[0].shape, 2)), # TODO: [0] to [node_index]
-                                np.zeros((nlp.controls[0].shape, 2)),   # TODO: [0] to [node_index]
+                                np.zeros((len(nlp.states), 2)),
+                                np.zeros((len(nlp.controls), 2)),
                                 np.zeros((nlp.parameters.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )

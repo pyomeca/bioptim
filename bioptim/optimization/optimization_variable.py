@@ -477,8 +477,7 @@ class OptimizationVariableList:
         The cx of all elements together
         """
 
-        # return self.cx_constructor([]) if self.shape == 0 else self._cx_start[:, 0]   # TODO: A changer
-
+        # return self.cx_constructor([]) if self.shape == 0 else self._cx_start[:, 0]
         return self._cx_start[:, 0]
 
     @property
@@ -488,9 +487,7 @@ class OptimizationVariableList:
         """
 
         # return self.cx_constructor([]) if self.shape == 0 else self._cx_end[:, 0]
-
         return self._cx_end[:, 0]
-
 
     @property
     def cx_intermediates_list(self):
@@ -499,7 +496,6 @@ class OptimizationVariableList:
         """
 
         return self._cx_intermediates
-
 
     @property
     def mx(self):

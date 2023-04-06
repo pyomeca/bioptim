@@ -708,7 +708,7 @@ class PenaltyOption(OptionGeneric):
                 else all_pn.t
             )
 
-        penalty_function = self.type(self, all_pn, **self.params)
+        penalty_function = self.type(self, all_pn, **self.params) # TODO: Ask Benjamin
         self.set_penalty(penalty_function, all_pn)
 
     def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):

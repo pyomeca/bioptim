@@ -485,8 +485,8 @@ class DynamicsFunctions:
             The derivative of the states and the defects of the implicit dynamics
         """
 
-        q = DynamicsFunctions.get(nlp.states[0]["q"], states)   # TODO: [0] to [node_index]
-        qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         residual_tau = (
             DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
         )
