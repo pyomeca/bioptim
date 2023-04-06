@@ -1289,10 +1289,17 @@ def test_multistart():
     final_time = [1]
     n_shooting = [5, 10]
     seed = [2, 1]
-    combinatorial_parameters={'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,'seed': seed}
-    save_folder = './Solutions_test_folder'
-    multi_start = ocp_module.prepare_multi_start(combinatorial_parameters=combinatorial_parameters, save_folder=save_folder,
-                                                 )
+    combinatorial_parameters = {
+        "bio_model_path": bio_model_path,
+        "final_time": final_time,
+        "n_shooting": n_shooting,
+        "seed": seed,
+    }
+    save_folder = "./Solutions_test_folder"
+    multi_start = ocp_module.prepare_multi_start(
+        combinatorial_parameters=combinatorial_parameters,
+        save_folder=save_folder,
+    )
     multi_start.solve()
 
     with open(f"{save_folder}/pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
@@ -1305,7 +1312,7 @@ def test_multistart():
         multi_start_3 = pickle.load(file)
 
     # Delete the solutions
-    shutil.rmtree(f'{save_folder}')
+    shutil.rmtree(f"{save_folder}")
 
     np.testing.assert_almost_equal(
         multi_start_0,
@@ -1439,17 +1446,26 @@ def test_multistart():
         ),
     )
 
-    combinatorial_parameters = {'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,
-                                'seed': seed}
-    with pytest.raises(ValueError, match='save_folder must be an str'):
-        ocp_module.prepare_multi_start(combinatorial_parameters=combinatorial_parameters, save_folder=5,
-                                       )
+    combinatorial_parameters = {
+        "bio_model_path": bio_model_path,
+        "final_time": final_time,
+        "n_shooting": n_shooting,
+        "seed": seed,
+    }
+    with pytest.raises(ValueError, match="save_folder must be an str"):
+        ocp_module.prepare_multi_start(
+            combinatorial_parameters=combinatorial_parameters,
+            save_folder=5,
+        )
 
-    with pytest.raises(ValueError, match='combinatorial_parameters must be a dictionary'):
-        ocp_module.prepare_multi_start(combinatorial_parameters=[combinatorial_parameters], save_folder=save_folder,
-                                       )
+    with pytest.raises(ValueError, match="combinatorial_parameters must be a dictionary"):
+        ocp_module.prepare_multi_start(
+            combinatorial_parameters=[combinatorial_parameters],
+            save_folder=save_folder,
+        )
     # Delete the solutions
-    shutil.rmtree(f'{save_folder}')
+    shutil.rmtree(f"{save_folder}")
+
 
 def test_example_variable_scaling():
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module

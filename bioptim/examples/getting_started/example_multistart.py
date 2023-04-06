@@ -23,6 +23,7 @@ from bioptim import (
     MagnitudeType,
 )
 
+
 def prepare_ocp(
     bio_model_path: str,
     final_time: float,
@@ -106,7 +107,6 @@ def prepare_ocp(
     return ocp
 
 
-
 def save_results(
     sol: Solution,
     biorbd_model_path: str,
@@ -115,7 +115,7 @@ def save_results(
     seed: int,
     save_folder: str,
     only_save_filename: bool = False,
-) -> None :
+) -> None:
     """
     Solving the ocp
     Parameters
@@ -134,7 +134,7 @@ def save_results(
         True if you want to return only the name of the file without saving, else False
     """
     # OptimalControlProgram.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
-    bio_model = biorbd_model_path.split('/')[-1].removesuffix('.bioMod')
+    bio_model = biorbd_model_path.split("/")[-1].removesuffix(".bioMod")
     filename = f"pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl"
     if only_save_filename == True:
         return filename
@@ -144,34 +144,36 @@ def save_results(
         with open(f"{save_folder}/{filename}", "wb") as file:
             pickle.dump(states, file)
 
-def should_solve(args,save_folder, save_results=save_results):
+
+def should_solve(args, save_folder, save_results=save_results):
     """
     Check if the filename already appears in the folder where files are saved, if not ocp must be solved
     """
     already_done_filenames = os.listdir(f"{save_folder}")
     return save_results([None], *args, save_folder=save_folder, only_save_filename=True) not in already_done_filenames
 
+
 def prepare_multi_start(
     combinatorial_parameters: dict,
     save_folder: str = None,
     n_pools: int = 1,
-
 ) -> MultiStart:
     """
     The initialization of the multi-start
     """
     if not isinstance(save_folder, str):
-        raise ValueError('save_folder must be an str')
+        raise ValueError("save_folder must be an str")
     os.mkdir(f"{save_folder}")
 
     return MultiStart(
         combinatorial_parameters=combinatorial_parameters,
         prepare_ocp_callback=prepare_ocp,
-        post_optimization_callback=(save_results, {'save_folder':save_folder}),
-        should_solve_callback=(should_solve,{'save_folder':save_folder}),
+        post_optimization_callback=(save_results, {"save_folder": save_folder}),
+        should_solve_callback=(should_solve, {"save_folder": save_folder}),
         solver=Solver.IPOPT(show_online_optim=False),  # You cannot use show_online_optim with multi-start
         n_pools=n_pools,
     )
+
 
 def main():
     # --- Prepare the multi-start and run it --- #
@@ -181,8 +183,12 @@ def main():
     n_shooting = [30, 40, 50]
     seed = [0, 1, 2, 3]
 
-    combinatorial_parameters = {'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,
-                                'seed': seed}
+    combinatorial_parameters = {
+        "bio_model_path": bio_model_path,
+        "final_time": final_time,
+        "n_shooting": n_shooting,
+        "seed": seed,
+    }
 
     save_folder = "./temporary_results"
     multi_start = prepare_multi_start(
@@ -194,7 +200,7 @@ def main():
     multi_start.solve()
 
     # Delete the solutions
-    shutil.rmtree(f'{save_folder}')
+    shutil.rmtree(f"{save_folder}")
 
 
 if __name__ == "__main__":

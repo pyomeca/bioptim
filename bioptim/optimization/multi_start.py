@@ -50,23 +50,23 @@ class MultiStart:
         """
         # errors : post, prep,
         if not isinstance(combinatorial_parameters, dict):
-            raise ValueError('combinatorial_parameters must be a dictionary')
+            raise ValueError("combinatorial_parameters must be a dictionary")
         if not isinstance(prepare_ocp_callback, Callable):
-            raise ValueError('prepare_ocp_callback must be a Callable')
+            raise ValueError("prepare_ocp_callback must be a Callable")
         if not isinstance(post_optimization_callback, tuple):
-            raise ValueError('post_optimization_callback must be a tuple')
+            raise ValueError("post_optimization_callback must be a tuple")
         if not isinstance(post_optimization_callback[0], Callable):
-            raise ValueError('post_optimization_callback first argument must be a Callable')
+            raise ValueError("post_optimization_callback first argument must be a Callable")
         if not isinstance(post_optimization_callback[1], dict):
-            raise ValueError('post_optimization_callback second argument must be a dictionary')
+            raise ValueError("post_optimization_callback second argument must be a dictionary")
         if not isinstance(should_solve_callback, tuple):
-            raise ValueError('should_solve_callback must be a tuple')
+            raise ValueError("should_solve_callback must be a tuple")
         if not isinstance(should_solve_callback[0], Callable):
-            raise ValueError('should_solve_callback first argument must be a Callable')
+            raise ValueError("should_solve_callback first argument must be a Callable")
         if not isinstance(should_solve_callback[1], dict):
-            raise ValueError('should_solve_callback first argument must be a dictionary')
+            raise ValueError("should_solve_callback first argument must be a dictionary")
         if not isinstance(n_pools, int):
-            raise ValueError('n_pools must be an int')
+            raise ValueError("n_pools must be an int")
 
         self.prepare_ocp_callback = prepare_ocp_callback
         self.post_optimization_callback = post_optimization_callback
@@ -89,7 +89,9 @@ class MultiStart:
         return combined_args_to_list
 
     def _prepare_and_solve_ocp(self, ocp_parameters):
-        if self.should_solve_callback is None or self.should_solve_callback[0](ocp_parameters, **self.should_solve_callback[1]):
+        if self.should_solve_callback is None or self.should_solve_callback[0](
+            ocp_parameters, **self.should_solve_callback[1]
+        ):
             sol = self.prepare_ocp_callback(*ocp_parameters).solve(self.solver)
             self.post_optimization_callback[0](sol, *ocp_parameters, **self.post_optimization_callback[1])
 
