@@ -620,12 +620,9 @@ class PlotOcp:
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
 
         for _ in self.ocp.nlp:
-            if self.t_idx_to_optimize and _.parameters.mx.shape[0] > 1:  # todo : if bimapping is True instead:
+            if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                     self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
-            else:
-                for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                    self.tf[i_in_tf] = float(data_params["time"][0])
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
