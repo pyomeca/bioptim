@@ -1290,7 +1290,7 @@ def test_multistart():
     n_shooting = [5, 10]
     seed = [2, 1]
     combinatorial_parameters={'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,'seed': seed}
-    save_folder = '.Solutions_test_folder'
+    save_folder = './Solutions_test_folder'
     multi_start = ocp_module.prepare_multi_start(combinatorial_parameters=combinatorial_parameters, save_folder=save_folder,
                                                  )
     multi_start.solve()
@@ -1435,11 +1435,8 @@ def test_multistart():
             ]
         ),
     )
-    # multistart_1= Multistart(
-    # )
-    # assert len(combinatorial_parameters) == 4
-    #
-    #
+   # multistart_1= Multistart(
+
     # with pytest.raises(ValueError, match="independent_indices must not contain more elements than nb_elements"):
     #     SelectionMapping(1, (3, 4, 5))
     # with pytest.raises(ValueError, match="nb_dof should be an 'int'"):
