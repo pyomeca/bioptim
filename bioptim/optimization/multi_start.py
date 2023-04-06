@@ -23,6 +23,7 @@ class MultiStart:
         combinatorial_parameters: dict[tuple, ...],
         prepare_ocp_callback: Callable[[Any], OptimalControlProgram],
         post_optimization_callback: Callable[[Solution, Any], None],
+        save_folder: str = None,
         should_solve_callback: Callable[[Any], bool] = None,
         solver: Solver = None,
         n_pools: int = 1,
@@ -57,6 +58,7 @@ class MultiStart:
         self.solver = solver if solver else Solver.IPOPT()
         self.n_pools = n_pools
         self.combined_ocp_parameters = self._generate_parameters_combinations(combinatorial_parameters)
+        self.save_folder = save_folder
 
     @staticmethod
     def _generate_parameters_combinations(combinatorial_parameters):
@@ -71,9 +73,9 @@ class MultiStart:
         return combined_args_to_list
 
     def _prepare_and_solve_ocp(self, ocp_parameters):
-        if self.should_solve_callback is None or self.should_solve_callback(ocp_parameters):
+        if self.should_solve_callback is None or self.should_solve_callback(ocp_parameters, save_folder = self.save_folder):
             sol = self.prepare_ocp_callback(*ocp_parameters).solve(self.solver)
-            self.post_optimization_callback(sol, *ocp_parameters)
+            self.post_optimization_callback(sol, *ocp_parameters,save_folder= self.save_folder)
 
     def solve(self):
         """
