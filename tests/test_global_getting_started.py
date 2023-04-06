@@ -1290,17 +1290,18 @@ def test_multistart():
     n_shooting = [5, 10]
     seed = [2, 1]
     combinatorial_parameters={'bio_model_path': bio_model_path, 'final_time': final_time, 'n_shooting': n_shooting,'seed': seed}
-    multi_start = ocp_module.prepare_multi_start(combinatorial_parameters=combinatorial_parameters
+    save_folder = '.Solutions_test_folder'
+    multi_start = ocp_module.prepare_multi_start(combinatorial_parameters=combinatorial_parameters, save_folder=save_folder,
                                                  )
     multi_start.solve()
 
-    with open("/home/laseche/Documents/Stage_Lisa/Lisa/Sol/pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
+    with open(f"{save_folder}/pendulum_multi_start_random_states_5_0.pkl", "rb") as file:
         multi_start_0 = pickle.load(file)
-    with open("/home/laseche/Documents/Stage_Lisa/Lisa/Sol/pendulum_multi_start_random_states_5_1.pkl", "rb") as file:
+    with open(f"{save_folder}/pendulum_multi_start_random_states_5_1.pkl", "rb") as file:
         multi_start_1 = pickle.load(file)
-    with open("/home/laseche/Documents/Stage_Lisa/Lisa/Sol/pendulum_multi_start_random_states_10_2.pkl", "rb") as file:
+    with open(f"{save_folder}/pendulum_multi_start_random_states_10_2.pkl", "rb") as file:
         multi_start_2 = pickle.load(file)
-    with open("/home/laseche/Documents/Stage_Lisa/Lisa/Sol/pendulum_multi_start_random_states_10_1.pkl", "rb") as file:
+    with open(f"{save_folder}/pendulum_multi_start_random_states_10_1.pkl", "rb") as file:
         multi_start_3 = pickle.load(file)
 
     np.testing.assert_almost_equal(
