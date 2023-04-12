@@ -35,8 +35,8 @@ def test_xia_fatigable_muscles():
 
     # Check some of the results
     states, controls = sol.states, sol.controls
-    q, qdot, ma, mr, mf = states["q"], states["qdot"], states["muscles_ma"], states["muscles_mr"], states["muscles_mf"]
-    tau, muscles = controls["tau"], controls["muscles"]
+    q, qdot, ma, mr, mf = states[0]["q"], states[0]["qdot"], states[0]["muscles_ma"], states[0]["muscles_mr"], states[0]["muscles_mf"]  # TODO: [0] to [node_index]
+    tau, muscles = controls[0]["tau"], controls[0]["muscles"]   # TODO: [0] to [node_index]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.07, 1.4)))
@@ -220,8 +220,8 @@ def test_effort_fatigable_muscles():
 
     # Check some of the results
     states, controls = sol.states, sol.controls
-    q, qdot, mf = states["q"], states["qdot"], states["muscles_mf"]
-    tau, muscles = controls["tau"], controls["muscles"]
+    q, qdot, mf = states[0]["q"], states[0]["qdot"], states[0]["muscles_mf"]    # TODO: [0] to [node_index]
+    tau, muscles = controls[0]["tau"], controls[0]["muscles"]   # TODO: [0] to [node_index]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.07, 1.4)))
@@ -318,10 +318,10 @@ def test_fatigable_xia_torque_split():
 
     # Check some of the results
     states, controls = sol.states, sol.controls
-    q, qdot = states["q"], states["qdot"]
-    ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
-    ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
-    tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
+    q, qdot = states[0]["q"], states[0]["qdot"] # TODO: [0] to [node_index]
+    ma_minus, mr_minus, mf_minus = states[0]["tau_minus_ma"], states[0]["tau_minus_mr"], states[0]["tau_minus_mf"]  # TODO: [0] to [node_index]
+    ma_plus, mr_plus, mf_plus = states[0]["tau_plus_ma"], states[0]["tau_plus_mr"], states[0]["tau_plus_mf"]    # TODO: [0] to [node_index]
+    tau_minus, tau_plus = controls[0]["tau_minus"], controls[0]["tau_plus"] # TODO: [0] to [node_index]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))

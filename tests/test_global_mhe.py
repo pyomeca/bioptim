@@ -102,7 +102,7 @@ def test_multi_cyclic_nmpc_get_final():
     # check some results of the second structure
     for s in sol[1]:
         states, controls = s.states, s.controls
-        q = states["q"]
+        q = states[0]["q"]
 
         # initial and final position
         np.testing.assert_equal(q.shape, (3, 41))
@@ -117,7 +117,7 @@ def test_multi_cyclic_nmpc_get_final():
 
     for s in sol[2]:
         states, controls = s.states, s.controls
-        q = states["q"]
+        q = states[0]["q"]
 
         # initial and final position
         np.testing.assert_equal(q.shape, (3, 21))

@@ -58,9 +58,9 @@ def custom_dynamic(
     The derivative of the states in the tuple[MX | SX] format
     """
 
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+    q = DynamicsFunctions.get(nlp.states[0]["q"], states)  # TODO : [0] to [node_index]
+    qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)     # TODO : [0] to [node_index]
+    tau = DynamicsFunctions.get(nlp.controls[0]["tau"], controls)   # TODO : [0] to [node_index]
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor

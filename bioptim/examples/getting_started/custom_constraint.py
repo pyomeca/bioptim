@@ -57,14 +57,14 @@ def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second
 
         # noinspection PyTypeChecker
         model: BiorbdModel = all_pn.nlp.model
-        markers = all_pn.nlp.mx_to_cx("markers", model.model.markers, all_pn.nlp.states["q"])
+        markers = all_pn.nlp.mx_to_cx("markers", model.model.markers, all_pn.nlp.states[0]["q"])    # TODO: [0] to [node_index]
         markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     else:
         # Do the calculation in biorbd API and then convert to the required format
-        markers = all_pn.nlp.model.markers(all_pn.nlp.states["q"].mx)
+        markers = all_pn.nlp.model.markers(all_pn.nlp.states[0]["q"].mx)    # TODO: [0] to [node_index]
         markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
-        markers_diff = all_pn.nlp.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
+        markers_diff = all_pn.nlp.mx_to_cx("markers", markers_diff, all_pn.nlp.states[0]["q"])  # TODO: [0] to [node_index]
 
     return markers_diff
 

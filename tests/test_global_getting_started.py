@@ -121,7 +121,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
 
     # Check some of the results
     states, controls = sol.states, sol.controls
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = states[0]["q"], states[0]["qdot"], controls[0]["tau"]    # TODO: [0] to [node_index]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))

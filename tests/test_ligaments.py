@@ -42,6 +42,7 @@ def test_torque_driven_with_ligament(with_ligament, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.initialize(cx)
     nlp.x_scaling = {}
     nlp.xdot_scaling = {}
     nlp.u_scaling = {}
@@ -71,8 +72,8 @@ def test_torque_driven_with_ligament(with_ligament, cx):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states.shape, nlp.ns)
-    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)    # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)   # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
     if with_ligament:
@@ -97,6 +98,7 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.initialize(cx)
     nlp.x_scaling = {}
     nlp.xdot_scaling = {}
     nlp.u_scaling = {}
@@ -128,8 +130,8 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states.shape, nlp.ns)
-    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)    # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)    # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
     if with_ligament:
@@ -154,6 +156,7 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.initialize(cx)
     nlp.x_scaling = {}
     nlp.xdot_scaling = {}
     nlp.u_scaling = {}
@@ -181,8 +184,8 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states.shape, nlp.ns)
-    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)    # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)    # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
     if with_ligament:
@@ -209,6 +212,7 @@ def test_muscle_driven_with_ligament(with_ligament, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.initialize(cx)
     nlp.x_scaling = {}
     nlp.xdot_scaling = {}
     nlp.u_scaling = {}
@@ -242,8 +246,8 @@ def test_muscle_driven_with_ligament(with_ligament, cx):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states.shape, nlp.ns)
-    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)   # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)   # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
