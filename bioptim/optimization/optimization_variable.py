@@ -1,7 +1,7 @@
 from typing import Callable
 
 import numpy as np
-from casadi import MX, SX, vertcat, horzcat
+from casadi import MX, SX, vertcat
 
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric, OptionDict
@@ -242,15 +242,17 @@ class OptimizationVariable:
     -------
     __len__(self)
         The len of the MX reduced
-    cx(self)
+    cx_start(self)
         The CX of the variable (starting point)
+    cx_end(self)
+        The CX of the variable (ending point)
     """
 
     def __init__(
         self,
         name: str,
         mx: MX,
-        cx: list | None,
+        cx_start: list | None,
         index: [range, list],
         mapping: BiMapping = None,
         parent_list=None,
@@ -269,7 +271,7 @@ class OptimizationVariable:
         """
         self.name: str = name
         self.mx: MX = mx
-        self.original_cx: list = cx
+        self.original_cx: list = cx_start
         self.index: [range, list] = index
         self.mapping: BiMapping = mapping
         self.parent_list: OptimizationVariableList = parent_list
@@ -285,7 +287,7 @@ class OptimizationVariable:
         return len(self.index)
 
     @property
-    def cx(self):
+    def cx_start(self):
         """
         The CX of the variable
         """
@@ -297,6 +299,19 @@ class OptimizationVariable:
             )
         return self.parent_list.cx_start
 
+    @property
+    def cx_end(self):
+        """
+        The CX of the variable
+        """
+
+        if self.parent_list is None:
+            raise RuntimeError(
+                "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
+                "Typically 'all' cannot be used"
+            )
+        return self.parent_list.cx_end
+
 
 class OptimizationVariableList:
     """
@@ -306,7 +321,7 @@ class OptimizationVariableList:
     ----------
     elements: list
         Each of the variable separated
-    _cx: MX | SX
+    _cx_start: MX | SX
         The symbolic MX or SX of the list (starting point)
     _cx_end: MX | SX
         The symbolic MX or SX of the list (ending point)
@@ -428,7 +443,7 @@ class OptimizationVariableList:
 
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
         self._cx_start = vertcat(self._cx_start, cx[0])
-        self._cx_end = vertcat(self._cx_end, cx[1])
+        self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
@@ -459,7 +474,7 @@ class OptimizationVariableList:
         """
 
         self._cx_start = vertcat(self._cx_start, cx[0])
-        self._cx_end = vertcat(self._cx_end, cx[1])
+        self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
@@ -486,7 +501,7 @@ class OptimizationVariableList:
         The cx of all elements together
         """
 
-        # return self.cx_constructor([]) if self.shape == 0 else self._cx_end[:, 0]
+        # return self.cx_constructor([]) if self.shape == 0 else self._cx_end[:, 1]
         return self._cx_end[:, 0]
 
     @property
@@ -601,12 +616,12 @@ class OptimizationVariableContainer:
         self.optimization_variable["scaled"].cx_constructor = self.cx_constructor
         self.optimization_variable["unscaled"].cx_constructor = self.cx_constructor
 
-
-    def _set_states_and_controls(self, n_shooting: int, cx: MX):
-        self = [OptimizationVariableContainer() for _ in range(n_shooting)]
+    @staticmethod
+    def _set_states_and_controls(n_shooting: int, cx: MX) -> list:
+        out = [OptimizationVariableContainer() for _ in range(n_shooting)]
         for node_index in range(n_shooting):
-            self[node_index]._set_cx_constructor(cx)
-        return self
+            out[node_index]._set_cx_constructor(cx)
+        return out
 
     def keys(self):
         return self.optimization_variable["unscaled"].keys()
