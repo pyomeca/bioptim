@@ -336,7 +336,7 @@ class PlotOcp:
                         size = (
                             nlp.plot[key]
                             .function(
-                                np.nan,
+                                0,
                                 np.zeros((nlp.states.shape, 2)),
                                 np.zeros((nlp.controls.shape, 2)),
                                 np.zeros((nlp.parameters.shape, 2)),
@@ -418,7 +418,7 @@ class PlotOcp:
 
                     plot_type = self.plot_func[variable][i].type
                   #  if _ in [8 9 12 13] :
-                   #     plot_type = PlotType.INTEGRATED
+                   #     plot_type = PlotType.INTEGRATED ###### ici
                     t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
                     if self.plot_func[variable][i].label:
                         label = self.plot_func[variable][i].label
@@ -721,14 +721,9 @@ class PlotOcp:
                         self.__append_to_ydata([y_tp])
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
-                    print('plot type point ')
                     for i_var in range(self.variable_sizes[i][key]):
-                        #if self.plot_func[key][i].parameters:
-                        print(f' key is {key} and phase is {i}')
-                        print(self.plot_func[key][i].parameters)
                         if self.plot_func[key][i].parameters["penalty"].multinode_constraint:
                             y = np.array([np.nan])
-
                             phase_1 = self.plot_func[key][i].parameters["penalty"].phase_second_idx
                             phase_2 = self.plot_func[key][i].parameters["penalty"].phase_first_idx
                             node_idx_1 = self.plot_func[key][i].node_idx[0]
