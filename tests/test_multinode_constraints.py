@@ -108,7 +108,7 @@ def test_binode_fail_first_node(node):
     # hard constraint
     with pytest.raises(
         NotImplementedError,
-        match="Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+        match="Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
     ):
         binode_constraints.add(
             BinodeConstraintFcn.STATES_EQUALITY,
@@ -126,7 +126,7 @@ def test_binode_fail_second_node(node):
     # hard constraint
     with pytest.raises(
         NotImplementedError,
-        match="Multi Node Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+        match="Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
     ):
         binode_constraints.add(
             BinodeConstraintFcn.STATES_EQUALITY,
