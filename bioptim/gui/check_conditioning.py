@@ -289,19 +289,19 @@ def check_conditioning(ocp):
                     nlp = ocp.nlp[phase - 1]
                     nlp_post = nlp_phase
                     states_pre = nlp.states.cx_end
-                    states_post = nlp_post.states.cx
+                    states_post = nlp_post.states.cx_start
                     controls_pre = nlp.controls.cx_end
-                    controls_post = nlp_post.controls.cx
+                    controls_post = nlp_post.controls.cx_start
                     state_cx = vertcat(states_pre, states_post)
                     control_cx = vertcat(controls_pre, controls_post)
 
                 else:
                     if obj.integrate:
-                        state_cx = horzcat(*([nlp_phase.states.cx] + nlp_phase.states.cx_intermediates_list))
-                        control_cx = nlp_phase.controls.cx
+                        state_cx = horzcat(*([nlp_phase.states.cx_start] + nlp_phase.states.cx_intermediates_list))
+                        control_cx = nlp_phase.controls.cx_start
                     else:
-                        state_cx = nlp_phase.states.cx
-                        control_cx = nlp_phase.controls.cx
+                        state_cx = nlp_phase.states.cx_start
+                        control_cx = nlp_phase.controls.cx_start
                     if obj.explicit_derivative:
                         if obj.derivative:
                             raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
@@ -309,8 +309,8 @@ def check_conditioning(ocp):
                         control_cx = horzcat(control_cx, nlp_phase.controls.cx_end)
 
                 if obj.derivative:
-                    state_cx = horzcat(nlp_phase.states.cx_end, nlp_phase.states.cx)
-                    control_cx = horzcat(nlp_phase.controls.cx_end, nlp_phase.controls.cx)
+                    state_cx = horzcat(nlp_phase.states.cx_end, nlp_phase.states.cx_start)
+                    control_cx = horzcat(nlp_phase.controls.cx_end, nlp_phase.controls.cx_start)
 
                 dt_cx = nlp_phase.cx.sym("dt", 1, 1)
                 is_trapezoidal = (
@@ -320,14 +320,14 @@ def check_conditioning(ocp):
 
                 if is_trapezoidal:
                     state_cx = (
-                        horzcat(nlp_phase.states.cx, nlp_phase.states.cx_end)
+                        horzcat(nlp_phase.states.cx_start, nlp_phase.states.cx_end)
                         if obj.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                        else nlp_phase.states.cx
+                        else nlp_phase.states.cx_start
                     )
                     control_cx = (
-                        horzcat(nlp_phase.controls.cx)
+                        horzcat(nlp_phase.controls.cx_start)
                         if nlp_phase.control_type == ControlType.CONSTANT
-                        else horzcat(nlp_phase.controls.cx, nlp_phase.controls.cx_end)
+                        else horzcat(nlp_phase.controls.cx_start, nlp_phase.controls.cx_end)
                     )
                     control_cx_end = get_u(nlp_phase, control_cx, dt_cx)
 

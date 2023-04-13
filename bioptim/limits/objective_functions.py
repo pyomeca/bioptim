@@ -477,5 +477,5 @@ class ContinuityObjectiveFunctions:
         # TODO: binode_anything shouldn't be handled by "continuity".
         # Keeping binode_constraint here because otherwise they wouldn't be added when state continuity is an
         # objective, should REALLY be changed.
-        if ocp.binode_constraints:
+        if ocp.binode_constraints or ocp.allnode_constraints:
             ObjectiveFunction.node_equalities(ocp)

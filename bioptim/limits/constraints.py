@@ -288,7 +288,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
 
-            value = vertcat(nlp.controls[0]["tau"].cx_start + min_bound, nlp.controls[0]["tau"].cx_start - max_bound)  # TODO: [0] to [node_index]
+            value = vertcat(nlp.controls[0]["tau"].cx + min_bound, nlp.controls[0]["tau"].cx - max_bound)  # TODO: [0] to [node_index]
 
             n_rows = constraint.rows if constraint.rows else int(value.shape[0] / 2)
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
@@ -345,7 +345,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             q = nlp.states[0]["q"].mx   # TODO: [0] to [node_index]
             qdot = nlp.states[0]["qdot"].mx # TODO: [0] to [node_index]
             passive_torque = nlp.model.passive_joint_torque(q, qdot)
-            tau = nlp.states[0]["tau"].mx if "tau" in nlp.states[0] else nlp.controls["tau"].mx    # TODO: [0] to [node_index]
+            tau = nlp.states[0]["tau"].mx if "tau" in nlp.states[0] else nlp.controls[0]["tau"].mx    # TODO: [0] to [node_index]
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
@@ -542,7 +542,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return nlp.mx_to_cx("forward_dynamics", nlp.controls[0]["fext"].mx - soft_contact_force, *var)  # TODO: [0] to [node_index]
 
     @staticmethod
-    def inter_phase_continuity(ocp):    # TODO: Ne fonctionne pas bien
+    def inter_phase_continuity(ocp):
         """
         Add phase transition constraints between two phases.
 
@@ -561,7 +561,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
 
-            # return ocp.phase_transitions
 
     @staticmethod
     def get_dt(_):

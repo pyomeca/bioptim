@@ -492,8 +492,7 @@ class OptimizationVariableList:
         The cx of all elements together
         """
 
-        # return self.cx_constructor([]) if self.shape == 0 else self._cx_start[:, 0]
-        return self._cx_start[:, 0]
+        return self.cx_constructor([]) if self.shape == 0 else self._cx_start[:, 0]
 
     @property
     def cx_end(self):
@@ -501,8 +500,7 @@ class OptimizationVariableList:
         The cx of all elements together
         """
 
-        # return self.cx_constructor([]) if self.shape == 0 else self._cx_end[:, 1]
-        return self._cx_end[:, 0]
+        return self.cx_constructor([]) if self.shape == 0 else self._cx_end[:, 0]
 
     @property
     def cx_intermediates_list(self):
@@ -549,7 +547,7 @@ class OptimizationVariableList:
         The size of the CX
         """
 
-        return self._cx_start.shape[0]
+        return self._cx_end.shape[0]
 
     def __len__(self):
         """

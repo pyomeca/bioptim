@@ -68,11 +68,11 @@ class OdeSolverBase:
             A reference to the current phase of the ocp
         """
         nlp.dynamics = []
-        for node_index in range(nlp.ns + 1):
-            if ocp.n_threads != 1 and ocp.n_threads != 1:
-                raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")  # TODO: verify if it's solved
-            else:
-                nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp, node_index))
+        for node_index in range(nlp.ns):    # TODO: before nlp.ns + 1
+            # if len(nlp.dynamics) != 1 and ocp.n_threads != 1:
+            #     raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")  # TODO: verify if it's solved
+            # else:
+            nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp)[0])
 
 
 class RK(OdeSolverBase):
@@ -98,7 +98,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp, node_index) -> list:
+    def integrator(self, ocp, nlp) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -108,8 +108,6 @@ class RK(OdeSolverBase):
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the nlp
-        node_index:
-            Index of the node
 
         Returns
         -------
@@ -122,7 +120,6 @@ class RK(OdeSolverBase):
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
-            "node_index": node_index,
             "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
@@ -141,8 +138,6 @@ class RK(OdeSolverBase):
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
-
-        return nlp.ode_solver.rk_integrator(ode, ode_opt)
 
         dynamics_out = []
         for idx in range(ode["ode"].size2_out("xdot")):  # TODO: after Anais has her PR accepted, change that to NS
@@ -163,7 +158,6 @@ class OdeSolver:
     """
     The public interface to the different OdeSolvers
     """
-
     class RK1(RK):
         """
         A Runge-Kutta 1 solver (Forward Euler Method)
@@ -265,7 +259,7 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-        def integrator(self, ocp, nlp, node_index) -> list:
+        def integrator(self, ocp, nlp) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -275,8 +269,6 @@ class OdeSolver:
                 A reference to the ocp
             nlp: NonLinearProgram
                 A reference to the nlp
-            node_index:
-                Index of the node
             Returns
             -------
             A list of integrators
@@ -293,9 +285,9 @@ class OdeSolver:
 
             ode = {
                 "x_unscaled": [nlp.states[0].cx_start] + nlp.states[0].cx_intermediates_list,  # TODO: [0] to [node_index]
-                "x_scaled": [nlp.states[0]["scaled"].cx_start] + nlp.states[0]["scaled"].cx_intermediates_list,
-                "p_unscaled": nlp.controls[0].cx_start,
-                "p_scaled": nlp.controls[0]["scaled"].cx_start,
+                "x_scaled": [nlp.states[0]["scaled"].cx_start] + nlp.states[0]["scaled"].cx_intermediates_list, # TODO: [0] to [node_index]
+                "p_unscaled": nlp.controls[0].cx_start, # TODO: [0] to [node_index]
+                "p_scaled": nlp.controls[0]["scaled"].cx_start, # TODO: [0] to [node_index]
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -305,7 +297,6 @@ class OdeSolver:
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
-                "node_index": node_index,
                 "idx": 0,
                 "control_type": nlp.control_type,
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
@@ -396,7 +387,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index) -> list:
+        def integrator(self, ocp, nlp) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -406,8 +397,6 @@ class OdeSolver:
                 A reference to the ocp
             nlp: NonLinearProgram
                 A reference to the nlp
-            node_index:
-                Index of the node
             Returns
             -------
             A list of integrators
@@ -423,18 +412,18 @@ class OdeSolver:
 
             ode = {
                 "x": nlp.states[0]["scaled"].cx_start,    # TODO: [0] to [node_index]
-                "p": nlp.controls[0]["scaled"].cx_start,
-                "ode": nlp.dynamics_func(nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx),
+                "p": nlp.controls[0]["scaled"].cx_start,    # TODO: [0] to [node_index]
+                "ode": nlp.dynamics_func(nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx),  # TODO: [0] to [node_index]
             }
-            ode_opt = {"t0": 0, "tf": nlp.dt, "node_index": node_index}
+            ode_opt = {"t0": 0, "tf": nlp.dt}
 
             integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
 
             return [
                 Function(
                     "integrator",
-                    [nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx],
-                    self._adapt_integrator_output(integrator_func, nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start),
+                    [nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx],  # TODO: [0] to [node_index]
+                    self._adapt_integrator_output(integrator_func, nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start),   # TODO: [0] to [node_index]
                     ["x0", "p", "params"],
                     ["xf", "xall"],
                 )

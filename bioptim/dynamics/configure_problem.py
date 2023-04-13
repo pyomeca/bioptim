@@ -832,12 +832,12 @@ class ConfigureProblem:
 
         # Create a fake accessor for the name of the controls so it can be directly called in nlp.controls
         if split_controls:
-            ConfigureProblem.append_faked_optim_var(name, nlp.controls["scaled"], var_names_with_suffix)
-            ConfigureProblem.append_faked_optim_var(name, nlp.controls["unscaled"], var_names_with_suffix)
+            ConfigureProblem.append_faked_optim_var(name, nlp.controls[0]["scaled"], var_names_with_suffix) # TODO: [0] to [node_index]
+            ConfigureProblem.append_faked_optim_var(name, nlp.controls[0]["unscaled"], var_names_with_suffix)   # TODO: [0] to [node_index]
         else:
             for meta_suffix in var_names_with_suffix:
-                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls["scaled"], [name])
-                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls["unscaled"], [name])
+                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls[0]["scaled"], [name]) # TODO: [0] to [node_index]
+                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls[0]["unscaled"], [name])   # TODO: [0] to [node_index]
 
         return True
 
@@ -892,28 +892,15 @@ class ConfigureProblem:
                 _cx[node_index] = [nlp.cx() for _ in range(n_col)]
             for idx in nlp.variable_mappings[name].to_first.map_idx:
                 for node_index in range(n_shooting + 1):
-                    if node_index < n_shooting:
+                    for j in range(n_col):
                         sign = "-" if np.sign(idx) < 0 else ""
-                        _cx[node_index][0] = vertcat(
-                            _cx[node_index][0], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{node_index}_{0}", 1, 1)
-                        )
-                        sign = "-" if np.sign(idx) < 0 else ""
-                        _cx[node_index][1] = vertcat(
-                            _cx[node_index][1], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{node_index + 1}_{1}", 1, 1)
-                        )
-                    else:
-                        sign = "-" if np.sign(idx) < 0 else ""
-                        _cx[node_index][0] = vertcat(
-                            _cx[node_index][0], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{node_index}_{0}", 1, 1)
-                        )
-                        sign = "-" if np.sign(idx) < 0 else ""
-                        _cx[node_index][1] = vertcat(
-                            _cx[node_index][1], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{node_index}_{1}", 1, 1)
+                        _cx[node_index][j] = vertcat(
+                            _cx[node_index][j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{node_index}_{j}", 1, 1)
                         )
             return _cx
 
         def define_cx_unscaled(_cx_scaled: list, scaling: np.ndarray) -> list:
-            _cx = [[] for _ in range(len(_cx_scaled))]
+            _cx = [nlp.cx() for _ in range(len(_cx_scaled))]
             for node_index in range(len(_cx_scaled)):
                 _cx[node_index] = [nlp.cx() for _ in range(len(_cx_scaled[0]))]
 

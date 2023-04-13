@@ -61,7 +61,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_states")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return all_pn.nlp.states[0][key].cx_start   # TODO: [0] to [node_index]
+            return all_pn.nlp.states[0][key].cx_start  # TODO: [0] to [node_index]
 
         @staticmethod
         def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
@@ -86,7 +86,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return all_pn.nlp.controls[0][key].cx # TODO: [0] to [node_index]
+            return all_pn.nlp.controls[0][key].cx_start # TODO: [0] to [node_index]
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
@@ -665,7 +665,7 @@ class PenaltyFunctionAbstract:
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 u = nlp.controls[0].cx_start    # TODO: [0] to [node_index]
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                u = horzcat(nlp.controls[1].cx_start, nlp.controls[0].cx_end) # TODO: Pour cx_end prendre le noeud precedent
+                u = horzcat(nlp.controls[1].cx_start, nlp.controls[0].cx_end) # TODO: For cx_end take the previous node
             else:
                 raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
 
@@ -684,10 +684,10 @@ class PenaltyFunctionAbstract:
 
             continuity = nlp.states[0].cx_end   # TODO: [0] to [node_index]
             if nlp.ode_solver.is_direct_collocation:
-                cx = horzcat(*([nlp.states[0].cx_start] + nlp.states.cx_intermediates_list)) # TODO: [0] to [node_index]
-                continuity -= nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
+                cx = horzcat(*([nlp.states[0].cx_start] + nlp.states[0].cx_intermediates_list)) # TODO: [0] to [node_index]
+                continuity -= nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx)["xf"] # TODO: [0] to [node_index]
                 continuity = vertcat(
-                    continuity, nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx)["defects"]
+                    continuity, nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx)["defects"]  # TODO: [0] to [node_index]
                 )
                 penalty.integrate = True
 

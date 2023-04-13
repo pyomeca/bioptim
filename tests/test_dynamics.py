@@ -182,6 +182,7 @@ def test_torque_driven_implicit(with_contact, cx):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.initialize(cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
@@ -216,8 +217,8 @@ def test_torque_driven_implicit(with_contact, cx):
 
     # Test the results
     np.random.seed(42)
-    states = np.random.rand(nlp.states.shape, nlp.ns)
-    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)    # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)    # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -1440,7 +1441,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
 
     nlp.ns = 5
     nlp.cx = cx
-    nlp.initialize(cx)
+    nlp.initialize(nlp.cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -1487,9 +1488,9 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact):
     def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> DynamicsEvaluation:
-        q = DynamicsFunctions.get(nlp.states["q"], states)
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        q = DynamicsFunctions.get(nlp.states[0]["q"], states)   # TODO: [0] to [node_index]
+        qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states) # TODO: [0] to [node_index]
+        tau = DynamicsFunctions.get(nlp.controls[0]["tau"], controls)   # TODO: [0] to [node_index]
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
@@ -1512,7 +1513,7 @@ def test_custom_dynamics(with_contact):
     )
     nlp.ns = 5
     nlp.cx = MX
-
+    nlp.initialize(nlp.cx)
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     nlp.x_scaling = {}
@@ -1539,8 +1540,8 @@ def test_custom_dynamics(with_contact):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states.shape, nlp.ns)
-    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)    # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)   # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 

@@ -154,8 +154,8 @@ class AcadosInterface(SolverInterface):
             raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
 
         # Declare model variables
-        x = ocp.nlp[0].states.cx
-        u = ocp.nlp[0].controls.cx
+        x = ocp.nlp[0].states[0].cx_start   # TODO: [0] to [node_index]
+        u = ocp.nlp[0].controls[0].cx_start # TODO: [0] to [node_index]
         p = ocp.nlp[0].parameters.cx
         if ocp.v.parameters_in_list:
             for param in ocp.v.parameters_in_list:
@@ -210,8 +210,8 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.solver_options.tf = ocp.nlp[0].tf
 
         # set dimensions
-        self.acados_ocp.dims.nx = ocp.nlp[0].states.shape + ocp.nlp[0].parameters.shape
-        self.acados_ocp.dims.nu = ocp.nlp[0].controls.shape
+        self.acados_ocp.dims.nx = ocp.nlp[0].states[0].shape + ocp.nlp[0].parameters.shape  # TODO: [0] to [node_index]
+        self.acados_ocp.dims.nu = ocp.nlp[0].controls[0].shape  # TODO: [0] to [node_index]
         self.acados_ocp.dims.N = ocp.nlp[0].ns
 
     def __set_constr_type(self, constr_type: str = "BGH"):
@@ -256,8 +256,8 @@ class AcadosInterface(SolverInterface):
         self.all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i, nlp in enumerate(ocp.nlp):
-            x = nlp.states.cx
-            u = nlp.controls.cx
+            x = nlp.states[0].cx_start  # TODO: [0] to [node_index]
+            u = nlp.controls[0].cx_start    # TODO: [0] to [node_index]
             p = nlp.parameters.cx
 
             for g, G in enumerate(nlp.g):
@@ -376,7 +376,7 @@ class AcadosInterface(SolverInterface):
         def add_linear_ls_lagrange(acados, objectives):
             def add_objective(n_variables, is_state):
                 v_var = np.zeros(n_variables)
-                var_type = acados.ocp.nlp[0].states if is_state else acados.ocp.nlp[0].controls
+                var_type = acados.ocp.nlp[0].states[0] if is_state else acados.ocp.nlp[0].controls[0]   # TODO: [0] to [node_index]
                 rows = objectives.rows + var_type[objectives.params["key"]].index[0]
                 v_var[rows] = 1.0
                 if is_state:
@@ -408,7 +408,7 @@ class AcadosInterface(SolverInterface):
             def add_objective(n_variables, is_state):
                 def _adjust_dim():
                     v_var = np.zeros(n_variables)
-                    var_type = acados.ocp.nlp[0].states if is_state else acados.ocp.nlp[0].controls
+                    var_type = acados.ocp.nlp[0].states[0] if is_state else acados.ocp.nlp[0].controls[0]   # TODO: [0] to [node_index]
                     rows = objectives.rows + var_type[objectives.params["key"]].index[0]
                     v_var[rows] = 1.0
                     return v_var, rows
@@ -498,8 +498,8 @@ class AcadosInterface(SolverInterface):
         allowed_state_objectives = [ObjectiveFcn.Lagrange.MINIMIZE_STATE, ObjectiveFcn.Mayer.TRACK_STATE]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
-            n_states = ocp.nlp[0].states.shape
-            n_controls = ocp.nlp[0].controls.shape
+            n_states = ocp.nlp[0].states[0].shape   # TODO: [0] to [node_index]
+            n_controls = ocp.nlp[0].controls[0].shape   # TODO: [0] to [node_index]
             self.Vu = np.array([], dtype=np.int64).reshape(0, n_controls)
             self.Vx = np.array([], dtype=np.int64).reshape(0, n_states)
             self.Vxe = np.array([], dtype=np.int64).reshape(0, n_states)

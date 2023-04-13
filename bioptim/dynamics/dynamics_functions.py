@@ -535,7 +535,7 @@ class DynamicsFunctions:
 
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
             ddq = DynamicsFunctions.get(nlp.controls[0]["qddot"], controls) # TODO: [0] to [node_index]
-            dxdt = MX(nlp.states.shape, 1)
+            dxdt = MX(nlp.states[0].shape, 1)   # TODO: [0] to [node_index]
             dxdt[nlp.states[0]["q"].index, :] = dq  # TODO: [0] to [node_index]
             dxdt[nlp.states[0]["qdot"].index, :] = DynamicsFunctions.get(nlp.controls[0]["qddot"], controls)    # TODO: [0] to [node_index]
         else:

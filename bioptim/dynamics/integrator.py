@@ -77,7 +77,6 @@ class Integrator:
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
         self.control_type = ode_opt["control_type"]
-        self.node_index = ode_opt["node_index"]
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
         self.function = None
@@ -154,7 +153,7 @@ class Integrator:
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),   # TODO: [0] to [node_index]
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall"],
         )
@@ -627,7 +626,7 @@ class COLLOCATION(Integrator):
         self.function = Function(
             "integrator",
             [horzcat(*self.x_sym), self.u_sym, self.param_sym],
-            self.dxdt(self.h, self.x_sym[0], self.u_sym[0], self.param_sym * self.param_scaling),   # TODO: [0] to [node_index]
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall", "defects"],
         )
@@ -702,8 +701,8 @@ class IRK(COLLOCATION):
 
         self.function = Function(
             "integrator",
-            [self.x_sym, self.u_sym, self.param_sym],
-            self.dxdt(self.h, self.x_sym[0], self.u_sym[0], self.param_sym * self.param_scaling),   # TODO: [0] to [node_index]
+            [self.x_sym[0], self.u_sym, self.param_sym],
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall"],
         )

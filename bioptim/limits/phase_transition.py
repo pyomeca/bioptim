@@ -268,13 +268,14 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
 
             val = []
-            cx = []
-            for key in nlp_pre.states:
+            cx_start = []
+            cx_end = []
+            for key in nlp_pre.states[0]:
                 cx_end = vertcat(
-                    cx[-1],
+                    cx_end,
                     nlp_pre.states[0][key].mapping.to_second.map(nlp_pre.states[0][key].cx_end),   # TODO: [0] to [node_index]
                 )
-                cx_start = vertcat(cx[0], nlp_post.states[0][key].mapping.to_second.map(nlp_post.states[0][key].cx_start))  # TODO: [0] to [node_index]
+                cx_start = vertcat(cx_start, nlp_post.states[0][key].mapping.to_second.map(nlp_post.states[0][key].cx_start))  # TODO: [0] to [node_index]
                 post_mx = nlp_post.states[0][key].mx    # TODO: [0] to [node_index]
                 continuity = nlp_post.states[0]["qdot"].mapping.to_first.map(   # TODO: [0] to [node_index]
                     qdot_impact - post_mx if key == "qdot" else nlp_pre.states[0][key].mx - post_mx # TODO: [0] to [node_index]

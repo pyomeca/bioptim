@@ -542,18 +542,18 @@ class OptimalControlProgram:
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
             if not state_continuity_weight:
-                # Inner-phase continuity
+
                 for nlp in self.nlp:
                     for shooting_node in range(nlp.ns):
                         penalty = Constraint(ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL)
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
+
+                self.phase_transitions = ConstraintFunction.inter_phase_continuity(self)
+
+                if self.binode_constraints or self.allnode_constraints:
+                    MultinodeConstraintsFunctions.node_equalities(self)
             else:
                 ContinuityObjectiveFunctions.continuity(self, state_continuity_weight)
-
-        self.phase_transitions = ConstraintFunction.inter_phase_continuity(self)
-
-        if self.binode_constraints or self.allnode_constraints:
-            MultinodeConstraintsFunctions.node_equalities(self)
 
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
