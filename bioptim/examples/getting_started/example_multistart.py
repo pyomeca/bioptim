@@ -3,6 +3,9 @@ An example of how to use multi-start to find local minima from different initial
 This example is a variation of the pendulum example in getting_started/pendulum.py.
 """
 import pickle
+import os
+import shutil
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -104,13 +107,21 @@ def prepare_ocp(
     return ocp
 
 
-def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_shooting: int, seed: int):
+def save_results(
+    sol: Solution,
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    seed: int,
+    save_folder: str,
+    only_save_filename: bool = False,
+) -> None:
     """
     Solving the ocp
     Parameters
     ----------
     sol: Solution
-        The solution to the ocp at the current pool
+        The solution to the ocp at the current poolf
     biorbd_model_path: str
         The path to the biorbd model
     final_time: float
@@ -119,35 +130,77 @@ def save_results(sol: Solution, biorbd_model_path: str, final_time: float, n_sho
         The number of shooting points to define int the direct multiple shooting program
     seed: int
         The seed to use for the random initial guess
+    only_save_filename: bool
+        True if you want to return only the name of the file without saving, else False
     """
     # OptimalControlProgram.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
+    bio_model = biorbd_model_path.split("/")[-1].removesuffix(".bioMod")
+    filename = f"pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl"
+    if only_save_filename == True:
+        return filename
     states = sol.states["all"]
-    with open(f"pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl", "wb") as file:
-        pickle.dump(states, file)
+
+    if save_folder:
+        with open(f"{save_folder}/{filename}", "wb") as file:
+            pickle.dump(states, file)
 
 
-def prepare_multi_start(bio_model_path: list, final_time: list, n_shooting: list, seed: list) -> MultiStart:
+def should_solve(args, save_folder, save_results=save_results):
+    """
+    Check if the filename already appears in the folder where files are saved, if not ocp must be solved
+    """
+    already_done_filenames = os.listdir(f"{save_folder}")
+    return save_results([None], *args, save_folder=save_folder, only_save_filename=True) not in already_done_filenames
+
+
+def prepare_multi_start(
+    combinatorial_parameters: dict,
+    save_folder: str = None,
+    n_pools: int = 1,
+) -> MultiStart:
     """
     The initialization of the multi-start
     """
+    if not isinstance(save_folder, str):
+        raise ValueError("save_folder must be an str")
+    os.mkdir(f"{save_folder}")
+
     return MultiStart(
-        prepare_ocp,
+        combinatorial_parameters=combinatorial_parameters,
+        prepare_ocp_callback=prepare_ocp,
+        post_optimization_callback=(save_results, {"save_folder": save_folder}),
+        should_solve_callback=(should_solve, {"save_folder": save_folder}),
         solver=Solver.IPOPT(show_online_optim=False),  # You cannot use show_online_optim with multi-start
-        post_optimization_callback=save_results,
-        n_pools=4,
-        bio_model_path=bio_model_path,
-        final_time=final_time,
-        n_shooting=n_shooting,
-        seed=seed,
+        n_pools=n_pools,
     )
 
 
 def main():
     # --- Prepare the multi-start and run it --- #
+
+    bio_model_path = ["models/pendulum.bioMod"]
+    final_time = [1]
+    n_shooting = [30, 40, 50]
+    seed = [0, 1, 2, 3]
+
+    combinatorial_parameters = {
+        "bio_model_path": bio_model_path,
+        "final_time": final_time,
+        "n_shooting": n_shooting,
+        "seed": seed,
+    }
+
+    save_folder = "./temporary_results"
     multi_start = prepare_multi_start(
-        bio_model_path=["models/pendulum.bioMod"], final_time=[1], n_shooting=[30, 40, 50], seed=[0, 1, 2, 3]
+        combinatorial_parameters=combinatorial_parameters,
+        save_folder=save_folder,
+        n_pools=2,
     )
+
     multi_start.solve()
+
+    # Delete the solutions
+    shutil.rmtree(f"{save_folder}")
 
 
 if __name__ == "__main__":
