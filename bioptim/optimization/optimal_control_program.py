@@ -938,10 +938,9 @@ class OptimalControlProgram:
 
             _target = (
                 np.hstack([p[..., penalty.node_idx.index(t)] for p in penalty.target])
-                 if penalty.target is not None and isinstance(t, int)
+                if penalty.target is not None and isinstance(t, int)
                 else []
             )
-
             if x.shape[1] == 1:
                 x_shape = int(x.shape[0] / self.nlp[penalty.phase].x_scaling["all"].scaling.shape[0])
                 x_scaling = np.reshape(

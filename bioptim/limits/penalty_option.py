@@ -582,11 +582,11 @@ class PenaltyOption(OptionGeneric):
                 all_pn.ocp.add_plot(
                     self.target_plot_name,
                     plot_function,
-                    penalty = self,
+                    penalty=self,
                     color="tab:red",
                     plot_type=plot_type,
                     phase=all_pn.nlp.phase_idx,
-                    axes_idx=Mapping(self.rows),
+                    axes_idx=Mapping(self.rows), # TODO verify if not all elements has target
                     node_idx=self.node_idx,
                 )
             else :
