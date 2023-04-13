@@ -541,6 +541,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return nlp.mx_to_cx("forward_dynamics", nlp.controls[0]["fext"].mx - soft_contact_force, *var)  # TODO: [0] to [node_index]
 
+    @staticmethod
+    def get_dt(_):
+        return 1
+
+    @staticmethod
+    def penalty_nature() -> str:
+        return "constraints"
+
 
 class MultinodeConstraintFunction(PenaltyFunctionAbstract):
 
@@ -577,7 +585,6 @@ class MultinodeConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def penalty_nature() -> str:
             return "constraints"
-
 
 
 class ConstraintFcn(FcnEnum):
