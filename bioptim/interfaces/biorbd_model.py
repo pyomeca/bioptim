@@ -60,6 +60,13 @@ class MultiBiorbdModel:
             for model in self.models[:model_index]:
                 current_idx += model.nbQddot()
             return range(current_idx, current_idx + self.models[model_index].nbQddot())
+        elif variable == "root":
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nbRoot()
+            return range(
+                current_idx, current_idx + self.models[model_index].nbRoot()
+            )
         elif variable == "qddot_joints":
             current_idx = 0
             for model in self.models[:model_index]:
@@ -283,6 +290,16 @@ class MultiBiorbdModel:
             )
         return out
 
+    def reorder_qddot_root_joints(self, qddot_root, qddot_joints):
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+            out,
+            qddot_root[self.variable_index("root", i)],
+            qddot_joints[self.variable_index("qddot_joints", i)],
+            )
+
+        return out
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
         if external_forces is not None:
