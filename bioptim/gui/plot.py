@@ -258,7 +258,7 @@ class PlotOcp:
         self.top_margin: int | None = None
         self.height_step: int | None = None
         self.width_step: int | None = None
-        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
+        self._organize_windows(len(self.ocp.nlp[0].states[0]) + len(self.ocp.nlp[0].controls[0]))   # TODO : [0] to [node_index]
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -337,8 +337,8 @@ class PlotOcp:
                             nlp.plot[key]
                             .function(
                                 np.nan,
-                                np.zeros((len(nlp.states), 2)),
-                                np.zeros((len(nlp.controls), 2)),
+                                np.zeros((nlp.states[0].shape, 2)),  # TODO : [0] to [node_index]
+                                np.zeros((nlp.controls[0].shape, 2)),    # TODO : [0] to [node_index]
                                 np.zeros((nlp.parameters.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )
