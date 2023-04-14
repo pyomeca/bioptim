@@ -540,46 +540,7 @@ class OptimalControlProgram:
         self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
         self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
-        if not skip_continuity:
-            if not state_continuity_weight:
-                for nlp in self.nlp:
-                    for shooting_node in range(nlp.ns):
-                        penalty = Constraint(ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL)
-                        penalty.add_or_replace_to_penalty_pool(self, nlp)
-
-                # self.phase_transitions = ConstraintFunction.inter_phase_continuity(self)
-                for pt in self.phase_transitions:
-                    if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
-                        continue
-                    # Dynamics must be respected between phases
-                    pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-                    pt.list_index = -1
-                    pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
-
-                if self.binode_constraints or self.allnode_constraints:
-                    MultinodeConstraintFunction.Functions.node_equalities(self)
-            else:
-                # ContinuityObjectiveFunctions.continuity(self, state_continuity_weight)
-                for nlp in self.nlp:
-
-                    for shooting_point in range(nlp.ns):
-                        penalty = Objective(
-                            ObjectiveFcn.Mayer.CONTINUITY,
-                            weight=state_continuity_weight,
-                            quadratic=True,
-                            node=shooting_point,
-                            penalty_type=PenaltyType.INTERNAL,
-                        )
-                        penalty.add_or_replace_to_penalty_pool(self, nlp)
-
-                    for pt in self.phase_transitions:
-                        # Dynamics must be respected between phases
-                        pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-                        pt.list_index = -1
-                        pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
-
-                    if self.binode_constraints or self.allnode_constraints:
-                        ObjectiveFunction.MultinodeFunction.Functions.node_equalities(self)
+        self.declare_continuity()
 
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
@@ -692,6 +653,42 @@ class OptimalControlProgram:
                 setattr(model, "nb_quaternions", 0)
 
         return biomodels
+
+    def declare_continuity(self, state_continuity_weight=None, skip_continuity=None):
+        for nlp in self.nlp:    # Inner-phase
+            if not skip_continuity and not state_continuity_weight:
+                for shooting_node in range(nlp.ns):
+                    penalty = Constraint(ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL)
+                    penalty.add_or_replace_to_penalty_pool(self, nlp)
+            elif not skip_continuity and state_continuity_weight:
+                for shooting_point in range(nlp.ns):
+                    penalty = Objective(
+                        ObjectiveFcn.Mayer.CONTINUITY,
+                        weight=state_continuity_weight,
+                        quadratic=True,
+                        node=shooting_point,
+                        penalty_type=PenaltyType.INTERNAL,
+                    )
+                    penalty.add_or_replace_to_penalty_pool(self, nlp)
+
+        for pt in self.phase_transitions:   # Inter-phase
+            if not skip_continuity and not state_continuity_weight:
+                if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                    continue
+                # Dynamics must be respected between phases
+                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+                pt.list_index = -1
+                pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
+            elif not skip_continuity and state_continuity_weight:
+                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+                pt.list_index = -1
+                pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
+
+        if self.binode_constraints or self.allnode_constraints: # Node-equalities
+            if not skip_continuity and not state_continuity_weight:
+                MultinodeConstraintFunction.Functions.node_equalities(self)
+            elif not skip_continuity and state_continuity_weight:
+                ObjectiveFunction.MultinodeFunction.Functions.node_equalities(self)
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """

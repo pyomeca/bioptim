@@ -513,7 +513,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
             states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].cx_end)   # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(nlp_post[0].states.cx_start)    # TODO: [0] to [node_index]
+            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states[0].cx_start)    # TODO: [0] to [node_index]
 
             states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]]  # TODO: [0] to [node_index]
             states_post_sym = vertcat(*states_post_sym_list)

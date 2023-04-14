@@ -69,9 +69,6 @@ class OdeSolverBase:
         """
         nlp.dynamics = []
         for node_index in range(nlp.ns):    # TODO: before nlp.ns + 1
-            # if len(nlp.dynamics) != 1 and ocp.n_threads != 1:
-            #     raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")  # TODO: verify if it's solved
-            # else:
             nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp)[0])
 
 
@@ -98,7 +95,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp) -> list:
+    def integrator(self, ocp, nlp) -> list:  # TODO: add node_index
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -259,7 +256,7 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-        def integrator(self, ocp, nlp) -> list:
+        def integrator(self, ocp, nlp) -> list: # TODO: add node_index
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -387,7 +384,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp) -> list:
+        def integrator(self, ocp, nlp) -> list: # TODO: add node_index
             """
             The interface of the OdeSolver to the corresponding integrator
 

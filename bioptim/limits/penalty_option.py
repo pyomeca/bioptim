@@ -394,11 +394,13 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise RuntimeError(f"{nlp.control_type} ControlType not implemented yet")
 
+        # TODO: Add loop node_index here
         if self.binode_constraint or self.transition:
             ocp = all_pn[0].ocp
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
+
             states_pre_scaled = nlp.states[0]["scaled"].cx_end  # TODO: [0] to [node_index]
             states_post_scaled = nlp_post.states[0]["scaled"].cx_start  # TODO: [0] to [node_index]
             controls_pre_scaled = nlp.controls[0]["scaled"].cx_end  # TODO: [0] to [node_index]
@@ -676,8 +678,8 @@ class PenaltyOption(OptionGeneric):
             self.node_idx = [all_pn[0].t[0], all_pn[1].t[0]]
             self.ensure_penalty_sanity(ocp, all_pn[0].nlp)
 
-        elif self.allnode_constraint:   # TODO: Peut etre a changer
-            #all_pn = []
+        elif self.allnode_constraint:   # TODO: clear this if not necessary anymore
+            # all_pn = []
             # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
             # self.transition = True
             self.dt = 1
