@@ -323,7 +323,9 @@ class PenaltyFunctionAbstract:
 
             controls = all_pn.nlp.controls[key].cx
 
-            return (controls[first_dof, :] - first_dof_intercept) - coef * (controls[second_dof, :] - second_dof_intercept)
+            return (controls[first_dof, :] - first_dof_intercept) - coef * (
+                controls[second_dof, :] - second_dof_intercept
+            )
 
         @staticmethod
         def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
