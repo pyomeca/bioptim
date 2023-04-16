@@ -259,6 +259,8 @@ class PenaltyFunctionAbstract:
             first_dof: int,
             second_dof: int,
             coef: float,
+            first_dof_intercept: float = 0,
+            second_dof_intercept: float = 0,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
@@ -283,7 +285,8 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             states = all_pn.nlp.states[key].cx
-            return states[first_dof, :] - coef * states[second_dof, :]
+
+            return (states[first_dof, :] - first_dof_intercept) - coef * (states[second_dof, :] - second_dof_intercept)
 
         @staticmethod
         def proportional_controls(
@@ -293,6 +296,8 @@ class PenaltyFunctionAbstract:
             first_dof: int,
             second_dof: int,
             coef: float,
+            first_dof_intercept: float = 0,
+            second_dof_intercept: float = 0,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
@@ -317,7 +322,8 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             controls = all_pn.nlp.controls[key].cx
-            return controls[first_dof, :] - coef * controls[second_dof, :]
+
+            return (controls[first_dof, :] - first_dof_intercept) - coef * (controls[second_dof, :] - second_dof_intercept)
 
         @staticmethod
         def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
