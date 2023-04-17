@@ -677,8 +677,12 @@ class DynamicsFunctions:
         defects = MX(qdot.shape[0] + qddot_defects.shape[0], 1)
 
         defects[: qdot.shape[0], :] = qdot - DynamicsFunctions.compute_qdot(
-            nlp, q, DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx)
+            nlp, q, DynamicsFunctions.get(nlp.variable_mappings["qdot"].to_first.map(nlp.states_dot["qdot"].mx_reduced),nlp.states_dot.mx_reduced)
         )
+
+        # defects[: qdot.shape[0], :] = qdot - DynamicsFunctions.compute_qdot(
+        #     nlp, q, DynamicsFunctions.get(nlp.states_dotnlp.states_dot["qdot"], nlp.states_dot.mx)
+        #         )
         defects[qdot.shape[0] : (qdot.shape[0] + qddot_root.shape[0]), :] = floating_base_constraint
         defects[(qdot.shape[0] + qddot_root.shape[0]) :, :] = qddot_joints - DynamicsFunctions.get(
             nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced
