@@ -776,12 +776,8 @@ def test_example_minimize_JCS_velocity():
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
-    np.testing.assert_almost_equal(
-        states["q"][:, 0], np.array([0.0, 0.0, 0.0]), decimal=6
-    )
-    np.testing.assert_almost_equal(
-        states["q"][:, -1], np.array([0.0 ,  3.14159265, -3.14159265]), decimal=6
-    )
+    np.testing.assert_almost_equal(states["q"][:, 0], np.array([0.0, 0.0, 0.0]), decimal=6)
+    np.testing.assert_almost_equal(states["q"][:, -1], np.array([0.0, 3.14159265, -3.14159265]), decimal=6)
     # initial and final velocities
     np.testing.assert_almost_equal(
         states["qdot"][:, 0],
@@ -790,9 +786,9 @@ def test_example_minimize_JCS_velocity():
     )
     np.testing.assert_almost_equal(
         states["qdot"][:, -1],
-        np.array([3.87226896, -0.86304605, -4.365753  ]),
+        np.array([3.87226896, -0.86304605, -4.365753]),
         decimal=6,
     )
     # initial and final controls
-    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-1.70961892,  3.45695861,  0.10722993]), decimal=6)
-    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.65879374,  0.46223097, -0.7662934]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-1.70961892, 3.45695861, 0.10722993]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.65879374, 0.46223097, -0.7662934]), decimal=6)

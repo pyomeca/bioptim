@@ -689,9 +689,7 @@ class PenaltyFunctionAbstract:
             segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             if not isinstance(nlp.model, BiorbdModel):
-                raise NotImplementedError(
-                    "The minimize_jcs_rotation penalty can only be called with a BiorbdModel"
-                )
+                raise NotImplementedError("The minimize_jcs_rotation penalty can only be called with a BiorbdModel")
             model: BiorbdModel = nlp.model
             jcs_segment = model.model.globalJCS(nlp.states["q"].mx, segment_idx).rot()
             angles_segment = biorbd.Rotation.toEulerAngles(jcs_segment, "xyz").to_mx()
@@ -706,7 +704,6 @@ class PenaltyFunctionAbstract:
             jcs_rotation_objective = nlp.mx_to_cx("jcs_rotation", angles_segment[axes], nlp.states["q"])
 
             return jcs_rotation_objective
-
 
         @staticmethod
         def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):
