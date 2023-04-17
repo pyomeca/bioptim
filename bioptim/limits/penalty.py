@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, acos, norm_1
+from casadi import horzcat, vertcat, SX, Function, acos, norm_2, dot
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -673,7 +673,7 @@ class PenaltyFunctionAbstract:
             The first vector is defined by vector_0_marker_1 - vector_0_marker_0.
             The second vector is defined by vector_1_marker_1 - vector_1_marker_0.
             Note that is minimizes the angle between the two vectors, thus it is not possible ti specify an axis.
-            By default this function is quadratic, meaning that it minimizes the angle between the two vectors.
+            By default, this function is quadratic, meaning that it minimizes the angle between the two vectors.
 
             Parameters
             ----------
@@ -707,7 +707,7 @@ class PenaltyFunctionAbstract:
             vector_0 = vector_0_marker_1_position - vector_0_marker_0_position
             vector_1 = vector_1_marker_1_position - vector_1_marker_0_position
 
-            angle = acos(vector_0 @ vector_1 / (norm_1(vector_0) * norm_1(vector_1)))
+            angle = acos(dot(vector_0, vector_1)**2 / (norm_2(vector_0) * norm_2(vector_1)))
 
             angle_objective = nlp.mx_to_cx("vector_orientations_difference", angle, nlp.states["q"])
 
