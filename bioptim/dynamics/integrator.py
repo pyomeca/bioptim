@@ -395,7 +395,7 @@ class RK4(RK):
         The next integrate states
         """
 
-        k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
+        k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx] # Apply mapping'states_mapping' here ? @pariterre
         k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
         k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
         k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p)[:, self.idx]
