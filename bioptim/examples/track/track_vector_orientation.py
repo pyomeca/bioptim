@@ -52,11 +52,15 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
-    objective_functions.add(ObjectiveFcn.Mayer.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS, node=Node.ALL, weight=100,
-                            vector_0_marker_0="m0",
-                            vector_0_marker_1="m3",
-                            vector_1_marker_0="origin",
-                            vector_1_marker_1="m6")
+    objective_functions.add(
+        ObjectiveFcn.Mayer.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS,
+        node=Node.ALL,
+        weight=100,
+        vector_0_marker_0="m0",
+        vector_0_marker_1="m3",
+        vector_1_marker_0="origin",
+        vector_1_marker_1="m6",
+    )
 
     # Dynamics
     dynamics = DynamicsList()

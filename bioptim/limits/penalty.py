@@ -694,10 +694,18 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             nlp = all_pn.nlp
-            vector_0_marker_0_idx = nlp.model.marker_index(vector_0_marker_0) if isinstance(vector_0_marker_0, str) else vector_0_marker_0
-            vector_0_marker_1_idx = nlp.model.marker_index(vector_0_marker_1) if isinstance(vector_0_marker_1, str) else vector_0_marker_1
-            vector_1_marker_0_idx = nlp.model.marker_index(vector_1_marker_0) if isinstance(vector_1_marker_0, str) else vector_1_marker_0
-            vector_1_marker_1_idx = nlp.model.marker_index(vector_1_marker_1) if isinstance(vector_1_marker_1, str) else vector_1_marker_1
+            vector_0_marker_0_idx = (
+                nlp.model.marker_index(vector_0_marker_0) if isinstance(vector_0_marker_0, str) else vector_0_marker_0
+            )
+            vector_0_marker_1_idx = (
+                nlp.model.marker_index(vector_0_marker_1) if isinstance(vector_0_marker_1, str) else vector_0_marker_1
+            )
+            vector_1_marker_0_idx = (
+                nlp.model.marker_index(vector_1_marker_0) if isinstance(vector_1_marker_0, str) else vector_1_marker_0
+            )
+            vector_1_marker_1_idx = (
+                nlp.model.marker_index(vector_1_marker_1) if isinstance(vector_1_marker_1, str) else vector_1_marker_1
+            )
 
             vector_0_marker_0_position = nlp.model.marker(nlp.states["q"].mx, vector_0_marker_0_idx)
             vector_0_marker_1_position = nlp.model.marker(nlp.states["q"].mx, vector_0_marker_1_idx)
@@ -707,12 +715,11 @@ class PenaltyFunctionAbstract:
             vector_0 = vector_0_marker_1_position - vector_0_marker_0_position
             vector_1 = vector_1_marker_1_position - vector_1_marker_0_position
 
-            angle = acos(dot(vector_0, vector_1)**2 / (norm_2(vector_0) * norm_2(vector_1)))
+            angle = acos(dot(vector_0, vector_1) ** 2 / (norm_2(vector_0) * norm_2(vector_1)))
 
             angle_objective = nlp.mx_to_cx("vector_orientations_difference", angle, nlp.states["q"])
 
             return angle_objective
-
 
         @staticmethod
         def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):

@@ -471,6 +471,7 @@ def test__track__track_segment_on_rt():
         final_time=1,
     )
 
+
 def test__track__track_vector_orientation():
     from bioptim.examples.track import track_vector_orientation as ocp_module
 
@@ -481,6 +482,7 @@ def test__track__track_vector_orientation():
         n_shooting=30,
         final_time=1,
     )
+
 
 def test__getting_started__example_variable_scaling():
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
