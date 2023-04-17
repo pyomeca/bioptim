@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function
+from casadi import horzcat, vertcat, SX, Function, acos, norm_1
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -658,6 +658,61 @@ class PenaltyFunctionAbstract:
             penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
 
             return marker_objective
+
+        @staticmethod
+        def track_vector_orientations_from_markers(
+            penalty: PenaltyOption,
+            all_pn: PenaltyNodeList,
+            vector_0_marker_0: int | str,
+            vector_0_marker_1: int | str,
+            vector_1_marker_0: int | str,
+            vector_1_marker_1: int | str,
+        ):
+            """
+            Aligns two vectors together.
+            The first vector is defined by vector_0_marker_1 - vector_0_marker_0.
+            The second vector is defined by vector_1_marker_1 - vector_1_marker_0.
+            Note that is minimizes the angle between the two vectors, thus it is not possible ti specify an axis.
+            By default this function is quadratic, meaning that it minimizes the angle between the two vectors.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            vector_0_marker_0: int | str
+                Name or index of the first marker of the first vector
+            vector_0_marker_1: int | str
+                Name or index of the second marker of the first vector
+            vector_1_marker_0: int | str
+                Name or index of the first marker of the second vector
+            vector_1_marker_1: int | str
+                Name or index of the second marker of the second vector
+            """
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = all_pn.nlp
+            vector_0_marker_0_idx = nlp.model.marker_index(vector_0_marker_0) if isinstance(vector_0_marker_0, str) else vector_0_marker_0
+            vector_0_marker_1_idx = nlp.model.marker_index(vector_0_marker_1) if isinstance(vector_0_marker_1, str) else vector_0_marker_1
+            vector_1_marker_0_idx = nlp.model.marker_index(vector_1_marker_0) if isinstance(vector_1_marker_0, str) else vector_1_marker_0
+            vector_1_marker_1_idx = nlp.model.marker_index(vector_1_marker_1) if isinstance(vector_1_marker_1, str) else vector_1_marker_1
+
+            vector_0_marker_0_position = nlp.model.marker(nlp.states["q"].mx, vector_0_marker_0_idx)
+            vector_0_marker_1_position = nlp.model.marker(nlp.states["q"].mx, vector_0_marker_1_idx)
+            vector_1_marker_0_position = nlp.model.marker(nlp.states["q"].mx, vector_1_marker_0_idx)
+            vector_1_marker_1_position = nlp.model.marker(nlp.states["q"].mx, vector_1_marker_1_idx)
+
+            vector_0 = vector_0_marker_1_position - vector_0_marker_0_position
+            vector_1 = vector_1_marker_1_position - vector_1_marker_0_position
+
+            angle = acos(vector_0 @ vector_1 / (norm_1(vector_0) * norm_1(vector_1)))
+
+            angle_objective = nlp.mx_to_cx("vector_orientations_difference", angle, nlp.states["q"])
+
+            return angle_objective
+
 
         @staticmethod
         def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):
