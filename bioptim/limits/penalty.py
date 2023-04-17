@@ -660,6 +660,55 @@ class PenaltyFunctionAbstract:
             return marker_objective
 
         @staticmethod
+        def minimize_jcs_rotation(
+            penalty: PenaltyOption,
+            all_pn: PenaltyNodeList,
+            segment: int | str,
+            axes: list | tuple = None,
+        ):
+            """
+            Track the orientation of a segment.
+            By default, this function is quadratic, meaning that it minimizes towards the target.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            segment: int
+                Name or index of the segment to align with the marker
+            axes: list | tuple
+                The axis that the JCS rotation should be tracked
+            """
+            from ..interfaces.biorbd_model import BiorbdModel
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = all_pn.nlp
+            segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
+
+            if not isinstance(nlp.model, BiorbdModel):
+                raise NotImplementedError(
+                    "The minimize_jcs_rotation penalty can only be called with a BiorbdModel"
+                )
+            model: BiorbdModel = nlp.model
+            jcs_segment = model.model.globalJCS(nlp.states["q"].mx, segment_idx).rot()
+            angles_segment = biorbd.Rotation.toEulerAngles(jcs_segment, "xyz").to_mx()
+
+            if axes is None:
+                axes = [Axis.X, Axis.Y, Axis.Z]
+            else:
+                for ax in axes:
+                    if not isinstance(ax, Axis):
+                        raise RuntimeError("axes must be a list of bioptim.Axis")
+
+            jcs_rotation_objective = nlp.mx_to_cx("jcs_rotation", angles_segment[axes], nlp.states["q"])
+
+            return jcs_rotation_objective
+
+
+        @staticmethod
         def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):
             nlp = all_pn.nlp
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):

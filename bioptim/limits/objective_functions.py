@@ -385,6 +385,7 @@ class ObjectiveFcn:
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        MINIMIZE_JCS_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_jcs_rotation,)
         CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
@@ -424,6 +425,7 @@ class ObjectiveFcn:
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        MINIMIZE_JCS_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_jcs_rotation,)
         CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
