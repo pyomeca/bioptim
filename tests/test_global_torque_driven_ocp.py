@@ -746,9 +746,8 @@ def test_example_multi_biorbd_model():
     np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.00235227, -0.02192184, -0.00709896]), decimal=6)
 
 
-def test_example_minimize_JCS_velocity():
-    # Load example_multi_biorbd_model
-    from bioptim.examples.torque_driven_ocp import example_minimize_JCS_velocity as ocp_module
+def test_example_minimize_segment_velocity():
+    from bioptim.examples.torque_driven_ocp import example_minimize_segment_velocity as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -765,7 +764,7 @@ def test_example_minimize_JCS_velocity():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 34.94553532235115)
+    np.testing.assert_almost_equal(f[0, 0], 41.40771798838792)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -786,9 +785,9 @@ def test_example_minimize_JCS_velocity():
     )
     np.testing.assert_almost_equal(
         states["qdot"][:, -1],
-        np.array([3.87226896, -0.86304605, -4.365753]),
+        np.array([2.69457617,  0.25126143, -2.3535264]),
         decimal=6,
     )
     # initial and final controls
-    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-1.70961892, 3.45695861, 0.10722993]), decimal=6)
-    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.65879374, 0.46223097, -0.7662934]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-2.4613488 ,  3.70379261, -0.99483388]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([0.80156395, 0.82773623, 0.35042046]), decimal=6)
