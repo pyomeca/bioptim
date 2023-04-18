@@ -731,7 +731,9 @@ class BiorbdModel(MultiBiorbdModel):
     def marker(self, q, index, reference_segment_index=None) -> MX:
         marker = self.model.marker(self.transform_to_generalized_coordinates(q), index)
         if reference_segment_index is not None:
-            global_homogeneous_matrix = self.model.globalJCS(self.transform_to_generalized_coordinates(q), reference_segment_index)
+            global_homogeneous_matrix = self.model.globalJCS(
+                self.transform_to_generalized_coordinates(q), reference_segment_index
+            )
             marker.applyRT(global_homogeneous_matrix.transpose())
         return marker.to_mx()
 
@@ -755,7 +757,9 @@ class BiorbdModel(MultiBiorbdModel):
                 reference_index,
                 inverse=True,
             )
-            for m in self.model.markersVelocity(self.transform_to_generalized_coordinates(q), self.transform_to_generalized_velocities(qdot)):
+            for m in self.model.markersVelocity(
+                self.transform_to_generalized_coordinates(q), self.transform_to_generalized_velocities(qdot)
+            ):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     out = horzcat(out, m.to_mx())
 

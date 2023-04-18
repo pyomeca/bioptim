@@ -785,9 +785,9 @@ def test_example_minimize_segment_velocity():
     )
     np.testing.assert_almost_equal(
         states["qdot"][:, -1],
-        np.array([2.69457617,  0.25126143, -2.3535264]),
+        np.array([2.69457617, 0.25126143, -2.3535264]),
         decimal=6,
     )
     # initial and final controls
-    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-2.4613488 ,  3.70379261, -0.99483388]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-2.4613488, 3.70379261, -0.99483388]), decimal=6)
     np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([0.80156395, 0.82773623, 0.35042046]), decimal=6)

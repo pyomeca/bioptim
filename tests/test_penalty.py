@@ -601,6 +601,7 @@ def test_penalty_track_marker_with_segment_axis(penalty_origin, value):
     expected = [[value, 0, value]]
     np.testing.assert_almost_equal(res.T, expected)
 
+
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_segment_rotation(penalty_origin, value):
@@ -616,8 +617,9 @@ def test_penalty_minimize_segment_rotation(penalty_origin, value):
         penalty = Constraint(penalty_type, segment=2)
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
-    expected = ([[0, value, 0]] if value == 0.1 else [[3.1415927, 0.575222, 3.1415927]])
+    expected = [[0, value, 0]] if value == 0.1 else [[3.1415927, 0.575222, 3.1415927]]
     np.testing.assert_almost_equal(res.T, expected)
+
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -636,6 +638,7 @@ def test_penalty_minimize_segment_rotation(penalty_origin, value):
 
     expected = [[0, value, 0]]
     np.testing.assert_almost_equal(res.T, expected)
+
 
 @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
