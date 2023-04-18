@@ -578,27 +578,16 @@ class PenaltyOption(OptionGeneric):
                 plot_type = PlotType.STEP
             else:
                 plot_type = PlotType.POINT
-            if plot_type == PlotType.POINT:
-                all_pn.ocp.add_plot(
-                    self.target_plot_name,
-                    plot_function,
-                    penalty=self,
-                    color="tab:red",
-                    plot_type=plot_type,
-                    phase=all_pn.nlp.phase_idx,
-                    axes_idx=Mapping(self.rows), # TODO verify if not all elements has target
-                    node_idx=self.node_idx,
-                )
-            else :
-                all_pn.ocp.add_plot(
-                    self.target_plot_name,
-                    plot_function,
-                   # penalty=self,
-                    color="tab:red",
-                    plot_type=plot_type,
-                    phase=all_pn.nlp.phase_idx,
-                    axes_idx=Mapping(self.rows),
-                    node_idx=self.node_idx,
+
+            all_pn.ocp.add_plot(
+                self.target_plot_name,
+                plot_function,
+                penalty=self if plot_type == PlotType.POINT else None,
+                color="tab:red",
+                plot_type=plot_type,
+                phase=all_pn.nlp.phase_idx,
+                axes_idx=Mapping(self.rows), # TODO verify if not all elements has target
+                node_idx=self.node_idx,
                 )
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):

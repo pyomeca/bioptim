@@ -655,7 +655,6 @@ class PlotOcp:
                         control = np.concatenate((control, data_controls[s]))
 
             for key in self.variable_sizes[i]:
-                # print(f' key is {key}')
                 if not self.plot_func[key][i]:
                     continue
                 if self.plot_func[key][i].label:
@@ -872,14 +871,11 @@ class PlotOcp:
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
 
-
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
                     p.set_ydata(y[cmp])
             else:
                 plot[2].set_ydata(y)
-
-
 
         for p in self.plots_vertical_lines:
             p.set_ydata((np.nan, np.nan))
@@ -909,9 +905,6 @@ class PlotOcp:
         for fig in self.all_figures:
             fig.set_tight_layout(True)
 
-        #for i, plot in enumerate(self.plots):
-          #  plot.plt.savefig("/home/mickaelbegon/Documents/Stage_Lisa/AnthropoImpactOnTech/Solutions_vrille_et_demi/,
-          #           dpi=500)
 
     @staticmethod
     def __compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:

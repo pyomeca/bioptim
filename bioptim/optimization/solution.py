@@ -1285,7 +1285,6 @@ class Solution:
         show_bounds: bool = False,
         show_now: bool = True,
         shooting_type: Shooting = Shooting.MULTIPLE,
-        save_path: str = None,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
     ):
         """
@@ -1312,12 +1311,6 @@ class Solution:
         plot_ocp.update_data(self.vector)
         if show_now:
             plt.show()
-
-        if save_path:
-            titles = ["q_states", "qdot_states", "qddot_states", "OBJECTIVES", "CONSTRAINTS"]
-            for i, fig in enumerate(plot_ocp.all_figures):
-                fig.savefig(f"{save_path}/{titles[i]}" + ".png", dpi=300)
-
 
     def animate(
         self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any
