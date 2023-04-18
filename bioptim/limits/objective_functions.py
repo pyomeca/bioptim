@@ -386,6 +386,7 @@ class ObjectiveFcn:
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
         MINIMIZE_JCS_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_jcs_rotation,)
+        MINIMIZE_JCS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_jcs_velocity,)
         CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod

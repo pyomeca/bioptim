@@ -761,6 +761,11 @@ class BiorbdModel(MultiBiorbdModel):
 
             return out
 
+    def segment_angular_velocity(self, q, qdot, segment_index) -> MX:
+        q_biorbd = self.transform_to_generalized_coordinates(q)
+        qdot_biorbd = self.transform_to_generalized_velocities(qdot)
+        return self.model.segmentAngularVelocity(q_biorbd, qdot_biorbd, segment_index, True).to_mx()
+
     @property
     def path(self) -> list[str]:
         # This is for retro compatibility with bioviz in animate
