@@ -71,7 +71,6 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][2, [0, -1]] = [-1.57, 1.57]
-    # x_bounds[0][nq:, [0, -1]] = 0
 
     # Initial guess
     x_init = InitialGuessList()

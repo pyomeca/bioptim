@@ -602,6 +602,33 @@ def test_penalty_track_marker_with_segment_axis(penalty_origin, value):
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_vector_orientation(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM(np.array([0, 0, value, 0, 0, 0, 0, 0]))]
+    u = [0]
+    penalty_type = penalty_origin.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty = Objective(penalty_type, vector_0_marker_0="m0",
+        vector_0_marker_1="m3",
+        vector_1_marker_0="origin",
+        vector_1_marker_1="m6",)
+    else:
+        penalty = Constraint(penalty_type, vector_0_marker_0="m0",
+        vector_0_marker_1="m3",
+        vector_1_marker_0="origin",
+        vector_1_marker_1="m6",)
+
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    if value == 0.1:
+        np.testing.assert_almost_equal(float(res), 1.0529423391195598)
+    else:
+        np.testing.assert_almost_equal(float(res), 1.2110674089002156)
+
 @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_contact_force_inequality(penalty_origin, value):
