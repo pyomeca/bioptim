@@ -447,8 +447,8 @@ def test__torque_driven_ocp__trampo_quaternions():
     )
 
 
-def test__torque_driven_ocp__minimize_JCS_velocity():
-    from bioptim.examples.torque_driven_ocp import example_minimize_JCS_velocity as ocp_module
+def test__torque_driven_ocp__minimize_segment_velocity():
+    from bioptim.examples.torque_driven_ocp import example_minimize_segment_velocity as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
