@@ -586,9 +586,9 @@ class PenaltyOption(OptionGeneric):
                 color="tab:red",
                 plot_type=plot_type,
                 phase=all_pn.nlp.phase_idx,
-                axes_idx=Mapping(self.rows), # TODO verify if not all elements has target
+                axes_idx=Mapping(self.rows),  # TODO verify if not all elements has target
                 node_idx=self.node_idx,
-                )
+            )
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         """
