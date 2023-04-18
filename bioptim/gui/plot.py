@@ -583,6 +583,7 @@ class PlotOcp:
         """
 
         plt.show()
+
     @staticmethod
     def save():
         """
@@ -904,7 +905,6 @@ class PlotOcp:
 
         for fig in self.all_figures:
             fig.set_tight_layout(True)
-
 
     @staticmethod
     def __compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:
