@@ -35,9 +35,9 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_JCS_ROTATION, segment=2, target=np.zeros((3,)), weight=100
-    )  # here the target is the Euler angles of the third JCS in the global (sequence 'xyz'
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_JCS_ROTATION, segment=2, derivative=True, weight=100)
+        ObjectiveFcn.Lagrange.MINIMIZE_SEGMENT_ROTATION, segment=2, target=np.zeros((3,)), weight=100
+    )  # here the target is the Euler angles of the third JCS in the global (sequence 'xyz')
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_SEGMENT_VELOCITY, segment=2, weight=100)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6)
 
     # Dynamics

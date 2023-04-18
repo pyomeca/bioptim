@@ -660,14 +660,14 @@ class PenaltyFunctionAbstract:
             return marker_objective
 
         @staticmethod
-        def minimize_jcs_rotation(
+        def minimize_segment_rotation(
             penalty: PenaltyOption,
             all_pn: PenaltyNodeList,
             segment: int | str,
             axes: list | tuple = None,
         ):
             """
-            Track the orientation of a segment.
+            Track the orientation of a segment in the global with the sequence XYZ.
             By default, this function is quadratic, meaning that it minimizes towards the target.
 
             Parameters
@@ -692,7 +692,7 @@ class PenaltyFunctionAbstract:
             segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             if not isinstance(nlp.model, BiorbdModel):
-                raise NotImplementedError("The minimize_jcs_rotation penalty can only be called with a BiorbdModel")
+                raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
             model: BiorbdModel = nlp.model
             jcs_segment = model.model.globalJCS(nlp.states["q"].mx, segment_idx).rot()
             angles_segment = biorbd.Rotation.toEulerAngles(jcs_segment, "xyz").to_mx()
@@ -704,12 +704,12 @@ class PenaltyFunctionAbstract:
                     if not isinstance(ax, Axis):
                         raise RuntimeError("axes must be a list of bioptim.Axis")
 
-            jcs_rotation_objective = nlp.mx_to_cx("jcs_rotation", angles_segment[axes], nlp.states["q"])
+            segment_rotation_objective = nlp.mx_to_cx("segment_rotation", angles_segment[axes], nlp.states["q"])
 
-            return jcs_rotation_objective
+            return segment_rotation_objective
 
         @staticmethod
-        def minimize_segments_velocity(
+        def minimize_segment_velocity(
             penalty: PenaltyOption,
             all_pn: PenaltyNodeList,
             segment: int | str,
@@ -749,7 +749,7 @@ class PenaltyFunctionAbstract:
                     if not isinstance(ax, Axis):
                         raise RuntimeError("axes must be a list of bioptim.Axis")
 
-            segment_velocity_objective = nlp.mx_to_cx("segment_velocity", segment_angular_velocity[axes], nlp.states["q"])
+            segment_velocity_objective = nlp.mx_to_cx("segment_velocity", segment_angular_velocity[axes], nlp.states["q"], nlp.states["qdot"])
 
             return segment_velocity_objective
 
