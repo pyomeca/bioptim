@@ -685,14 +685,14 @@ class PenaltyFunctionAbstract:
             continuity = nlp.states.cx_end
             if nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([nlp.states.cx] + nlp.states.cx_intermediates_list))
-                continuity -= nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
+                continuity -= nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx)["xf"] # to mapp
                 continuity = vertcat(
                     continuity, nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx)["defects"]
                 )
                 penalty.integrate = True
 
             else:
-                continuity -= nlp.dynamics[node_idx](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+                continuity -= nlp.dynamics[node_idx](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"] # to mapp
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True

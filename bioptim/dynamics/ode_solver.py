@@ -56,7 +56,7 @@ class OdeSolverBase:
         raise RuntimeError("OdeSolveBase is abstract, please select a valid OdeSolver")
 
     @staticmethod
-    def prepare_dynamic_integrator(ocp, nlp):
+    def prepare_dynamic_integrator(ocp, nlp, states_mapping):
         """
         Properly set the integration in an nlp
 
@@ -66,9 +66,11 @@ class OdeSolverBase:
             A reference to the main program
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
+        states_mapping: Mapping
+            The states mapping
         """
 
-        nlp.dynamics = nlp.ode_solver.integrator(ocp, nlp)
+        nlp.dynamics = nlp.ode_solver.integrator(ocp, nlp, states_mapping)
         if len(nlp.dynamics) != 1 and ocp.n_threads != 1:
             raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")
         if len(nlp.dynamics) == 1:
@@ -98,7 +100,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp) -> list:
+    def integrator(self, ocp, nlp, states_mapping) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -108,6 +110,8 @@ class RK(OdeSolverBase):
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the nlp
+        states_mapping:
+            The states mapping
 
         Returns
         -------
@@ -124,7 +128,7 @@ class RK(OdeSolverBase):
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
             "defects_type": DefectType.NOT_APPLICABLE,
-            # 'states_mapping': nlp.variable_mappings['states'] ? @pariterre
+            'states_mapping': states_mapping #nlp.variable_mappings['states'] ? @pariterre
         }
 
         ode = {

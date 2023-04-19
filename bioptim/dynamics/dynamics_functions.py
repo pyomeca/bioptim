@@ -674,19 +674,25 @@ class DynamicsFunctions:
 
         floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects)[: nlp.model.nb_root]
 
-        defects = MX(qdot.shape[0] + qddot_defects.shape[0], 1)
+        qdot_mapped = nlp.variable_mappings['qdot'].to_first.map(qdot)
+        qddot_mapped = nlp.variable_mappings['qdot'].to_first.map(qddot_root_func(q, qdot, qddot_joints))
+        qddot_root_mapped = nlp.variable_mappings['qddot_roots'].to_first.map(qddot_root)
+        qddot_joints_mapped = nlp.variable_mappings['qddot_joints'].to_first.map(qddot_joints)
 
-        defects[: qdot.shape[0], :] = qdot - nlp.variable_mappings["qdot"].to_second.map(DynamicsFunctions.compute_qdot(
-            nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]),nlp.states_dot.mx_reduced))
+        defects = MX(qdot_mapped.shape[0] + qddot_root_mapped.shape[0] + qddot_joints_mapped.shape[0], 1)
+
+        defects[: qdot_mapped.shape[0], :] = qdot_mapped - nlp.variable_mappings["qdot"].to_first.map(DynamicsFunctions.compute_qdot(
+            nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]), nlp.states_dot.mx_reduced))
         )
 
-        defects[qdot.shape[0] : (qdot.shape[0] + qddot_root.shape[0]), :] = floating_base_constraint
-        defects[(qdot.shape[0] + qddot_root.shape[0]) :, :] = qddot_joints - nlp.variable_mappings["qddot_joints"].to_second.map(DynamicsFunctions.get(
+        defects[qdot_mapped.shape[0]: (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]), :] = floating_base_constraint
+        defects[(qdot_mapped.shape[0] + qddot_root_mapped.shape[0]):, :] = qddot_joints_mapped - nlp.variable_mappings[
+            "qddot_joints"].to_first.map(DynamicsFunctions.get(
             nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced)
         )
-        # for i in range(len(nlp.model.models)):
+
         return DynamicsEvaluation(
-            dxdt=vertcat(qdot, qddot_root_func(q, qdot, qddot_joints)), defects=defects
+            dxdt=vertcat(qdot_mapped, qddot_mapped), defects=None
         )
 
     @staticmethod

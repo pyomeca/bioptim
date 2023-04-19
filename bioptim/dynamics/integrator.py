@@ -80,6 +80,7 @@ class Integrator:
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
         self.function = None
+        self.states_mapping = ode_opt['states_mapping']
 
     def __call__(self, *args, **kwargs):
         """
@@ -241,11 +242,13 @@ class RK(Integrator):
 
         u = controls
         x = self.cx(states.shape[0], self.n_step + 1)
+        #         x = self.cx(len(self.states_mapping.to_first.map_idx), self.n_step + 1)
         p = params
         x[:, 0] = states
 
         for i in range(1, self.n_step + 1):
             t_norm_init = (i - 1) / self.n_step  # normalized time
+            # send x full size
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
 
             if self.model.nb_quaternions > 0:
@@ -394,7 +397,8 @@ class RK4(RK):
         -------
         The next integrate states
         """
-
+        # apply the states_mapping
+        x_prev_mapped = self.states_mapping.to_first.map(x_prev)
         k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx] # Apply mapping'states_mapping' here ? @pariterre
         k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
         k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
@@ -604,6 +608,7 @@ class COLLOCATION(Integrator):
                 xp_j += self._c[r, j] * states[r]
 
             if self.defects_type == DefectType.EXPLICIT:
+                # send full x
                 f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
                 defects.append(h * f_j - xp_j)
             elif self.defects_type == DefectType.IMPLICIT:
@@ -680,6 +685,7 @@ class IRK(COLLOCATION):
         _, _, defect = super(IRK, self).dxdt(h, states, controls, params)
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
+        # send full x
         vfcn = Function("vfcn", [vertcat(*states[1:]), states[0], controls, params], [defect]).expand()
 
         # Create a implicit function instance to solve the system of equations
