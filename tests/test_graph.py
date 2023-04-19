@@ -35,7 +35,7 @@ from .utils import TestUtils
 
 
 def minimize_difference(all_pn: PenaltyNodeList):
-    return all_pn[0].nlp.controls["tau"].cx[-1] - all_pn[1].nlp.controls["tau"].cx[0]
+    return all_pn[0].nlp.controls[0]["tau"].cx_end - all_pn[1].nlp.controls[0]["tau"].cx_start  # TODO: [0] to [node_index]
 
 
 def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str) -> MX:
@@ -48,7 +48,7 @@ def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second
 
     # noinspection PyTypeChecker
     model: BiorbdModel = all_pn.nlp.model
-    markers = all_pn.nlp.mx_to_cx("markers", model.model.markers, all_pn.nlp.states["q"])
+    markers = all_pn.nlp.mx_to_cx("markers", model.model.markers, all_pn.nlp.states[0]["q"])    # TODO: [0] to [node_index]
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 

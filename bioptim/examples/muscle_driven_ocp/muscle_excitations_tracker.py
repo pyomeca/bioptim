@@ -31,6 +31,7 @@ from bioptim import (
     Solver,
     RigidBodyDynamics,
 )
+from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 
 
 def generate_data(
@@ -87,21 +88,26 @@ def generate_data(
     }
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
-    nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
-    nlp.states.append(
-        "muscles", [symbolic_mus_states, symbolic_mus_states], symbolic_mus_states, nlp.variable_mappings["muscles"]
-    )
+    nlp.states = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.states
+    nlp.states_dot = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.states_dot
+    nlp.controls = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.controls
 
-    nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
-    nlp.controls.append(
-        "muscles",
-        [symbolic_mus_controls, symbolic_mus_controls],
-        symbolic_mus_controls,
-        nlp.variable_mappings["muscles"],
-    )
-    nlp.states_dot.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
-    nlp.states_dot.append("qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"])
+    for node_index in range(n_shooting):
+        nlp.states[node_index].append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
+        nlp.states[node_index].append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+        nlp.states[node_index].append(
+            "muscles", [symbolic_mus_states, symbolic_mus_states], symbolic_mus_states, nlp.variable_mappings["muscles"]
+        )
+
+        nlp.controls[node_index].append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
+        nlp.controls[node_index].append(
+            "muscles",
+            [symbolic_mus_controls, symbolic_mus_controls],
+            symbolic_mus_controls,
+            nlp.variable_mappings["muscles"],
+        )
+        nlp.states_dot[node_index].append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+        nlp.states_dot[node_index].append("qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"])
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
