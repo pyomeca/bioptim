@@ -436,7 +436,7 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled = horzcat(state_cx_scaled, all_pn.nlp.states[0]["scaled"].cx_end)   # TODO: [0] to [node_index]
                 control_cx_scaled = horzcat(control_cx_scaled, all_pn.nlp.controls[0]["scaled"].cx_end) # TODO: [0] to [node_index]
 
-        param_cx = nlp.cx(nlp.parameters.cx)
+        param_cx = nlp.cx(nlp.parameters.cx_start)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
@@ -502,7 +502,7 @@ class PenaltyOption(OptionGeneric):
             state_cx_end_scaled = (
                 all_pn.nlp.states[0]["scaled"].cx_end   # TODO: [0] to [node_index]
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else nlp.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp.parameters.cx)["xf"]
+                else nlp.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp.parameters.cx_start)["xf"]
             )
             self.modified_function = nlp.to_casadi_func(
                 f"{name}",
@@ -683,6 +683,7 @@ class PenaltyOption(OptionGeneric):
             # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
             # self.transition = True
             self.dt = 1
+            # self.dt = penalty_type.get_dt(all_pn.nlp)
             #if not self.states_mapping:
             #    self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
             nlp = ocp.nlp[self.phase_idx]
@@ -698,8 +699,7 @@ class PenaltyOption(OptionGeneric):
             all_pn = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, all_pn)
             self.ensure_penalty_sanity(all_pn.ocp, all_pn.nlp)
-            # self.dt = penalty_type.get_dt(all_pn.nlp) # TODO: A remettre
-            self.dt = 1
+            self.dt = penalty_type.get_dt(all_pn.nlp)
             self.node_idx = (
                 all_pn.t[:-1]
                 if (
@@ -789,4 +789,4 @@ class PenaltyOption(OptionGeneric):
         x_scaled = [nlp.X_scaled[idx] for idx in t]
         u = [nlp.U[idx] for idx in t if idx != nlp.ns]
         u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
-        return PenaltyNodeList(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx)    #nlp.parameters.cx[0]
+        return PenaltyNodeList(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx_start)

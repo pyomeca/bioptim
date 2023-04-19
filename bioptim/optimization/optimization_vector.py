@@ -110,7 +110,7 @@ class OptimizationVector:
                 x_scaled += [self.x_scaled[nlp.phase_idx].reshape((-1, 1))]
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                 u_scaled += [self.u_scaled[nlp.phase_idx]]
-        return vertcat(*x_scaled, *u_scaled, self.parameters_in_list.cx)
+        return vertcat(*x_scaled, *u_scaled, self.parameters_in_list.cx_start)
 
     @property
     def bounds(self):

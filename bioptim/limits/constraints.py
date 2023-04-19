@@ -234,7 +234,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
 
-            contact = all_pn.nlp.contact_forces_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx)   # TODO: [0] to [node_index]
+            contact = all_pn.nlp.contact_forces_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start)   # TODO: [0] to [node_index]
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
                 tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
@@ -288,7 +288,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
 
-            value = vertcat(nlp.controls[0]["tau"].cx + min_bound, nlp.controls[0]["tau"].cx - max_bound)  # TODO: [0] to [node_index]
+            value = vertcat(nlp.controls[0]["tau"].cx_start + min_bound, nlp.controls[0]["tau"].cx_start - max_bound)  # TODO: [0] to [node_index]
 
             n_rows = constraint.rows if constraint.rows else int(value.shape[0] / 2)
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows

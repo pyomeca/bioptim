@@ -999,7 +999,7 @@ class ConfigureProblem:
                 nlp.states[node_index].append_from_scaled(name, cx[node_index], nlp.states[node_index]["scaled"])
                 if not skip_plot:
                     nlp.plot[f"{name}_states"] = CustomPlot(
-                        lambda t, x, u, p: x[nlp.states[name].index, :],
+                        lambda t, x, u, p: x[nlp.states[node_index][name].index, :],
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=axes_idx,
                         legend=legend,
@@ -1008,7 +1008,7 @@ class ConfigureProblem:
 
 
         if as_controls:
-            for node_index in range(nlp.ns + 1):    # TODO: This may or may not be a problem for CONTROL_TYPE.LinearContinuous
+            for node_index in range(nlp.ns):    # TODO: This may or may not be a problem for CONTROL_TYPE.LinearContinuous
                 cx_scaled = (
                     ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
                     if copy_controls

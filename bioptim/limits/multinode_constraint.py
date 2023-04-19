@@ -557,8 +557,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the duration of the phases
             """
             time_pre_idx = None
-            for i in range(all_pn[0].nlp.parameters.cx.shape[0]):
-                param_name = all_pn[0].nlp.parameters.cx[i].name()
+            for i in range(all_pn[0].nlp.parameters.cx_start.shape[0]):
+                param_name = all_pn[0].nlp.parameters.cx_start[i].name()
                 if param_name == "time_phase_" + str(all_pn[0].nlp.phase_idx):
                     time_pre_idx = all_pn[0].nlp.phase_idx
             if time_pre_idx is None:
@@ -570,8 +570,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             time_post_idx = None
-            for i in range(all_pn[1].nlp.parameters.cx.shape[0]):
-                param_name = all_pn[1].nlp.parameters.cx[i].name()
+            for i in range(all_pn[1].nlp.parameters.cx_start.shape[0]):
+                param_name = all_pn[1].nlp.parameters.cx_start[i].name()
                 if param_name == "time_phase_" + str(all_pn[1].nlp.phase_idx):
                     time_post_idx = all_pn[1].nlp.phase_idx
             if time_post_idx is None:
@@ -581,7 +581,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"with constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
                 )
 
-            time_pre, time_post = all_pn[0].nlp.parameters.cx[time_pre_idx], all_pn[1].nlp.parameters.cx[time_post_idx]
+            time_pre, time_post = all_pn[0].nlp.parameters.cx_start[time_pre_idx], all_pn[1].nlp.parameters.cx_start[time_post_idx]
 
             return time_pre - time_post
 

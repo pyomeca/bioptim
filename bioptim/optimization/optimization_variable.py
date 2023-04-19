@@ -297,7 +297,7 @@ class OptimizationVariable:
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
                 "Typically 'all' cannot be used"
             )
-        return self.parent_list.cx_start
+        return self.parent_list.cx_start[self.index, :] # TODO: ADD [self.index, :]
 
     @property
     def cx_end(self):
@@ -310,7 +310,7 @@ class OptimizationVariable:
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
                 "Typically 'all' cannot be used"
             )
-        return self.parent_list.cx_end
+        return self.parent_list.cx_end[self.index, :]   # TODO: ADD [self.index, :]
 
 
 class OptimizationVariableList:

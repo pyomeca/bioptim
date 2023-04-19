@@ -491,7 +491,7 @@ class DynamicsFunctions:
             DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
         )
 
-        mus_act_nlp, mus_act = (nlp.states[0], states) if "muscles" in nlp.states else (nlp.controls[0], controls)  # TODO: [0] to [node_index]
+        mus_act_nlp, mus_act = (nlp.states[0], states) if "muscles" in nlp.states[0] else (nlp.controls[0], controls)  # TODO: [0] to [node_index]
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
         fatigue_states = None
         if fatigue is not None and "muscles" in fatigue:
@@ -810,9 +810,9 @@ class DynamicsFunctions:
         """
 
         if len(nlp.external_forces) != 0:
-            if "tau" in nlp.states:
+            if "tau" in nlp.states[0]:   # TODO: [0] to [node_index]
                 tau_shape = nlp.states[0]["tau"].mx.shape[0]    # TODO: [0] to [node_index]
-            elif "tau" in nlp.controls:
+            elif "tau" in nlp.controls[0]:   # TODO: [0] to [node_index]
                 tau_shape = nlp.controls[0]["tau"].mx.shape[0]  # TODO: [0] to [node_index]
             else:
                 tau_shape = nlp.model.nb_tau

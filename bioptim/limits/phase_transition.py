@@ -282,9 +282,9 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 )
                 val = vertcat(val, continuity)
 
-                name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-                func = nlp_pre.to_casadi_func(name, val, nlp_pre.states[0].mx, nlp_post.states[0].mx)(cx_end, cx_start) # TODO: [0] to [node_index]
-                return func
+            name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
+            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states[0].mx, nlp_post.states[0].mx)(cx_end, cx_start) # TODO: [0] to [node_index]
+            return func
 
 
 class PhaseTransitionFcn(FcnEnum):

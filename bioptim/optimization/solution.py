@@ -1404,7 +1404,7 @@ class Solution:
         val_weighted = []
         p = self.parameters["all"]
         dt = (
-            Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
+            Function("time", [nlp.parameters.cx_start], [penalty.dt])(self.parameters["time"])
             if "time" in self.parameters
             else penalty.dt
         )

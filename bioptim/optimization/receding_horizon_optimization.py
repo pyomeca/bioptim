@@ -243,7 +243,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                     "The MHE is not implemented yet for x_bounds not being "
                     "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
                 )
-            self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].states.shape, 3)
+            self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].states[0].shape, 3)    # TODO: [0] to [node_index]
         self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, 1]
         return True
 
@@ -255,7 +255,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             self.nlp[0].x_init = InitialGuess(
                 np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
             )
-            self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.shape, self.nlp[0].ns)
+            self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states[0].shape, self.nlp[0].ns) # TODO: [0] to [node_index]
         self.nlp[0].x_init.init[:, :] = np.concatenate(
             (sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1
         )
@@ -266,7 +266,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             self.nlp[0].u_init = InitialGuess(
                 np.ndarray(sol.controls["all"][:, :-1].shape), interpolation=InterpolationType.EACH_FRAME
             )
-            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns - 1)
+            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls[0].shape, self.nlp[0].ns - 1)   # TODO: [0] to [node_index]
         self.nlp[0].u_init.init[:, :] = np.concatenate(
             (sol.controls["all"][:, 1:-1], sol.controls["all"][:, -2][:, np.newaxis]), axis=1
         )

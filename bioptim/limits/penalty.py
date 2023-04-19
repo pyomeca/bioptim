@@ -338,7 +338,7 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             if "qddot" not in nlp.states[0] and "qddot" not in nlp.controls[0]: # TODO: [0] to [node_index]
-                return nlp.dynamics_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx)[nlp.states[0]["qdot"].index, :]   # TODO: [0] to [node_index]
+                return nlp.dynamics_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start)[nlp.states[0]["qdot"].index, :]   # TODO: [0] to [node_index]
             elif "qddot" in nlp.states[0]:  # TODO: [0] to [node_index]
                 return nlp.states[0]["qddot"].cx_start  # TODO: [0] to [node_index]
             elif "qddot" in nlp.controls[0]:    # TODO: [0] to [node_index]
@@ -539,7 +539,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            contact_force = nlp.contact_forces_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx)    # TODO: [0] to [node_index]
+            contact_force = nlp.contact_forces_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start)    # TODO: [0] to [node_index]
             return contact_force
 
         @staticmethod
@@ -574,7 +574,7 @@ class PenaltyFunctionAbstract:
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
-            soft_contact_force = nlp.soft_contact_forces_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx)  # TODO: [0] to [node_index]
+            soft_contact_force = nlp.soft_contact_forces_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start)  # TODO: [0] to [node_index]
             return soft_contact_force[force_idx]
 
         @staticmethod
@@ -665,7 +665,7 @@ class PenaltyFunctionAbstract:
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 u = nlp.controls[0].cx_start    # TODO: [0] to [node_index]
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                u = horzcat(nlp.controls[1].cx_start, nlp.controls[0].cx_end) # TODO: For cx_end take the previous node
+                u = horzcat(nlp.controls[0].cx_start, nlp.controls[0].cx_end) # TODO: For cx_end take the previous node
             else:
                 raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
 
@@ -685,14 +685,14 @@ class PenaltyFunctionAbstract:
             continuity = nlp.states[0].cx_end   # TODO: [0] to [node_index]
             if nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([nlp.states[0].cx_start] + nlp.states[0].cx_intermediates_list)) # TODO: [0] to [node_index]
-                continuity -= nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx)["xf"] # TODO: [0] to [node_index]
+                continuity -= nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx_start)["xf"] # TODO: [0] to [node_index]
                 continuity = vertcat(
-                    continuity, nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx)["defects"]  # TODO: [0] to [node_index]
+                    continuity, nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx_start)["defects"]  # TODO: [0] to [node_index]
                 )
                 penalty.integrate = True
 
             else:
-                continuity -= nlp.dynamics[node_idx](x0=nlp.states[0].cx_start, p=u, params=nlp.parameters.cx)["xf"]    # TODO: [0] to [node_index]
+                continuity -= nlp.dynamics[node_idx](x0=nlp.states[0].cx_start, p=u, params=nlp.parameters.cx_start)["xf"]    # TODO: [0] to [node_index]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True

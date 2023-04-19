@@ -68,8 +68,8 @@ class OdeSolverBase:
             A reference to the current phase of the ocp
         """
         nlp.dynamics = []
-        for node_index in range(nlp.ns):    # TODO: before nlp.ns + 1
-            nlp.dynamics.append(nlp.ode_solver.integrator(ocp, nlp)[0])
+        for node_index in range(nlp.ns):
+            nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index)
 
 
 class RK(OdeSolverBase):
@@ -95,7 +95,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp) -> list:  # TODO: add node_index
+    def integrator(self, ocp, nlp, node_index = None) -> list:  # TODO: add node_index
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -136,12 +136,9 @@ class RK(OdeSolverBase):
             "implicit_ode": nlp.implicit_dynamics_func,
         }
 
-        dynamics_out = []
-        for idx in range(ode["ode"].size2_out("xdot")):  # TODO: after Anais has her PR accepted, change that to NS
-            ode_opt["idx"] = idx
-            dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
-        return dynamics_out
-
+        if ode["ode"].size2_out("xdot") != 1:
+            ode_opt["idx"] = node_index
+        return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
     def __str__(self):
         ode_solver_string = f"{self.rk_integrator.__name__} {self.steps} step"
@@ -256,7 +253,7 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-        def integrator(self, ocp, nlp) -> list: # TODO: add node_index
+        def integrator(self, ocp, nlp, node_index) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -301,14 +298,9 @@ class OdeSolver:
                 "defects_type": self.defects_type,
             }
 
-            if len(nlp.external_forces) == 0:
-                return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
-
-            dynamics_out = []
-            for idx in range(len(nlp.external_forces)):
-                ode_opt["idx"] = idx
-                dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
-            return dynamics_out
+            if ode["ode"].size2_out("xdot") != 1:
+                ode_opt["idx"] = node_index
+            return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
         def __str__(self):
             return f"{self.rk_integrator.__name__} {self.method} {self.polynomial_degree}"
@@ -350,7 +342,7 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.steps = 1
 
-        def integrator(self, ocp, nlp) -> list:
+        def integrator(self, ocp, nlp, node_index = None) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -369,7 +361,7 @@ class OdeSolver:
             if ocp.cx is SX:
                 raise RuntimeError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
-            return super(OdeSolver.IRK, self).integrator(ocp, nlp)
+            return super(OdeSolver.IRK, self).integrator(ocp, nlp, node_index)
 
     class CVODES(OdeSolverBase):
         """
@@ -384,7 +376,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp) -> list: # TODO: add node_index
+        def integrator(self, ocp, nlp, node_index = None) -> list: # TODO: add node_index
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -410,7 +402,7 @@ class OdeSolver:
             ode = {
                 "x": nlp.states[0]["scaled"].cx_start,    # TODO: [0] to [node_index]
                 "p": nlp.controls[0]["scaled"].cx_start,    # TODO: [0] to [node_index]
-                "ode": nlp.dynamics_func(nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx),  # TODO: [0] to [node_index]
+                "ode": nlp.dynamics_func(nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx_start),  # TODO: [0] to [node_index]
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
 
@@ -419,7 +411,7 @@ class OdeSolver:
             return [
                 Function(
                     "integrator",
-                    [nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx],  # TODO: [0] to [node_index]
+                    [nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx_start],  # TODO: [0] to [node_index]
                     self._adapt_integrator_output(integrator_func, nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start),   # TODO: [0] to [node_index]
                     ["x0", "p", "params"],
                     ["xf", "xall"],
