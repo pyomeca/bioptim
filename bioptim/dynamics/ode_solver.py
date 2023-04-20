@@ -37,7 +37,7 @@ class OdeSolverBase:
         self.is_direct_collocation = False
         self.is_direct_shooting = False
 
-    def integrator(self, ocp, nlp) -> list:
+    def integrator(self, ocp, nlp, node_index) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
