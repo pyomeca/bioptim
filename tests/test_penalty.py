@@ -610,7 +610,7 @@ def test_penalty_minimize_segment_rotation(penalty_origin, value):
     x = [DM.ones((8, 1)) * value]
     u = [0]
 
-    if isinstance(penalty_origin, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+    if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
         penalty_type = penalty_origin.MINIMIZE_SEGMENT_ROTATION
         penalty = Objective(penalty_type, segment=2)
     else:
@@ -624,16 +624,17 @@ def test_penalty_minimize_segment_rotation(penalty_origin, value):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_segment_rotation(penalty_origin, value):
+def test_penalty_minimize_segment_velocity(penalty_origin, value):
     ocp = prepare_test_ocp()
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
-    penalty_type = penalty_origin.MINIMIZE_SEGMENT_VELOCITY
 
-    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+    if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = penalty_origin.MINIMIZE_SEGMENT_VELOCITY
         penalty = Objective(penalty_type, segment=2)
     else:
+        penalty_type = penalty_origin.TRACK_SEGMENT_VELOCITY
         penalty = Constraint(penalty_type, segment=2)
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
