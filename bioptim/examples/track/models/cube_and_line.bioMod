@@ -1,6 +1,6 @@
 version 4
 
-
+    
 segment Seg1
     translations	xz
     rotations	y
@@ -63,8 +63,11 @@ endsegment
 
 segment ground
 endsegment
-
     // Markers on ground
+    marker origin
+        parent ground
+		position 0 0 0 
+	endmarker
     marker m4
         parent ground
         position 1 0 0
