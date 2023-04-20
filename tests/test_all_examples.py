@@ -483,6 +483,18 @@ def test__track__track_segment_on_rt():
     )
 
 
+def test__track__track_vector_orientation():
+    from bioptim.examples.track import track_vector_orientation as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
+        n_shooting=30,
+        final_time=1,
+    )
+
+
 def test__getting_started__example_variable_scaling():
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
 
