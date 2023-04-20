@@ -6,6 +6,8 @@ import pickle
 import sys
 import re
 import sys
+import shutil
+
 
 import pytest
 import numpy as np
@@ -1325,23 +1327,34 @@ def test_multistart():
     from bioptim.examples.getting_started import example_multistart as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
-
+    bio_model_path = [bioptim_folder + "/models/pendulum.bioMod"]
+    final_time = [1]
+    n_shooting = [5, 10]
+    seed = [2, 1]
+    combinatorial_parameters = {
+        "bio_model_path": bio_model_path,
+        "final_time": final_time,
+        "n_shooting": n_shooting,
+        "seed": seed,
+    }
+    save_folder = "./Solutions_test_folder"
     multi_start = ocp_module.prepare_multi_start(
-        bio_model_path=[bioptim_folder + "/models/pendulum.bioMod"],
-        final_time=[1],
-        n_shooting=[5, 10],
-        seed=[2, 1],
+        combinatorial_parameters=combinatorial_parameters,
+        save_folder=save_folder,
     )
     multi_start.solve()
 
-    with open("pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
+    with open(f"{save_folder}/pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
         multi_start_0 = pickle.load(file)
-    with open("pendulum_multi_start_random_states_5_1.pkl", "rb") as file:
+    with open(f"{save_folder}/pendulum_multi_start_random_states_5_1.pkl", "rb") as file:
         multi_start_1 = pickle.load(file)
-    with open("pendulum_multi_start_random_states_10_2.pkl", "rb") as file:
+    with open(f"{save_folder}/pendulum_multi_start_random_states_10_2.pkl", "rb") as file:
         multi_start_2 = pickle.load(file)
-    with open("pendulum_multi_start_random_states_10_1.pkl", "rb") as file:
+    with open(f"{save_folder}/pendulum_multi_start_random_states_10_1.pkl", "rb") as file:
         multi_start_3 = pickle.load(file)
+
+    # Delete the solutions
+    shutil.rmtree(f"{save_folder}")
 
     np.testing.assert_almost_equal(
         multi_start_0,
@@ -1474,6 +1487,26 @@ def test_multistart():
             ]
         ),
     )
+
+    combinatorial_parameters = {
+        "bio_model_path": bio_model_path,
+        "final_time": final_time,
+        "n_shooting": n_shooting,
+        "seed": seed,
+    }
+    with pytest.raises(ValueError, match="save_folder must be an str"):
+        ocp_module.prepare_multi_start(
+            combinatorial_parameters=combinatorial_parameters,
+            save_folder=5,
+        )
+
+    with pytest.raises(ValueError, match="combinatorial_parameters must be a dictionary"):
+        ocp_module.prepare_multi_start(
+            combinatorial_parameters=[combinatorial_parameters],
+            save_folder=save_folder,
+        )
+    # Delete the solutions
+    shutil.rmtree(f"{save_folder}")
 
 
 def test_example_variable_scaling():

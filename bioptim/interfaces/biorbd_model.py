@@ -540,7 +540,7 @@ class MultiBiorbdModel:
             for i_sc in range(self.nb_soft_contacts):
                 soft_contact = self.soft_contact(i_sc)
 
-                soft_contact_forces[i_sc * 6: (i_sc + 1) * 6, :] = (
+                soft_contact_forces[i_sc * 6 : (i_sc + 1) * 6, :] = (
                     biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(model, q_biorbd, qdot_biorbd).to_mx()
                 )
             out = vertcat(out, soft_contact_forces)
