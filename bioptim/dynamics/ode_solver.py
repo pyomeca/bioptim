@@ -253,7 +253,7 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-        def integrator(self, ocp, nlp, node_index) -> list:
+        def integrator(self, ocp, nlp, node_index = None) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
