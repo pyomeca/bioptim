@@ -609,11 +609,12 @@ def test_penalty_minimize_segment_rotation(penalty_origin, value):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
-    penalty_type = penalty_origin.MINIMIZE_SEGMENT_ROTATION
 
-    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+    if isinstance(penalty_origin, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty_type = penalty_origin.MINIMIZE_SEGMENT_ROTATION
         penalty = Objective(penalty_type, segment=2)
     else:
+        penalty_type = penalty_origin.TRACK_SEGMENT_ROTATION
         penalty = Constraint(penalty_type, segment=2)
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
