@@ -37,7 +37,7 @@ class OdeSolverBase:
         self.is_direct_collocation = False
         self.is_direct_shooting = False
 
-    def integrator(self, ocp, nlp, node_index) -> list:
+    def integrator(self, ocp, nlp, node_index=None) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -95,7 +95,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp, node_index = None) -> list:  # TODO: add node_index
+    def integrator(self, ocp, nlp, node_index=None) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -342,7 +342,7 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.steps = 1
 
-        def integrator(self, ocp, nlp, node_index = None) -> list:
+        def integrator(self, ocp, nlp, node_index=None) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -376,7 +376,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index = None) -> list: # TODO: add node_index
+        def integrator(self, ocp, nlp, node_index=None) -> list: # TODO: add node_index
             """
             The interface of the OdeSolver to the corresponding integrator
 
