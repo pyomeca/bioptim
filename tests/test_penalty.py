@@ -324,7 +324,8 @@ def test_penalty_track_super_impose_marker(penalty_origin, value):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_proportional_state(penalty_origin, value):
+@pytest.mark.parametrize("value_intercept", [0.0, 1.0])
+def test_penalty_proportional_state(penalty_origin, value, value_intercept):
     ocp = prepare_test_ocp()
     t = [0]
     x = [DM.ones((8, 1)) * value]
@@ -332,12 +333,34 @@ def test_penalty_proportional_state(penalty_origin, value):
     penalty_type = penalty_origin.PROPORTIONAL_STATE
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
-        penalty = Objective(penalty_type, key="qdot", first_dof=0, second_dof=1, coef=2)
+        penalty = Objective(
+            penalty_type,
+            key="qdot",
+            first_dof=0,
+            second_dof=1,
+            coef=2,
+            first_dof_intercept=value_intercept,
+            second_dof_intercept=value_intercept,
+        )
     else:
-        penalty = Constraint(penalty_type, key="qdot", first_dof=0, second_dof=1, coef=2)
+        penalty = Constraint(
+            penalty_type,
+            key="qdot",
+            first_dof=0,
+            second_dof=1,
+            coef=2,
+            first_dof_intercept=value_intercept,
+            second_dof_intercept=value_intercept,
+        )
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
-    np.testing.assert_almost_equal(res, -value)
+    if value_intercept == 0.0:
+        np.testing.assert_almost_equal(res, -value)
+    else:
+        if value == 0.1:
+            np.testing.assert_almost_equal(res, 0.9)
+        else:
+            np.testing.assert_almost_equal(res, 11)
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ConstraintFcn])
@@ -603,6 +626,46 @@ def test_penalty_track_marker_with_segment_axis(penalty_origin, value):
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
     expected = [[value, 0, value]]
+    np.testing.assert_almost_equal(res.T, expected)
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_segment_rotation(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+
+    if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = penalty_origin.MINIMIZE_SEGMENT_ROTATION
+        penalty = Objective(penalty_type, segment=2)
+    else:
+        penalty_type = penalty_origin.TRACK_SEGMENT_ROTATION
+        penalty = Constraint(penalty_type, segment=2)
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    expected = [[0, value, 0]] if value == 0.1 else [[3.1415927, 0.575222, 3.1415927]]
+    np.testing.assert_almost_equal(res.T, expected)
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_segment_velocity(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+
+    if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = penalty_origin.MINIMIZE_SEGMENT_VELOCITY
+        penalty = Objective(penalty_type, segment=2)
+    else:
+        penalty_type = penalty_origin.TRACK_SEGMENT_VELOCITY
+        penalty = Constraint(penalty_type, segment=2)
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    expected = [[0, value, 0]]
     np.testing.assert_almost_equal(res.T, expected)
 
 
