@@ -584,15 +584,6 @@ class PlotOcp:
 
         plt.show()
 
-    @staticmethod
-    def save():
-        """
-
-        Returns
-        -------
-
-        """
-
     def update_data(self, v: dict):
         """
         Update ydata from the variable a solution structure
