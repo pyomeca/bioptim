@@ -660,6 +660,108 @@ class PenaltyFunctionAbstract:
             return marker_objective
 
         @staticmethod
+        def minimize_segment_rotation(
+            penalty: PenaltyOption,
+            all_pn: PenaltyNodeList,
+            segment: int | str,
+            axes: list | tuple = None,
+        ):
+            """
+            Track the orientation of a segment in the global with the sequence XYZ.
+            By default, this function is quadratic, meaning that it minimizes towards the target.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            segment: int
+                Name or index of the segment to align with the marker
+            axes: list | tuple
+                The axis that the JCS rotation should be tracked
+            """
+            from ..interfaces.biorbd_model import BiorbdModel
+
+            if penalty.derivative == True:
+                raise RuntimeWarning(
+                    "To minimize the velocity of the segment rotation, it would be safer (Euler angles related problems) to use MINIMIZE_SEGMENT_ANGLUAR_VELOCITY instead."
+                )
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = all_pn.nlp
+            segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
+
+            if not isinstance(nlp.model, BiorbdModel):
+                raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
+            model: BiorbdModel = nlp.model
+            jcs_segment = model.model.globalJCS(nlp.states["q"].mx, segment_idx).rot()
+            angles_segment = biorbd.Rotation.toEulerAngles(jcs_segment, "xyz").to_mx()
+
+            if axes is None:
+                axes = [Axis.X, Axis.Y, Axis.Z]
+            else:
+                for ax in axes:
+                    if not isinstance(ax, Axis):
+                        raise RuntimeError("axes must be a list of bioptim.Axis")
+
+            segment_rotation_objective = nlp.mx_to_cx("segment_rotation", angles_segment[axes], nlp.states["q"])
+
+            return segment_rotation_objective
+
+        @staticmethod
+        def minimize_segment_velocity(
+            penalty: PenaltyOption,
+            all_pn: PenaltyNodeList,
+            segment: int | str,
+            axes: list | tuple = None,
+        ):
+            """
+            Track the orientation of a segment.
+            By default, this function is quadratic, meaning that it minimizes towards the target.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            segment: int
+                Name or index of the segment to align with the marker
+            axes: list | tuple
+                The axis that the JCS rotation should be tracked
+            """
+            from ..interfaces.biorbd_model import BiorbdModel
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = all_pn.nlp
+            segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
+
+            if not isinstance(nlp.model, BiorbdModel):
+                raise NotImplementedError(
+                    "The minimize_segments_velocity penalty can only be called with a BiorbdModel"
+                )
+            model: BiorbdModel = nlp.model
+            segment_angular_velocity = model.segment_angular_velocity(
+                nlp.states["q"].mx, nlp.states["qdot"].mx, segment_idx
+            )
+
+            if axes is None:
+                axes = [Axis.X, Axis.Y, Axis.Z]
+            else:
+                for ax in axes:
+                    if not isinstance(ax, Axis):
+                        raise RuntimeError("axes must be a list of bioptim.Axis")
+
+            segment_velocity_objective = nlp.mx_to_cx(
+                "segment_velocity", segment_angular_velocity[axes], nlp.states["q"], nlp.states["qdot"]
+            )
+
+            return segment_velocity_objective
+
+        @staticmethod
         def track_vector_orientations_from_markers(
             penalty: PenaltyOption,
             all_pn: PenaltyNodeList,
