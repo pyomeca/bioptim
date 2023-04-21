@@ -295,7 +295,6 @@ class PenaltyFunctionAbstract:
             states = all_pn.nlp.states[0][key].cx_start  # TODO: [0] to [node_index]
             return (states[first_dof, :] - first_dof_intercept) - coef * (states[second_dof, :] - second_dof_intercept)
 
-
         @staticmethod
         def proportional_controls(
             penalty: PenaltyOption,
@@ -749,7 +748,7 @@ class PenaltyFunctionAbstract:
             if not isinstance(nlp.model, BiorbdModel):
                 raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
             model: BiorbdModel = nlp.model
-            jcs_segment = model.model.globalJCS(nlp.states[0]["q"].mx, segment_idx).rot()   # TODO: [0] to [node_index]
+            jcs_segment = model.model.globalJCS(nlp.states[0]["q"].mx, segment_idx).rot()  # TODO: [0] to [node_index]
             angles_segment = biorbd.Rotation.toEulerAngles(jcs_segment, "xyz").to_mx()
 
             if axes is None:
@@ -759,7 +758,9 @@ class PenaltyFunctionAbstract:
                     if not isinstance(ax, Axis):
                         raise RuntimeError("axes must be a list of bioptim.Axis")
 
-            segment_rotation_objective = nlp.mx_to_cx("segment_rotation", angles_segment[axes], nlp.states[0]["q"]) # TODO: [0] to [node_index]
+            segment_rotation_objective = nlp.mx_to_cx(
+                "segment_rotation", angles_segment[axes], nlp.states[0]["q"]
+            )  # TODO: [0] to [node_index]
 
             return segment_rotation_objective
 
@@ -798,7 +799,7 @@ class PenaltyFunctionAbstract:
                 )
             model: BiorbdModel = nlp.model
             segment_angular_velocity = model.segment_angular_velocity(
-                nlp.states[0]["q"].mx, nlp.states[0]["qdot"].mx, segment_idx    # TODO: [0] to [node_index]
+                nlp.states[0]["q"].mx, nlp.states[0]["qdot"].mx, segment_idx  # TODO: [0] to [node_index]
             )
 
             if axes is None:
@@ -809,7 +810,10 @@ class PenaltyFunctionAbstract:
                         raise RuntimeError("axes must be a list of bioptim.Axis")
 
             segment_velocity_objective = nlp.mx_to_cx(
-                "segment_velocity", segment_angular_velocity[axes], nlp.states[0]["q"], nlp.states[0]["qdot"]   # TODO: [0] to [node_index]
+                "segment_velocity",
+                segment_angular_velocity[axes],
+                nlp.states[0]["q"],
+                nlp.states[0]["qdot"],  # TODO: [0] to [node_index]
             )
 
             return segment_velocity_objective
