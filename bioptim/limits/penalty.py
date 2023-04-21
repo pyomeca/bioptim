@@ -837,7 +837,9 @@ class PenaltyFunctionAbstract:
             vector_0 = vector_0_marker_1_position - vector_0_marker_0_position
             vector_1 = vector_1_marker_1_position - vector_1_marker_0_position
 
-            angle = acos(dot(vector_0, vector_1) ** 2 / (norm_2(vector_0) * norm_2(vector_1)))
+            sq_norm_vect_0 = vector_0[0] ** 2 + vector_0[1] ** 2 + vector_0[2] ** 2
+            sq_norm_vect_1 = vector_1[0] ** 2 + vector_1[1] ** 2 + vector_1[2] ** 2
+            angle = acos(dot(vector_0, vector_1) ** 2 / (sq_norm_vect_0 * sq_norm_vect_1))
 
             angle_objective = nlp.mx_to_cx("vector_orientations_difference", angle, nlp.states["q"])
 
