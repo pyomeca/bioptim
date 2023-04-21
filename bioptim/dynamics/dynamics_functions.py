@@ -655,27 +655,18 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
 
-
-        qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
-
-
-        q_temporary = MX.sym('Q', nlp.model.nb_q)
-        qdot_temporary = MX.sym('Qdot', nlp.model.nb_qdot)
-        qddot_joints_temporary = MX.sym('Qddot_joints', nlp.model.nb_qddot - nlp.model.nb_root)
-        qddot_root_temporary = nlp.model.forward_dynamics_free_floating_base(q_temporary, qdot_temporary, qddot_joints_temporary)
-
-        qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_temporary, qddot_joints_temporary)
-
-        qddot_root_func = Function("qddot_root_func", [q_temporary, qdot_temporary, qddot_joints_temporary], [qddot_reordered])
+        qddot_root_func = nlp.model.forward_dynamics_free_floating_base(nlp)
+        qddot_root = qddot_root_func(q, qdot, qddot_joints)
+        qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
 
         # defects
         qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
-        qddot_defects = nlp.model.reorder_qddot_root_joints(qddot_root_defects,qddot_joints)
+        qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
 
-        floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects)[: nlp.model.nb_root]
+        floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered)[: nlp.model.nb_root]
 
         qdot_mapped = nlp.variable_mappings['qdot'].to_first.map(qdot)
-        qddot_mapped = nlp.variable_mappings['qdot'].to_first.map(qddot_root_func(q, qdot, qddot_joints))
+        qddot_mapped = nlp.variable_mappings['qdot'].to_first.map(qddot_reordered)
         qddot_root_mapped = nlp.variable_mappings['qddot_roots'].to_first.map(qddot_root)
         qddot_joints_mapped = nlp.variable_mappings['qddot_joints'].to_first.map(qddot_joints)
 

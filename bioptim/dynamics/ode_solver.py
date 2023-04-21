@@ -128,7 +128,6 @@ class RK(OdeSolverBase):
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
             "defects_type": DefectType.NOT_APPLICABLE,
-            'states_mapping': states_mapping #nlp.variable_mappings['states'] ? @pariterre
         }
 
         ode = {

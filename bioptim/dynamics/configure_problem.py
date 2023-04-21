@@ -975,7 +975,6 @@ class ConfigureProblem:
                 legend += [current_legend]
 
         if as_states:
-            # append nlp.variable_mappings['states'] ? @pariterre
             n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
             cx_scaled = (
                 ocp.nlp[nlp.use_states_from_phase_idx].states[name].original_cx

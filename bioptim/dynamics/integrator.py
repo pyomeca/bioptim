@@ -80,7 +80,6 @@ class Integrator:
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
         self.function = None
-        self.states_mapping = ode_opt['states_mapping']
 
     def __call__(self, *args, **kwargs):
         """
@@ -242,7 +241,6 @@ class RK(Integrator):
 
         u = controls
         x = self.cx(states.shape[0], self.n_step + 1)
-        #         x = self.cx(len(self.states_mapping.to_first.map_idx), self.n_step + 1)
         p = params
         x[:, 0] = states
 
@@ -397,9 +395,8 @@ class RK4(RK):
         -------
         The next integrate states
         """
-        # apply the states_mapping
-        x_prev_mapped = self.states_mapping.to_first.map(x_prev)
-        k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx] # Apply mapping'states_mapping' here ? @pariterre
+
+        k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
         k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
         k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
         k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p)[:, self.idx]

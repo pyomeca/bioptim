@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import biorbd_casadi as biorbd
-from casadi import SX, MX, vertcat, horzcat, norm_fro
+from casadi import SX, MX, vertcat, horzcat, norm_fro, Function
 
 from ..misc.utils import check_version
 from ..limits.path_conditions import Bounds
@@ -269,26 +269,23 @@ class MultiBiorbdModel:
             model.closeActuator()
         return out
 
-    # def multi_model_reorder_dynamics(self, qddot_joints, qddot_rootself):
-    #     qddot = []
-    #     for i in range(len(self.models)):
-    #         qddot[i] = qddot_joints[i]+qddot_rootself[i]
-    #     return qddot
 
+    def forward_dynamics_free_floating_base(self, nlp) -> MX:
 
-
-    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
-        out = MX()
+        q_temporary = MX.sym('Q', nlp.model.nb_q)
+        qdot_temporary = MX.sym('Qdot', nlp.model.nb_qdot)
+        qddot_joints_temporary = MX.sym('Qddot_joints', nlp.model.nb_qddot - nlp.model.nb_root)
+        qddot_root_temporary = MX()
         for i, model in enumerate(self.models):
-            out = vertcat(
-                out,
+            qddot_root_temporary = vertcat(
+                qddot_root_temporary,
                 model.ForwardDynamicsFreeFloatingBase(
-                    q[self.variable_index("q", i)],
-                    qdot[self.variable_index("q", i)],
-                    qddot_joints[self.variable_index("qddot_joints", i)],
+                    q_temporary[self.variable_index("q", i)],
+                    qdot_temporary[self.variable_index("q", i)],
+                    qddot_joints_temporary[self.variable_index("qddot_joints", i)],
                 ).to_mx(),
             )
-        return out
+        return Function("qddot_root_func", [q_temporary, qdot_temporary, qddot_joints_temporary], [qddot_root_temporary])
 
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints):
         out = MX()
