@@ -123,7 +123,7 @@ class NonControledMethod:
 
         nlp.dynamics_func = Function(
             "ForwardDyn",
-            [nlp.states[0]["scaled"].mx_reduced, nlp.controls[0]["scaled"].mx_reduced, nlp.parameters.mx],
+            [nlp.states[0]["scaled"].mx_reduced, nlp.controls[0]["scaled"].mx_reduced, nlp.parameters.mx],  # TODO: [0] to [node_index]
             [dynamics_eval_horzcat],
             ["x", "u", "p"],
             ["xdot"],

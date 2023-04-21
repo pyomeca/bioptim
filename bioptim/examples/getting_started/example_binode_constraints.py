@@ -204,9 +204,9 @@ def main():
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     sol.print_cost()
-    # sol.graphs()  # TODO : Restore that
+    sol.graphs()
     # --- Show results --- #
-    #sol.animate()
+    sol.animate()
 
 
 if __name__ == "__main__":

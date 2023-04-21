@@ -187,8 +187,11 @@ class AllNodeConstraint(Constraint):
             Generic parameters for options
         """
 
+
         force_allnode = False
         if "force_allnode" in params:
+            # This is a hack to circumvent the apparatus that moves the functions to a custom function
+            # It is necessary for PhaseTransition
             force_allnode = True
             del params["force_allnode"]
 
