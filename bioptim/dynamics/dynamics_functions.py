@@ -665,26 +665,27 @@ class DynamicsFunctions:
 
         floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered)[: nlp.model.nb_root]
 
-        qdot_mapped = nlp.variable_mappings['qdot'].to_first.map(qdot)
-        qddot_mapped = nlp.variable_mappings['qdot'].to_first.map(qddot_reordered)
-        qddot_root_mapped = nlp.variable_mappings['qddot_roots'].to_first.map(qddot_root)
-        qddot_joints_mapped = nlp.variable_mappings['qddot_joints'].to_first.map(qddot_joints)
+        qdot_mapped = nlp.variable_mappings["qdot"].to_first.map(qdot)
+        qddot_mapped = nlp.variable_mappings["qdot"].to_first.map(qddot_reordered)
+        qddot_root_mapped = nlp.variable_mappings["qddot_roots"].to_first.map(qddot_root)
+        qddot_joints_mapped = nlp.variable_mappings["qddot_joints"].to_first.map(qddot_joints)
 
         defects = MX(qdot_mapped.shape[0] + qddot_root_mapped.shape[0] + qddot_joints_mapped.shape[0], 1)
 
-        defects[: qdot_mapped.shape[0], :] = qdot_mapped - nlp.variable_mappings["qdot"].to_first.map(DynamicsFunctions.compute_qdot(
-            nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]), nlp.states_dot.mx_reduced))
+        defects[: qdot_mapped.shape[0], :] = qdot_mapped - nlp.variable_mappings["qdot"].to_first.map(
+            DynamicsFunctions.compute_qdot(
+                nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]), nlp.states_dot.mx_reduced)
+            )
         )
 
-        defects[qdot_mapped.shape[0]: (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]), :] = floating_base_constraint
-        defects[(qdot_mapped.shape[0] + qddot_root_mapped.shape[0]):, :] = qddot_joints_mapped - nlp.variable_mappings[
-            "qddot_joints"].to_first.map(DynamicsFunctions.get(
-            nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced)
-        )
+        defects[
+            qdot_mapped.shape[0] : (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]), :
+        ] = floating_base_constraint
+        defects[(qdot_mapped.shape[0] + qddot_root_mapped.shape[0]) :, :] = qddot_joints_mapped - nlp.variable_mappings[
+            "qddot_joints"
+        ].to_first.map(DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced))
 
-        return DynamicsEvaluation(
-            dxdt=vertcat(qdot_mapped, qddot_mapped), defects=None
-        )
+        return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=None)
 
     @staticmethod
     def get(var: OptimizationVariable, cx: MX | SX):

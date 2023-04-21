@@ -64,9 +64,7 @@ class MultiBiorbdModel:
             current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nbRoot()
-            return range(
-                current_idx, current_idx + self.models[model_index].nbRoot()
-            )
+            return range(current_idx, current_idx + self.models[model_index].nbRoot())
         elif variable == "qddot_joints":
             current_idx = 0
             for model in self.models[:model_index]:
@@ -269,12 +267,11 @@ class MultiBiorbdModel:
             model.closeActuator()
         return out
 
-
     def forward_dynamics_free_floating_base(self, nlp) -> MX:
 
-        q_temporary = MX.sym('Q', nlp.model.nb_q)
-        qdot_temporary = MX.sym('Qdot', nlp.model.nb_qdot)
-        qddot_joints_temporary = MX.sym('Qddot_joints', nlp.model.nb_qddot - nlp.model.nb_root)
+        q_temporary = MX.sym("Q", nlp.model.nb_q)
+        qdot_temporary = MX.sym("Qdot", nlp.model.nb_qdot)
+        qddot_joints_temporary = MX.sym("Qddot_joints", nlp.model.nb_qddot - nlp.model.nb_root)
         qddot_root_temporary = MX()
         for i, model in enumerate(self.models):
             qddot_root_temporary = vertcat(
@@ -285,15 +282,17 @@ class MultiBiorbdModel:
                     qddot_joints_temporary[self.variable_index("qddot_joints", i)],
                 ).to_mx(),
             )
-        return Function("qddot_root_func", [q_temporary, qdot_temporary, qddot_joints_temporary], [qddot_root_temporary])
+        return Function(
+            "qddot_root_func", [q_temporary, qdot_temporary, qddot_joints_temporary], [qddot_root_temporary]
+        )
 
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints):
         out = MX()
         for i, model in enumerate(self.models):
             out = vertcat(
-            out,
-            qddot_root[self.variable_index("root", i)],
-            qddot_joints[self.variable_index("qddot_joints", i)],
+                out,
+                qddot_root[self.variable_index("root", i)],
+                qddot_joints[self.variable_index("qddot_joints", i)],
             )
 
         return out
