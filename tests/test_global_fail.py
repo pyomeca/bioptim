@@ -19,7 +19,7 @@ def test_custom_constraint_mx_fail():
         if pn.u_scaled is None:
             return None
         u = pn.nlp.controls
-        return MX.zeros(u[0].shape), u[0].cx_start, MX.zeros(u[0].shape)    # TODO: [0] to [node_index]
+        return MX.zeros(u[0].shape), u[0].cx_start, MX.zeros(u[0].shape)  # TODO: [0] to [node_index]
 
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"

@@ -258,7 +258,9 @@ class PlotOcp:
         self.top_margin: int | None = None
         self.height_step: int | None = None
         self.width_step: int | None = None
-        self._organize_windows(len(self.ocp.nlp[0].states[0]) + len(self.ocp.nlp[0].controls[0]))   # TODO : [0] to [node_index]
+        self._organize_windows(
+            len(self.ocp.nlp[0].states[0]) + len(self.ocp.nlp[0].controls[0])
+        )  # TODO : [0] to [node_index]
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -338,7 +340,7 @@ class PlotOcp:
                             .function(
                                 np.nan,
                                 np.zeros((nlp.states[0].shape, 2)),  # TODO : [0] to [node_index]
-                                np.zeros((nlp.controls[0].shape, 2)),    # TODO : [0] to [node_index]
+                                np.zeros((nlp.controls[0].shape, 2)),  # TODO : [0] to [node_index]
                                 np.zeros((nlp.parameters.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )
@@ -634,14 +636,14 @@ class PlotOcp:
 
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
-            for s in nlp.states[0]: # TODO: [0] to [node_index]
+            for s in nlp.states[0]:  # TODO: [0] to [node_index]
                 if nlp.use_states_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_states, (list, tuple)):
                         state = np.concatenate((state, data_states[i][s]))
                     else:
                         state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.controls[0]:   # TODO: [0] to [node_index]
+            for s in nlp.controls[0]:  # TODO: [0] to [node_index]
                 if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_controls, (list, tuple)):
                         control = np.concatenate((control, data_controls[i][s]))

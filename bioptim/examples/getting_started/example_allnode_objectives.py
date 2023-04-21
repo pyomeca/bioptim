@@ -9,6 +9,7 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 import sys
+
 sys.path.append("/home/lim/Documents/Anais/bioviz")
 sys.path.append("/home/lim/Documents/Anais/bioptim")
 
@@ -33,8 +34,7 @@ from bioptim import (
 )
 
 
-def custom_allnode_constraint(
-    allnode_constraint: AllNodeConstraint, nlp_all: NonLinearProgram) -> MX:
+def custom_allnode_constraint(allnode_constraint: AllNodeConstraint, nlp_all: NonLinearProgram) -> MX:
     """
     The constraint of the transition.
 
@@ -51,6 +51,7 @@ def custom_allnode_constraint(
 
     states_all = nlp_all.states.cx_start
     return states_all
+
 
 def prepare_ocp(
     biorbd_model_path: str,

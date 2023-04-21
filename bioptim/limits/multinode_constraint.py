@@ -187,7 +187,6 @@ class AllNodeConstraint(Constraint):
             Generic parameters for options
         """
 
-
         force_allnode = False
         if "force_allnode" in params:
             # This is a hack to circumvent the apparatus that moves the functions to a custom function
@@ -202,9 +201,7 @@ class AllNodeConstraint(Constraint):
 
         if node is not Node.ALL:
             if not isinstance(node, int):
-                raise NotImplementedError(
-                    "Allnode Constraint only works with Node.ALL"
-                )
+                raise NotImplementedError("Allnode Constraint only works with Node.ALL")
 
         self.min_bound = min_bound
         self.max_bound = max_bound
@@ -374,13 +371,12 @@ class AllNodeConstraintList(UniquePerPhaseOptionList):
             if mnc.phase_idx < 0:
                 raise RuntimeError("Phase index of the allnode_constraint need to be positive")
 
-            if not mnc.weight: # ajouter un check, sinon mettre 1
+            if not mnc.weight:  # ajouter un check, sinon mettre 1
                 mnc.base = 1
 
             full_phase_allnode_constraint.append(mnc)
 
         return full_phase_allnode_constraint
-
 
 
 class BinodeConstraintFunctions(PenaltyFunctionAbstract):
@@ -411,8 +407,12 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].get_cx(key, CXStep.CX_END))   # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states[0].get_cx(key, CXStep.CX_START))    # TODO: [0] to [node_index]
+            states_pre = binode_constraint.states_mapping.to_second.map(
+                nlp_pre.states[0].get_cx(key, CXStep.CX_END)
+            )  # TODO: [0] to [node_index]
+            states_post = binode_constraint.states_mapping.to_first.map(
+                nlp_post.states[0].get_cx(key, CXStep.CX_START)
+            )  # TODO: [0] to [node_index]
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -441,8 +441,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            controls_pre = nlp_pre.controls[0].get_cx(key, CXStep.CX_END)   # TODO: [0] to [node_index]
-            controls_post = nlp_post.controls[0].get_cx(key, CXStep.CX_START)   # TODO: [0] to [node_index]
+            controls_pre = nlp_pre.controls[0].get_cx(key, CXStep.CX_END)  # TODO: [0] to [node_index]
+            controls_post = nlp_post.controls[0].get_cx(key, CXStep.CX_START)  # TODO: [0] to [node_index]
 
             if controls_pre.shape != controls_post.shape:
                 raise RuntimeError(
@@ -471,10 +471,16 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].cx_end)   # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states[0].cx_start)  # TODO: [0] to [node_index]
+            states_pre = binode_constraint.states_mapping.to_second.map(
+                nlp_pre.states[0].cx_end
+            )  # TODO: [0] to [node_index]
+            states_post = binode_constraint.states_mapping.to_first.map(
+                nlp_post.states[0].cx_start
+            )  # TODO: [0] to [node_index]
 
-            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]]  # TODO: [0] to [node_index]
+            states_post_sym_list = [
+                MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]
+            ]  # TODO: [0] to [node_index]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -484,10 +490,12 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com = nlp_pre.model.center_of_mass(states_pre[nlp_pre.states[0]["q"].index, :]) # TODO: [0] to [node_index]
+            pre_com = nlp_pre.model.center_of_mass(
+                states_pre[nlp_pre.states[0]["q"].index, :]
+            )  # TODO: [0] to [node_index]
             post_com = nlp_post.model.center_of_mass(states_post_sym_list[0])
 
-            pre_states_cx = nlp_pre.states[0].cx_end    # TODO: [0] to [node_index]
+            pre_states_cx = nlp_pre.states[0].cx_end  # TODO: [0] to [node_index]
             post_states_cx = nlp_post.states[0].cx_start  # TODO: [0] to [node_index]
 
             return nlp_pre.to_casadi_func(
@@ -515,10 +523,16 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].cx_end)   # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states[0].cx_start)    # TODO: [0] to [node_index]
+            states_pre = binode_constraint.states_mapping.to_second.map(
+                nlp_pre.states[0].cx_end
+            )  # TODO: [0] to [node_index]
+            states_post = binode_constraint.states_mapping.to_first.map(
+                nlp_post.states[0].cx_start
+            )  # TODO: [0] to [node_index]
 
-            states_post_sym_list = [MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]]  # TODO: [0] to [node_index]
+            states_post_sym_list = [
+                MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]
+            ]  # TODO: [0] to [node_index]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -529,12 +543,13 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             pre_com_dot = nlp_pre.model.center_of_mass_velocity(
-                states_pre[nlp_pre.states[0]["q"].index, :], states_pre[nlp_pre.states[0]["qdot"].index, :] # TODO: [0] to [node_index]
+                states_pre[nlp_pre.states[0]["q"].index, :],
+                states_pre[nlp_pre.states[0]["qdot"].index, :],  # TODO: [0] to [node_index]
             )
             post_com_dot = nlp_post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
-            pre_states_cx = nlp_pre.states[0].cx_end    # TODO: [0] to [node_index]
-            post_states_cx = nlp_post.states[0].cx_start    # TODO: [0] to [node_index]
+            pre_states_cx = nlp_pre.states[0].cx_end  # TODO: [0] to [node_index]
+            post_states_cx = nlp_post.states[0].cx_start  # TODO: [0] to [node_index]
 
             return nlp_pre.to_casadi_func(
                 "com_dot_equality",
@@ -584,7 +599,10 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"with constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
                 )
 
-            time_pre, time_post = all_pn[0].nlp.parameters.cx_start[time_pre_idx], all_pn[1].nlp.parameters.cx_start[time_post_idx]
+            time_pre, time_post = (
+                all_pn[0].nlp.parameters.cx_start[time_pre_idx],
+                all_pn[1].nlp.parameters.cx_start[time_post_idx],
+            )
 
             return time_pre - time_post
 
@@ -613,6 +631,7 @@ class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
     """
     Internal implementation of the phase transitions
     """
+
     class Functions:
         """
         Implementation of all the AllNode Constraint
@@ -665,6 +684,7 @@ class AllNodeConstraintFcn(FcnEnum):
     """
     Selection of valid allnode constraint functions
     """
+
     CUSTOM = (AllNodeConstraintFunctions.Functions.custom,)
 
     @staticmethod

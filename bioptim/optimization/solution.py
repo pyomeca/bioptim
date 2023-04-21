@@ -383,7 +383,9 @@ class Solution:
             sol_states, sol_controls = _sol[0], _sol[1]
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states[0]["scaled"].shape, ns, "states") # TODO: [0] to [node_index]
+                s.init.check_and_adjust_dimensions(
+                    self.ocp.nlp[p].states[0]["scaled"].shape, ns, "states"
+                )  # TODO: [0] to [node_index]
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
             for p, s in enumerate(sol_controls):
@@ -394,7 +396,9 @@ class Solution:
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls[0]["scaled"].shape, self.ns[p], "controls") # TODO: [0] to [node_index]
+                s.init.check_and_adjust_dimensions(
+                    self.ocp.nlp[p].controls[0]["scaled"].shape, self.ns[p], "controls"
+                )  # TODO: [0] to [node_index]
                 for i in range(self.ns[p] + off):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
@@ -1054,9 +1058,9 @@ class Solution:
                 )
 
             # Dispatch the integrated values to all the keys
-            for key in nlp.states[0]:   # TODO: [0] to [node_index]
+            for key in nlp.states[0]:  # TODO: [0] to [node_index]
                 out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][
-                    nlp.states[0][key].index, : # TODO: [0] to [node_index]
+                    nlp.states[0][key].index, :  # TODO: [0] to [node_index]
                 ]
 
         return out
@@ -1455,8 +1459,6 @@ class Solution:
                     #             self._states["scaled"][penalty.phase_idx]["all"][:, :],
                     #         )
                     #     )
-
-
 
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]

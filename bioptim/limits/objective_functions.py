@@ -281,7 +281,6 @@ class ObjectiveFunction:
 
         ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, list | tuple) else new_target
 
-
     class MultinodeFunction(PenaltyFunctionAbstract):
         """
         Internal (re)implementation of the penalty functions
@@ -291,6 +290,7 @@ class ObjectiveFunction:
             """
             Implementation of all the Lagrange objective functions
             """
+
             @staticmethod
             def node_equalities(ocp):
                 """
@@ -303,8 +303,9 @@ class ObjectiveFunction:
                 """
                 for mnc in ocp.binode_constraints or ocp.allnode_constraints:
                     # Equality constraint between nodes
-                    first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node,
-                                                                                 int) else mnc.first_node.name
+                    first_node_name = (
+                        f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
+                    )
                     second_node_name = (
                         f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
                     )
@@ -428,6 +429,7 @@ class ObjectiveFcn:
         def get_type() -> Callable
             Returns the type of the penalty
         """
+
         CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod

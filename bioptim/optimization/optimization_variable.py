@@ -297,7 +297,7 @@ class OptimizationVariable:
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
                 "Typically 'all' cannot be used"
             )
-        return self.parent_list.cx_start[self.index, :] # TODO: ADD [self.index, :]
+        return self.parent_list.cx_start[self.index, :]  # TODO: ADD [self.index, :]
 
     @property
     def cx_end(self):
@@ -310,7 +310,7 @@ class OptimizationVariable:
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
                 "Typically 'all' cannot be used"
             )
-        return self.parent_list.cx_end[self.index, :]   # TODO: ADD [self.index, :]
+        return self.parent_list.cx_end[self.index, :]  # TODO: ADD [self.index, :]
 
 
 class OptimizationVariableList:
@@ -349,7 +349,6 @@ class OptimizationVariableList:
     """
 
     def __init__(self):
-
         self.elements: list = []
         self.fake_elements: list = []
         self._cx_start: MX | SX | np.ndarray = np.array([])
@@ -694,7 +693,6 @@ class OptimizationVariableContainer:
         """
 
         return self.optimization_variable["unscaled"].cx_end
-
 
     """"autre a coder"""
 

@@ -246,7 +246,9 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             ocp = all_pn[0].ocp
-            if ocp.nlp[transition.phase_pre_idx].states[0].shape != ocp.nlp[transition.phase_post_idx].states[0].shape: # TODO: [0] to [node_index]
+            if (
+                ocp.nlp[transition.phase_pre_idx].states[0].shape != ocp.nlp[transition.phase_post_idx].states[0].shape
+            ):  # TODO: [0] to [node_index]
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
@@ -263,8 +265,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 warn("The chosen model does not have any rigid contact")
 
             # Todo scaled?
-            q_pre = nlp_pre.states[0]["q"].mx   # TODO: [0] to [node_index]
-            qdot_pre = nlp_pre.states[0]["qdot"].mx # TODO: [0] to [node_index]
+            q_pre = nlp_pre.states[0]["q"].mx  # TODO: [0] to [node_index]
+            qdot_pre = nlp_pre.states[0]["qdot"].mx  # TODO: [0] to [node_index]
             qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
 
             val = []
@@ -273,17 +275,25 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             for key in nlp_pre.states[0]:
                 cx_end = vertcat(
                     cx_end,
-                    nlp_pre.states[0][key].mapping.to_second.map(nlp_pre.states[0][key].cx_end),   # TODO: [0] to [node_index]
+                    nlp_pre.states[0][key].mapping.to_second.map(
+                        nlp_pre.states[0][key].cx_end
+                    ),  # TODO: [0] to [node_index]
                 )
-                cx_start = vertcat(cx_start, nlp_post.states[0][key].mapping.to_second.map(nlp_post.states[0][key].cx_start))  # TODO: [0] to [node_index]
-                post_mx = nlp_post.states[0][key].mx    # TODO: [0] to [node_index]
-                continuity = nlp_post.states[0]["qdot"].mapping.to_first.map(   # TODO: [0] to [node_index]
-                    qdot_impact - post_mx if key == "qdot" else nlp_pre.states[0][key].mx - post_mx # TODO: [0] to [node_index]
+                cx_start = vertcat(
+                    cx_start, nlp_post.states[0][key].mapping.to_second.map(nlp_post.states[0][key].cx_start)
+                )  # TODO: [0] to [node_index]
+                post_mx = nlp_post.states[0][key].mx  # TODO: [0] to [node_index]
+                continuity = nlp_post.states[0]["qdot"].mapping.to_first.map(  # TODO: [0] to [node_index]
+                    qdot_impact - post_mx
+                    if key == "qdot"
+                    else nlp_pre.states[0][key].mx - post_mx  # TODO: [0] to [node_index]
                 )
                 val = vertcat(val, continuity)
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states[0].mx, nlp_post.states[0].mx)(cx_end, cx_start) # TODO: [0] to [node_index]
+            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states[0].mx, nlp_post.states[0].mx)(
+                cx_end, cx_start
+            )  # TODO: [0] to [node_index]
             return func
 
 

@@ -39,21 +39,21 @@ class MuscleFatigue(FatigueModel):
         return MultiFatigueInterfaceMuscle
 
     def _get_target_load(self, nlp, controls, index):
-        if self.type() not in nlp.controls[0]:    # TODO: [0] to [node_index]
+        if self.type() not in nlp.controls[0]:  # TODO: [0] to [node_index]
             raise NotImplementedError(f"Fatigue dynamics without {self.type()} controls is not implemented yet")
 
-        return DynamicsFunctions.get(nlp.controls[0][self.type()], controls)[index, :]   # TODO: [0] to [node_index]
+        return DynamicsFunctions.get(nlp.controls[0][self.type()], controls)[index, :]  # TODO: [0] to [node_index]
 
     def dynamics(self, dxdt, nlp, index, states, controls):
         target_load = self._get_target_load(nlp, controls, index)
         fatigue = [
-            DynamicsFunctions.get(nlp.states[0][f"{self.type()}_{s}"], states)[index, :]    # TODO: [0] to [node_index]
+            DynamicsFunctions.get(nlp.states[0][f"{self.type()}_{s}"], states)[index, :]  # TODO: [0] to [node_index]
             for s in self.suffix(VariableType.STATES)
         ]
         current_dxdt = self.apply_dynamics(target_load, *fatigue)
 
         for i, s in enumerate(self.suffix(variable_type=VariableType.STATES)):
-            dxdt[nlp.states[0][f"{self.type()}_{s}"].index[index], :] = current_dxdt[i] # TODO: [0] to [node_index]
+            dxdt[nlp.states[0][f"{self.type()}_{s}"].index[index], :] = current_dxdt[i]  # TODO: [0] to [node_index]
 
         return dxdt
 

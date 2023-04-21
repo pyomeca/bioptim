@@ -656,10 +656,12 @@ class OptimalControlProgram:
         return biomodels
 
     def declare_continuity(self, state_continuity_weight=None):
-        for nlp in self.nlp:    # Inner-phase
+        for nlp in self.nlp:  # Inner-phase
             if not state_continuity_weight:
                 for shooting_node in range(nlp.ns):
-                    penalty = Constraint(ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL)
+                    penalty = Constraint(
+                        ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
+                    )
                     penalty.add_or_replace_to_penalty_pool(self, nlp)
 
             else:
@@ -673,7 +675,7 @@ class OptimalControlProgram:
                     )
                     penalty.add_or_replace_to_penalty_pool(self, nlp)
 
-        for pt in self.phase_transitions:   # Inter-phase
+        for pt in self.phase_transitions:  # Inter-phase
             if not state_continuity_weight:
                 if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
                     continue
@@ -687,7 +689,7 @@ class OptimalControlProgram:
                 pt.list_index = -1
                 pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
 
-        if self.binode_constraints or self.allnode_constraints: # Node-equalities
+        if self.binode_constraints or self.allnode_constraints:  # Node-equalities
             if not state_continuity_weight:
                 MultinodeConstraintFunction.Functions.node_equalities(self)
             else:
@@ -797,12 +799,16 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states[0]:   # TODO: [0] to [node_index]
+            for key in nlp.states[0]:  # TODO: [0] to [node_index]
                 if f"{key}_states" in nlp.plot:
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[0][key].index]   # TODO: [0] to [node_index]
-            for key in nlp.controls[0]: # TODO: [0] to [node_index]
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[
+                        nlp.states[0][key].index
+                    ]  # TODO: [0] to [node_index]
+            for key in nlp.controls[0]:  # TODO: [0] to [node_index]
                 if f"{key}_controls" in nlp.plot:
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[0][key].index]   # TODO: [0] to [node_index]
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[
+                        nlp.controls[0][key].index
+                    ]  # TODO: [0] to [node_index]
 
     def update_initial_guess(
         self,

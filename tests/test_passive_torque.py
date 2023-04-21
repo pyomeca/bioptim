@@ -83,8 +83,8 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)   # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)   # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
@@ -162,8 +162,8 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)    # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)    # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
     if with_passive_torque:
@@ -248,8 +248,8 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)    # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)    # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
     if with_residual_torque:
@@ -362,8 +362,8 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)    # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)    # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 

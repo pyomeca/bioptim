@@ -29,8 +29,8 @@ from bioptim import (
 
 
 def prepare_ocp(
-        biorbd_model_path: str = "models/cube.bioMod",
-        ode_solver: OdeSolver = OdeSolver.RK4(),
+    biorbd_model_path: str = "models/cube.bioMod",
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -189,8 +189,10 @@ def custom_binode_constraint(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].cx_end)   # TODO: [0] to [node_index]
-    states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states[0].cx_start)     # TODO: [0] to [node_index]
+    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].cx_end)  # TODO: [0] to [node_index]
+    states_post = binode_constraint.states_mapping.to_first.map(
+        nlp_post.states[0].cx_start
+    )  # TODO: [0] to [node_index]
     return states_pre * coef - states_post
 
 

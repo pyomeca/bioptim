@@ -324,8 +324,8 @@ class OcpToConsole(GraphAbstract):
                 phase_idx,
                 self.ocp.nlp[phase_idx].x_bounds,
                 [
-                    self.ocp.nlp[phase_idx].states[0].cx_start[i].name()    # TODO: [0] to [node_index]
-                    for i in range(self.ocp.nlp[phase_idx].states[0].cx_start.shape[0]) # TODO: [0] to [node_index]
+                    self.ocp.nlp[phase_idx].states[0].cx_start[i].name()  # TODO: [0] to [node_index]
+                    for i in range(self.ocp.nlp[phase_idx].states[0].cx_start.shape[0])  # TODO: [0] to [node_index]
                 ],
             )
             print(f"**********")
