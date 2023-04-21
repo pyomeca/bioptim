@@ -1077,11 +1077,11 @@ Matches one marker with another one.
 The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
 
 #### PROPORTIONAL_STATE
-Links one state to another, such that `x[first_dof] = coef * x[second_dof]`
+Links one state to another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
 
 #### PROPORTIONAL_CONTROL
-Links one control to another, such that `u[first_dof] = coef * u[second_dof]`
+Links one control to another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
 
 #### TRACK_TORQUE
@@ -1238,11 +1238,11 @@ Tracks one marker with another one.
 The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
 
 #### PROPORTIONAL_STATE (Lagrange and Mayer)
-Minimizes the difference between one state and another, such that `x[first_dof] ~= coef * x[second_dof]`
+Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
 
 #### PROPORTIONAL_CONTROL (Lagrange)
-Minimizes the difference between one control and another, such that `u[first_dof] ~= coef * u[second_dof]`
+Minimizes the difference between one control and another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
 
 #### MINIMIZE_TORQUE (Lagrange)

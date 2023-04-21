@@ -259,6 +259,8 @@ class PenaltyFunctionAbstract:
             first_dof: int,
             second_dof: int,
             coef: float,
+            first_dof_intercept: float = 0,
+            second_dof_intercept: float = 0,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
@@ -277,13 +279,20 @@ class PenaltyFunctionAbstract:
             second_dof: int
                 The index of the second variable
             coef: float
-                The proportion coefficient such that v[first_dof] = coef * v[second_dof]
+                The proportion coefficient between the two variables
+            first_dof_intercept: float
+                The intercept of the first variable
+            second_dof_intercept: float
+                The intercept of the second variable
+
+            Formula = v[first_dof] - first_dof_intercept = coef * (v[second_dof] - second_dof_intercept)
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             states = all_pn.nlp.states[key].cx
-            return states[first_dof, :] - coef * states[second_dof, :]
+
+            return (states[first_dof, :] - first_dof_intercept) - coef * (states[second_dof, :] - second_dof_intercept)
 
         @staticmethod
         def proportional_controls(
@@ -293,6 +302,8 @@ class PenaltyFunctionAbstract:
             first_dof: int,
             second_dof: int,
             coef: float,
+            first_dof_intercept: float = 0,
+            second_dof_intercept: float = 0,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
@@ -311,13 +322,22 @@ class PenaltyFunctionAbstract:
             second_dof: int
                 The index of the second variable
             coef: float
-                The proportion coefficient such that v[first_dof] = coef * v[second_dof]
+                The proportion coefficient between the two variables
+            first_dof_intercept: float
+                The intercept of the first variable
+            second_dof_intercept: float
+                The intercept of the second variable
+
+            Formula = v[first_dof] - first_dof_intercept = coef * (v[second_dof] - second_dof_intercept)
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             controls = all_pn.nlp.controls[key].cx
-            return controls[first_dof, :] - coef * controls[second_dof, :]
+
+            return (controls[first_dof, :] - first_dof_intercept) - coef * (
+                controls[second_dof, :] - second_dof_intercept
+            )
 
         @staticmethod
         def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
