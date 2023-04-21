@@ -685,7 +685,7 @@ class DynamicsFunctions:
             "qddot_joints"
         ].to_first.map(DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced))
 
-        return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=None)
+        return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=defects)
 
     @staticmethod
     def get(var: OptimizationVariable, cx: MX | SX):
