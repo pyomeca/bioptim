@@ -129,17 +129,17 @@ def test_track_vector_orientation():
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.80000001, -0.68299837, -1.57      , -1.56999089]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.80000001, -0.68299837,  1.57      ,  1.56999138]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.80000001, -0.68299837, -1.57, -1.56999089]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.80000001, -0.68299837, 1.57, 1.56999138]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((3.37753150e-16, 4.90499995e+00, 3.14001172e+00, 3.13997056e+00)))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((3.37753150e-16, 4.90499995e00, 3.14001172e00, 3.13997056e00)))
     np.testing.assert_almost_equal(
-        qdot[:, -1], np.array((3.37753131e-16, -4.90499995e+00,  3.14001059e+00,  3.13997170e+00))
+        qdot[:, -1], np.array((3.37753131e-16, -4.90499995e00, 3.14001059e00, 3.13997170e00))
     )
     # initial and final controls
     np.testing.assert_almost_equal(
-        tau[:, 0], np.array([-1.27269674e-24,  1.97261036e-08, -3.01420965e-05,  3.01164220e-05])
+        tau[:, 0], np.array([-1.27269674e-24, 1.97261036e-08, -3.01420965e-05, 3.01164220e-05])
     )
     np.testing.assert_almost_equal(
-        tau[:, -2], np.array([-2.10041085e-23,  1.97261036e-08,  2.86303889e-05, -2.86047182e-05])
+        tau[:, -2], np.array([-2.10041085e-23, 1.97261036e-08, 2.86303889e-05, -2.86047182e-05])
     )
