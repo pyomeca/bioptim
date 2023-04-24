@@ -56,7 +56,7 @@ class OdeSolverBase:
         raise RuntimeError("OdeSolveBase is abstract, please select a valid OdeSolver")
 
     @staticmethod
-    def prepare_dynamic_integrator(ocp, nlp, states_mapping):
+    def prepare_dynamic_integrator(ocp, nlp):
         """
         Properly set the integration in an nlp
 
@@ -70,7 +70,7 @@ class OdeSolverBase:
             The states mapping
         """
 
-        nlp.dynamics = nlp.ode_solver.integrator(ocp, nlp, states_mapping)
+        nlp.dynamics = nlp.ode_solver.integrator(ocp, nlp)
         if len(nlp.dynamics) != 1 and ocp.n_threads != 1:
             raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")
         if len(nlp.dynamics) == 1:
@@ -100,7 +100,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp, states_mapping) -> list:
+    def integrator(self, ocp, nlp) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
