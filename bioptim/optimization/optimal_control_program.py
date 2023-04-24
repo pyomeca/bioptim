@@ -169,6 +169,7 @@ class OptimalControlProgram:
         n_threads: int = 1,
         use_sx: bool = False,
         skip_continuity: bool = False,
+        assume_phase_dynamics: bool = True,
     ):
         """
         Parameters
@@ -223,6 +224,8 @@ class OptimalControlProgram:
             The nature of the casadi variables. MX are used if False.
         skip_continuity: bool
             This is mainly for internal purposes when creating an OCP not destined to be solved
+        assume_phase_dynamics: bool
+            If the dynamics of for each shooting node in phases are assumed to be the same
         """
 
         if not isinstance(bio_model, (list, tuple)):
@@ -267,6 +270,7 @@ class OptimalControlProgram:
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
+            "assume_phase_dynamics": assume_phase_dynamics,
         }
 
         # Check integrity of arguments
@@ -530,6 +534,7 @@ class OptimalControlProgram:
         # TODO: multinode_whatever should be handled the same way as constraints and objectives
         self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
+        self.assume_phase_dynamics = assume_phase_dynamics
         if not skip_continuity:
             if not state_continuity_weight:
                 # Inner- and inter-phase continuity
