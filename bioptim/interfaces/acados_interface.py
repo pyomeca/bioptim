@@ -134,10 +134,10 @@ class AcadosInterface(SolverInterface):
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
-        self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].controls.shape)
-        self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
-        self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
-        self.Vx0 = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
+        self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].controls[0].shape) # TODO: [0] to [node_index]
+        self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states[0].shape)   # TODO: [0] to [node_index]
+        self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states[0].shape)  # TODO: [0] to [node_index]
+        self.Vx0 = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states[0].shape)  # TODO: [0] to [node_index]
 
     def __acados_export_model(self, ocp):
         """
@@ -156,7 +156,7 @@ class AcadosInterface(SolverInterface):
         # Declare model variables
         x = ocp.nlp[0].states[0].cx_start  # TODO: [0] to [node_index]
         u = ocp.nlp[0].controls[0].cx_start  # TODO: [0] to [node_index]
-        p = ocp.nlp[0].parameters.cx
+        p = ocp.nlp[0].parameters.cx_start
         if ocp.v.parameters_in_list:
             for param in ocp.v.parameters_in_list:
                 if str(param.cx)[:11] == f"time_phase_":
@@ -258,7 +258,7 @@ class AcadosInterface(SolverInterface):
         for i, nlp in enumerate(ocp.nlp):
             x = nlp.states[0].cx_start  # TODO: [0] to [node_index]
             u = nlp.controls[0].cx_start  # TODO: [0] to [node_index]
-            p = nlp.parameters.cx
+            p = nlp.parameters.cx_start
 
             for g, G in enumerate(nlp.g):
                 if not G:
@@ -570,13 +570,13 @@ class AcadosInterface(SolverInterface):
                         )
 
                     if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
-                        add_nonlinear_ls_lagrange(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+                        add_nonlinear_ls_lagrange(self, J, nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start)   # TODO: [0] to [node_index]
 
                         # Deal with first and last node
-                        add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+                        add_nonlinear_ls_mayer(self, J, nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start)    # TODO: [0] to [node_index]
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
-                        add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+                        add_nonlinear_ls_mayer(self, J, nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start)  # TODO: [0] to [node_index]
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
@@ -586,7 +586,7 @@ class AcadosInterface(SolverInterface):
                 nlp = ocp.nlp[0]  # Assume 1 phase
                 for j, J in enumerate(ocp.J):
                     J.node = [Node.END]
-                    add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+                    add_nonlinear_ls_mayer(self, J, nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start)  # TODO: [0] to [node_index]
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = (

@@ -1056,7 +1056,7 @@ class OptimalControlProgram:
                         if not isinstance(penalty.dt, (float, int)):
                             if i_phase in self.time_param_phases_idx:
                                 dt = Function(
-                                    "time", [nlp.parameters.cx[i_phase]], [nlp.parameters.cx[i_phase] / nlp.ns]
+                                    "time", [nlp.parameters.cx_start[i_phase]], [nlp.parameters.cx_start[i_phase] / nlp.ns]
                                 )
 
                 plot_params = {
