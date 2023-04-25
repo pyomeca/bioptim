@@ -100,6 +100,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         n_threads=1,  # You cannot use multi-threading for the resolution of the ocp with multi-start
+        assume_phase_dynamics=True,
     )
 
     ocp.add_plot_penalty(CostType.ALL)

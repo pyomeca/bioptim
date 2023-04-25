@@ -82,6 +82,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         u_init,
         x_bounds,
         u_bounds,
+        assume_phase_dynamics=True,
     )
 
 

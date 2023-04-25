@@ -78,6 +78,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         variable_mappings=tau_mappings,
+        assume_phase_dynamics=True,
     )
 
 

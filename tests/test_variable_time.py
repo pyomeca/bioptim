@@ -145,6 +145,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
         constraints,
         ode_solver=ode_solver,
         parameters=parameters,
+        assume_phase_dynamics=False,
     )
 
 

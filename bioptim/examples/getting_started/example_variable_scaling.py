@@ -105,6 +105,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
+        assume_phase_dynamics=True,
     )
 
 

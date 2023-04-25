@@ -169,7 +169,7 @@ class OptimalControlProgram:
         n_threads: int = 1,
         use_sx: bool = False,
         skip_continuity: bool = False,
-        assume_phase_dynamics: bool = True,
+        assume_phase_dynamics: bool = False,
     ):
         """
         Parameters
