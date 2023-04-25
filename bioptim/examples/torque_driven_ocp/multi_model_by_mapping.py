@@ -107,6 +107,7 @@ def prepare_ocp(
         node_mappings=node_mappings,
         phase_transitions=phase_transitions,
         parameter_mappings=parameter_mappings,
+        assume_phase_dynamics=True,
     )
 
 

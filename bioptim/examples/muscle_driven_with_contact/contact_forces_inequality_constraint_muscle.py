@@ -84,7 +84,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,
@@ -95,6 +95,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
         objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
+        assume_phase_dynamics=True,
     )
 
 
