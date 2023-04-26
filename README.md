@@ -340,8 +340,12 @@ ocp = OptimalControlProgram(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        assume_phase_dynamics=True,
     )
 ```
+The argument assume_phase_dynamics should be set to True if we assume the dynamics 
+are the same in each phase of the ocp problem. The default value is False.
+
 ## Checking the ocp
 Now you can check if the ocp is well defined for the initial values.
 This checking will help you to see if your constraints and objectives are ok.
@@ -452,6 +456,7 @@ ocp = OptimalControlProgram(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        assume_phase_dynamics=True,
     )
     
 sol = ocp.solve(show_online_optim=True)
@@ -563,6 +568,7 @@ OptimalControlProgram(
     phase_transitions: PhaseTransitionList,
     n_threads: int,
     use_sx: bool,
+    assume_phase_dynamics=False,
 )
 ```
 Of these, only the first 4 are mandatory.
