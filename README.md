@@ -343,7 +343,7 @@ ocp = OptimalControlProgram(
         assume_phase_dynamics=True,
     )
 ```
-The argument assume_phase_dynamics should be set to `True` if we assume the dynamics 
+The argument `assume_phase_dynamics` should be set to `True` if we assume the dynamics 
 are the same in each phase of the ocp problem. 
 This argument increase speed to mount the problem, it should be consider each time you build an Optimal Control Program.
 The default value is `False`, meaning we consider the dynamic equations are different for each shooting node (e.g. when applying an different external force at each shooting node).
