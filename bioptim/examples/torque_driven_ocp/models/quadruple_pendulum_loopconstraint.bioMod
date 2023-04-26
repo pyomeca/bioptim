@@ -1,0 +1,73 @@
+version 4
+
+segment Seg1
+    rotations	x
+    ranges
+        -10*pi 10*pi
+    mass 1
+    inertia
+        0.0391  0.0000	0.0000
+	    0.0000	0.0335	-0.0032
+	    0.0000	-0.0032	0.0090
+    com  -0.0005 0.0688 -0.9542
+    meshfile mesh/pendulum.vtp
+endsegment
+
+
+segment Seg2
+    parent Seg1
+    rotations	x
+    ranges
+        -3*pi 3*pi
+    rtinmatrix 0
+    rt 0 0 0 xyz 0 0 -1
+    mass 1
+    inertia
+        0.0391  0.0000	0.0000
+	    0.0000	0.0335	-0.0032
+	    0.0000	-0.0032	0.0090
+    com  -0.0005 0.0688 -0.9542
+    meshfile mesh/pendulum.vtp
+endsegment
+
+
+segment Seg3
+    parent Seg2
+    rotations	x
+    ranges
+        -3*pi 3*pi
+    rtinmatrix 0
+    rt 0 0 0 xyz 0 0 -1
+    mass 1
+    inertia
+        0.0391  0.0000	0.0000
+	    0.0000	0.0335	-0.0032
+	    0.0000	-0.0032	0.0090
+    com  -0.0005 0.0688 -0.9542
+    meshfile mesh/pendulum.vtp
+endsegment
+
+segment Seg4
+    parent Seg3
+    rotations	x
+    ranges
+        -3*pi 3*pi
+    rtinmatrix 0
+    rt 0 0 0 xyz 0 0 -1
+    mass 1
+    inertia
+        0.0391  0.0000	0.0000
+	    0.0000	0.0335	-0.0032
+	    0.0000	-0.0032	0.0090
+    com  -0.0005 0.0688 -0.9542
+    meshfile mesh/pendulum.vtp
+endsegment
+
+loopconstraint
+  predecessor Seg4
+  successor Seg1
+  RTpredecessor 0 0 0 xyz 0 0 0
+  RTsuccessor 0 0 0 xyz 0 0 0
+  axis 1 0 0 0 0 0
+  stabilizationParameter 0.1
+loopconstraint
