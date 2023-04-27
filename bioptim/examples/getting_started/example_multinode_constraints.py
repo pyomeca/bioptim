@@ -158,6 +158,7 @@ def prepare_ocp(
         constraints,
         multinode_constraints=multinode_constraints,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 

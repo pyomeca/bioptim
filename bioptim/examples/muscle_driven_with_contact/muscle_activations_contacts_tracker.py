@@ -79,7 +79,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,
@@ -89,6 +89,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 

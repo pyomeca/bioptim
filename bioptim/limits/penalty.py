@@ -861,7 +861,7 @@ class PenaltyFunctionAbstract:
 
             penalty.expand = all_pn.nlp.dynamics_type.expand
 
-            if len(penalty.node_idx) > 1:
+            if len(penalty.node_idx) > 1 and not all_pn.ocp.assume_phase_dynamics:
                 raise NotImplementedError(
                     f"Length of node index superior to 1 is not implemented yet,"
                     f" actual length {len(penalty.node_idx[0])} "

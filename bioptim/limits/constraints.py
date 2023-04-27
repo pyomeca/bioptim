@@ -554,9 +554,17 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         # Dynamics must be sound within phases
         for nlp in ocp.nlp:
-            for shooting_node in range(nlp.ns):
-                penalty = Constraint(ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL)
+            if ocp.assume_phase_dynamics:
+                penalty = Constraint(
+                    ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
+                )
                 penalty.add_or_replace_to_penalty_pool(ocp, nlp)
+            else:
+                for shooting_node in range(nlp.ns):
+                    penalty = Constraint(
+                        ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
+                    )
+                    penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
     def inter_phase_continuity(ocp):
