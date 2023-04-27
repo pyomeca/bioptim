@@ -519,6 +519,8 @@ class OptimalControlProgram:
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
 
+        self.assume_phase_dynamics = assume_phase_dynamics
+
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
@@ -543,7 +545,7 @@ class OptimalControlProgram:
         self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
         self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
-        self.assume_phase_dynamics = assume_phase_dynamics
+
         if not skip_continuity:
             self._declare_continuity(state_continuity_weight)
 

@@ -68,8 +68,12 @@ class OdeSolverBase:
             A reference to the current phase of the ocp
         """
         nlp.dynamics = []
-        for node_index in range(nlp.ns):
-            nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index)
+        nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, 0)
+        if ocp.assume_phase_dynamics:
+            nlp.dynamics = nlp.dynamics * nlp.ns
+        else:
+            for node_index in range(1, nlp.ns):
+                nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index)
 
 
 class RK(OdeSolverBase):
