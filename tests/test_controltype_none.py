@@ -25,7 +25,6 @@ from bioptim import (
     NonLinearProgram,
     Solver,
 )
-from .utils import TestUtils
 
 
 class NonControledMethod:

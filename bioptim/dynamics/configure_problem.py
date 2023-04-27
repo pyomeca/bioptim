@@ -1056,7 +1056,7 @@ class ConfigureProblem:
                 plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not skip_plot:
                     nlp.plot[f"{name}_controls"] = CustomPlot(
-                        lambda t, x, u, p: u[nlp.controls[i][name].index, :],
+                        lambda t, x, u, p: u[nlp.controls[node_index][name].index, :],
                         plot_type=plot_type,
                         axes_idx=axes_idx,
                         legend=legend,

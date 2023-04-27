@@ -5,7 +5,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver, Solver, DefectType
+from bioptim import OdeSolver, DefectType
 
 from .utils import TestUtils
 

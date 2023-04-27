@@ -11,7 +11,6 @@ from bioptim import (
     DynamicsFcn,
     Dynamics,
     ConstraintList,
-    OdeSolver,
     Solver,
 )
 from bioptim.optimization.optimization_vector import OptimizationVector
