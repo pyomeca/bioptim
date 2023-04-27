@@ -89,6 +89,7 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n
         u_init=u_init,
         x_bounds=x_bound,
         u_bounds=u_bound,
+        assume_phase_dynamics=True,
     )
 
 

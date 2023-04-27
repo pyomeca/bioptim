@@ -75,6 +75,7 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque):
         u_init=u_init,
         x_bounds=x_bound,
         u_bounds=u_bound,
+        assume_phase_dynamics=True,
     )
 
 

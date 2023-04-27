@@ -196,6 +196,7 @@ def prepare_ocp(
         x_scaling=x_scaling,
         xdot_scaling=xdot_scaling,
         u_scaling=u_scaling,
+        assume_phase_dynamics=True,
     )
 
 

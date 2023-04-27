@@ -95,6 +95,7 @@ def prepare_ocp(weights, coefficients, biorbd_model_path="models/double_pendulum
         objective_functions=objective_functions,
         variable_mappings=tau_mappings,
         n_threads=4,
+        assume_phase_dynamics=True,
     )
 
 

@@ -238,6 +238,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
+        assume_phase_dynamics=True,
     )
 
 

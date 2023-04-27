@@ -105,6 +105,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
         constraints,
         variable_mappings=dof_mapping,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
