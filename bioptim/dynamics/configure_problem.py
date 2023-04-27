@@ -1051,7 +1051,7 @@ class ConfigureProblem:
                 nlp.controls[node_index]["scaled"].append(
                     name, cx_scaled[0], mx_controls, nlp.variable_mappings[name]
                 )
-                nlp.controls[0].append_from_scaled(name, cx[0], nlp.controls[node_index]["scaled"])
+                nlp.controls[node_index].append_from_scaled(name, cx[0], nlp.controls[node_index]["scaled"])
 
                 plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not skip_plot:
