@@ -76,8 +76,8 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [The parameters](#the-parameters)
   - [ParameterList](#class-parameterlist)
 - [The multinode constraints](#the-multinode-constraints)
-  - [MultinodeConstraintList](#class-multinodeconstraintlist)
-  - [MultinodeConstraintFcn](#class-multinodeconstraintfcn)
+  - [BinodeConstraintList](#class-binodeconstraintlist)
+  - [BinodeConstraintFcn](#class-binodeconstraintfcn)
 - [The phase transitions](#the-phase-transitions)
   - [PhaseTransitionList](#class-phasetransitionlist)
   - [PhaseTransitionFcn](#class-phasetransitionfcn)
@@ -1382,32 +1382,32 @@ It is useful however to define this value by hand if one wants to declare the pa
 `Bioptim` can declare multiphase optimisation programs. The goal of a multiphase ocp is usually to handle changing dynamics. 
 The user must understand that each phase is therefore a full ocp by itself, with constraints that links the end of which with the beginning of the following.
 
-### Class: MultinodeConstraintList
-The MultinodeConstraintList provide a class that prepares the multinode constraints.
-When constructing an `OptimalControlProgram()`, MultinodeConstraintList is the expected class for the `multinode_constraints` parameter. 
+### Class: BinodeConstraintList
+The BinodeConstraintList provide a class that prepares the binode constraints.
+When constructing an `OptimalControlProgram()`, BinodeConstraintList is the expected class for the `binode_constraints` parameter. 
 
-The MultinodeConstraintList class is the main class to define parameters.
-Please note that unlike other lists, `MultinodeConstraint` is not accessible since multinode constraint don't make sense for single phase ocp.
+The BinodeConstraintList class is the main class to define parameters.
+Please note that unlike other lists, `BinodeConstraint` is not accessible since binode constraint don't make sense for single phase ocp.
 Therefore, one should not call the PhaseTransition constructor directly. 
 
-Here is the full signature of the `add()` method of the `MultinodeConstraintList`:
+Here is the full signature of the `add()` method of the `BinodeConstraintList`:
 ```python
-MultinodeConstraintList.add(MultinodeConstraintFcn, phase_first_idx, phase_second_idx, first_node, second_node, **extra_parameters)
+BinodeConstraintList.add(BinodeConstraintFcn, phase_first_idx, phase_second_idx, first_node, second_node, **extra_parameters)
 ```
-The `MultinodeConstraintFcn` is multinode constraints function to use.
+The `BinodeConstraintFcn` is binode constraints function to use.
 The default is EQUALITY.
-If one wants to declare a custom transition phase, then MultinodeConstraintFcn is the function handler to the custom function.
-The signature of the custom function is: `custom_function(multinode_constraint:MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
+If one wants to declare a custom transition phase, then BinodeConstraintFcn is the function handler to the custom function.
+The signature of the custom function is: `custom_function(binode_constraint:BinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
 where `nlp_pre` is the non linear program of the considered phase, `nlp_post` is the non linear program of the second considered phase, and the `**extra_parameters` are those sent to the add() method.
-This function is expected to return the cost of the multinode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
-Anyone who wants to define multinode constraints should be at least familiar with this type beforehand.
+This function is expected to return the cost of the binode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
+Anyone who wants to define binode constraints should be at least familiar with this type beforehand.
 The `phase_first_idx` is the index of the first phase. 
 The `phase_second_idx` is the index of the second phase. 
 The `first_node` is the first node considered. 
 The `second_node` is the second node considered. 
 
-### Class: MultinodeConstraintFcn
-The `MultinodeConstraintFcn` class is the already available multinode constraints in `bioptim`. 
+### Class: BinodeConstraintFcn
+The `BinodeConstraintFcn` class is the already available binode constraints in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabailities of your IDE. 
 
 #### EQUALITY
@@ -1421,7 +1421,7 @@ The velocities of centers of mass are equals.
 
 #### CUSTOM
 CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
-You can have a look at the MultinodeConstraintList section for more information about how to define custom transition function.
+You can have a look at the BinodeConstraintList section for more information about how to define custom transition function.
 
 ## The phase transitions
 `Bioptim` can declare multiphase optimisation programs. 

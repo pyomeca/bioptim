@@ -119,23 +119,23 @@ class PenaltyNode:
                 return self.u
 
             if variable_type == "any":
-                if item in self.nlp.states and item in self.nlp.controls:
+                if item in self.nlp.states[0] and item in self.nlp.controls[0]:  # TODO: [0] to [node_index]
                     raise RuntimeError(f"Sliced item must specify the type if they appear in both states and controls")
 
-                if item in self.nlp.states:
-                    return self.x[self.nlp.states[item].index, :]
-                elif item in self.nlp.controls:
-                    return self.u[self.nlp.controls[item].index, :]
+                if item in self.nlp.states[0]:  # TODO: [0] to [node_index]
+                    return self.x[self.nlp.states[0][item].index, :]  # TODO: [0] to [node_index]
+                elif item in self.nlp.controls[0]:  # TODO: [0] to [node_index]
+                    return self.u[self.nlp.controls[0][item].index, :]  # TODO: [0] to [node_index]
                 else:
                     raise RuntimeError(
                         f"{item} is not present in controls nor states. Or was not 'states' or 'controls', for all"
                     )
 
             elif variable_type == "states":
-                return self.x[self.nlp.states[item].index, :]
+                return self.x[self.nlp.states[0][item].index, :]  # TODO: [0] to [node_index]
 
             elif variable_type == "controls":
-                return self.u[self.nlp.controls[item].index, :]
+                return self.u[self.nlp.controls[0][item].index, :]  # TODO: [0] to [node_index]
 
             else:
                 raise ValueError("The variable_type must be 'any', 'states', or 'controls'")

@@ -79,9 +79,13 @@ def get_penalty_value(ocp, penalty, t, x, u, p):
     if isinstance(val, float):
         return val
 
-    states = ocp.nlp[0].states.cx if ocp.nlp[0].states.cx.shape != (0, 0) else ocp.cx(0, 0)
-    controls = ocp.nlp[0].controls.cx if ocp.nlp[0].controls.cx.shape != (0, 0) else ocp.cx(0, 0)
-    parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
+    states = (
+        ocp.nlp[0].states[0].cx_start if ocp.nlp[0].states[0].cx_start.shape != (0, 0) else ocp.cx(0, 0)
+    )  # TODO: [0] to [node_index]
+    controls = (
+        ocp.nlp[0].controls[0].cx_start if ocp.nlp[0].controls[0].cx_start.shape != (0, 0) else ocp.cx(0, 0)
+    )  # TODO: [0] to [node_index]
+    parameters = ocp.nlp[0].parameters.cx_start if ocp.nlp[0].parameters.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     return ocp.nlp[0].to_casadi_func("penalty", val, states, controls, parameters)(x[0], u[0], p)
 
 
@@ -770,7 +774,7 @@ def test_penalty_time_constraint(value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom(penalty_origin, value):
     def custom(pn, mult):
-        my_values = pn.nlp.states["q"].cx * mult
+        my_values = pn.nlp.states[0]["q"].cx_start * mult  # TODO: [0] to [node_index]
         return my_values
 
     ocp = prepare_test_ocp()
@@ -846,7 +850,7 @@ def test_penalty_custom_fail(penalty_origin, value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds(value):
     def custom_with_bounds(pn):
-        return -10, pn.nlp.states["q"].cx, 10
+        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -864,7 +868,7 @@ def test_penalty_custom_with_bounds(value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_min_bound(value):
     def custom_with_bounds(pn):
-        return -10, pn.nlp.states["q"].cx, 10
+        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -884,7 +888,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_max_bound(value):
     def custom_with_bounds(pn):
-        return -10, pn.nlp.states["q"].cx, 10
+        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
 
     ocp = prepare_test_ocp()
     t = [0]

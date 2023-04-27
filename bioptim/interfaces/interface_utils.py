@@ -204,6 +204,9 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         return target_out
 
     def get_x_and_u_at_idx(_penalty, _idx, is_unscaled):
+        """
+        TODO: Change here
+        """
         if _penalty.transition:
             ocp = interface.ocp
             if is_unscaled:
@@ -219,7 +222,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
             _x = vertcat(x_pre, x_post)
             _u = vertcat(u_pre, u_post)
-        elif _penalty.multinode_constraint:
+        elif _penalty.binode_constraint:
             ocp = interface.ocp
             # Make an exception to the fact that U is not available for the last node
             mod_u0 = 1 if _penalty.first_node == Node.END else 0
@@ -286,7 +289,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = horzcat(_u, u)
         return _x, _u
 
-    param = interface.ocp.cx(interface.ocp.v.parameters_in_list.cx)
+    param = interface.ocp.cx(interface.ocp.v.parameters_in_list.cx_start)
     out = interface.ocp.cx()
     for penalty in penalties:
         if not penalty:

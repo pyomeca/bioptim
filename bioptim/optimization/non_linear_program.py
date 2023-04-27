@@ -148,13 +148,13 @@ class NonLinearProgram:
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
-        self.controls = OptimizationVariableContainer()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
         self.X_scaled = None
         self.X = None
         self.states = OptimizationVariableContainer()
         self.states_dot = OptimizationVariableContainer()
+        self.controls = OptimizationVariableContainer()
 
     def initialize(self, cx: Callable = None):
         """
@@ -166,19 +166,17 @@ class NonLinearProgram:
             The type of casadi variable
 
         """
+
         self.plot = {}
         self.cx = cx
-        self.states["scaled"]._cx = self.cx()
-        self.states._cx = self.cx()
-        self.controls["scaled"]._cx = self.cx()
-        self.controls._cx = self.cx()
         self.J = []
         self.g = []
         self.g_internal = []
         self.casadi_func = {}
-        self.controls._set_cx_constructor(self.cx)
-        self.states._set_cx_constructor(self.cx)
-        self.states_dot._set_cx_constructor(self.cx)
+
+        self.states = self.states._set_states_and_controls(n_shooting=self.ns + 1, cx=self.cx)
+        self.states_dot = self.states_dot._set_states_and_controls(n_shooting=self.ns + 1, cx=self.cx)
+        self.controls = self.controls._set_states_and_controls(n_shooting=self.ns + 1, cx=self.cx)
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
@@ -333,7 +331,7 @@ class NonLinearProgram:
         cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
         mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
         cx = [
-            var.mapping.to_second.map(var.cx) if hasattr(var, "mapping") else var.cx
+            var.mapping.to_second.map(var.cx_start) if hasattr(var, "mapping") else var.cx_start
             for var in all_param
             if isinstance(var, cx_types)
         ]
