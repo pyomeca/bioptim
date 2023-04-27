@@ -447,6 +447,17 @@ def test__torque_driven_ocp__trampo_quaternions():
     )
 
 
+def test__torque_driven_ocp__minimize_segment_velocity():
+    from bioptim.examples.torque_driven_ocp import example_minimize_segment_velocity as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/triple_pendulum.bioMod",
+        n_shooting=5,
+    )
+
+
 def test__track__track_marker_on_segment():
     from bioptim.examples.track import track_marker_on_segment as ocp_module
 
@@ -462,6 +473,18 @@ def test__track__track_marker_on_segment():
 
 def test__track__track_segment_on_rt():
     from bioptim.examples.track import track_segment_on_rt as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
+        n_shooting=30,
+        final_time=1,
+    )
+
+
+def test__track__track_vector_orientation():
+    from bioptim.examples.track import track_vector_orientation as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
