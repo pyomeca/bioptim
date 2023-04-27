@@ -1023,9 +1023,7 @@ class ConfigureProblem:
                     if copy_states
                     else define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
                 )
-                nlp.states[node_index]["scaled"].append(
-                    name, cx_scaled[0], mx_states, nlp.variable_mappings[name]
-                )
+                nlp.states[node_index]["scaled"].append(name, cx_scaled[0], mx_states, nlp.variable_mappings[name])
                 nlp.states[node_index].append_from_scaled(name, cx[0], nlp.states[node_index]["scaled"])
                 if not skip_plot:
                     nlp.plot[f"{name}_states"] = CustomPlot(
@@ -1037,7 +1035,9 @@ class ConfigureProblem:
                     )
 
         if as_controls:
-            for node_index in range((1 if ocp.assume_phase_dynamics else nlp.ns)):  # TODO: This may or may not be a problem for CONTROL_TYPE.LinearContinuous
+            for node_index in range(
+                (1 if ocp.assume_phase_dynamics else nlp.ns)
+            ):  # TODO: This may or may not be a problem for CONTROL_TYPE.LinearContinuous
                 cx_scaled = (
                     ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
                     if copy_controls
@@ -1048,9 +1048,7 @@ class ConfigureProblem:
                     if copy_controls
                     else define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
                 )
-                nlp.controls[node_index]["scaled"].append(
-                    name, cx_scaled[0], mx_controls, nlp.variable_mappings[name]
-                )
+                nlp.controls[node_index]["scaled"].append(name, cx_scaled[0], mx_controls, nlp.variable_mappings[name])
                 nlp.controls[node_index].append_from_scaled(name, cx[0], nlp.controls[node_index]["scaled"])
 
                 plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
@@ -1079,9 +1077,7 @@ class ConfigureProblem:
                 nlp.states_dot[node_index]["scaled"].append(
                     name, cx_scaled[0], mx_states_dot, nlp.variable_mappings[name]
                 )
-                nlp.states_dot[node_index].append_from_scaled(
-                    name, cx[0], nlp.states_dot[node_index]["scaled"]
-                )
+                nlp.states_dot[node_index].append_from_scaled(name, cx[0], nlp.states_dot[node_index]["scaled"])
 
     @staticmethod
     def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
