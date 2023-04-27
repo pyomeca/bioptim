@@ -2464,7 +2464,7 @@ If you are using use_sx and/or expand options, try turning them off. If it does 
 
 ## Free variables
 Sometimes when working on advanced custom problems, you may have some free variables that prevent the solver from being launched.
-If this occurs, try reloading your model. This has worked for us with biorbd models.
+If this occurs, try reloading your model inside of the custom function. This has worked for us with biorbd models.
 
 ## Non-converging problems
 If Ipopt converges to an infeasible solution, make sure the boundaries are sound for the constraints of the problem.
