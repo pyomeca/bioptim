@@ -105,6 +105,7 @@ def prepare_ocp(
         constraints=constraints,
         external_forces=external_forces,
         ode_solver=ode_solver,
+        assume_phase_dynamics=False,
     )
 
 

@@ -120,6 +120,7 @@ def prepare_ocp(
         variable_mappings=tau_mappings,
         phase_transitions=phase_transitions,
         binode_constraints=binode_constraints,
+        assume_phase_dynamics=True,
     )
 
 

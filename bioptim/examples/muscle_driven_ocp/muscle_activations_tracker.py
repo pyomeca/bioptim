@@ -264,6 +264,7 @@ def prepare_ocp(
         objective_functions,
         ode_solver=ode_solver,
         n_threads=n_threads,
+        assume_phase_dynamics=True,
     )
 
 

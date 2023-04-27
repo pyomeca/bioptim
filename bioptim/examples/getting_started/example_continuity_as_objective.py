@@ -131,6 +131,7 @@ def prepare_ocp_first_pass(
         use_sx=use_sx,
         n_threads=n_threads,
         state_continuity_weight=state_continuity_weight,
+        assume_phase_dynamics=True,
     )
 
 

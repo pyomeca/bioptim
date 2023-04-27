@@ -18,10 +18,8 @@ from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
-
-
 from ..interfaces.biomodel import BioModel
-from ..interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
+from ..interfaces.biorbd_model import MultiBiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -48,6 +46,7 @@ from ..misc.enums import (
     IntegralApproximation,
     InterpolationType,
     PenaltyType,
+    Node,
 )
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
@@ -172,6 +171,7 @@ class OptimalControlProgram:
         n_threads: int = 1,
         use_sx: bool = False,
         skip_continuity: bool = False,
+        assume_phase_dynamics: bool = False,
     ):
         """
         Parameters
@@ -226,6 +226,8 @@ class OptimalControlProgram:
             The nature of the casadi variables. MX are used if False.
         skip_continuity: bool
             This is mainly for internal purposes when creating an OCP not destined to be solved
+        assume_phase_dynamics: bool
+            If the dynamics of for each shooting node in phases are assumed to be the same
         """
 
         if not isinstance(bio_model, (list, tuple)):
@@ -271,6 +273,7 @@ class OptimalControlProgram:
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
+            "assume_phase_dynamics": assume_phase_dynamics,
         }
 
         # Check integrity of arguments
@@ -540,8 +543,9 @@ class OptimalControlProgram:
         self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
         self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
+        self.assume_phase_dynamics = assume_phase_dynamics
         if not skip_continuity:
-            self.declare_continuity(state_continuity_weight)
+            self._declare_continuity(state_continuity_weight)
 
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
@@ -655,25 +659,51 @@ class OptimalControlProgram:
 
         return biomodels
 
-    def declare_continuity(self, state_continuity_weight=None):
+    def _declare_continuity(self, state_continuity_weight: float = None) -> None:
+        """
+        Declare the continuity function for the state variables. By default, the continuity function
+        is a constraint, but it declared as an objective if  state_continuity_weight is not None
+
+        Parameters
+        ----------
+        state_continuity_weight:
+            The weight on continuity objective. If it is not None, then the continuity are objective
+            instead of constraints
+        """
+
         for nlp in self.nlp:  # Inner-phase
-            if not state_continuity_weight:
-                for shooting_node in range(nlp.ns):
+            if state_continuity_weight is None:
+                if self.assume_phase_dynamics:
                     penalty = Constraint(
-                        ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
+                        ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
                     )
                     penalty.add_or_replace_to_penalty_pool(self, nlp)
-
+                else:
+                    for shooting_node in range(nlp.ns):
+                        penalty = Constraint(
+                            ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
+                        )
+                        penalty.add_or_replace_to_penalty_pool(self, nlp)
             else:
-                for shooting_point in range(nlp.ns):
+                if self.assume_phase_dynamics:
                     penalty = Objective(
                         ObjectiveFcn.Mayer.CONTINUITY,
                         weight=state_continuity_weight,
                         quadratic=True,
-                        node=shooting_point,
+                        node=Node.ALL_SHOOTING,
                         penalty_type=PenaltyType.INTERNAL,
                     )
                     penalty.add_or_replace_to_penalty_pool(self, nlp)
+                else:
+                    for shooting_point in range(nlp.ns):
+                        penalty = Objective(
+                            ObjectiveFcn.Mayer.CONTINUITY,
+                            weight=state_continuity_weight,
+                            quadratic=True,
+                            node=shooting_point,
+                            penalty_type=PenaltyType.INTERNAL,
+                        )
+                        penalty.add_or_replace_to_penalty_pool(self, nlp)
 
         for pt in self.phase_transitions:  # Inter-phase
             if not state_continuity_weight:

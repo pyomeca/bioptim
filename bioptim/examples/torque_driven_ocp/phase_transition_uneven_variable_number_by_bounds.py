@@ -105,6 +105,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         variable_mappings=tau_mappings,
+        assume_phase_dynamics=True,
     )
 
 

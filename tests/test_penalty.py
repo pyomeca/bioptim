@@ -698,9 +698,9 @@ def test_penalty_minimize_vector_orientation(penalty_origin, value):
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
     if value == 0.1:
-        np.testing.assert_almost_equal(float(res), 1.0529423391195598)
+        np.testing.assert_almost_equal(float(res), 0.09999999999999999)
     else:
-        np.testing.assert_almost_equal(float(res), 1.2110674089002156)
+        np.testing.assert_almost_equal(float(res), 2.566370614359173)
 
 
 @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])

@@ -170,6 +170,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         use_sx=use_sx,
+        assume_phase_dynamics=True,
     )
 
 
