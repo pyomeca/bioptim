@@ -313,11 +313,6 @@ class MultiBiorbdModel:
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints):
         out = MX()
         for i, model in enumerate(self.models):
-            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
-            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
-            qddot_joints_biorbd = self.transform_to_generalized_accelerations(
-                qddot_joints[self.variable_index("qddot_joints", i)]
-            )
             out = vertcat(
                 out,
                 qddot_root[self.variable_index("root", i)],
