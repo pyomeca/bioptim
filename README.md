@@ -113,6 +113,18 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [Acados](#acados)
 - [Inverse optimal control](#inverse-optimal-control)
 
+[Performance](#performance)
+- [use_sx](#use_sx)
+- [n_threads](#n_threads)
+- [assume_phase_dynamics](#assume_phase_dynamics)
+- [expand](#expand)
+
+[Troubleshooting](#troubleshooting)
+- [freezing compute](#freezing-compute)
+- [free variables](#free-variables)
+- [non-converging problem](#non-converging-problem)
+
+
 [Citing](#Citing)
 
 
@@ -2420,7 +2432,49 @@ This example is separated in three parts:
 - The second part solves the problem with only one objective at a time to for the pareto front.
 - The thirs part solves the inverse optimal control problem aiming to retrieve the initial weightings.
 A the end of the example, the markers trajectories are plotted to show that the movement is the same.
- 
+
+# Performance
+If you find yourself asking, "Why is bioptim so slow? I thought it was lightning fast!"
+then this section may help you improve your code to get better performance.
+
+## use_sx
+Set use_sx to True in the OptimalControlProgram class to use the SX symbolic variables.
+These are faster, but require more RAM, so make sure you have enough RAM to use this option.
+
+## n_threads
+Set n_threads to the number of threads you want to use in the OptimalControlProgram class.
+By default, it is set to 1. It will split the computation of the continuity constraints between threads and speed up the computation. If applicable to your problem, make sure to use the next option too.
+
+## assume_phase_dynamics
+Set assume_phase_dynamics to True in the OptimalControlProgram class if your dynamic equations are phase-independent but not node-specific.
+It will speed up the computation of the continuity constraints since only one continuity constraint will be computed per phase instead of one per node.
+
+## expand
+(For objective and constraint functions)
+Set the expand argument to True for objective and constraint functions to speed up the computation.
+This will turn your MX symbolic variables into SX symbolic variables, which is faster but requires more RAM.
+
+# Troubleshooting
+Despite our best efforts to assist you, you may experience some problems with bioptim.
+Fortunately, this troubleshooting section will guide you through solving some known issues.
+
+## Freezing compute
+If your computer freezes before any optimization is performed, it is probably because your problem requires too much RAM.
+If you are using use_sx and/or expand options, try turning them off. If it does not work, try reducing the number of nodes. If assume_phase_dynamics is set to False, try setting it to True, if applicable to your problem.
+
+## Free variables
+Sometimes when working on advanced custom problems, you may have some free variables that prevent the solver from being launched.
+If this occurs, try reloading your model. This has worked for us with biorbd models.
+
+## Non-converging problems
+If Ipopt converges to an infeasible solution, make sure the boundaries are sound for the constraints of the problem.
+If the problem still does not converge, try changing the initial guess of the problem.
+
+If the problem takes numerous iterations to solve (a lot more than expected), check the weights on objective functions and the weight of the actual variables.
+
+If the problem still does not converge, try observing the evolution of the objective function and the constraints through a live plot.
+It is always a good idea to see how they evolve through the iterations.
+
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
 @article{michaud2022bioptim,
