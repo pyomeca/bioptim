@@ -1011,12 +1011,12 @@ class ConfigureProblem:
                 legend += [current_legend]
 
         if as_states:
-            for node_index in range(nlp.ns + 1):
+            for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
                 n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
                 cx_scaled = (
                     ocp.nlp[nlp.use_states_from_phase_idx].states[node_index][name].original_cx
                     if copy_states
-                    else define_cx_scaled(n_col=n_cx, n_shooting=nlp.ns)
+                    else define_cx_scaled(n_col=n_cx, n_shooting=0)
                 )
                 cx = (
                     ocp.nlp[nlp.use_states_from_phase_idx].states[node_index][name].original_cx
@@ -1024,9 +1024,9 @@ class ConfigureProblem:
                     else define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
                 )
                 nlp.states[node_index]["scaled"].append(
-                    name, cx_scaled[node_index], mx_states, nlp.variable_mappings[name]
+                    name, cx_scaled[0], mx_states, nlp.variable_mappings[name]
                 )
-                nlp.states[node_index].append_from_scaled(name, cx[node_index], nlp.states[node_index]["scaled"])
+                nlp.states[node_index].append_from_scaled(name, cx[0], nlp.states[node_index]["scaled"])
                 if not skip_plot:
                     nlp.plot[f"{name}_states"] = CustomPlot(
                         lambda t, x, u, p: x[nlp.states[node_index][name].index, :],
@@ -1037,11 +1037,11 @@ class ConfigureProblem:
                     )
 
         if as_controls:
-            for node_index in range(nlp.ns):  # TODO: This may or may not be a problem for CONTROL_TYPE.LinearContinuous
+            for node_index in range((1 if ocp.assume_phase_dynamics else nlp.ns)):  # TODO: This may or may not be a problem for CONTROL_TYPE.LinearContinuous
                 cx_scaled = (
                     ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
                     if copy_controls
-                    else define_cx_scaled(n_col=2, n_shooting=nlp.ns)
+                    else define_cx_scaled(n_col=2, n_shooting=0)
                 )
                 cx = (
                     ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
@@ -1049,9 +1049,9 @@ class ConfigureProblem:
                     else define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
                 )
                 nlp.controls[node_index]["scaled"].append(
-                    name, cx_scaled[node_index], mx_controls, nlp.variable_mappings[name]
+                    name, cx_scaled[0], mx_controls, nlp.variable_mappings[name]
                 )
-                nlp.controls[node_index].append_from_scaled(name, cx[node_index], nlp.controls[node_index]["scaled"])
+                nlp.controls[0].append_from_scaled(name, cx[0], nlp.controls[node_index]["scaled"])
 
                 plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not skip_plot:
@@ -1064,12 +1064,12 @@ class ConfigureProblem:
                     )
 
         if as_states_dot:
-            for node_index in range(nlp.ns + 1):
+            for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
                 n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
                 cx_scaled = (
                     ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[node_index][name].original_cx
                     if copy_states_dot
-                    else define_cx_scaled(n_col=n_cx, n_shooting=nlp.ns)
+                    else define_cx_scaled(n_col=n_cx, n_shooting=1)
                 )
                 cx = (
                     ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[node_index][name].original_cx
@@ -1077,10 +1077,10 @@ class ConfigureProblem:
                     else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
                 )
                 nlp.states_dot[node_index]["scaled"].append(
-                    name, cx_scaled[node_index], mx_states_dot, nlp.variable_mappings[name]
+                    name, cx_scaled[0], mx_states_dot, nlp.variable_mappings[name]
                 )
                 nlp.states_dot[node_index].append_from_scaled(
-                    name, cx[node_index], nlp.states_dot[node_index]["scaled"]
+                    name, cx[0], nlp.states_dot[node_index]["scaled"]
                 )
 
     @staticmethod
