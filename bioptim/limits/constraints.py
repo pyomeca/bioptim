@@ -564,6 +564,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )  # TODO: [0] to [node_index]
 
     @staticmethod
+    def get_dt(_):
+        return 1
+
+    @staticmethod
     def penalty_nature() -> str:
         return "constraints"
 
