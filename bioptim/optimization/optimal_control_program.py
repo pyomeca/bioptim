@@ -18,20 +18,19 @@ from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
-
 from ..interfaces.biomodel import BioModel
-from ..interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
+from ..interfaces.biorbd_model import MultiBiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
     ConstraintFcn,
     ConstraintList,
     Constraint,
-    ContinuityConstraintFunctions,
+    MultinodeConstraintFunction,
 )
-from ..limits.phase_transition import PhaseTransitionList
-from ..limits.multinode_constraint import MultinodeConstraintList
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ContinuityObjectiveFunctions
+from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
+from ..limits.multinode_constraint import BinodeConstraintList, AllNodeConstraintList
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
 from ..limits.penalty import PenaltyOption
@@ -46,6 +45,8 @@ from ..misc.enums import (
     SolutionIntegrator,
     IntegralApproximation,
     InterpolationType,
+    PenaltyType,
+    Node,
 )
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
@@ -161,7 +162,8 @@ class OptimalControlProgram:
         node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
-        multinode_constraints: MultinodeConstraintList = None,
+        binode_constraints: BinodeConstraintList = None,
+        allnode_constraints: AllNodeConstraintList = None,
         x_scaling: VariableScaling | VariableScalingList = None,
         xdot_scaling: VariableScaling | VariableScalingList = None,
         u_scaling: VariableScaling | VariableScalingList = None,
@@ -169,6 +171,7 @@ class OptimalControlProgram:
         n_threads: int = 1,
         use_sx: bool = False,
         skip_continuity: bool = False,
+        assume_phase_dynamics: bool = False,
     ):
         """
         Parameters
@@ -223,6 +226,8 @@ class OptimalControlProgram:
             The nature of the casadi variables. MX are used if False.
         skip_continuity: bool
             This is mainly for internal purposes when creating an OCP not destined to be solved
+        assume_phase_dynamics: bool
+            If the dynamics of for each shooting node in phases are assumed to be the same
         """
 
         if not isinstance(bio_model, (list, tuple)):
@@ -263,10 +268,12 @@ class OptimalControlProgram:
             "node_mappings": node_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
-            "multinode_constraints": multinode_constraints,
+            "binode_constraints": binode_constraints,
+            "allnode_constraints": allnode_constraints,
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
+            "assume_phase_dynamics": assume_phase_dynamics,
         }
 
         # Check integrity of arguments
@@ -401,10 +408,15 @@ class OptimalControlProgram:
         elif not isinstance(phase_transitions, PhaseTransitionList):
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
-        if multinode_constraints is None:
-            multinode_constraints = MultinodeConstraintList()
-        elif not isinstance(multinode_constraints, MultinodeConstraintList):
-            raise RuntimeError("multinode_constraints should be built from an MultinodeConstraintList")
+        if binode_constraints is None:
+            binode_constraints = BinodeConstraintList()
+        elif not isinstance(binode_constraints, BinodeConstraintList):
+            raise RuntimeError("binode_constraints should be built from an BinodeConstraintList")
+
+        if allnode_constraints is None:
+            allnode_constraints = AllNodeConstraintList()
+        elif not isinstance(allnode_constraints, AllNodeConstraintList):
+            raise RuntimeError("allnode_constraints should be built from an AllNodeConstraintList")
 
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
@@ -507,6 +519,8 @@ class OptimalControlProgram:
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
 
+        self.assume_phase_dynamics = assume_phase_dynamics
+
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
@@ -527,15 +541,13 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-        # TODO: multinode_whatever should be handled the same way as constraints and objectives
-        self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
+        # TODO: binode_whatever should be handled the same way as constraints and objectives
+        self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
+        self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
         # Skipping creates a valid but unsolvable OCP class
+
         if not skip_continuity:
-            if not state_continuity_weight:
-                # Inner- and inter-phase continuity
-                ContinuityConstraintFunctions.continuity(self)
-            else:
-                ContinuityObjectiveFunctions.continuity(self, state_continuity_weight)
+            self._declare_continuity(state_continuity_weight)
 
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
@@ -568,7 +580,7 @@ class OptimalControlProgram:
     def _check_variable_mapping_consistency_with_node_mapping(
         self, use_states_from_phase_idx, use_controls_from_phase_idx
     ):
-        # TODO this feature is broken since the merge with multi_node, fix it
+        # TODO this feature is broken since the merge with bi_node, fix it
         if (
             list(set(use_states_from_phase_idx)) != use_states_from_phase_idx
             or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx
@@ -649,6 +661,72 @@ class OptimalControlProgram:
 
         return biomodels
 
+    def _declare_continuity(self, state_continuity_weight: float = None) -> None:
+        """
+        Declare the continuity function for the state variables. By default, the continuity function
+        is a constraint, but it declared as an objective if  state_continuity_weight is not None
+
+        Parameters
+        ----------
+        state_continuity_weight:
+            The weight on continuity objective. If it is not None, then the continuity are objective
+            instead of constraints
+        """
+
+        for nlp in self.nlp:  # Inner-phase
+            if state_continuity_weight is None:
+                if self.assume_phase_dynamics:
+                    penalty = Constraint(
+                        ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
+                    )
+                    penalty.add_or_replace_to_penalty_pool(self, nlp)
+                else:
+                    for shooting_node in range(nlp.ns):
+                        penalty = Constraint(
+                            ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
+                        )
+                        penalty.add_or_replace_to_penalty_pool(self, nlp)
+            else:
+                if self.assume_phase_dynamics:
+                    penalty = Objective(
+                        ObjectiveFcn.Mayer.CONTINUITY,
+                        weight=state_continuity_weight,
+                        quadratic=True,
+                        node=Node.ALL_SHOOTING,
+                        penalty_type=PenaltyType.INTERNAL,
+                    )
+                    penalty.add_or_replace_to_penalty_pool(self, nlp)
+                else:
+                    for shooting_point in range(nlp.ns):
+                        penalty = Objective(
+                            ObjectiveFcn.Mayer.CONTINUITY,
+                            weight=state_continuity_weight,
+                            quadratic=True,
+                            node=shooting_point,
+                            penalty_type=PenaltyType.INTERNAL,
+                        )
+                        penalty.add_or_replace_to_penalty_pool(self, nlp)
+
+        for pt in self.phase_transitions:  # Inter-phase
+            if not state_continuity_weight:
+                if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                    continue
+                # Dynamics must be respected between phases
+                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+                pt.list_index = -1
+                pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
+
+            else:
+                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+                pt.list_index = -1
+                pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
+
+        if self.binode_constraints or self.allnode_constraints:  # Node-equalities
+            if not state_continuity_weight:
+                MultinodeConstraintFunction.Functions.node_equalities(self)
+            else:
+                ObjectiveFunction.MultinodeFunction.Functions.node_equalities(self)
+
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """
         The main user interface to add or modify objective functions in the ocp
@@ -711,7 +789,6 @@ class OptimalControlProgram:
             for constraints_in_phase in new_constraint:
                 for constraint in constraints_in_phase:
                     self.__modify_penalty(constraint)
-
         else:
             raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
@@ -754,12 +831,16 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states:
+            for key in nlp.states[0]:  # TODO: [0] to [node_index]
                 if f"{key}_states" in nlp.plot:
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
-            for key in nlp.controls:
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[
+                        nlp.states[0][key].index
+                    ]  # TODO: [0] to [node_index]
+            for key in nlp.controls[0]:  # TODO: [0] to [node_index]
                 if f"{key}_controls" in nlp.plot:
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[
+                        nlp.controls[0][key].index
+                    ]  # TODO: [0] to [node_index]
 
     def update_initial_guess(
         self,
@@ -941,7 +1022,6 @@ class OptimalControlProgram:
                 if penalty.target is not None and isinstance(t, int)
                 else []
             )
-
             if x.shape[1] == 1:
                 x_shape = int(x.shape[0] / self.nlp[penalty.phase].x_scaling["all"].scaling.shape[0])
                 x_scaling = np.reshape(
@@ -964,7 +1044,7 @@ class OptimalControlProgram:
             u /= u_scaling
 
             out = []
-            if penalty.transition or penalty.multinode_constraint:
+            if penalty.transition or penalty.binode_constraint:
                 out.append(
                     penalty.weighted_function_non_threaded(
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
@@ -1007,7 +1087,9 @@ class OptimalControlProgram:
                         if not isinstance(penalty.dt, (float, int)):
                             if i_phase in self.time_param_phases_idx:
                                 dt = Function(
-                                    "time", [nlp.parameters.cx[i_phase]], [nlp.parameters.cx[i_phase] / nlp.ns]
+                                    "time",
+                                    [nlp.parameters.cx_start[i_phase]],
+                                    [nlp.parameters.cx_start[i_phase] / nlp.ns],
                                 )
 
                 plot_params = {

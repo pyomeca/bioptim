@@ -281,68 +281,49 @@ class ObjectiveFunction:
 
         ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, list | tuple) else new_target
 
-    @staticmethod
-    def inner_phase_continuity(ocp, weight: float):
+    class MultinodeFunction(PenaltyFunctionAbstract):
         """
-        Add continuity objectives between each nodes of a phase.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
+        Internal (re)implementation of the penalty functions
         """
 
-        # Dynamics must be sound within phases
-        for nlp in ocp.nlp:
-            for shooting_point in range(nlp.ns):
-                penalty = Objective(
-                    ObjectiveFcn.Mayer.CONTINUITY,
-                    weight=weight,
-                    quadratic=True,
-                    node=shooting_point,
-                    penalty_type=PenaltyType.INTERNAL,
-                )
-                penalty.add_or_replace_to_penalty_pool(ocp, nlp)
+        class Functions:
+            """
+            Implementation of all the Lagrange objective functions
+            """
 
-    @staticmethod
-    def inter_phase_continuity(ocp):
-        """
-        Add phase transitions between two phases.
+            @staticmethod
+            def node_equalities(ocp):
+                """
+                Add multi node constraints between chosen phases.
 
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        """
-        for pt in ocp.phase_transitions:
-            # Dynamics must be respected between phases
-            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-            pt.list_index = -1
-            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
+                Parameters
+                ----------
+                ocp: OptimalControlProgram
+                    A reference to the ocp
+                """
+                for mnc in ocp.binode_constraints or ocp.allnode_constraints:
+                    # Equality constraint between nodes
+                    first_node_name = (
+                        f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
+                    )
+                    second_node_name = (
+                        f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
+                    )
+                    mnc.name = (
+                        f"NODE_EQUALITY "
+                        f"Phase {mnc.phase_first_idx} Node {first_node_name}"
+                        f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
+                    )
+                    mnc.list_index = -1
+                    mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
 
-    @staticmethod
-    def node_equalities(ocp):
-        """
-        Add multi node constraints between chosen phases.
+        @staticmethod
+        def get_dt(_):
+            return 1
 
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        """
-        for mnc in ocp.multinode_constraints:
-            # Equality constraint between nodes
-            first_node_name = f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
-            second_node_name = (
-                f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
-            )
-            mnc.name = (
-                f"NODE_EQUALITY "
-                f"Phase {mnc.phase_first_idx} Node {first_node_name}"
-                f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
-            )
-            mnc.list_index = -1
-            mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
+        @staticmethod
+        def penalty_nature() -> str:
+            return "objective_functions"
 
 
 class ObjectiveFcn:
@@ -385,6 +366,11 @@ class ObjectiveFcn:
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        MINIMIZE_SEGMENT_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_segment_rotation,)
+        MINIMIZE_SEGMENT_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_segment_velocity,)
+        TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (
+            PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,
+        )
         CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
@@ -424,6 +410,11 @@ class ObjectiveFcn:
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        MINIMIZE_SEGMENT_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_segment_rotation,)
+        MINIMIZE_SEGMENT_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_segment_velocity,)
+        TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (
+            PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,
+        )
         CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
@@ -432,6 +423,25 @@ class ObjectiveFcn:
             Returns the type of the penalty
             """
             return ObjectiveFunction.MayerFunction
+
+    class Multinode(FcnEnum):
+        """
+        Selection of valid Multinode objective functions
+
+        Methods
+        -------
+        def get_type() -> Callable
+            Returns the type of the penalty
+        """
+
+        CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
+
+        @staticmethod
+        def get_type() -> Callable:
+            """
+            Returns the type of the penalty
+            """
+            return ObjectiveFunction.MultinodeFunction
 
     class Parameter(FcnEnum):
         """
@@ -451,31 +461,3 @@ class ObjectiveFcn:
             Returns the type of the penalty
             """
             return ObjectiveFunction.ParameterFunction
-
-
-class ContinuityObjectiveFunctions:
-    """
-    Interface between continuity and objective
-    """
-
-    @staticmethod
-    def continuity(ocp, weight):
-        """
-        The declaration of inner- and inter-phase continuity objectives
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        """
-
-        ObjectiveFunction.inner_phase_continuity(ocp, weight)
-
-        # Dynamics must be respected between phases
-        ObjectiveFunction.inter_phase_continuity(ocp)
-
-        # TODO: multinode_anything shouldn't be handled by "continuity".
-        # Keeping multinode_constraint here because otherwise they wouldn't be added when state continuity is an
-        # objective, should REALLY be changed.
-        if ocp.multinode_constraints:
-            ObjectiveFunction.node_equalities(ocp)

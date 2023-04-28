@@ -31,6 +31,8 @@ from bioptim import (
     RigidBodyDynamics,
 )
 
+from bioptim.optimization.optimization_variable import OptimizationVariableContainer
+
 
 def generate_data(
     bio_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
@@ -81,15 +83,30 @@ def generate_data(
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
-    nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+    nlp.states = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.states
+    nlp.states_dot = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.states_dot
+    nlp.controls = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.controls
 
-    nlp.states_dot.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
-    nlp.states_dot.append("qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"])
+    for node_index in range(n_shooting):
+        nlp.states[node_index].append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
+        nlp.states[node_index].append(
+            "qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"]
+        )
 
-    if use_residual_torque:
-        nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
-    nlp.controls.append("muscles", [symbolic_mus, symbolic_mus], symbolic_mus, nlp.variable_mappings["muscles"])
+        nlp.states_dot[node_index].append(
+            "qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"]
+        )
+        nlp.states_dot[node_index].append(
+            "qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"]
+        )
+
+        if use_residual_torque:
+            nlp.controls[node_index].append(
+                "tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"]
+            )
+        nlp.controls[node_index].append(
+            "muscles", [symbolic_mus, symbolic_mus], symbolic_mus, nlp.variable_mappings["muscles"]
+        )
 
     if use_residual_torque:
         nlp.variable_mappings["tau"] = BiMapping(range(n_tau), range(n_tau))
@@ -247,6 +264,7 @@ def prepare_ocp(
         objective_functions,
         ode_solver=ode_solver,
         n_threads=n_threads,
+        assume_phase_dynamics=True,
     )
 
 

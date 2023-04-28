@@ -78,6 +78,18 @@ class MultiBiorbdModel:
                 current_idx += model.nbRigidContacts()
             return range(current_idx, current_idx + self.models[model_index].nbRigidContacts())
 
+    def transform_to_generalized_coordinates(self, q: MX):
+        return biorbd.GeneralizedCoordinates(q)
+
+    def transform_to_generalized_velocities(self, qdot: MX):
+        return biorbd.GeneralizedVelocity(qdot)
+
+    def transform_to_generalized_torques(self, tau: MX):
+        return biorbd.GeneralizedTorque(tau)
+
+    def transform_to_generalized_accelerations(self, qddot: MX):
+        return biorbd.GeneralizedAcceleration(qddot)
+
     @property
     def gravity(self) -> MX:
         return vertcat(*(model.getGravity().to_mx() for model in self.models))
@@ -138,27 +150,33 @@ class MultiBiorbdModel:
     def center_of_mass(self, q) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
-            out = vertcat(out, model.CoM(q[self.variable_index("q", i)], True).to_mx())
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            out = vertcat(out, model.CoM(q_biorbd, True).to_mx())
         return out
 
     def center_of_mass_velocity(self, q, qdot) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
             out = vertcat(
                 out,
-                model.CoMdot(q[self.variable_index("q", i)], qdot[self.variable_index("qdot", i)], True).to_mx(),
+                model.CoMdot(q_biorbd, qdot_biorbd, True).to_mx(),
             )
         return out
 
     def center_of_mass_acceleration(self, q, qdot, qddot) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
+            qddot_biorbd = self.transform_to_generalized_accelerations(qddot[self.variable_index("qddot", i)])
             out = vertcat(
                 out,
                 model.CoMddot(
-                    q[self.variable_index("q", i)],
-                    qdot[self.variable_index("qdot", i)],
-                    qddot[self.variable_index("qddot", i)],
+                    q_biorbd,
+                    qdot_biorbd,
+                    qddot_biorbd,
                     True,
                 ).to_mx(),
             )
@@ -167,31 +185,37 @@ class MultiBiorbdModel:
     def angular_momentum(self, q, qdot) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
             out = vertcat(
                 out,
-                model.angularMomentum(
-                    q[self.variable_index("q", i)], qdot[self.variable_index("qdot", i)], True
-                ).to_mx(),
+                model.angularMomentum(q_biorbd, qdot_biorbd, True).to_mx(),
             )
         return out
 
     def reshape_qdot(self, q, qdot, k_stab=1) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_coordinates(
+                qdot[self.variable_index("qdot", i)]
+            )  # Due to a bug in biorbd
             out = vertcat(
                 out,
-                model.computeQdot(q[self.variable_index("q", i)], qdot[self.variable_index("qdot", i)], k_stab).to_mx(),
+                model.computeQdot(q_biorbd, qdot_biorbd, k_stab).to_mx(),
             )
         return out
 
     def segment_angular_velocity(self, q, qdot, idx) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
             out = vertcat(
                 out,
                 model.segmentAngularVelocity(
-                    q[self.variable_index("q", i)],
-                    qdot[self.variable_index("qdot", i)],
+                    q_biorbd,
+                    qdot_biorbd,
                     idx,
                     True,
                 ).to_mx(),
@@ -254,9 +278,9 @@ class MultiBiorbdModel:
             out = vertcat(
                 out,
                 model.torque(
-                    tau_activations[self.variable_index("tau", i)],
-                    q[self.variable_index("q", i)],
-                    qdot[self.variable_index("qdot", i)],
+                    tau_activations,
+                    q,
+                    qdot,
                 ).to_mx(),
             )
             model.closeActuator()
@@ -265,12 +289,17 @@ class MultiBiorbdModel:
     def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
+            qddot_joints_biorbd = self.transform_to_generalized_accelerations(
+                qddot_joints[self.variable_index("qddot_joints", i)]
+            )
             out = vertcat(
                 out,
                 model.ForwardDynamicsFreeFloatingBase(
-                    q[self.variable_index("q", i)],
-                    qdot[self.variable_index("q", i)],
-                    qddot_joints[self.variable_index("qddot_joints", i)],
+                    q_biorbd,
+                    qdot_biorbd,
+                    qddot_joints_biorbd,
                 ).to_mx(),
             )
         return out
@@ -280,12 +309,15 @@ class MultiBiorbdModel:
             external_forces = biorbd.to_spatial_vector(external_forces)
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
+            tau_biorbd = self.transform_to_generalized_torques(tau[self.variable_index("tau", i)])
             out = vertcat(
                 out,
                 model.ForwardDynamics(
-                    q[self.variable_index("q", i)],
-                    qdot[self.variable_index("qdot", i)],
-                    tau[self.variable_index("tau", i)],
+                    q_biorbd,
+                    qdot_biorbd,
+                    tau_biorbd,
                     external_forces,
                     f_contacts,
                 ).to_mx(),
@@ -297,12 +329,17 @@ class MultiBiorbdModel:
             external_forces = biorbd.to_spatial_vector(external_forces)
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
+            qddot_biorbd = self.transform_to_generalized_torques(
+                qddot[self.variable_index("qddot", i)]
+            )  # Due to a bug in biorbd
             out = vertcat(
                 out,
                 model.ForwardDynamicsConstraintsDirect(
-                    q[self.variable_index("q", i)],
-                    qdot[self.variable_index("qdot", i)],
-                    qddot[self.variable_index("qddot", i)],
+                    q_biorbd,
+                    qdot_biorbd,
+                    qddot_biorbd,
                     external_forces,
                 ).to_mx(),
             )
@@ -313,12 +350,15 @@ class MultiBiorbdModel:
             external_forces = biorbd.to_spatial_vector(external_forces)
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
+            qddot_biorbd = self.transform_to_generalized_accelerations(qddot[self.variable_index("qddot", i)])
             out = vertcat(
                 out,
                 model.InverseDynamics(
-                    q[self.variable_index("q", i)],
-                    qdot[self.variable_index("qdot", i)],
-                    qddot[self.variable_index("qddot", i)],
+                    q_biorbd,
+                    qdot_biorbd,
+                    qddot_biorbd,
                     external_forces,
                     f_contacts,
                 ).to_mx(),
@@ -330,12 +370,15 @@ class MultiBiorbdModel:
             external_forces = biorbd.to_spatial_vector(external_forces)
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
+            tau_biorbd = self.transform_to_generalized_torques(tau[self.variable_index("tau", i)])
             out = vertcat(
                 out,
                 model.ContactForcesFromForwardDynamicsConstraintsDirect(
-                    q[self.variable_index("q", i)],
-                    qdot[self.variable_index("q", i)],
-                    tau[self.variable_index("q", i)],
+                    q_biorbd,
+                    qdot_biorbd,
+                    tau_biorbd,
                     external_forces,
                 ).to_mx(),
             )
@@ -344,11 +387,15 @@ class MultiBiorbdModel:
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_pre_impact_biorbd = self.transform_to_generalized_velocities(
+                qdot_pre_impact[self.variable_index("qdot", i)]
+            )
             out = vertcat(
                 out,
                 model.ComputeConstraintImpulsesDirect(
-                    q[self.variable_index("q", i)],
-                    qdot_pre_impact[self.variable_index("qdot", i)],
+                    q_biorbd,
+                    qdot_pre_impact_biorbd,
                 ).to_mx(),
             )
         return out
@@ -368,13 +415,16 @@ class MultiBiorbdModel:
             muscles_states = model.stateSet()
             for k in range(model.nbMuscles()):
                 muscles_states[k].setActivation(activations[k])
-            out = vertcat(out, model.muscularJointTorque(muscles_states, q, qdot).to_mx())
+            q_biorbd = self.transform_to_generalized_coordinates(q)
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot)
+            out = vertcat(out, model.muscularJointTorque(muscles_states, q_biorbd, qdot_biorbd).to_mx())
         return out
 
     def markers(self, q) -> Any | list[MX]:
         out = []
         for i, model in enumerate(self.models):
-            for m in model.markers(q[self.variable_index("q", i)]):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            for m in model.markers(q_biorbd):
                 out.append(m.to_mx())
         return out
 
@@ -429,14 +479,16 @@ class MultiBiorbdModel:
 
         out = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
             out = vertcat(
                 out,
                 horzcat(
                     *[
                         m.to_mx()
                         for m in model.markersVelocity(
-                            q[self.variable_index("q", i)],
-                            qdot[self.variable_index("qdot", i)],
+                            q_biorbd,
+                            qdot_biorbd,
                             True,
                         )
                     ]
@@ -449,7 +501,9 @@ class MultiBiorbdModel:
         out_min = MX()
         for model in self.models:
             model.closeActuator()
-            torque_max, torque_min = model.torqueMax(q, qdot)
+            q_biorbd = self.transform_to_generalized_coordinates(q)
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot)
+            torque_max, torque_min = model.torqueMax(q_biorbd, qdot_biorbd)
             out_max = vertcat(out_max, torque_max.to_mx())
             out_min = vertcat(out_min, torque_min.to_mx())
         return out_max, out_min
@@ -458,7 +512,12 @@ class MultiBiorbdModel:
         for i, model in enumerate(self.models):
             if contact_index in self.variable_index("contact", i):
                 model_selected = model
-        return model.rigidContactAcceleration(q, qdot, qddot, contact_index, True).to_mx()[contact_axis]
+        q_biorbd = self.transform_to_generalized_coordinates(q[self.variable_index("q", i)])
+        qdot_biorbd = self.transform_to_generalized_velocities(qdot[self.variable_index("qdot", i)])
+        qddot_biorbd = self.transform_to_generalized_accelerations(qddot[self.variable_index("qddot", i)])
+        return model.rigidContactAcceleration(q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True).to_mx()[
+            contact_axis
+        ]
 
     @property
     def nb_dof(self) -> int:
@@ -473,6 +532,8 @@ class MultiBiorbdModel:
         return tuple(out)
 
     def soft_contact_forces(self, q, qdot) -> MX:
+        q_biorbd = self.transform_to_generalized_coordinates(q)
+        qdot_biorbd = self.transform_to_generalized_velocities(qdot)
         out = MX()
         for model in self.models:
             soft_contact_forces = MX.zeros(self.nb_soft_contacts * 6, 1)
@@ -480,7 +541,7 @@ class MultiBiorbdModel:
                 soft_contact = self.soft_contact(i_sc)
 
                 soft_contact_forces[i_sc * 6 : (i_sc + 1) * 6, :] = (
-                    biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(model, q, qdot).to_mx()
+                    biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(model, q_biorbd, qdot_biorbd).to_mx()
                 )
             out = vertcat(out, soft_contact_forces)
         return out
@@ -529,10 +590,14 @@ class MultiBiorbdModel:
             return self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=None)
 
     def passive_joint_torque(self, q, qdot) -> MX:
-        return vertcat(*(model.passiveJointTorque(q, qdot).to_mx() for model in self.models))
+        q_biorbd = self.transform_to_generalized_coordinates(q)
+        qdot_biorbd = self.transform_to_generalized_velocities(qdot)
+        return vertcat(*(model.passiveJointTorque(q_biorbd, qdot_biorbd).to_mx() for model in self.models))
 
     def ligament_joint_torque(self, q, qdot) -> MX:
-        return self.model.ligamentsJointTorque(q, qdot).to_mx()
+        q_biorbd = self.transform_to_generalized_coordinates(q)
+        qdot_biorbd = self.transform_to_generalized_velocities(qdot)
+        return self.model.ligamentsJointTorque(q_biorbd, qdot_biorbd).to_mx()
 
     def _q_mapping(self, mapping: BiMapping = None) -> BiMapping:
         if mapping is None:
@@ -651,7 +716,7 @@ class BiorbdModel(MultiBiorbdModel):
         return biorbd.segment_index(self.model, name)
 
     def homogeneous_matrices_in_global(self, q, reference_index, inverse=False):
-        val = self.model.globalJCS(q, reference_index)
+        val = self.model.globalJCS(self.transform_to_generalized_coordinates(q), reference_index)
         if inverse:
             return val.transpose()
         else:
@@ -664,9 +729,11 @@ class BiorbdModel(MultiBiorbdModel):
         return biorbd.marker_index(self.model, name)
 
     def marker(self, q, index, reference_segment_index=None) -> MX:
-        marker = self.model.marker(q, index)
+        marker = self.model.marker(self.transform_to_generalized_coordinates(q), index)
         if reference_segment_index is not None:
-            global_homogeneous_matrix = self.model.globalJCS(q, reference_segment_index)
+            global_homogeneous_matrix = self.model.globalJCS(
+                self.transform_to_generalized_coordinates(q), reference_segment_index
+            )
             marker.applyRT(global_homogeneous_matrix.transpose())
         return marker.to_mx()
 
@@ -676,8 +743,8 @@ class BiorbdModel(MultiBiorbdModel):
                 *[
                     m.to_mx()
                     for m in self.model.markersVelocity(
-                        q,
-                        qdot,
+                        self.transform_to_generalized_coordinates(q),
+                        self.transform_to_generalized_velocities(qdot),
                         True,
                     )
                 ]
@@ -686,15 +753,22 @@ class BiorbdModel(MultiBiorbdModel):
         else:
             out = MX()
             homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
-                q,
+                self.transform_to_generalized_coordinates(q),
                 reference_index,
                 inverse=True,
             )
-            for m in self.model.markersVelocity(q, qdot):
+            for m in self.model.markersVelocity(
+                self.transform_to_generalized_coordinates(q), self.transform_to_generalized_velocities(qdot)
+            ):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     out = horzcat(out, m.to_mx())
 
             return out
+
+    def segment_angular_velocity(self, q, qdot, segment_index) -> MX:
+        q_biorbd = self.transform_to_generalized_coordinates(q)
+        qdot_biorbd = self.transform_to_generalized_velocities(qdot)
+        return self.model.segmentAngularVelocity(q_biorbd, qdot_biorbd, segment_index, True).to_mx()
 
     @property
     def path(self) -> list[str]:

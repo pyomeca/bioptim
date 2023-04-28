@@ -258,7 +258,9 @@ class PlotOcp:
         self.top_margin: int | None = None
         self.height_step: int | None = None
         self.width_step: int | None = None
-        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
+        self._organize_windows(
+            len(self.ocp.nlp[0].states[0]) + len(self.ocp.nlp[0].controls[0])
+        )  # TODO : [0] to [node_index]
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -337,8 +339,8 @@ class PlotOcp:
                             nlp.plot[key]
                             .function(
                                 np.nan,
-                                np.zeros((nlp.states.shape, 2)),
-                                np.zeros((nlp.controls.shape, 2)),
+                                np.zeros((nlp.states[0].shape, 2)),  # TODO : [0] to [node_index]
+                                np.zeros((nlp.controls[0].shape, 2)),  # TODO : [0] to [node_index]
                                 np.zeros((nlp.parameters.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )
@@ -384,13 +386,12 @@ class PlotOcp:
                     self.plot_func[variable] = [
                         nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
                     ]
-
                 if not self.plot_func[variable][i]:
                     continue
 
                 mapping = nlp.plot[variable].phase_mappings.map_idx
-                for ctr, _ in enumerate(mapping):
-                    ax = axes[ctr]
+                for ctr, axe_index in enumerate(mapping):
+                    ax = axes[axe_index]
                     if ctr < len(nlp.plot[variable].legend):
                         ax.set_title(nlp.plot[variable].legend[ctr])
                     ax.grid(**self.plot_options["grid"])
@@ -414,7 +415,6 @@ class PlotOcp:
                         ax.set_ylim(y_range)
 
                     plot_type = self.plot_func[variable][i].type
-
                     t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
                     if self.plot_func[variable][i].label:
                         label = self.plot_func[variable][i].label
@@ -634,14 +634,14 @@ class PlotOcp:
 
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
-            for s in nlp.states:
+            for s in nlp.states[0]:  # TODO: [0] to [node_index]
                 if nlp.use_states_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_states, (list, tuple)):
                         state = np.concatenate((state, data_states[i][s]))
                     else:
                         state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.controls:
+            for s in nlp.controls[0]:  # TODO: [0] to [node_index]
                 if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_controls, (list, tuple)):
                         control = np.concatenate((control, data_controls[i][s]))
@@ -709,9 +709,8 @@ class PlotOcp:
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
                     for i_var in range(self.variable_sizes[i][key]):
-                        if self.plot_func[key][i].parameters["penalty"].multinode_constraint:
+                        if self.plot_func[key][i].parameters["penalty"].binode_constraint:
                             y = np.array([np.nan])
-
                             phase_1 = self.plot_func[key][i].parameters["penalty"].phase_second_idx
                             phase_2 = self.plot_func[key][i].parameters["penalty"].phase_first_idx
                             node_idx_1 = self.plot_func[key][i].node_idx[0]

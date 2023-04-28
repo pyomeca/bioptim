@@ -101,3 +101,45 @@ def test_track_marker_on_segment(ode_solver):
 
     # simulate
     TestUtils.simulate(sol)
+
+
+def test_track_vector_orientation():
+    from bioptim.examples.track import track_vector_orientation as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
+        final_time=1,
+        n_shooting=10,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 2.614556858357712e-08)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (80, 1))
+    np.testing.assert_almost_equal(g, np.zeros((80, 1)))
+
+    # Check some of the results
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.80000001, -0.68299837, -1.57, -1.56999089]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.80000001, -0.68299837, 1.57, 1.56999138]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((3.37753150e-16, 4.90499995e00, 3.14001172e00, 3.13997056e00)))
+    np.testing.assert_almost_equal(
+        qdot[:, -1], np.array((3.37753131e-16, -4.90499995e00, 3.14001059e00, 3.13997170e00))
+    )
+    # initial and final controls
+    np.testing.assert_almost_equal(
+        tau[:, 0], np.array([-1.27269674e-24, 1.97261036e-08, -3.01420965e-05, 3.01164220e-05])
+    )
+    np.testing.assert_almost_equal(
+        tau[:, -2], np.array([-2.10041085e-23, 1.97261036e-08, 2.86303889e-05, -2.86047182e-05])
+    )

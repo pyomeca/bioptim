@@ -28,7 +28,8 @@ from bioptim import (
 
 
 def minimize_difference(all_pn: PenaltyNode):
-    return all_pn[0].nlp.controls.cx_end - all_pn[1].nlp.controls.cx
+    return all_pn[0].nlp.controls[0].cx_end - all_pn[1].nlp.controls[0].cx_start  # TODO: [0] to [node_index]
+    # TODO: node_index= all_pn.node_index, all_pn[0].nlp.controls[node_index].cx_end
 
 
 def prepare_ocp(
@@ -130,6 +131,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -142,7 +144,9 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    # sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT())
+    sol.graphs(show_bounds=True)
 
     # --- Show results --- #
     sol.print_cost()

@@ -79,9 +79,13 @@ def get_penalty_value(ocp, penalty, t, x, u, p):
     if isinstance(val, float):
         return val
 
-    states = ocp.nlp[0].states.cx if ocp.nlp[0].states.cx.shape != (0, 0) else ocp.cx(0, 0)
-    controls = ocp.nlp[0].controls.cx if ocp.nlp[0].controls.cx.shape != (0, 0) else ocp.cx(0, 0)
-    parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
+    states = (
+        ocp.nlp[0].states[0].cx_start if ocp.nlp[0].states[0].cx_start.shape != (0, 0) else ocp.cx(0, 0)
+    )  # TODO: [0] to [node_index]
+    controls = (
+        ocp.nlp[0].controls[0].cx_start if ocp.nlp[0].controls[0].cx_start.shape != (0, 0) else ocp.cx(0, 0)
+    )  # TODO: [0] to [node_index]
+    parameters = ocp.nlp[0].parameters.cx_start if ocp.nlp[0].parameters.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     return ocp.nlp[0].to_casadi_func("penalty", val, states, controls, parameters)(x[0], u[0], p)
 
 
@@ -172,17 +176,17 @@ def test_penalty_minimize_markers(penalty_origin, value):
 
     expected = np.array(
         [
-            [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
+            [0.1, 0.99517075, 1.9901749, 1.0950042, 0, 1, 2, 0.49750208],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, 0, -0.0499167],
         ]
     )
     if value == -10:
         expected = np.array(
             [
-                [-10, -11.3830926, -12.2221642, -10.8390715, 1.0, 2.0, -0.4195358],
-                [0, 0, 0, 0, 0, 0, 0],
-                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, -0.2720106],
+                [-10, -11.3830926, -12.2221642, -10.8390715, 0, 1.0, 2.0, -0.4195358],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, 0, -0.2720106],
             ]
         )
 
@@ -206,17 +210,17 @@ def test_penalty_track_markers(penalty_origin, value):
 
     expected = np.array(
         [
-            [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
+            [0.1, 0.99517075, 1.9901749, 1.0950042, 0, 1, 2, 0.49750208],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, 0, -0.0499167],
         ]
     )
     if value == -10:
         expected = np.array(
             [
-                [-10, -11.3830926, -12.2221642, -10.8390715, 1.0, 2.0, -0.4195358],
-                [0, 0, 0, 0, 0, 0, 0],
-                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, -0.2720106],
+                [-10, -11.3830926, -12.2221642, -10.8390715, 0, 1.0, 2.0, -0.4195358],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, 0, -0.2720106],
             ]
         )
 
@@ -239,9 +243,9 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value):
             res,
             np.array(
                 [
-                    [0.1, -0.00948376, -0.0194671, 0.0900167, 00, 00, -0.00499167],
-                    [0, 0, 0, 0, 00, 00, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, -0.0497502],
+                    [0.1, -0.00948376, -0.0194671, 0.0900167, 0, 00, 00, -0.00499167],
+                    [0, 0, 0, 0, 0, 00, 00, 0],
+                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, 0, -0.0497502],
                 ]
             ),
         )
@@ -250,9 +254,9 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value):
             res,
             np.array(
                 [
-                    [-10, -12.9505, -7.51029, -4.55979, 00, 00, 2.72011],
-                    [0, 0, 0, 0, 00, 00, 0],
-                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, -4.19536],
+                    [-10, -12.9505, -7.51029, -4.55979, 0, 00, 00, 2.72011],
+                    [0, 0, 0, 0, 0, 00, 00, 0],
+                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, 0, -4.19536],
                 ]
             ),
             decimal=4,
@@ -279,9 +283,9 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
             res,
             np.array(
                 [
-                    [0.1, -0.00948376, -0.0194671, 0.0900167, 00, 00, -0.00499167],
-                    [0, 0, 0, 0, 00, 00, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, -0.0497502],
+                    [0.1, -0.00948376, -0.0194671, 0.0900167, 0, 00, 00, -0.00499167],
+                    [0, 0, 0, 0, 0, 00, 00, 0],
+                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, 0, -0.0497502],
                 ]
             ),
         )
@@ -290,9 +294,9 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
             res,
             np.array(
                 [
-                    [-10, -12.9505, -7.51029, -4.55979, 00, 00, 2.72011],
-                    [0, 0, 0, 0, 00, 00, 0],
-                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, -4.19536],
+                    [-10, -12.9505, -7.51029, -4.55979, 0, 00, 00, 2.72011],
+                    [0, 0, 0, 0, 0, 00, 00, 0],
+                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, 0, -4.19536],
                 ]
             ),
             decimal=4,
@@ -320,7 +324,8 @@ def test_penalty_track_super_impose_marker(penalty_origin, value):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_proportional_state(penalty_origin, value):
+@pytest.mark.parametrize("value_intercept", [0.0, 1.0])
+def test_penalty_proportional_state(penalty_origin, value, value_intercept):
     ocp = prepare_test_ocp()
     t = [0]
     x = [DM.ones((8, 1)) * value]
@@ -328,12 +333,34 @@ def test_penalty_proportional_state(penalty_origin, value):
     penalty_type = penalty_origin.PROPORTIONAL_STATE
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
-        penalty = Objective(penalty_type, key="qdot", first_dof=0, second_dof=1, coef=2)
+        penalty = Objective(
+            penalty_type,
+            key="qdot",
+            first_dof=0,
+            second_dof=1,
+            coef=2,
+            first_dof_intercept=value_intercept,
+            second_dof_intercept=value_intercept,
+        )
     else:
-        penalty = Constraint(penalty_type, key="qdot", first_dof=0, second_dof=1, coef=2)
+        penalty = Constraint(
+            penalty_type,
+            key="qdot",
+            first_dof=0,
+            second_dof=1,
+            coef=2,
+            first_dof_intercept=value_intercept,
+            second_dof_intercept=value_intercept,
+        )
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
-    np.testing.assert_almost_equal(res, -value)
+    if value_intercept == 0.0:
+        np.testing.assert_almost_equal(res, -value)
+    else:
+        if value == 0.1:
+            np.testing.assert_almost_equal(res, 0.9)
+        else:
+            np.testing.assert_almost_equal(res, 11)
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ConstraintFcn])
@@ -602,6 +629,80 @@ def test_penalty_track_marker_with_segment_axis(penalty_origin, value):
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_segment_rotation(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+
+    if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = penalty_origin.MINIMIZE_SEGMENT_ROTATION
+        penalty = Objective(penalty_type, segment=2)
+    else:
+        penalty_type = penalty_origin.TRACK_SEGMENT_ROTATION
+        penalty = Constraint(penalty_type, segment=2)
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    expected = [[0, value, 0]] if value == 0.1 else [[3.1415927, 0.575222, 3.1415927]]
+    np.testing.assert_almost_equal(res.T, expected)
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_segment_velocity(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+
+    if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = penalty_origin.MINIMIZE_SEGMENT_VELOCITY
+        penalty = Objective(penalty_type, segment=2)
+    else:
+        penalty_type = penalty_origin.TRACK_SEGMENT_VELOCITY
+        penalty = Constraint(penalty_type, segment=2)
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    expected = [[0, value, 0]]
+    np.testing.assert_almost_equal(res.T, expected)
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_vector_orientation(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM(np.array([0, 0, value, 0, 0, 0, 0, 0]))]
+    u = [0]
+    penalty_type = penalty_origin.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty = Objective(
+            penalty_type,
+            vector_0_marker_0="m0",
+            vector_0_marker_1="m3",
+            vector_1_marker_0="origin",
+            vector_1_marker_1="m6",
+        )
+    else:
+        penalty = Constraint(
+            penalty_type,
+            vector_0_marker_0="m0",
+            vector_0_marker_1="m3",
+            vector_1_marker_0="origin",
+            vector_1_marker_1="m6",
+        )
+
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    if value == 0.1:
+        np.testing.assert_almost_equal(float(res), 0.09999999999999999)
+    else:
+        np.testing.assert_almost_equal(float(res), 2.566370614359173)
+
+
 @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_contact_force_inequality(penalty_origin, value):
@@ -673,7 +774,7 @@ def test_penalty_time_constraint(value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom(penalty_origin, value):
     def custom(pn, mult):
-        my_values = pn.nlp.states["q"].cx * mult
+        my_values = pn.nlp.states[0]["q"].cx_start * mult  # TODO: [0] to [node_index]
         return my_values
 
     ocp = prepare_test_ocp()
@@ -749,7 +850,7 @@ def test_penalty_custom_fail(penalty_origin, value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds(value):
     def custom_with_bounds(pn):
-        return -10, pn.nlp.states["q"].cx, 10
+        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -767,7 +868,7 @@ def test_penalty_custom_with_bounds(value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_min_bound(value):
     def custom_with_bounds(pn):
-        return -10, pn.nlp.states["q"].cx, 10
+        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -787,7 +888,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_max_bound(value):
     def custom_with_bounds(pn):
-        return -10, pn.nlp.states["q"].cx, 10
+        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
 
     ocp = prepare_test_ocp()
     t = [0]

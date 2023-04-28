@@ -37,12 +37,12 @@ from bioptim import (
 
 
 def out_of_sphere(all_pn, y, z):
-    q = all_pn.nlp.states["q"].mx
+    q = all_pn.nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
     marker_q = all_pn.nlp.model.markers(q)[1]
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 
-    return all_pn.nlp.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states["q"])
+    return all_pn.nlp.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states[0]["q"])  # TODO: [0] to [node_index]
 
 
 def prepare_ocp_first_pass(
@@ -131,6 +131,7 @@ def prepare_ocp_first_pass(
         use_sx=use_sx,
         n_threads=n_threads,
         state_continuity_weight=state_continuity_weight,
+        assume_phase_dynamics=True,
     )
 
 

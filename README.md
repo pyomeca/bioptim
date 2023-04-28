@@ -76,8 +76,8 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [The parameters](#the-parameters)
   - [ParameterList](#class-parameterlist)
 - [The multinode constraints](#the-multinode-constraints)
-  - [MultinodeConstraintList](#class-multinodeconstraintlist)
-  - [MultinodeConstraintFcn](#class-multinodeconstraintfcn)
+  - [BinodeConstraintList](#class-binodeconstraintlist)
+  - [BinodeConstraintFcn](#class-binodeconstraintfcn)
 - [The phase transitions](#the-phase-transitions)
   - [PhaseTransitionList](#class-phasetransitionlist)
   - [PhaseTransitionFcn](#class-phasetransitionfcn)
@@ -112,6 +112,18 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [Moving estimation horizon](#moving-estimation-horizon)
 - [Acados](#acados)
 - [Inverse optimal control](#inverse-optimal-control)
+
+[Performance](#performance)
+- [use_sx](#use_sx)
+- [n_threads](#n_threads)
+- [assume_phase_dynamics](#assume_phase_dynamics)
+- [expand](#expand)
+
+[Troubleshooting](#troubleshooting)
+- [freezing compute](#freezing-compute)
+- [free variables](#free-variables)
+- [non-converging problem](#non-converging-problem)
+
 
 [Citing](#Citing)
 
@@ -340,8 +352,15 @@ ocp = OptimalControlProgram(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        assume_phase_dynamics=True,
     )
 ```
+The argument `assume_phase_dynamics` should be set to `True` if we assume the dynamics 
+are the same within in each phase of the ocp problem. 
+This argument increase speed to mount the problem, it should be consider each time you build an Optimal Control Program.
+The default value is `False`, meaning we consider the dynamic equations are different for each shooting node (e.g. when applying an different external force at each shooting node).
+
+
 ## Checking the ocp
 Now you can check if the ocp is well defined for the initial values.
 This checking will help you to see if your constraints and objectives are ok.
@@ -452,6 +471,7 @@ ocp = OptimalControlProgram(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        assume_phase_dynamics=True,
     )
     
 sol = ocp.solve(show_online_optim=True)
@@ -563,6 +583,7 @@ OptimalControlProgram(
     phase_transitions: PhaseTransitionList,
     n_threads: int,
     use_sx: bool,
+    assume_phase_dynamics=False,
 )
 ```
 Of these, only the first 4 are mandatory.
@@ -1077,11 +1098,11 @@ Matches one marker with another one.
 The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
 
 #### PROPORTIONAL_STATE
-Links one state to another, such that `x[first_dof] = coef * x[second_dof]`
+Links one state to another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
 
 #### PROPORTIONAL_CONTROL
-Links one control to another, such that `u[first_dof] = coef * u[second_dof]`
+Links one control to another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
 
 #### TRACK_TORQUE
@@ -1238,11 +1259,11 @@ Tracks one marker with another one.
 The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
 
 #### PROPORTIONAL_STATE (Lagrange and Mayer)
-Minimizes the difference between one state and another, such that `x[first_dof] ~= coef * x[second_dof]`
+Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
 
 #### PROPORTIONAL_CONTROL (Lagrange)
-Minimizes the difference between one control and another, such that `u[first_dof] ~= coef * u[second_dof]`
+Minimizes the difference between one control and another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
 
 #### MINIMIZE_TORQUE (Lagrange)
@@ -1361,32 +1382,32 @@ It is useful however to define this value by hand if one wants to declare the pa
 `Bioptim` can declare multiphase optimisation programs. The goal of a multiphase ocp is usually to handle changing dynamics. 
 The user must understand that each phase is therefore a full ocp by itself, with constraints that links the end of which with the beginning of the following.
 
-### Class: MultinodeConstraintList
-The MultinodeConstraintList provide a class that prepares the multinode constraints.
-When constructing an `OptimalControlProgram()`, MultinodeConstraintList is the expected class for the `multinode_constraints` parameter. 
+### Class: BinodeConstraintList
+The BinodeConstraintList provide a class that prepares the binode constraints.
+When constructing an `OptimalControlProgram()`, BinodeConstraintList is the expected class for the `binode_constraints` parameter. 
 
-The MultinodeConstraintList class is the main class to define parameters.
-Please note that unlike other lists, `MultinodeConstraint` is not accessible since multinode constraint don't make sense for single phase ocp.
+The BinodeConstraintList class is the main class to define parameters.
+Please note that unlike other lists, `BinodeConstraint` is not accessible since binode constraint don't make sense for single phase ocp.
 Therefore, one should not call the PhaseTransition constructor directly. 
 
-Here is the full signature of the `add()` method of the `MultinodeConstraintList`:
+Here is the full signature of the `add()` method of the `BinodeConstraintList`:
 ```python
-MultinodeConstraintList.add(MultinodeConstraintFcn, phase_first_idx, phase_second_idx, first_node, second_node, **extra_parameters)
+BinodeConstraintList.add(BinodeConstraintFcn, phase_first_idx, phase_second_idx, first_node, second_node, **extra_parameters)
 ```
-The `MultinodeConstraintFcn` is multinode constraints function to use.
+The `BinodeConstraintFcn` is binode constraints function to use.
 The default is EQUALITY.
-If one wants to declare a custom transition phase, then MultinodeConstraintFcn is the function handler to the custom function.
-The signature of the custom function is: `custom_function(multinode_constraint:MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
+If one wants to declare a custom transition phase, then BinodeConstraintFcn is the function handler to the custom function.
+The signature of the custom function is: `custom_function(binode_constraint:BinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
 where `nlp_pre` is the non linear program of the considered phase, `nlp_post` is the non linear program of the second considered phase, and the `**extra_parameters` are those sent to the add() method.
-This function is expected to return the cost of the multinode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
-Anyone who wants to define multinode constraints should be at least familiar with this type beforehand.
+This function is expected to return the cost of the binode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
+Anyone who wants to define binode constraints should be at least familiar with this type beforehand.
 The `phase_first_idx` is the index of the first phase. 
 The `phase_second_idx` is the index of the second phase. 
 The `first_node` is the first node considered. 
 The `second_node` is the second node considered. 
 
-### Class: MultinodeConstraintFcn
-The `MultinodeConstraintFcn` class is the already available multinode constraints in `bioptim`. 
+### Class: BinodeConstraintFcn
+The `BinodeConstraintFcn` class is the already available binode constraints in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabailities of your IDE. 
 
 #### EQUALITY
@@ -1400,7 +1421,7 @@ The velocities of centers of mass are equals.
 
 #### CUSTOM
 CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
-You can have a look at the MultinodeConstraintList section for more information about how to define custom transition function.
+You can have a look at the BinodeConstraintList section for more information about how to define custom transition function.
 
 ## The phase transitions
 `Bioptim` can declare multiphase optimisation programs. 
@@ -2411,7 +2432,49 @@ This example is separated in three parts:
 - The second part solves the problem with only one objective at a time to for the pareto front.
 - The thirs part solves the inverse optimal control problem aiming to retrieve the initial weightings.
 A the end of the example, the markers trajectories are plotted to show that the movement is the same.
- 
+
+# Performance
+If you find yourself asking, "Why is bioptim so slow? I thought it was lightning fast!"
+then this section may help you improve your code to get better performance.
+
+## use_sx
+Set use_sx to True in the OptimalControlProgram class to use the SX symbolic variables.
+These are faster, but require more RAM, so make sure you have enough RAM to use this option.
+
+## n_threads
+Set n_threads to the number of threads you want to use in the OptimalControlProgram class.
+By default, it is set to 1. It will split the computation of the continuity constraints between threads and speed up the computation. If applicable to your problem, make sure to use the next option too.
+
+## assume_phase_dynamics
+Set assume_phase_dynamics to True in the OptimalControlProgram class if your dynamic equations are phase-independent but not node-specific.
+It will speed up the computation of the continuity constraints since only one continuity constraint will be computed per phase instead of one per node.
+
+## expand
+(For objective and constraint functions)
+Set the expand argument to True for objective and constraint functions to speed up the computation.
+This will turn your MX symbolic variables into SX symbolic variables, which is faster but requires more RAM.
+
+# Troubleshooting
+Despite our best efforts to assist you, you may experience some problems with bioptim.
+Fortunately, this troubleshooting section will guide you through solving some known issues.
+
+## Freezing compute
+If your computer freezes before any optimization is performed, it is probably because your problem requires too much RAM.
+If you are using use_sx and/or expand options, try turning them off. If it does not work, try reducing the number of nodes. If assume_phase_dynamics is set to False, try setting it to True, if applicable to your problem.
+
+## Free variables
+Sometimes when working on advanced custom problems, you may have some free variables that prevent the solver from being launched.
+If this occurs, try reloading your model inside of the custom function. This has worked for us with biorbd models.
+
+## Non-converging problems
+If Ipopt converges to an infeasible solution, make sure the boundaries are sound for the constraints of the problem.
+If the problem still does not converge, try changing the initial guess of the problem.
+
+If the problem takes numerous iterations to solve (a lot more than expected), check the weights on objective functions and the weight of the actual variables.
+
+If the problem still does not converge, try observing the evolution of the objective function and the constraints through a live plot.
+It is always a good idea to see how they evolve through the iterations.
+
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
 @article{michaud2022bioptim,

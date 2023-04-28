@@ -3,7 +3,6 @@ Test for file IO
 """
 import pytest
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -71,12 +70,12 @@ def prepare_ocp(
             ObjectiveFcn.Lagrange.MINIMIZE_MARKERS,
             derivative=True,
             reference_jcs=coordinates_system_idx,
-            marker_index=6,
+            marker_index=7,
             weight=1000,
         )
     elif marker_velocity_or_displacement == "velo":
         objective_functions.add(
-            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, node=Node.ALL, marker_index=6, weight=1000
+            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, node=Node.ALL, marker_index=7, weight=1000
         )
     else:
         raise RuntimeError(
