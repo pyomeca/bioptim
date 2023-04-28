@@ -8,7 +8,7 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, horzcat
+from casadi import MX, SX, Function, sum1, sum2, horzcat
 from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
@@ -1468,6 +1468,26 @@ class OptimalControlProgram:
         NLP.add(self, "tf", phase_time, False)
         NLP.add(self, "t0", [0] + [nlp.tf for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         NLP.add(self, "dt", [self.nlp[i].tf / max(self.nlp[i].ns, 1) for i in range(self.n_phases)], False)
+        NLP.add(
+            self,
+            "time_node",
+            [[self.nlp[i].tf / self.nlp[i].ns * j for j in range(self.nlp[i].ns)] for i in range(self.n_phases)],
+            False,
+        )
+        all_nlp_tf = horzcat()
+        all_nlp_tf_in_ocp = horzcat()
+        for i in range(self.n_phases):
+            all_nlp_tf = horzcat(all_nlp_tf, self.nlp[i].tf)
+            all_nlp_tf_in_ocp = horzcat(all_nlp_tf_in_ocp, sum2(all_nlp_tf[0:i]))
+        NLP.add(
+            self,
+            "time_ocp",
+            [
+                [all_nlp_tf_in_ocp[i] + self.nlp[i].time_node[j] for j in range(self.nlp[i].ns)]
+                for i in range(self.n_phases)
+            ],
+            False,
+        )
 
         # Add to the v vector
         i = 0

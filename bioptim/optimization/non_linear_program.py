@@ -139,6 +139,8 @@ class NonLinearProgram:
         self.plot_mapping = {}
         self.t0 = None
         self.tf = None
+        self.time_node = None
+        self.time_ocp = None
         self.t_initial_guess = None
         self.variable_mappings = {}
         self.u_bounds = Bounds()
