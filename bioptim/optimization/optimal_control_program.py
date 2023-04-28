@@ -1468,26 +1468,6 @@ class OptimalControlProgram:
         NLP.add(self, "tf", phase_time, False)
         NLP.add(self, "t0", [0] + [nlp.tf for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         NLP.add(self, "dt", [self.nlp[i].tf / max(self.nlp[i].ns, 1) for i in range(self.n_phases)], False)
-        NLP.add(
-            self,
-            "time_node",
-            [[self.nlp[i].tf / self.nlp[i].ns * j for j in range(self.nlp[i].ns)] for i in range(self.n_phases)],
-            False,
-        )
-        all_nlp_tf = horzcat()
-        all_nlp_tf_in_ocp = horzcat()
-        for i in range(self.n_phases):
-            all_nlp_tf = horzcat(all_nlp_tf, self.nlp[i].tf)
-            all_nlp_tf_in_ocp = horzcat(all_nlp_tf_in_ocp, sum2(all_nlp_tf[0:i]))
-        NLP.add(
-            self,
-            "time_ocp",
-            [
-                [all_nlp_tf_in_ocp[i] + self.nlp[i].time_node[j] for j in range(self.nlp[i].ns)]
-                for i in range(self.n_phases)
-            ],
-            False,
-        )
 
         # Add to the v vector
         i = 0
@@ -1527,3 +1507,31 @@ class OptimalControlProgram:
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
 
         self.program_changed = True
+
+    def time(self, phase_number: int, node_number: int):
+        """
+        Gives the time in the current ocp
+
+        Parameters
+        ----------
+        phase_number: int
+          number of the phase
+        node_number: int
+          number of the node
+
+        Returns
+        -------
+        The time in the current ocp
+        """
+        if 0 > phase_number or phase_number > self.n_phases - 1:
+            return RuntimeError("Phase_number out of range [0:ocp.n_phases]")
+        if 0 > node_number or node_number > self.nlp[phase_number].ns:
+            return RuntimeError("Node_number out of range [0:ocp.nlp.ns]")
+        if phase_number == 0:
+            return self.nlp[phase_number].time(node_number)
+        else:
+            all_nlp_tf = horzcat()
+            for i in range(phase_number):
+                all_nlp_tf = horzcat(all_nlp_tf, self.nlp[i].tf)
+        nlp_t0_in_ocp = sum2(all_nlp_tf[0:phase_number])
+        return nlp_t0_in_ocp + self.nlp[phase_number].time(node_number)

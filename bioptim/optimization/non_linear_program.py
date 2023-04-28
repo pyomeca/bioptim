@@ -139,8 +139,6 @@ class NonLinearProgram:
         self.plot_mapping = {}
         self.t0 = None
         self.tf = None
-        self.time_node = None
-        self.time_ocp = None
         self.t_initial_guess = None
         self.variable_mappings = {}
         self.u_bounds = Bounds()
@@ -375,3 +373,20 @@ class NonLinearProgram:
                 func_evaluated = func_evaluated.to_mx()
         func = Function(name, cx_param, [func_evaluated])
         return func.expand() if expand else func
+
+    def time(self, node_number: int):
+        """
+        Gives the time in the current nlp
+
+        Parameters
+        ----------
+        node_number: int
+          number of the node
+
+        Returns
+        -------
+        The time in the current nlp
+        """
+        if 0 > node_number or node_number > self.ns - 1:
+            return RuntimeError("Node_number out of range [0:nlp.ns]")
+        return self.tf / self.ns * node_number
