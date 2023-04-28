@@ -1429,7 +1429,7 @@ class Solution:
                             self._states["scaled"][phase_post]["all"][:, 0],
                         )
                     )
-                    u = np.concatenate(
+                    u = [] if nlp.control_type == ControlType.NONE else np.concatenate(
                         (
                             self._controls["scaled"][phase_idx]["all"][:, -1],
                             self._controls["scaled"][phase_post]["all"][:, 0],
@@ -1488,7 +1488,7 @@ class Solution:
                     else:
                         x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]
 
-                    u = self._controls["scaled"][phase_idx]["all"][:, col_u_idx]
+                    u = [] if nlp.control_type == ControlType.NONE else self._controls["scaled"][phase_idx]["all"][:, col_u_idx]
                     if penalty.target is None:
                         target = []
                     elif (
