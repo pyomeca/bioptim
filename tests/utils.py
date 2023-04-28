@@ -6,9 +6,7 @@ import pickle
 
 import numpy as np
 import pytest
-
 from casadi import MX
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,

@@ -4,7 +4,6 @@ Test for file IO
 import os
 import sys
 import numpy as np
-import pytest
 from bioptim import Solver, MultiCyclicCycleSolutions
 
 

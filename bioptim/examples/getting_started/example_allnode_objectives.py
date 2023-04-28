@@ -1,15 +1,20 @@
 """
-A simple optimal control program consisting of a double pendulum starting downward and ending upward while requiring the
- minimum of generalized forces. The solver is only allowed to apply an angular acceleration the joint linking the second
- pendulum to the first one.
+A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
+while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
+
+This simple example is a good place to start investigating bioptim as it describes the most common dynamics out there
+(the joint torque driven), it defines an objective function and some boundaries and initial guesses
 
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
+import sys
 
-import biorbd_casadi as biorbd
+sys.path.append("/home/lim/Documents/Anais/bioviz")
+sys.path.append("/home/lim/Documents/Anais/bioptim")
+
+from casadi import MX
 from bioptim import (
-    BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
@@ -20,7 +25,32 @@ from bioptim import (
     OdeSolver,
     CostType,
     Solver,
+    BiorbdModel,
+    AllNodeConstraintList,
+    AllNodeConstraint,
+    AllNodeConstraintFcn,
+    NonLinearProgram,
+    Node,
 )
+
+
+def custom_allnode_constraint(allnode_constraint: AllNodeConstraint, nlp_all: NonLinearProgram) -> MX:
+    """
+    The constraint of the transition.
+
+    Parameters
+    ----------
+    allnode_constraint: AllNodeConstraint
+        The placeholder for the allnode_constraint
+    nlp_all: NonLinearProgram
+        The nonlinear program of the phase
+
+    Returns
+    -------
+    """
+
+    states_all = nlp_all.states.cx_start
+    return states_all
 
 
 def prepare_ocp(
@@ -57,16 +87,15 @@ def prepare_ocp(
     bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qddot_joints")
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
-    x_bounds[0, -1] = 3.14
-    x_bounds[1, -1] = 0
+    x_bounds[1, -1] = 3.14
 
     # Initial guess
     n_q = bio_model.nb_q
@@ -74,11 +103,21 @@ def prepare_ocp(
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_qddot_joints = bio_model.nb_qddot - bio_model.nb_root  # 2 - 1 = 1 in this example
-    qddot_joints_min, qddot_joints_max, qddot_joints_init = -100, 100, 0
-    u_bounds = Bounds([qddot_joints_min] * n_qddot_joints, [qddot_joints_max] * n_qddot_joints)
+    n_tau = bio_model.nb_tau
+    tau_min, tau_max, tau_init = -100, 100, 0
+    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
+    u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = InitialGuess([qddot_joints_init] * n_qddot_joints)
+    u_init = InitialGuess([tau_init] * n_tau)
+
+    # Contraint
+    allnode_constraints = AllNodeConstraintList()
+    allnode_constraints.add(
+        custom_allnode_constraint,
+        phase_idx=0,
+        weight=0.1,
+        node=Node.ALL,
+    )
 
     return OptimalControlProgram(
         bio_model,
@@ -90,10 +129,10 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        allnode_constraints=allnode_constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=True,
     )
 
 
@@ -103,17 +142,20 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/double_pendulum.bioMod", final_time=10, n_shooting=100)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
+
+    # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
+    # ocp.check_conditioning()
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
-    # sol.graphs()
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
     sol.detailed_cost_values()

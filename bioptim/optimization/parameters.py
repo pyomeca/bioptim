@@ -129,13 +129,13 @@ class Parameter(PenaltyOption):
             The place holder for what is supposed to be nlp
         """
 
-        old_parameter_cx = ocp.v.parameters_in_list.cx
+        old_parameter_cx = ocp.v.parameters_in_list.cx_start
         ocp.v.add_parameter(self)
 
         # Express the previously defined parameters with the new param set
         state_cx = ocp.cx()
         controls_cx = ocp.cx()
-        parameter_cx = ocp.v.parameters_in_list.cx
+        parameter_cx = ocp.v.parameters_in_list.cx_start
         for p in ocp.v.parameters_in_list:
             if p.penalty_list is None:
                 continue
@@ -210,7 +210,7 @@ class Parameter(PenaltyOption):
         # Do not use nlp.add_casadi_func because all functions must be registered
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
-        param_cx = ocp.v.parameters_in_list.cx
+        param_cx = ocp.v.parameters_in_list.cx_start
 
         objective.function = NonLinearProgram.to_casadi_func(
             f"{self.name}", fcn[objective.rows, objective.cols], state_cx, control_cx, param_cx, expand=expand
@@ -402,7 +402,7 @@ class ParameterList(UniquePerProblemOptionList):
         return np.vstack([p.scaling for p in self]) if len(self) else np.array([[1.0]])
 
     @property
-    def cx(self):
+    def cx_start(self):
         """
         The CX vector of all parameters
         """

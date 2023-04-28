@@ -1,7 +1,6 @@
 import pytest
 import os
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     BoundsList,

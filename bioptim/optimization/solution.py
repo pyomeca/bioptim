@@ -137,7 +137,7 @@ class Solution:
             if isinstance(other, Solution.SimplifiedOptimizationVariableList):
                 self.shape = other.shape
             else:
-                self.shape = other.cx.shape[0]
+                self.shape = other.cx_start.shape[0]
             for elt in other:
                 self.append(other[elt])
 
@@ -383,7 +383,9 @@ class Solution:
             sol_states, sol_controls = _sol[0], _sol[1]
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states["scaled"].shape, ns, "states")
+                s.init.check_and_adjust_dimensions(
+                    self.ocp.nlp[p].states[0]["scaled"].shape, ns, "states"
+                )  # TODO: [0] to [node_index]
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
             for p, s in enumerate(sol_controls):
@@ -394,7 +396,9 @@ class Solution:
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls["scaled"].shape, self.ns[p], "controls")
+                s.init.check_and_adjust_dimensions(
+                    self.ocp.nlp[p].controls[0]["scaled"].shape, self.ns[p], "controls"
+                )  # TODO: [0] to [node_index]
                 for i in range(self.ns[p] + off):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
@@ -1054,9 +1058,9 @@ class Solution:
                 )
 
             # Dispatch the integrated values to all the keys
-            for key in nlp.states:
+            for key in nlp.states[0]:  # TODO: [0] to [node_index]
                 out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][
-                    nlp.states[key].index, :
+                    nlp.states[0][key].index, :  # TODO: [0] to [node_index]
                 ]
 
         return out
@@ -1114,7 +1118,6 @@ class Solution:
             t_phase = t_all[p]
             t_phase, time_index = np.unique(t_phase, return_index=True)
             t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
-
             x_interpolate = np.ndarray((n_elements, n_frames[p]))
             for j in range(n_elements):
                 s = sci_interp.splrep(t_phase, x_phase[j, time_index], k=1)
@@ -1405,12 +1408,12 @@ class Solution:
         val_weighted = []
         p = self.parameters["all"]
         dt = (
-            Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
+            Function("time", [nlp.parameters.cx_start], [penalty.dt])(self.parameters["time"])
             if "time" in self.parameters
             else penalty.dt
         )
 
-        if penalty.multinode_constraint:
+        if penalty.binode_constraint or penalty.allnode_constraint:
             penalty.node_idx = [penalty.node_idx]
 
         for idx in penalty.node_idx:
@@ -1432,13 +1435,14 @@ class Solution:
                             self._controls["scaled"][phase_post]["all"][:, 0],
                         )
                     )
-                elif penalty.multinode_constraint:
+                elif penalty.binode_constraint:
                     x = np.concatenate(
                         (
                             self._states["scaled"][penalty.phase_first_idx]["all"][:, idx[0]],
                             self._states["scaled"][penalty.phase_second_idx]["all"][:, idx[1]],
                         )
                     )
+
                     # Make an exception to the fact that U is not available for the last node
                     mod_u0 = 1 if penalty.first_node == Node.END else 0
                     mod_u1 = 1 if penalty.second_node == Node.END else 0
@@ -1448,6 +1452,13 @@ class Solution:
                             self._controls["scaled"][penalty.phase_second_idx]["all"][:, idx[1] - mod_u1],
                         )
                     )
+
+                    # elif penalty.allnode_constraint:
+                    #     x = np.concatenate(
+                    #         (
+                    #             self._states["scaled"][penalty.phase_idx]["all"][:, :],
+                    #         )
+                    #     )
 
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
@@ -1472,7 +1483,7 @@ class Solution:
                         x = (
                             self.states_no_intermediate["all"][:, col_x_idx]
                             if len(self.phase_time) - 1 == 1
-                            else self.states_no_intermediate[phase_idx]["all"][:, col_x_idx]
+                            else self.states_no_intermediate[0][phase_idx]["all"][:, col_x_idx]
                         )
                     else:
                         x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]

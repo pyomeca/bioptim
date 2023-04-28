@@ -3,7 +3,7 @@ from warnings import warn
 
 from casadi import vertcat, MX
 
-from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
+from .multinode_constraint import BinodeConstraint, BinodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
@@ -12,7 +12,7 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
-class PhaseTransition(MultinodeConstraint):
+class PhaseTransition(BinodeConstraint):
     """
     A placeholder for a transition of state
 
@@ -62,12 +62,12 @@ class PhaseTransition(MultinodeConstraint):
             phase_second_idx=None,
             first_node=Node.END,
             second_node=Node.START,
-            multinode_constraint=transition,
+            binode_constraint=transition,
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
             weight=weight if weight is not None else 0,
-            force_multinode=True,
+            force_binode=True,
             **params,
         )
 
@@ -137,6 +137,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
         existing_phases = []
+
         for pt in self:
             if pt.phase_pre_idx is None:
                 if pt.type == PhaseTransitionFcn.CYCLIC:
@@ -187,7 +188,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
+            return BinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
 
         @staticmethod
         def discontinuous(transition, all_pn):
@@ -225,7 +226,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return MultinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
+            return BinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
 
         @staticmethod
         def impact(transition, all_pn):
@@ -245,7 +246,9 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             ocp = all_pn[0].ocp
-            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape:
+            if (
+                ocp.nlp[transition.phase_pre_idx].states[0].shape != ocp.nlp[transition.phase_post_idx].states[0].shape
+            ):  # TODO: [0] to [node_index]
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
@@ -262,27 +265,35 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 warn("The chosen model does not have any rigid contact")
 
             # Todo scaled?
-            q_pre = nlp_pre.states["q"].mx
-            qdot_pre = nlp_pre.states["qdot"].mx
+            q_pre = nlp_pre.states[0]["q"].mx  # TODO: [0] to [node_index]
+            qdot_pre = nlp_pre.states[0]["qdot"].mx  # TODO: [0] to [node_index]
             qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
 
             val = []
+            cx_start = []
             cx_end = []
-            cx = []
-            for key in nlp_pre.states:
+            for key in nlp_pre.states[0]:
                 cx_end = vertcat(
                     cx_end,
-                    nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end),
+                    nlp_pre.states[0][key].mapping.to_second.map(
+                        nlp_pre.states[0][key].cx_end
+                    ),  # TODO: [0] to [node_index]
                 )
-                cx = vertcat(cx, nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx))
-                post_mx = nlp_post.states[key].mx
-                continuity = nlp_post.states["qdot"].mapping.to_first.map(
-                    qdot_impact - post_mx if key == "qdot" else nlp_pre.states[key].mx - post_mx
+                cx_start = vertcat(
+                    cx_start, nlp_post.states[0][key].mapping.to_second.map(nlp_post.states[0][key].cx_start)
+                )  # TODO: [0] to [node_index]
+                post_mx = nlp_post.states[0][key].mx  # TODO: [0] to [node_index]
+                continuity = nlp_post.states[0]["qdot"].mapping.to_first.map(  # TODO: [0] to [node_index]
+                    qdot_impact - post_mx
+                    if key == "qdot"
+                    else nlp_pre.states[0][key].mx - post_mx  # TODO: [0] to [node_index]
                 )
                 val = vertcat(val, continuity)
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
+            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states[0].mx, nlp_post.states[0].mx)(
+                cx_end, cx_start
+            )  # TODO: [0] to [node_index]
             return func
 
 
@@ -295,7 +306,7 @@ class PhaseTransitionFcn(FcnEnum):
     DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
-    CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
+    CUSTOM = (BinodeConstraintFunctions.Functions.custom,)
 
     @staticmethod
     def get_type():
