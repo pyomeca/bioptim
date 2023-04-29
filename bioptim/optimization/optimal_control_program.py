@@ -1508,30 +1508,45 @@ class OptimalControlProgram:
 
         self.program_changed = True
 
-    def time(self, phase_number: int, node_number: int):
+    def time(self, phase_idx: int, node_idx: int):
         """
         Gives the time in the current ocp
 
         Parameters
         ----------
-        phase_number: int
+        phase_idx: int
           number of the phase
-        node_number: int
+        node_idx: int
           number of the node
 
         Returns
         -------
         The time in the current ocp
         """
-        if 0 > phase_number or phase_number > self.n_phases - 1:
+        if 0 > phase_idx or phase_idx > self.n_phases - 1:
             return RuntimeError("Phase_number out of range [0:ocp.n_phases]")
-        if 0 > node_number or node_number > self.nlp[phase_number].ns:
+        if 0 > phase_idx or node_idx > self.nlp[phase_idx].ns:
             return RuntimeError("Node_number out of range [0:ocp.nlp.ns]")
-        if phase_number == 0:
-            return self.nlp[phase_number].time(node_number)
+
+        if "time" in self.nlp[phase_idx].parameters.names:
+            if phase_idx == 0:
+                return self.nlp[phase_idx].time(node_idx)
+            all_nlp_tf = horzcat()
+            for j in range(phase_idx):
+                for i in range(len(self.nlp[phase_idx].parameters.names)):
+                    if "time" in self.nlp[j].parameters[i].mx.name():
+                        all_nlp_tf = horzcat(all_nlp_tf, self.nlp[j].parameters[i].mx)
+            nlp_t0_in_ocp = sum2(all_nlp_tf)
+            for i in range(len(self.nlp[phase_idx].parameters.names)):
+                if "time" in self.nlp[phase_idx].parameters[i].mx.name():
+                    return nlp_t0_in_ocp + self.nlp[phase_idx].time(node_idx)
+
+        if phase_idx == 0:
+            return self.nlp[phase_idx].time(node_idx)
         else:
             all_nlp_tf = horzcat()
-            for i in range(phase_number):
+            for i in range(phase_idx):
                 all_nlp_tf = horzcat(all_nlp_tf, self.nlp[i].tf)
-        nlp_t0_in_ocp = sum2(all_nlp_tf[0:phase_number])
-        return nlp_t0_in_ocp + self.nlp[phase_number].time(node_number)
+        nlp_t0_in_ocp = sum2(all_nlp_tf[0:phase_idx])
+
+        return nlp_t0_in_ocp + self.nlp[phase_idx].time(node_idx)

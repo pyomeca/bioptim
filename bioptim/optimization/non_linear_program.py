@@ -374,19 +374,23 @@ class NonLinearProgram:
         func = Function(name, cx_param, [func_evaluated])
         return func.expand() if expand else func
 
-    def time(self, node_number: int):
+    def time(self, node_idx: int):
         """
         Gives the time in the current nlp
 
         Parameters
         ----------
-        node_number: int
+        node_idx: int
           number of the node
 
         Returns
         -------
         The time in the current nlp
         """
-        if 0 > node_number or node_number > self.ns - 1:
-            return RuntimeError("Node_number out of range [0:nlp.ns]")
-        return self.tf / self.ns * node_number
+        if node_idx < 0 or node_idx > self.ns:
+            return ValueError("Node_number out of range [0:nlp.ns]")
+        if "time" in self.parameters.names:
+            for i in range(len(self.parameters.names)):
+                if "time" in self.parameters[i].mx.name():
+                    return self.parameters[i].mx / self.ns * node_idx
+        return self.tf / self.ns * node_idx
