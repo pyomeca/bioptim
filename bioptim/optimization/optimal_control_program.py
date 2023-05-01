@@ -1528,19 +1528,6 @@ class OptimalControlProgram:
         if 0 > phase_idx or node_idx > self.nlp[phase_idx].ns:
             return RuntimeError("Node_number out of range [0:ocp.nlp.ns]")
 
-        if "time" in self.nlp[phase_idx].parameters.names:
-            if phase_idx == 0:
-                return self.nlp[phase_idx].time(node_idx)
-            all_nlp_tf = horzcat()
-            for j in range(phase_idx):
-                for i in range(len(self.nlp[phase_idx].parameters.names)):
-                    if "time" in self.nlp[j].parameters[i].mx.name():
-                        all_nlp_tf = horzcat(all_nlp_tf, self.nlp[j].parameters[i].mx)
-            nlp_t0_in_ocp = sum2(all_nlp_tf)
-            for i in range(len(self.nlp[phase_idx].parameters.names)):
-                if "time" in self.nlp[phase_idx].parameters[i].mx.name():
-                    return nlp_t0_in_ocp + self.nlp[phase_idx].time(node_idx)
-
         if phase_idx == 0:
             return self.nlp[phase_idx].time(node_idx)
         else:

@@ -389,8 +389,4 @@ class NonLinearProgram:
         """
         if node_idx < 0 or node_idx > self.ns:
             return ValueError("Node_number out of range [0:nlp.ns]")
-        if "time" in self.parameters.names:
-            for i in range(len(self.parameters.names)):
-                if "time" in self.parameters[i].mx.name():
-                    return self.parameters[i].mx / self.ns * node_idx
         return self.tf / self.ns * node_idx
