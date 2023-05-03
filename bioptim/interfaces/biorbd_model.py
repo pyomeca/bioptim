@@ -292,7 +292,6 @@ class MultiBiorbdModel:
         return out
 
     def forward_dynamics_free_floating_base(self) -> MX:
-
         q_temporary = MX.sym("Q", self.nb_q)
         qdot_temporary = MX.sym("Qdot", self.nb_qdot)
         qddot_joints_temporary = MX.sym("Qddot_joints", self.nb_qddot - self.nb_root)
