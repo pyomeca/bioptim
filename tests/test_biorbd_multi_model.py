@@ -116,9 +116,9 @@ def test_biorbd_model():
         ]  # TODO: Fix torque (Close the actuator model before calling torqueMax)
 
     forward_dynamics_free_floating_base = Function(
-        "RootForwardDynamics", [], [models.forward_dynamics_free_floating_base()(q,qdot,qddot_joints)]
+        "RootForwardDynamics", [], [models.forward_dynamics_free_floating_base()(q, qdot, qddot_joints)]
     )()["o0"]
-    forward_dynamics = Function("ForwardDynamics", [], [models.forward_dynamics(q,qdot,tau)])()["o0"]
+    forward_dynamics = Function("ForwardDynamics", [], [models.forward_dynamics(q, qdot, tau)])()["o0"]
     constrained_forward_dynamics = Function(
         "ConstrainedForwardDynamics", [], [models.constrained_forward_dynamics(q, qdot, tau, f_ext)]
     )()["o0"]
