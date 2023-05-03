@@ -2,15 +2,8 @@
 name: bioptim
 channels:
 - conda-forge
-- default
 dependencies:
-- python >=3.9
-- biorbd >=1.8.8
+- biorbd >=1.9.9
 - bioviz
-- scipy
-- numpy
-- packaging
 - python-graphviz
 - pyqtgraph
-- pygmo
-
