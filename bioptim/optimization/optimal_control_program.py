@@ -1508,32 +1508,25 @@ class OptimalControlProgram:
 
         self.program_changed = True
 
-    def time(self, phase_idx: int, node_idx: int):
+    def node_time(self, phase_idx: int, node_idx: int):
         """
-        Gives the time in the current ocp
+        Gives the time of the node node_idx of from the phase phase_idx
 
         Parameters
         ----------
         phase_idx: int
-          number of the phase
+          Index of the phase
         node_idx: int
-          number of the node
+          Index of the node
 
         Returns
         -------
-        The time in the current ocp
+        `The time of the node node_idx of from the phase phase_idx
         """
-        if 0 > phase_idx or phase_idx > self.n_phases - 1:
-            return RuntimeError("Phase_number out of range [0:ocp.n_phases]")
-        if 0 > phase_idx or node_idx > self.nlp[phase_idx].ns:
-            return RuntimeError("Node_number out of range [0:ocp.nlp.ns]")
+        if phase_idx < 0 or phase_idx > self.n_phases - 1:
+            return RuntimeError("Phase_index out of range [0:ocp.n_phases]")
+        if node_idx > self.nlp[phase_idx].ns:
+            return RuntimeError("Node_index out of range [0:ocp.nlp.ns]")
 
-        if phase_idx == 0:
-            return self.nlp[phase_idx].time(node_idx)
-        else:
-            all_nlp_tf = horzcat()
-            for i in range(phase_idx):
-                all_nlp_tf = horzcat(all_nlp_tf, self.nlp[i].tf)
-        nlp_t0_in_ocp = sum2(all_nlp_tf[0:phase_idx])
-
-        return nlp_t0_in_ocp + self.nlp[phase_idx].time(node_idx)
+        previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
+        return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
