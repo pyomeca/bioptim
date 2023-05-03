@@ -701,7 +701,7 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)  # TODO: [0] to [node_index]
         qddot_joints = DynamicsFunctions.get(nlp.controls[0]["qddot_joints"], controls)  # TODO: [0] to [node_index]
 
-        qddot_root_func = nlp.model.forward_dynamics_free_floating_base(nlp)
+        qddot_root_func = nlp.model.forward_dynamics_free_floating_base()
         qddot_root = qddot_root_func(q, qdot, qddot_joints)
         qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
 

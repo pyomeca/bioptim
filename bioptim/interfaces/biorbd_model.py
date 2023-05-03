@@ -291,11 +291,11 @@ class MultiBiorbdModel:
             model.closeActuator()
         return out
 
-    def forward_dynamics_free_floating_base(self, nlp) -> MX:
+    def forward_dynamics_free_floating_base(self) -> MX:
 
-        q_temporary = MX.sym("Q", nlp.model.nb_q)
-        qdot_temporary = MX.sym("Qdot", nlp.model.nb_qdot)
-        qddot_joints_temporary = MX.sym("Qddot_joints", nlp.model.nb_qddot - nlp.model.nb_root)
+        q_temporary = MX.sym("Q", self.nb_q)
+        qdot_temporary = MX.sym("Qdot", self.nb_qdot)
+        qddot_joints_temporary = MX.sym("Qddot_joints", self.nb_qddot - self.nb_root)
         qddot_root_temporary = MX()
         for i, model in enumerate(self.models):
             q_biorbd = self.transform_to_generalized_coordinates(q_temporary[self.variable_index("q", i)])
