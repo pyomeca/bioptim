@@ -298,17 +298,22 @@ class MultiBiorbdModel:
         qddot_joints_temporary = MX.sym("Qddot_joints", nlp.model.nb_qddot - nlp.model.nb_root)
         qddot_root_temporary = MX()
         for i, model in enumerate(self.models):
+            q_biorbd = self.transform_to_generalized_coordinates(q_temporary[self.variable_index("q", i)])
+            qdot_biorbd = self.transform_to_generalized_velocities(qdot_temporary[self.variable_index("qdot", i)])
+            qddot_joints_biorbd = self.transform_to_generalized_accelerations(
+                qddot_joints_temporary[self.variable_index("qddot_joints", i)]
+            )
             qddot_root_temporary = vertcat(
                 qddot_root_temporary,
                 model.ForwardDynamicsFreeFloatingBase(
-                    q_temporary[self.variable_index("q", i)],
-                    qdot_temporary[self.variable_index("q", i)],
-                    qddot_joints_temporary[self.variable_index("qddot_joints", i)],
+                    q_biorbd,
+                    qdot_biorbd,
+                    qddot_joints_biorbd,
                 ).to_mx(),
             )
         return Function(
             "qddot_root_func", [q_temporary, qdot_temporary, qddot_joints_temporary], [qddot_root_temporary]
-        )
+        ).expand()
 
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints):
         out = MX()
