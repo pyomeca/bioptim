@@ -24,8 +24,8 @@ def generic_online_optim(interface, ocp, show_options: dict = None):
         The options to pass to PlotOcp
     """
 
-    if platform == "win32":
-        raise RuntimeError("Online graphics are not available on Windows")
+    if platform != "Linux":
+        raise RuntimeError("Online graphics are only available on Linux")
     interface.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
 
