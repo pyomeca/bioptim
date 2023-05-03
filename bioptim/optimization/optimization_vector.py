@@ -69,6 +69,7 @@ class OptimizationVector:
         self.ocp = ocp
 
         self.parameters_in_list = ParameterList()
+        self.parameters_in_list.cx_type = ocp.cx
 
         self.x_scaled: MX | SX | list = []
         self.x_bounds = []

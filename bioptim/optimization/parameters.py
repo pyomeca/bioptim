@@ -1,7 +1,6 @@
 from typing import Callable, Any
 
-import biorbd_casadi as biorbd
-from casadi import MX, SX, vertcat, Function
+from casadi import MX, SX, DM, vertcat, Function
 import numpy as np
 
 from ..limits.objective_functions import ObjectiveFcn, Objective, ObjectiveList
@@ -276,6 +275,12 @@ class ParameterList(UniquePerProblemOptionList):
         The size of all parameters vector
     """
 
+    def __init__(self):
+        super(ParameterList, self).__init__()
+
+        # This cx_type was introduced after Casadi changed the behavior of vertcat which now returns a DM.
+        self.cx_type = MX  # Assume MX for now, if needed, optimal control program will set this properly
+
     def add(
         self,
         parameter_name: str | Parameter,
@@ -406,16 +411,22 @@ class ParameterList(UniquePerProblemOptionList):
         """
         The CX vector of all parameters
         """
-
-        return vertcat(*[p.cx for p in self])
+        out = vertcat(*[p.cx for p in self])
+        if isinstance(out, DM):
+            # Force the type if it is a DM (happens if self is empty)
+            out = self.cx_type(out)
+        return out
 
     @property
     def mx(self):
         """
         The MX vector of all parameters
         """
-
-        return vertcat(*[p.mx for p in self])
+        out = vertcat(*[p.mx for p in self])
+        if isinstance(out, DM):
+            # Force the type if it is a DM (happens if self is empty)
+            out = MX(out)
+        return out
 
     @property
     def bounds(self):
