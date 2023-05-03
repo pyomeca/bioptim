@@ -24,6 +24,8 @@ Please note that while BiMapping is used in that context for reducing dof, it is
 applications one can do with the Mappings
 """
 
+import platform
+
 from bioptim import (
     BiorbdModel,
     Node,
@@ -149,7 +151,7 @@ def main():
     ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate()

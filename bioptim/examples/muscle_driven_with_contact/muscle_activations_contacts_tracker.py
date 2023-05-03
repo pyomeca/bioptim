@@ -4,12 +4,11 @@ All the examples in muscle_driven_with_contact are merely to show some dynamics 
 It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
 """
 
-
 import importlib.util
 from pathlib import Path
+import platform
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -124,7 +123,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate()

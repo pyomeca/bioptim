@@ -4,9 +4,10 @@ pulling downward and afterward to let it go so it gains velocity. It is designed
 forces to interact with the body.
 """
 
+import platform
+
 from casadi import MX, vertcat
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -116,7 +117,7 @@ def main():
     ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate()

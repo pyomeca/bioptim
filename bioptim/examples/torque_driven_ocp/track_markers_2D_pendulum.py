@@ -9,6 +9,7 @@ Note that the final node is not tracked.
 from typing import Callable
 import importlib.util
 from pathlib import Path
+import platform
 
 import biorbd_casadi as biorbd
 import numpy as np
@@ -215,7 +216,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate(n_frames=100)

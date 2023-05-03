@@ -5,8 +5,9 @@ cycle at a time while optimizing three cycles at a time (main difference between
 the latter has more cycle at a time giving the knowledge to the solver that 'something' is coming after)
 """
 
+import platform
+
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     MultiCyclicNonlinearModelPredictiveControl,
@@ -118,7 +119,7 @@ def main():
     # Solve the program
     sol = nmpc.solve(
         update_functions,
-        solver=Solver.IPOPT(show_online_optim=True),
+        solver=Solver.IPOPT(show_online_optim=platform.system() == 'Linux'),
         n_cycles_simultaneous=n_cycles_simultaneous,
     )
     sol.print_cost()

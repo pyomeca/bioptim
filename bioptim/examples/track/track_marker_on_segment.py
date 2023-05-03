@@ -4,7 +4,8 @@ movement. The initial and final position of the box are dictated, the rest is fu
 to show how one can use the tracking function to track a marker with a body segment
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     Node,
@@ -139,7 +140,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate()

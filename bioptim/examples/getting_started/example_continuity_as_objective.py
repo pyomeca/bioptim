@@ -13,6 +13,8 @@ the model using the optimal solution.
 User might want to start reading the script by the `main` function to get a better feel.
 """
 
+import platform
+
 from casadi import sqrt
 import numpy as np
 from bioptim import (
@@ -233,7 +235,7 @@ def main():
     )
     # ocp_first.print(to_console=True)
 
-    solver_first = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
+    solver_first = Solver.IPOPT(show_online_optim=platform.system() == 'Linux', show_options=dict(show_bounds=True))
     # change maximum iterations to affect the initial solution
     # it doesn't mather if it exits before the optimal solution, only that there is an initial guess
     solver_first.set_maximum_iterations(500)
@@ -247,7 +249,7 @@ def main():
 
     # # --- Second pass ---#
     # # --- Prepare the ocp --- #
-    solver_second = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
+    solver_second = Solver.IPOPT(show_online_optim=platform.system() == 'Linux', show_options=dict(show_bounds=True))
     solver_second.set_maximum_iterations(10000)
 
     ocp_second = prepare_ocp_second_pass(

@@ -4,7 +4,7 @@ this time there is a passive torque which is applied on Seg1 in the model "pendu
 The expression of the tau is therefore not the same here.
 """
 
-import biorbd_casadi as biorbd
+import platform
 
 from bioptim import (
     OptimalControlProgram,
@@ -138,7 +138,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #

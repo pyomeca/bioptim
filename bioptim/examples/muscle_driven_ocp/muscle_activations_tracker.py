@@ -8,6 +8,8 @@ and kinematics would indeed be acquired via data acquisition devices
 The difference between muscle activation and excitation is that the latter is the derivative of the former
 """
 
+import platform
+
 from scipy.integrate import solve_ivp
 import numpy as np
 import biorbd_casadi as biorbd
@@ -301,7 +303,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show the results --- #
     q = sol.states["q"]

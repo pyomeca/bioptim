@@ -5,7 +5,8 @@ the rest is fully optimized. It is designed to show how one can use the tracking
 any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     Node,
@@ -109,7 +110,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate()

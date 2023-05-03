@@ -4,6 +4,7 @@ This example uses a representation of a human body by a trunk_leg segment and tw
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 """
 
+import platform
 
 import numpy as np
 import biorbd_casadi as biorbd
@@ -130,7 +131,7 @@ def main():
     """
 
     ocp = prepare_ocp("models/TruncAnd2Arm_Quaternion.bioMod", n_shooting=5, final_time=0.25)
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # Print the last solution
     sol.animate(n_frames=-1)

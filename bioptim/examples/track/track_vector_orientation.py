@@ -3,7 +3,8 @@ This example is a trivial example where a stick must keep its axis aligned with 
 side of a box during the whole duration of the movement.
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     Node,
@@ -12,8 +13,6 @@ from bioptim import (
     DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
-    ConstraintList,
-    ConstraintFcn,
     BoundsList,
     InitialGuessList,
     OdeSolver,
@@ -115,7 +114,7 @@ def main():
     ocp.add_plot_penalty()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate()

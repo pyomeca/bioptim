@@ -6,7 +6,8 @@ Please note that using show_meshes=True in the animator may be long due to the c
 mesh points.
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -109,7 +110,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=0.5, n_shooting=50, weight=1000)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate(show_meshes=True)
