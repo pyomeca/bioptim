@@ -701,8 +701,7 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)  # TODO: [0] to [node_index]
         qddot_joints = DynamicsFunctions.get(nlp.controls[0]["qddot_joints"], controls)  # TODO: [0] to [node_index]
 
-        qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
-        qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
+        qddot_root, qddot_reordered = DynamicsFunctions.forward_dynamics_free_floating(nlp, q, qdot, qddot_joints)
 
         # defects
         qddot_root_defects = DynamicsFunctions.get(nlp.states_dot[0]["qddot_roots"], nlp.states_dot[0].mx_reduced)
@@ -841,6 +840,29 @@ class DynamicsFunctions:
                 qddot = nlp.model.forward_dynamics(q, qdot, tau)
 
             return qdot_var.mapping.to_first.map(qddot)
+
+    @staticmethod
+    def forward_dynamics_free_floating(nlp, q, qdot, qddot_joints) -> list[MX, MX]:
+        """
+        Easy accessor to derivative of free floating base dynamics
+
+        Returns
+        -------
+        The derivative of qdot concatenated such that qddot = qddot_root, qddot_joints
+        """
+
+        q_temporary = MX.sym("Q", nlp.model.nb_q)
+        qdot_temporary = MX.sym("Qdot",  nlp.model.nb_qdot)
+        qddot_joints_temporary = MX.sym("Qddot_joints", nlp.model.nb_qddot - nlp.model.nb_root)
+
+        qddot_root_temporary = nlp.model.forward_dynamics_free_floating_base(q_temporary, qdot_temporary, qddot_joints_temporary)
+        q_root_func = Function(
+            "qddot_root_func", [q_temporary, qdot_temporary, qddot_joints_temporary], [qddot_root_temporary]
+        ).expand()
+        qddot_root = q_root_func(q, qdot, qddot_joints)
+        qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
+
+        return qddot_root, qddot_reordered
 
     @staticmethod
     def inverse_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, qddot: MX | SX, with_contact: bool):
