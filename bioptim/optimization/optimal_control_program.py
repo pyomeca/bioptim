@@ -1524,6 +1524,6 @@ class OptimalControlProgram:
         `The time of the node node_idx of from the phase phase_idx
         """
         if phase_idx < 0 or phase_idx > self.n_phases - 1:
-            return RuntimeError("Phase_index out of range [0:ocp.n_phases]")
+            return ValueError("Phase_index out of range [0:ocp.n_phases]")
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
         return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
