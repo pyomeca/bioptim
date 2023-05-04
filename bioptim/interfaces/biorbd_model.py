@@ -58,8 +58,7 @@ def _qddot_mapping(model, mapping: BiMapping = None) -> BiMapping:
     if mapping is None:
         mapping = {}
     if "qddot" not in mapping:
-        if model.nb_quaternions > 0:
-            mapping["qddot"] = BiMapping(range(model.nb_qddot), range(model.nb_qddot))
+        mapping["qddot"] = BiMapping(range(model.nb_qddot), range(model.nb_qddot))
 
     return mapping
 
@@ -264,6 +263,9 @@ class BiorbdModel:
         qdot_biorbd = GeneralizedVelocity(qdot)
         qddot_joints_biorbd = GeneralizedAcceleration(qddot_joints)
         return self.model.ForwardDynamicsFreeFloatingBase(q_biorbd, qdot_biorbd, qddot_joints_biorbd).to_mx()
+
+    def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
+        return vertcat(qddot_root, qddot_joints)
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
         if external_forces is not None:
@@ -777,11 +779,8 @@ class MultiBiorbdModel:
             )
         return out
 
-    def forward_dynamics_free_floating_base(self) -> MX:
-        q_temporary = MX.sym("Q", self.nb_q)
-        qdot_temporary = MX.sym("Qdot", self.nb_qdot)
-        qddot_joints_temporary = MX.sym("Qddot_joints", self.nb_qddot - self.nb_root)
-        qddot_root_temporary = MX()
+    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
+        out = MX()
         for i, model in enumerate(self.models):
             q_model = q[self.variable_index("q", i)]
             qdot_model = qdot[self.variable_index("qdot", i)]
@@ -794,17 +793,16 @@ class MultiBiorbdModel:
                     qddot_joints_model,
                 ),
             )
-        return Function(
-            "qddot_root_func", [q_temporary, qdot_temporary, qddot_joints_temporary], [qddot_root_temporary]
-        ).expand()
+        return out
 
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints):
         out = MX()
         for i, model in enumerate(self.models):
+            qddot_root_model = qddot_root[self.variable_index("qddot_root", i)]
+            qddot_joints_model = qddot_joints[self.variable_index("qddot_joints", i)]
             out = vertcat(
                 out,
-                qddot_root[self.variable_index("root", i)],
-                qddot_joints[self.variable_index("qddot_joints", i)],
+                model.reorder_qddot_root_joints(qddot_root_model, qddot_joints_model),
             )
 
         return out
