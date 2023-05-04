@@ -44,13 +44,8 @@ def _qdot_mapping(model, mapping: BiMapping = None) -> BiMapping:
     """
     if mapping is None:
         mapping = {}
-    if "qdot" not in mapping:
-        if model.nb_quaternions > 0:
-            mapping["qdot"] = BiMapping(range(model.nb_qdot), range(model.nb_qdot))
-        else:
-            if "q" not in mapping:
-                mapping["q"] = BiMapping(range(model.nb_q), range(model.nb_q))
-            mapping["qdot"] = mapping["q"]
+        mapping["qdot"] = BiMapping(range(model.nb_qdot), range(model.nb_qdot))
+
     return mapping
 
 
@@ -64,17 +59,7 @@ def _qddot_mapping(model, mapping: BiMapping = None) -> BiMapping:
     if "qddot" not in mapping:
         if model.nb_quaternions > 0:
             mapping["qddot"] = BiMapping(range(model.nb_qddot), range(model.nb_qddot))
-        elif "qdot" not in mapping:
-            if model.nb_quaternions > 0:
-                mapping["qdot"] = BiMapping(range(model.nb_qdot), range(model.nb_qdot))
-                mapping["qddot"] = mapping["qdot"]
-            else:
-                if "q" not in mapping:
-                    mapping["q"] = BiMapping(range(model.nb_q), range(model.nb_q))
-                mapping["qdot"] = mapping["q"]
-                mapping["qddot"] = mapping["qdot"]
-        else:
-            mapping["qddot"] = mapping["qdot"]
+
     return mapping
 
 
