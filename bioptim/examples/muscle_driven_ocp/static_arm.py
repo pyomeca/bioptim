@@ -110,7 +110,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=0.5, n_shooting=50, weight=1000)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate(show_meshes=True)

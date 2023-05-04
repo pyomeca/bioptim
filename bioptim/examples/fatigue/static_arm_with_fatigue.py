@@ -202,7 +202,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    solver = Solver.IPOPT(show_online_optim=platform.system() == 'Linux')
+    solver = Solver.IPOPT(show_online_optim=platform.system() == "Linux")
     solver.set_hessian_approximation("exact")
     sol = ocp.solve(solver)
     sol.print_cost()

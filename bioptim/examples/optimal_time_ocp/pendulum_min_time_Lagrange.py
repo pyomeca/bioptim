@@ -114,7 +114,7 @@ def main():
     ocp.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}, good job Lagrange!")

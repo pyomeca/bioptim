@@ -122,7 +122,7 @@ def main():
     ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, loop_from_constraint=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

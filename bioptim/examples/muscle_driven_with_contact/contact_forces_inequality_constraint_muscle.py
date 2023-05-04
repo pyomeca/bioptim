@@ -113,7 +113,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     nlp = ocp.nlp[0]
     nlp.model = BiorbdModel(biorbd_model_path)

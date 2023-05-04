@@ -174,7 +174,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate(n_frames=40)

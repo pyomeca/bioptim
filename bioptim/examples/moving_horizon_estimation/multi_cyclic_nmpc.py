@@ -119,7 +119,7 @@ def main():
     # Solve the program
     sol = nmpc.solve(
         update_functions,
-        solver=Solver.IPOPT(show_online_optim=platform.system() == 'Linux'),
+        solver=Solver.IPOPT(show_online_optim=platform.system() == "Linux"),
         n_cycles_simultaneous=n_cycles_simultaneous,
     )
     sol.print_cost()

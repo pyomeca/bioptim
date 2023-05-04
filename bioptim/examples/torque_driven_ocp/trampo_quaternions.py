@@ -131,7 +131,7 @@ def main():
     """
 
     ocp = prepare_ocp("models/TruncAnd2Arm_Quaternion.bioMod", n_shooting=5, final_time=0.25)
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # Print the last solution
     sol.animate(n_frames=-1)

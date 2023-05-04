@@ -144,7 +144,7 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
     sol = ocp.solve(Solver.IPOPT())
     sol.graphs(show_bounds=True)
 

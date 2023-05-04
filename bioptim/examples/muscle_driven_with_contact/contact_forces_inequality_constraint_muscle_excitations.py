@@ -120,7 +120,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, phase_time=t, n_shooting=ns, min_bound=50)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     nlp = ocp.nlp[0]
     nlp.model = BiorbdModel(biorbd_model_path)
