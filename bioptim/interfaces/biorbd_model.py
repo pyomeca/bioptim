@@ -44,6 +44,7 @@ def _qdot_mapping(model, mapping: BiMapping = None) -> BiMapping:
     """
     if mapping is None:
         mapping = {}
+    if "qdot" not in mapping:
         mapping["qdot"] = BiMapping(range(model.nb_qdot), range(model.nb_qdot))
 
     return mapping
