@@ -388,5 +388,5 @@ class NonLinearProgram:
         The time for a specific index
         """
         if node_idx < 0 or node_idx > self.ns:
-            return ValueError("Node_index out of range [0:nlp.ns]")
+            return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.tf / self.ns * node_idx
