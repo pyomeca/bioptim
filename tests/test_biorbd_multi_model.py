@@ -25,7 +25,7 @@ def test_biorbd_model_import():
     )
 
     with pytest.raises(
-        RuntimeError, match="The models must be a 'str', 'biorbd.Model' or a tuple of 'str' or 'biorbd.Model'"
+        ValueError, match="The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those"
     ):
         MultiBiorbdModel([1])
 
@@ -89,16 +89,12 @@ def test_biorbd_model():
     with pytest.raises(
         NotImplementedError, match="homogeneous_matrices_in_global is not implemented for MultiBiorbdModel"
     ):
-        homogeneous_matrices_in_global = Function(
-            "RT_parent", [], [models.homogeneous_matrices_in_global(q[:3], 0, 0).to_mx()]
-        )()["o0"]
+        Function("RT_parent", [], [models.homogeneous_matrices_in_global(q[:3], 0, 0).to_mx()])()["o0"]
 
     with pytest.raises(
         NotImplementedError, match="homogeneous_matrices_in_child is not implemented for MultiBiorbdModel"
     ):
-        homogeneous_matrices_in_child = Function(
-            "RT_child", [], [models.homogeneous_matrices_in_child(0)[0].to_mx()]
-        )()["o0"]
+        Function("RT_child", [], [models.homogeneous_matrices_in_child(0)[0].to_mx()])()["o0"]
     mass = Function("Mass", [], [models.mass])()["o0"]
     center_of_mass = Function("CoM", [], [models.center_of_mass(q)])()["o0"]
     center_of_mass_velocity = Function("CoMdot", [], [models.center_of_mass_velocity(q, qdot)])()["o0"]
@@ -111,7 +107,7 @@ def test_biorbd_model():
     ]  # TODO: Fix soft contact (biorbd call error)
 
     with pytest.raises(RuntimeError, match="Close the actuator model before calling torqueMax"):
-        torque = Function("TorqueFromActivation", [], [models.torque(tau, q, qdot)])()[
+        Function("TorqueFromActivation", [], [models.torque(tau, q, qdot)])()[
             "o0"
         ]  # TODO: Fix torque (Close the actuator model before calling torqueMax)
 
@@ -119,28 +115,40 @@ def test_biorbd_model():
         "RootForwardDynamics", [], [models.forward_dynamics_free_floating_base(q, qdot, qddot_joints)]
     )()["o0"]
     forward_dynamics = Function("ForwardDynamics", [], [models.forward_dynamics(q, qdot, tau)])()["o0"]
+
     constrained_forward_dynamics = Function(
-        "ConstrainedForwardDynamics", [], [models.constrained_forward_dynamics(q, qdot, tau, f_ext)]
+        "ConstrainedForwardDynamics", [], [models.constrained_forward_dynamics(q, qdot, tau, None)]
     )()["o0"]
+    with pytest.raises(NotImplementedError, match="External forces are not implemented yet for MultiBiorbdModel."):
+        Function("ConstrainedForwardDynamics", [], [models.constrained_forward_dynamics(q, qdot, tau, f_ext)])()["o0"]
+
     inverse_dynamics = Function("InverseDynamics", [], [models.inverse_dynamics(q, qdot, tau)])()["o0"]
+
     contact_forces_from_constrained_dynamics = Function(
-        "ContactForcesFromDynamics", [], [models.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, f_ext)]
+        "ContactForcesFromDynamics", [], [models.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, None)]
     )()["o0"]
+    with pytest.raises(NotImplementedError, match="External forces are not implemented yet for MultiBiorbdModel."):
+        Function(
+            "ContactForcesFromDynamics",
+            [],
+            [models.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, f_ext)],
+        )()["o0"]
+
     qdot_from_impact = Function("QdotFromImpact", [], [models.qdot_from_impact(q, qdot)])()["o0"]
     muscle_activation_dot = Function("MusActivationdot", [], [models.muscle_activation_dot(muscle_excitations)])()["o0"]
     muscle_joint_torque = Function("MusTau", [], [models.muscle_joint_torque(muscle_excitations, q, qdot)])()["o0"]
     markers = Function("Markers", [], [models.markers(q)[0]])()["o0"]
 
     with pytest.raises(NotImplementedError, match="marker is not implemented yet for MultiBiorbdModel"):
-        marker = Function("Marker", [], [models.marker(q[:3], index=0)])()["o0"]
+        Function("Marker", [], [models.marker(q[:3], index=0)])()["o0"]
 
     with pytest.raises(NotImplementedError, match="marker_index is not implemented yet for MultiBiorbdModel"):
-        marker_index = models.marker_index("marker_3")
+        models.marker_index("marker_3")
 
     marker_velocities = Function("Markerdot", [], [models.marker_velocities(q, qdot)[0, :]])()["o0"]
 
     with pytest.raises(RuntimeError, match="All dof must have their actuators set"):
-        tau_max = Function("TauMax", [], [models.tau_max(q, qdot)])()[
+        Function("TauMax", [], [models.tau_max(q, qdot)])()[
             "o0"
         ]  # TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
 
@@ -148,12 +156,29 @@ def test_biorbd_model():
     # rigid_contact_acceleration = models.rigid_contact_acceleration(q, qdot, qddot, 0, 0)
 
     soft_contact_forces = Function("SoftContactForces", [], [models.soft_contact_forces(q, qdot)])()["o0"]
-    reshape_fext_to_fcontact = Function("Fext_to_Fcontact", [], [models.reshape_fext_to_fcontact(f_ext)])()["o0"]
+
+    reshape_fext_to_fcontact = Function("Fext_to_Fcontact", [], [models.models[0].reshape_fext_to_fcontact(f_ext)])()[
+        "o0"
+    ]
+
+    with pytest.raises(
+        NotImplementedError, match="reshape_fext_to_fcontact is not implemented yet for MultiBiorbdModel"
+    ):
+        Function("Fext_to_Fcontact", [], [models.reshape_fext_to_fcontact(f_ext)])()["o0"]
+
     normalize_state_quaternions = Function(
-        "Fext_to_Fcontact", [], [models.normalize_state_quaternions(vertcat(q, qdot))]
+        "normalize_state_quaternions", [], [models.normalize_state_quaternions(vertcat(q, qdot))]
     )()["o0"]
-    get_quaternion_idx = models.get_quaternion_idx()
-    contact_forces = Function("Fcontact", [], [models.contact_forces(q, qdot, tau, [f_ext])])()["o0"]
+
+    get_quaternion_idx = models.models[0].get_quaternion_idx()
+    get_quaternion_idx = models.models[1].get_quaternion_idx()
+
+    contact_forces = Function("Fcontact", [], [models.contact_forces(q, qdot, tau, None)])()["o0"]
+    with pytest.raises(
+        NotImplementedError, match="contact_forces is not implemented yet with external_forces for MultiBiorbdModel"
+    ):
+        contact_forces = Function("Fcontact", [], [models.contact_forces(q, qdot, tau, f_ext)])()["o0"]
+
     passive_joint_torque = Function("PassiveTau", [], [models.passive_joint_torque(q, qdot)])()["o0"]
     q_mapping = models._q_mapping(variable_mappings)
     qdot_mapping = models._q_mapping(variable_mappings)
