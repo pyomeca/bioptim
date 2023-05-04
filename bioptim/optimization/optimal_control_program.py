@@ -1525,5 +1525,7 @@ class OptimalControlProgram:
         """
         if phase_idx < 0 or phase_idx > self.n_phases - 1:
             return ValueError(f"phase_index out of range [0:{self.n_phases}]")
+        if node_idx < 0 or node_idx > self.nlp[phase_idx].ns:
+            return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
         return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
