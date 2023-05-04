@@ -1074,9 +1074,7 @@ class ConfigureProblem:
                     if copy_states_dot
                     else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
                 )
-                nlp.states_dot.scaled[node_index].append(
-                    name, cx_scaled[0], mx_states_dot, nlp.variable_mappings[name]
-                )
+                nlp.states_dot.scaled[node_index].append(name, cx_scaled[0], mx_states_dot, nlp.variable_mappings[name])
                 nlp.states_dot[node_index].append_from_scaled(name, cx[0], nlp.states_dot.scaled[node_index])
 
     @staticmethod

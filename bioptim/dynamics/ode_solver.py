@@ -135,9 +135,7 @@ class RK(OdeSolverBase):
             else horzcat(nlp.controls[0].cx_start, nlp.controls[0].cx_end),  # TODO : [0] to [node_index]
             "p_scaled": nlp.controls.scaled[0].cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
-            else horzcat(
-                nlp.controls.scaled[0].cx_start, nlp.controls.scaled[0].cx_end
-            ),  # TODO: [0] to [node_index]
+            else horzcat(nlp.controls.scaled[0].cx_start, nlp.controls.scaled[0].cx_end),  # TODO: [0] to [node_index]
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
