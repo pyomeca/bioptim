@@ -776,8 +776,11 @@ class MultiBiorbdModel:
             )
         return out
 
-    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
-        out = MX()
+    def forward_dynamics_free_floating_base(self) -> MX:
+        q_temporary = MX.sym("Q", self.nb_q)
+        qdot_temporary = MX.sym("Qdot", self.nb_qdot)
+        qddot_joints_temporary = MX.sym("Qddot_joints", self.nb_qddot - self.nb_root)
+        qddot_root_temporary = MX()
         for i, model in enumerate(self.models):
             q_model = q[self.variable_index("q", i)]
             qdot_model = qdot[self.variable_index("qdot", i)]
@@ -790,6 +793,19 @@ class MultiBiorbdModel:
                     qddot_joints_model,
                 ),
             )
+        return Function(
+            "qddot_root_func", [q_temporary, qdot_temporary, qddot_joints_temporary], [qddot_root_temporary]
+        ).expand()
+
+    def reorder_qddot_root_joints(self, qddot_root, qddot_joints):
+        out = MX()
+        for i, model in enumerate(self.models):
+            out = vertcat(
+                out,
+                qddot_root[self.variable_index("root", i)],
+                qddot_joints[self.variable_index("qddot_joints", i)],
+            )
+
         return out
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
