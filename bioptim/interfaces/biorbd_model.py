@@ -598,6 +598,11 @@ class MultiBiorbdModel:
             return range(
                 current_idx, current_idx + self.models[model_index].nb_qddot - self.models[model_index].nb_root
             )
+        elif variable == "qddot_root":
+            current_idx = 0
+            for model in self.models[:model_index]:
+                current_idx += model.nb_root
+            return range(current_idx, current_idx + self.models[model_index].nb_root)
         elif variable == "tau":
             current_idx = 0
             for model in self.models[:model_index]:
