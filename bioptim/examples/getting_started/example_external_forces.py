@@ -12,9 +12,9 @@ external_force is silently ignored. Bioptim expects external_forces to be a list
 np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
 (defined by the externalforceindex) for each node n
 """
+import platform
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -117,7 +117,7 @@ def main():
     ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate()

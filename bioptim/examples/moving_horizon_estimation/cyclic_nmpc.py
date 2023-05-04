@@ -4,8 +4,9 @@ perform a rotation of the arm in a quasi-cyclic manner. The sliding window acros
 cycle at a time (main difference between cyclic and normal NMPC where NMPC advance for a single frame).
 """
 
+import platform
+
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     CyclicNonlinearModelPredictiveControl,
@@ -93,7 +94,7 @@ def main():
         return cycle_idx < n_cycles  # True if there are still some cycle to perform
 
     # Solve the program
-    sol = nmpc.solve(update_functions, solver=Solver.IPOPT(show_online_optim=True))
+    sol = nmpc.solve(update_functions, solver=Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
     sol.graphs()
     sol.print_cost()
     sol.animate(n_frames=100)

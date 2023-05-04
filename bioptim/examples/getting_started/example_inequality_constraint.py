@@ -11,8 +11,9 @@ It is designed to show how to use min_bound and max_bound values so they define 
 of equality constraints, which can be used with any ConstraintFcn
 """
 
+import platform
+
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -124,7 +125,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

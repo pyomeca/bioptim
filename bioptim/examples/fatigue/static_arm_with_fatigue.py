@@ -6,7 +6,7 @@ Please note that using show_meshes=True in the animator may be long due to the c
 mesh points.
 """
 
-import biorbd_casadi as biorbd
+import platform
 
 from bioptim import (
     BiorbdModel,
@@ -202,7 +202,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    solver = Solver.IPOPT(show_online_optim=True)
+    solver = Solver.IPOPT(show_online_optim=platform.system() == "Linux")
     solver.set_hessian_approximation("exact")
     sol = ocp.solve(solver)
     sol.print_cost()
