@@ -1521,7 +1521,7 @@ class OptimalControlProgram:
 
         Returns
         -------
-        `The time of the node node_idx of from the phase phase_idx
+        The time of the node node_idx of from the phase phase_idx
         """
         if phase_idx < 0 or phase_idx > self.n_phases - 1:
             return ValueError("Phase_index out of range [0:ocp.n_phases]")
