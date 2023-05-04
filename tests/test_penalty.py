@@ -930,8 +930,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
     nlp.U = np.linspace(10, 19, ns)
     nlp.X_scaled = nlp.X
     nlp.U_scaled = nlp.U
-    tp = OptimizationVariableList()
-    tp.cx_constructor = MX
+    tp = OptimizationVariableList(MX)
     tp.append("param", [MX(), MX()], MX(), BiMapping([], []))
     nlp.parameters = tp["param"]
 

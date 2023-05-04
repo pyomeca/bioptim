@@ -151,7 +151,7 @@ class DynamicsFunctions:
         # TODO: contacts and fatigue to be handled with implicit dynamics
         if not with_contact and fatigue is None:
             qddot = DynamicsFunctions.get(
-                nlp.states_dot[0]["qddot"], nlp.states_dot[0]["scaled"].mx_reduced
+                nlp.states_dot[0]["qddot"], nlp.states_dot.scaled[0].mx_reduced
             )  # TODO: [0] to [node_index]
             tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
             defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
@@ -164,7 +164,7 @@ class DynamicsFunctions:
                         nlp,
                         q,
                         DynamicsFunctions.get(
-                            nlp.states_dot[0]["scaled"]["qdot"], nlp.states_dot[0]["scaled"].mx_reduced
+                            nlp.states_dot.scaled[0]["qdot"], nlp.states_dot.scaled[0].mx_reduced
                         ),  # TODO: [0] to [node_index]
                     )
                 )

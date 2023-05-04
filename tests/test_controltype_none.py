@@ -109,8 +109,8 @@ class NonControledMethod:
             extra_params["t"] = t_node_in_ocp
 
             dynamics_eval = self.custom_dynamics(
-                nlp.states[0]["scaled"].mx_reduced,  # TODO: [0] to [node_index]
-                nlp.controls[0]["scaled"].mx_reduced,  # TODO: [0] to [node_index]
+                nlp.states.scaled[0].mx_reduced,  # TODO: [0] to [node_index]
+                nlp.controls.scaled[0].mx_reduced,  # TODO: [0] to [node_index]
                 nlp.parameters.mx,
                 nlp,
                 **extra_params
@@ -123,8 +123,8 @@ class NonControledMethod:
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [
-                nlp.states[0]["scaled"].mx_reduced,
-                nlp.controls[0]["scaled"].mx_reduced,
+                nlp.states.scaled[0].mx_reduced,
+                nlp.controls.scaled[0].mx_reduced,
                 nlp.parameters.mx,
             ],  # TODO: [0] to [node_index]
             [dynamics_eval_horzcat],
