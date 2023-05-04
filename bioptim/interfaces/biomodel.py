@@ -104,8 +104,11 @@ class BioModel(Protocol):
     def torque(self, q, qdot, activation) -> MX:
         """Get the muscle torque"""
 
-    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
+    def forward_dynamics_free_floating_base(self, q, qdot, qddot) -> MX:
         """compute the free floating base forward dynamics"""
+
+    def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
+        """reorder the qddot, from the root dof and the joints dof"""
 
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
         """compute the forward dynamics"""
