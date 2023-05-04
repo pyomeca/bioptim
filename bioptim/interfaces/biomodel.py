@@ -104,7 +104,7 @@ class BioModel(Protocol):
     def torque(self, q, qdot, activation) -> MX:
         """Get the muscle torque"""
 
-    def forward_dynamics_free_floating_base(self) -> MX:
+    def forward_dynamics_free_floating_base(self) -> MX: #TODO for Ipuch
         """compute the free floating base forward dynamics"""
 
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:

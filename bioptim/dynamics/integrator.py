@@ -245,8 +245,7 @@ class RK(Integrator):
         x[:, 0] = states
 
         for i in range(1, self.n_step + 1):
-            t_norm_init = (i - 1) / self.n_step  # normalized time
-            # send x full size
+            t_norm_init = (i - 1) / self.n_step
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
 
             if self.model.nb_quaternions > 0:
@@ -605,7 +604,6 @@ class COLLOCATION(Integrator):
                 xp_j += self._c[r, j] * states[r]
 
             if self.defects_type == DefectType.EXPLICIT:
-                # send full x
                 f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
                 defects.append(h * f_j - xp_j)
             elif self.defects_type == DefectType.IMPLICIT:
@@ -682,7 +680,6 @@ class IRK(COLLOCATION):
         _, _, defect = super(IRK, self).dxdt(h, states, controls, params)
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
-        # send full x
         vfcn = Function("vfcn", [vertcat(*states[1:]), states[0], controls, params], [defect]).expand()
 
         # Create a implicit function instance to solve the system of equations

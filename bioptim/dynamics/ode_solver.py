@@ -66,8 +66,6 @@ class OdeSolverBase:
             A reference to the main program
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
-        states_mapping: Mapping
-            The states mapping
         """
         nlp.dynamics = []
         nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, 0)
@@ -111,8 +109,6 @@ class RK(OdeSolverBase):
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the nlp
-        states_mapping:
-            The states mapping
 
         Returns
         -------
