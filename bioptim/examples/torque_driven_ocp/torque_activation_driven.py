@@ -1,18 +1,16 @@
 """
 This is an example of the use of torque actuator using a model of 2segments and 2 degrees of freedom
 """
-import biorbd_casadi as biorbd
+
+import platform
+
 from bioptim import (
     BiorbdModel,
-    Node,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
-    ConstraintList,
-    ConstraintFcn,
-    BiMappingList,
     BoundsList,
     InitialGuessList,
     OdeSolver,
@@ -113,7 +111,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

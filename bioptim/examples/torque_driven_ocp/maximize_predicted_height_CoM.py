@@ -5,7 +5,8 @@ It is designed to give a sense of the goal of the different MINIMIZE_COM functio
 weight=-1 to maximize instead of minimizing.
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 import numpy as np
 from bioptim import (
     BiorbdModel,
@@ -173,7 +174,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate(n_frames=40)
