@@ -129,15 +129,13 @@ class RK(OdeSolverBase):
 
         ode = {
             "x_unscaled": nlp.states[0].cx_start,
-            "x_scaled": nlp.states[0]["scaled"].cx_start,
+            "x_scaled": nlp.states.scaled[0].cx_start,
             "p_unscaled": nlp.controls[0].cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
             else horzcat(nlp.controls[0].cx_start, nlp.controls[0].cx_end),  # TODO : [0] to [node_index]
-            "p_scaled": nlp.controls[0]["scaled"].cx_start
+            "p_scaled": nlp.controls.scaled[0].cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
-            else horzcat(
-                nlp.controls[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_end
-            ),  # TODO: [0] to [node_index]
+            else horzcat(nlp.controls.scaled[0].cx_start, nlp.controls.scaled[0].cx_end),  # TODO: [0] to [node_index]
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
@@ -287,10 +285,10 @@ class OdeSolver:
             ode = {
                 "x_unscaled": [nlp.states[0].cx_start]
                 + nlp.states[0].cx_intermediates_list,  # TODO: [0] to [node_index]
-                "x_scaled": [nlp.states[0]["scaled"].cx_start]
-                + nlp.states[0]["scaled"].cx_intermediates_list,  # TODO: [0] to [node_index]
+                "x_scaled": [nlp.states.scaled[0].cx_start]
+                + nlp.states.scaled[0].cx_intermediates_list,  # TODO: [0] to [node_index]
                 "p_unscaled": nlp.controls[0].cx_start,  # TODO: [0] to [node_index]
-                "p_scaled": nlp.controls[0]["scaled"].cx_start,  # TODO: [0] to [node_index]
+                "p_scaled": nlp.controls.scaled[0].cx_start,  # TODO: [0] to [node_index]
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -409,10 +407,10 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "x": nlp.states[0]["scaled"].cx_start,  # TODO: [0] to [node_index]
-                "p": nlp.controls[0]["scaled"].cx_start,  # TODO: [0] to [node_index]
+                "x": nlp.states.scaled[0].cx_start,  # TODO: [0] to [node_index]
+                "p": nlp.controls.scaled[0].cx_start,  # TODO: [0] to [node_index]
                 "ode": nlp.dynamics_func(
-                    nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start, nlp.parameters.cx_start
+                    nlp.states.scaled[0].cx_start, nlp.controls.scaled[0].cx_start, nlp.parameters.cx_start
                 ),  # TODO: [0] to [node_index]
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
@@ -423,12 +421,12 @@ class OdeSolver:
                 Function(
                     "integrator",
                     [
-                        nlp.states[0]["scaled"].cx_start,
-                        nlp.controls[0]["scaled"].cx_start,
+                        nlp.states.scaled[0].cx_start,
+                        nlp.controls.scaled[0].cx_start,
                         nlp.parameters.cx_start,
                     ],  # TODO: [0] to [node_index]
                     self._adapt_integrator_output(
-                        integrator_func, nlp.states[0]["scaled"].cx_start, nlp.controls[0]["scaled"].cx_start
+                        integrator_func, nlp.states.scaled[0].cx_start, nlp.controls.scaled[0].cx_start
                     ),  # TODO: [0] to [node_index]
                     ["x0", "p", "params"],
                     ["xf", "xall"],

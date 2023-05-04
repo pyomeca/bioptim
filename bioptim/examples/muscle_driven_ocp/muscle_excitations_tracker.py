@@ -90,9 +90,12 @@ def generate_data(
     }
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.states
-    nlp.states_dot = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.states_dot
-    nlp.controls = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.controls
+    nlp.states = OptimizationVariableContainer()
+    nlp.states_dot = OptimizationVariableContainer()
+    nlp.controls = OptimizationVariableContainer()
+    nlp.states.initialize_from_shooting(n_shooting, MX)
+    nlp.states_dot.initialize_from_shooting(n_shooting, MX)
+    nlp.controls.initialize_from_shooting(n_shooting, MX)
 
     for node_index in range(n_shooting):
         nlp.states[node_index].append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])

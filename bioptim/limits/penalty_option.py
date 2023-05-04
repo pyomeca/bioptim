@@ -401,10 +401,10 @@ class PenaltyOption(OptionGeneric):
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
 
-            states_pre_scaled = nlp.states[0]["scaled"].cx_end  # TODO: [0] to [node_index]
-            states_post_scaled = nlp_post.states[0]["scaled"].cx_start  # TODO: [0] to [node_index]
-            controls_pre_scaled = nlp.controls[0]["scaled"].cx_end  # TODO: [0] to [node_index]
-            controls_post_scaled = nlp_post.controls[0]["scaled"].cx_start  # TODO: [0] to [node_index]
+            states_pre_scaled = nlp.states.scaled[0].cx_end  # TODO: [0] to [node_index]
+            states_post_scaled = nlp_post.states.scaled[0].cx_start  # TODO: [0] to [node_index]
+            controls_pre_scaled = nlp.controls.scaled[0].cx_end  # TODO: [0] to [node_index]
+            controls_post_scaled = nlp_post.controls.scaled[0].cx_start  # TODO: [0] to [node_index]
             state_cx_scaled = vertcat(states_pre_scaled, states_post_scaled)
             control_cx_scaled = vertcat(controls_pre_scaled, controls_post_scaled)
 
@@ -413,8 +413,8 @@ class PenaltyOption(OptionGeneric):
             nlp = all_pn[0].nlp
             nlp_all = all_pn.nlp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
-            states_all_scaled = nlp_all.states[0]["scaled"].cx_start  # TODO: [0] to [node_index]
-            controls_all_scaled = nlp_all.controls[0]["scaled"].cx_start  # TODO: [0] to [node_index]
+            states_all_scaled = nlp_all.states.scaled[0].cx_start  # TODO: [0] to [node_index]
+            controls_all_scaled = nlp_all.controls.scaled[0].cx_start  # TODO: [0] to [node_index]
             state_cx_scaled = vertcat(states_all_scaled)
             control_cx_scaled = vertcat(controls_all_scaled)
 
@@ -425,21 +425,21 @@ class PenaltyOption(OptionGeneric):
             if self.integrate:
                 state_cx_scaled = horzcat(
                     *(
-                        [all_pn.nlp.states[0]["scaled"].cx_start] + all_pn.nlp.states[0]["scaled"].cx_intermediates_list
+                        [all_pn.nlp.states.scaled[0].cx_start] + all_pn.nlp.states.scaled[0].cx_intermediates_list
                     )  # TODO: [0] to [node_index]
                 )
-                control_cx_scaled = all_pn.nlp.controls[0]["scaled"].cx_start  # TODO: [0] to [node_index]
+                control_cx_scaled = all_pn.nlp.controls.scaled[0].cx_start  # TODO: [0] to [node_index]
             else:
-                state_cx_scaled = all_pn.nlp.states[0]["scaled"].cx_start  # TODO: [0] to [node_index]
-                control_cx_scaled = all_pn.nlp.controls[0]["scaled"].cx_start  # TODO: [0] to [node_index]
+                state_cx_scaled = all_pn.nlp.states.scaled[0].cx_start  # TODO: [0] to [node_index]
+                control_cx_scaled = all_pn.nlp.controls.scaled[0].cx_start  # TODO: [0] to [node_index]
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                 state_cx_scaled = horzcat(
-                    state_cx_scaled, all_pn.nlp.states[0]["scaled"].cx_end
+                    state_cx_scaled, all_pn.nlp.states.scaled[0].cx_end
                 )  # TODO: [0] to [node_index]
                 control_cx_scaled = horzcat(
-                    control_cx_scaled, all_pn.nlp.controls[0]["scaled"].cx_end
+                    control_cx_scaled, all_pn.nlp.controls.scaled[0].cx_end
                 )  # TODO: [0] to [node_index]
 
         param_cx = nlp.cx(nlp.parameters.cx_start)
@@ -453,18 +453,18 @@ class PenaltyOption(OptionGeneric):
 
         if self.derivative:
             state_cx_scaled = horzcat(
-                all_pn.nlp.states[0]["scaled"].cx_end, all_pn.nlp.states[0]["scaled"].cx_start
+                all_pn.nlp.states.scaled[0].cx_end, all_pn.nlp.states.scaled[0].cx_start
             )  # TODO: [0] to [node_index]
             control_cx_scaled = horzcat(
-                all_pn.nlp.controls[0]["scaled"].cx_end, all_pn.nlp.controls[0]["scaled"].cx_start
+                all_pn.nlp.controls.scaled[0].cx_end, all_pn.nlp.controls.scaled[0].cx_start
             )  # TODO: [0] to [node_index]
             self.function = biorbd.to_casadi_func(
                 f"{name}",
                 self.function(
-                    all_pn.nlp.states[0]["scaled"].cx_end, all_pn.nlp.controls[0]["scaled"].cx_end, param_cx
+                    all_pn.nlp.states.scaled[0].cx_end, all_pn.nlp.controls.scaled[0].cx_end, param_cx
                 )  # TODO: [0] to [node_index]
                 - self.function(
-                    all_pn.nlp.states[0]["scaled"].cx_start, all_pn.nlp.controls[0]["scaled"].cx_start, param_cx
+                    all_pn.nlp.states.scaled[0].cx_start, all_pn.nlp.controls.scaled[0].cx_start, param_cx
                 ),  # TODO: [0] to [node_index]
                 state_cx_scaled,
                 control_cx_scaled,
@@ -491,10 +491,10 @@ class PenaltyOption(OptionGeneric):
             # it neglects the discontinuities at the beginning of the optimization
             state_cx_scaled = (
                 horzcat(
-                    all_pn.nlp.states[0]["scaled"].cx_start, all_pn.nlp.states[0]["scaled"].cx_end
+                    all_pn.nlp.states.scaled[0].cx_start, all_pn.nlp.states.scaled[0].cx_end
                 )  # TODO: [0] to [node_index]
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else all_pn.nlp.states[0]["scaled"].cx_start  # TODO: [0] to [node_index]
+                else all_pn.nlp.states.scaled[0].cx_start  # TODO: [0] to [node_index]
             )
             state_cx = (
                 horzcat(all_pn.nlp.states[0].cx_start, all_pn.nlp.states[0].cx_end)  # TODO: [0] to [node_index]
@@ -504,10 +504,10 @@ class PenaltyOption(OptionGeneric):
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx_scaled = (
-                horzcat(all_pn.nlp.controls[0]["scaled"].cx_start)  # TODO: [0] to [node_index]
+                horzcat(all_pn.nlp.controls.scaled[0].cx_start)  # TODO: [0] to [node_index]
                 if nlp.control_type == ControlType.CONSTANT
                 else horzcat(
-                    all_pn.nlp.controls[0]["scaled"].cx_start, all_pn.nlp.controls[0]["scaled"].cx_end
+                    all_pn.nlp.controls.scaled[0].cx_start, all_pn.nlp.controls.scaled[0].cx_end
                 )  # TODO: [0] to [node_index]
             )
             control_cx = (
@@ -520,7 +520,7 @@ class PenaltyOption(OptionGeneric):
             control_cx_end_scaled = get_u(nlp, control_cx_scaled, dt_cx)
             control_cx_end = get_u(nlp, control_cx, dt_cx)
             state_cx_end_scaled = (
-                all_pn.nlp.states[0]["scaled"].cx_end  # TODO: [0] to [node_index]
+                all_pn.nlp.states.scaled[0].cx_end  # TODO: [0] to [node_index]
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else nlp.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp.parameters.cx_start)["xf"]
             )
@@ -529,7 +529,7 @@ class PenaltyOption(OptionGeneric):
                 (
                     (
                         self.function(
-                            all_pn.nlp.states[0]["scaled"].cx_start, all_pn.nlp.controls[0]["scaled"].cx_start, param_cx
+                            all_pn.nlp.states.scaled[0].cx_start, all_pn.nlp.controls.scaled[0].cx_start, param_cx
                         )  # TODO: [0] to [node_index]
                         - target_cx[:, 0]
                     )
