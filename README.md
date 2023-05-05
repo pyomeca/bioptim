@@ -1061,8 +1061,8 @@ The dimensions of the target must be of [index, node]
 The `ConstraintFcn` class provides a list of some predefined constraint functions. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 It is possible however to define a custom constraint by sending a function handler in place of the `ConstraintFcn`.
-The signature of this custom function is: `custom_function(pn: PenaltyNodeList, **extra_params)`
-The PenaltyNodeList contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Constraint` constructor. 
+The signature of this custom function is: `custom_function(pn: PenaltyController, **extra_params)`
+The PenaltyController contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Constraint` constructor. 
 The function is expected to return an MX vector of the constraint to be inside `min_bound` and `max_bound`. 
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom constraint should be at least familiar with this type beforehand. 
@@ -1204,8 +1204,8 @@ The `ObjectiveFcn` class provides a list of some predefined objective functions.
 Since `ObjectiveFcn.Lagrange` and `ObjectiveFcn.Mayer` are Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 It is possible however to define a custom objective function by sending a function handler in place of the `ObjectiveFcn`.
 If one do so, an additional parameter must be sent to the `Objective` constructor which is `custom_type` and must be either `ObjectiveFcn.Lagrange` or `ObjectiveFcn.Mayer`.
-The signature of the custom function is: `custom_function(pn: PenaltyNodeList, **extra_params)`
-The PenaltyNodeList contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Objective` constructor. 
+The signature of the custom function is: `custom_function(pn: PenaltyController, **extra_params)`
+The PenaltyController contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Objective` constructor. 
 The function is expected to return an MX vector of the objective function. 
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom objective functions should be at least familiar with this type beforehand. 

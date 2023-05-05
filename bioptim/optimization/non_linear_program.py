@@ -144,6 +144,7 @@ class NonLinearProgram:
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
         self.U_scaled = None
+        self.u_scaling = None
         self.U = None
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
@@ -151,6 +152,7 @@ class NonLinearProgram:
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
         self.X_scaled = None
+        self.x_scaling = None
         self.X = None
         self.states = OptimizationVariableContainer()
         self.states_dot = OptimizationVariableContainer()

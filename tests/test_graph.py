@@ -24,7 +24,7 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Node,
-    PenaltyNodeList,
+    PenaltyController,
     PhaseTransitionList,
     PhaseTransitionFcn,
     ParameterList,
@@ -34,24 +34,24 @@ from bioptim.gui.graph import OcpToGraph
 from .utils import TestUtils
 
 
-def minimize_difference(all_pn: PenaltyNodeList):
-    return (
-        all_pn[0].nlp.controls[0]["tau"].cx_end - all_pn[1].nlp.controls[0]["tau"].cx_start
-    )  # TODO: [0] to [node_index]
+def minimize_difference(controllers: list[PenaltyController, PenaltyController]):
+    pre = controllers[0]
+    post = controllers[1]
+    return pre.nlp.controls[0]["tau"].cx_end - post.nlp.controls[0]["tau"].cx_start  # TODO: [0] to [node_index]
 
 
-def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str) -> MX:
+def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str) -> MX:
     # Get the index of the markers from their name
-    marker_0_idx = all_pn.nlp.model.marker_index(first_marker)
-    marker_1_idx = all_pn.nlp.model.marker_index(second_marker)
+    marker_0_idx = controller.nlp.model.marker_index(first_marker)
+    marker_1_idx = controller.nlp.model.marker_index(second_marker)
 
     # Convert the function to the required format and then subtract
     from bioptim import BiorbdModel
 
     # noinspection PyTypeChecker
-    model: BiorbdModel = all_pn.nlp.model
-    markers = all_pn.nlp.mx_to_cx(
-        "markers", model.model.markers, all_pn.nlp.states[0]["q"]
+    model: BiorbdModel = controller.nlp.model
+    markers = controller.nlp.mx_to_cx(
+        "markers", model.model.markers, controller.nlp.states[0]["q"]
     )  # TODO: [0] to [node_index]
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 

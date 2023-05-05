@@ -143,7 +143,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: list | tuple | BioModel | MultiBiorbdModel,
+        bio_model: list | tuple | BioModel,
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
@@ -429,6 +429,9 @@ class OptimalControlProgram:
         # Type of CasADi graph
         self.cx = SX if use_sx else MX
 
+        # If the dynamics should be declared individually for each node of the phase or not
+        self.assume_phase_dynamics = assume_phase_dynamics
+
         # Declare optimization variables
         self.program_changed = True
         self.J = []
@@ -518,8 +521,6 @@ class OptimalControlProgram:
         self._check_variable_mapping_consistency_with_node_mapping(
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
-
-        self.assume_phase_dynamics = assume_phase_dynamics
 
         # Prepare the dynamics
         for i in range(self.n_phases):
@@ -831,16 +832,12 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states[0]:  # TODO: [0] to [node_index]
+            for key in nlp.states:
                 if f"{key}_states" in nlp.plot:
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[
-                        nlp.states[0][key].index
-                    ]  # TODO: [0] to [node_index]
-            for key in nlp.controls[0]:  # TODO: [0] to [node_index]
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
+            for key in nlp.controls:
                 if f"{key}_controls" in nlp.plot:
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[
-                        nlp.controls[0][key].index
-                    ]  # TODO: [0] to [node_index]
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
 
     def update_initial_guess(
         self,
@@ -979,7 +976,7 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(t, x, u, p, penalty, dt):
+        def compute_penalty_values(t, x, u, p, penalty, dt: int | Callable):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
@@ -995,7 +992,7 @@ class OptimalControlProgram:
                 Parameters vector
             penalty: Penalty
                 The penalty object containing details on how to compute it
-            dt: float
+            dt: float, Callable
                 Time step for the whole interval
 
             Returns

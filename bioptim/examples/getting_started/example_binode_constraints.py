@@ -4,11 +4,10 @@ a the at different marker at the end of each phase. Moreover a constraint on the
 Extra constraints are defined between specific nodes of phases.
 It is designed to show how one can define a binode constraints and objectives in a multiphase optimal control program
 """
+
 from casadi import MX
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
-    PenaltyNode,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,

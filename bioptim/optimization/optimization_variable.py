@@ -619,13 +619,6 @@ class OptimizationVariableContainer:
         else:
             raise ValueError("item should be a node index or the name of the variable")
 
-    # TODO Benjamin See if this is important
-    # def __setitem__(self, item: int | str | list | range, value: OptimizationVariableList | np.ndarray):
-    #     if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
-    #         self.optimization_variable[item] = value
-    #     else:
-    #         self.unscaled[0][item] = value  # TODO Benjamin node?
-
     def keys(self):
         return self.unscaled[0].keys()
 
@@ -682,43 +675,6 @@ class OptimizationVariableContainer:
 
         return item in self.unscaled[0]
 
-    def get_cx(self, key, cx_type):
-        return self.unscaled[0].get_cx(key, cx_type)  # TODO Benjamin node?
-
-    @property
-    def cx_start(self):
-        """
-        The cx of all elements together (starting point)
-        """
-
-        return self.unscaled[0].cx_start  # TODO Benjamin node?
-
-    @property
-    def cx_end(self):
-        """
-        The cx of all elements together (starting point)
-        """
-
-        return self.unscaled[0].cx_end  # TODO Benjamin node?
-
-    """"autre a coder"""
-
-    @property
-    def cx_intermediates_list(self):
-        """
-        The cx of all elements together (starting point)
-        """
-
-        return self.unscaled[0].cx_intermediates_list  # TODO Benjamin node?
-
-    @property
-    def mx(self):
-        return self.unscaled[0].mx  # TODO Benjamin node?
-
-    @property
-    def mx_reduced(self):
-        return self.unscaled[0].mx_reduced  # TODO Benjamin node?
-
     def __len__(self):
         """
         The number of variables in the list
@@ -750,4 +706,4 @@ class OptimizationVariableContainer:
         self._iter_idx += 1
         if self._iter_idx > len(self):
             raise StopIteration
-        return self.unscaled[0][self._iter_idx - 1].name  # TODO Benjamin node?
+        return self.unscaled[0][self._iter_idx - 1].name
