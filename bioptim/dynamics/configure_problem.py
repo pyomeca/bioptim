@@ -941,7 +941,11 @@ class ConfigureProblem:
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
-        if not ocp.assume_phase_dynamics and (nlp.use_states_from_phase_idx != nlp.phase_idx or nlp.use_states_dot_from_phase_idx != nlp.phase_idx  or nlp.use_controls_from_phase_idx != nlp.phase_idx):
+        if not ocp.assume_phase_dynamics and (
+            nlp.use_states_from_phase_idx != nlp.phase_idx
+            or nlp.use_states_dot_from_phase_idx != nlp.phase_idx
+            or nlp.use_controls_from_phase_idx != nlp.phase_idx
+        ):
             # This check allows to use states[0], controls[0] in the following copy
             raise ValueError("map_state=True must be used alongside with assume_phase_dynamics=True")
 
@@ -976,15 +980,11 @@ class ConfigureProblem:
             )
 
         # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
-        mx_states = (
-            [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[0][name].mx]
-        )
+        mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[0][name].mx]
         mx_states_dot = (
             [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0][name].mx]
         )
-        mx_controls = (
-            [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[0][name].mx]
-        )
+        mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[0][name].mx]
 
         # todo: if mapping on variables, what do we do with mapping on the nodes
         for i in nlp.variable_mappings[name].to_second.map_idx:

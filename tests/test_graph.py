@@ -37,9 +37,7 @@ from .utils import TestUtils
 def minimize_difference(controllers: list[PenaltyController, PenaltyController]):
     pre = controllers[0]
     post = controllers[1]
-    return (
-        pre.nlp.controls[0]["tau"].cx_end - post.nlp.controls[0]["tau"].cx_start
-    )  # TODO: [0] to [node_index]
+    return pre.nlp.controls[0]["tau"].cx_end - post.nlp.controls[0]["tau"].cx_start  # TODO: [0] to [node_index]
 
 
 def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str) -> MX:

@@ -428,7 +428,8 @@ class PenaltyOption(OptionGeneric):
             if self.integrate:
                 state_cx_scaled = horzcat(
                     *(
-                        [controller.nlp.states.scaled[0].cx_start] + controller.nlp.states.scaled[0].cx_intermediates_list
+                        [controller.nlp.states.scaled[0].cx_start]
+                        + controller.nlp.states.scaled[0].cx_intermediates_list
                     )  # TODO: [0] to [node_index]
                 )
                 control_cx_scaled = controller.nlp.controls.scaled[0].cx_start  # TODO: [0] to [node_index]
@@ -532,7 +533,9 @@ class PenaltyOption(OptionGeneric):
                 (
                     (
                         self.function(
-                            controller.nlp.states.scaled[0].cx_start, controller.nlp.controls.scaled[0].cx_start, param_cx
+                            controller.nlp.states.scaled[0].cx_start,
+                            controller.nlp.controls.scaled[0].cx_start,
+                            param_cx,
                         )  # TODO: [0] to [node_index]
                         - target_cx[:, 0]
                     )

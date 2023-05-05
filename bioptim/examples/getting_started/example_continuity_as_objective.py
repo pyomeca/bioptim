@@ -45,7 +45,9 @@ def out_of_sphere(controller: PenaltyController, y, z):
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 
-    return controller.nlp.mx_to_cx("out_of_sphere", distance, controller.nlp.states[0]["q"])  # TODO: [0] to [node_index]
+    return controller.nlp.mx_to_cx(
+        "out_of_sphere", distance, controller.nlp.states[0]["q"]
+    )  # TODO: [0] to [node_index]
 
 
 def prepare_ocp_first_pass(

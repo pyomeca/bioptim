@@ -110,7 +110,9 @@ class BinodeConstraint(Constraint):
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController, PenaltyController]):
         if not isinstance(controller, (list, tuple)):
-            raise RuntimeError("_add_penalty for multi constraints function was called without a list while it should not")
+            raise RuntimeError(
+                "_add_penalty for multi constraints function was called without a list while it should not"
+            )
 
         ocp = controller[0].ocp
         nlp = controller[0].nlp
@@ -221,7 +223,9 @@ class AllNodeConstraint(Constraint):
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
         if not isinstance(controller, (list, tuple)):
-            raise RuntimeError("_add_penalty for multi constraints function was called without a list while it should not")
+            raise RuntimeError(
+                "_add_penalty for multi constraints function was called without a list while it should not"
+            )
 
         ocp = controller[0].ocp
         nlp = controller[0].nlp

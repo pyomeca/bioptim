@@ -292,8 +292,7 @@ class OdeSolver:
                 )
 
             ode = {
-                "x_unscaled": [nlp.states[node_index].cx_start]
-                + nlp.states[node_index].cx_intermediates_list,
+                "x_unscaled": [nlp.states[node_index].cx_start] + nlp.states[node_index].cx_intermediates_list,
                 "x_scaled": [nlp.states.scaled[node_index].cx_start]
                 + nlp.states.scaled[node_index].cx_intermediates_list,
                 "p_unscaled": nlp.controls[node_index].cx_start,
@@ -424,7 +423,9 @@ class OdeSolver:
                 "x": nlp.states.scaled[node_index].cx_start,
                 "p": nlp.controls.scaled[node_index].cx_start,
                 "ode": nlp.dynamics_func(
-                    nlp.states.scaled[node_index].cx_start, nlp.controls.scaled[node_index].cx_start, nlp.parameters.cx_start
+                    nlp.states.scaled[node_index].cx_start,
+                    nlp.controls.scaled[node_index].cx_start,
+                    nlp.parameters.cx_start,
                 ),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
@@ -440,7 +441,9 @@ class OdeSolver:
                         nlp.parameters.cx_start,
                     ],
                     self._adapt_integrator_output(
-                        integrator_func, nlp.states.scaled[node_index].cx_start, nlp.controls.scaled[node_index].cx_start
+                        integrator_func,
+                        nlp.states.scaled[node_index].cx_start,
+                        nlp.controls.scaled[node_index].cx_start,
                     ),
                     ["x0", "p", "params"],
                     ["xf", "xall"],
