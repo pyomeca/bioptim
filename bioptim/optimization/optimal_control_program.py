@@ -976,7 +976,7 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(t, x, u, p, penalty, dt):
+        def compute_penalty_values(t, x, u, p, penalty, dt: int | Callable):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
@@ -992,7 +992,7 @@ class OptimalControlProgram:
                 Parameters vector
             penalty: Penalty
                 The penalty object containing details on how to compute it
-            dt: float
+            dt: float, Callable
                 Time step for the whole interval
 
             Returns
