@@ -70,7 +70,7 @@ class OdeSolverBase:
             A reference to the current phase of the ocp
         """
         nlp.dynamics = []
-        nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, 0)
+        nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0)
         if ocp.assume_phase_dynamics:
             nlp.dynamics = nlp.dynamics * nlp.ns
         else:
@@ -125,7 +125,7 @@ class RK(OdeSolverBase):
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
-            "idx": 0, # TODO Benjamin
+            "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
             "defects_type": DefectType.NOT_APPLICABLE,
@@ -145,6 +145,8 @@ class RK(OdeSolverBase):
         }
 
         if ode["ode"].size2_out("xdot") != 1:
+            # If the ode is designed for each node, use the proper node, otherwise use the first one
+            # Please note this is unrelated to ocp.assume_phase_dynamics
             ode_opt["idx"] = node_index
         return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
@@ -305,7 +307,7 @@ class OdeSolver:
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
-                "idx": 0,  # TODO Benjamin
+                "idx": 0,
                 "control_type": nlp.control_type,
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
                 "method": self.method,

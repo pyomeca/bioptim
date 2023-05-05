@@ -832,16 +832,12 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states[0]:  # TODO: [0] to [node_index]
+            for key in nlp.states:
                 if f"{key}_states" in nlp.plot:
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[
-                        nlp.states[0][key].index
-                    ]  # TODO: [0] to [node_index]
-            for key in nlp.controls[0]:  # TODO: [0] to [node_index]
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
+            for key in nlp.controls:
                 if f"{key}_controls" in nlp.plot:
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[
-                        nlp.controls[0][key].index
-                    ]  # TODO: [0] to [node_index]
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
 
     def update_initial_guess(
         self,
