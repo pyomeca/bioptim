@@ -391,7 +391,7 @@ class PlotOcp:
 
                 mapping = nlp.plot[variable].phase_mappings.map_idx
                 for ctr, axe_index in enumerate(mapping):
-                    ax = axes[axe_index]
+                    ax = axes[ctr]
                     if ctr < len(nlp.plot[variable].legend):
                         ax.set_title(nlp.plot[variable].legend[ctr])
                     ax.grid(**self.plot_options["grid"])
