@@ -2,7 +2,21 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import InterpolationType, InitialGuess, Solution, Shooting, SolutionIntegrator, BiorbdModel, Objective, Dynamics, DynamicsFcn, Bounds, ObjectiveFcn, OptimalControlProgram, InitialGuessList
+from bioptim import (
+    InterpolationType,
+    InitialGuess,
+    Solution,
+    Shooting,
+    SolutionIntegrator,
+    BiorbdModel,
+    Objective,
+    Dynamics,
+    DynamicsFcn,
+    Bounds,
+    ObjectiveFcn,
+    OptimalControlProgram,
+    InitialGuessList,
+)
 
 # TODO: Add negative test for sizes
 
@@ -287,7 +301,10 @@ def test_initial_guess_error_messages():
         )
 
     x_init = InitialGuessList()
-    with pytest.raises(RuntimeError, match="You must please declare an initial guess for the states (x_init). Here, the InitialGuessList is empty."):
+    with pytest.raises(
+        RuntimeError,
+        match="You must please declare an initial guess for the states (x_init). Here, the InitialGuessList is empty.",
+    ):
         OptimalControlProgram(
             bio_model,
             dynamics,

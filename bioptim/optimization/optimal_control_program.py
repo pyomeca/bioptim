@@ -302,7 +302,9 @@ class OptimalControlProgram:
             x_bounds_tp.add(bounds=x_bounds)
             x_bounds = x_bounds_tp
         elif isinstance(x_bounds, BoundsList) and len(x_bounds) == 0:
-            raise RuntimeError("If you do not want to provide an x_bounds, you should declare x_bounds=None instead of an empty BoundsList")
+            raise RuntimeError(
+                "If you do not want to provide an x_bounds, you should declare x_bounds=None instead of an empty BoundsList"
+            )
         elif not isinstance(x_bounds, BoundsList):
             raise RuntimeError("x_bounds should be built from a Bounds or a BoundsList")
 
@@ -313,7 +315,9 @@ class OptimalControlProgram:
             u_bounds_tp.add(bounds=u_bounds)
             u_bounds = u_bounds_tp
         elif isinstance(u_bounds, BoundsList) and len(u_bounds) == 0:
-            raise RuntimeError("If you do not want to provide a u_bounds, you should declare u_bounds=None instead of an empty BoundsList")
+            raise RuntimeError(
+                "If you do not want to provide a u_bounds, you should declare u_bounds=None instead of an empty BoundsList"
+            )
         elif not isinstance(u_bounds, BoundsList):
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
@@ -332,7 +336,9 @@ class OptimalControlProgram:
             x_init_tp.add(x_init.init)
             x_init = x_init_tp
         elif isinstance(x_init, InitialGuessList) and len(x_init) == 0:
-            raise RuntimeError("You must please declare an initial guess for the states x_init. Here, the InitialGuessList is empty.")
+            raise RuntimeError(
+                "You must please declare an initial guess for the states x_init. Here, the InitialGuessList is empty."
+            )
         elif not isinstance(x_init, InitialGuessList):
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
@@ -351,7 +357,9 @@ class OptimalControlProgram:
             u_init_tp.add(u_init.init)
             u_init = u_init_tp
         elif isinstance(u_init, InitialGuessList) and len(u_init) == 0:
-            raise RuntimeError("You must please declare an initial guess for the controls u_init. Here, the InitialGuessList is empty.")
+            raise RuntimeError(
+                "You must please declare an initial guess for the controls u_init. Here, the InitialGuessList is empty."
+            )
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
