@@ -216,19 +216,20 @@ class OptimizationVector:
         n_points = nlp.ode_solver.polynomial_degree + 1
         x_init_vector = np.zeros(
             (nlp.states.scaled[0].shape, self.n_phase_x[phase] // nlp.states.scaled[0].shape)
-        )  # TODO: [0] to [node_index]
+        )
         init_values = (
             self.ocp.original_values["x_init"][phase].init
             if isinstance(self.ocp.original_values["x_init"], InitialGuessList)
             else self.ocp.original_values["x_init"].init
         )
-        # the linear interpolation is performed at the given time steps from the ode solver
-        steps = np.array(
-            nlp.ode_solver.integrator(self.ocp, nlp, node_index=None)[0].step_time
-        )  # TODO: [0] Change node_index Benjamin
 
         for idx_state, state in enumerate(init_values):
             for frame in range(nlp.ns):
+                # the linear interpolation is performed at the given time steps from the ode solver
+                steps = np.array(
+                    nlp.ode_solver.integrator(self.ocp, nlp, node_index=0 if self.ocp.assume_phase_dynamics else frame)[0].step_time
+                )
+
                 x_init_vector[idx_state, frame * n_points : (frame + 1) * n_points] = (
                     state[frame] + (state[frame + 1] - state[frame]) * steps
                 )

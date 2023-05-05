@@ -66,6 +66,7 @@ def prepare_ocp(
     random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
     ode_solver=OdeSolver.COLLOCATION(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -84,6 +85,8 @@ def prepare_ocp(
         The type of interpolation to use for the initial guesses
     ode_solver: OdeSolver
         The type of ode solver used
+    assume_phase_dynamics: bool
+        If the dynamics of each individual node should be computed or assumed to be the same across the phase
 
     Returns
     -------
@@ -196,7 +199,7 @@ def prepare_ocp(
         x_scaling=x_scaling,
         xdot_scaling=xdot_scaling,
         u_scaling=u_scaling,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

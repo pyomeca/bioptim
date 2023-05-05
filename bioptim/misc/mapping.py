@@ -488,7 +488,7 @@ class NodeMappingList(OptionDict):
             The BiMapping to copy
         """
 
-        if map_states == False and map_controls == False:
+        if not map_states and not map_controls:
             raise Warning(
                 "You should use either map_states=True or map_controls=True. "
                 "For now your node mapping has no effect."
