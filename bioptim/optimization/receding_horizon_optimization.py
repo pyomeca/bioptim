@@ -196,12 +196,11 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         self.frame_to_export = export_options["frame_to_export"]
 
     def _initialize_solution(self, states: list, controls: list):
-        _states = InitialGuess(
-            np.concatenate(states, axis=1), interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
-        )
-        _controls = InitialGuess(
-            np.concatenate(controls, axis=1), interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
-        )
+        _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
+        if self.original_values["control_type"] == ControlType.CONSTANT:
+            init_controls = InitialGuess(np.concatenate(controls, axis=1)[:, :-1], interpolation=InterpolationType.EACH_FRAME)
+        else:
+            init_controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
@@ -212,12 +211,13 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             phase_time=self.total_optimization_run * self.nlp[0].dt,
             skip_continuity=True,
             x_init=_states,
-            u_init=_controls,
+            u_init=init_controls,
             x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
             xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
             u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
             use_sx=self.original_values["use_sx"],
         )
+        _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
         return Solution(solution_ocp, [_states, _controls])
 
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
