@@ -151,7 +151,7 @@ class DynamicsFunctions:
         # TODO: contacts and fatigue to be handled with implicit dynamics
         if not with_contact and fatigue is None:
             qddot = DynamicsFunctions.get(
-                nlp.states_dot[0]["qddot"], nlp.states_dot[0]["scaled"].mx_reduced
+                nlp.states_dot[0]["qddot"], nlp.states_dot.scaled[0].mx_reduced
             )  # TODO: [0] to [node_index]
             tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
             defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
@@ -164,7 +164,7 @@ class DynamicsFunctions:
                         nlp,
                         q,
                         DynamicsFunctions.get(
-                            nlp.states_dot[0]["scaled"]["qdot"], nlp.states_dot[0]["scaled"].mx_reduced
+                            nlp.states_dot.scaled[0]["qdot"], nlp.states_dot.scaled[0].mx_reduced
                         ),  # TODO: [0] to [node_index]
                     )
                 )
@@ -702,31 +702,35 @@ class DynamicsFunctions:
         qddot_joints = DynamicsFunctions.get(nlp.controls[0]["qddot_joints"], controls)  # TODO: [0] to [node_index]
 
         qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
-        qddot_root_func = Function("qddot_root_func", [q, qdot, qddot_joints], [qddot_root]).expand()
+        qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
 
         # defects
-        qddot_root = DynamicsFunctions.get(
-            nlp.states_dot[0]["qddot_roots"], nlp.states_dot[0].mx_reduced
-        )  # TODO: [0] to [node_index]
-        qddot = vertcat(qddot_root, qddot_joints)
+        qddot_root_defects = DynamicsFunctions.get(nlp.states_dot[0]["qddot_roots"], nlp.states_dot[0].mx_reduced)
+        qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
 
-        floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot)[: nlp.model.nb_root]
+        floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered)[: nlp.model.nb_root]
 
-        defects = MX(qdot.shape[0] + qddot.shape[0], 1)
+        qdot_mapped = nlp.variable_mappings["qdot"].to_first.map(qdot)
+        qddot_mapped = nlp.variable_mappings["qdot"].to_first.map(qddot_reordered)
+        qddot_root_mapped = nlp.variable_mappings["qddot_roots"].to_first.map(qddot_root)
+        qddot_joints_mapped = nlp.variable_mappings["qddot_joints"].to_first.map(qddot_joints)
 
-        defects[: qdot.shape[0], :] = qdot - DynamicsFunctions.compute_qdot(
-            nlp,
-            q,
-            DynamicsFunctions.get(nlp.states_dot[0]["qdot"], nlp.states_dot[0].mx_reduced),  # TODO: [0] to [node_index]
+        defects = MX(qdot_mapped.shape[0] + qddot_root_mapped.shape[0] + qddot_joints_mapped.shape[0], 1)
+
+        defects[: qdot_mapped.shape[0], :] = qdot_mapped - nlp.variable_mappings["qdot"].to_first.map(
+            DynamicsFunctions.compute_qdot(
+                nlp, q, DynamicsFunctions.get((nlp.states_dot[0]["qdot"]), nlp.states_dot[0].mx_reduced)
+            )
         )
-        defects[qdot.shape[0] : (qdot.shape[0] + qddot_root.shape[0]), :] = floating_base_constraint
-        defects[(qdot.shape[0] + qddot_root.shape[0]) :, :] = qddot_joints - DynamicsFunctions.get(
-            nlp.states_dot[0]["qddot_joints"], nlp.states_dot[0].mx_reduced  # TODO: [0] to [node_index]
-        )
 
-        return DynamicsEvaluation(
-            dxdt=vertcat(qdot, qddot_root_func(q, qdot, qddot_joints), qddot_joints), defects=defects
-        )
+        defects[
+            qdot_mapped.shape[0] : (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]), :
+        ] = floating_base_constraint
+        defects[(qdot_mapped.shape[0] + qddot_root_mapped.shape[0]) :, :] = qddot_joints_mapped - nlp.variable_mappings[
+            "qddot_joints"
+        ].to_first.map(DynamicsFunctions.get(nlp.states_dot[0]["qddot_joints"], nlp.states_dot[0].mx_reduced))
+
+        return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=defects)
 
     @staticmethod
     def get(var: OptimizationVariable, cx: MX | SX):

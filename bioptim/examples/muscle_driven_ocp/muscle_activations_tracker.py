@@ -8,6 +8,8 @@ and kinematics would indeed be acquired via data acquisition devices
 The difference between muscle activation and excitation is that the latter is the derivative of the former
 """
 
+import platform
+
 from scipy.integrate import solve_ivp
 import numpy as np
 import biorbd_casadi as biorbd
@@ -83,9 +85,12 @@ def generate_data(
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.states
-    nlp.states_dot = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.states_dot
-    nlp.controls = [OptimizationVariableContainer() for _ in range(n_shooting)]  # Initialize nlp.controls
+    nlp.states = OptimizationVariableContainer()
+    nlp.states_dot = OptimizationVariableContainer()
+    nlp.controls = OptimizationVariableContainer()
+    nlp.states.initialize_from_shooting(n_shooting, MX)
+    nlp.states_dot.initialize_from_shooting(n_shooting, MX)
+    nlp.controls.initialize_from_shooting(n_shooting, MX)
 
     for node_index in range(n_shooting):
         nlp.states[node_index].append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
@@ -301,7 +306,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show the results --- #
     q = sol.states["q"]

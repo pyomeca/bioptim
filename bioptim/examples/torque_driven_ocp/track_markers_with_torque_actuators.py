@@ -7,7 +7,8 @@ to not converge when it is used on more complicated model. A solution that defin
 better idea. An example of which can be found with the bioptim paper.
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     Node,
@@ -130,7 +131,7 @@ def main():
     ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, actuator_type=2)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

@@ -6,8 +6,9 @@ It is designed to show how one can define its phase transition constraints if th
 More specifically, this example mimics the behaviour of the most common PhaseTransitionFcn.CONTINUOUS
 """
 
+import platform
+
 from casadi import MX
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -188,7 +189,7 @@ def main():
     ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.print_cost()

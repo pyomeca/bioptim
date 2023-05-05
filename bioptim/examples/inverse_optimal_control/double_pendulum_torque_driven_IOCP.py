@@ -6,7 +6,6 @@ Please note that this example is dependent on the external library Pygmo which c
 conda install -c conda-forge pygmo
 """
 
-import pygmo as pg
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -145,6 +144,8 @@ class prepare_iocp:
 
 
 def main():
+    import pygmo as pg
+
     # Generate data using OCP
     weights_to_track = [0.4, 0.3, 0.3]
     ocp_to_track = prepare_ocp(weights=weights_to_track, coefficients=[1, 1, 1])

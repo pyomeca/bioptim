@@ -3,7 +3,7 @@ from typing import Callable, Any
 import casadi
 from casadi import SX, MX, Function, horzcat
 
-from .optimization_variable import OptimizationVariableList, OptimizationVariable, OptimizationVariableContainer
+from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
@@ -83,7 +83,7 @@ class NonLinearProgram:
         The initial guess for the controls
     U: list[MX | SX]
         The casadi variables for the integration at each node of the phase
-    controls: OptimizationVariableList
+    controls: OptimizationVariableContainer
         A list of all the control variables
     x_bounds = Bounds()
         The bounds for the states
@@ -91,7 +91,7 @@ class NonLinearProgram:
         The initial guess for the states
     X: list[MX | SX]
         The casadi variables for the integration at each node of the phase
-    states: OptimizationVariableList
+    states: OptimizationVariableContainer
         A list of all the state variables
 
     Methods
@@ -174,9 +174,9 @@ class NonLinearProgram:
         self.g_internal = []
         self.casadi_func = {}
 
-        self.states = self.states._set_states_and_controls(n_shooting=self.ns + 1, cx=self.cx)
-        self.states_dot = self.states_dot._set_states_and_controls(n_shooting=self.ns + 1, cx=self.cx)
-        self.controls = self.controls._set_states_and_controls(n_shooting=self.ns + 1, cx=self.cx)
+        self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+        self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+        self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):

@@ -384,7 +384,7 @@ class Solution:
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
                 s.init.check_and_adjust_dimensions(
-                    self.ocp.nlp[p].states[0]["scaled"].shape, ns, "states"
+                    self.ocp.nlp[p].states.scaled[0].shape, ns, "states"
                 )  # TODO: [0] to [node_index]
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
@@ -397,7 +397,7 @@ class Solution:
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
                 s.init.check_and_adjust_dimensions(
-                    self.ocp.nlp[p].controls[0]["scaled"].shape, self.ns[p], "controls"
+                    self.ocp.nlp[p].controls.scaled[0].shape, self.ns[p], "controls"
                 )  # TODO: [0] to [node_index]
                 for i in range(self.ns[p] + off):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
@@ -1429,10 +1429,14 @@ class Solution:
                             self._states["scaled"][phase_post]["all"][:, 0],
                         )
                     )
-                    u = np.concatenate(
-                        (
-                            self._controls["scaled"][phase_idx]["all"][:, -1],
-                            self._controls["scaled"][phase_post]["all"][:, 0],
+                    u = (
+                        []
+                        if nlp.control_type == ControlType.NONE
+                        else np.concatenate(
+                            (
+                                self._controls["scaled"][phase_idx]["all"][:, -1],
+                                self._controls["scaled"][phase_post]["all"][:, 0],
+                            )
                         )
                     )
                 elif penalty.binode_constraint:
@@ -1488,7 +1492,11 @@ class Solution:
                     else:
                         x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]
 
-                    u = self._controls["scaled"][phase_idx]["all"][:, col_u_idx]
+                    u = (
+                        []
+                        if nlp.control_type == ControlType.NONE
+                        else self._controls["scaled"][phase_idx]["all"][:, col_u_idx]
+                    )
                     if penalty.target is None:
                         target = []
                     elif (

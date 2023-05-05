@@ -348,14 +348,14 @@ class OptimizationVariableList:
         The number of variables in the list
     """
 
-    def __init__(self):
+    def __init__(self, cx_constructor):
         self.elements: list = []
         self.fake_elements: list = []
         self._cx_start: MX | SX | np.ndarray = np.array([])
         self._cx_end: MX | SX | np.ndarray = np.array([])
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
-        self.cx_constructor = None
+        self.cx_constructor = cx_constructor
 
     def __getitem__(self, item: int | str | list | range):
         """
@@ -583,49 +583,55 @@ class OptimizationVariableList:
 
 
 class OptimizationVariableContainer:
-    def __init__(self, variable_scaled=None, variables_unscaled=None, casadi_symbolic_callable: Callable = None):
-        self.cx_constructor = casadi_symbolic_callable
-        if variable_scaled is None:
-            variable_scaled = OptimizationVariableList()
-            variable_scaled.cx_constructor = self.cx_constructor
-        if variables_unscaled is None:
-            variables_unscaled = OptimizationVariableList()
-            variable_scaled.cx_constructor = self.cx_constructor
-        self.optimization_variable = {"scaled": variable_scaled, "unscaled": variables_unscaled}
+    def __init__(self):
+        """
+        This is merely a declaration function, it is mandatory to call initialize_from_shooting to get valid structures
+        """
+        self.cx_constructor = None
+        self.unscaled: list[OptimizationVariableList, ...] = []
+        self.scaled: list[OptimizationVariableList, ...] = []
 
-    def __getitem__(self, item: int | str | list | range):
-        if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
-            return self.optimization_variable[item]
-        else:
-            return self.optimization_variable["unscaled"][item]
+    def initialize_from_shooting(self, n_shooting: int, cx: Callable):
+        """
+        Initialize the Container so the dimensions are up to number of shooting points of the program
 
-    def __setitem__(self, item: int | str | list | range, value: OptimizationVariableList | np.ndarray):
-        if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
-            self.optimization_variable[item] = value
-        else:
-            self.optimization_variable["unscaled"][item] = value
+        Parameters
+        ----------
+        n_shooting
+            The number of shooting points
+        cx
+            The type (MX or SX) of the variable
+        """
 
-    def _set_cx_constructor(self, cx_constructor: Callable = None):
-        "Sets the constructors with MX or SX, to be called later, as MX.zeros(...)"
-        if cx_constructor is None and not isinstance(cx_constructor, Callable):
+        if not isinstance(cx, Callable):
             raise ValueError("This entry should be either casadi.MX or casadi.SX")
-        self.cx_constructor = cx_constructor
-        self.optimization_variable["scaled"].cx_constructor = self.cx_constructor
-        self.optimization_variable["unscaled"].cx_constructor = self.cx_constructor
 
-    @staticmethod
-    def _set_states_and_controls(n_shooting: int, cx: MX) -> list:
-        out = [OptimizationVariableContainer() for _ in range(n_shooting)]
         for node_index in range(n_shooting):
-            out[node_index]._set_cx_constructor(cx)
-        return out
+            self.cx_constructor = cx
+            self.scaled.append(OptimizationVariableList(cx))
+            self.unscaled.append(OptimizationVariableList(cx))
+
+    def __getitem__(self, item: int | str):
+        if isinstance(item, int):
+            return self.unscaled[item]
+        elif isinstance(item, str):
+            return self.unscaled[0][item]
+        else:
+            raise ValueError("item should be a node index or the name of the variable")
+
+    # TODO Benjamin See if this is important
+    # def __setitem__(self, item: int | str | list | range, value: OptimizationVariableList | np.ndarray):
+    #     if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
+    #         self.optimization_variable[item] = value
+    #     else:
+    #         self.unscaled[0][item] = value  # TODO Benjamin node?
 
     def keys(self):
-        return self.optimization_variable["unscaled"].keys()
+        return self.unscaled[0].keys()
 
     @property
     def shape(self):
-        return self.optimization_variable["unscaled"].shape
+        return self.unscaled[0].shape
 
     def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
         """
@@ -643,7 +649,8 @@ class OptimizationVariableContainer:
             The Mapping of the MX against CX
         """
 
-        return self.optimization_variable["unscaled"].append(name, cx, mx, bimapping)
+        for unscaled in self.unscaled:
+            unscaled.append(name, cx, mx, bimapping)
 
     def append_from_scaled(
         self,
@@ -663,8 +670,8 @@ class OptimizationVariableContainer:
         scaled_optimization_variable: OptimizationVariable
             The scaled optimization variable associated with this variable
         """
-
-        return self.optimization_variable["unscaled"].append_from_scaled(name, cx, scaled_optimization_variable)
+        for unscaled in self.unscaled:
+            unscaled.append_from_scaled(name, cx, scaled_optimization_variable)
 
     def __contains__(self, item: str):
         """
@@ -673,10 +680,10 @@ class OptimizationVariableContainer:
         if item == "scaled" or item == "unscaled":
             return True
 
-        return item in self.optimization_variable["unscaled"]
+        return item in self.unscaled[0]
 
     def get_cx(self, key, cx_type):
-        return self.optimization_variable["unscaled"].get_cx(key, cx_type)
+        return self.unscaled[0].get_cx(key, cx_type)  # TODO Benjamin node?
 
     @property
     def cx_start(self):
@@ -684,7 +691,7 @@ class OptimizationVariableContainer:
         The cx of all elements together (starting point)
         """
 
-        return self.optimization_variable["unscaled"].cx_start
+        return self.unscaled[0].cx_start  # TODO Benjamin node?
 
     @property
     def cx_end(self):
@@ -692,7 +699,7 @@ class OptimizationVariableContainer:
         The cx of all elements together (starting point)
         """
 
-        return self.optimization_variable["unscaled"].cx_end
+        return self.unscaled[0].cx_end  # TODO Benjamin node?
 
     """"autre a coder"""
 
@@ -702,22 +709,22 @@ class OptimizationVariableContainer:
         The cx of all elements together (starting point)
         """
 
-        return self.optimization_variable["unscaled"].cx_intermediates_list
+        return self.unscaled[0].cx_intermediates_list  # TODO Benjamin node?
 
     @property
     def mx(self):
-        return self.optimization_variable["unscaled"].mx
+        return self.unscaled[0].mx  # TODO Benjamin node?
 
     @property
     def mx_reduced(self):
-        return self.optimization_variable["unscaled"].mx_reduced
+        return self.unscaled[0].mx_reduced  # TODO Benjamin node?
 
     def __len__(self):
         """
         The number of variables in the list
         """
 
-        return len(self.optimization_variable["unscaled"])
+        return len(self.unscaled[0])
 
     def __iter__(self):
         """
@@ -743,4 +750,4 @@ class OptimizationVariableContainer:
         self._iter_idx += 1
         if self._iter_idx > len(self):
             raise StopIteration
-        return self.optimization_variable["unscaled"][self._iter_idx - 1].name
+        return self.unscaled[0][self._iter_idx - 1].name  # TODO Benjamin node?

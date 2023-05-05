@@ -245,7 +245,7 @@ class RK(Integrator):
         x[:, 0] = states
 
         for i in range(1, self.n_step + 1):
-            t_norm_init = (i - 1) / self.n_step  # normalized time
+            t_norm_init = (i - 1) / self.n_step
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
 
             if self.model.nb_quaternions > 0:

@@ -18,6 +18,7 @@ from .utils import TestUtils
 
 class OptimalControlProgram:
     def __init__(self, nlp):
+        self.cx = nlp.cx
         self.assume_phase_dynamics = True
         self.n_phases = 1
         self.nlp = [nlp]
