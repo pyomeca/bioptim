@@ -225,7 +225,7 @@ class OptimizationVector:
         # the linear interpolation is performed at the given time steps from the ode solver
         steps = np.array(
             nlp.ode_solver.integrator(self.ocp, nlp, node_index=None)[0].step_time
-        )  # TODO: Change node_index
+        )  # TODO: [0] Change node_index Benjamin
 
         for idx_state, state in enumerate(init_values):
             for frame in range(nlp.ns):

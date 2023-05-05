@@ -143,7 +143,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: list | tuple | BioModel | MultiBiorbdModel,
+        bio_model: list | tuple | BioModel,
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
@@ -429,6 +429,9 @@ class OptimalControlProgram:
         # Type of CasADi graph
         self.cx = SX if use_sx else MX
 
+        # If the dynamics should be declared individually for each node of the phase or not
+        self.assume_phase_dynamics = assume_phase_dynamics
+
         # Declare optimization variables
         self.program_changed = True
         self.J = []
@@ -518,8 +521,6 @@ class OptimalControlProgram:
         self._check_variable_mapping_consistency_with_node_mapping(
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
-
-        self.assume_phase_dynamics = assume_phase_dynamics
 
         # Prepare the dynamics
         for i in range(self.n_phases):

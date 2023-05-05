@@ -941,20 +941,25 @@ class ConfigureProblem:
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
+        if not ocp.assume_phase_dynamics and (nlp.use_states_from_phase_idx or nlp.use_states_dot_from_phase_idx or nlp.use_controls_from_phase_idx):
+            # This check allows to use states[0], controls[0] in the following copy
+            raise ValueError("map_state=True must be used alongside with assume_phase_dynamics=True")
+
+        # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
         copy_states = (
             nlp.use_states_from_phase_idx is not None
             and nlp.use_states_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_states_from_phase_idx].states[0]  # TODO: [0] to [node_index]
+            and name in ocp.nlp[nlp.use_states_from_phase_idx].states[0]
         )
         copy_controls = (
             nlp.use_controls_from_phase_idx is not None
             and nlp.use_controls_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls[0]  # TODO: [0] to [node_index]
+            and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls[0]
         )
         copy_states_dot = (
             nlp.use_states_dot_from_phase_idx is not None
             and nlp.use_states_dot_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0]  # TODO: [0] to [node_index]
+            and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0]
         )
 
         if as_states and name not in nlp.x_scaling:
@@ -970,15 +975,17 @@ class ConfigureProblem:
                 key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
             )
 
+        # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
         mx_states = (
             [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[0][name].mx]
-        )  # TODO: [0] to [node_index]
+        )
         mx_states_dot = (
             [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0][name].mx]
-        )  # TODO: [0] to [node_index]
+        )
         mx_controls = (
             [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[0][name].mx]
-        )  # TODO: [0] to [node_index]
+        )
+
         # todo: if mapping on variables, what do we do with mapping on the nodes
         for i in nlp.variable_mappings[name].to_second.map_idx:
             var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
