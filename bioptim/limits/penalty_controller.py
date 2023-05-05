@@ -21,6 +21,7 @@ class PenaltyController:
         x_scaled: list,
         u_scaled: list,
         p: MX | SX | list,
+        node_index: int = 0,
     ):
         """
         Parameters
@@ -41,6 +42,8 @@ class PenaltyController:
             References to the scaled control variables
         p: MX | SX | list
             References to the parameter variables
+        node_index: int
+            Current node index if ocp.assume_phase_dynamics is True, then node_index is expected to be set to 0
         """
 
         self._ocp: Any = ocp
@@ -51,6 +54,7 @@ class PenaltyController:
         self.x_scaled = x_scaled
         self.u_scaled = u_scaled
         self.p = vertcat(p) if p is not None else p
+        self.node_index = node_index
 
     @property
     def ocp(self):

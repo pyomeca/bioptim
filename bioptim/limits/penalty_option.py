@@ -660,9 +660,7 @@ class PenaltyOption(OptionGeneric):
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(
-                    range(nlp.states[0].shape), range(nlp.states[0].shape)
-                )  # TODO: [0] to [node_index]
+                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
             controller.append(self._get_penalty_node_list(ocp, nlp))
             controller[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
@@ -745,9 +743,14 @@ class PenaltyOption(OptionGeneric):
 
         if ocp.assume_phase_dynamics:
             penalty_function = self.type(self, controller, **self.params)  # TODO: Ask Benjamin
+            self.set_penalty(penalty_function, controller)
         else:
+            # node_indices = [t for t in controller.t]
+            # for node_index in node_indices:
+            #     controller.t = [node_index]
+            #     controller.node_index = node_index
             penalty_function = self.type(self, controller, **self.params)  # TODO: Ask Benjamin
-        self.set_penalty(penalty_function, controller)
+            self.set_penalty(penalty_function, controller)
 
     def _add_penalty_to_pool(self, controller: PenaltyController | list[PenaltyController, ...]):
         """

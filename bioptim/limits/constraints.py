@@ -95,7 +95,7 @@ class Constraint(PenaltyOption):
 
     def _add_penalty_to_pool(self, controller: PenaltyController):
         if isinstance(controller, (list, tuple)):
-            raise RuntimeError("_add_penalty for objective function was called with a list while it should not")
+            controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = controller.nlp.g_internal if controller is not None and controller.nlp else controller.ocp.g_internal
