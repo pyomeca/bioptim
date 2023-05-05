@@ -5,7 +5,7 @@ import numpy as np
 
 from ..limits.objective_functions import ObjectiveFcn, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
-from ..limits.penalty_node import PenaltyController
+from ..limits.penalty_controller import PenaltyController
 from ..limits.penalty import PenaltyOption
 from ..misc.enums import InterpolationType, Node
 from ..misc.options import UniquePerProblemOptionList
@@ -125,7 +125,7 @@ class Parameter(PenaltyOption):
         ocp: OptimalControlProgram
             A reference to the ocp
         _: Any
-            The place holder for what is supposed to be nlp
+            The placeholder for what is supposed to be nlp
         """
 
         old_parameter_cx = ocp.v.parameters_in_list.cx_start
@@ -180,11 +180,11 @@ class Parameter(PenaltyOption):
 
                 func = penalty.custom_function
 
-                all_pn = PenaltyController(ocp, None, [], [], [], [], [], [])
+                controller = PenaltyController(ocp, None, [], [], [], [], [], [])
                 val = func(ocp, self.cx * self.scaling, **penalty.params)
                 self.set_penalty(ocp, penalty, val, target_ns=1)
                 penalty.ensure_penalty_sanity(ocp, None)
-                penalty._add_penalty_to_pool(all_pn)
+                penalty._add_penalty_to_pool(controller)
 
     def set_penalty(
         self,

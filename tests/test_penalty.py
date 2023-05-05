@@ -17,7 +17,7 @@ from bioptim import (
     RigidBodyDynamics,
     ControlType,
 )
-from bioptim.limits.penalty_node import PenaltyController
+from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.misc.mapping import BiMapping
 from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
@@ -951,52 +951,52 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
             _ = penalty._get_penalty_node_list([], nlp)
         return
     else:
-        all_pn = penalty._get_penalty_node_list([], nlp)
+        controller = penalty._get_penalty_node_list([], nlp)
 
     x_expected = nlp.X
     u_expected = nlp.U
 
     if node == Node.ALL:
-        np.testing.assert_almost_equal(all_pn.t, [i for i in range(ns + 1)])
-        np.testing.assert_almost_equal(np.array(all_pn.x), np.linspace(0, -10, ns + 1))
-        np.testing.assert_almost_equal(np.array(all_pn.u), np.linspace(10, 19, ns))
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), np.linspace(0, -10, ns + 1))
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), np.linspace(10, 19, ns))
+        np.testing.assert_almost_equal(controller.t, [i for i in range(ns + 1)])
+        np.testing.assert_almost_equal(np.array(controller.x), np.linspace(0, -10, ns + 1))
+        np.testing.assert_almost_equal(np.array(controller.u), np.linspace(10, 19, ns))
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), np.linspace(0, -10, ns + 1))
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), np.linspace(10, 19, ns))
     elif node == Node.ALL_SHOOTING:
-        np.testing.assert_almost_equal(all_pn.t, [i for i in range(ns)])
-        np.testing.assert_almost_equal(np.array(all_pn.x), nlp.X[:-1])
-        np.testing.assert_almost_equal(np.array(all_pn.u), nlp.U)
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), nlp.X[:-1])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), nlp.U)
+        np.testing.assert_almost_equal(controller.t, [i for i in range(ns)])
+        np.testing.assert_almost_equal(np.array(controller.x), nlp.X[:-1])
+        np.testing.assert_almost_equal(np.array(controller.u), nlp.U)
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), nlp.X[:-1])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), nlp.U)
     elif node == Node.INTERMEDIATES:
-        np.testing.assert_almost_equal(all_pn.t, [i for i in range(1, ns - 1)])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[1 : ns - 1])
-        np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[1 : ns - 1])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[1 : ns - 1])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(controller.t, [i for i in range(1, ns - 1)])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.u), u_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[1 : ns - 1])
     elif node == Node.START:
-        np.testing.assert_almost_equal(all_pn.t, [0])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[0])
-        np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[0])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[0])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[0])
+        np.testing.assert_almost_equal(controller.t, [0])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[0])
+        np.testing.assert_almost_equal(np.array(controller.u), u_expected[0])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[0])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[0])
     elif node == Node.MID:
-        np.testing.assert_almost_equal(all_pn.t, [ns // 2])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[ns // 2])
-        np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[ns // 2])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[ns // 2])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[ns // 2])
+        np.testing.assert_almost_equal(controller.t, [ns // 2])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[ns // 2])
+        np.testing.assert_almost_equal(np.array(controller.u), u_expected[ns // 2])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[ns // 2])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[ns // 2])
     elif node == Node.PENULTIMATE:
-        np.testing.assert_almost_equal(all_pn.t, [ns - 1])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[-2])
-        np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[-1])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[-2])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[-1])
+        np.testing.assert_almost_equal(controller.t, [ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[-2])
+        np.testing.assert_almost_equal(np.array(controller.u), u_expected[-1])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[-2])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[-1])
     elif node == Node.END:
-        np.testing.assert_almost_equal(all_pn.t, [ns])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[ns])
-        np.testing.assert_almost_equal(all_pn.u, [])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[ns])
-        np.testing.assert_almost_equal(all_pn.u_scaled, [])
+        np.testing.assert_almost_equal(controller.t, [ns])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[ns])
+        np.testing.assert_almost_equal(controller.u, [])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[ns])
+        np.testing.assert_almost_equal(controller.u_scaled, [])
     else:
         raise RuntimeError("Something went wrong")

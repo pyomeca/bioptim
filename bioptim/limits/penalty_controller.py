@@ -52,6 +52,14 @@ class PenaltyController:
         self.u_scaled = u_scaled
         self.p = vertcat(p) if p is not None else p
 
+    @property
+    def ocp(self):
+        return self._ocp
+
+    @property
+    def nlp(self):
+        return self._nlp
+
     def states(self, node_index: int = 0) -> OptimizationVariableContainer:
         """
         Return the states associated with a specific node

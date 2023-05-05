@@ -172,7 +172,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(transition, all_pn):
+        def continuous(transition, controller):
             """
             The most common continuity function, that is state before equals state after
 
@@ -180,7 +180,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition : PhaseTransition
                 A reference to the phase transition
-            all_pn: PenaltyController
+            controller: PenaltyController
                     The penalty node elements
 
             Returns
@@ -188,10 +188,10 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return BinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
+            return BinodeConstraintFunctions.Functions.states_equality(transition, controller, "all")
 
         @staticmethod
-        def discontinuous(transition, all_pn):
+        def discontinuous(transition, controller: PenaltyController):
             """
             There is no continuity constraints on the states
 
@@ -199,7 +199,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition : PhaseTransition
                 A reference to the phase transition
-            all_pn: PenaltyController
+            controller: PenaltyController
                     The penalty node elements
 
             Returns
@@ -210,7 +210,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return MX.zeros(0, 0)
 
         @staticmethod
-        def cyclic(transition, all_pn) -> MX:
+        def cyclic(transition, controller) -> MX:
             """
             The continuity function applied to the last to first node
 
@@ -218,7 +218,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition: PhaseTransition
                 A reference to the phase transition
-            all_pn: PenaltyController
+            controller: PenaltyController
                     The penalty node elements
 
             Returns
@@ -226,10 +226,10 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return BinodeConstraintFunctions.Functions.states_equality(transition, all_pn, "all")
+            return BinodeConstraintFunctions.Functions.states_equality(transition, controller, "all")
 
         @staticmethod
-        def impact(transition, all_pn):
+        def impact(transition, controller):
             """
             A discontinuous function that simulates an inelastic impact of a new contact point
 
@@ -237,7 +237,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition: PhaseTransition
                 A reference to the phase transition
-            all_pn: PenaltyController
+            controller: PenaltyController
                     The penalty node elements
 
             Returns
@@ -245,7 +245,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node after applying the impulse equations
             """
 
-            ocp = all_pn[0].ocp
+            ocp = controller[0].ocp
             if (
                 ocp.nlp[transition.phase_pre_idx].states[0].shape != ocp.nlp[transition.phase_post_idx].states[0].shape
             ):  # TODO: [0] to [node_index]
@@ -254,7 +254,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 )
 
             # Aliases
-            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
+            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
 
             # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
             # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
