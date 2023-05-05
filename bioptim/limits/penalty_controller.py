@@ -3,12 +3,17 @@ from typing import Any
 from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.optimization_variable import OptimizationVariableContainer
+from ..optimization.optimization_variable import OptimizationVariableList
+from ..misc.enums import ControlType
 
 
 class PenaltyController:
     """
     A placeholder for the required elements to compute a penalty (all time)
+    For most of the part, PenaltyController will behave like NLP with the major difference that it will always
+    return the states and controls form the current node_index (instead of all of them). If for some reason,
+    one must access specific node that is not the current node_index, they can directly access the _nlp.
+    Please note that this will likely result in free variables, which can be a pain to deal with...
     """
 
     def __init__(
@@ -61,38 +66,119 @@ class PenaltyController:
         return self._ocp
 
     @property
-    def nlp(self):
+    def get_nlp(self):
+        """
+        This method returns the underlying nlp. Please note that acting directly with the nlp is not want you should do.
+        Unless you see no way to access what you need otherwise, we strongly suggest that you use the normal path
+        """
         return self._nlp
 
-    def states(self, node_index: int = 0) -> OptimizationVariableContainer:
-        """
-        Return the states associated with a specific node
+    def __len__(self):
+        return len(self.t)
 
-        Parameters
-        ----------
-        node_index
-            The index of the node to request the states from
+    @property
+    def control_type(self) -> ControlType:
+        return self._nlp.control_type
+
+    @property
+    def phase_idx(self) -> int:
+        return self._nlp.phase_idx
+
+    @property
+    def ns(self) -> int:
+        return self._nlp.ns
+
+    @property
+    def tf(self) -> int:
+        return self._nlp.tf
+
+    @property
+    def mx_to_cx(self):
+        return self._nlp.mx_to_cx
+
+    @property
+    def model(self):
+        return self._nlp.model
+
+    @property
+    def states(self) -> OptimizationVariableList:
+        """
+        Return the states associated with the current node index
 
         Returns
         -------
         The states at node node_index
         """
-        return self._nlp.states[node_index]
+        return self._nlp.states[self.node_index]
 
-    def controls(self, node_index: int = 0) -> OptimizationVariableContainer:
+    @property
+    def integrate(self):
+        return self._nlp.dynamics[self.node_index]
+
+    @property
+    def dynamics(self):
+        return self._nlp.dynamics_func
+
+    @property
+    def states_scaled(self) -> OptimizationVariableList:
         """
-        Return the controls associated with a specific node
+        Return the scaled states associated with the current node index.
 
-        Parameters
-        ----------
-        node_index
-            The index of the node to request the controls from
+        Warning: Most of the time, the user does not want that states but the normal `states`, that said, it can
+        sometime be useful for very limited number of use case.
+
+        Returns
+        -------
+        The scaled states at node node_index
+        """
+        return self._nlp.states.scaled[self.node_index]
+
+    @property
+    def controls(self) -> OptimizationVariableList:
+        """
+        Return the controls associated with the current node index
 
         Returns
         -------
         The controls at node node_index
         """
-        return self._nlp.controls[node_index]
+        return self._nlp.controls[self.node_index]
 
-    def __len__(self):
-        return len(self.t)
+    @property
+    def controls_scaled(self) -> OptimizationVariableList:
+        """
+        Return the scaled controls associated with the current node index.
+
+        Warning: Most of the time, the user does not want that controls but the normal `controls`, that said, it can
+        sometime be useful for very limited number of use case.
+
+        Returns
+        -------
+        The scaled controls at node node_index
+        """
+        return self._nlp.controls.scaled[self.node_index]
+
+    @property
+    def parameters(self) -> OptimizationVariableList:
+        """
+        Return the parameters
+
+        Returns
+        -------
+        The parameters
+        """
+        return self._nlp.parameters
+
+    @property
+    def parameters_scaled(self) -> OptimizationVariableList:
+        """
+        Return the scaled parameters
+
+        Warning: Most of the time, the user does not want that parameters but the normal `parameters`, that said, it can
+        sometime be useful for very limited number of use case.
+
+        Returns
+        -------
+        The scaled parameters
+        """
+        return self._nlp.parameters.scaled

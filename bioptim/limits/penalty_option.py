@@ -302,11 +302,11 @@ class PenaltyOption(OptionGeneric):
             # If the target is on controls and control is constant, there will be one value missing
             if controller is not None:
                 if (
-                    controller.nlp.control_type == ControlType.CONSTANT
-                    and controller.nlp.ns in controller.t
-                    and self.target[0].shape[-1] == controller.nlp.ns
+                    controller.control_type == ControlType.CONSTANT
+                    and controller.ns in controller.t
+                    and self.target[0].shape[-1] == controller.ns
                 ):
-                    if controller.t[-1] != controller.nlp.ns:
+                    if controller.t[-1] != controller.ns:
                         raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                     self.target[0] = np.concatenate(
                         (self.target[0], np.nan * np.zeros((self.target[0].shape[0], 1))), axis=1
@@ -319,6 +319,7 @@ class PenaltyOption(OptionGeneric):
             if target_dim != 2:
                 raise RuntimeError(f"targets with trapezoidal integration rule need to get a list of two elements.")
 
+            n_dim = None
             for target in self.target:
                 n_dim = len(target.shape)
                 if n_dim != 2 and n_dim != 3:
@@ -343,12 +344,12 @@ class PenaltyOption(OptionGeneric):
             # If the target is on controls and control is constant, there will be one value missing
             if controller is not None:
                 if (
-                    controller.nlp.control_type == ControlType.CONSTANT
-                    and controller.nlp.ns in controller.t
-                    and self.target[0].shape[-1] == controller.nlp.ns - 1
-                    and self.target[1].shape[-1] == controller.nlp.ns - 1
+                    controller.control_type == ControlType.CONSTANT
+                    and controller.ns in controller.t
+                    and self.target[0].shape[-1] == controller.ns - 1
+                    and self.target[1].shape[-1] == controller.ns - 1
                 ):
-                    if controller.t[-1] != controller.nlp.ns:
+                    if controller.t[-1] != controller.ns:
                         raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                     self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
@@ -372,14 +373,12 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-        def get_u(nlp, u: MX | SX, dt: MX | SX):
+        def get_u(u: MX | SX, dt: MX | SX):
             """
             Get the control at a given time
 
             Parameters
             ----------
-            nlp: NonlinearProgram
-                The nonlinear program
             u: MX | SX
                 The control matrix
             dt: MX | SX
@@ -390,12 +389,12 @@ class PenaltyOption(OptionGeneric):
             The control at a given time
             """
 
-            if nlp.control_type == ControlType.CONSTANT:
+            if controller.control_type == ControlType.CONSTANT:
                 return u
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            elif controller.control_type == ControlType.LINEAR_CONTINUOUS:
                 return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
             else:
-                raise RuntimeError(f"{nlp.control_type} ControlType not implemented yet")
+                raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
         # TODO: Add loop node_index here
         if self.binode_constraint or self.transition:
@@ -423,30 +422,21 @@ class PenaltyOption(OptionGeneric):
 
         else:
             ocp = controller.ocp
-            nlp = controller.nlp
+            nlp = controller.get_nlp
             name = self.name
             if self.integrate:
-                state_cx_scaled = horzcat(
-                    *(
-                        [controller.nlp.states.scaled[0].cx_start]
-                        + controller.nlp.states.scaled[0].cx_intermediates_list
-                    )  # TODO: [0] to [node_index]
-                )
-                control_cx_scaled = controller.nlp.controls.scaled[0].cx_start  # TODO: [0] to [node_index]
+                state_cx_scaled = horzcat(*([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list))
+                control_cx_scaled = controller.controls_scaled.cx_start
             else:
-                state_cx_scaled = controller.nlp.states.scaled[0].cx_start  # TODO: [0] to [node_index]
-                control_cx_scaled = controller.nlp.controls.scaled[0].cx_start  # TODO: [0] to [node_index]
+                state_cx_scaled = controller.states_scaled.cx_start
+                control_cx_scaled = controller.controls_scaled.cx_start
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                state_cx_scaled = horzcat(
-                    state_cx_scaled, controller.nlp.states.scaled[0].cx_end
-                )  # TODO: [0] to [node_index]
-                control_cx_scaled = horzcat(
-                    control_cx_scaled, controller.nlp.controls.scaled[0].cx_end
-                )  # TODO: [0] to [node_index]
+                state_cx_scaled = horzcat(state_cx_scaled, controller.states_scaled.cx_end)
+                control_cx_scaled = horzcat(control_cx_scaled, controller.controls_scaled.cx_end)
 
-        param_cx = nlp.cx(nlp.parameters.cx_start)
+        param_cx = nlp.cx(controller.parameters.cx_start)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
@@ -456,20 +446,12 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded = self.function
 
         if self.derivative:
-            state_cx_scaled = horzcat(
-                controller.nlp.states.scaled[0].cx_end, controller.nlp.states.scaled[0].cx_start
-            )  # TODO: [0] to [node_index]
-            control_cx_scaled = horzcat(
-                controller.nlp.controls.scaled[0].cx_end, controller.nlp.controls.scaled[0].cx_start
-            )  # TODO: [0] to [node_index]
+            state_cx_scaled = horzcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
+            control_cx_scaled = horzcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
             self.function = biorbd.to_casadi_func(
                 f"{name}",
-                self.function(
-                    controller.nlp.states.scaled[0].cx_end, controller.nlp.controls.scaled[0].cx_end, param_cx
-                )  # TODO: [0] to [node_index]
-                - self.function(
-                    controller.nlp.states.scaled[0].cx_start, controller.nlp.controls.scaled[0].cx_start, param_cx
-                ),  # TODO: [0] to [node_index]
+                self.function(controller.states_scaled.cx_end, controller.controls_scaled.cx_end, param_cx)
+                - self.function(controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx),
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -494,49 +476,39 @@ class PenaltyOption(OptionGeneric):
             # Hypothesis: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
             state_cx_scaled = (
-                horzcat(
-                    controller.nlp.states.scaled[0].cx_start, controller.nlp.states.scaled[0].cx_end
-                )  # TODO: [0] to [node_index]
+                horzcat(controller.states_scaled.cx_start, controller.states_scaled.cx_end)
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else controller.nlp.states.scaled[0].cx_start  # TODO: [0] to [node_index]
+                else controller.states_scaled.cx_start
             )
             state_cx = (
-                horzcat(controller.nlp.states[0].cx_start, controller.nlp.states[0].cx_end)  # TODO: [0] to [node_index]
+                horzcat(controller.states.cx_start, controller.states.cx_end)
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else controller.nlp.states[0].cx_start  # TODO: [0] to [node_index]
+                else controller.states.cx_start
             )
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx_scaled = (
-                horzcat(controller.nlp.controls.scaled[0].cx_start)  # TODO: [0] to [node_index]
+                horzcat(controller.controls_scaled.cx_start)
                 if nlp.control_type == ControlType.CONSTANT
-                else horzcat(
-                    controller.nlp.controls.scaled[0].cx_start, controller.nlp.controls.scaled[0].cx_end
-                )  # TODO: [0] to [node_index]
+                else horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
             )
             control_cx = (
-                horzcat(controller.nlp.controls[0].cx_start)  # TODO: [0] to [node_index]
+                horzcat(controller.controls.cx_start)
                 if nlp.control_type == ControlType.CONSTANT
-                else horzcat(
-                    controller.nlp.controls[0].cx_start, controller.nlp.controls[0].cx_end
-                )  # TODO: [0] to [node_index]
+                else horzcat(controller.controls.cx_start, controller.controls.cx_end)
             )
-            control_cx_end_scaled = get_u(nlp, control_cx_scaled, dt_cx)
-            control_cx_end = get_u(nlp, control_cx, dt_cx)
+            control_cx_end_scaled = get_u(control_cx_scaled, dt_cx)
+            control_cx_end = get_u(control_cx, dt_cx)
             state_cx_end_scaled = (
-                controller.nlp.states.scaled[0].cx_end  # TODO: [0] to [node_index]
+                controller.states_scaled.cx_end
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else nlp.dynamics[0](x0=state_cx, p=control_cx_end, params=nlp.parameters.cx_start)["xf"]
+                else nlp.dynamics[controller.node_index](x0=state_cx, p=control_cx_end, params=controller.parameters.cx_start)["xf"]
             )
             self.modified_function = nlp.to_casadi_func(
                 f"{name}",
                 (
                     (
-                        self.function(
-                            controller.nlp.states.scaled[0].cx_start,
-                            controller.nlp.controls.scaled[0].cx_start,
-                            param_cx,
-                        )  # TODO: [0] to [node_index]
+                        self.function(controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx)
                         - target_cx[:, 0]
                     )
                     ** exponent
@@ -590,7 +562,7 @@ class PenaltyOption(OptionGeneric):
 
         self.target_plot_name = combine_to
         # if the target is n x ns, we need to add a dimension (n x ns + 1) to make it compatible with the plot
-        if self.target[0].shape[1] == controller.nlp.ns:
+        if self.target[0].shape[1] == controller.ns:
             self.target_to_plot = np.concatenate(
                 (self.target[0], np.nan * np.ndarray((self.target[0].shape[0], 1))), axis=1
             )
@@ -626,7 +598,7 @@ class PenaltyOption(OptionGeneric):
                 penalty=self if plot_type == PlotType.POINT else None,
                 color="tab:red",
                 plot_type=plot_type,
-                phase=controller.nlp.phase_idx,
+                phase=controller.phase_idx,
                 axes_idx=Mapping(self.rows),  # TODO verify if not all elements has target
                 node_idx=self.node_idx,
             )
@@ -673,7 +645,7 @@ class PenaltyOption(OptionGeneric):
 
             penalty_type.validate_penalty_time_index(self, controller[0])
             penalty_type.validate_penalty_time_index(self, controller[1])
-            self.ensure_penalty_sanity(ocp, controller[0].nlp)
+            self.ensure_penalty_sanity(ocp, nlp)
 
         elif isinstance(self.node, tuple) and self.binode_constraint:
             controller = []
@@ -724,13 +696,13 @@ class PenaltyOption(OptionGeneric):
             # self.node_idx = [controller[0].t[0]] # t?
             penalty_type.validate_penalty_time_index(self, controller)
             self.node_idx = controller.t
-            self.ensure_penalty_sanity(ocp, controller.nlp)
+            self.ensure_penalty_sanity(ocp, nlp)
 
         else:
             controller = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, controller)
-            self.ensure_penalty_sanity(controller.ocp, controller.nlp)
-            self.dt = penalty_type.get_dt(controller.nlp)
+            self.ensure_penalty_sanity(ocp, nlp)
+            self.dt = penalty_type.get_dt(nlp)
             self.node_idx = (
                 controller.t[:-1]
                 if (
@@ -742,15 +714,15 @@ class PenaltyOption(OptionGeneric):
             )
 
         if ocp.assume_phase_dynamics:
-            penalty_function = self.type(self, controller, **self.params)  # TODO: Ask Benjamin
+            penalty_function = self.type(self, controller, **self.params)
             self.set_penalty(penalty_function, controller)
         else:
-            # node_indices = [t for t in controller.t]
-            # for node_index in node_indices:
-            #     controller.t = [node_index]
-            #     controller.node_index = node_index
-            penalty_function = self.type(self, controller, **self.params)  # TODO: Ask Benjamin
-            self.set_penalty(penalty_function, controller)
+            node_indices = [t for t in controller.t]
+            for node_index in node_indices:
+                controller.t = [node_index]
+                controller.node_index = node_index
+                penalty_function = self.type(self, controller, **self.params)  # TODO: Ask Benjamin
+                self.set_penalty(penalty_function, controller)
 
     def _add_penalty_to_pool(self, controller: PenaltyController | list[PenaltyController, ...]):
         """

@@ -905,7 +905,7 @@ class ConfigureProblem:
         if combine_state_control_plot and combine_name is not None:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
-        def define_cx_scaled(n_col: int, n_shooting: int) -> list:
+        def define_cx_scaled(n_col: int, n_shooting: int, initial_node) -> list:
             _cx = [nlp.cx() for _ in range(n_shooting + 1)]
             for node_index in range(n_shooting + 1):
                 _cx[node_index] = [nlp.cx() for _ in range(n_col)]
@@ -916,7 +916,7 @@ class ConfigureProblem:
                         _cx[node_index][j] = vertcat(
                             _cx[node_index][j],
                             nlp.cx.sym(
-                                f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{node_index}_{j}", 1, 1
+                                f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{node_index + initial_node}_{j}", 1, 1
                             ),
                         )
             return _cx
@@ -1023,7 +1023,7 @@ class ConfigureProblem:
                 cx_scaled = (
                     ocp.nlp[nlp.use_states_from_phase_idx].states[node_index][name].original_cx
                     if copy_states
-                    else define_cx_scaled(n_col=n_cx, n_shooting=0)
+                    else define_cx_scaled(n_col=n_cx, n_shooting=0, initial_node=node_index)
                 )
                 cx = (
                     ocp.nlp[nlp.use_states_from_phase_idx].states[node_index][name].original_cx
@@ -1048,7 +1048,7 @@ class ConfigureProblem:
                 cx_scaled = (
                     ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
                     if copy_controls
-                    else define_cx_scaled(n_col=2, n_shooting=0)
+                    else define_cx_scaled(n_col=2, n_shooting=0, initial_node=node_index)
                 )
                 cx = (
                     ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
@@ -1074,7 +1074,7 @@ class ConfigureProblem:
                 cx_scaled = (
                     ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[node_index][name].original_cx
                     if copy_states_dot
-                    else define_cx_scaled(n_col=n_cx, n_shooting=1)
+                    else define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
                 )
                 cx = (
                     ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[node_index][name].original_cx
