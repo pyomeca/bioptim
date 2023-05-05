@@ -621,10 +621,11 @@ class PlotOcp:
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
-                if 'time' in self.ocp.parameter_mappings.keys():
-                    data_params["time"] = self.ocp.parameter_mappings['time'].to_second.map(np.array([1]))
+                if data_params['time'].shape[0] != len(data_states):
+                    data_params["time"] = self.ocp.parameter_mappings['time'].to_second.map(data_params["time"][0])
                     for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                         self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
+
                 else:
                     for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                         self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
