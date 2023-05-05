@@ -47,7 +47,7 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cubeSym.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
+    biorbd_model_path: str = "models/cubeSym.bioMod", ode_solver: OdeSolver = OdeSolver.RK4(), assume_phase_dynamics: bool = True
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -139,7 +139,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         variable_mappings=dof_mappings,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
