@@ -198,7 +198,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         if self.original_values["control_type"] == ControlType.CONSTANT:
-            init_controls = InitialGuess(np.concatenate(controls, axis=1)[:, :-1], interpolation=InterpolationType.EACH_FRAME)
+            init_controls = InitialGuess(
+                np.concatenate(controls, axis=1)[:, :-1], interpolation=InterpolationType.EACH_FRAME
+            )
         else:
             init_controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
         model_class = self.original_values["bio_model"][0][0]
