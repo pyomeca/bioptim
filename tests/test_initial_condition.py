@@ -2,7 +2,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import InterpolationType, InitialGuess, Solution, Shooting, SolutionIntegrator
+from bioptim import InterpolationType, InitialGuess, Solution, Shooting, SolutionIntegrator, BiorbdModel, Objective, Dynamics, DynamicsFcn, Bounds, ObjectiveFcn, OptimalControlProgram, InitialGuessList
 
 # TODO: Add negative test for sizes
 
@@ -243,3 +243,59 @@ def test_simulate_from_initial_single_shoot():
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.89, 1.8)))
+
+
+def test_initial_guess_error_messages():
+    """
+    This tests that the error messages are properly raised. The OCP is adapted from the getting_started/pendulum.py example.
+    """
+
+    biorbd_model_path = "../bioptim/examples/getting_started/models/pendulum.bioMod"
+    bio_model = BiorbdModel(biorbd_model_path)
+
+    # Add objective functions
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+
+    # Dynamics
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+
+    # Path constraint
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
+    x_bounds[:, [0, -1]] = 0
+    x_bounds[1, -1] = 3.14
+
+    # Define control path constraint
+    n_tau = bio_model.nb_tau
+    tau_min, tau_max, tau_init = -100, 100, 0
+    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
+    u_bounds[1, :] = 0  # Prevent the model from actively rotate
+
+    u_init = InitialGuess([tau_init] * n_tau)
+
+    # check the error messages
+    with pytest.raises(RuntimeError, match="Please provide an x_init of type InitialGuess or InitialGuessList."):
+        OptimalControlProgram(
+            bio_model,
+            dynamics,
+            n_shooting=5,
+            phase_time=1,
+            x_init=None,
+            u_init=u_init,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            objective_functions=objective_functions,
+        )
+
+    x_init = InitialGuessList()
+    with pytest.raises(RuntimeError, match="You must please declare an initial guess for the states (x_init). Here, the InitialGuessList is empty."):
+        OptimalControlProgram(
+            bio_model,
+            dynamics,
+            n_shooting=5,
+            phase_time=1,
+            x_init=x_init,
+            u_init=u_init,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            objective_functions=objective_functions,
+        )

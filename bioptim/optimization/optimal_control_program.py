@@ -332,7 +332,7 @@ class OptimalControlProgram:
             x_init_tp.add(x_init.init)
             x_init = x_init_tp
         elif isinstance(x_init, InitialGuessList) and len(x_init) == 0:
-            raise RuntimeError("You must please declare an initial guess for the states (x_init). Here, the InitialGuessList is empty.")
+            raise RuntimeError("You must please declare an initial guess for the states x_init. Here, the InitialGuessList is empty.")
         elif not isinstance(x_init, InitialGuessList):
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
@@ -351,7 +351,7 @@ class OptimalControlProgram:
             u_init_tp.add(u_init.init)
             u_init = u_init_tp
         elif isinstance(u_init, InitialGuessList) and len(u_init) == 0:
-            raise RuntimeError("You must please declare an initial guess for the controls (u_init). Here, the InitialGuessList is empty.")
+            raise RuntimeError("You must please declare an initial guess for the controls u_init. Here, the InitialGuessList is empty.")
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
