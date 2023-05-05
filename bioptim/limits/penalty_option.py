@@ -4,7 +4,7 @@ import biorbd_casadi as biorbd
 from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
-from .penalty_node import PenaltyNodeList
+from .penalty_node import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, IntegralApproximation
 from ..misc.mapping import Mapping, BiMapping
 from ..misc.options import OptionGeneric
@@ -63,26 +63,26 @@ class PenaltyOption(OptionGeneric):
 
     Methods
     -------
-    set_penalty(self, penalty: MX | SX, all_pn: PenaltyNodeList)
+    set_penalty(self, penalty: MX | SX, all_pn: PenaltyController)
         Prepare the dimension and index of the penalty (including the target)
     _set_dim_idx(self, dim: list | tuple | range | np.ndarray, n_rows: int)
         Checks if the variable index is consistent with the requested variable.
-    _check_target_dimensions(self, all_pn: PenaltyNodeList, n_time_expected: int)
+    _check_target_dimensions(self, all_pn: PenaltyController, n_time_expected: int)
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
-    _set_penalty_function(self, all_pn: PenaltyNodeList | list | tuple, fcn: MX | SX)
+    _set_penalty_function(self, all_pn: PenaltyController | list | tuple, fcn: MX | SX)
         Finalize the preparation of the penalty (setting function and weighted_function)
-    add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str)
+    add_target_to_plot(self, all_pn: PenaltyController, combine_to: str)
         Interface to the plot so it can be properly added to the proper plot
-    _finish_add_target_to_plot(self, all_pn: PenaltyNodeList)
+    _finish_add_target_to_plot(self, all_pn: PenaltyController)
         Internal interface to add (after having check the target dimensions) the target to the plot if needed
     add_or_replace_to_penalty_pool(self, ocp, nlp)
         Doing some configuration on the penalty and add it to the list of penalty
-    _add_penalty_to_pool(self, all_pn: PenaltyNodeList)
+    _add_penalty_to_pool(self, all_pn: PenaltyController)
         Return the penalty pool for the specified penalty (abstract)
     ensure_penalty_sanity(self, ocp, nlp)
         Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
-    _get_penalty_node_list(self, ocp, nlp) -> PenaltyNodeList
+    _get_penalty_node_list(self, ocp, nlp) -> PenaltyController
         Get the actual node (time, X and U) specified in the penalty
     """
 
@@ -214,7 +214,7 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = multi_thread
 
-    def set_penalty(self, penalty: MX | SX, all_pn: PenaltyNodeList):
+    def set_penalty(self, penalty: MX | SX, all_pn: PenaltyController):
         """
         Prepare the dimension and index of the penalty (including the target)
 
@@ -222,7 +222,7 @@ class PenaltyOption(OptionGeneric):
         ----------
         penalty: MX | SX,
             The actual penalty function
-        all_pn: PenaltyNodeList
+        all_pn: PenaltyController
             The penalty node elements
         """
 
@@ -263,14 +263,14 @@ class PenaltyOption(OptionGeneric):
             raise RuntimeError(f"{self.name} index must be a list of integer")
         return dim
 
-    def _check_target_dimensions(self, all_pn: PenaltyNodeList, n_time_expected: int):
+    def _check_target_dimensions(self, all_pn: PenaltyController, n_time_expected: int):
         """
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
 
         Parameters
         ----------
-        all_pn: PenaltyNodeList
+        all_pn: PenaltyController
             The penalty node elements
         n_time_expected: int
             The expected shape (n_rows, ns) of the data to track
@@ -349,13 +349,13 @@ class PenaltyOption(OptionGeneric):
                         raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                     self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
-    def _set_penalty_function(self, all_pn: PenaltyNodeList | list | tuple, fcn: MX | SX):
+    def _set_penalty_function(self, all_pn: PenaltyController | list | tuple, fcn: MX | SX):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 
         Parameters
         ----------
-        all_pn: PenaltyNodeList | list | tuple
+        all_pn: PenaltyController | list | tuple
             The nodes
         fcn: MX | SX
             The value of the penalty function
@@ -567,13 +567,13 @@ class PenaltyOption(OptionGeneric):
             self.function = self.function.expand()
             self.weighted_function = self.weighted_function.expand()
 
-    def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str):
+    def add_target_to_plot(self, all_pn: PenaltyController, combine_to: str):
         """
         Interface to the plot so it can be properly added to the proper plot
 
         Parameters
         ----------
-        all_pn: PenaltyNodeList
+        all_pn: PenaltyController
             The penalty node elements
         combine_to: str
             The name of the underlying plot to combine the tracking data to
@@ -591,13 +591,13 @@ class PenaltyOption(OptionGeneric):
         else:
             self.target_to_plot = self.target[0]
 
-    def _finish_add_target_to_plot(self, all_pn: PenaltyNodeList):
+    def _finish_add_target_to_plot(self, all_pn: PenaltyController):
         """
         Internal interface to add (after having check the target dimensions) the target to the plot if needed
 
         Parameters
         ----------
-        all_pn: PenaltyNodeList
+        all_pn: PenaltyController
             The penalty node elements
 
         """
@@ -737,16 +737,19 @@ class PenaltyOption(OptionGeneric):
                 else all_pn.t
             )
 
-        penalty_function = self.type(self, all_pn, **self.params)  # TODO: Ask Benjamin
+        if ocp.assume_phase_dynamics:
+            penalty_function = self.type(self, all_pn, **self.params)  # TODO: Ask Benjamin
+        else:
+            penalty_function = self.type(self, all_pn, **self.params)  # TODO: Ask Benjamin
         self.set_penalty(penalty_function, all_pn)
 
-    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
+    def _add_penalty_to_pool(self, all_pn: PenaltyController):
         """
         Return the penalty pool for the specified penalty (abstract)
 
         Parameters
         ----------
-        all_pn: PenaltyNodeList
+        all_pn: PenaltyController
             The penalty node elements
         """
 
@@ -766,7 +769,7 @@ class PenaltyOption(OptionGeneric):
 
         raise RuntimeError("_reset_penalty cannot be called from an abstract class")
 
-    def _get_penalty_node_list(self, ocp, nlp) -> PenaltyNodeList:
+    def _get_penalty_node_list(self, ocp, nlp) -> PenaltyController:
         """
         Get the actual node (time, X and U) specified in the penalty
 
@@ -816,4 +819,4 @@ class PenaltyOption(OptionGeneric):
         x_scaled = [nlp.X_scaled[idx] for idx in t]
         u = [nlp.U[idx] for idx in t if idx != nlp.ns]
         u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
-        return PenaltyNodeList(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx_start)
+        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx_start)

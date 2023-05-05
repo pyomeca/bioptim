@@ -5,7 +5,7 @@ import numpy as np
 
 from ..limits.objective_functions import ObjectiveFcn, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
-from ..limits.penalty_node import PenaltyNodeList
+from ..limits.penalty_node import PenaltyController
 from ..limits.penalty import PenaltyOption
 from ..misc.enums import InterpolationType, Node
 from ..misc.options import UniquePerProblemOptionList
@@ -180,7 +180,7 @@ class Parameter(PenaltyOption):
 
                 func = penalty.custom_function
 
-                all_pn = PenaltyNodeList(ocp, None, [], [], [], [], [], [])
+                all_pn = PenaltyController(ocp, None, [], [], [], [], [], [])
                 val = func(ocp, self.cx * self.scaling, **penalty.params)
                 self.set_penalty(ocp, penalty, val, target_ns=1)
                 penalty.ensure_penalty_sanity(ocp, None)

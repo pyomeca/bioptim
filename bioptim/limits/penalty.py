@@ -6,7 +6,7 @@ import biorbd_casadi as biorbd
 from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt
 
 from .penalty_option import PenaltyOption
-from .penalty_node import PenaltyNodeList
+from .penalty_node import PenaltyController
 from ..misc.enums import Node, Axis, ControlType, IntegralApproximation
 
 
@@ -18,14 +18,14 @@ class PenaltyFunctionAbstract:
     -------
     add(ocp: OptimalControlProgram, nlp: NonLinearProgram)
         Add a new penalty to the list (abstract)
-    set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, index: str | int | list | tuple, _type: str)
+    set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyController, index: str | int | list | tuple, _type: str)
         Simple penalty.cols setter for marker index and names
     set_axes_rows(penalty: PenaltyOption, axes: list | tuple)
         Simple penalty.cols setter for marker index and names
     _check_idx(name: str, elements: list | tuple | int, max_n_elements: int = inf, min_n_elements: int = 0)
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay
-    validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyNodeList)
+    validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyController)
         Check for any non sense in the requested times for the penalty. Raises an error if so
     get_type()
         Returns the type of the penalty (abstract)
@@ -39,7 +39,7 @@ class PenaltyFunctionAbstract:
         """
 
         @staticmethod
-        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
+        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyController, key: str):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -49,7 +49,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             key: str
                 The name of the state to minimize
@@ -67,7 +67,7 @@ class PenaltyFunctionAbstract:
             return all_pn.nlp.states[0][key].cx_start  # TODO: [0] to [node_index]
 
         @staticmethod
-        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
+        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyController, key: str):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -77,7 +77,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             key: str
                 The name of the controls to minimize
@@ -85,14 +85,14 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             if penalty.integration_rule == IntegralApproximation.RECTANGLE:
-                # todo: for trapezoidal integration
+                # TODO: for trapezoidal integration (This should not be done here but in _set_penalty_function)
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
             return all_pn.nlp.controls[0][key].cx_start  # TODO: [0] to [node_index]
 
         @staticmethod
-        def minimize_fatigue(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
+        def minimize_fatigue(penalty: PenaltyOption, all_pn: PenaltyController, key: str):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -102,7 +102,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             key: str
                 The name of the state to minimize
@@ -113,7 +113,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_markers(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             marker_index: tuple | list | int | str = None,
             axes: tuple | list = None,
             reference_jcs: str | int = None,
@@ -127,7 +127,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             marker_index: tuple | list | int | str
                 The index of markers to minimize, can be int or str.
@@ -166,7 +166,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_markers_velocity(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             marker_index: tuple | list | int | str = None,
             axes: tuple | list = None,
             reference_jcs: str | int = None,
@@ -180,7 +180,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             marker_index: tuple | list | int | str
                 The index of markers to minimize, can be int or str.
@@ -214,7 +214,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def superimpose_markers(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             first_marker: str | int,
             second_marker: str | int,
             axes: tuple | list = None,
@@ -227,7 +227,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             first_marker: str | int
                 The name or index of one of the two markers
@@ -259,7 +259,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def proportional_states(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             key: str,
             first_dof: int,
             second_dof: int,
@@ -275,7 +275,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             key: str
                 The name of the state to minimize
@@ -301,7 +301,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def proportional_controls(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             key: str,
             first_dof: int,
             second_dof: int,
@@ -317,7 +317,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             key: str
                 The name of the control to minimize
@@ -343,7 +343,7 @@ class PenaltyFunctionAbstract:
             )
 
         @staticmethod
-        def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
+        def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyController):
             """
             Minimize the states velocity by comparing the state at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -353,7 +353,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             """
 
@@ -370,7 +370,7 @@ class PenaltyFunctionAbstract:
                 return nlp.controls[0]["qddot"].cx_start  # TODO: [0] to [node_index]
 
         @staticmethod
-        def minimize_predicted_com_height(_: PenaltyOption, all_pn: PenaltyNodeList):
+        def minimize_predicted_com_height(_: PenaltyOption, all_pn: PenaltyController):
             """
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + com[2]
@@ -380,7 +380,7 @@ class PenaltyFunctionAbstract:
             ----------
             _: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             """
 
@@ -397,7 +397,7 @@ class PenaltyFunctionAbstract:
             return com_height_cx
 
         @staticmethod
-        def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
+        def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axes is specified, the squared-norm of the center_of_mass's position is minimized.
@@ -408,7 +408,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             axes: tuple | list
                 The axes to project on. Default is all axes
@@ -423,7 +423,7 @@ class PenaltyFunctionAbstract:
             return com_cx
 
         @staticmethod
-        def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
+        def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
@@ -434,7 +434,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             axes: tuple | list
                 The axes to project on. Default is all axes
@@ -450,7 +450,7 @@ class PenaltyFunctionAbstract:
             return com_dot_cx
 
         @staticmethod
-        def minimize_com_acceleration(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
+        def minimize_com_acceleration(penalty: PenaltyOption, all_pn: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
@@ -461,7 +461,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             axes: tuple | list
                 The axes to project on. Default is all axes
@@ -498,7 +498,7 @@ class PenaltyFunctionAbstract:
                 )
 
         @staticmethod
-        def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
+        def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the angular momentum of the model in the global reference frame should be minimized.
             If no axis is specified, the three components of the angular momentum are minimized.
@@ -508,7 +508,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             axes: tuple | list
                 The axes to project on. Default is all axes
@@ -525,7 +525,7 @@ class PenaltyFunctionAbstract:
             return angular_momentum_cx
 
         @staticmethod
-        def minimize_linear_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: tuple | list = None):
+        def minimize_linear_momentum(penalty: PenaltyOption, all_pn: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the linear momentum of the model in the global reference frame should be minimized.
             If no axis is specified, the three components of the linear momentum are minimized.
@@ -535,7 +535,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             axes: tuple | list
                 The axes to project on. Default is all axes
@@ -561,7 +561,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_contact_forces(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: tuple | list | int | str = None
+            penalty: PenaltyOption, all_pn: PenaltyController, contact_index: tuple | list | int | str = None
         ):
             """
             Minimize the contact forces computed from dynamics with contact
@@ -572,7 +572,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             contact_index: tuple | list
                 The index of contact to minimize, must be an int or a list.
@@ -593,7 +593,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_soft_contact_forces(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: tuple | list | int | str = None
+            penalty: PenaltyOption, all_pn: PenaltyController, contact_index: tuple | list | int | str = None
         ):
             """
             Minimize the soft contact forces computed from dynamics with contact
@@ -604,7 +604,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             contact_index: tuple | list
                 The index of contact to minimize, must be an int or a list.
@@ -629,7 +629,7 @@ class PenaltyFunctionAbstract:
             return soft_contact_force[force_idx]
 
         @staticmethod
-        def track_segment_with_custom_rt(penalty: PenaltyOption, all_pn: PenaltyNodeList, segment: int | str, rt: int):
+        def track_segment_with_custom_rt(penalty: PenaltyOption, all_pn: PenaltyController, segment: int | str, rt: int):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
             and a RT (e.g. IMU). By default this function is quadratic, meaning that it minimizes the difference.
@@ -638,7 +638,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             segment: int | str
                 The name or index of the segment
@@ -671,7 +671,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def track_marker_with_segment_axis(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             marker: int | str,
             segment: int | str,
             axis: Axis,
@@ -684,7 +684,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             marker: int
                 Name or index of the marker to be tracked
@@ -717,7 +717,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_segment_rotation(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             segment: int | str,
             axes: list | tuple = None,
         ):
@@ -729,7 +729,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             segment: int
                 Name or index of the segment to align with the marker
@@ -770,7 +770,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_segment_velocity(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             segment: int | str,
             axes: list | tuple = None,
         ):
@@ -782,7 +782,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             segment: int
                 Name or index of the segment to align with the marker
@@ -824,7 +824,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def track_vector_orientations_from_markers(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             vector_0_marker_0: int | str,
             vector_0_marker_1: int | str,
             vector_1_marker_0: int | str,
@@ -842,7 +842,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             vector_0_marker_0: int | str
                 Name or index of the first marker of the first vector
@@ -892,7 +892,7 @@ class PenaltyFunctionAbstract:
             return nlp.mx_to_cx("vector_orientations_difference", out, nlp.states[0]["q"])  # TODO: [0] to [node_index]
 
         @staticmethod
-        def continuity(penalty: PenaltyOption, all_pn: PenaltyNodeList | list):
+        def continuity(penalty: PenaltyOption, all_pn: PenaltyController | list):
             nlp = all_pn.nlp
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 u = nlp.controls[0].cx_start  # TODO: [0] to [node_index]
@@ -941,7 +941,7 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
-        def custom(penalty: PenaltyOption, all_pn: PenaltyNodeList | list, **parameters: Any):
+        def custom(penalty: PenaltyOption, all_pn: PenaltyController | list, **parameters: Any):
             """
             A user defined penalty function
 
@@ -949,7 +949,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             parameters: dict
                 Any parameters that should be pass to the custom function
@@ -1006,7 +1006,7 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("add cannot be called from an abstract class")
 
     @staticmethod
-    def set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, index: str | int | list | tuple, _type: str):
+    def set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyController, index: str | int | list | tuple, _type: str):
         """
         Simple penalty.cols setter for marker index and names
 
@@ -1014,7 +1014,7 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        all_pn: PenaltyNodeList
+        all_pn: PenaltyController
             The penalty node elements
         index: str | int | list | tuple
             The marker to index
@@ -1079,7 +1079,7 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
-    def validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyNodeList):
+    def validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyController):
         """
         Check for any nonsense in the requested times for the penalty. Raises an error if so
 
@@ -1087,7 +1087,7 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        all_pn: PenaltyNodeList
+        all_pn: PenaltyController
             The penalty node elements
         """
 

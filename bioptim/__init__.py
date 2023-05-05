@@ -193,7 +193,7 @@ from .limits.path_conditions import (
     NoisedInitialGuess,
 )
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
-from .limits.penalty_node import PenaltyNode, PenaltyNodeList
+from .limits.penalty_node import PenaltyController
 from .misc.enums import (
     Axis,
     Node,

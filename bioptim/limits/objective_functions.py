@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
-from .penalty_node import PenaltyNodeList
+from .penalty_node import PenaltyController
 from ..misc.enums import Node, IntegralApproximation, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -65,7 +65,7 @@ class Objective(PenaltyOption):
 
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
-    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList | list | tuple):
+    def _add_penalty_to_pool(self, all_pn: PenaltyController | list | tuple):
         if isinstance(all_pn, (list, tuple)):
             all_pn = all_pn[0]
 
@@ -179,7 +179,7 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(_: Objective, all_pn: PenaltyNodeList):
+            def minimize_time(_: Objective, all_pn: PenaltyController):
                 """
                 Minimizes the duration of the phase
 
@@ -187,7 +187,7 @@ class ObjectiveFunction:
                 ----------
                 _: Objective,
                     The actual constraint to declare
-                all_pn: PenaltyNodeList
+                all_pn: PenaltyController
                     The penalty node elements
                 """
 
@@ -214,7 +214,7 @@ class ObjectiveFunction:
             @staticmethod
             def minimize_time(
                 _: Objective,
-                all_pn: PenaltyNodeList,
+                all_pn: PenaltyController,
                 min_bound: float = None,
                 max_bound: float = None,
             ):
@@ -225,7 +225,7 @@ class ObjectiveFunction:
                 ----------
                 _: Objective,
                     The actual constraint to declare
-                all_pn: PenaltyNodeList
+                all_pn: PenaltyController
                     The penalty node elements
                 min_bound: float
                     The minimum value the time can take (this is ignored here, but

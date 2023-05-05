@@ -17,7 +17,7 @@ from bioptim import (
     RigidBodyDynamics,
     ControlType,
 )
-from bioptim.limits.penalty_node import PenaltyNodeList
+from bioptim.limits.penalty_node import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.misc.mapping import BiMapping
 from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
@@ -75,7 +75,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
 
 
 def get_penalty_value(ocp, penalty, t, x, u, p):
-    val = penalty.type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, u, [], [], []), **penalty.params)
+    val = penalty.type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], []), **penalty.params)
     if isinstance(val, float):
         return val
 
@@ -110,7 +110,7 @@ def test_penalty_minimize_time(penalty_origin, value):
 
     penalty_type = penalty_origin.MINIMIZE_TIME
     penalty = Objective(penalty_type)
-    penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], [], [], [], [], [], []))
+    penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], []))
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
     np.testing.assert_almost_equal(res, np.array(1))
@@ -882,7 +882,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], [], [], []))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], []))
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -905,7 +905,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
         RuntimeError,
         match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
     ):
-        penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], [], [], []))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], []))
 
 
 @pytest.mark.parametrize(

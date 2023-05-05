@@ -4,7 +4,7 @@ import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
 
 from .path_conditions import Bounds
-from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
+from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -63,7 +63,7 @@ class Constraint(PenaltyOption):
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
-    def set_penalty(self, penalty: MX | SX, all_pn: PenaltyNodeList):
+    def set_penalty(self, penalty: MX | SX, all_pn: PenaltyController):
         super(Constraint, self).set_penalty(penalty, all_pn)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
@@ -93,7 +93,7 @@ class Constraint(PenaltyOption):
         elif self.bounds.shape[0] != len(self.rows):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
-    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
+    def _add_penalty_to_pool(self, all_pn: PenaltyController):
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
         elif self.penalty_type == ConstraintType.IMPLICIT:
@@ -192,7 +192,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def non_slipping(
             constraint: Constraint,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             tangential_component_idx: int,
             normal_component_idx: int,
             static_friction_coefficient: float,
@@ -207,7 +207,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             tangential_component_idx: int
                 Index of the tangential component of the contact force.
@@ -255,7 +255,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return slipping
 
         @staticmethod
-        def torque_max_from_q_and_qdot(constraint: Constraint, all_pn: PenaltyNodeList, min_torque=None):
+        def torque_max_from_q_and_qdot(constraint: Constraint, all_pn: PenaltyController, min_torque=None):
             """
             Non linear maximal values of joint torques computed from the torque-position-velocity relationship
 
@@ -263,7 +263,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             min_torque: float
                 Minimum joint torques. This prevent from having too small torques, but introduces an if statement
@@ -300,7 +300,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return value
 
         @staticmethod
-        def time_constraint(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def time_constraint(_: Constraint, all_pn: PenaltyController, **unused_param):
             """
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
 
@@ -308,7 +308,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
@@ -319,7 +319,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def qddot_equals_forward_dynamics(
             _: Constraint,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             with_contact: bool,
             with_passive_torque: bool,
             with_ligament: bool,
@@ -333,7 +333,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             with_contact: bool
                 True if the contact dynamics is handled
@@ -374,7 +374,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def tau_equals_inverse_dynamics(
             _: Constraint,
-            all_pn: PenaltyNodeList,
+            all_pn: PenaltyController,
             with_contact: bool,
             with_passive_torque: bool,
             with_ligament: bool,
@@ -388,7 +388,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             with_contact: bool
                 True if the contact dynamics is handled
@@ -439,7 +439,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def implicit_marker_acceleration(
-            _: Constraint, all_pn: PenaltyNodeList, contact_index: int, contact_axis: int, **unused_param
+            _: Constraint, all_pn: PenaltyController, contact_index: int, contact_axis: int, **unused_param
         ):
             """
             Compute the acceleration of the contact node to set it at zero
@@ -448,7 +448,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             contact_index: int
                 The contact index
@@ -475,7 +475,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def tau_from_muscle_equal_inverse_dynamics(
-            _: Constraint, all_pn: PenaltyNodeList, with_passive_torque: bool, with_ligament: bool, **unused_param
+            _: Constraint, all_pn: PenaltyController, with_passive_torque: bool, with_ligament: bool, **unused_param
         ):
             """
             Compute the difference between symbolic joint torques from muscle and inverse dynamic results
@@ -485,7 +485,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             with_passive_torque: bool
                 True if the passive torque dynamics is handled
@@ -527,7 +527,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return nlp.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
 
         @staticmethod
-        def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyController, **unused_param):
             """
             Compute the difference between symbolic soft contact forces and actual force contact dynamic
 
@@ -535,7 +535,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                 The penalty node elements
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument

@@ -21,19 +21,19 @@ from bioptim import (
     Bounds,
     InitialGuess,
     OdeSolver,
-    PenaltyNodeList,
+    PenaltyController,
     Solver,
 )
 
 
-def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str, method: int) -> MX:
+def custom_func_track_markers(all_pn: PenaltyController, first_marker: str, second_marker: str, method: int) -> MX:
     """
     The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
 
     Parameters
     ----------
-    all_pn: PenaltyNodeList
+    all_pn: PenaltyController
         The penalty node elements
     first_marker: str
         The index of the first marker in the bioMod

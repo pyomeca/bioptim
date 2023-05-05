@@ -6,7 +6,7 @@ from casadi import vertcat, MX
 from .multinode_constraint import BinodeConstraint, BinodeConstraintFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
-from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
+from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..misc.enums import Node, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
@@ -180,7 +180,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition : PhaseTransition
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns
@@ -199,7 +199,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition : PhaseTransition
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns
@@ -218,7 +218,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition: PhaseTransition
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns
@@ -237,7 +237,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition: PhaseTransition
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns

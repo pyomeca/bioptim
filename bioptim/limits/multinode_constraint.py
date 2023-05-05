@@ -5,7 +5,7 @@ from casadi import vertcat, MX
 from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
-from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
+from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..misc.enums import Node, InterpolationType, PenaltyType, CXStep
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
@@ -108,7 +108,7 @@ class BinodeConstraint(Constraint):
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL
 
-    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList | list | tuple):
+    def _add_penalty_to_pool(self, all_pn: PenaltyController | list | tuple):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
         if self.weight == 0:
@@ -216,7 +216,7 @@ class AllNodeConstraint(Constraint):
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL
 
-    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList | list | tuple):
+    def _add_penalty_to_pool(self, all_pn: PenaltyController | list | tuple):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
         if self.weight == 0:
@@ -398,7 +398,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns
@@ -432,7 +432,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns
@@ -462,7 +462,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns
@@ -514,7 +514,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns
@@ -567,7 +567,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns
@@ -615,7 +615,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint: BinodeConstraint
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns
@@ -646,7 +646,7 @@ class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             allnode_constraint: AllNodeConstraint
                 A reference to the phase transition
-            all_pn: PenaltyNodeList
+            all_pn: PenaltyController
                     The penalty node elements
 
             Returns

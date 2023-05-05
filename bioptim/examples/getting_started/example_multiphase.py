@@ -10,8 +10,8 @@ import platform
 
 from bioptim import (
     BiorbdModel,
-    PenaltyNode,
     OptimalControlProgram,
+    PenaltyController,
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
@@ -27,8 +27,10 @@ from bioptim import (
 )
 
 
-def minimize_difference(all_pn: PenaltyNode):
-    return all_pn[0].nlp.controls[0].cx_end - all_pn[1].nlp.controls[0].cx_start  # TODO: [0] to [node_index]
+def minimize_difference(all_pn: list[PenaltyController, PenaltyController]):
+    all_pn_pre = all_pn[0]
+    all_pn_post = all_pn[1]
+    return all_pn_pre.nlp.controls[0].cx_end - all_pn_post.nlp.controls[0].cx_start  # TODO: [0] to [node_index]
     # TODO: node_index= all_pn.node_index, all_pn[0].nlp.controls[node_index].cx_end
 
 
