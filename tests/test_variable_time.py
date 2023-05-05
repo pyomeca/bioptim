@@ -21,7 +21,6 @@ from bioptim import (
     OdeSolver,
     OptimalControlProgram,
     ParameterList,
-    QAndQDotBounds,
 )
 from bioptim.optimization.solution import Solution
 
@@ -75,9 +74,9 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 0
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 1
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 2
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 0
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 1
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 2
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -146,6 +145,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
         constraints,
         ode_solver=ode_solver,
         parameters=parameters,
+        assume_phase_dynamics=False,
     )
 
 

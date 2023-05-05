@@ -115,7 +115,6 @@ def test_generate_time(
 
     if shooting_type == Shooting.SINGLE:
         if merge_phase:
-
             np.testing.assert_almost_equal(time[0], 0)
             np.testing.assert_almost_equal(time[-1], 1)
             if keep_intermediate_points:
@@ -139,7 +138,6 @@ def test_generate_time(
                     np.testing.assert_almost_equal(time[0][4], 0.06203787705313508)
 
     elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-
         if merge_phase:
             np.testing.assert_almost_equal(time[0], 0)
             np.testing.assert_almost_equal(time[-1], 1)

@@ -16,7 +16,6 @@ from bioptim import (
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     ObjectiveFcn,
     OdeSolver,
@@ -83,7 +82,7 @@ def prepare_ocp(
         qddot_min, qddot_max, qddot_init = -1000, 1000, 0
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, [0, -1]] = 0
     x_bounds[0][1, -1] = 3.14
 
@@ -127,6 +126,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
+        assume_phase_dynamics=True,
     )
 
 

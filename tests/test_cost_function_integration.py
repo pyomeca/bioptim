@@ -12,7 +12,6 @@ from bioptim import (
     ControlType,
     IntegralApproximation,
     OptimalControlProgram,
-    QAndQDotBounds,
     Objective,
     ObjectiveFcn,
     Dynamics,
@@ -30,7 +29,7 @@ def prepare_ocp(
     integration_rule: IntegralApproximation,
     control_type: ControlType,
     objective: str,
-    target: np.array = None,
+    target: np.ndarray = None,
     ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
@@ -78,7 +77,7 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
@@ -523,7 +522,6 @@ def test_error_mayer_trapz(integration_rule):
         match="Mayer objective functions cannot be integrated, "
         "remove the argument integration_rule or use a Lagrange objective function",
     ):
-
         ocp = prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
             n_shooting=30,

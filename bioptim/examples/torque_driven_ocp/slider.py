@@ -3,7 +3,8 @@ This example is a trivial slider that goes from 0 to 1 and back to 0. The slider
 slider. The slider is constrained to move only on the x axis. This example is multi-phase optimal control problem.
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -13,7 +14,6 @@ from bioptim import (
     ObjectiveFcn,
     ConstraintList,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -73,9 +73,9 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
     x_bounds[0].min[:, 0] = 0
     x_bounds[0].max[:, 0] = 0
     x_bounds[1].min[0, -1] = 0.5
@@ -113,6 +113,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         control_type=control_type,
+        assume_phase_dynamics=True,
     )
 
 
@@ -128,7 +129,7 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    solver = Solver.IPOPT(show_online_optim=True)
+    solver = Solver.IPOPT(show_online_optim=platform.system() == "Linux")
     sol = ocp.solve(solver)
     sol.graphs()
     sol.animate()

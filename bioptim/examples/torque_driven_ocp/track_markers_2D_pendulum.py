@@ -6,9 +6,10 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 Note that the final node is not tracked.
 """
 
-from typing import Callable, Union
+from typing import Callable
 import importlib.util
 from pathlib import Path
+import platform
 
 import biorbd_casadi as biorbd
 import numpy as np
@@ -19,7 +20,6 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     ObjectiveList,
     ObjectiveFcn,
@@ -37,13 +37,13 @@ data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
-def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable, n_q: int) -> Union[DM, np.ndarray]:
+def get_markers_pos(x: DM | np.ndarray, idx_marker: int, fun: Callable, n_q: int) -> DM | np.ndarray:
     """
     Get the position of a specific marker from the states
 
     Parameters
     ----------
-    x: Union[DM, np.ndarray]
+    x: DM | np.ndarray
         The states to get the marker positions from
     idx_marker: int
         The index of the marker to get the position
@@ -111,7 +111,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, 0] = 0
 
     # Initial guess
@@ -142,6 +142,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -215,7 +216,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate(n_frames=100)

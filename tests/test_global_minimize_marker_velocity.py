@@ -3,7 +3,6 @@ Test for file IO
 """
 import pytest
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -12,7 +11,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     ControlType,
     OdeSolver,
@@ -72,12 +70,12 @@ def prepare_ocp(
             ObjectiveFcn.Lagrange.MINIMIZE_MARKERS,
             derivative=True,
             reference_jcs=coordinates_system_idx,
-            marker_index=6,
+            marker_index=7,
             weight=1000,
         )
     elif marker_velocity_or_displacement == "velo":
         objective_functions.add(
-            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, node=Node.ALL, marker_index=6, weight=1000
+            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, node=Node.ALL, marker_index=7, weight=1000
         )
     else:
         raise RuntimeError(
@@ -95,7 +93,7 @@ def prepare_ocp(
     # Path constraint
     nq = bio_model.nb_q
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0].min[nq:, :] = -10
     x_bounds[0].max[nq:, :] = 10
 

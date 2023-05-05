@@ -6,12 +6,12 @@ of the previous phase is the last shooting node (and not the node arrival).
 It is designed to show how one can define a multiphase optimal control program
 """
 
+import platform
 
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
-    PenaltyNode,
     OptimalControlProgram,
+    PenaltyController,
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
@@ -19,7 +19,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Node,
@@ -28,8 +27,10 @@ from bioptim import (
 )
 
 
-def minimize_difference(all_pn: PenaltyNode):
-    return all_pn[0].nlp.controls.cx_end - all_pn[1].nlp.controls.cx
+def minimize_difference(controllers: list[PenaltyController, PenaltyController]):
+    pre = controllers[0]
+    post = controllers[1]
+    return pre.nlp.controls[0].cx_end - post.nlp.controls[0].cx_start  # TODO: [0] to [node_index]
 
 
 def prepare_ocp(
@@ -92,9 +93,9 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -131,6 +132,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -143,7 +145,9 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT())
+    sol.graphs(show_bounds=True)
 
     # --- Show results --- #
     sol.print_cost()

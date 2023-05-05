@@ -4,9 +4,10 @@ pulling downward and afterward to let it go so it gains velocity. It is designed
 forces to interact with the body.
 """
 
+import platform
+
 from casadi import MX, vertcat
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -16,7 +17,6 @@ from bioptim import (
     DynamicsFunctions,
     ObjectiveFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     NonLinearProgram,
     Solver,
@@ -44,9 +44,9 @@ def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgr
     The state derivative
     """
 
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+    q = DynamicsFunctions.get(nlp.states[0]["q"], states)  # TODO: [0] to [node_index]
+    qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)  # TODO: [0] to [node_index]
+    tau = DynamicsFunctions.get(nlp.controls[0]["tau"], controls)  # TODO: [0] to [node_index]
 
     force_vector = MX.zeros(6)
     force_vector[5] = 100 * q[0] ** 2
@@ -85,7 +85,7 @@ def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
     dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(m)
+    x_bounds = m.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = [0] * m.nb_q + [0] * m.nb_qdot
     x_bounds.min[:, 1] = [-1] * m.nb_q + [-100] * m.nb_qdot
     x_bounds.max[:, 1] = [1] * m.nb_q + [100] * m.nb_qdot
@@ -109,6 +109,7 @@ def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        assume_phase_dynamics=True,
     )
 
 
@@ -116,7 +117,7 @@ def main():
     ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

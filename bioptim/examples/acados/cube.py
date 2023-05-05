@@ -15,7 +15,6 @@ from bioptim import (
     ObjectiveFcn,
     ObjectiveList,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     OdeSolver,
     Solver,
@@ -30,7 +29,7 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
@@ -49,6 +48,7 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
         u_bounds,
         ode_solver=ode_solver,
         use_sx=use_sx,
+        assume_phase_dynamics=True,
     )
 
 

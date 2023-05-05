@@ -8,13 +8,13 @@ This simple example is a good place to start investigating bioptim as it describ
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
+import platform
 
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     ObjectiveFcn,
     Objective,
@@ -65,7 +65,7 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
@@ -95,6 +95,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
+        assume_phase_dynamics=False,
     )
 
 
@@ -116,7 +117,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #

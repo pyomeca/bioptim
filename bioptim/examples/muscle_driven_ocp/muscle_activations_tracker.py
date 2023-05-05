@@ -8,6 +8,8 @@ and kinematics would indeed be acquired via data acquisition devices
 The difference between muscle activation and excitation is that the latter is the derivative of the former
 """
 
+import platform
+
 from scipy.integrate import solve_ivp
 import numpy as np
 import biorbd_casadi as biorbd
@@ -24,13 +26,14 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Node,
     Solver,
     RigidBodyDynamics,
 )
+
+from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 
 
 def generate_data(
@@ -82,15 +85,33 @@ def generate_data(
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
-    nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+    nlp.states = OptimizationVariableContainer()
+    nlp.states_dot = OptimizationVariableContainer()
+    nlp.controls = OptimizationVariableContainer()
+    nlp.states.initialize_from_shooting(n_shooting, MX)
+    nlp.states_dot.initialize_from_shooting(n_shooting, MX)
+    nlp.controls.initialize_from_shooting(n_shooting, MX)
 
-    nlp.states_dot.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
-    nlp.states_dot.append("qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"])
+    for node_index in range(n_shooting):
+        nlp.states[node_index].append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
+        nlp.states[node_index].append(
+            "qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"]
+        )
 
-    if use_residual_torque:
-        nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
-    nlp.controls.append("muscles", [symbolic_mus, symbolic_mus], symbolic_mus, nlp.variable_mappings["muscles"])
+        nlp.states_dot[node_index].append(
+            "qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"]
+        )
+        nlp.states_dot[node_index].append(
+            "qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"]
+        )
+
+        if use_residual_torque:
+            nlp.controls[node_index].append(
+                "tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"]
+            )
+        nlp.controls[node_index].append(
+            "muscles", [symbolic_mus, symbolic_mus], symbolic_mus, nlp.variable_mappings["muscles"]
+        )
 
     if use_residual_torque:
         nlp.variable_mappings["tau"] = BiMapping(range(n_tau), range(n_tau))
@@ -203,11 +224,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=use_residual_torque)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=use_residual_torque)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
     nq = bio_model.nb_q
     x_bounds[0].min[:nq, :] = -2 * np.pi
@@ -229,7 +250,10 @@ def prepare_ocp(
         )
         u_init.add([tau_init] * bio_model.nb_tau + [activation_init] * bio_model.nb_muscles)
     else:
-        u_bounds.add([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles)
+        u_bounds.add(
+            [activation_min] * bio_model.nb_muscles,
+            [activation_max] * bio_model.nb_muscles,
+        )
         u_init.add([activation_init] * bio_model.nb_muscles)
     # ------------- #
 
@@ -245,6 +269,7 @@ def prepare_ocp(
         objective_functions,
         ode_solver=ode_solver,
         n_threads=n_threads,
+        assume_phase_dynamics=True,
     )
 
 
@@ -261,7 +286,10 @@ def main():
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(
-        bio_model, final_time, n_shooting_points, use_residual_torque=use_residual_torque
+        bio_model,
+        final_time,
+        n_shooting_points,
+        use_residual_torque=use_residual_torque,
     )
 
     # Track these data
@@ -278,12 +306,12 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show the results --- #
     q = sol.states["q"]
     n_q = ocp.nlp[0].model.nb_q
-    n_mark = ocp.nlp[0].model.nbMarkers()
+    n_mark = ocp.nlp[0].model.nb_markers
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
@@ -296,8 +324,16 @@ def main():
     plt.figure("Markers")
     n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
     for i in range(markers.shape[1]):
-        plt.plot(np.linspace(0, final_time, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
-        plt.plot(np.linspace(0, final_time, n_shooting_points * n_steps_ode + 1), markers[:, i, :].T, "r--")
+        plt.plot(
+            np.linspace(0, final_time, n_shooting_points + 1),
+            markers_ref[:, i, :].T,
+            "k",
+        )
+        plt.plot(
+            np.linspace(0, final_time, n_shooting_points * n_steps_ode + 1),
+            markers[:, i, :].T,
+            "r--",
+        )
 
     # --- Plot --- #
     plt.show()

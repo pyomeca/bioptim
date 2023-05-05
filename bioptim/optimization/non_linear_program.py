@@ -1,9 +1,9 @@
-from typing import Callable, Any, Union
+from typing import Callable, Any
 
 import casadi
 from casadi import SX, MX, Function, horzcat
 
-from .optimization_variable import OptimizationVariableList, OptimizationVariable, OptimizationVariableContainer
+from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
@@ -25,7 +25,7 @@ class NonLinearProgram:
         The contact force function if exists for the current nlp
     control_type: ControlType
         The control type for the current nlp
-    cx: Union[MX, SX]
+    cx: MX | SX
         The type of symbolic variable that is used
     dt: float
         The delta time of the current phase
@@ -51,7 +51,7 @@ class NonLinearProgram:
         All the objectives at each of the node of the phase
     J_internal: list[list[Objective]]
         All the objectives internally defined by the phase at each of the node of the phase
-    model: Union[BiorbdModel, BioModel]
+    model: BiorbdModel | BioModel
         The biorbd model associated with the phase
     n_threads: int
         The number of thread to use
@@ -81,17 +81,17 @@ class NonLinearProgram:
         The bounds for the controls
     u_init = InitialGuess()
         The initial guess for the controls
-    U: list[Union[MX, SX]]
+    U: list[MX | SX]
         The casadi variables for the integration at each node of the phase
-    controls: OptimizationVariableList
+    controls: OptimizationVariableContainer
         A list of all the control variables
     x_bounds = Bounds()
         The bounds for the states
     x_init = InitialGuess()
         The initial guess for the states
-    X: list[Union[MX, SX]]
+    X: list[MX | SX]
         The casadi variables for the integration at each node of the phase
-    states: OptimizationVariableList
+    states: OptimizationVariableContainer
         A list of all the state variables
 
     Methods
@@ -101,7 +101,7 @@ class NonLinearProgram:
     add(ocp: OptimalControlProgram, param_name: str, param: Any, duplicate_singleton: bool,
             _type: Any = None, name: str = None)
         Set a parameter to their respective nlp
-    __setattr(nlp, name: Union[str, None], param_name: str, param: Any)
+    __setattr(nlp, name: str | None, param_name: str, param: Any)
         Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
     add_path_condition(ocp: OptimalControlProgram, var: Any, path_name: str, type_option: Any, type_list: Any)
         Interface to add for PathCondition classes
@@ -144,17 +144,19 @@ class NonLinearProgram:
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
         self.U_scaled = None
+        self.u_scaling = None
         self.U = None
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
-        self.controls = OptimizationVariableContainer()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
         self.X_scaled = None
+        self.x_scaling = None
         self.X = None
         self.states = OptimizationVariableContainer()
         self.states_dot = OptimizationVariableContainer()
+        self.controls = OptimizationVariableContainer()
 
     def initialize(self, cx: Callable = None):
         """
@@ -162,20 +164,21 @@ class NonLinearProgram:
 
         Parameters
         ----------
-        cx: Union[MX, SX]
+        cx: MX | SX
             The type of casadi variable
 
         """
+
         self.plot = {}
         self.cx = cx
-        self.states["scaled"]._cx = self.cx()
-        self.states._cx = self.cx()
-        self.controls["scaled"]._cx = self.cx()
-        self.controls._cx = self.cx()
         self.J = []
         self.g = []
         self.g_internal = []
         self.casadi_func = {}
+
+        self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+        self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+        self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
@@ -232,7 +235,7 @@ class NonLinearProgram:
                     raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
 
     @staticmethod
-    def __setattr(nlp, name: Union[str, None], param_name: str, param: Any):
+    def __setattr(nlp, name: str | None, param_name: str, param: Any):
         """
         Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
 
@@ -240,7 +243,7 @@ class NonLinearProgram:
         ----------
         nlp: NonLinearProgram
             A reference to a nlp
-        name: Union[str, None]
+        name: str | None
             A meta name of the param if the param is set in a dictionary
         param_name: str
             The name of the parameter
@@ -288,7 +291,7 @@ class NonLinearProgram:
             raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
         NonLinearProgram.add(ocp, path_name, var, False)
 
-    def add_casadi_func(self, name: str, function: Union[Callable, SX, MX], *all_param: Any) -> casadi.Function:
+    def add_casadi_func(self, name: str, function: Callable | SX | MX, *all_param: Any) -> casadi.Function:
         """
         Add to the pool of declared casadi function. If the function already exists, it is skipped
 
@@ -296,7 +299,7 @@ class NonLinearProgram:
         ----------
         name: str
             The unique name of the function to add to the casadi functions pool
-        function: Callable
+        function: Callable | SX | MX
             The biorbd function to add
         all_param: dict
             Any parameters to pass to the biorbd function
@@ -318,7 +321,7 @@ class NonLinearProgram:
         ----------
         name: str
             The unique name of the function to add to the casadi functions pool
-        symbolic_expression: Union[SX, MX, Callable]
+        symbolic_expression: SX | MX | Callable
             The symbolic expression to be converted, also support Callables
         all_param: Any
             Any parameters to pass to the biorbd function
@@ -330,7 +333,7 @@ class NonLinearProgram:
         cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
         mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
         cx = [
-            var.mapping.to_second.map(var.cx) if hasattr(var, "mapping") else var.cx
+            var.mapping.to_second.map(var.cx_start) if hasattr(var, "mapping") else var.cx_start
             for var in all_param
             if isinstance(var, cx_types)
         ]
@@ -345,7 +348,7 @@ class NonLinearProgram:
         ----------
         name: str
             The name of the function
-        symbolic_expression: Union[SX, MX, Callable]
+        symbolic_expression: MX | SX | Callable
             The symbolic expression to be converted, also support Callables
         all_param: Any
             Any parameters to pass to the biorbd function

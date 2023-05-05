@@ -6,7 +6,7 @@ Please note that using show_meshes=True in the animator may be long due to the c
 mesh points.
 """
 
-import biorbd_casadi as biorbd
+import platform
 
 from bioptim import (
     BiorbdModel,
@@ -15,7 +15,6 @@ from bioptim import (
     ObjectiveFcn,
     Dynamics,
     DynamicsFcn,
-    QAndQDotBounds,
     InitialGuess,
     OdeSolver,
     Constraint,
@@ -135,7 +134,9 @@ def prepare_ocp(
                 raise ValueError("fatigue_type not implemented")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue_dynamics, with_torque=torque_level > 0)
+    dynamics = Dynamics(
+        DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue_dynamics, with_residual_torque=torque_level > 0
+    )
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -156,7 +157,7 @@ def prepare_ocp(
         axes=[Axis.X, Axis.Y],
     )
 
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = (0.07, 1.4, 0, 0)
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
 
@@ -183,6 +184,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=False,
         n_threads=8,
+        assume_phase_dynamics=True,
     )
 
 
@@ -200,7 +202,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    solver = Solver.IPOPT(show_online_optim=True)
+    solver = Solver.IPOPT(show_online_optim=platform.system() == "Linux")
     solver.set_hessian_approximation("exact")
     sol = ocp.solve(solver)
     sol.print_cost()

@@ -4,12 +4,11 @@ All the examples in muscle_driven_with_contact are merely to show some dynamics 
 It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
 """
 
-
 import importlib.util
 from pathlib import Path
+import platform
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -18,7 +17,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -51,7 +49,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True, with_contact=True)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
 
     # Path constraint
     n_q = bio_model.nb_q
@@ -60,7 +58,7 @@ def prepare_ocp(
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess
@@ -80,7 +78,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,
@@ -90,6 +88,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -124,7 +123,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

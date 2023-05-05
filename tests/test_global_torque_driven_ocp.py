@@ -3,11 +3,9 @@ Test for file IO
 """
 import os
 import pytest
-
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver, BiorbdModel
-
 from .utils import TestUtils
 
 
@@ -544,6 +542,7 @@ def test_phase_transition_uneven_variable_number_by_mapping():
     np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([7.93025703, 0.31520724]))
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([0.0, 0.0, 7.93025703, 0.31520724]))
     np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([-0.2593021, 10.0000001, 9.49212256, -0.1382893]))
+
     # initial and final velocities
     np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([1.89770078, 18.62453707]))
     np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([16.56293494, -16.83711551]))
@@ -580,21 +579,9 @@ def test_multi_model_by_mapping():
         )
     return  # TODO: when it is not broken anymore, the following results should be good
 
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 2.07020992)
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (40, 1))
     np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
-
     # Check some of the results
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
-
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
     np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159296, 0.0]), decimal=3)
@@ -656,3 +643,151 @@ def test_multi_model_by_constraint():
     np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([0.01132175]), decimal=6)
     np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([0.00146709]), decimal=6)
     np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([0.01132175]), decimal=6)
+
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+def test_torque_activation_driven(ode_solver):
+    # Load track_markers
+    from bioptim.examples.torque_driven_ocp import torque_activation_driven as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ode_solver = ode_solver()
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_2dof_2contacts.bioMod",
+        n_shooting=30,
+        final_time=2,
+        ode_solver=ode_solver,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 0.04880295023323905, decimal=3)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (120, 1))
+    np.testing.assert_almost_equal(g, np.zeros((120, 1)))
+
+    # Check some of the results
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((-0.75, 0.75)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((3.0, 0.75)))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0.0, 0.0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0.0, 0.0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.2256539, 0.0681475)), decimal=3)
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-0.0019898, -0.0238914)), decimal=3)
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, decimal_value=4)
+
+
+def test_example_multi_biorbd_model():
+    # Load example_multi_biorbd_model
+    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    # Define the problem
+
+    biorbd_model_path = bioptim_folder + "/models/triple_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = bioptim_folder + "/models/triple_pendulum_modified_inertia.bioMod"
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=biorbd_model_path,
+        biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
+        n_shooting=20,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 10.697019532108447)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (240, 1))
+    np.testing.assert_almost_equal(g, np.zeros((240, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
+
+    # initial and final position
+    np.testing.assert_almost_equal(
+        states["q"][:, 0], np.array([-3.14159265, 0.0, 0.0, -3.14159265, 0.0, 0.0]), decimal=6
+    )
+    np.testing.assert_almost_equal(
+        states["q"][:, -1], np.array([3.05279505, 0.0, 0.0, 3.04159266, 0.0, 0.0]), decimal=6
+    )
+    # initial and final velocities
+    np.testing.assert_almost_equal(
+        states["qdot"][:, 0],
+        np.array([15.68385811, -31.25068304, 19.2317873, 15.63939216, -31.4159265, 19.91541457]),
+        decimal=6,
+    )
+    np.testing.assert_almost_equal(
+        states["qdot"][:, -1],
+        np.array([15.90689541, -30.54499528, 16.03701393, 15.96682325, -30.89799758, 16.70457477]),
+        decimal=6,
+    )
+    # initial and final controls
+    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.48437131, 0.0249894, 0.38051993]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.00235227, -0.02192184, -0.00709896]), decimal=6)
+
+
+def test_example_minimize_segment_velocity():
+    from bioptim.examples.torque_driven_ocp import example_minimize_segment_velocity as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    # Define the problem
+
+    biorbd_model_path = bioptim_folder + "/models/triple_pendulum.bioMod"
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=biorbd_model_path,
+        n_shooting=5,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 41.40771798838792)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (30, 1))
+    np.testing.assert_almost_equal(g, np.zeros((30, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
+
+    # initial and final position
+    np.testing.assert_almost_equal(states["q"][:, 0], np.array([0.0, 0.0, 0.0]), decimal=6)
+    np.testing.assert_almost_equal(states["q"][:, -1], np.array([0.0, 3.14159265, -3.14159265]), decimal=6)
+    # initial and final velocities
+    np.testing.assert_almost_equal(
+        states["qdot"][:, 0],
+        np.array([0.0, 0.0, 0.0]),
+        decimal=6,
+    )
+    np.testing.assert_almost_equal(
+        states["qdot"][:, -1],
+        np.array([2.69457617, 0.25126143, -2.3535264]),
+        decimal=6,
+    )
+    # initial and final controls
+    np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-2.4613488, 3.70379261, -0.99483388]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([0.80156395, 0.82773623, 0.35042046]), decimal=6)

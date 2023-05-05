@@ -4,7 +4,6 @@ import shutil
 from sys import platform
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Solver,

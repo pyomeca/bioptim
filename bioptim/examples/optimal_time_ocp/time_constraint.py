@@ -4,7 +4,8 @@ the time to perform the task is now free for the solver to change. This example 
 control program
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -15,7 +16,6 @@ from bioptim import (
     Constraint,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     Node,
     OdeSolver,
@@ -69,7 +69,7 @@ def prepare_ocp(
     # Path constraint
     n_q = bio_model.nb_q
     n_qdot = bio_model.nb_qdot
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[n_q - 1, -1] = 3.14
 
@@ -98,6 +98,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -117,7 +118,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}")

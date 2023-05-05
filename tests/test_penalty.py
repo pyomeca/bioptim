@@ -15,8 +15,9 @@ from bioptim import (
     Constraint,
     Node,
     RigidBodyDynamics,
+    ControlType,
 )
-from bioptim.limits.penalty_node import PenaltyNodeList
+from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.misc.mapping import BiMapping
 from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
@@ -33,7 +34,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     elif with_muscles:
         bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True)
+        dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True)
         nx = bio_model.nb_q + bio_model.nb_qdot
         nu = bio_model.nb_tau + bio_model.nb_muscles
     elif with_contact:
@@ -74,13 +75,17 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
 
 
 def get_penalty_value(ocp, penalty, t, x, u, p):
-    val = penalty.type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, u, [], [], []), **penalty.params)
+    val = penalty.type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], []), **penalty.params)
     if isinstance(val, float):
         return val
 
-    states = ocp.nlp[0].states.cx if ocp.nlp[0].states.cx.shape != (0, 0) else ocp.cx(0, 0)
-    controls = ocp.nlp[0].controls.cx if ocp.nlp[0].controls.cx.shape != (0, 0) else ocp.cx(0, 0)
-    parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
+    states = (
+        ocp.nlp[0].states[0].cx_start if ocp.nlp[0].states[0].cx_start.shape != (0, 0) else ocp.cx(0, 0)
+    )  # TODO: [0] to [node_index]
+    controls = (
+        ocp.nlp[0].controls[0].cx_start if ocp.nlp[0].controls[0].cx_start.shape != (0, 0) else ocp.cx(0, 0)
+    )  # TODO: [0] to [node_index]
+    parameters = ocp.nlp[0].parameters.cx_start if ocp.nlp[0].parameters.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     return ocp.nlp[0].to_casadi_func("penalty", val, states, controls, parameters)(x[0], u[0], p)
 
 
@@ -105,7 +110,7 @@ def test_penalty_minimize_time(penalty_origin, value):
 
     penalty_type = penalty_origin.MINIMIZE_TIME
     penalty = Objective(penalty_type)
-    penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], [], [], [], [], [], []))
+    penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], []))
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
     np.testing.assert_almost_equal(res, np.array(1))
@@ -171,17 +176,17 @@ def test_penalty_minimize_markers(penalty_origin, value):
 
     expected = np.array(
         [
-            [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
+            [0.1, 0.99517075, 1.9901749, 1.0950042, 0, 1, 2, 0.49750208],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, 0, -0.0499167],
         ]
     )
     if value == -10:
         expected = np.array(
             [
-                [-10, -11.3830926, -12.2221642, -10.8390715, 1.0, 2.0, -0.4195358],
-                [0, 0, 0, 0, 0, 0, 0],
-                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, -0.2720106],
+                [-10, -11.3830926, -12.2221642, -10.8390715, 0, 1.0, 2.0, -0.4195358],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, 0, -0.2720106],
             ]
         )
 
@@ -205,17 +210,17 @@ def test_penalty_track_markers(penalty_origin, value):
 
     expected = np.array(
         [
-            [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
+            [0.1, 0.99517075, 1.9901749, 1.0950042, 0, 1, 2, 0.49750208],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, 0, -0.0499167],
         ]
     )
     if value == -10:
         expected = np.array(
             [
-                [-10, -11.3830926, -12.2221642, -10.8390715, 1.0, 2.0, -0.4195358],
-                [0, 0, 0, 0, 0, 0, 0],
-                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, -0.2720106],
+                [-10, -11.3830926, -12.2221642, -10.8390715, 0, 1.0, 2.0, -0.4195358],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, 0, -0.2720106],
             ]
         )
 
@@ -238,9 +243,9 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value):
             res,
             np.array(
                 [
-                    [0.1, -0.00948376, -0.0194671, 0.0900167, 00, 00, -0.00499167],
-                    [0, 0, 0, 0, 00, 00, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, -0.0497502],
+                    [0.1, -0.00948376, -0.0194671, 0.0900167, 0, 00, 00, -0.00499167],
+                    [0, 0, 0, 0, 0, 00, 00, 0],
+                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, 0, -0.0497502],
                 ]
             ),
         )
@@ -249,9 +254,9 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value):
             res,
             np.array(
                 [
-                    [-10, -12.9505, -7.51029, -4.55979, 00, 00, 2.72011],
-                    [0, 0, 0, 0, 00, 00, 0],
-                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, -4.19536],
+                    [-10, -12.9505, -7.51029, -4.55979, 0, 00, 00, 2.72011],
+                    [0, 0, 0, 0, 0, 00, 00, 0],
+                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, 0, -4.19536],
                 ]
             ),
             decimal=4,
@@ -278,9 +283,9 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
             res,
             np.array(
                 [
-                    [0.1, -0.00948376, -0.0194671, 0.0900167, 00, 00, -0.00499167],
-                    [0, 0, 0, 0, 00, 00, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, -0.0497502],
+                    [0.1, -0.00948376, -0.0194671, 0.0900167, 0, 00, 00, -0.00499167],
+                    [0, 0, 0, 0, 0, 00, 00, 0],
+                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, 0, -0.0497502],
                 ]
             ),
         )
@@ -289,9 +294,9 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
             res,
             np.array(
                 [
-                    [-10, -12.9505, -7.51029, -4.55979, 00, 00, 2.72011],
-                    [0, 0, 0, 0, 00, 00, 0],
-                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, -4.19536],
+                    [-10, -12.9505, -7.51029, -4.55979, 0, 00, 00, 2.72011],
+                    [0, 0, 0, 0, 0, 00, 00, 0],
+                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, 0, -4.19536],
                 ]
             ),
             decimal=4,
@@ -319,7 +324,8 @@ def test_penalty_track_super_impose_marker(penalty_origin, value):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_proportional_state(penalty_origin, value):
+@pytest.mark.parametrize("value_intercept", [0.0, 1.0])
+def test_penalty_proportional_state(penalty_origin, value, value_intercept):
     ocp = prepare_test_ocp()
     t = [0]
     x = [DM.ones((8, 1)) * value]
@@ -327,12 +333,34 @@ def test_penalty_proportional_state(penalty_origin, value):
     penalty_type = penalty_origin.PROPORTIONAL_STATE
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
-        penalty = Objective(penalty_type, key="qdot", first_dof=0, second_dof=1, coef=2)
+        penalty = Objective(
+            penalty_type,
+            key="qdot",
+            first_dof=0,
+            second_dof=1,
+            coef=2,
+            first_dof_intercept=value_intercept,
+            second_dof_intercept=value_intercept,
+        )
     else:
-        penalty = Constraint(penalty_type, key="qdot", first_dof=0, second_dof=1, coef=2)
+        penalty = Constraint(
+            penalty_type,
+            key="qdot",
+            first_dof=0,
+            second_dof=1,
+            coef=2,
+            first_dof_intercept=value_intercept,
+            second_dof_intercept=value_intercept,
+        )
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
-    np.testing.assert_almost_equal(res, -value)
+    if value_intercept == 0.0:
+        np.testing.assert_almost_equal(res, -value)
+    else:
+        if value == 0.1:
+            np.testing.assert_almost_equal(res, 0.9)
+        else:
+            np.testing.assert_almost_equal(res, 11)
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ConstraintFcn])
@@ -601,6 +629,80 @@ def test_penalty_track_marker_with_segment_axis(penalty_origin, value):
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_segment_rotation(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+
+    if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = penalty_origin.MINIMIZE_SEGMENT_ROTATION
+        penalty = Objective(penalty_type, segment=2)
+    else:
+        penalty_type = penalty_origin.TRACK_SEGMENT_ROTATION
+        penalty = Constraint(penalty_type, segment=2)
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    expected = [[0, value, 0]] if value == 0.1 else [[3.1415927, 0.575222, 3.1415927]]
+    np.testing.assert_almost_equal(res.T, expected)
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_segment_velocity(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+
+    if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = penalty_origin.MINIMIZE_SEGMENT_VELOCITY
+        penalty = Objective(penalty_type, segment=2)
+    else:
+        penalty_type = penalty_origin.TRACK_SEGMENT_VELOCITY
+        penalty = Constraint(penalty_type, segment=2)
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    expected = [[0, value, 0]]
+    np.testing.assert_almost_equal(res.T, expected)
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_vector_orientation(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0]
+    x = [DM(np.array([0, 0, value, 0, 0, 0, 0, 0]))]
+    u = [0]
+    penalty_type = penalty_origin.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty = Objective(
+            penalty_type,
+            vector_0_marker_0="m0",
+            vector_0_marker_1="m3",
+            vector_1_marker_0="origin",
+            vector_1_marker_1="m6",
+        )
+    else:
+        penalty = Constraint(
+            penalty_type,
+            vector_0_marker_0="m0",
+            vector_0_marker_1="m3",
+            vector_1_marker_0="origin",
+            vector_1_marker_1="m6",
+        )
+
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    if value == 0.1:
+        np.testing.assert_almost_equal(float(res), 0.09999999999999999)
+    else:
+        np.testing.assert_almost_equal(float(res), 2.566370614359173)
+
+
 @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_contact_force_inequality(penalty_origin, value):
@@ -672,7 +774,7 @@ def test_penalty_time_constraint(value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom(penalty_origin, value):
     def custom(pn, mult):
-        my_values = pn.nlp.states["q"].cx * mult
+        my_values = pn.nlp.states[0]["q"].cx_start * mult  # TODO: [0] to [node_index]
         return my_values
 
     ocp = prepare_test_ocp()
@@ -748,7 +850,7 @@ def test_penalty_custom_fail(penalty_origin, value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds(value):
     def custom_with_bounds(pn):
-        return -10, pn.nlp.states["q"].cx, 10
+        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -766,7 +868,7 @@ def test_penalty_custom_with_bounds(value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_min_bound(value):
     def custom_with_bounds(pn):
-        return -10, pn.nlp.states["q"].cx, 10
+        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -780,13 +882,13 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], [], [], []))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], []))
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_max_bound(value):
     def custom_with_bounds(pn):
-        return -10, pn.nlp.states["q"].cx, 10
+        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -803,7 +905,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
         RuntimeError,
         match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
     ):
-        penalty_type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, [], [], [], []))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], []))
 
 
 @pytest.mark.parametrize(
@@ -821,14 +923,14 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
 )
 @pytest.mark.parametrize("ns", [1, 10, 11])
 def test_PenaltyFunctionAbstract_get_node(node, ns):
-
     nlp = NLP()
+    nlp.control_type = ControlType.CONSTANT
     nlp.ns = ns
     nlp.X = np.linspace(0, -10, ns + 1)
     nlp.U = np.linspace(10, 19, ns)
     nlp.X_scaled = nlp.X
     nlp.U_scaled = nlp.U
-    tp = OptimizationVariableList()
+    tp = OptimizationVariableList(MX)
     tp.append("param", [MX(), MX()], MX(), BiMapping([], []))
     nlp.parameters = tp["param"]
 
@@ -849,52 +951,52 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
             _ = penalty._get_penalty_node_list([], nlp)
         return
     else:
-        all_pn = penalty._get_penalty_node_list([], nlp)
+        controller = penalty._get_penalty_node_list([], nlp)
 
     x_expected = nlp.X
     u_expected = nlp.U
 
     if node == Node.ALL:
-        np.testing.assert_almost_equal(all_pn.t, [i for i in range(ns + 1)])
-        np.testing.assert_almost_equal(np.array(all_pn.x), np.linspace(0, -10, ns + 1))
-        np.testing.assert_almost_equal(np.array(all_pn.u), np.linspace(10, 19, ns))
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), np.linspace(0, -10, ns + 1))
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), np.linspace(10, 19, ns))
+        np.testing.assert_almost_equal(controller.t, [i for i in range(ns + 1)])
+        np.testing.assert_almost_equal(np.array(controller.x), np.linspace(0, -10, ns + 1))
+        np.testing.assert_almost_equal(np.array(controller.u), np.linspace(10, 19, ns))
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), np.linspace(0, -10, ns + 1))
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), np.linspace(10, 19, ns))
     elif node == Node.ALL_SHOOTING:
-        np.testing.assert_almost_equal(all_pn.t, [i for i in range(ns)])
-        np.testing.assert_almost_equal(np.array(all_pn.x), nlp.X[:-1])
-        np.testing.assert_almost_equal(np.array(all_pn.u), nlp.U)
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), nlp.X[:-1])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), nlp.U)
+        np.testing.assert_almost_equal(controller.t, [i for i in range(ns)])
+        np.testing.assert_almost_equal(np.array(controller.x), nlp.X[:-1])
+        np.testing.assert_almost_equal(np.array(controller.u), nlp.U)
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), nlp.X[:-1])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), nlp.U)
     elif node == Node.INTERMEDIATES:
-        np.testing.assert_almost_equal(all_pn.t, [i for i in range(1, ns - 1)])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[1 : ns - 1])
-        np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[1 : ns - 1])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[1 : ns - 1])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(controller.t, [i for i in range(1, ns - 1)])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.u), u_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[1 : ns - 1])
     elif node == Node.START:
-        np.testing.assert_almost_equal(all_pn.t, [0])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[0])
-        np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[0])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[0])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[0])
+        np.testing.assert_almost_equal(controller.t, [0])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[0])
+        np.testing.assert_almost_equal(np.array(controller.u), u_expected[0])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[0])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[0])
     elif node == Node.MID:
-        np.testing.assert_almost_equal(all_pn.t, [ns // 2])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[ns // 2])
-        np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[ns // 2])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[ns // 2])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[ns // 2])
+        np.testing.assert_almost_equal(controller.t, [ns // 2])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[ns // 2])
+        np.testing.assert_almost_equal(np.array(controller.u), u_expected[ns // 2])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[ns // 2])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[ns // 2])
     elif node == Node.PENULTIMATE:
-        np.testing.assert_almost_equal(all_pn.t, [ns - 1])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[-2])
-        np.testing.assert_almost_equal(np.array(all_pn.u), u_expected[-1])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[-2])
-        np.testing.assert_almost_equal(np.array(all_pn.u_scaled), u_expected[-1])
+        np.testing.assert_almost_equal(controller.t, [ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[-2])
+        np.testing.assert_almost_equal(np.array(controller.u), u_expected[-1])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[-2])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[-1])
     elif node == Node.END:
-        np.testing.assert_almost_equal(all_pn.t, [ns])
-        np.testing.assert_almost_equal(np.array(all_pn.x), x_expected[ns])
-        np.testing.assert_almost_equal(all_pn.u, [])
-        np.testing.assert_almost_equal(np.array(all_pn.x_scaled), x_expected[ns])
-        np.testing.assert_almost_equal(all_pn.u_scaled, [])
+        np.testing.assert_almost_equal(controller.t, [ns])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[ns])
+        np.testing.assert_almost_equal(controller.u, [])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[ns])
+        np.testing.assert_almost_equal(controller.u_scaled, [])
     else:
         raise RuntimeError("Something went wrong")

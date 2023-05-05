@@ -8,8 +8,8 @@ A phase transition loop constraint is treated as hard penalty (constraint)
 if weight is <= 0 [or if no weight is provided], or as a soft penalty (objective) otherwise
 """
 
+import platform
 
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -21,7 +21,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     OdeSolver,
     PhaseTransitionList,
@@ -74,7 +73,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1")
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     # First node is free but mid and last are constrained to be exactly at a certain point.
     # The cyclic penalty ensures that the first node and the last node are the same.
     x_bounds[2:6, -1] = [1.57, 0, 0, 0]
@@ -111,6 +110,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         phase_transitions=phase_transitions,
+        assume_phase_dynamics=True,
     )
 
 
@@ -122,7 +122,7 @@ def main():
     ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, loop_from_constraint=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

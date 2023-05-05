@@ -1,4 +1,4 @@
-from typing import Callable, Union, Any
+from typing import Callable, Any
 import multiprocessing as mp
 from copy import copy
 import tkinter
@@ -27,7 +27,7 @@ class CustomPlot:
         Type of plot to use
     phase_mappings: Mapping
         The index of the plot across the phases
-    legend: Union[tuple[str], list[str]]
+    legend: tuple[str] | list[str]
         The titles of the graphs
     combine_to: str
         The name of the variable to combine this one with
@@ -35,7 +35,7 @@ class CustomPlot:
         The color of the line as specified in matplotlib
     linestyle: str
         The style of the line as specified in matplotlib
-    ylim: Union[tuple[float, float], list[float, float]]
+    ylim: tuple[float, float] | list[float, float]
         The ylim of the axes as specified in matplotlib
     bounds: Bounds
         The bounds to show on the graph
@@ -49,12 +49,12 @@ class CustomPlot:
         self,
         update_function: Callable,
         plot_type: PlotType = PlotType.PLOT,
-        axes_idx: Union[Mapping, tuple, list] = None,
-        legend: Union[tuple, list] = None,
+        axes_idx: Mapping | tuple | list = None,
+        legend: tuple | list = None,
         combine_to: str = None,
         color: str = None,
         linestyle: str = None,
-        ylim: Union[tuple, list] = None,
+        ylim: tuple | list = None,
         bounds: Bounds = None,
         node_idx: list = None,
         label: list = None,
@@ -69,9 +69,9 @@ class CustomPlot:
             The function to call to update the graph
         plot_type: PlotType
             Type of plot to use
-        axes_idx: Union[Mapping, tuple, list]
+        axes_idx: Mapping | tuple | list
             The index of the plot across the phases
-        legend: Union[tuple[str], list[str]]
+        legend: tuple[str] | list[str]
             The titles of the graphs
         combine_to: str
             The name of the variable to combine this one with
@@ -79,7 +79,7 @@ class CustomPlot:
             The color of the line as specified in matplotlib
         linestyle: str
             The style of the line as specified in matplotlib
-        ylim: Union[tuple[float, float], list[float, float]]
+        ylim: tuple[float, float] | list[float, float]
             The ylim of the axes as specified in matplotlib
         bounds: Bounds
             The bounds to show on the graph
@@ -187,7 +187,7 @@ class PlotOcp:
         Parse the data list to create a single list of all ydata that will fit the plots vector
     __update_axes(self)
         Update the plotted data from ydata
-    __compute_ylim(min_val: Union[np.ndarray, DM], max_val: Union[np.ndarray, DM], factor: float) -> tuple:
+    __compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:
         Dynamically find the ylim
     _generate_windows_size(nb: int) -> tuple[int, int]
         Defines the number of column and rows of subplots from the number of variables to plot.
@@ -253,12 +253,14 @@ class PlotOcp:
         self.all_figures = []
 
         self.automatically_organize = automatically_organize
-        self.n_vertical_windows: Union[int, None] = None
-        self.n_horizontal_windows: Union[int, None] = None
-        self.top_margin: Union[int, None] = None
-        self.height_step: Union[int, None] = None
-        self.width_step: Union[int, None] = None
-        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
+        self.n_vertical_windows: int | None = None
+        self.n_horizontal_windows: int | None = None
+        self.top_margin: int | None = None
+        self.height_step: int | None = None
+        self.width_step: int | None = None
+        self._organize_windows(
+            len(self.ocp.nlp[0].states[0]) + len(self.ocp.nlp[0].controls[0])
+        )  # TODO : [0] to [node_index]
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -337,8 +339,8 @@ class PlotOcp:
                             nlp.plot[key]
                             .function(
                                 np.nan,
-                                np.zeros((nlp.states.shape, 2)),
-                                np.zeros((nlp.controls.shape, 2)),
+                                np.zeros((nlp.states[0].shape, 2)),  # TODO : [0] to [node_index]
+                                np.zeros((nlp.controls[0].shape, 2)),  # TODO : [0] to [node_index]
                                 np.zeros((nlp.parameters.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )
@@ -384,13 +386,12 @@ class PlotOcp:
                     self.plot_func[variable] = [
                         nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
                     ]
-
                 if not self.plot_func[variable][i]:
                     continue
 
                 mapping = nlp.plot[variable].phase_mappings.map_idx
-                for ctr, _ in enumerate(mapping):
-                    ax = axes[ctr]
+                for ctr, axe_index in enumerate(mapping):
+                    ax = axes[axe_index]
                     if ctr < len(nlp.plot[variable].legend):
                         ax.set_title(nlp.plot[variable].legend[ctr])
                     ax.grid(**self.plot_options["grid"])
@@ -414,7 +415,6 @@ class PlotOcp:
                         ax.set_ylim(y_range)
 
                     plot_type = self.plot_func[variable][i].type
-
                     t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
                     if self.plot_func[variable][i].label:
                         label = self.plot_func[variable][i].label
@@ -634,14 +634,14 @@ class PlotOcp:
 
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
-            for s in nlp.states:
+            for s in nlp.states[0]:  # TODO: [0] to [node_index]
                 if nlp.use_states_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_states, (list, tuple)):
                         state = np.concatenate((state, data_states[i][s]))
                     else:
                         state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.controls:
+            for s in nlp.controls[0]:  # TODO: [0] to [node_index]
                 if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_controls, (list, tuple)):
                         control = np.concatenate((control, data_controls[i][s]))
@@ -709,10 +709,8 @@ class PlotOcp:
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
                     for i_var in range(self.variable_sizes[i][key]):
-
-                        if self.plot_func[key][i].parameters["penalty"].multinode_constraint:
+                        if self.plot_func[key][i].parameters["penalty"].binode_constraint:
                             y = np.array([np.nan])
-
                             phase_1 = self.plot_func[key][i].parameters["penalty"].phase_second_idx
                             phase_2 = self.plot_func[key][i].parameters["penalty"].phase_first_idx
                             node_idx_1 = self.plot_func[key][i].node_idx[0]
@@ -738,7 +736,6 @@ class PlotOcp:
                             y = np.empty((len(self.plot_func[key][i].node_idx),))
                             y.fill(np.nan)
                             for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
-
                                 if self.plot_func[key][i].parameters["penalty"].transition:
                                     val = self.plot_func[key][i].function(
                                         node_idx,
@@ -783,7 +780,6 @@ class PlotOcp:
                     y.fill(np.nan)
                     if self.plot_func[key][i].compute_derivative:
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
-
                             val = self.plot_func[key][i].function(
                                 node_idx,
                                 state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
@@ -848,7 +844,7 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([time, time])
 
-    def __append_to_ydata(self, data: Union[list, np.ndarray]):
+    def __append_to_ydata(self, data: list | np.ndarray):
         """
         Parse the data list to create a single list of all ydata that will fit the plots vector
 
@@ -904,14 +900,14 @@ class PlotOcp:
             fig.set_tight_layout(True)
 
     @staticmethod
-    def __compute_ylim(min_val: Union[np.ndarray, DM], max_val: Union[np.ndarray, DM], factor: float) -> tuple:
+    def __compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:
         """
         Dynamically find the ylim
         Parameters
         ----------
-        min_val: Union[np.ndarray, DM]
+        min_val: np.ndarray | DM
             The minimal value of the y axis
-        max_val: Union[np.ndarray, DM]
+        max_val: np.ndarray | DM
             The maximal value of the y axis
         factor: float
             The widening factor of the y range
@@ -983,7 +979,7 @@ class OnlineCallback(Callback):
         Get the name of the output variable
     get_sparsity_in(self, i: int) -> tuple[int]
         Get the sparsity of a specific variable
-    eval(self, arg: Union[list, tuple]) -> list[int]
+    eval(self, arg: list | tuple) -> list[int]
         Send the current data to the plotter
     """
 
@@ -1092,13 +1088,13 @@ class OnlineCallback(Callback):
         else:
             return Sparsity(0, 0)
 
-    def eval(self, arg: Union[list, tuple]) -> list:
+    def eval(self, arg: list | tuple) -> list:
         """
         Send the current data to the plotter
 
         Parameters
         ----------
-        arg: Union[list, tuple]
+        arg: list | tuple
             The data to send
 
         Returns

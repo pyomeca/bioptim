@@ -4,9 +4,10 @@ All the examples in muscle_driven_with_contact are merely to show some dynamics 
 It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
 """
 
+import platform
+
 from matplotlib import pyplot as plt
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -19,7 +20,6 @@ from bioptim import (
     DynamicsFcn,
     BiMappingList,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     Solver,
 )
@@ -40,7 +40,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True, with_contact=True)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
 
     # Constraints
     constraints = ConstraintList()
@@ -66,7 +66,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess
@@ -85,7 +85,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,
@@ -96,6 +96,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
         objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
+        assume_phase_dynamics=True,
     )
 
 
@@ -112,7 +113,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     nlp = ocp.nlp[0]
     nlp.model = BiorbdModel(biorbd_model_path)

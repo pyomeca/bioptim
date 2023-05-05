@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Union
 from ..misc.enums import SolverType
 
 
@@ -700,7 +699,7 @@ class Solver:
             self._qp_solver = val
             self.set_only_first_options_has_changed(True)
 
-        def set_option_unsafe(self, val: Union[float, int, str], name: str):
+        def set_option_unsafe(self, val: float | int | str, name: str):
             """
             This function is unsafe because we did not check if the option exist in the solver option list.
             If it's not it just will be ignored. Please make sure that the option you're asking for exist.
@@ -811,7 +810,7 @@ class Solver:
             self._nlp_solver_tol_stat = val
             self.set_has_tolerance_changed(True)
 
-        def set_convergence_tolerance(self, val: Union[float, int]):
+        def set_convergence_tolerance(self, val: float | int):
             self.set_nlp_solver_tol_eq(val)
             self.set_nlp_solver_tol_ineq(val)
             self.set_nlp_solver_tol_comp(val)

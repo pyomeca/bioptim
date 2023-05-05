@@ -1,11 +1,9 @@
 import pytest
 import os
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     MagnitudeType,
 )
@@ -22,9 +20,9 @@ def test_noisy_multiphase():
     n_shooting = [20, 30, 20]
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -737,7 +735,6 @@ def test_noisy_multiphase():
     ],
 )
 def test_add_wrong_magnitude(magnitude, raised_str):
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -750,9 +747,9 @@ def test_add_wrong_magnitude(magnitude, raised_str):
     nb_phases = ocp.n_phases
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])
@@ -781,7 +778,6 @@ def test_add_wrong_magnitude(magnitude, raised_str):
     ],
 )
 def test_add_wrong_bound_push(bound_push, raised_str):
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -792,9 +788,9 @@ def test_add_wrong_bound_push(bound_push, raised_str):
     n_shooting = [20, 30, 20]
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])
@@ -820,7 +816,6 @@ def test_add_wrong_bound_push(bound_push, raised_str):
     ],
 )
 def test_add_wrong_seed(seed, raised_str):
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -831,9 +826,9 @@ def test_add_wrong_seed(seed, raised_str):
     n_shooting = [20, 30, 20]
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])
@@ -852,7 +847,6 @@ def test_add_wrong_seed(seed, raised_str):
 
 
 def test_add_wrong_bounds():
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -865,8 +859,8 @@ def test_add_wrong_bounds():
     nb_phases = ocp.n_phases
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])
@@ -894,7 +888,6 @@ def test_add_wrong_bounds():
 
 
 def test_add_wrong_n_shooting():
-
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -906,9 +899,9 @@ def test_add_wrong_n_shooting():
     nb_phases = ocp.n_phases
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
 
     x_init = InitialGuessList()
     x_init.add([1, 2, 1, 2, 1, 2])

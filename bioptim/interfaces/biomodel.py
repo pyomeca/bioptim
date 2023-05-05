@@ -1,5 +1,7 @@
 from casadi import MX, SX
 from typing import Protocol, Callable
+from ..misc.mapping import BiMapping, BiMappingList
+from ..interfaces.biorbd_model import Bounds
 
 
 class BioModel(Protocol):
@@ -54,14 +56,14 @@ class BioModel(Protocol):
         P_R1 the position of any point P in the segment R1 frame.
         """
 
-    homogeneous_matrices_in_child: tuple
-    """
-    Get the homogeneous matrices of all segments in their parent frame,
-    such as: P_R1 = T_R1_R2 * P_R2
-    with P_R1 the position of any point P in the segment R1 frame,
-    with P_R2 the position of any point P in the segment R2 frame,
-    T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
-    """
+    def homogeneous_matrices_in_child(self) -> tuple:
+        """
+        Get the homogeneous matrices of all segments in their parent frame,
+        such as: P_R1 = T_R1_R2 * P_R2
+        with P_R1 the position of any point P in the segment R1 frame,
+        with P_R2 the position of any point P in the segment R2 frame,
+        T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
+        """
 
     mass: MX
     """Get the mass of the model"""
@@ -102,8 +104,11 @@ class BioModel(Protocol):
     def torque(self, q, qdot, activation) -> MX:
         """Get the muscle torque"""
 
-    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
+    def forward_dynamics_free_floating_base(self, q, qdot, qddot) -> MX:
         """compute the free floating base forward dynamics"""
+
+    def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
+        """reorder the qddot, from the root dof and the joints dof"""
 
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
         """compute the forward dynamics"""
@@ -147,7 +152,7 @@ class BioModel(Protocol):
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         """Get the maximum torque"""
 
-    def rigid_contact_acceleration(self, q, qdot, qddot, index) -> MX:
+    def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
         """Get the rigid contact acceleration"""
 
     marker_names: tuple[str, ...]
@@ -162,7 +167,7 @@ class BioModel(Protocol):
 
         Parameters
         ----------
-        x: Union[MX, SX]
+        x: MX | SX
             The state to normalize
 
         Returns
@@ -176,16 +181,38 @@ class BioModel(Protocol):
 
         Parameters
         ----------
-        q: Union[MX, SX]
+        q: MX | SX
             The value of q from "get"
-        qdot: Union[MX, SX]
+        qdot: MX | SX
             The value of qdot from "get"
-        tau: Union[MX, SX]
+        tau: MX | SX
             The value of tau from "get"
         external_forces: list[np.ndarray]
             The value of external_forces, one for each frame
 
         Returns
         -------
-        The contact forces MX of size [nb_contacts, 1], or [nb_contacts, n_frames] if external_forces is not None
+        The contact forces MX of size [nb_rigid_contacts, 1], or [nb_rigid_contacts, n_frames] if external_forces is not None
+        """
+
+    def passive_joint_torque(self, q, qdot) -> MX:
+        """Get the passive joint torque"""
+
+    def ligament_joint_torque(self, q, qdot) -> MX:
+        """Get the ligament joint torque"""
+
+    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
+        """
+        Create bounds from ranges of the model depending on the variable chosen, such as q, qdot, qddot
+
+        Parameters
+        ----------
+        variables: [str, ...]
+           Input or list of input such as ["q"] for bounds on q ranges, ["q", "qdot"] for bounds on q and qdot ranges
+            or even ["q", "qdot", qddot"] for bounds on q, qdot and qddot ranges
+        mapping: Union[BiMapping, BiMappingList]
+            The mapping of q and qdot (if only q, then qdot = q)
+        Returns
+        -------
+        Create the desired bounds
         """

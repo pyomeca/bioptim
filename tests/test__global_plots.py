@@ -263,6 +263,5 @@ def test_console_objective_functions():
         "\n"
         "------------------------------\n"
     )
-
     sys.stdout = sys.__stdout__  # Reset redirect.
     assert captured_output.getvalue() == expected_output

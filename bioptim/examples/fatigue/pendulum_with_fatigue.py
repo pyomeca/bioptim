@@ -10,14 +10,13 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution.
 """
 
-import biorbd_casadi as biorbd
+import platform
 
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    QAndQDotBounds,
     InitialGuess,
     Objective,
     FatigueBounds,
@@ -137,7 +136,7 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics, expand=True)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
@@ -171,6 +170,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         use_sx=use_sx,
+        assume_phase_dynamics=True,
     )
 
 
@@ -193,7 +193,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show the results in a bioviz animation --- #
     sol.print_cost()

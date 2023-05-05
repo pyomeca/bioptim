@@ -5,7 +5,8 @@ the rest is fully optimized. It is designed to show how one can use the tracking
 any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     Node,
@@ -17,7 +18,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -64,7 +64,7 @@ def prepare_ocp(
     # Path constraint
     nq = bio_model.nb_q
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][2, [0, -1]] = [-1.57, 1.57]
     x_bounds[0][nq:, [0, -1]] = 0
 
@@ -94,6 +94,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -109,7 +110,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

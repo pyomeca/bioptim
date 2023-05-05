@@ -14,7 +14,7 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 | Type | Status |
 |---|---|
 | License | <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-success" alt="License"/></a> |
-| Continuous integration | [![Build status](https://ci.appveyor.com/api/projects/status/om07r8jhng61qx7y/branch/master?svg=true)](https://ci.appveyor.com/project/pariterre/bioptim/branch/master) |
+| Continuous integration | [![Build status](https://github.com/pyomeca/bioptim/actions/workflows/run_tests.yml/badge.svg)](https://github.com/pyomeca/bioptim/actions) |
 | Code coverage | [![codecov](https://codecov.io/gh/pyomeca/bioptim/branch/master/graph/badge.svg?token=NK1V6QE2CK)](https://codecov.io/gh/pyomeca/bioptim) |
 | DOI | [![DOI](https://zenodo.org/badge/251615517.svg)](https://zenodo.org/badge/latestdoi/251615517) |
 
@@ -59,8 +59,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [The bounds](#the-bounds)
   - [Bounds](#class-bounds)
   - [BoundsList](#class-boundslist)
-  - [QAndQDotBounds](#class-qandqdotbounds)
-  - [QAndQDotAndQDDotBounds](#class-qandqdotandqddotbounds)
 - [The initial conditions](#the-initial-conditions)
   - [InitialGuess](#class-initialguess)
   - [InitialGuessList](#class-initialguesslist)
@@ -78,8 +76,8 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [The parameters](#the-parameters)
   - [ParameterList](#class-parameterlist)
 - [The multinode constraints](#the-multinode-constraints)
-  - [MultinodeConstraintList](#class-multinodeconstraintlist)
-  - [MultinodeConstraintFcn](#class-multinodeconstraintfcn)
+  - [BinodeConstraintList](#class-binodeconstraintlist)
+  - [BinodeConstraintFcn](#class-binodeconstraintfcn)
 - [The phase transitions](#the-phase-transitions)
   - [PhaseTransitionList](#class-phasetransitionlist)
   - [PhaseTransitionFcn](#class-phasetransitionfcn)
@@ -113,6 +111,19 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [Track](#track)
 - [Moving estimation horizon](#moving-estimation-horizon)
 - [Acados](#acados)
+- [Inverse optimal control](#inverse-optimal-control)
+
+[Performance](#performance)
+- [use_sx](#use_sx)
+- [n_threads](#n_threads)
+- [assume_phase_dynamics](#assume_phase_dynamics)
+- [expand](#expand)
+
+[Troubleshooting](#troubleshooting)
+- [freezing compute](#freezing-compute)
+- [free variables](#free-variables)
+- [non-converging problem](#non-converging-problem)
+
 
 [Citing](#Citing)
 
@@ -164,6 +175,7 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [`Ipopt`](https://github.com/coin-or/Ipopt)
 - [`Acados`](https://github.com/acados/acados)
 - [pyqtgraph](https://www.pyqtgraph.org/)
+- [pygmo](https://esa.github.io/pygmo2/) (only for inverse optimal control)
 
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
@@ -185,7 +197,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Mac - Installing dependencies with conda
 Equivalently for MacOSX:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
+conda install casadi 'rbdl' 'biorbd' 'bioviz' python-graphviz -cconda-forge
 ```
 Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`.
 The `Acados` installation script is `[ROOT_BIOPTIM]/external/acados_install_mac.sh`.
@@ -199,7 +211,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Windows - Installing dependencies with conda
 Equivalently for Windows:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
+conda install casadi 'rbdl' 'biorbd' 'bioviz' python-graphviz -cconda-forge
 ```
 There isn't any `Anaconda` nor `pip3` package of `Acados`.
 If one wants to use the `Acados` solver on Windows, they must compile it by themselves.
@@ -239,7 +251,7 @@ from bioptim import (
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
+    
     InitialGuess,
     ObjectiveFcn,
     Objective,
@@ -269,10 +281,10 @@ To define that, it would be nice to first define boundary constraints on the pos
 In this case, the state with index 0 is translation y, and the index 1 refers to rotation about x. 
 Finally, the index 2 and 3 are respectively the velocity of translation y and rotation about x 
 
-QAndQDotBounds waits for a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
+bounds_from_ranges uses the ranges from a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
 How convenient!
 ```python
-x_bounds = QAndQDotBounds(bio_model)
+x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
 ```
 The first dimension of x_bounds is the degrees of freedom (*q*) `and` their velocities (*qdot*) that match those `in` the bioMod `file`. The time `is` discretized `in` nodes wich `is` the second dimension declared `in` x_bounds.
 If you have more than one phase, we would have x_bound[*phase*][*q `and` qdot*, *nodes*]
@@ -340,8 +352,15 @@ ocp = OptimalControlProgram(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        assume_phase_dynamics=True,
     )
 ```
+The argument `assume_phase_dynamics` should be set to `True` if we assume the dynamics 
+are the same within in each phase of the ocp problem. 
+This argument increase speed to mount the problem, it should be consider each time you build an Optimal Control Program.
+The default value is `False`, meaning we consider the dynamic equations are different for each shooting node (e.g. when applying an different external force at each shooting node).
+
+
 ## Checking the ocp
 Now you can check if the ocp is well defined for the initial values.
 This checking will help you to see if your constraints and objectives are ok.
@@ -426,7 +445,7 @@ from bioptim import (
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
+    
     InitialGuess,
     ObjectiveFcn,
     Objective,
@@ -434,7 +453,7 @@ from bioptim import (
 
 bio_model = BiorbdModel("pendulum.bioMod")
 dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
-x_bounds = QAndQDotBounds(bio_model)
+x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
 x_bounds[:, [0, -1]] = 0
 x_bounds[1, -1] = 3.14
 u_bounds = Bounds([-100, 0], [100, 0])
@@ -452,6 +471,7 @@ ocp = OptimalControlProgram(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        assume_phase_dynamics=True,
     )
     
 sol = ocp.solve(show_online_optim=True)
@@ -563,10 +583,11 @@ OptimalControlProgram(
     phase_transitions: PhaseTransitionList,
     n_threads: int,
     use_sx: bool,
+    assume_phase_dynamics=False,
 )
 ```
 Of these, only the first 4 are mandatory.
-`bio_model` is the model loaded such with class such as BiorbdModel or a custom class.
+`bio_model` is the model loaded such with class such as BiorbdModel, MultiBiorbdModel, or a custom class.
 In the case of a multiphase optimization, one model per phase should be passed in a list.
 `dynamics` is the dynamics of the system during each phase (see The dynamics section).
 `n_shooting` is the number of shooting point of the direct multiple shooting (method) for each phase.
@@ -582,7 +603,7 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `constraints` is the constraint set of the ocp (see The constraints section)
 `parameters` is the parameter set of the ocp (see The parameters section)
 `external_forces` are the external forces acting on the center of mass of the bodies. 
-It is list (one element for each phase) of np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
+It is list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
 `ode_solver` is the ode solver used to solve the dynamic equations
 `control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section)
 `all_generalized_mapping` is used to reduce the number of degrees of freedom by linking them (see The mappings section).
@@ -633,6 +654,7 @@ The `Solver` class can be used to select the nonlinear solver to solve the ocp:
 
 - IPOPT
 - ACADOS
+- SQP method
 
 Note that options can be passed to the solver parameter.
 One can refer to the documentation of their respective chosen solver to know which options exist.
@@ -674,12 +696,19 @@ They can be used as is, or can be modified to add new features.
 
 ### Class: BiorbdModel
 
-The `BiorbdModel` class is implementating a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
+The `BiorbdModel` class is implementing a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
 ```python
 bio_model = BiorbdModel("path/to/model.bioMod")
 bio_model.marker_names  # for example returns the marker names
 # if the methods is not interfaced, it can be accessed through
 bio_model.model.markerNames()
+```
+
+### Class: MultiBiorbdModel
+
+The `MultiBiorbdModel` class is implementing BioModel of multiple models of biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
+```python
+bio_model = MultiBiorbdModel(("path/to/model.bioMod", "path/to/other/model.bioMod"))
 ```
 
 ### Class: CustomModel
@@ -744,6 +773,7 @@ In this function the user is expected to call the relevant `ConfigureProblem` cl
 - `configure_qdot(nlp, as_states: bool, as_controls: bool)`
 - `configure_q_qdot(nlp, as_states: bool, as_controls: bool)`
 - `configure_tau(nlp, as_states: bool, as_controls: bool)`
+- `configure_residual_tau(nlp, as_states: bool, as_controls: bool)`
 - `configure_muscles(nlp, as_states: bool, as_controls: bool)`
 where `as_states` add the variable to the states vector and `as_controls` to the controls vector.
 Please note that this is not necessary mutually exclusive.
@@ -781,10 +811,14 @@ The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 If external forces are provided, they are added to the ForwardDynamics function. 
 
-#### TORQUE_DRIVEN_WITH_CONTACT
-The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
-The derivative of *q* is trivially *qdot*.
+##### with_contact = True
 The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
+
+##### with_passive_torque = True
+The passive torque is taken into account in the *tau* 
+
+##### with_ligament = True
+The tau generated by the ligament is taken into account in the *tau* 
 
 #### TORQUE_DERIVATIVE_DRIVEN
 The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
@@ -793,11 +827,14 @@ The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.For
 The derivative of *tau* is trivially *taudot*.
 If external forces are provided, they are added to the ForwardDynamics function. 
 
-#### TORQUE_DERIVATIVE_DRIVEN_WITH_CONTACT
-The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
-The derivative of *q* is trivially *qdot*.
+##### with_contact = True
 The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
-The derivative of *tau* is trivially *taudot*.
+
+##### with_passive_torque = True
+The passive torque is taken into account in the *tau* 
+
+##### with_ligament = True
+The tau generated by the ligament is taken into account in the *tau* 
 
 #### TORQUE_ACTIVATIONS_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. 
@@ -809,15 +846,17 @@ Please note, this dynamics is expected to be very slow to converge, if it ever d
 One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
 This has been shown to be more efficient and allows defining minimum torque.
 
-#### TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT
-The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. 
-The derivative of *q* is trivially *qdot*.
+##### with_contact = True
 The actual *tau* is computed from the activation by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `tau = bio_model.torque(torque_act, q, qdot)`.
-Then, the derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 
-Please note, this dynamics is expected to be very slow to converge, if it ever does. 
-One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
-This has been shown to be more efficient and allows defining minimum torque.
+##### with_passive_torque = True
+The passive torque is taken into account in the *tau*
+
+##### with_residual_torque = True
+The residual torque is taken into account in the *tau*
+
+##### with_ligament = True
+The tau generated by the ligament is taken into account in the *tau* 
 
 #### JOINTS_ACCELERATION_DRIVEN
 The joints acceleration driven defines the states (x) as *q* and *qdot* and the controls (u) as *qddot_joints*. The derivative of *q* is trivially *qdot*.
@@ -827,44 +866,29 @@ The derivative of *qdot* is the vertical stack of *qddot_root* and *qddot_joints
 
 This dynamic is suitable for bodies in free fall.
 
-#### MUSCLE_ACTIVATIONS_DRIVEN
+#### MUSCLE_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the muscle activations. 
 The derivative of *q* is trivially *qdot*.
 The actual *tau* is computed from the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
 The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 
-#### MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN
+##### with_residual_torque = True
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). 
-The derivative of *q* is trivially *qdot*.
 The actual *tau* is computed from the sum of *tau* to the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 
-#### MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT
-The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). 
-The derivative of *q* is trivially *qdot*.
+##### with_contact = True
 The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
 The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 
-#### MUSCLE_EXCITATIONS_DRIVEN
-The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *EMG*. 
-The derivative of *q* is trivially *qdot*.
-The actual *tau* is computed from *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
+##### with_excitations = True
+The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*.
 The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
 
-#### MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN
-The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*. 
-The derivative of *q* is trivially *qdot*.
-The actual *tau* is computed from the sum of *tau* to *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
+##### with_passive_torque = True
+The passive torque is taken into account in the *tau*
 
-#### MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT
-The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*. 
-The derivative of *q* is trivially *qdot*.
-The actual *tau* is computed from the sum of *tau* to *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
+##### with_ligament = True
+The tau generated by the ligament is taken into account in the *tau* 
 
 #### CUSTOM
 This leaves the user to define both the configuration (what are the states and controls) and to define the dynamic function. 
@@ -915,15 +939,6 @@ bounds_list = BoundsList()
 bounds_list.add(min_bounds, max_bounds)
 ```
 
-### Class: QAndQDotBounds 
-The QAndQDotBounds is a Bounds that uses a biorbd_model to define the minimal and maximal bounds for the generalized coordinates (*q*) and velocities (*qdot*). 
-It is particularly useful when declaring the states bounds for *q* and *qdot*. 
-Anything that was presented for Bounds, also applies to QAndQDotBounds
-
-### Class: QAndQDotAndQDDotBounds 
-The QAndQDotAndQDDotBounds is almost the same as the previous class.
-Except that it also defines the bounds for the generalized accelerations *qddot* in addition to *q* and *qdot*.  
-
 ## The initial conditions
 The initial conditions the solver should start from, i.e., initial values of the states (x) and the controls (u).
 In that sense, it is what is expected by the `OptimalControlProgram` for its `u_init` and `x_init` parameters. 
@@ -955,10 +970,10 @@ Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be ca
 If someone wants to add noise to the initial guess, you can provide the following:
 ```python
 init = init.add_noise(
-    bounds: Union[Bounds, BoundsList, QAndQDotBounds], 
-    magnitude: Union[list, int, float, np.ndarray],
+    bounds: Bounds | BoundsList, 
+    magnitude: list | int | float | np.ndarray,
     magnitude_type: MagnitudeType, n_shooting: int, 
-    bound_push: Union[list, int, float], 
+    bound_push: list | int | float, 
     seed: int
     )
 ```
@@ -982,11 +997,11 @@ If someone wants to add noise to the initial guess list, you can provide the fol
 ```python
 init_list.add_noise(
   bounds: BoundList,
-  n_shooting: Union[int, List[int], Tuple[int]],
-  magnitude: Union[list, int, float, np.ndarray],
+  n_shooting: int | List[int] | Tuple[int],
+  magnitude: list | int | float | np.ndarray,
   magnitude_type: magnitudeType,
-  bound_push: Union[int, float, List[int], List[float], ndarray],
-  seed: Union[int, List[int]],
+  bound_push: int | float | List[int] | List[float] | ndarray,
+  seed: int | List[int],
 )
 ```
 The parameters, except `MagnitudeType` must be specified for each phase unless you want the same value for every phases.
@@ -1046,8 +1061,8 @@ The dimensions of the target must be of [index, node]
 The `ConstraintFcn` class provides a list of some predefined constraint functions. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 It is possible however to define a custom constraint by sending a function handler in place of the `ConstraintFcn`.
-The signature of this custom function is: `custom_function(pn: PenaltyNodeList, **extra_params)`
-The PenaltyNodeList contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Constraint` constructor. 
+The signature of this custom function is: `custom_function(pn: PenaltyController, **extra_params)`
+The PenaltyController contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Constraint` constructor. 
 The function is expected to return an MX vector of the constraint to be inside `min_bound` and `max_bound`. 
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom constraint should be at least familiar with this type beforehand. 
@@ -1083,11 +1098,11 @@ Matches one marker with another one.
 The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
 
 #### PROPORTIONAL_STATE
-Links one state to another, such that `x[first_dof] = coef * x[second_dof]`
+Links one state to another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
 
 #### PROPORTIONAL_CONTROL
-Links one control to another, such that `u[first_dof] = coef * u[second_dof]`
+Links one control to another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
 
 #### TRACK_TORQUE
@@ -1127,14 +1142,9 @@ The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent
 Constraints the linear momentum towards a target.
 The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
 
-#### CONTACT_FORCE
-Adds a constraint to the non-acceleration point reaction forces.
-It is usually used in conjunction with changing the bounds, so it creates an inequality constraint on this contact force.
-The extra parameter `contact_force_idx: int` must be passed to the `Constraint` constructor
-
 #### NON_SLIPPING
 Adds a constraint of static friction at contact points constraining for small tangential forces. 
-This constraint assumes that the normal forces is positive (that is having an additional CONTACT_FORCE with `max_bound=np.inf`).
+This constraint assumes that the normal forces is positive (that is having an additional TRACK_CONTACT_FORCES with `max_bound=np.inf`).
 The extra parameters `tangential_component_idx: int`, `normal_component_idx: int` and `static_friction_coefficient: float` must be passed to the `Constraint` constructor
 
 #### TORQUE_MAX_FROM_ACTUATORS
@@ -1194,8 +1204,8 @@ The `ObjectiveFcn` class provides a list of some predefined objective functions.
 Since `ObjectiveFcn.Lagrange` and `ObjectiveFcn.Mayer` are Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 It is possible however to define a custom objective function by sending a function handler in place of the `ObjectiveFcn`.
 If one do so, an additional parameter must be sent to the `Objective` constructor which is `custom_type` and must be either `ObjectiveFcn.Lagrange` or `ObjectiveFcn.Mayer`.
-The signature of the custom function is: `custom_function(pn: PenaltyNodeList, **extra_params)`
-The PenaltyNodeList contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Objective` constructor. 
+The signature of the custom function is: `custom_function(pn: PenaltyController, **extra_params)`
+The PenaltyController contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Objective` constructor. 
 The function is expected to return an MX vector of the objective function. 
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom objective functions should be at least familiar with this type beforehand. 
@@ -1249,11 +1259,11 @@ Tracks one marker with another one.
 The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
 
 #### PROPORTIONAL_STATE (Lagrange and Mayer)
-Minimizes the difference between one state and another, such that `x[first_dof] ~= coef * x[second_dof]`
+Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
 
 #### PROPORTIONAL_CONTROL (Lagrange)
-Minimizes the difference between one control and another, such that `u[first_dof] ~= coef * u[second_dof]`
+Minimizes the difference between one control and another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`
 The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
 
 #### MINIMIZE_TORQUE (Lagrange)
@@ -1372,32 +1382,32 @@ It is useful however to define this value by hand if one wants to declare the pa
 `Bioptim` can declare multiphase optimisation programs. The goal of a multiphase ocp is usually to handle changing dynamics. 
 The user must understand that each phase is therefore a full ocp by itself, with constraints that links the end of which with the beginning of the following.
 
-### Class: MultinodeConstraintList
-The MultinodeConstraintList provide a class that prepares the multinode constraints.
-When constructing an `OptimalControlProgram()`, MultinodeConstraintList is the expected class for the `multinode_constraints` parameter. 
+### Class: BinodeConstraintList
+The BinodeConstraintList provide a class that prepares the binode constraints.
+When constructing an `OptimalControlProgram()`, BinodeConstraintList is the expected class for the `binode_constraints` parameter. 
 
-The MultinodeConstraintList class is the main class to define parameters.
-Please note that unlike other lists, `MultinodeConstraint` is not accessible since multinode constraint don't make sense for single phase ocp.
+The BinodeConstraintList class is the main class to define parameters.
+Please note that unlike other lists, `BinodeConstraint` is not accessible since binode constraint don't make sense for single phase ocp.
 Therefore, one should not call the PhaseTransition constructor directly. 
 
-Here is the full signature of the `add()` method of the `MultinodeConstraintList`:
+Here is the full signature of the `add()` method of the `BinodeConstraintList`:
 ```python
-MultinodeConstraintList.add(MultinodeConstraintFcn, phase_first_idx, phase_second_idx, first_node, second_node, **extra_parameters)
+BinodeConstraintList.add(BinodeConstraintFcn, phase_first_idx, phase_second_idx, first_node, second_node, **extra_parameters)
 ```
-The `MultinodeConstraintFcn` is multinode constraints function to use.
+The `BinodeConstraintFcn` is binode constraints function to use.
 The default is EQUALITY.
-If one wants to declare a custom transition phase, then MultinodeConstraintFcn is the function handler to the custom function.
-The signature of the custom function is: `custom_function(multinode_constraint:MultinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
+If one wants to declare a custom transition phase, then BinodeConstraintFcn is the function handler to the custom function.
+The signature of the custom function is: `custom_function(binode_constraint:BinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
 where `nlp_pre` is the non linear program of the considered phase, `nlp_post` is the non linear program of the second considered phase, and the `**extra_parameters` are those sent to the add() method.
-This function is expected to return the cost of the multinode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
-Anyone who wants to define multinode constraints should be at least familiar with this type beforehand.
+This function is expected to return the cost of the binode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
+Anyone who wants to define binode constraints should be at least familiar with this type beforehand.
 The `phase_first_idx` is the index of the first phase. 
 The `phase_second_idx` is the index of the second phase. 
 The `first_node` is the first node considered. 
 The `second_node` is the second node considered. 
 
-### Class: MultinodeConstraintFcn
-The `MultinodeConstraintFcn` class is the already available multinode constraints in `bioptim`. 
+### Class: BinodeConstraintFcn
+The `BinodeConstraintFcn` class is the already available binode constraints in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabailities of your IDE. 
 
 #### EQUALITY
@@ -1411,7 +1421,7 @@ The velocities of centers of mass are equals.
 
 #### CUSTOM
 CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
-You can have a look at the MultinodeConstraintList section for more information about how to define custom transition function.
+You can have a look at the BinodeConstraintList section for more information about how to define custom transition function.
 
 ## The phase transitions
 `Bioptim` can declare multiphase optimisation programs. 
@@ -1495,7 +1505,7 @@ q = sol.states[0]["q"]
 q = sol.states[0]["all"]
 ```
 
-The values inside the dictionaries are np.array of dimension `n_elements` x `n_shooting`, unless the data were previously altered by integrating or interpolating (then the number of columns may differ).
+The values inside the dictionaries are np.ndarray of dimension `n_elements` x `n_shooting`, unless the data were previously altered by integrating or interpolating (then the number of columns may differ).
 
 The parameters are very similar, but differs by the fact that it is always a dictionary (since parameters don't depend on the phases).
 Also, the values inside the dictionaries are of dimension `n_elements` x 1. 
@@ -1622,6 +1632,10 @@ Note the `None` are replaced by zeros.
 
 The BiMapping is no more no less than a list of two mappings that link two matrices both ways: `BiMapping(a_to_b, b_to_a)`
 
+The SelectionMapping is a subclass of BiMapping where you only have to precise the size of the first matrix, 
+and the mapping b_to_a to get the second matrix from the first, if some elements depend on others 
+you can add an argument dependencies :`SelectionMapping(size(int), b_to_a; tuple[int, int, ...], dependencies :tuple([int, int, bool]))`
+
 ### Enum: Node
 The node targets some specific nodes of the ocp or of a phase
 
@@ -1662,6 +1676,7 @@ It is perfectly designed for MHE and NMPC problems.
 The accepted values are:
 - ̀`Ipopt`
 - ̀`Acados`
+- ̀`SQP`
 
 ### Enum: ControlType
 The type the controls are. 
@@ -1923,18 +1938,18 @@ forces have to remain inside of the cone of friction), as shown in the part of t
 ```python
 constraints = ConstraintList()
    constraints.add(
-   ConstraintFcn.CONTACT_FORCE,
+   ConstraintFcn.TRACK_CONTACT_FORCES,
    min_bound=min_bound,
    max_bound=max_bound,
    node=Node.ALL,
-   contact_force_idx=1,
+   contact_index=1,
    )
 constraints.add(
-    ConstraintFcn.CONTACT_FORCE,
+    ConstraintFcn.TRACK_CONTACT_FORCES,
     min_bound=min_bound,
     max_bound=max_bound,
     node=Node.ALL,
-    contact_force_idx=2,
+    contact_index=2,
     )
 constraints.add(
     ConstraintFcn.NON_SLIPPING,
@@ -2404,7 +2419,61 @@ dynamics out there (the joint torque driven), it defines an objective function a
 ### The static_arm.py file
 This is a basic example on how to use biorbd model driven by muscle to perform an optimal reaching task.
 The arm must reach a marker while minimizing the muscles activity and the states. We solve the problem using both 
-`acados` and `ipotpt`.
+`acados` and `ipopt`.
+
+## Inverse optimal control
+In this section, you will find an example to implement inverse optimal control with `bioptim`. 
+
+### The double_pendulum_torque_driven_IOCP.py file
+This is a basic example of a rigid double pendulum which have to circle around a fixed point.
+The movement is inspired from the motion of gymnasts on the bar apparatus.
+This example is separated in three parts:
+- The first part is the definition of the problem. The problem is solved with specific weightings.
+- The second part solves the problem with only one objective at a time to for the pareto front.
+- The thirs part solves the inverse optimal control problem aiming to retrieve the initial weightings.
+A the end of the example, the markers trajectories are plotted to show that the movement is the same.
+
+# Performance
+If you find yourself asking, "Why is bioptim so slow? I thought it was lightning fast!"
+then this section may help you improve your code to get better performance.
+
+## use_sx
+Set use_sx to True in the OptimalControlProgram class to use the SX symbolic variables.
+These are faster, but require more RAM, so make sure you have enough RAM to use this option.
+
+## n_threads
+Set n_threads to the number of threads you want to use in the OptimalControlProgram class.
+By default, it is set to 1. It will split the computation of the continuity constraints between threads and speed up the computation. If applicable to your problem, make sure to use the next option too.
+
+## assume_phase_dynamics
+Set assume_phase_dynamics to True in the OptimalControlProgram class if your dynamic equations are phase-independent but not node-specific.
+It will speed up the computation of the continuity constraints since only one continuity constraint will be computed per phase instead of one per node.
+
+## expand
+(For objective and constraint functions)
+Set the expand argument to True for objective and constraint functions to speed up the computation.
+This will turn your MX symbolic variables into SX symbolic variables, which is faster but requires more RAM.
+
+# Troubleshooting
+Despite our best efforts to assist you, you may experience some problems with bioptim.
+Fortunately, this troubleshooting section will guide you through solving some known issues.
+
+## Freezing compute
+If your computer freezes before any optimization is performed, it is probably because your problem requires too much RAM.
+If you are using use_sx and/or expand options, try turning them off. If it does not work, try reducing the number of nodes. If assume_phase_dynamics is set to False, try setting it to True, if applicable to your problem.
+
+## Free variables
+Sometimes when working on advanced custom problems, you may have some free variables that prevent the solver from being launched.
+If this occurs, try reloading your model inside of the custom function. This has worked for us with biorbd models.
+
+## Non-converging problems
+If Ipopt converges to an infeasible solution, make sure the boundaries are sound for the constraints of the problem.
+If the problem still does not converge, try changing the initial guess of the problem.
+
+If the problem takes numerous iterations to solve (a lot more than expected), check the weights on objective functions and the weight of the actual variables.
+
+If the problem still does not converge, try observing the evolution of the objective function and the constraints through a live plot.
+It is always a good idea to see how they evolve through the iterations.
 
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:

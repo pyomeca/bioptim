@@ -65,13 +65,13 @@ class XiaFatigue(MuscleFatigue):
 
         Parameters
         ----------
-        target_load: Union[float, MX, SX]
+        target_load: float | MX | SX
             The target load the actuator must accomplish
-        states: Union[float, MX, SX]
+        states: float | MX | SX
             The values of the states used to compute the dynamics
         Returns
         -------
-        Union[float, MX, SX]
+        float | MX | SX
         The derivative of the states: (ma_dot, mr_dot, mf_dot)
 
         """

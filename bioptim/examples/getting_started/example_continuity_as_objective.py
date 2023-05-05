@@ -13,6 +13,8 @@ the model using the optimal solution.
 User might want to start reading the script by the `main` function to get a better feel.
 """
 
+import platform
+
 from casadi import sqrt
 import numpy as np
 from bioptim import (
@@ -23,7 +25,6 @@ from bioptim import (
     Dynamics,
     Bounds,
     InterpolationType,
-    QAndQDotBounds,
     NoisedInitialGuess,
     InitialGuess,
     ObjectiveFcn,
@@ -34,16 +35,19 @@ from bioptim import (
     CostType,
     Solver,
     Solution,
+    PenaltyController,
 )
 
 
-def out_of_sphere(all_pn, y, z):
-    q = all_pn.nlp.states["q"].mx
-    marker_q = all_pn.nlp.model.markers(q)[1]
+def out_of_sphere(controller: PenaltyController, y, z):
+    q = controller.nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
+    marker_q = controller.nlp.model.markers(q)[1]
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 
-    return all_pn.nlp.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states["q"])
+    return controller.nlp.mx_to_cx(
+        "out_of_sphere", distance, controller.nlp.states[0]["q"]
+    )  # TODO: [0] to [node_index]
 
 
 def prepare_ocp_first_pass(
@@ -91,7 +95,7 @@ def prepare_ocp_first_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = 0
 
     # Initial guess
@@ -132,6 +136,7 @@ def prepare_ocp_first_pass(
         use_sx=use_sx,
         n_threads=n_threads,
         state_continuity_weight=state_continuity_weight,
+        assume_phase_dynamics=True,
     )
 
 
@@ -172,7 +177,7 @@ def prepare_ocp_second_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, 0] = 0
 
     # Initial guess
@@ -233,7 +238,7 @@ def main():
     )
     # ocp_first.print(to_console=True)
 
-    solver_first = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
+    solver_first = Solver.IPOPT(show_online_optim=platform.system() == "Linux", show_options=dict(show_bounds=True))
     # change maximum iterations to affect the initial solution
     # it doesn't mather if it exits before the optimal solution, only that there is an initial guess
     solver_first.set_maximum_iterations(500)
@@ -247,7 +252,7 @@ def main():
 
     # # --- Second pass ---#
     # # --- Prepare the ocp --- #
-    solver_second = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
+    solver_second = Solver.IPOPT(show_online_optim=platform.system() == "Linux", show_options=dict(show_bounds=True))
     solver_second.set_maximum_iterations(10000)
 
     ocp_second = prepare_ocp_second_pass(

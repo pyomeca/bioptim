@@ -9,12 +9,12 @@ Please note that the point of application of the external forces are defined in 
 externalforceindex tag in segment and is acting at the center of mass of this particular segment. Please note that
 this segment MUST have at least one degree of freedom defined (translations and/or rotations). Otherwise, the
 external_force is silently ignored. Bioptim expects external_forces to be a list (one element for each phase) of
-np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
+np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
 (defined by the externalforceindex) for each node n
 """
+import platform
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -26,7 +26,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -73,13 +72,12 @@ def prepare_ocp(
 
     # External forces. external_forces is of len 1 because there is only one phase.
     # The array inside it is 6x2x30 since there is [Mx, My, Mz, Fx, Fy, Fz] for the two externalforceindex for each node
-    external_forces = [[
-        np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T for _ in range(n_shooting)
-    ]]
+    external_forces = [[np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T for _ in range(n_shooting)]]
+    external_forces[0][4] = np.array([[0, 0, 0, 0, 0, -22], [0, 0, 0, 0, 0, 52]]).T
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][3:6, [0, -1]] = 0
 
     # Initial guess
@@ -107,6 +105,7 @@ def prepare_ocp(
         constraints=constraints,
         external_forces=external_forces,
         ode_solver=ode_solver,
+        assume_phase_dynamics=False,
     )
 
 
@@ -118,7 +117,7 @@ def main():
     ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == 'Linux'))
 
     # --- Show results --- #
     sol.animate()

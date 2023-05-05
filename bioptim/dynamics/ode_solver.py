@@ -1,4 +1,4 @@
-from typing import Union, Callable
+from typing import Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
@@ -16,7 +16,7 @@ class OdeSolverBase:
         The number of integration steps
     steps_scipy: int
         Number of steps while integrating with scipy
-    rk_integrator: Union[RK4, RK8, IRK]
+    rk_integrator: RK4 | RK8 | IRK
         The corresponding integrator class
     is_direct_collocation: bool
         indicating if the ode solver is direct collocation method
@@ -24,7 +24,7 @@ class OdeSolverBase:
         indicating if the ode solver is direct shooting method
     Methods
     -------
-    integrator(self, ocp, nlp) -> list
+    integrator(self, ocp, nlp, node_index) -> list
         The interface of the OdeSolver to the corresponding integrator
     prepare_dynamic_integrator(ocp, nlp)
         Properly set the integration in an nlp
@@ -37,7 +37,7 @@ class OdeSolverBase:
         self.is_direct_collocation = False
         self.is_direct_shooting = False
 
-    def integrator(self, ocp, nlp) -> list:
+    def integrator(self, ocp, nlp, node_index: int) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -47,6 +47,8 @@ class OdeSolverBase:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the nlp
+        node_index
+            The index of the node currently evaluated
 
         Returns
         -------
@@ -67,12 +69,13 @@ class OdeSolverBase:
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
         """
-
-        nlp.dynamics = nlp.ode_solver.integrator(ocp, nlp)
-        if len(nlp.dynamics) != 1 and ocp.n_threads != 1:
-            raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")
-        if len(nlp.dynamics) == 1:
+        nlp.dynamics = []
+        nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0)
+        if ocp.assume_phase_dynamics:
             nlp.dynamics = nlp.dynamics * nlp.ns
+        else:
+            for node_index in range(1, nlp.ns):
+                nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index)
 
 
 class RK(OdeSolverBase):
@@ -81,7 +84,7 @@ class RK(OdeSolverBase):
 
     Methods
     -------
-    integrator(self, ocp, nlp) -> list
+    integrator(self, ocp, nlp, node_index) -> list
         The interface of the OdeSolver to the corresponding integrator
     """
 
@@ -98,7 +101,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp) -> list:
+    def integrator(self, ocp, nlp, node_index: int) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -108,6 +111,8 @@ class RK(OdeSolverBase):
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the nlp
+        node_index
+            The index of the node currently integrated
 
         Returns
         -------
@@ -125,27 +130,25 @@ class RK(OdeSolverBase):
             "number_of_finite_elements": self.steps,
             "defects_type": DefectType.NOT_APPLICABLE,
         }
+
         ode = {
-            "x_unscaled": nlp.states.cx,
-            "x_scaled": nlp.states["scaled"].cx,
-            "p_unscaled": nlp.controls.cx
-            if nlp.control_type == ControlType.CONSTANT
-            else horzcat(nlp.controls.cx, nlp.controls.cx_end),
-            "p_scaled": nlp.controls["scaled"].cx
-            if nlp.control_type == ControlType.CONSTANT
-            else horzcat(nlp.controls["scaled"].cx, nlp.controls["scaled"].cx_end),
+            "x_unscaled": nlp.states[node_index].cx_start,
+            "x_scaled": nlp.states.scaled[node_index].cx_start,
+            "p_unscaled": nlp.controls[node_index].cx_start
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
+            else horzcat(nlp.controls[node_index].cx_start, nlp.controls[node_index].cx_end),
+            "p_scaled": nlp.controls.scaled[node_index].cx_start
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
+            else horzcat(nlp.controls.scaled[node_index].cx_start, nlp.controls.scaled[node_index].cx_end),
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
 
-        if len(nlp.external_forces) != 0:
-            dynamics_out = []
-            for idx in range(len(nlp.external_forces)):
-                ode_opt["idx"] = idx
-                dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))
-            return dynamics_out
-        else:
-            return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+        if ode["ode"].size2_out("xdot") != 1:
+            # If the ode is designed for each node, use the proper node, otherwise use the first one
+            # Please note this is unrelated to ocp.assume_phase_dynamics
+            ode_opt["idx"] = node_index
+        return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
     def __str__(self):
         ode_solver_string = f"{self.rk_integrator.__name__} {self.steps} step"
@@ -261,7 +264,7 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-        def integrator(self, ocp, nlp) -> list:
+        def integrator(self, ocp, nlp, node_index: int) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -271,6 +274,8 @@ class OdeSolver:
                 A reference to the ocp
             nlp: NonLinearProgram
                 A reference to the nlp
+            node_index
+                The index of the node currently integrated
 
             Returns
             -------
@@ -287,10 +292,11 @@ class OdeSolver:
                 )
 
             ode = {
-                "x_unscaled": [nlp.states.cx] + nlp.states.cx_intermediates_list,
-                "x_scaled": [nlp.states["scaled"].cx] + nlp.states["scaled"].cx_intermediates_list,
-                "p_unscaled": nlp.controls.cx,
-                "p_scaled": nlp.controls["scaled"].cx,
+                "x_unscaled": [nlp.states[node_index].cx_start] + nlp.states[node_index].cx_intermediates_list,
+                "x_scaled": [nlp.states.scaled[node_index].cx_start]
+                + nlp.states.scaled[node_index].cx_intermediates_list,
+                "p_unscaled": nlp.controls[node_index].cx_start,
+                "p_scaled": nlp.controls.scaled[node_index].cx_start,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -306,6 +312,9 @@ class OdeSolver:
                 "method": self.method,
                 "defects_type": self.defects_type,
             }
+
+            if ode["ode"].size2_out("xdot") != 1:
+                ode_opt["idx"] = node_index
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
         def __str__(self):
@@ -348,7 +357,7 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.steps = 1
 
-        def integrator(self, ocp, nlp) -> list:
+        def integrator(self, ocp, nlp, node_index: int) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -358,6 +367,8 @@ class OdeSolver:
                 A reference to the ocp
             nlp: NonLinearProgram
                 A reference to the nlp
+            node_index
+                The index of the node currently integrated
 
             Returns
             -------
@@ -367,7 +378,7 @@ class OdeSolver:
             if ocp.cx is SX:
                 raise RuntimeError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
-            return super(OdeSolver.IRK, self).integrator(ocp, nlp)
+            return super(OdeSolver.IRK, self).integrator(ocp, nlp, node_index)
 
     class CVODES(OdeSolverBase):
         """
@@ -382,7 +393,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp) -> list:
+        def integrator(self, ocp, nlp, node_index: int) -> list:  # TODO: add node_index
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -392,6 +403,8 @@ class OdeSolver:
                 A reference to the ocp
             nlp: NonLinearProgram
                 A reference to the nlp
+            node_index
+                The index of the node currently integrated
 
             Returns
             -------
@@ -407,9 +420,13 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "x": nlp.states["scaled"].cx,
-                "p": nlp.controls["scaled"].cx,
-                "ode": nlp.dynamics_func(nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx),
+                "x": nlp.states.scaled[node_index].cx_start,
+                "p": nlp.controls.scaled[node_index].cx_start,
+                "ode": nlp.dynamics_func(
+                    nlp.states.scaled[node_index].cx_start,
+                    nlp.controls.scaled[node_index].cx_start,
+                    nlp.parameters.cx_start,
+                ),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
 
@@ -418,15 +435,23 @@ class OdeSolver:
             return [
                 Function(
                     "integrator",
-                    [nlp.states["scaled"].cx, nlp.controls["scaled"].cx, nlp.parameters.cx],
-                    self._adapt_integrator_output(integrator_func, nlp.states["scaled"].cx, nlp.controls["scaled"].cx),
+                    [
+                        nlp.states.scaled[node_index].cx_start,
+                        nlp.controls.scaled[node_index].cx_start,
+                        nlp.parameters.cx_start,
+                    ],
+                    self._adapt_integrator_output(
+                        integrator_func,
+                        nlp.states.scaled[node_index].cx_start,
+                        nlp.controls.scaled[node_index].cx_start,
+                    ),
                     ["x0", "p", "params"],
                     ["xf", "xall"],
                 )
             ]
 
         @staticmethod
-        def _adapt_integrator_output(integrator_func: Callable, x0: Union[MX, SX], p: Union[MX, SX]):
+        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX):
             """
             Interface to make xf and xall as outputs
 
@@ -434,9 +459,9 @@ class OdeSolver:
             ----------
             integrator_func: Callable
                 Handler on a CasADi function
-            x0: Union[MX, SX]
+            x0: MX | SX
                 Symbolic variable of states
-            p: Union[MX, SX]
+            p: MX | SX
                 Symbolic variable of controls
 
             Returns

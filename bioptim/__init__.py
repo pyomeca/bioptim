@@ -94,10 +94,6 @@ Bounds
     A placeholder for bounds constraints
 BoundsList
     A list of Bounds if more than one is required
-QAndQDotBounds
-    Specialized Bounds that reads a model to automatically extract q and qdot bounds
-QAndQDotAndQDDotBounds
-    Specialized Bounds that reads a model to automatically extract q, qdot and qddot bounds
 
 
 # --- Managing the initial guesses of the variables --- #
@@ -113,11 +109,15 @@ PhaseTransitionList
 PhaseTransitionFcn
     Selection of valid phase transition functions
 
-# --- Managing the multinode constraint for multiphase programs at specified nodes--- #
-MultinodeConstraintList
-    A list of MultinodeConstraint
-MultinodeConstraintListFcn
-    Selection of valid phase MultinodeConstraint functions
+# --- Managing the binode constraint for multiphase programs at specified nodes--- #
+BinodeConstraintList
+    A list of BinodeConstraint
+BinodeConstraintListFcn
+    Selection of valid phase BinodeConstraint functions
+AllNodeConstraintList
+    A list of AllNodeConstraint
+AllNodeConstraintListFcn
+    Selection of valid phase AllNodeConstraint functions
 
 # --- Mapping indices between vector --- #
 Mapping
@@ -172,11 +172,18 @@ from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver
 from .interfaces.solver_options import Solver
-from .interfaces.biorbd_model import BiorbdModel
+from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from .interfaces.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
-from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
+from .limits.multinode_constraint import (
+    BinodeConstraintFcn,
+    BinodeConstraintList,
+    BinodeConstraint,
+    AllNodeConstraintFcn,
+    AllNodeConstraintList,
+    AllNodeConstraint,
+)
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import (
     BoundsList,
@@ -184,11 +191,9 @@ from .limits.path_conditions import (
     InitialGuessList,
     InitialGuess,
     NoisedInitialGuess,
-    QAndQDotBounds,
-    QAndQDotAndQDDotBounds,
 )
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
-from .limits.penalty_node import PenaltyNode, PenaltyNodeList
+from .limits.penalty_controller import PenaltyController
 from .misc.enums import (
     Axis,
     Node,
@@ -204,8 +209,9 @@ from .misc.enums import (
     SoftContactDynamics,
     DefectType,
     MagnitudeType,
+    MultiCyclicCycleSolutions,
 )
-from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList
+from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram

@@ -1,4 +1,4 @@
-from typing import Union, Callable, Any, List, Tuple
+from typing import Callable, Any, List, Tuple
 
 import numpy as np
 from casadi import MX, SX, vertcat
@@ -6,10 +6,8 @@ from scipy.interpolate import interp1d
 from numpy import array, ndarray
 
 from ..misc.enums import InterpolationType, MagnitudeType
-from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..optimization.optimization_variable import VariableScaling
-from ..interfaces.biomodel import BioModel
 
 
 class PathCondition(np.ndarray):
@@ -48,22 +46,22 @@ class PathCondition(np.ndarray):
 
     def __new__(
         cls,
-        input_array: Union[np.ndarray, Callable],
+        input_array: np.ndarray | Callable,
         t: list = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
-        slice_list: Union[slice, list, tuple] = None,
+        slice_list: slice | list | tuple = None,
         **extra_params,
     ):
         """
         Parameters
         ----------
-        input_array: Union[np.ndarray, Callable]
+        input_array: np.ndarray | Callable
             The matrix of interpolation, rows are the components, columns are the time
         t: list[float]
             The time stamps
         interpolation: InterpolationType
             The type of interpolation. It determines how many timestamps are required
-        slice_list: Union[slice, list, tuple]
+        slice_list: slice | list | tuple
             If the data should be sliced. It is more relevant for custom functions
         extra_params: dict
             Any parameters to pass to the path condition
@@ -325,11 +323,11 @@ class Bounds(OptionGeneric):
         of required elements and time. If the function exit, then everything is okay
     concatenate(self, other: "Bounds")
         Vertical concatenate of two Bounds
-    scale(self, scaling: Union[float, np.ndarray])
+    scale(self, scaling: float | np.ndarray)
         Scaling a Bound
     __getitem__(self, slice_list: slice) -> "Bounds"
         Allows to get from square brackets
-    __setitem__(self, slice: slice, value: Union[np.ndarray, list, float])
+    __setitem__(self, slice: slice, value: np.ndarray | list | float)
         Allows to set from square brackets
     __bool__(self) -> bool
         Get if the Bounds is empty
@@ -339,22 +337,22 @@ class Bounds(OptionGeneric):
 
     def __init__(
         self,
-        min_bound: Union[Callable, PathCondition, np.ndarray, list, tuple, float] = None,
-        max_bound: Union[Callable, PathCondition, np.ndarray, list, tuple, float] = None,
+        min_bound: Callable | PathCondition | np.ndarray | list | tuple | float = None,
+        max_bound: Callable | PathCondition | np.ndarray | list | tuple | float = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        slice_list: Union[slice, list, tuple] = None,
+        slice_list: slice | list | tuple = None,
         **parameters: Any,
     ):
         """
         Parameters
         ----------
-        min_bound: Union[Callable, PathCondition, np.ndarray, list, tuple]
+        min_bound: Callable | PathCondition | np.ndarray | list | tuple
             The minimal bound
-        max_bound: Union[Callable, PathCondition, np.ndarray, list, tuple]
+        max_bound: Callable | PathCondition | np.ndarray | list | tuple
             The maximal bound
         interpolation: InterpolationType
             The type of interpolation of the bound
-        slice_list: Union[slice, list, tuple]
+        slice_list: slice | list | tuple
             Slice of the array
         parameters: dict
             Any extra parameters that is associated to the path condition
@@ -420,7 +418,7 @@ class Bounds(OptionGeneric):
         self.extra_params = self.min.extra_params
         self.n_shooting = self.min.n_shooting
 
-    def scale(self, scaling: Union[float, np.ndarray, VariableScaling]):
+    def scale(self, scaling: float | np.ndarray | VariableScaling):
         """
         Scaling a Bound
 
@@ -432,13 +430,13 @@ class Bounds(OptionGeneric):
 
         return Bounds(self.min / scaling, self.max / scaling, interpolation=self.type)
 
-    def __getitem__(self, slice_list: Union[slice, list, tuple]) -> "Bounds":
+    def __getitem__(self, slice_list: slice | list | tuple) -> "Bounds":
         """
         Allows to get from square brackets
 
         Parameters
         ----------
-        slice_list: Union[slice, list, tuple]
+        slice_list: slice | list | tuple
             The slice to get
 
         Returns
@@ -476,15 +474,15 @@ class Bounds(OptionGeneric):
                 "b is the stopping index and c is the step for slicing."
             )
 
-    def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
+    def __setitem__(self, _slice: slice | list | tuple, value: np.ndarray | list | float):
         """
         Allows to set from square brackets
 
         Parameters
         ----------
-        _slice: Union[slice, list, tuple]
+        _slice: slice | list | tuple
             The slice where to put the data
-        value: Union[np.ndarray, float]
+        value: np.ndarray | float
             The value to set
         """
 
@@ -531,8 +529,8 @@ class BoundsList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, min_bound: Union[PathCondition, np.ndarray, list, tuple] = None,
-            max_bound: Union[PathCondition, np.ndarray, list, tuple] = None, bounds: Bounds = None, **extra_arguments)
+    add(self, min_bound: PathCondition | np.ndarray | list | tuple = None,
+            max_bound: PathCondition | np.ndarray | list | tuple = None, bounds: Bounds = None, **extra_arguments)
         Add a new constraint to the list, either [min_bound AND max_bound] OR [bounds] should be defined
     __getitem__(self, item) -> Bounds
         Get the ith option of the list
@@ -542,8 +540,8 @@ class BoundsList(UniquePerPhaseOptionList):
 
     def add(
         self,
-        min_bound: Union[PathCondition, np.ndarray, list, tuple] = None,
-        max_bound: Union[PathCondition, np.ndarray, list, tuple] = None,
+        min_bound: PathCondition | np.ndarray | list | tuple = None,
+        max_bound: PathCondition | np.ndarray | list | tuple = None,
         bounds: Bounds = None,
         **extra_arguments,
     ):
@@ -552,7 +550,7 @@ class BoundsList(UniquePerPhaseOptionList):
 
         Parameters
         ----------
-        min_bound: Union[PathCondition, np.ndarray, list, tuple]
+        min_bound: PathCondition | np.ndarray | list | tuple
             The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
         max_bound: [PathCondition, np.ndarray, list, tuple]
             The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
@@ -597,113 +595,6 @@ class BoundsList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of BoundsList is not ready yet")
 
 
-class QAndQDotBounds(Bounds):
-    """
-    Specialized Bounds that reads a model to automatically extract q and qdot bounds
-    """
-
-    def __init__(
-        self,
-        bio_model: BioModel,
-        dof_mappings: Union[BiMapping, BiMappingList] = None,
-    ):
-        """
-        Parameters
-        ----------
-        bio_model: BioModel
-            A reference to the model
-        dof_mappings: BiMappingList
-            The mapping of q and qdot (if only q, then qdot = q)
-        """
-        if dof_mappings is None:
-            dof_mappings = {}
-
-        if bio_model.nb_quaternions > 0:
-            if "q" in dof_mappings and "qdot" not in dof_mappings:
-                raise RuntimeError(
-                    "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
-                )
-            elif "q" not in dof_mappings and "qdot" in dof_mappings:
-                raise RuntimeError(
-                    "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
-                )
-
-        if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
-
-        if "qdot" not in dof_mappings:
-            if bio_model.nb_quaternions > 0:
-                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
-            else:
-                dof_mappings["qdot"] = dof_mappings["q"]
-
-        q_ranges = []
-        qdot_ranges = []
-        for i in range(bio_model.nb_segments):
-            segment = bio_model.segments[i]
-            q_ranges += [q_range for q_range in segment.QRanges()]
-            qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-
-        x_min = [q_ranges[i].min() for i in dof_mappings["q"].to_first.map_idx] + [
-            qdot_ranges[i].min() for i in dof_mappings["qdot"].to_first.map_idx
-        ]
-        x_max = [q_ranges[i].max() for i in dof_mappings["q"].to_first.map_idx] + [
-            qdot_ranges[i].max() for i in dof_mappings["qdot"].to_first.map_idx
-        ]
-
-        super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
-
-
-class QAndQDotAndQDDotBounds(QAndQDotBounds):
-    """
-    Specialized Bounds that reads a model to automatically extract q, qdot and qddot bounds
-    """
-
-    def __init__(
-        self,
-        bio_model: BioModel,
-        dof_mappings: Union[BiMapping, BiMappingList] = None,
-    ):
-        """
-        Parameters
-        ----------
-        bio_model: BioModel
-            A reference to the model
-        dof_mappings: BiMappingList
-            The mapping of q and qdot (if only q, then qdot = q)
-        """
-
-        super(QAndQDotAndQDDotBounds, self).__init__(bio_model=bio_model, dof_mappings=dof_mappings)
-
-        if dof_mappings is None:
-            dof_mappings = {}
-
-        if "q" not in dof_mappings:
-            dof_mappings["q"] = BiMapping(range(bio_model.nb_q), range(bio_model.nb_q))
-
-        if "qdot" not in dof_mappings:
-            if bio_model.nb_quaternions > 0:
-                dof_mappings["qdot"] = BiMapping(range(bio_model.nb_qdot), range(bio_model.nb_qdot))
-            else:
-                dof_mappings["qdot"] = dof_mappings["q"]
-
-        if "qddot" not in dof_mappings:
-            if bio_model.nb_quaternions > 0:
-                dof_mappings["qddot"] = BiMapping(range(bio_model.nb_qddot), range(bio_model.nb_qddot))
-            else:
-                dof_mappings["qddot"] = dof_mappings["qdot"]
-
-        qddot_ranges = []
-        for i in range(bio_model.nb_segments):
-            segment = bio_model.segments[i]
-            qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
-
-        x_min = [qddot_ranges[i].min() for i in dof_mappings["qddot"].to_first.map_idx]
-        x_max = [qddot_ranges[i].max() for i in dof_mappings["qddot"].to_first.map_idx]
-
-        self.concatenate(Bounds(x_min, x_max))
-
-
 class InitialGuess(OptionGeneric):
     """
     A placeholder for the initial guess
@@ -726,20 +617,20 @@ class InitialGuess(OptionGeneric):
         Get if the initial guess is empty
     shape(self) -> int
         Get the size of the initial guess
-    __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float])
+    __setitem__(self, _slice: slice | list | tuple, value: np.ndarray | list | float)
         Allows to set from square brackets
     """
 
     def __init__(
         self,
-        initial_guess: Union[np.ndarray, list, tuple, float, Callable] = None,
+        initial_guess: np.ndarray | list | tuple | float | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         **parameters: Any,
     ):
         """
         Parameters
         ----------
-        initial_guess: Union[np.ndarray, list, tuple, float, Callable]
+        initial_guess: np.ndarray | list | tuple | float | Callable
             The initial guess
         interpolation: InterpolationType
             The type of interpolation of the initial guess
@@ -786,7 +677,7 @@ class InitialGuess(OptionGeneric):
             interpolation=self.init.type,
         )
 
-    def scale(self, scaling: Union[float, np.ndarray, VariableScaling]):
+    def scale(self, scaling: float | np.ndarray | VariableScaling):
         """
         Scaling an InitialGuess
 
@@ -821,15 +712,15 @@ class InitialGuess(OptionGeneric):
 
         return self.init.shape
 
-    def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
+    def __setitem__(self, _slice: slice | list | tuple, value: np.ndarray | list | float):
         """
         Allows to set from square brackets
 
         Parameters
         ----------
-        _slice: Union[slice, list, tuple]
+        _slice: slice | list | tuple
             The slice where to put the data
-        value: Union[np.ndarray, float]
+        value: np.ndarray | float
             The value to set
         """
 
@@ -837,11 +728,11 @@ class InitialGuess(OptionGeneric):
 
     def add_noise(
         self,
-        bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
-        magnitude: Union[list, int, float, np.ndarray] = 1,
+        bounds: Bounds | BoundsList = None,
+        magnitude: list | int | float | np.ndarray = 1,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         n_shooting: int = None,
-        bound_push: Union[list, int, float] = 0.1,
+        bound_push: list | int | float = 0.1,
         seed: int = None,
     ):
         """
@@ -849,9 +740,9 @@ class InitialGuess(OptionGeneric):
 
         Parameters
         ----------
-        bounds: Union[Bounds, BoundsList, QAndQDotBounds]
+        bounds: Bounds | BoundsList
             The bounds
-        magnitude: Union[list, int, float, np.ndarray]
+        magnitude: list | int | float | np.ndarray
             The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
             range defined between the bounds or between -magnitude and +magnitude for absolute noise
             If one value is given, applies this value to each initial guess
@@ -859,7 +750,7 @@ class InitialGuess(OptionGeneric):
             The type of magnitude to apply : relative to the bounds or absolute
         n_shooting: int
             Number of nodes (second dim)
-        bound_push: Union[list, int, float]
+        bound_push: list | int | float
             The absolute minimal distance between the bound and the noised initial guess (if the originally generated
             initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push)
         seed: int
@@ -906,26 +797,26 @@ class NoisedInitialGuess(InitialGuess):
 
     def __init__(
         self,
-        initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
+        initial_guess: np.ndarray | list | tuple | float | Callable | PathCondition | InitialGuess = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
-        bounds: Union[Bounds, BoundsList, QAndQDotBounds] = None,
-        magnitude: Union[list, int, float, np.ndarray] = 1,
+        bounds: Bounds | BoundsList = None,
+        magnitude: list | int | float | np.ndarray = 1,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         n_shooting: int = None,
-        bound_push: Union[list, int, float] = 0.1,
+        bound_push: list | int | float = 0.1,
         seed: int = None,
         **parameters: Any,
     ):
         """
         Parameters
         ----------
-        initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition]
+        initial_guess: np.ndarray | list | tuple | float | Callable | PathCondition
             The initial guess
         init_interpolation: InterpolationType
             The type of interpolation of the initial guess
-        bounds: Union[Bounds, BoundsList, QAndQDotBounds]
+        bounds: Bounds | BoundsList
             The bounds
-        magnitude: Union[list, int, float, np.ndarray]
+        magnitude: list | int | float | np.ndarray
             The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
             range defined between the bounds or between -magnitude and +magnitude for absolute noise
             If one value is given, applies this value to each initial guess
@@ -935,7 +826,7 @@ class NoisedInitialGuess(InitialGuess):
             Number of elements (first dim)
         n_shooting: int
             Number of nodes (second dim)
-        bound_push: Union[list, int, float]
+        bound_push: list | int | float
             The absolute minimal distance between the bound and the noised initial guess (if the originally generated
             initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push)
         parameters: dict
@@ -980,13 +871,13 @@ class NoisedInitialGuess(InitialGuess):
             **parameters,
         )
 
-    def _check_magnitude(self, magnitude: Union[list, int, float, np.ndarray]):
+    def _check_magnitude(self, magnitude: list | int | float | np.ndarray):
         """
         Check noise magnitude type and shape
 
         Parameters
         ----------
-        magnitude: Union[list, int, float, np.ndarray]
+        magnitude: list | int | float | np.ndarray
             The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
             standard deviation of the size of the range defined between the bounds
         """
@@ -1010,7 +901,7 @@ class NoisedInitialGuess(InitialGuess):
 
     def _create_noise_matrix(
         self,
-        initial_guess: Union[np.ndarray, list, tuple, float, Callable, PathCondition, InitialGuess] = None,
+        initial_guess: np.ndarray | list | tuple | float | Callable | PathCondition | InitialGuess = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         **parameters: Any,
@@ -1091,7 +982,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, initial_guess: Union[PathCondition, np.ndarray, list, tuple], **extra_arguments)
+    add(self, initial_guess: PathCondition | np.ndarray | list | tuple, **extra_arguments)
         Add a new initial guess to the list
     print(self)
         Print the InitialGuessList to the console
@@ -1109,13 +1000,13 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Add noise to each initial guesses from an InitialGuessList
     """
 
-    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple] = None, **extra_arguments: Any):
+    def add(self, initial_guess: InitialGuess | np.ndarray | list | tuple = None, **extra_arguments: Any):
         """
         Add a new initial guess to the list
 
         Parameters
         ----------
-        initial_guess: Union[InitialGuess, np.ndarray, list, tuple]
+        initial_guess: InitialGuess | np.ndarray | list | tuple
             The initial guess to add
         extra_arguments: dict
             Any parameters to pass to the Bounds
@@ -1256,11 +1147,11 @@ class InitialGuessList(UniquePerPhaseOptionList):
     def add_noise(
         self,
         bounds: BoundsList = None,
-        n_shooting: Union[int, List[int], Tuple[int]] = None,
-        magnitude: Union[list, int, float, np.ndarray] = 1,
+        n_shooting: int | List[int] | Tuple[int] = None,
+        magnitude: list | int | float | np.ndarray = 1,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
-        bound_push: Union[int, float, List[int], List[float], ndarray] = 0.1,
-        seed: Union[int, List[int]] = 1,
+        bound_push: int | float | List[int] | List[float] | ndarray = 0.1,
+        seed: int | List[int] = 1,
     ):
         """
         Add noise to each initial guesses from an InitialGuessList
@@ -1269,19 +1160,19 @@ class InitialGuessList(UniquePerPhaseOptionList):
         ----------
         bounds: BoundsList
             The bounds of each phase
-        n_shooting: Union[List[int], int, Tuple[int]]
+        n_shooting: List[int] | int | Tuple[int]
             Number of nodes (second dim) per initial guess
-        magnitude: Union[list, int, float, np.ndarray]
+        magnitude: list | int | float | np.ndarray
             The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
             range defined between the bounds or between -magnitude and +magnitude for absolute noise
             If one value is given, applies this value to each initial guess
         magnitude_type: MagnitudeType
             The type of magnitude to apply : relative to the bounds or absolute
-        bound_push: Union[int, float, List[int], List[float], ndarray]
+        bound_push: int | float | List[int] | List[float] | ndarray
             The absolute minimal distance between the bound and the noised initial guess (if the originally generated
             initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push).
             If one value is given, applies this value to each initial guess
-        seed: Union[int, List[int]]
+        seed: int | List[int]
             The seed of the random generator
             If one value is given, applies this value to each initial guess
         """

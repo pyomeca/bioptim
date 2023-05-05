@@ -7,8 +7,9 @@ The difference between Mayer and Lagrange minimization time is that the former c
 the values, while the latter is the most common way to define optimal time
 """
 
+import platform
+
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -17,7 +18,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     CostType,
@@ -78,7 +78,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, [0, -1]] = 0
     x_bounds[0][n_q - 1, -1] = 3.14
 
@@ -107,6 +107,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -123,7 +124,7 @@ def main():
     ocp.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}, good job Mayer!")

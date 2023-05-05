@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 from abc import ABC, abstractmethod
 
 from casadi import MX
@@ -116,7 +116,7 @@ class FatigueModel(ABC):
 class MultiFatigueModel(OptionGeneric):
     def __init__(
         self,
-        model: Union[FatigueModel, list],
+        model: FatigueModel | list,
         state_only: bool,
         split_controls: bool = True,
         apply_to_joint_dynamics: bool = False,
@@ -279,13 +279,13 @@ class MultiFatigueModel(OptionGeneric):
         The default initial guess
         """
 
-    def _convert_to_models_key(self, item: Union[int, str]):
+    def _convert_to_models_key(self, item: int | str):
         """
         Convert the item to a key if self.models is a dictionary, based on suffix() order
 
         Parameters
         ----------
-        item: Union[int, str]
+        item: int | str
             The item to convert
 
         Returns
@@ -324,7 +324,7 @@ class FatigueUniqueList(UniquePerPhaseOptionList):
     def print(self):
         NotImplementedError("FatigueUniqueList cannot be printed")
 
-    def __init__(self, suffix: Union[list, tuple]):
+    def __init__(self, suffix: list | tuple):
         """
         Parameters
         ----------
@@ -360,7 +360,7 @@ class FatigueUniqueList(UniquePerPhaseOptionList):
 class FatigueList(OptionDict):
     def add(
         self,
-        model: Union[FatigueModel, MultiFatigueModel],
+        model: FatigueModel | MultiFatigueModel,
         index: int = -1,
         state_only: bool = None,
         apply_to_joint_dynamics: bool = None,
@@ -370,7 +370,7 @@ class FatigueList(OptionDict):
 
         Parameters
         ----------
-        model: Union[FatigueModel, MultiFatigueModel]
+        model: FatigueModel | MultiFatigueModel
             The dynamics to add, if more than one dynamics is required, a list can be sent
         index: int
             The index of the muscle, referring to the muscles order in the bioMod
@@ -400,7 +400,7 @@ class FatigueList(OptionDict):
     def __contains__(self, item):
         return item in self.options[0]
 
-    def __getitem__(self, item: Union[int, str, list, tuple]) -> FatigueUniqueList:
+    def __getitem__(self, item: int | str | list | tuple) -> FatigueUniqueList:
         return super(FatigueList, self).__getitem__(item)
 
     def print(self):

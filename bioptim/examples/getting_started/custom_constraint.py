@@ -7,6 +7,8 @@ sufficient.
 More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKERS constraint.
 """
 
+import platform
+
 from casadi import MX
 from bioptim import (
     BiorbdModel,
@@ -17,23 +19,22 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     ConstraintList,
-    PenaltyNodeList,
+    PenaltyController,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     OdeSolver,
     Solver,
 )
 
 
-def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str, method) -> MX:
+def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str, method) -> MX:
     """
     The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
 
     Parameters
     ----------
-    all_pn: PenaltyNodeList
+    controller: PenaltyController
         The penalty node elements
     first_marker: str
         The index of the first marker in the bioMod
@@ -49,23 +50,27 @@ def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second
     """
 
     # Get the index of the markers from their name
-    marker_0_idx = all_pn.nlp.model.marker_index(first_marker)
-    marker_1_idx = all_pn.nlp.model.marker_index(second_marker)
+    marker_0_idx = controller.nlp.model.marker_index(first_marker)
+    marker_1_idx = controller.nlp.model.marker_index(second_marker)
 
     if method == 0:
         # Convert the function to the required format and then subtract
         from bioptim import BiorbdModel
 
         # noinspection PyTypeChecker
-        model: BiorbdModel = all_pn.nlp.model
-        markers = all_pn.nlp.mx_to_cx("markers", model.model.markers, all_pn.nlp.states["q"])
+        model: BiorbdModel = controller.nlp.model
+        markers = controller.nlp.mx_to_cx(
+            "markers", model.model.markers, controller.nlp.states[0]["q"]
+        )  # TODO: [0] to [node_index]
         markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     else:
         # Do the calculation in biorbd API and then convert to the required format
-        markers = all_pn.nlp.model.markers(all_pn.nlp.states["q"].mx)
+        markers = controller.nlp.model.markers(controller.nlp.states[0]["q"].mx)  # TODO: [0] to [node_index]
         markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
-        markers_diff = all_pn.nlp.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
+        markers_diff = controller.nlp.mx_to_cx(
+            "markers", markers_diff, controller.nlp.states[0]["q"]
+        )  # TODO: [0] to [node_index]
 
     return markers_diff
 
@@ -108,7 +113,7 @@ def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.IRK())
     constraints.add(custom_func_track_markers, node=Node.END, first_marker="m0", second_marker="m2", method=1)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -134,6 +139,7 @@ def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.IRK())
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -146,7 +152,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

@@ -13,7 +13,8 @@ Please note that even though removing a degree of freedom seems a good idea, it 
 solving with IPOPT.
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     Node,
@@ -25,7 +26,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -76,7 +76,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][2, :] = 0  # Third dof is set to zero
     x_bounds[0][bio_model.nb_q :, [0, -1]] = 0  # Velocity is 0 at start and end
 
@@ -106,6 +106,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -120,7 +121,7 @@ def main():
     ocp.add_plot_penalty()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

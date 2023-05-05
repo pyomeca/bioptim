@@ -1,12 +1,12 @@
-from typing import Union, Any
+from typing import Any
 from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt
 
 from .penalty_option import PenaltyOption
-from .penalty_node import PenaltyNodeList
+from .penalty_controller import PenaltyController
 from ..misc.enums import Node, Axis, ControlType, IntegralApproximation
 
 
@@ -18,14 +18,14 @@ class PenaltyFunctionAbstract:
     -------
     add(ocp: OptimalControlProgram, nlp: NonLinearProgram)
         Add a new penalty to the list (abstract)
-    set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, index: Union[str, int, list, tuple], _type: str)
+    set_idx_columns(penalty: PenaltyOption, controller: PenaltyController, index: str | int | list | tuple, _type: str)
         Simple penalty.cols setter for marker index and names
-    set_axes_rows(penalty: PenaltyOption, axes: Union[list, tuple])
+    set_axes_rows(penalty: PenaltyOption, axes: list | tuple)
         Simple penalty.cols setter for marker index and names
-    _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0)
+    _check_idx(name: str, elements: list | tuple | int, max_n_elements: int = inf, min_n_elements: int = 0)
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay
-    validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyNodeList)
+    validate_penalty_time_index(penalty: PenaltyOption, controller: PenaltyController)
         Check for any non sense in the requested times for the penalty. Raises an error if so
     get_type()
         Returns the type of the penalty (abstract)
@@ -39,7 +39,7 @@ class PenaltyFunctionAbstract:
         """
 
         @staticmethod
-        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
+        def minimize_states(penalty: PenaltyOption, controller: PenaltyController, key: str):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -49,22 +49,25 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             key: str
                 The name of the state to minimize
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-            if penalty.integration_rule == IntegralApproximation.RECTANGLE:
+            if (
+                penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
+                and penalty.integration_rule != IntegralApproximation.TRUE_TRAPEZOIDAL
+            ):
                 # todo: for trapezoidal integration
-                penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_states")
+                penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_states")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return all_pn.nlp.states[key].cx
+            return controller.nlp.states[0][key].cx_start  # TODO: [0] to [node_index]
 
         @staticmethod
-        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
+        def minimize_controls(penalty: PenaltyOption, controller: PenaltyController, key: str):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -74,7 +77,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             key: str
                 The name of the controls to minimize
@@ -82,14 +85,14 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             if penalty.integration_rule == IntegralApproximation.RECTANGLE:
-                # todo: for trapezoidal integration
-                penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
+                # TODO: for trapezoidal integration (This should not be done here but in _set_penalty_function)
+                penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return all_pn.nlp.controls[key].cx
+            return controller.nlp.controls[0][key].cx_start  # TODO: [0] to [node_index]
 
         @staticmethod
-        def minimize_fatigue(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
+        def minimize_fatigue(penalty: PenaltyOption, controller: PenaltyController, key: str):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -99,21 +102,21 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             key: str
                 The name of the state to minimize
             """
 
-            return PenaltyFunctionAbstract.Functions.minimize_states(penalty, all_pn, f"{key}_mf")
+            return PenaltyFunctionAbstract.Functions.minimize_states(penalty, controller, f"{key}_mf")
 
         @staticmethod
         def minimize_markers(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
-            marker_index: Union[tuple, list, int, str] = None,
-            axes: Union[tuple, list] = None,
-            reference_jcs: Union[str, int] = None,
+            controller: PenaltyController,
+            marker_index: tuple | list | int | str = None,
+            axes: tuple | list = None,
+            reference_jcs: str | int = None,
         ):
             """
             Minimize a marker set.
@@ -124,27 +127,27 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            marker_index: Union[tuple, list, int, str]
+            marker_index: tuple | list | int | str
                 The index of markers to minimize, can be int or str.
                 penalty.cols should not be defined if marker_index is defined
             axes: list
                 The axes to minimize, default XYZ
-            reference_jcs: Union[int, str]
+            reference_jcs: int | str
                 The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
 
             # Adjust the cols and rows
-            PenaltyFunctionAbstract.set_idx_columns(penalty, all_pn, marker_index, "marker")
+            PenaltyFunctionAbstract.set_idx_columns(penalty, controller, marker_index, "marker")
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.plot_target = False
 
             # Compute the position of the marker in the requested reference frame (None for global)
-            nlp = all_pn.nlp
-            q = nlp.states["q"].mx
+            nlp = controller.nlp
+            q = nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
             model = nlp.model
             jcs_t = (
                 biorbd.RotoTrans()
@@ -157,16 +160,16 @@ class PenaltyFunctionAbstract:
                 markers_in_jcs = jcs_t.to_mx() @ vertcat(m, 1)
                 markers = horzcat(markers, markers_in_jcs[:3])
 
-            markers_objective = nlp.mx_to_cx("markers", markers, nlp.states["q"])
+            markers_objective = nlp.mx_to_cx("markers", markers, nlp.states[0]["q"])  # TODO: [0] to [node_index]
             return markers_objective
 
         @staticmethod
         def minimize_markers_velocity(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
-            marker_index: Union[tuple, list, int, str] = None,
-            axes: Union[tuple, list] = None,
-            reference_jcs: Union[str, int] = None,
+            controller: PenaltyController,
+            marker_index: tuple | list | int | str = None,
+            axes: tuple | list = None,
+            reference_jcs: str | int = None,
         ):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
@@ -177,42 +180,44 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            marker_index: Union[tuple, list, int, str]
+            marker_index: tuple | list | int | str
                 The index of markers to minimize, can be int or str.
                 penalty.cols should not be defined if marker_index is defined
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
-            reference_jcs: Union[int, str]
+            reference_jcs: int | str
                 The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
 
             # Adjust the cols and rows
-            PenaltyFunctionAbstract.set_idx_columns(penalty, all_pn, marker_index, "marker")
+            PenaltyFunctionAbstract.set_idx_columns(penalty, controller, marker_index, "marker")
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             # Add the penalty in the requested reference frame. None for global
-            nlp = all_pn.nlp
+            nlp = controller.nlp
 
-            q_mx = nlp.states["q"].mx
-            qdot_mx = nlp.states["qdot"].mx
+            q_mx = nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
+            qdot_mx = nlp.states[0]["qdot"].mx  # TODO: [0] to [node_index]
 
             # todo: return all MX, shouldn't it be a list of MX, I think there is an inconsistency here
             markers = nlp.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs)
 
-            markers_objective = nlp.mx_to_cx("markers_velocity", markers, nlp.states["q"], nlp.states["qdot"])
+            markers_objective = nlp.mx_to_cx(
+                "markers_velocity", markers, nlp.states[0]["q"], nlp.states[0]["qdot"]
+            )  # TODO: [0] to [node_index]
             return markers_objective
 
         @staticmethod
         def superimpose_markers(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
-            first_marker: Union[str, int],
-            second_marker: Union[str, int],
-            axes: Union[tuple, list] = None,
+            controller: PenaltyController,
+            first_marker: str | int,
+            second_marker: str | int,
+            axes: tuple | list = None,
         ):
             """
             Minimize the distance between two markers
@@ -222,17 +227,17 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            first_marker: Union[str, int]
+            first_marker: str | int
                 The name or index of one of the two markers
-            second_marker: Union[str, int]
+            second_marker: str | int
                 The name or index of one of the two markers
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
-            nlp = all_pn.nlp
+            nlp = controller.nlp
             first_marker_idx = nlp.model.marker_index(first_marker) if isinstance(first_marker, str) else first_marker
             second_marker_idx = (
                 nlp.model.marker_index(second_marker) if isinstance(second_marker, str) else second_marker
@@ -241,24 +246,26 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            diff_markers = nlp.model.marker(nlp.states["q"].mx, second_marker_idx) - nlp.model.marker(
-                nlp.states["q"].mx, first_marker_idx
-            )
+            diff_markers = nlp.model.marker(nlp.states[0]["q"].mx, second_marker_idx) - nlp.model.marker(
+                nlp.states[0]["q"].mx, first_marker_idx
+            )  # TODO: [0] to [node_index]
 
             return nlp.mx_to_cx(
                 f"diff_markers",
                 diff_markers,
-                nlp.states["q"],
+                nlp.states[0]["q"],  # TODO: [0] to [node_index]
             )
 
         @staticmethod
         def proportional_states(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            controller: PenaltyController,
             key: str,
             first_dof: int,
             second_dof: int,
             coef: float,
+            first_dof_intercept: float = 0,
+            second_dof_intercept: float = 0,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
@@ -268,7 +275,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             key: str
                 The name of the state to minimize
@@ -277,22 +284,30 @@ class PenaltyFunctionAbstract:
             second_dof: int
                 The index of the second variable
             coef: float
-                The proportion coefficient such that v[first_dof] = coef * v[second_dof]
+                The proportion coefficient between the two variables
+            first_dof_intercept: float
+                The intercept of the first variable
+            second_dof_intercept: float
+                The intercept of the second variable
+
+            Formula = v[first_dof] - first_dof_intercept = coef * (v[second_dof] - second_dof_intercept)
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            states = all_pn.nlp.states[key].cx
-            return states[first_dof, :] - coef * states[second_dof, :]
+            states = controller.nlp.states[0][key].cx_start  # TODO: [0] to [node_index]
+            return (states[first_dof, :] - first_dof_intercept) - coef * (states[second_dof, :] - second_dof_intercept)
 
         @staticmethod
         def proportional_controls(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
+            controller: PenaltyController,
             key: str,
             first_dof: int,
             second_dof: int,
             coef: float,
+            first_dof_intercept: float = 0,
+            second_dof_intercept: float = 0,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
@@ -302,7 +317,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             key: str
                 The name of the control to minimize
@@ -311,16 +326,24 @@ class PenaltyFunctionAbstract:
             second_dof: int
                 The index of the second variable
             coef: float
-                The proportion coefficient such that v[first_dof] = coef * v[second_dof]
+                The proportion coefficient between the two variables
+            first_dof_intercept: float
+                The intercept of the first variable
+            second_dof_intercept: float
+                The intercept of the second variable
+
+            Formula = v[first_dof] - first_dof_intercept = coef * (v[second_dof] - second_dof_intercept)
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            controls = all_pn.nlp.controls[key].cx
-            return controls[first_dof, :] - coef * controls[second_dof, :]
+            controls = controller.nlp.controls[0][key].cx_start  # TODO: [0] to [node_index]
+            return (controls[first_dof, :] - first_dof_intercept) - coef * (
+                controls[second_dof, :] - second_dof_intercept
+            )
 
         @staticmethod
-        def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
+        def minimize_qddot(penalty: PenaltyOption, controller: PenaltyController):
             """
             Minimize the states velocity by comparing the state at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -330,22 +353,24 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             """
 
             penalty.quadratic = True
 
-            nlp = all_pn.nlp
-            if "qddot" not in nlp.states and "qddot" not in nlp.controls:
-                return nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[nlp.states["qdot"].index, :]
-            elif "qddot" in nlp.states:
-                return nlp.states["qddot"].cx
-            elif "qddot" in nlp.controls:
-                return nlp.controls["qddot"].cx
+            nlp = controller.nlp
+            if "qddot" not in nlp.states[0] and "qddot" not in nlp.controls[0]:  # TODO: [0] to [node_index]
+                return nlp.dynamics_func(nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start)[
+                    nlp.states[0]["qdot"].index, :
+                ]  # TODO: [0] to [node_index]
+            elif "qddot" in nlp.states[0]:  # TODO: [0] to [node_index]
+                return nlp.states[0]["qddot"].cx_start  # TODO: [0] to [node_index]
+            elif "qddot" in nlp.controls[0]:  # TODO: [0] to [node_index]
+                return nlp.controls[0]["qddot"].cx_start  # TODO: [0] to [node_index]
 
         @staticmethod
-        def minimize_predicted_com_height(_: PenaltyOption, all_pn: PenaltyNodeList):
+        def minimize_predicted_com_height(_: PenaltyOption, controller: PenaltyController):
             """
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + com[2]
@@ -355,20 +380,24 @@ class PenaltyFunctionAbstract:
             ----------
             _: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             """
 
-            nlp = all_pn.nlp
+            nlp = controller.nlp
             g = nlp.model.gravity[2]
-            com = nlp.model.center_of_mass(nlp.states["q"].mx)
-            com_dot = nlp.model.center_of_mass_velocity(nlp.states["q"].mx, nlp.states["qdot"].mx)
+            com = nlp.model.center_of_mass(nlp.states[0]["q"].mx)  # TODO: [0] to [node_index]
+            com_dot = nlp.model.center_of_mass_velocity(
+                nlp.states[0]["q"].mx, nlp.states[0]["qdot"].mx
+            )  # TODO: [0] to [node_index]
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
-            com_height_cx = nlp.mx_to_cx("com_height", com_height, nlp.states["q"], nlp.states["qdot"])
+            com_height_cx = nlp.mx_to_cx(
+                "com_height", com_height, nlp.states[0]["q"], nlp.states[0]["qdot"]
+            )  # TODO: [0] to [node_index]
             return com_height_cx
 
         @staticmethod
-        def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_com_position(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axes is specified, the squared-norm of the center_of_mass's position is minimized.
@@ -379,20 +408,22 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            com_cx = all_pn.nlp.mx_to_cx("com", all_pn.nlp.model.center_of_mass, all_pn.nlp.states["q"])
+            com_cx = controller.nlp.mx_to_cx(
+                "com", controller.nlp.model.center_of_mass, controller.nlp.states[0]["q"]
+            )  # TODO: [0] to [node_index]
             return com_cx
 
         @staticmethod
-        def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_com_velocity(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
@@ -403,21 +434,23 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            nlp = all_pn.nlp
-            com_dot_cx = nlp.mx_to_cx("com_dot", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"])
+            nlp = controller.nlp
+            com_dot_cx = nlp.mx_to_cx(
+                "com_dot", nlp.model.center_of_mass_velocity, nlp.states[0]["q"], nlp.states[0]["qdot"]
+            )  # TODO: [0] to [node_index]
             return com_dot_cx
 
         @staticmethod
-        def minimize_com_acceleration(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_com_acceleration(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
@@ -428,36 +461,44 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            nlp = all_pn.nlp
-            if "qddot" not in nlp.states and "qddot" not in nlp.controls:
+            nlp = controller.nlp
+            if "qddot" not in nlp.states[0] and "qddot" not in nlp.controls[0]:  # TODO: [0] to [node_index]
                 com_ddot = nlp.model.center_of_mass_acceleration(
-                    nlp.states["q"].mx,
-                    nlp.states["qdot"].mx,
-                    nlp.dynamics_func(nlp.states.mx, nlp.controls.mx, nlp.parameters.mx)[nlp.states["qdot"].index, :],
+                    nlp.states[0]["q"].mx,  # TODO: [0] to [node_index]
+                    nlp.states[0]["qdot"].mx,  # TODO: [0] to [node_index]
+                    nlp.dynamics_func(nlp.states[0].mx, nlp.controls[0].mx, nlp.parameters.mx)[
+                        nlp.states[0]["qdot"].index, :
+                    ],  # TODO: [0] to [node_index]
                 )
                 # TODO scaled?
                 var = []
-                var.extend([nlp.states[key] for key in nlp.states])
-                var.extend([nlp.controls[key] for key in nlp.controls])
+                var.extend([nlp.states[0][key] for key in nlp.states[0]])  # TODO: [0] to [node_index]
+                var.extend([nlp.controls[0][key] for key in nlp.controls[0]])  # TODO: [0] to [node_index]
                 var.extend([nlp.parameters[key] for key in nlp.parameters])
                 return nlp.mx_to_cx("com_ddot", com_ddot, *var)
             else:
-                qddot = nlp.states["qddot"] if "qddot" in nlp.states else nlp.controls["qddot"]
+                qddot = (
+                    nlp.states[0]["qddot"] if "qddot" in nlp.states[0] else nlp.controls[0]["qddot"]
+                )  # TODO: [0] to [node_index]
                 return nlp.mx_to_cx(
-                    "com_ddot", nlp.model.center_of_mass_acceleration, nlp.states["q"], nlp.states["qdot"], qddot
+                    "com_ddot",
+                    nlp.model.center_of_mass_acceleration,
+                    nlp.states[0]["q"],
+                    nlp.states[0]["qdot"],
+                    qddot,  # TODO: [0] to [node_index]
                 )
 
         @staticmethod
-        def minimize_angular_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_angular_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the angular momentum of the model in the global reference frame should be minimized.
             If no axis is specified, the three components of the angular momentum are minimized.
@@ -467,21 +508,24 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-            nlp = all_pn.nlp
+            nlp = controller.nlp
             angular_momentum_cx = nlp.mx_to_cx(
-                "angular_momentum", nlp.model.angular_momentum, nlp.states["q"], nlp.states["qdot"]
+                "angular_momentum",
+                nlp.model.angular_momentum,
+                nlp.states[0]["q"],
+                nlp.states[0]["qdot"],  # TODO: [0] to [node_index]
             )
             return angular_momentum_cx
 
         @staticmethod
-        def minimize_linear_momentum(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
+        def minimize_linear_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
             """
             Adds the objective that the linear momentum of the model in the global reference frame should be minimized.
             If no axis is specified, the three components of the linear momentum are minimized.
@@ -491,18 +535,21 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            axes: Union[tuple, list]
+            axes: tuple | list
                 The axes to project on. Default is all axes
             """
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            nlp = all_pn.nlp
+            nlp = controller.nlp
             com_velocity = nlp.mx_to_cx(
-                "com_velocity", nlp.model.center_of_mass_velocity, nlp.states["q"], nlp.states["qdot"]
+                "com_velocity",
+                nlp.model.center_of_mass_velocity,
+                nlp.states[0]["q"],
+                nlp.states[0]["qdot"],  # TODO: [0] to [node_index]
             )
             if isinstance(com_velocity, SX):
                 mass = Function("mass", [], [nlp.model.mass]).expand()
@@ -514,7 +561,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_contact_forces(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None
+            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
         ):
             """
             Minimize the contact forces computed from dynamics with contact
@@ -525,26 +572,28 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            contact_index: Union[tuple, list]
+            contact_index: tuple | list
                 The index of contact to minimize, must be an int or a list.
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            nlp = all_pn.nlp
+            nlp = controller.nlp
             if nlp.contact_forces_func is None:
                 raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            contact_force = nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+            contact_force = nlp.contact_forces_func(
+                nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start
+            )  # TODO: [0] to [node_index]
             return contact_force
 
         @staticmethod
         def minimize_soft_contact_forces(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None
+            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
         ):
             """
             Minimize the soft contact forces computed from dynamics with contact
@@ -555,14 +604,14 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            contact_index: Union[tuple, list]
+            contact_index: tuple | list
                 The index of contact to minimize, must be an int or a list.
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            nlp = all_pn.nlp
+            nlp = controller.nlp
             if nlp.soft_contact_forces_func is None:
                 raise RuntimeError("minimize_contact_forces requires a soft contact dynamics")
 
@@ -574,12 +623,14 @@ class PenaltyFunctionAbstract:
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
-            soft_contact_force = nlp.soft_contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+            soft_contact_force = nlp.soft_contact_forces_func(
+                nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start
+            )  # TODO: [0] to [node_index]
             return soft_contact_force[force_idx]
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, segment: Union[int, str], rt: int
+            penalty: PenaltyOption, controller: PenaltyController, segment: int | str, rt: int
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -589,9 +640,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
-            segment: Union[int, str]
+            segment: int | str
                 The name or index of the segment
             rt: int
                 The index of the RT in the bioMod
@@ -600,7 +651,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            nlp = all_pn.nlp
+            nlp = controller.nlp
             segment_index = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             if not isinstance(nlp.model, BiorbdModel):
@@ -608,19 +659,23 @@ class PenaltyFunctionAbstract:
                     "The track_segment_with_custom_rt penalty can only be called with a BiorbdModel"
                 )
             model: BiorbdModel = nlp.model
-            r_seg_transposed = model.model.globalJCS(nlp.states["q"].mx, segment_index).rot().transpose()
-            r_rt = model.model.RT(nlp.states["q"].mx, rt).rot()
+            r_seg_transposed = (
+                model.model.globalJCS(nlp.states[0]["q"].mx, segment_index).rot().transpose()
+            )  # TODO: [0] to [node_index]
+            r_rt = model.model.RT(nlp.states[0]["q"].mx, rt).rot()  # TODO: [0] to [node_index]
             angles_diff = biorbd.Rotation.toEulerAngles(r_seg_transposed * r_rt, "zyx").to_mx()
 
-            angle_objective = nlp.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
+            angle_objective = nlp.mx_to_cx(
+                f"track_segment", angles_diff, nlp.states[0]["q"]
+            )  # TODO: [0] to [node_index]
             return angle_objective
 
         @staticmethod
         def track_marker_with_segment_axis(
             penalty: PenaltyOption,
-            all_pn: PenaltyNodeList,
-            marker: Union[int, str],
-            segment: Union[int, str],
+            controller: PenaltyController,
+            marker: int | str,
+            segment: int | str,
             axis: Axis,
         ):
             """
@@ -631,7 +686,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             marker: int
                 Name or index of the marker to be tracked
@@ -646,13 +701,13 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            nlp = all_pn.nlp
+            nlp = controller.nlp
             marker_idx = nlp.model.marker_index(marker) if isinstance(marker, str) else marker
             segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
 
             # Get the marker in rt reference frame
-            marker = nlp.model.marker(nlp.states["q"].mx, marker_idx, segment_idx)
-            marker_objective = nlp.mx_to_cx("marker", marker, nlp.states["q"])
+            marker = nlp.model.marker(nlp.states[0]["q"].mx, marker_idx, segment_idx)  # TODO: [0] to [node_index]
+            marker_objective = nlp.mx_to_cx("marker", marker, nlp.states[0]["q"])  # TODO: [0] to [node_index]
 
             # To align an axis, the other must be equal to 0
             if penalty.rows is not None:
@@ -662,30 +717,225 @@ class PenaltyFunctionAbstract:
             return marker_objective
 
         @staticmethod
-        def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list]):
+        def minimize_segment_rotation(
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            segment: int | str,
+            axes: list | tuple = None,
+        ):
+            """
+            Track the orientation of a segment in the global with the sequence XYZ.
+            By default, this function is quadratic, meaning that it minimizes towards the target.
 
-            nlp = all_pn.nlp
-            if nlp.control_type == ControlType.CONSTANT:
-                u = nlp.controls.cx
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            segment: int
+                Name or index of the segment to align with the marker
+            axes: list | tuple
+                The axis that the JCS rotation should be tracked
+            """
+            from ..interfaces.biorbd_model import BiorbdModel
+
+            if penalty.derivative == True:
+                raise RuntimeWarning(
+                    "To minimize the velocity of the segment rotation, it would be safer (Euler angles related problems) to use MINIMIZE_SEGMENT_ANGLUAR_VELOCITY instead."
+                )
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = controller.nlp
+            segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
+
+            if not isinstance(nlp.model, BiorbdModel):
+                raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
+            model: BiorbdModel = nlp.model
+            jcs_segment = model.model.globalJCS(nlp.states[0]["q"].mx, segment_idx).rot()  # TODO: [0] to [node_index]
+            angles_segment = biorbd.Rotation.toEulerAngles(jcs_segment, "xyz").to_mx()
+
+            if axes is None:
+                axes = [Axis.X, Axis.Y, Axis.Z]
+            else:
+                for ax in axes:
+                    if not isinstance(ax, Axis):
+                        raise RuntimeError("axes must be a list of bioptim.Axis")
+
+            segment_rotation_objective = nlp.mx_to_cx(
+                "segment_rotation", angles_segment[axes], nlp.states[0]["q"]
+            )  # TODO: [0] to [node_index]
+
+            return segment_rotation_objective
+
+        @staticmethod
+        def minimize_segment_velocity(
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            segment: int | str,
+            axes: list | tuple = None,
+        ):
+            """
+            Track the orientation of a segment.
+            By default, this function is quadratic, meaning that it minimizes towards the target.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            segment: int
+                Name or index of the segment to align with the marker
+            axes: list | tuple
+                The axis that the JCS rotation should be tracked
+            """
+            from ..interfaces.biorbd_model import BiorbdModel
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = controller.nlp
+            segment_idx = nlp.model.segment_index(segment) if isinstance(segment, str) else segment
+
+            if not isinstance(nlp.model, BiorbdModel):
+                raise NotImplementedError(
+                    "The minimize_segments_velocity penalty can only be called with a BiorbdModel"
+                )
+            model: BiorbdModel = nlp.model
+            segment_angular_velocity = model.segment_angular_velocity(
+                nlp.states[0]["q"].mx, nlp.states[0]["qdot"].mx, segment_idx  # TODO: [0] to [node_index]
+            )
+
+            if axes is None:
+                axes = [Axis.X, Axis.Y, Axis.Z]
+            else:
+                for ax in axes:
+                    if not isinstance(ax, Axis):
+                        raise RuntimeError("axes must be a list of bioptim.Axis")
+
+            segment_velocity_objective = nlp.mx_to_cx(
+                "segment_velocity",
+                segment_angular_velocity[axes],
+                nlp.states[0]["q"],
+                nlp.states[0]["qdot"],  # TODO: [0] to [node_index]
+            )
+
+            return segment_velocity_objective
+
+        @staticmethod
+        def track_vector_orientations_from_markers(
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            vector_0_marker_0: int | str,
+            vector_0_marker_1: int | str,
+            vector_1_marker_0: int | str,
+            vector_1_marker_1: int | str,
+        ):
+            """
+            Aligns two vectors together.
+            The first vector is defined by vector_0_marker_1 - vector_0_marker_0.
+            The second vector is defined by vector_1_marker_1 - vector_1_marker_0.
+            Note that is minimizes the angle between the two vectors, thus it is not possible ti specify an axis.
+            By default, this function is quadratic, meaning that it minimizes the angle between the two vectors.
+            WARNING: please be careful as there is a discontinuity when the two vectors are orthogonal.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            vector_0_marker_0: int | str
+                Name or index of the first marker of the first vector
+            vector_0_marker_1: int | str
+                Name or index of the second marker of the first vector
+            vector_1_marker_0: int | str
+                Name or index of the first marker of the second vector
+            vector_1_marker_1: int | str
+                Name or index of the second marker of the second vector
+            """
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            nlp = controller.nlp
+            vector_0_marker_0_idx = (
+                nlp.model.marker_index(vector_0_marker_0) if isinstance(vector_0_marker_0, str) else vector_0_marker_0
+            )
+            vector_0_marker_1_idx = (
+                nlp.model.marker_index(vector_0_marker_1) if isinstance(vector_0_marker_1, str) else vector_0_marker_1
+            )
+            vector_1_marker_0_idx = (
+                nlp.model.marker_index(vector_1_marker_0) if isinstance(vector_1_marker_0, str) else vector_1_marker_0
+            )
+            vector_1_marker_1_idx = (
+                nlp.model.marker_index(vector_1_marker_1) if isinstance(vector_1_marker_1, str) else vector_1_marker_1
+            )
+
+            vector_0_marker_0_position = nlp.model.marker(
+                nlp.states[0]["q"].mx, vector_0_marker_0_idx
+            )  # TODO: [0] to [node_index]
+            vector_0_marker_1_position = nlp.model.marker(
+                nlp.states[0]["q"].mx, vector_0_marker_1_idx
+            )  # TODO: [0] to [node_index]
+            vector_1_marker_0_position = nlp.model.marker(
+                nlp.states[0]["q"].mx, vector_1_marker_0_idx
+            )  # TODO: [0] to [node_index]
+            vector_1_marker_1_position = nlp.model.marker(
+                nlp.states[0]["q"].mx, vector_1_marker_1_idx
+            )  # TODO: [0] to [node_index]
+
+            vector_0 = vector_0_marker_1_position - vector_0_marker_0_position
+            vector_1 = vector_1_marker_1_position - vector_1_marker_0_position
+            cross_prod = cross(vector_0, vector_1)
+            cross_prod_norm = sqrt(cross_prod[0] ** 2 + cross_prod[1] ** 2 + cross_prod[2] ** 2)
+            out = atan2(cross_prod_norm, dot(vector_0, vector_1))
+
+            return nlp.mx_to_cx("vector_orientations_difference", out, nlp.states[0]["q"])  # TODO: [0] to [node_index]
+
+        @staticmethod
+        def continuity(penalty: PenaltyOption, controller: PenaltyController | list):
+            nlp = controller.nlp
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+                u = nlp.controls[0].cx_start  # TODO: [0] to [node_index]
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                u = horzcat(nlp.controls.cx, nlp.controls.cx_end)
+                u = horzcat(nlp.controls[0].cx_start, nlp.controls[0].cx_end)  # TODO: For cx_end take the previous node
             else:
                 raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
 
             if isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
                 raise RuntimeError("continuity should be called one node at a time")
 
-            penalty.expand = all_pn.nlp.dynamics_type.expand
+            penalty.expand = controller.nlp.dynamics_type.expand
 
-            continuity = nlp.states.cx_end
+            if len(penalty.node_idx) > 1 and not controller.ocp.assume_phase_dynamics:
+                raise NotImplementedError(
+                    f"Length of node index superior to 1 is not implemented yet,"
+                    f" actual length {len(penalty.node_idx[0])} "
+                )
+
+            node_idx = penalty.node_idx[0] if len(penalty.node_idx) == 1 else 0
+
+            continuity = nlp.states[0].cx_end  # TODO: [0] to [node_index]
             if nlp.ode_solver.is_direct_collocation:
-                cx = horzcat(*([nlp.states.cx] + nlp.states.cx_intermediates_list))
-                continuity -= nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
-                continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
+                cx = horzcat(
+                    *([nlp.states[0].cx_start] + nlp.states[0].cx_intermediates_list)
+                )  # TODO: [0] to [node_index]
+                continuity -= nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx_start)[
+                    "xf"
+                ]  # TODO: [0] to [node_index]
+                continuity = vertcat(
+                    continuity,
+                    nlp.dynamics[node_idx](x0=cx, p=u, params=nlp.parameters.cx_start)[
+                        "defects"
+                    ],  # TODO: [0] to [node_index]
+                )
                 penalty.integrate = True
 
             else:
-                continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+                continuity -= nlp.dynamics[node_idx](x0=nlp.states[0].cx_start, p=u, params=nlp.parameters.cx_start)[
+                    "xf"
+                ]  # TODO: [0] to [node_index]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
@@ -693,7 +943,7 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
-        def custom(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], **parameters: Any):
+        def custom(penalty: PenaltyOption, controller: PenaltyController | list, **parameters: Any):
             """
             A user defined penalty function
 
@@ -701,7 +951,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             parameters: dict
                 Any parameters that should be pass to the custom function
@@ -729,7 +979,7 @@ class PenaltyFunctionAbstract:
                 if keyword in invalid_keywords:
                     raise TypeError(f"{keyword} is a reserved word and cannot be used in a custom function signature")
 
-            val = penalty.custom_function(all_pn, **parameters)
+            val = penalty.custom_function(controller, **parameters)
             if isinstance(val, (list, tuple)):
                 if (hasattr(penalty, "min_bound") and penalty.min_bound is not None) or (
                     hasattr(penalty, "max_bound") and penalty.max_bound is not None
@@ -759,7 +1009,7 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def set_idx_columns(
-        penalty: PenaltyOption, all_pn: PenaltyNodeList, index: Union[str, int, list, tuple], _type: str
+        penalty: PenaltyOption, controller: PenaltyController, index: str | int | list | tuple, _type: str
     ):
         """
         Simple penalty.cols setter for marker index and names
@@ -768,9 +1018,9 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        all_pn: PenaltyNodeList
+        controller: PenaltyController
             The penalty node elements
-        index: Union[str, int, list, tuple]
+        index: str | int | list | tuple
             The marker to index
         _type: str
             The type of penalty (for raise error message purpose)
@@ -784,11 +1034,11 @@ class PenaltyFunctionAbstract:
             # Convert to int if it is str
             if _type == "marker":
                 penalty.cols = [
-                    cols if isinstance(cols, int) else all_pn.nlp.model.marker_index(cols) for cols in penalty.cols
+                    cols if isinstance(cols, int) else controller.nlp.model.marker_index(cols) for cols in penalty.cols
                 ]
 
     @staticmethod
-    def set_axes_rows(penalty: PenaltyOption, axes: Union[list, tuple]):
+    def set_axes_rows(penalty: PenaltyOption, axes: list | tuple):
         """
         Simple penalty.cols setter for marker index and names
 
@@ -796,7 +1046,7 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        axes: Union[list, tuple]
+        axes: list | tuple
             The marker to index
         """
 
@@ -805,7 +1055,7 @@ class PenaltyFunctionAbstract:
         penalty.rows = axes if axes is not None else penalty.rows
 
     @staticmethod
-    def _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0):
+    def _check_idx(name: str, elements: list | tuple | int, max_n_elements: int = inf, min_n_elements: int = 0):
         """
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay
@@ -813,7 +1063,7 @@ class PenaltyFunctionAbstract:
         Parameters
         name: str
             Name of the element
-        elements: Union[list, tuple, int]
+        elements: list | tuple | int
             Index of the slicing of the array variable
         max_n_elements: int
             The maximal shape of the element
@@ -833,7 +1083,7 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
-    def validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyNodeList):
+    def validate_penalty_time_index(penalty: PenaltyOption, controller: PenaltyController):
         """
         Check for any nonsense in the requested times for the penalty. Raises an error if so
 
@@ -841,7 +1091,7 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        all_pn: PenaltyNodeList
+        controller: PenaltyController
             The penalty node elements
         """
 
@@ -853,7 +1103,7 @@ class PenaltyFunctionAbstract:
             or func == PenaltyFunctionAbstract.Functions.proportional_controls
             or func == PenaltyFunctionAbstract.Functions.minimize_qddot
         ):
-            if node == Node.END or (isinstance(node, int) and node >= all_pn.nlp.ns):
+            if node == Node.END or (isinstance(node, int) and node >= controller.nlp.ns):
                 raise RuntimeError("No control u at last node")
 
     @staticmethod

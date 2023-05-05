@@ -4,7 +4,8 @@ movement. The initial and final position of the box are dictated, the rest is fu
 to show how one can use the tracking function to track a marker with a body segment
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     Node,
@@ -17,7 +18,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -82,7 +82,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
 
     for i in range(1, 8):
         if i != 3:
@@ -123,6 +123,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
+        assume_phase_dynamics=True,
     )
 
 
@@ -139,7 +140,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

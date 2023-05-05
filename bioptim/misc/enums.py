@@ -168,10 +168,20 @@ class DefectType(Enum):
 
 
 class CXStep(Enum):
-    CX_START = "cx_start"
     CX_END = "cx_end"
+    CX_START = "cx_start"
 
 
 class MagnitudeType(Enum):
     RELATIVE = "relative"
     ABSOLUTE = "absolute"
+
+
+class MultiCyclicCycleSolutions(Enum):
+    """
+    Selection of extra solution for multi cyclic receding horizon optimization
+    """
+
+    NONE = "none"
+    FIRST_CYCLES = "first_cycles"
+    ALL_CYCLES = "all_cycles"

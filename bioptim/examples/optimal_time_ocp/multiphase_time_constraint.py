@@ -4,7 +4,8 @@ phase with one of its corner. The time is free for each phase
 It is designed to show how one can define a multi-phase ocp problem with free time.
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     Solver,
@@ -16,7 +17,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Node,
@@ -102,10 +102,10 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 0
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 0
     if n_phases == 3:
-        x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 1
-        x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))  # Phase 2
+        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 1
+        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 2
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -148,6 +148,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -163,7 +164,7 @@ def main():
     ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     param = sol.parameters

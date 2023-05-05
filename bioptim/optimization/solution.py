@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 from copy import deepcopy
 
 import numpy as np
@@ -81,23 +81,23 @@ class Solution:
     copy(self, skip_data: bool = False) -> Any
         Create a deepcopy of the Solution
     @property
-    states(self) -> Union[list, dict]
+    states(self) -> list | dict
         Returns the state scaled and unscaled in list if more than one phases, otherwise it returns the only dict
     @property
-    states_scaled_no_intermediate(self) -> Union[list, dict]
+    states_scaled_no_intermediate(self) -> list | dict
         Returns the state scaled in list if more than one phases, otherwise it returns the only dict
         and removes the intermediate states scaled if Collocation solver is used
     @property
-    states_no_intermediate(self) -> Union[list, dict]
+    states_no_intermediate(self) -> list | dict
         Returns the state unscaled in list if more than one phases, otherwise it returns the only dict
         and removes the intermediate states unscaled if Collocation solver is used
     @property
-    controls(self) -> Union[list, dict]
+    controls(self) -> list | dict
         Returns the controls scaled and unscaled in list if more than one phases, otherwise it returns the only dict
     integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keep_intermediate_points: bool = True,
               merge_phases: bool = False, continuous: bool = True) -> Solution
         Integrate the states unscaled
-    interpolate(self, n_frames: Union[int, list, tuple]) -> Solution
+    interpolate(self, n_frames: int | list | tuple) -> Solution
         Interpolate the states unscaled
     merge_phases(self) -> Solution
         Get a data structure where all the phases are merged into one
@@ -108,7 +108,7 @@ class Solution:
     graphs(self, automatically_organize: bool, show_bounds: bool,
            show_now: bool, shooting_type: Shooting)
         Show the graphs of the simulation
-    animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]
+    animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> None | list
         Animate the simulation
     print(self, cost_type: CostType = CostType.ALL)
         Print the objective functions and/or constraints to the console
@@ -132,12 +132,12 @@ class Solution:
         Simplified version of OptimizationVariableList (compatible with pickle)
         """
 
-        def __init__(self, other: Union[OptimizationVariableList]):
+        def __init__(self, other: OptimizationVariableList):
             self.elements = []
             if isinstance(other, Solution.SimplifiedOptimizationVariableList):
                 self.shape = other.shape
             else:
-                self.shape = other.cx.shape[0]
+                self.shape = other.cx_start.shape[0]
             for elt in other:
                 self.append(other[elt])
 
@@ -269,13 +269,13 @@ class Solution:
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
 
-    def __init__(self, ocp, sol: Union[dict, list, tuple, np.ndarray, DM, None]):
+    def __init__(self, ocp, sol: dict | list | tuple | np.ndarray | DM | None):
         """
         Parameters
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp to strip
-        sol: Union[dict, list, tuple, np.ndarray, DM]
+        sol: dict | list | tuple | np.ndarray | DM | None
             The values of a solution
         """
 
@@ -383,7 +383,9 @@ class Solution:
             sol_states, sol_controls = _sol[0], _sol[1]
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states["scaled"].shape, ns, "states")
+                s.init.check_and_adjust_dimensions(
+                    self.ocp.nlp[p].states.scaled[0].shape, ns, "states"
+                )  # TODO: [0] to [node_index]
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
             for p, s in enumerate(sol_controls):
@@ -394,7 +396,9 @@ class Solution:
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls["scaled"].shape, self.ns[p], "controls")
+                s.init.check_and_adjust_dimensions(
+                    self.ocp.nlp[p].controls.scaled[0].shape, self.ns[p], "controls"
+                )  # TODO: [0] to [node_index]
                 for i in range(self.ns[p] + off):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
@@ -409,14 +413,15 @@ class Solution:
             )
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+            self._time_vector = self._generate_time()
 
-        def init_from_vector(_sol: Union[np.ndarray, DM]):
+        def init_from_vector(_sol: np.ndarray | DM):
             """
             Initialize all the attributes from a vector of solution
 
             Parameters
             ----------
-            _sol: Union[np.ndarray, DM]
+            _sol: np.ndarray | DM
                 The solution in vector format
             """
 
@@ -528,7 +533,7 @@ class Solution:
         return new
 
     @property
-    def states(self) -> Union[list, dict]:
+    def states(self) -> list | dict:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
 
@@ -551,7 +556,7 @@ class Solution:
 
         return self._states["scaled"] if len(self._states["scaled"]) > 1 else self._states["scaled"][0]
 
-    def _no_intermediate(self, states) -> Union[list, dict]:
+    def _no_intermediate(self, states) -> list | dict:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
         it removes the intermediate states in the case COLLOCATION Solver is used
@@ -621,7 +626,7 @@ class Solution:
             return states_no_intermediate[0] if len(states_no_intermediate) == 1 else states_no_intermediate
 
     @property
-    def states_scaled_no_intermediate(self) -> Union[list, dict]:
+    def states_scaled_no_intermediate(self) -> list | dict:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
         it removes the intermediate states in the case COLLOCATION Solver is used
@@ -633,7 +638,7 @@ class Solution:
         return self._no_intermediate(self._states["scaled"])
 
     @property
-    def states_no_intermediate(self) -> Union[list, dict]:
+    def states_no_intermediate(self) -> list | dict:
         """
         Returns the state in list if more than one phases, otherwise it returns the only dict
         it removes the intermediate states in the case COLLOCATION Solver is used
@@ -645,7 +650,7 @@ class Solution:
         return self._no_intermediate(self._states["unscaled"])
 
     @property
-    def controls(self) -> Union[list, dict]:
+    def controls(self) -> list | dict:
         """
         Returns the controls in list if more than one phases, otherwise it returns the only dict
 
@@ -664,7 +669,7 @@ class Solution:
         return self._controls["unscaled"] if len(self._controls["unscaled"]) > 1 else self._controls["unscaled"][0]
 
     @property
-    def controls_scaled(self) -> Union[list, dict]:
+    def controls_scaled(self) -> list | dict:
         """
         Returns the controls in list if more than one phases, otherwise it returns the only dict
 
@@ -676,7 +681,7 @@ class Solution:
         return self._controls["scaled"] if len(self._controls["scaled"]) > 1 else self._controls["scaled"][0]
 
     @property
-    def time(self) -> Union[list, dict]:
+    def time(self) -> list | dict:
         """
         Returns the time vector in list if more than one phases, otherwise it returns the only dict
 
@@ -805,7 +810,7 @@ class Solution:
         keep_intermediate_points: bool = None,
         merge_phases: bool = False,
         shooting_type: Shooting = None,
-    ) -> Union[np.ndarray, list[np.ndarray]]:
+    ) -> np.ndarray | list[np.ndarray]:
         """
         Generate time integration vector
 
@@ -862,7 +867,7 @@ class Solution:
             if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
                 flat_time += [nlp.ns * dt_ns]
 
-            time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time))
+            time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time, dtype=object))
 
         if merge_phases:
             return concatenate_optimization_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
@@ -1013,7 +1018,11 @@ class Solution:
             controls_phase_idx = self.ocp.nlp[p].use_controls_from_phase_idx
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
-            u = self._controls["unscaled"][controls_phase_idx]["all"]
+            u = (
+                np.array([])
+                if nlp.control_type == ControlType.NONE
+                else self._controls["unscaled"][controls_phase_idx]["all"]
+            )
             if integrator != SolutionIntegrator.OCP:
                 out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
@@ -1049,20 +1058,20 @@ class Solution:
                 )
 
             # Dispatch the integrated values to all the keys
-            for key in nlp.states:
+            for key in nlp.states[0]:  # TODO: [0] to [node_index]
                 out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][
-                    nlp.states[key].index, :
+                    nlp.states[0][key].index, :  # TODO: [0] to [node_index]
                 ]
 
         return out
 
-    def interpolate(self, n_frames: Union[int, list, tuple]) -> Any:
+    def interpolate(self, n_frames: int | list | tuple) -> Any:
         """
         Interpolate the states
 
         Parameters
         ----------
-        n_frames: Union[int, list, tuple]
+        n_frames: int | list | tuple
             If the value is an int, the Solution returns merges the phases,
             otherwise, it interpolates them independently
 
@@ -1109,7 +1118,6 @@ class Solution:
             t_phase = t_all[p]
             t_phase, time_index = np.unique(t_phase, return_index=True)
             t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
-
             x_interpolate = np.ndarray((n_elements, n_frames[p]))
             for j in range(n_elements):
                 s = sci_interp.splrep(t_phase, x_phase[j, time_index], k=1)
@@ -1179,7 +1187,7 @@ class Solution:
                 deepcopy(self.ns),
             )
 
-        def _merge(data: list, is_control: bool) -> Union[list, dict]:
+        def _merge(data: list, is_control: bool) -> list | dict:
             """
             Merge the phases of a states or controls data structure
 
@@ -1256,7 +1264,7 @@ class Solution:
         """
 
         for p, nlp in enumerate(self.ocp.nlp):
-            if nlp.control_type == ControlType.CONSTANT:
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 for key in self._controls["scaled"][p]:
                     self._controls["scaled"][p][key] = np.concatenate(
                         (
@@ -1312,7 +1320,7 @@ class Solution:
 
     def animate(
         self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any
-    ) -> Union[None, list]:
+    ) -> None | list:
         """
         Animate the simulation
 
@@ -1340,7 +1348,7 @@ class Solution:
 
         from ..interfaces.biorbd_model import BiorbdModel
 
-        check_version(bioviz, "2.1.0", "2.3.0")
+        check_version(bioviz, "2.3.0", "2.4.0")
 
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
@@ -1358,7 +1366,6 @@ class Solution:
 
         all_bioviz = []
         for idx_phase, data in enumerate(states):
-
             if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
                 raise NotImplementedError("Animation is only implemented for biorbd models")
 
@@ -1402,12 +1409,12 @@ class Solution:
         p = self.parameters["all"]
 
         dt = (
-            Function("time", [MX.sym("time", self.parameters["time"].shape[0])], [penalty.dt])(self.parameters["time"])
+            Function("time", [nlp.parameters.cx_start], [penalty.dt])(self.parameters["time"])
             if "time" in self.parameters
             else penalty.dt
         )
 
-        if penalty.multinode_constraint:
+        if penalty.binode_constraint or penalty.allnode_constraint:
             penalty.node_idx = [penalty.node_idx]
 
         for idx in penalty.node_idx:
@@ -1423,20 +1430,24 @@ class Solution:
                             self._states["scaled"][phase_post]["all"][:, 0],
                         )
                     )
-                    u = np.concatenate(
-                        (
-                            self._controls["scaled"][phase_idx]["all"][:, -1],
-                            self._controls["scaled"][phase_post]["all"][:, 0],
+                    u = (
+                        []
+                        if nlp.control_type == ControlType.NONE
+                        else np.concatenate(
+                            (
+                                self._controls["scaled"][phase_idx]["all"][:, -1],
+                                self._controls["scaled"][phase_post]["all"][:, 0],
+                            )
                         )
                     )
-                elif penalty.multinode_constraint:
-
+                elif penalty.binode_constraint:
                     x = np.concatenate(
                         (
                             self._states["scaled"][penalty.phase_first_idx]["all"][:, idx[0]],
                             self._states["scaled"][penalty.phase_second_idx]["all"][:, idx[1]],
                         )
                     )
+
                     # Make an exception to the fact that U is not available for the last node
                     mod_u0 = 1 if penalty.first_node == Node.END else 0
                     mod_u1 = 1 if penalty.second_node == Node.END else 0
@@ -1446,6 +1457,13 @@ class Solution:
                             self._controls["scaled"][penalty.phase_second_idx]["all"][:, idx[1] - mod_u1],
                         )
                     )
+
+                    # elif penalty.allnode_constraint:
+                    #     x = np.concatenate(
+                    #         (
+                    #             self._states["scaled"][penalty.phase_idx]["all"][:, :],
+                    #         )
+                    #     )
 
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
@@ -1470,12 +1488,16 @@ class Solution:
                         x = (
                             self.states_no_intermediate["all"][:, col_x_idx]
                             if len(self.phase_time) - 1 == 1
-                            else self.states_no_intermediate[phase_idx]["all"][:, col_x_idx]
+                            else self.states_no_intermediate[0][phase_idx]["all"][:, col_x_idx]
                         )
                     else:
                         x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]
 
-                    u = self._controls["scaled"][phase_idx]["all"][:, col_u_idx]
+                    u = (
+                        []
+                        if nlp.control_type == ControlType.NONE
+                        else self._controls["scaled"][phase_idx]["all"][:, col_u_idx]
+                    )
                     if penalty.target is None:
                         target = []
                     elif (
@@ -1539,6 +1561,11 @@ class Solution:
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
 
+                if penalty.node != Node.TRANSITION:
+                    node_name = f"{penalty.node[0]}" if isinstance(penalty.node[0], int) else penalty.node[0].name
+                else:
+                    node_name = penalty.node.name
+
                 self.detailed_cost += [
                     {
                         "name": penalty.type.__str__(),
@@ -1552,7 +1579,7 @@ class Solution:
                         "integration_rule": penalty.integration_rule.name,
                         "weight": penalty.weight,
                         "expand": penalty.expand,
-                        "node": penalty.node[0].name if penalty.node != Node.TRANSITION else penalty.node.name,
+                        "node": node_name,
                     }
                 ]
                 if print_only_weighted:
@@ -1656,11 +1683,11 @@ def concatenate_optimization_variables_dict(
 
 
 def concatenate_optimization_variables(
-    variable: Union[list[np.ndarray], np.ndarray],
+    variable: list[np.ndarray] | np.ndarray,
     continuous_phase: bool = True,
     continuous_interval: bool = True,
     merge_phases: bool = True,
-) -> Union[np.ndarray, list[dict[np.ndarray]]]:
+) -> np.ndarray | list[dict[np.ndarray]]:
     """
     This function concatenates the decision variables of the phases of the system
     into a single array, omitting the last element of each phase except for the last one.
@@ -1693,7 +1720,6 @@ def concatenate_optimization_variables(
             else:
                 return z_final
         else:
-
             final_tuple = []
             for i, y in enumerate(variable):
                 if i < (len(variable) - 1) and continuous_phase:

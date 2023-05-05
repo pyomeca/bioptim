@@ -1,4 +1,4 @@
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 
 class OptionGeneric:
@@ -260,7 +260,7 @@ class OptionDict(OptionList):
             self.options.append({})
         return
 
-    def __getitem__(self, item: Union[int, str, list, tuple]) -> Union[dict, OptionGeneric]:
+    def __getitem__(self, item: int | str | list | tuple) -> dict | OptionGeneric:
         if isinstance(item, int):
             return self.options[item]
 

@@ -7,10 +7,9 @@ sufficient.
 More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE_DRIVEN using a custom dynamics
 """
 
-from typing import Union
+import platform
 
 from casadi import MX, SX, vertcat
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -24,7 +23,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     OdeSolver,
     NonLinearProgram,
@@ -34,9 +32,9 @@ from bioptim import (
 
 
 def custom_dynamic(
-    states: Union[MX, SX],
-    controls: Union[MX, SX],
-    parameters: Union[MX, SX],
+    states: MX | SX,
+    controls: MX | SX,
+    parameters: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
 ) -> DynamicsEvaluation:
@@ -45,11 +43,11 @@ def custom_dynamic(
 
     Parameters
     ----------
-    states: Union[MX, SX]
+    states: MX | SX
         The state of the system
-    controls: Union[MX, SX]
+    controls: MX | SX
         The controls of the system
-    parameters: Union[MX, SX]
+    parameters: MX | SX
         The parameters acting on the system
     nlp: NonLinearProgram
         A reference to the phase
@@ -58,12 +56,12 @@ def custom_dynamic(
 
     Returns
     -------
-    The derivative of the states in the tuple[Union[MX, SX]] format
+    The derivative of the states in the tuple[MX | SX] format
     """
 
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+    q = DynamicsFunctions.get(nlp.states[0]["q"], states)  # TODO : [0] to [node_index]
+    qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)  # TODO : [0] to [node_index]
+    tau = DynamicsFunctions.get(nlp.controls[0]["tau"], controls)  # TODO : [0] to [node_index]
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
@@ -148,7 +146,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -176,6 +174,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
+        assume_phase_dynamics=True,
     )
 
 
@@ -188,7 +187,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate()

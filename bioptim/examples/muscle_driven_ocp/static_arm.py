@@ -6,7 +6,8 @@ Please note that using show_meshes=True in the animator may be long due to the c
 mesh points.
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -15,7 +16,6 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -63,11 +63,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0][:, 0] = (0.07, 1.4, 0, 0)
 
     # Initial guess
@@ -98,6 +98,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -109,7 +110,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=0.5, n_shooting=50, weight=1000)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.animate(show_meshes=True)

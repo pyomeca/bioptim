@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Callable
 
 import numpy as np
 from casadi import MX, SX, vertcat
@@ -9,11 +9,11 @@ from ..misc.enums import CXStep
 
 
 class VariableScaling(OptionGeneric):
-    def __init__(self, key: str, scaling: Union[np.ndarray, list] = None, **kwargs):
+    def __init__(self, key: str, scaling: np.ndarray | list = None, **kwargs):
         """
         Parameters
         ----------
-        scaling: Union[np.ndarray, list]
+        scaling: np.ndarray | list
             The scaling of the variables
         """
 
@@ -69,7 +69,7 @@ class VariableScalingList(OptionDict):
 
     Methods
     -------
-    add(self, scaling: Union[np.ndarray, list] = None)
+    add(self, scaling: np.ndarray | list = None)
         Add a new variable scaling to the list
     __getitem__(self, item) -> Bounds
         Get the ith option of the list
@@ -83,7 +83,7 @@ class VariableScalingList(OptionDict):
     def add(
         self,
         key: str = None,
-        scaling: Union[np.ndarray, list, VariableScaling] = None,
+        scaling: np.ndarray | list | VariableScaling = None,
         phase: int = -1,
     ):
         """
@@ -91,9 +91,9 @@ class VariableScalingList(OptionDict):
 
         Parameters
         ----------
-        min_bound: Union[PathCondition, np.ndarray, list, tuple]
+        min_bound: PathCondition | np.ndarray | list | tuple
             The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
-        max_bound: [PathCondition, np.ndarray, list, tuple]
+        max_bound: PathCondition | np.ndarray | list | tuple
             The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
         bounds: Bounds
             Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
@@ -136,13 +136,11 @@ class VariableScalingList(OptionDict):
 
     @staticmethod
     def scaling_fill_phases(ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
-
         x_scaling_out = VariableScalingList()
         xdot_scaling_out = VariableScalingList()
         u_scaling_out = VariableScalingList()
 
         for phase in range(ocp.n_phases):
-
             if "all" not in x_scaling.keys():
                 nx = x_init[phase].shape[0]
                 if len(x_scaling.keys()) > 0:
@@ -244,7 +242,7 @@ class OptimizationVariable:
     -------
     __len__(self)
         The len of the MX reduced
-    cx(self)
+    cx_start(self)
         The CX of the variable (starting point)
     cx_end(self)
         The CX of the variable (ending point)
@@ -254,7 +252,7 @@ class OptimizationVariable:
         self,
         name: str,
         mx: MX,
-        cx: Union[list, None],
+        cx_start: list | None,
         index: [range, list],
         mapping: BiMapping = None,
         parent_list=None,
@@ -273,7 +271,7 @@ class OptimizationVariable:
         """
         self.name: str = name
         self.mx: MX = mx
-        self.original_cx: list = cx
+        self.original_cx: list = cx_start
         self.index: [range, list] = index
         self.mapping: BiMapping = mapping
         self.parent_list: OptimizationVariableList = parent_list
@@ -289,7 +287,7 @@ class OptimizationVariable:
         return len(self.index)
 
     @property
-    def cx(self):
+    def cx_start(self):
         """
         The CX of the variable
         """
@@ -299,16 +297,20 @@ class OptimizationVariable:
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
                 "Typically 'all' cannot be used"
             )
-        return self.parent_list.cx[self.index, :]
+        return self.parent_list.cx_start[self.index, :]  # TODO: ADD [self.index, :]
 
     @property
     def cx_end(self):
+        """
+        The CX of the variable
+        """
+
         if self.parent_list is None:
             raise RuntimeError(
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
                 "Typically 'all' cannot be used"
             )
-        return self.parent_list.cx_end[self.index, :]
+        return self.parent_list.cx_end[self.index, :]  # TODO: ADD [self.index, :]
 
 
 class OptimizationVariableList:
@@ -319,23 +321,25 @@ class OptimizationVariableList:
     ----------
     elements: list
         Each of the variable separated
-    _cx: Union[MX, SX]
+    _cx_start: MX | SX
         The symbolic MX or SX of the list (starting point)
-    _cx_end: Union[MX, SX]
+    _cx_end: MX | SX
         The symbolic MX or SX of the list (ending point)
     mx_reduced: MX
         The reduced MX to the size of _cx
+    cx_constructor: Callable
+        The casadi symbolic type used for the optimization (MX or SX)
 
     Methods
     -------
-    __getitem__(self, item: Union[int, str])
+    __getitem__(self, item: int | str)
         Get a specific variable in the list, whether by name or by index
     append(self, name: str, cx: list, mx: MX, bimapping: BiMapping)
         Add a new variable to the list
     cx(self)
-        The the cx of all elements together (starting point)
+        The cx of all elements together (starting point)
     cx_end(self)
-        The the cx of all elements together (ending point)
+        The cx of all elements together (ending point)
     mx(self)
         The MX of all variable concatenated together
     shape(self)
@@ -344,13 +348,14 @@ class OptimizationVariableList:
         The number of variables in the list
     """
 
-    def __init__(self):
+    def __init__(self, cx_constructor):
         self.elements: list = []
         self.fake_elements: list = []
-        self._cx: Union[MX, SX, np.ndarray] = np.array([])
-        self._cx_end: Union[MX, SX, np.ndarray] = np.array([])
+        self._cx_start: MX | SX | np.ndarray = np.array([])
+        self._cx_end: MX | SX | np.ndarray = np.array([])
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
+        self.cx_constructor = cx_constructor
 
     def __getitem__(self, item: int | str | list | range):
         """
@@ -358,7 +363,7 @@ class OptimizationVariableList:
 
         Parameters
         ----------
-        item: Union[int, str]
+        item: int | str
             The index or name of the element to return
 
         Returns
@@ -373,7 +378,7 @@ class OptimizationVariableList:
                 index = []
                 for elt in self.elements:
                     index.extend(list(elt.index))
-                return OptimizationVariable("all", self.mx, self.cx, index, None)
+                return OptimizationVariable("all", self.mx, self.cx_start, index, None)
 
             for elt in self.elements:
                 if item == elt.name:
@@ -397,11 +402,11 @@ class OptimizationVariableList:
 
     def get_cx(self, key, cx_type):
         if key == "all":
-            return self.cx if cx_type == CXStep.CX_START else self.cx_end
+            return self.cx_start if cx_type == CXStep.CX_START else self.cx_end
         else:
-            return self[key].cx if cx_type == CXStep.CX_START else self[key].cx_end
+            return self[key].cx_start if cx_type == CXStep.CX_START else self[key].cx_end
 
-    def append_fake(self, name: str, index: Union[MX, SX, list], mx: MX, bimapping: BiMapping):
+    def append_fake(self, name: str, index: MX | SX | list, mx: MX, bimapping: BiMapping):
         """
         Add a new variable to the fake list which add something without changing the size of the normal elements
 
@@ -409,7 +414,7 @@ class OptimizationVariableList:
         ----------
         name: str
             The name of the variable
-        index: Union[MX, SX]
+        index: MX | SX
             The SX or MX variable associated with this variable. Is interpreted as index if is_fake is true
         mx: MX
             The MX variable associated with this variable
@@ -435,16 +440,17 @@ class OptimizationVariableList:
             The Mapping of the MX against CX
         """
 
-        index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
-        self._cx = vertcat(self._cx, cx[0])
+        index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
+        self._cx_start = vertcat(self._cx_start, cx[0])
         self._cx_end = vertcat(self._cx_end, cx[-1])
+
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
                 self._cx_intermediates.append(c)
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
-        self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape))
 
+        self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
         self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, self))
 
     def append_from_scaled(
@@ -466,33 +472,34 @@ class OptimizationVariableList:
             The scaled optimization variable associated with this variable
         """
 
-        self._cx = vertcat(self._cx, cx[0])
+        self._cx_start = vertcat(self._cx_start, cx[0])
         self._cx_end = vertcat(self._cx_end, cx[-1])
+
         for i, c in enumerate(cx[1:-1]):
             if i >= len(self._cx_intermediates):
                 self._cx_intermediates.append(c)
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
-        self.mx_reduced = scaled_optimization_variable.mx_reduced
 
+        self.mx_reduced = scaled_optimization_variable.mx_reduced
         var = scaled_optimization_variable[name]
         self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
 
     @property
-    def cx(self):
+    def cx_start(self):
         """
-        The cx of all elements together (starting point)
+        The cx of all elements together
         """
 
-        return self._cx[:, 0]
+        return self.cx_constructor([]) if self.shape == 0 else self._cx_start[:, 0]
 
     @property
     def cx_end(self):
         """
-        The cx of all elements together (ending point)
+        The cx of all elements together
         """
 
-        return self._cx_end[:, 0]
+        return self.cx_constructor([]) if self.shape == 0 else self._cx_end[:, 0]
 
     @property
     def cx_intermediates_list(self):
@@ -539,7 +546,7 @@ class OptimizationVariableList:
         The size of the CX
         """
 
-        return self._cx.shape[0]
+        return self._cx_end.shape[0]
 
     def __len__(self):
         """
@@ -576,31 +583,48 @@ class OptimizationVariableList:
 
 
 class OptimizationVariableContainer:
-    def __init__(self, variable_scaled=None, variables_unscaled=None):
-        if variable_scaled is None:
-            variable_scaled = OptimizationVariableList()
-        if variables_unscaled is None:
-            variables_unscaled = OptimizationVariableList()
-        self.optimization_variable = {"scaled": variable_scaled, "unscaled": variables_unscaled}
+    def __init__(self):
+        """
+        This is merely a declaration function, it is mandatory to call initialize_from_shooting to get valid structures
+        """
+        self.cx_constructor = None
+        self.unscaled: list[OptimizationVariableList, ...] = []
+        self.scaled: list[OptimizationVariableList, ...] = []
 
-    def __getitem__(self, item: int | str | list | range):
-        if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
-            return self.optimization_variable[item]
-        else:
-            return self.optimization_variable["unscaled"][item]
+    def initialize_from_shooting(self, n_shooting: int, cx: Callable):
+        """
+        Initialize the Container so the dimensions are up to number of shooting points of the program
 
-    def __setitem__(self, item: int | str | list | range, value: Union[OptimizationVariableList, np.ndarray]):
-        if isinstance(item, str) and (item == "unscaled" or item == "scaled"):
-            self.optimization_variable[item] = value
+        Parameters
+        ----------
+        n_shooting
+            The number of shooting points
+        cx
+            The type (MX or SX) of the variable
+        """
+
+        if not isinstance(cx, Callable):
+            raise ValueError("This entry should be either casadi.MX or casadi.SX")
+
+        for node_index in range(n_shooting):
+            self.cx_constructor = cx
+            self.scaled.append(OptimizationVariableList(cx))
+            self.unscaled.append(OptimizationVariableList(cx))
+
+    def __getitem__(self, item: int | str):
+        if isinstance(item, int):
+            return self.unscaled[item]
+        elif isinstance(item, str):
+            return self.unscaled[0][item]
         else:
-            self.optimization_variable["unscaled"][item] = value
+            raise ValueError("item should be a node index or the name of the variable")
 
     def keys(self):
-        return self.optimization_variable["unscaled"].keys()
+        return self.unscaled[0].keys()
 
     @property
     def shape(self):
-        return self.optimization_variable["unscaled"].shape
+        return self.unscaled[0].shape
 
     def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
         """
@@ -618,7 +642,8 @@ class OptimizationVariableContainer:
             The Mapping of the MX against CX
         """
 
-        return self.optimization_variable["unscaled"].append(name, cx, mx, bimapping)
+        for unscaled in self.unscaled:
+            unscaled.append(name, cx, mx, bimapping)
 
     def append_from_scaled(
         self,
@@ -638,8 +663,8 @@ class OptimizationVariableContainer:
         scaled_optimization_variable: OptimizationVariable
             The scaled optimization variable associated with this variable
         """
-
-        return self.optimization_variable["unscaled"].append_from_scaled(name, cx, scaled_optimization_variable)
+        for unscaled in self.unscaled:
+            unscaled.append_from_scaled(name, cx, scaled_optimization_variable)
 
     def __contains__(self, item: str):
         """
@@ -648,49 +673,14 @@ class OptimizationVariableContainer:
         if item == "scaled" or item == "unscaled":
             return True
 
-        return item in self.optimization_variable["unscaled"]
-
-    def get_cx(self, key, cx_type):
-        return self.optimization_variable["unscaled"].get_cx(key, cx_type)
-
-    @property
-    def cx(self):
-        """
-        The cx of all elements together (starting point)
-        """
-
-        return self.optimization_variable["unscaled"].cx
-
-    @property
-    def cx_intermediates_list(self):
-        """
-        The cx of all elements together (starting point)
-        """
-
-        return self.optimization_variable["unscaled"].cx_intermediates_list
-
-    @property
-    def cx_end(self):
-        """
-        The cx of all elements together (ending point)
-        """
-
-        return self.optimization_variable["unscaled"].cx_end
-
-    @property
-    def mx(self):
-        return self.optimization_variable["unscaled"].mx
-
-    @property
-    def mx_reduced(self):
-        return self.optimization_variable["unscaled"].mx_reduced
+        return item in self.unscaled[0]
 
     def __len__(self):
         """
         The number of variables in the list
         """
 
-        return len(self.optimization_variable["unscaled"])
+        return len(self.unscaled[0])
 
     def __iter__(self):
         """
@@ -716,4 +706,4 @@ class OptimizationVariableContainer:
         self._iter_idx += 1
         if self._iter_idx > len(self):
             raise StopIteration
-        return self.optimization_variable["unscaled"][self._iter_idx - 1].name
+        return self.unscaled[0][self._iter_idx - 1].name

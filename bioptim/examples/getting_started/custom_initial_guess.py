@@ -26,7 +26,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     InterpolationType,
     OdeSolver,
@@ -67,6 +66,7 @@ def prepare_ocp(
     random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
     ode_solver=OdeSolver.COLLOCATION(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -85,6 +85,8 @@ def prepare_ocp(
         The type of interpolation to use for the initial guesses
     ode_solver: OdeSolver
         The type of ode solver used
+    assume_phase_dynamics: bool
+        If the dynamics of each individual node should be computed or assumed to be the same across the phase
 
     Returns
     -------
@@ -112,7 +114,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint and control path constraints
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
     u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
@@ -197,6 +199,7 @@ def prepare_ocp(
         x_scaling=x_scaling,
         xdot_scaling=xdot_scaling,
         u_scaling=u_scaling,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

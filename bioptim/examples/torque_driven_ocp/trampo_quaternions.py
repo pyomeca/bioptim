@@ -4,6 +4,7 @@ This example uses a representation of a human body by a trunk_leg segment and tw
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 """
 
+import platform
 
 import numpy as np
 import biorbd_casadi as biorbd
@@ -16,7 +17,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     InterpolationType,
     OdeSolver,
@@ -103,7 +103,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0].min[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
     x_bounds[0].max[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
 
@@ -121,6 +121,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -130,7 +131,7 @@ def main():
     """
 
     ocp = prepare_ocp("models/TruncAnd2Arm_Quaternion.bioMod", n_shooting=5, final_time=0.25)
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # Print the last solution
     sol.animate(n_frames=-1)

@@ -6,8 +6,9 @@ It is designed to show how one can define its phase transition constraints if th
 More specifically, this example mimics the behaviour of the most common PhaseTransitionFcn.CONTINUOUS
 """
 
+import platform
+
 from casadi import MX
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -19,7 +20,6 @@ from bioptim import (
     ConstraintFcn,
     ConstraintList,
     BoundsList,
-    QAndQDotBounds,
     InitialGuessList,
     PhaseTransitionFcn,
     PhaseTransitionList,
@@ -56,12 +56,10 @@ def custom_phase_transition(
     -------
     The constraint such that: c(x) = 0
     """
-    state_pre = nlp_pre.states
-    state_post = nlp_post.states
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = transition.states_mapping.to_second.map(nlp_pre.states.cx_end)
-    states_post = transition.states_mapping.to_first.map(nlp_post.states.cx)
+    states_pre = transition.states_mapping.to_second.map(nlp_pre.states[0].cx_end)
+    states_post = transition.states_mapping.to_first.map(nlp_post.states[0].cx_start)
 
     return states_pre * coef - states_post
 
@@ -120,10 +118,10 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
 
     x_bounds[0][[1, 3, 4, 5], 0] = 0
     x_bounds[-1][[1, 3, 4, 5], -1] = 0
@@ -183,6 +181,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         phase_transitions=phase_transitions,
+        assume_phase_dynamics=True,
     )
 
 
@@ -190,7 +189,7 @@ def main():
     ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
     sol.print_cost()

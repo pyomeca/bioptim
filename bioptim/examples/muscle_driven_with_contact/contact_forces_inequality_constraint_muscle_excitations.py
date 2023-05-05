@@ -4,9 +4,10 @@ All the examples in muscle_driven_with_contact are merely to show some dynamics 
 It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
 """
 
+import platform
+
 from matplotlib import pyplot as plt
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -18,9 +19,10 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BiMappingList,
+    SelectionMapping,
+    Dependency,
     BoundsList,
     Bounds,
-    QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -32,15 +34,23 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
     dof_mapping = BiMappingList()
-    dof_mapping.add("tau", [None, None, None, 0], [3])
 
+    # adds a bimapping to bimappinglist
+    # dof_mapping.add("tau", [None, None, None, 0], [3])
+    # easier way is to use SelectionMapping which is a subclass of biMapping
+    bimap = SelectionMapping(
+        nb_elements=bio_model.nb_dof,
+        independent_indices=(3,),
+        dependencies=(Dependency(dependent_index=None, reference_index=None, factor=None),),
+    )
+    dof_mapping.add(name="tau", bimapping=bimap)
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_torque=True, with_contact=True)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=True, with_contact=True)
 
     # Constraints
     constraints = ConstraintList()
@@ -67,7 +77,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model))
+    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
     x_bounds[0].concatenate(Bounds([activation_min] * n_mus, [activation_max] * n_mus))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot + [0.5] * n_mus
 
@@ -87,7 +97,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         phase_time,
@@ -99,6 +109,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
         constraints=constraints,
         variable_mappings=dof_mapping,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -109,7 +120,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, phase_time=t, n_shooting=ns, min_bound=50)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     nlp = ocp.nlp[0]
     nlp.model = BiorbdModel(biorbd_model_path)

@@ -7,14 +7,14 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 
-import biorbd_casadi as biorbd
+import platform
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     ObjectiveFcn,
     Objective,
@@ -64,7 +64,7 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[0, -1] = 3.14
     x_bounds[1, -1] = 0
@@ -75,7 +75,7 @@ def prepare_ocp(
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    n_qddot_joints = bio_model.nb_qddot - bio_model.nbRoot()  # 2 - 1 = 1 in this example
+    n_qddot_joints = bio_model.nb_qddot - bio_model.nb_root  # 2 - 1 = 1 in this example
     qddot_joints_min, qddot_joints_max, qddot_joints_init = -100, 100, 0
     u_bounds = Bounds([qddot_joints_min] * n_qddot_joints, [qddot_joints_max] * n_qddot_joints)
 
@@ -94,6 +94,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
+        assume_phase_dynamics=True,
     )
 
 
@@ -112,7 +113,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #

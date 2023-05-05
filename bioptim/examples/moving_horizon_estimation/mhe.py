@@ -28,7 +28,6 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     InterpolationType,
     Solver,
@@ -101,9 +100,10 @@ def prepare_mhe(bio_model, window_len, window_duration, max_torque, x_init, u_in
         objective_functions=new_objectives,
         x_init=InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME),
         u_init=InitialGuess(u_init, interpolation=InterpolationType.EACH_FRAME),
-        x_bounds=QAndQDotBounds(bio_model),
+        x_bounds=bio_model.bounds_from_ranges(["q", "qdot"]),
         u_bounds=Bounds([-max_torque, 0.0], [max_torque, 0.0]),
         n_threads=4,
+        assume_phase_dynamics=True,
     )
 
 
@@ -146,7 +146,7 @@ def main():
     noise_std = 0.05  # STD of noise added to measurements
     torque_max = 2  # Max torque applied to the model
     states, markers, markers_noised, controls = generate_data(
-        biorbd_model, final_time, x0, torque_max, n_shoot_per_second * final_time, noise_std, show_plots=False
+        bio_model, final_time, x0, torque_max, n_shoot_per_second * final_time, noise_std, show_plots=False
     )
 
     x_init = np.zeros((bio_model.nb_q * 2, window_len + 1))
@@ -155,7 +155,7 @@ def main():
 
     bio_model = BiorbdModel(biorbd_model_path)
     mhe = prepare_mhe(
-        biorbd_model,
+        bio_model,
         window_len=window_len,
         window_duration=window_duration,
         max_torque=torque_max,
@@ -180,7 +180,7 @@ def main():
     print(f"Average real time per iteration of MHE : {sol.real_time_to_optimize / (n_frames_total - 1)} s.")
     print(f"Norm of the error on state = {np.linalg.norm(states[:, :n_frames_total] - sol.states['all'])}")
 
-    markers_estimated = states_to_markers(biorbd_model, sol.states["all"])
+    markers_estimated = states_to_markers(bio_model, sol.states["all"])
 
     plt.plot(
         markers_noised[1, :, :n_frames_total].T,

@@ -11,7 +11,6 @@ from bioptim import (
     Dynamics,
     DynamicsFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     PlotType,
     Solver,
@@ -57,7 +56,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = QAndQDotBounds(bio_model)
+    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
@@ -83,6 +82,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         u_init,
         x_bounds,
         u_bounds,
+        assume_phase_dynamics=True,
     )
 
 

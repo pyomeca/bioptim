@@ -117,7 +117,7 @@ class SQPInterface(SolverInterface):
 
         Returns
         -------
-        Union[SX, MX]
+        SX | MX
             The objective function
         """
         return generic_dispatch_obj_func(self)

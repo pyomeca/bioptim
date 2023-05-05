@@ -22,17 +22,17 @@ def custom_dynamics(
     """
     Parameters
     ----------
-    states: Union[MX, SX]
+    states: MX | SX
         The state of the system
-    controls: Union[MX, SX]
+    controls: MX | SX
         The controls of the system
-    parameters: Union[MX, SX]
+    parameters: MX | SX
         The parameters acting on the system
     nlp: NonLinearProgram
         A reference to the phase
     Returns
     -------
-    The derivative of the states in the tuple[Union[MX, SX]] format
+    The derivative of the states in the tuple[MX | SX] format
     """
 
     return DynamicsEvaluation(

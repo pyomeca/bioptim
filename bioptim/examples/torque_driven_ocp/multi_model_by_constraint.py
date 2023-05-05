@@ -9,13 +9,12 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     Node,
-    QAndQDotBounds,
     ObjectiveFcn,
     BiMappingList,
     PhaseTransitionList,
     PhaseTransitionFcn,
-    MultinodeConstraintList,
-    MultinodeConstraintFcn,
+    BinodeConstraintList,
+    BinodeConstraintFcn,
 )
 
 
@@ -24,7 +23,6 @@ def prepare_ocp(
     biorbd_model_path_modified_inertia: str = "models/double_pendulum_modified_inertia.bioMod",
     n_shooting: tuple = (40, 40),
 ) -> OptimalControlProgram:
-
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_modified_inertia))
 
     # Problem parameters
@@ -46,17 +44,17 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6, phase=1)
 
     # Multi-node constraints
-    multinode_constraints = MultinodeConstraintList()
-    multinode_constraints.add(
-        MultinodeConstraintFcn.TIME_CONSTRAINT,
+    binode_constraints = BinodeConstraintList()
+    binode_constraints.add(
+        BinodeConstraintFcn.TIME_CONSTRAINT,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.END,
         second_node=Node.END,
     )
     for i in range(n_shooting[0]):
-        multinode_constraints.add(
-            MultinodeConstraintFcn.CONTROLS_EQUALITY,
+        binode_constraints.add(
+            BinodeConstraintFcn.CONTROLS_EQUALITY,
             phase_first_idx=0,
             phase_second_idx=1,
             first_node=i,
@@ -71,8 +69,8 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(bio_model[1]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[1].bounds_from_ranges(["q", "qdot"]))
 
     # Phase 0
     x_bounds[0][0, 0] = -np.pi
@@ -121,12 +119,12 @@ def prepare_ocp(
         objective_functions=objective_functions,
         variable_mappings=tau_mappings,
         phase_transitions=phase_transitions,
-        multinode_constraints=multinode_constraints,
+        binode_constraints=binode_constraints,
+        assume_phase_dynamics=True,
     )
 
 
 def main():
-
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 

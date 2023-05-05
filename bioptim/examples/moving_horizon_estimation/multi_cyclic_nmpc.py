@@ -5,8 +5,9 @@ cycle at a time while optimizing three cycles at a time (main difference between
 the latter has more cycle at a time giving the knowledge to the solver that 'something' is coming after)
 """
 
+import platform
+
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     MultiCyclicNonlinearModelPredictiveControl,
@@ -17,7 +18,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    QAndQDotBounds,
     InitialGuess,
     Solver,
     Node,
@@ -45,7 +45,7 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n
     model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_bound = QAndQDotBounds(model)
+    x_bound = model.bounds_from_ranges(["q", "qdot"])
     x_bound.min[0, :] = -2 * np.pi * n_cycles_simultaneous  # Allow the wheel to spin as much as needed
     x_bound.max[0, :] = 0
     u_bound = Bounds([-max_torque] * model.nb_q, [max_torque] * model.nb_q)
@@ -90,6 +90,7 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n
         u_init=u_init,
         x_bounds=x_bound,
         u_bounds=u_bound,
+        assume_phase_dynamics=True,
     )
 
 
@@ -118,7 +119,7 @@ def main():
     # Solve the program
     sol = nmpc.solve(
         update_functions,
-        solver=Solver.IPOPT(show_online_optim=True),
+        solver=Solver.IPOPT(show_online_optim=platform.system() == "Linux"),
         n_cycles_simultaneous=n_cycles_simultaneous,
     )
     sol.print_cost()
