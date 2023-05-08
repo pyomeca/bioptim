@@ -96,7 +96,7 @@ class CustomPlot:
         if axes_idx is None:
             self.phase_mappings = None  # Will be set later
         elif isinstance(axes_idx, (tuple, list)):
-            self.phase_mappings = BiMapping(axes_idx) # ?
+            self.phase_mappings = BiMapping(axes_idx)
         elif isinstance(axes_idx, BiMapping):
             self.phase_mappings = axes_idx
         else:
@@ -492,8 +492,9 @@ class PlotOcp:
 
                 legend_without_duplicate_labels(ax)
 
-                for ctr in mapping_range_index:
-                    ax = axes[ctr]
+                # for ctr in mapping_range_index:
+                for ctr, ax in enumerate(axes):
+                    # ax = axes[ctr]
                     if ctr in mapping_to_first_index:
                         intersections_time = self.find_phases_intersections()
                         for time in intersections_time:
@@ -685,8 +686,10 @@ class PlotOcp:
                     for idx, t in enumerate(self.t_integrated[i]):
                         y_tp = np.empty((self.variable_sizes[i][key], len(t)))
                         y_tp.fill(np.nan)
+                        val = np.empty((self.variable_sizes[i][key], len(t)))
+                        val.fill(np.nan)
 
-                        val = self.plot_func[key][i].function(
+                        val_tempo = self.plot_func[key][i].function(
                             idx,
                             state[:, step_size * idx : step_size * (idx + 1) + x_mod],
                             control[:, idx : idx + u_mod + 1],
@@ -696,12 +699,14 @@ class PlotOcp:
 
                         if self.plot_func[key][i].compute_derivative:
                             # This is a special case since derivative is not properly integrated
-                            val = np.repeat(val, y_tp.shape[1])[np.newaxis, :]
+                            val_tempo = np.repeat(val, y_tp.shape[1])[np.newaxis, :]
 
-                        if val.shape != y_tp.shape:
+                        if val_tempo.shape[0] != len(self.plot_func[key][i].phase_mappings.to_first.map_idx) or val_tempo.shape[1] != val.shape[1]:
                             raise RuntimeError(
                                 f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y_tp.shape}"
                             )
+                        for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
+                            val[axe_index, :] = val_tempo[ctr, :]
                         y_tp[:, :] = val
                         all_y.append(y_tp)
 
@@ -735,13 +740,16 @@ class PlotOcp:
                                 data_params_in_dyn,
                                 **self.plot_func[key][i].parameters,
                             )
-                            y[0] = val[i_var]
+                            # y[0] = val[i_var]  # Was like this, but I am not sure this really works?
+                            y[0] = val[abs(self.plot_func[key][i].phase_mappings.to_second.map_idx[i_var])]
                         else:
                             y = np.empty((len(self.plot_func[key][i].node_idx),))
                             y.fill(np.nan)
+                            val = np.empty((len(self.plot_func[key][i].node_idx),))
+                            val.fill(np.nan)
                             for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                                 if self.plot_func[key][i].parameters["penalty"].transition:
-                                    val = self.plot_func[key][i].function(
+                                    val_tempo = self.plot_func[key][i].function(
                                         node_idx,
                                         np.hstack(
                                             (
@@ -769,28 +777,34 @@ class PlotOcp:
                                             :, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size
                                         ]
 
-                                    val = self.plot_func[key][i].function(
+                                    val_tempo = self.plot_func[key][i].function(
                                         node_idx,
                                         states,
                                         control[:, node_idx : node_idx + 1 + u_mod],
                                         data_params_in_dyn,
                                         **self.plot_func[key][i].parameters,
                                     )
+                                for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
+                                    val[axe_index] = val_tempo[ctr]
                                 y[i_node] = val[i_var]
                         self.ydata.append(y)
 
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
+                    val = np.empty((self.variable_sizes[i][key], ))
+                    val.fill(np.nan)
                     if self.plot_func[key][i].compute_derivative:
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
-                            val = self.plot_func[key][i].function(
+                            val_tempo = self.plot_func[key][i].function(
                                 node_idx,
                                 state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
                                 control[:, node_idx : node_idx + 1 + 1],
                                 data_params_in_dyn,
                                 **self.plot_func[key][i].parameters,
                             )
+                            for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
+                                val[axe_index] = val_tempo[ctr]
                             y[:, i_node] = val
                     else:
                         y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
