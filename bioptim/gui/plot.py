@@ -710,7 +710,7 @@ class PlotOcp:
                         y_tp[:, :] = val
                         all_y.append(y_tp)
 
-                    for idx in range(len(self.plot_func[key][i].phase_mappings.to_first.map_idx)):
+                    for idx in range(len(self.plot_func[key][i].phase_mappings.to_second.map_idx)):
                         y_tp = []
                         for y in all_y:
                             y_tp.append(y[idx, :])
