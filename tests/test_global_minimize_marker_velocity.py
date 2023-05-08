@@ -14,6 +14,7 @@ from bioptim import (
     InitialGuessList,
     ControlType,
     OdeSolver,
+    OdeSolverBase,
     Node,
 )
 
@@ -27,7 +28,7 @@ def prepare_ocp(
     marker_velocity_or_displacement: str,
     marker_in_first_coordinates_system: bool,
     control_type: ControlType,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare an ocp that targets some marker velocities, either by finite differences or by jacobian
@@ -121,6 +122,7 @@ def prepare_ocp(
         objective_functions,
         control_type=control_type,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 

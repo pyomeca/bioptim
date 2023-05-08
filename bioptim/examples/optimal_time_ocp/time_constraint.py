@@ -19,6 +19,7 @@ from bioptim import (
     InitialGuess,
     Node,
     OdeSolver,
+    OdeSolverBase,
     Solver,
 )
 
@@ -29,7 +30,7 @@ def prepare_ocp(
     n_shooting: int,
     time_min: float,
     time_max: float,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program

@@ -505,8 +505,8 @@ def test_monophase_time_constraint(ode_solver):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         final_time=(2, 5, 4),
-        time_min=[1, 3, 0.1],
-        time_max=[2, 4, 0.8],
+        time_min=(1, 3, 0.1),
+        time_max=(2, 4, 0.8),
         n_shooting=(20,),
         ode_solver=ode_solver(),
     )
@@ -562,8 +562,8 @@ def test_multiphase_time_constraint(ode_solver):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         final_time=(2, 5, 4),
-        time_min=[1, 3, 0.1],
-        time_max=[2, 4, 0.8],
+        time_min=(1, 3, 0.1),
+        time_max=(2, 4, 0.8),
         n_shooting=(20, 30, 20),
         ode_solver=ode_solver(),
     )

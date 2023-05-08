@@ -172,7 +172,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(transition, controller):
+        def continuous(transition, controllers: list[PenaltyController, PenaltyController]):
             """
             The most common continuity function, that is state before equals state after
 
@@ -180,7 +180,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition : PhaseTransition
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -188,10 +188,10 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return BinodeConstraintFunctions.Functions.states_equality(transition, controller, "all")
+            return BinodeConstraintFunctions.Functions.states_equality(transition, controllers, "all")
 
         @staticmethod
-        def discontinuous(transition, controller: PenaltyController):
+        def discontinuous(transition, controllers: list[PenaltyController, PenaltyController]):
             """
             There is no continuity constraints on the states
 
@@ -199,7 +199,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition : PhaseTransition
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -210,7 +210,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return MX.zeros(0, 0)
 
         @staticmethod
-        def cyclic(transition, controller) -> MX:
+        def cyclic(transition, controllers: list[PenaltyController, PenaltyController]) -> MX:
             """
             The continuity function applied to the last to first node
 
@@ -218,7 +218,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition: PhaseTransition
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -226,10 +226,10 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return BinodeConstraintFunctions.Functions.states_equality(transition, controller, "all")
+            return BinodeConstraintFunctions.Functions.states_equality(transition, controllers, "all")
 
         @staticmethod
-        def impact(transition, controller):
+        def impact(transition, controllers: list[PenaltyController, PenaltyController]):
             """
             A discontinuous function that simulates an inelastic impact of a new contact point
 
@@ -237,7 +237,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             ----------
             transition: PhaseTransition
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -245,55 +245,43 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node after applying the impulse equations
             """
 
-            ocp = controller[0].ocp
-            if (
-                ocp.nlp[transition.phase_pre_idx].states[0].shape != ocp.nlp[transition.phase_post_idx].states[0].shape
-            ):  # TODO: [0] to [node_index]
+            ocp = controllers[0].ocp
+            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
 
             # Aliases
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
+            pre, post = controllers
 
             # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
             # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
-            model = nlp_post.model.copy()
+            # EDIT 1: using multinode constraint this should work now
+            model = post.model.copy()
 
-            if nlp_post.model.nb_rigid_contacts == 0:
+            if post.model.nb_rigid_contacts == 0:
                 warn("The chosen model does not have any rigid contact")
 
             # Todo scaled?
-            q_pre = nlp_pre.states[0]["q"].mx  # TODO: [0] to [node_index]
-            qdot_pre = nlp_pre.states[0]["qdot"].mx  # TODO: [0] to [node_index]
+            q_pre = pre.states["q"].mx
+            qdot_pre = pre.states["qdot"].mx
             qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
 
             val = []
             cx_start = []
             cx_end = []
-            for key in nlp_pre.states[0]:
-                cx_end = vertcat(
-                    cx_end,
-                    nlp_pre.states[0][key].mapping.to_second.map(
-                        nlp_pre.states[0][key].cx_end
-                    ),  # TODO: [0] to [node_index]
-                )
-                cx_start = vertcat(
-                    cx_start, nlp_post.states[0][key].mapping.to_second.map(nlp_post.states[0][key].cx_start)
-                )  # TODO: [0] to [node_index]
-                post_mx = nlp_post.states[0][key].mx  # TODO: [0] to [node_index]
-                continuity = nlp_post.states[0]["qdot"].mapping.to_first.map(  # TODO: [0] to [node_index]
-                    qdot_impact - post_mx
-                    if key == "qdot"
-                    else nlp_pre.states[0][key].mx - post_mx  # TODO: [0] to [node_index]
+            for key in pre.states:
+                cx_end = vertcat(cx_end, pre.states[key].mapping.to_second.map(pre.states[key].cx_end))
+                cx_start = vertcat(cx_start, post.states[key].mapping.to_second.map(post.states[key].cx_start))
+                post_mx = post.states[key].mx
+                continuity = post.states["qdot"].mapping.to_first.map(
+                    qdot_impact - post_mx if key == "qdot" else pre.states[key].mx - post_mx
                 )
                 val = vertcat(val, continuity)
 
-            name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = nlp_pre.to_casadi_func(name, val, nlp_pre.states[0].mx, nlp_post.states[0].mx)(
-                cx_end, cx_start
-            )  # TODO: [0] to [node_index]
+            name = f"PHASE_TRANSITION_{pre.phase_idx}_{post.phase_idx}"
+            func = pre.to_casadi_func(name, val, pre.states.mx, post.states.mx)(cx_end, cx_start)
             return func
 
 
