@@ -93,24 +93,51 @@ def generate_data(
     nlp.controls.initialize_from_shooting(n_shooting, MX)
 
     for node_index in range(n_shooting):
-        nlp.states[node_index].append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
-        nlp.states[node_index].append(
-            "qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"]
+        nlp.states.append(
+            "q", [symbolic_q, symbolic_q], [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"], node_index
+        )
+        nlp.states.append(
+            "qdot",
+            [symbolic_qdot, symbolic_qdot],
+            [symbolic_qdot, symbolic_qdot],
+            symbolic_qdot,
+            nlp.variable_mappings["qdot"],
+            node_index,
         )
 
-        nlp.states_dot[node_index].append(
-            "qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"]
+        nlp.states_dot.append(
+            "qdot",
+            [symbolic_qdot, symbolic_qdot],
+            [symbolic_qdot, symbolic_qdot],
+            symbolic_qdot,
+            nlp.variable_mappings["qdot"],
+            node_index,
         )
-        nlp.states_dot[node_index].append(
-            "qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"]
+        nlp.states_dot.append(
+            "qddot",
+            [symbolic_qddot, symbolic_qddot],
+            [symbolic_qddot, symbolic_qddot],
+            symbolic_qddot,
+            nlp.variable_mappings["qddot"],
+            node_index,
         )
 
         if use_residual_torque:
-            nlp.controls[node_index].append(
-                "tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"]
+            nlp.controls.append(
+                "tau",
+                [symbolic_tau, symbolic_tau],
+                [symbolic_tau, symbolic_tau],
+                symbolic_tau,
+                nlp.variable_mappings["tau"],
+                node_index,
             )
-        nlp.controls[node_index].append(
-            "muscles", [symbolic_mus, symbolic_mus], symbolic_mus, nlp.variable_mappings["muscles"]
+        nlp.controls.append(
+            "muscles",
+            [symbolic_mus, symbolic_mus],
+            [symbolic_mus, symbolic_mus],
+            symbolic_mus,
+            nlp.variable_mappings["muscles"],
+            node_index,
         )
 
     if use_residual_torque:

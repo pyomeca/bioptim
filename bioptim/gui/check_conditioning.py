@@ -65,10 +65,8 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function(
-                        phase.states[0].cx_start, phase.controls[0].cx_start, phase.parameters.cx_start
-                    ).shape[
-                        0
-                    ],  # TODO: [0] to [node_index]
+                        phase.states.cx_start, phase.controls.cx_start, phase.parameters.cx_start
+                    ).shape[0],
                 ):
                     # depends if there are parameters
                     if phase.parameters.shape == 0:
@@ -79,8 +77,8 @@ def check_conditioning(ocp):
                     list_constraints.append(
                         jacobian(
                             constraints.function(
-                                phase.states[0].cx_start,  # TODO: [0] to [node_index]
-                                phase.controls[0].cx_start,  # TODO: [0] to [node_index]
+                                phase.states.cx_start,
+                                phase.controls.cx_start,
                                 phase.parameters.cx_start,
                             )[axis],
                             vertcat_obj,
@@ -134,10 +132,8 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function(
-                        phase.states[0].cx_start, phase.controls[0].cx_start, phase.parameters.cx_start
-                    ).shape[
-                        0
-                    ],  # TODO: [0] to [node_index]
+                        phase.states.cx_start, phase.controls.cx_start, phase.parameters.cx_start
+                    ).shape[0],
                 ):
                     # find all equality constraints
                     if (constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]) == True:
@@ -149,8 +145,8 @@ def check_conditioning(ocp):
 
                         hessian_cas = hessian(
                             constraints.function(
-                                phase.states[0].cx_start,  # TODO: [0] to [node_index]
-                                phase.controls[0].cx_start,  # TODO: [0] to [node_index]
+                                phase.states.cx_start,
+                                phase.controls.cx_start,
                                 phase.parameters.cx_start,
                             )[axis],
                             vertcat_obj,
@@ -296,35 +292,29 @@ def check_conditioning(ocp):
                 if obj.binode_constraint or obj.transition:
                     nlp = ocp.nlp[phase - 1]
                     nlp_post = nlp_phase
-                    states_pre = nlp.states[0].cx_end  # TODO: [0] to [node_index]
-                    states_post = nlp_post.states[0].cx_start  # TODO: [0] to [node_index]
-                    controls_pre = nlp.controls[0].cx_end  # TODO: [0] to [node_index]
-                    controls_post = nlp_post.controls[0].cx_start  # TODO: [0] to [node_index]
+                    states_pre = nlp.states.cx_end
+                    states_post = nlp_post.states.cx_start
+                    controls_pre = nlp.controls.cx_end
+                    controls_post = nlp_post.controls.cx_start
                     state_cx = vertcat(states_pre, states_post)
                     control_cx = vertcat(controls_pre, controls_post)
 
                 else:
                     if obj.integrate:
-                        state_cx = horzcat(
-                            *([nlp_phase.states[0].cx_start] + nlp_phase.states[0].cx_intermediates_list)
-                        )  # TODO: [0] to [node_index]
-                        control_cx = nlp_phase.controls[0].cx_start  # TODO: [0] to [node_index]
+                        state_cx = horzcat(*([nlp_phase.states.cx_start] + nlp_phase.states.cx_intermediates_list))
+                        control_cx = nlp_phase.controls.cx_start
                     else:
-                        state_cx = nlp_phase.states[0].cx_start  # TODO: [0] to [node_index]
-                        control_cx = nlp_phase.controls[0].cx_start  # TODO: [0] to [node_index]
+                        state_cx = nlp_phase.states.cx_start
+                        control_cx = nlp_phase.controls.cx_start
                     if obj.explicit_derivative:
                         if obj.derivative:
                             raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                        state_cx = horzcat(state_cx, nlp_phase.states[0].cx_end)  # TODO: [0] to [node_index]
-                        control_cx = horzcat(control_cx, nlp_phase.controls[0].cx_end)  # TODO: [0] to [node_index]
+                        state_cx = horzcat(state_cx, nlp_phase.states.cx_end)
+                        control_cx = horzcat(control_cx, nlp_phase.controls.cx_end)
 
                 if obj.derivative:
-                    state_cx = horzcat(
-                        nlp_phase.states[0].cx_end, nlp_phase.states[0].cx_start
-                    )  # TODO: [0] to [node_index]
-                    control_cx = horzcat(
-                        nlp_phase.controls[0].cx_end, nlp_phase.controls[0].cx_start
-                    )  # TODO: [0] to [node_index]
+                    state_cx = horzcat(nlp_phase.states.cx_end, nlp_phase.states.cx_start)
+                    control_cx = horzcat(nlp_phase.controls.cx_end, nlp_phase.controls.cx_start)
 
                 dt_cx = nlp_phase.cx.sym("dt", 1, 1)
                 is_trapezoidal = (
@@ -334,16 +324,14 @@ def check_conditioning(ocp):
 
                 if is_trapezoidal:
                     state_cx = (
-                        horzcat(nlp_phase.states[0].cx_start, nlp_phase.states[0].cx_end)  # TODO: [0] to [node_index]
+                        horzcat(nlp_phase.states.cx_start, nlp_phase.states.cx_end)
                         if obj.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                        else nlp_phase.states[0].cx_start  # TODO: [0] to [node_index]
+                        else nlp_phase.states.cx_start
                     )
                     control_cx = (
-                        horzcat(nlp_phase.controls[0].cx_start)  # TODO: [0] to [node_index]
+                        horzcat(nlp_phase.controls.cx_start)
                         if nlp_phase.control_type == ControlType.CONSTANT
-                        else horzcat(
-                            nlp_phase.controls[0].cx_start, nlp_phase.controls[0].cx_end
-                        )  # TODO: [0] to [node_index]
+                        else horzcat(nlp_phase.controls.cx_start, nlp_phase.controls.cx_end)
                     )
                     control_cx_end = get_u(nlp_phase, control_cx, dt_cx)
 

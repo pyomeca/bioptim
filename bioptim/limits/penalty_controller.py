@@ -117,7 +117,8 @@ class PenaltyController:
         -------
         The states at node node_index
         """
-        return self._nlp.states[self.node_index]
+        self._nlp.states.node_index = self.node_index
+        return self._nlp.states.unscaled
 
     @property
     def integrate(self):
@@ -139,7 +140,8 @@ class PenaltyController:
         -------
         The scaled states at node node_index
         """
-        return self._nlp.states.scaled[self.node_index]
+        self._nlp.states.node_index = self.node_index
+        return self._nlp.states.scaled
 
     @property
     def controls(self) -> OptimizationVariableList:
@@ -150,7 +152,8 @@ class PenaltyController:
         -------
         The controls at node node_index
         """
-        return self._nlp.controls[self.node_index]
+        self._nlp.controls.node_index = self.node_index
+        return self._nlp.controls.unscaled
 
     @property
     def controls_scaled(self) -> OptimizationVariableList:
@@ -164,7 +167,8 @@ class PenaltyController:
         -------
         The scaled controls at node node_index
         """
-        return self._nlp.controls.scaled[self.node_index]
+        self._nlp.controls.node_index = self.node_index
+        return self._nlp.controls.scaled
 
     @property
     def parameters(self) -> OptimizationVariableList:

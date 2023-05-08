@@ -243,9 +243,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                     "The MHE is not implemented yet for x_bounds not being "
                     "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
                 )
-            self.nlp[0].x_bounds.check_and_adjust_dimensions(
-                self.nlp[0].states[0].shape, 3
-            )  # TODO: [0] to [node_index]
+            self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].states.shape, 3)
         self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, 1]
         return True
 
@@ -257,9 +255,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             self.nlp[0].x_init = InitialGuess(
                 np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
             )
-            self.nlp[0].x_init.check_and_adjust_dimensions(
-                self.nlp[0].states[0].shape, self.nlp[0].ns
-            )  # TODO: [0] to [node_index]
+            self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.shape, self.nlp[0].ns)
         self.nlp[0].x_init.init[:, :] = np.concatenate(
             (sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1
         )
@@ -270,9 +266,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             self.nlp[0].u_init = InitialGuess(
                 np.ndarray(sol.controls["all"][:, :-1].shape), interpolation=InterpolationType.EACH_FRAME
             )
-            self.nlp[0].u_init.check_and_adjust_dimensions(
-                self.nlp[0].controls[0].shape, self.nlp[0].ns - 1
-            )  # TODO: [0] to [node_index]
+            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns - 1)
         self.nlp[0].u_init.init[:, :] = np.concatenate(
             (sol.controls["all"][:, 1:-1], sol.controls["all"][:, -2][:, np.newaxis]), axis=1
         )
@@ -394,9 +388,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
     def _initialize_state_idx_to_cycle(self, options):
         if "states" not in options:
-            options["states"] = self.nlp[0].states[0].keys()  # TODO : [0] to [node_index]
+            options["states"] = self.nlp[0].states.keys()
 
-        states = self.nlp[0].states[0]  # TODO : [0] to [node_index]
+        states = self.nlp[0].states
         self.state_idx_to_cycle = list(chain.from_iterable([states[key].index for key in options["states"]]))
 
     def _set_cyclic_bound(self, sol: Solution = None):
@@ -455,9 +449,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
                 np.ndarray((sol.controls["all"].shape[0], self.nlp[0].ns)),
                 interpolation=InterpolationType.EACH_FRAME,
             )
-            self.nlp[0].u_init.check_and_adjust_dimensions(
-                self.nlp[0].controls[0].shape, self.nlp[0].ns - 1
-            )  # TODO : [0] to [node_index]
+            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns - 1)
         self.nlp[0].u_init.init[:, :] = sol.controls["all"][:, :-1]
 
 
@@ -513,9 +505,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             self.nlp[0].x_init = InitialGuess(
                 np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
             )
-            self.nlp[0].x_init.check_and_adjust_dimensions(
-                self.nlp[0].states[0].shape, self.nlp[0].ns
-            )  # TODO : [0] to [node_index]
+            self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.shape, self.nlp[0].ns)
         self.nlp[0].x_init.init[:, :] = sol.states["all"][:, self.initial_guess_frames]
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
@@ -524,9 +514,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                 np.ndarray((sol.controls["all"].shape[0], self.nlp[0].ns)),
                 interpolation=InterpolationType.EACH_FRAME,
             )
-            self.nlp[0].u_init.check_and_adjust_dimensions(
-                self.nlp[0].controls[0].shape, self.nlp[0].ns - 1
-            )  # TODO : [0] to [node_index]
+            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns - 1)
         self.nlp[0].u_init.init[:, :] = sol.controls["all"][:, self.initial_guess_frames[:-1]]
 
     def solve(

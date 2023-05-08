@@ -81,8 +81,8 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
@@ -219,8 +219,8 @@ def test_torque_driven_implicit(with_contact, cx):
 
     # Test the results
     np.random.seed(42)
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -282,8 +282,8 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
 
     # Test the results
     np.random.seed(42)
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -353,8 +353,8 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -482,8 +482,8 @@ def test_torque_derivative_driven_implicit(with_contact, cx):
 
     # Test the results
     np.random.seed(42)
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -579,8 +579,8 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
 
     # Test the results
     np.random.seed(42)
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -754,8 +754,8 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -858,8 +858,8 @@ def test_torque_activation_driven_with_residual_torque(
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -977,8 +977,8 @@ def test_muscle_driven(
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -1478,8 +1478,8 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
         ConfigureProblem.initialize(ocp, nlp)
 
         # Test the results
-        states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-        controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+        states = np.random.rand(nlp.states.shape, nlp.ns)
+        controls = np.random.rand(nlp.controls.shape, nlp.ns)
         params = np.random.rand(nlp.parameters.shape, nlp.ns)
         x_out = np.array(nlp.dynamics_func(states, controls, params))
 
@@ -1490,9 +1490,9 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics):
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact):
     def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> DynamicsEvaluation:
-        q = DynamicsFunctions.get(nlp.states[0]["q"], states)  # TODO: [0] to [node_index]
-        qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)  # TODO: [0] to [node_index]
-        tau = DynamicsFunctions.get(nlp.controls[0]["tau"], controls)  # TODO: [0] to [node_index]
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
@@ -1542,8 +1542,8 @@ def test_custom_dynamics(with_contact):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    states = np.random.rand(nlp.states[0].shape, nlp.ns)  # TODO: [0] to [node_index]
-    controls = np.random.rand(nlp.controls[0].shape, nlp.ns)  # TODO: [0] to [node_index]
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 

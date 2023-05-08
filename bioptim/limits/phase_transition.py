@@ -246,8 +246,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             ocp = controllers[0].ocp
-            if (
-                ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape:
+            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
