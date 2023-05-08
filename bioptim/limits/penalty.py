@@ -8,6 +8,7 @@ from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, Axis, ControlType, IntegralApproximation
+from ..misc.mapping import BiMapping
 
 
 class PenaltyFunctionAbstract:
@@ -84,9 +85,13 @@ class PenaltyFunctionAbstract:
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            if key in all_pn.nlp.variable_mappings:
+                target_mapping = all_pn.nlp.variable_mappings[key]
+            else:
+                target_mapping = BiMapping(to_first=list(range(all_pn.nlp.controls[key].cx_start.shape[0])), to_second=list(range(all_pn.nlp.controls[key].cx_start.shape[0])))
             if penalty.integration_rule == IntegralApproximation.RECTANGLE:
                 # todo: for trapezoidal integration
-                penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls")
+                penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls", target_mapping=target_mapping)
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
             return all_pn.nlp.controls[0][key].cx_start  # TODO: [0] to [node_index]

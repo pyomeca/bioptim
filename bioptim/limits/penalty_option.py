@@ -5,6 +5,7 @@ from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
+# from .objective_functions import ObjectiveFcn
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, IntegralApproximation
 from ..misc.mapping import Mapping, BiMapping
 from ..misc.options import OptionGeneric
@@ -228,6 +229,12 @@ class PenaltyOption(OptionGeneric):
 
         self.rows = self._set_dim_idx(self.rows, penalty.rows())
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
+        # self.plot_mappings = None
+        # if "key" in self.params.keys():
+        #     if all_pn.nlp.variable_mappings in self.params["key"]:
+        #         if self.name == "MINIMIZE_CONTROL":
+        #             if self.params["key"] in all_pn.nlp.controls.keys():
+        #                 self.plot_mapping = all_pn[self.phase].
         if self.target is not None:
             self._check_target_dimensions(all_pn, len(all_pn.t))
             if self.plot_target:
@@ -567,7 +574,7 @@ class PenaltyOption(OptionGeneric):
             self.function = self.function.expand()
             self.weighted_function = self.weighted_function.expand()
 
-    def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str):
+    def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str, target_mapping: BiMapping):
         """
         Interface to the plot so it can be properly added to the proper plot
 
@@ -585,11 +592,16 @@ class PenaltyOption(OptionGeneric):
         self.target_plot_name = combine_to
         # if the target is n x ns, we need to add a dimension (n x ns + 1) to make it compatible with the plot
         if self.target[0].shape[1] == all_pn.nlp.ns:
-            self.target_to_plot = np.concatenate(
+            self.target_temporaty = np.concatenate(
                 (self.target[0], np.nan * np.ndarray((self.target[0].shape[0], 1))), axis=1
             )
         else:
-            self.target_to_plot = self.target[0]
+            self.target_temporaty = self.target[0]
+
+        self.target_to_plot = np.zeros((len(target_mapping.to_second.map_idx), self.target_temporaty.shape[1]))
+        self.target_to_plot[:, :] = np.nan
+        for i, idx_mapped in enumerate(target_mapping.to_first.map_idx):
+            self.target_to_plot[idx_mapped] = self.target_temporaty[i]
 
     def _finish_add_target_to_plot(self, all_pn: PenaltyNodeList):
         """
@@ -621,7 +633,7 @@ class PenaltyOption(OptionGeneric):
                 color="tab:red",
                 plot_type=plot_type,
                 phase=all_pn.nlp.phase_idx,
-                axes_idx=Mapping(self.rows),  # TODO verify if not all elements has target
+                axes_idx=BiMapping(to_first=list(self.rows), to_second=list(self.rows)),  # TODO verify if not all elements has target
                 node_idx=self.node_idx,
             )
 
