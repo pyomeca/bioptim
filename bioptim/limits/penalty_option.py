@@ -196,10 +196,10 @@ class PenaltyOption(OptionGeneric):
         self.node_idx = []
         self.dt = 0
         self.weight = weight
-        self.function: Function | None = None
-        self.function_non_threaded: Function | None = None
-        self.weighted_function: Function | None = None
-        self.weighted_function_non_threaded: Function | None = None
+        self.function: list[Function | None, ...] = []
+        self.function_non_threaded: list[Function | None, ...] = []
+        self.weighted_function: list[Function | None, ...] = []
+        self.weighted_function_non_threaded: list[Function | None, ...] = []
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
@@ -442,23 +442,34 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled = horzcat(state_cx_scaled, controller.states_scaled.cx_end)
                 control_cx_scaled = horzcat(control_cx_scaled, controller.controls_scaled.cx_end)
 
-        # Reference the parameters for ease of access
+        # Alias some variables
+        node = controller.node_index
         param_cx = controller.parameters.cx_start
+
+        # Sanity check on outputs
+        if len(self.function) <= node:
+            for _ in range(len(self.function), node + 1):
+                self.function.append(None)
+                self.weighted_function.append(None)
+                self.function_non_threaded.append(None)
+                self.weighted_function_non_threaded.append(None)
+        if self.function[node] is not None:
+            raise RuntimeError("Penalty function declared twice. This should not happen, please report.")
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
-        self.function = controller.to_casadi_func(
+        self.function[node] = controller.to_casadi_func(
             name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, expand=self.expand
         )
-        self.function_non_threaded = self.function
+        self.function_non_threaded[node] = self.function[node]
 
         if self.derivative:
             state_cx_scaled = horzcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
             control_cx_scaled = horzcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
-            self.function = biorbd.to_casadi_func(
+            self.function[node] = biorbd.to_casadi_func(
                 f"{name}",
-                self.function(controller.states_scaled.cx_end, controller.controls_scaled.cx_end, param_cx)
-                - self.function(controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx),
+                self.function[node](controller.states_scaled.cx_end, controller.controls_scaled.cx_end, param_cx)
+                - self.function[node](controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx),
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -511,15 +522,15 @@ class PenaltyOption(OptionGeneric):
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx_start)["xf"]
             )
-            self.modified_function = controller.to_casadi_func(
+            modified_function = controller.to_casadi_func(
                 f"{name}",
                 (
                     (
-                        self.function(controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx)
+                        self.function[node](controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx)
                         - target_cx[:, 0]
                     )
                     ** exponent
-                    + (self.function(state_cx_end_scaled, control_cx_end_scaled, param_cx) - target_cx[:, 1])
+                    + (self.function[node](state_cx_end_scaled, control_cx_end_scaled, param_cx) - target_cx[:, 1])
                     ** exponent
                 )
                 / 2,
@@ -529,28 +540,28 @@ class PenaltyOption(OptionGeneric):
                 target_cx,
                 dt_cx,
             )
-            modified_fcn = self.modified_function(state_cx_scaled, control_cx_scaled, param_cx, target_cx, dt_cx)
+            modified_fcn = modified_function(state_cx_scaled, control_cx_scaled, param_cx, target_cx, dt_cx)
         else:
-            modified_fcn = (self.function(state_cx_scaled, control_cx_scaled, param_cx) - target_cx) ** exponent
+            modified_fcn = (self.function[node](state_cx_scaled, control_cx_scaled, param_cx) - target_cx) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
         modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
 
         # Do not use nlp.add_casadi_func because all of them must be registered
-        self.weighted_function = Function(
+        self.weighted_function[node] = Function(
             name, [state_cx_scaled, control_cx_scaled, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
-        self.weighted_function_non_threaded = self.weighted_function
+        self.weighted_function_non_threaded[node] = self.weighted_function[node]
 
         if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
-            self.function = self.function.map(len(self.node_idx), "thread", ocp.n_threads)
-            self.weighted_function = self.weighted_function.map(len(self.node_idx), "thread", ocp.n_threads)
+            self.function[node] = self.function[node].map(len(self.node_idx), "thread", ocp.n_threads)
+            self.weighted_function[node] = self.weighted_function[node].map(len(self.node_idx), "thread", ocp.n_threads)
         else:
             self.multi_thread = False  # Override the multi_threading, since only one node is optimized
 
         if self.expand:
-            self.function = self.function.expand()
-            self.weighted_function = self.weighted_function.expand()
+            self.function[node] = self.function[node].expand()
+            self.weighted_function[node] = self.weighted_function[node].expand()
 
     def add_target_to_plot(self, controller: PenaltyController, combine_to: str):
         """
@@ -721,6 +732,10 @@ class PenaltyOption(OptionGeneric):
         if ocp.assume_phase_dynamics:
             penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
+            self.function = self.function * len(controllers[0])
+            self.weighted_function = self.weighted_function * len(controllers[0])
+            self.function_non_threaded = self.function_non_threaded * len(controllers[0])
+            self.weighted_function_non_threaded = self.weighted_function_non_threaded * len(controllers[0])
         else:
             # The active controller is always last
             node_indices = [t for t in controllers[-1].t]

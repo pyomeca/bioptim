@@ -312,6 +312,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             ) and nlp.control_type == ControlType.CONSTANT:
                 u = horzcat(u, u[:, -1])
 
+            # TODO: Benjamin check if this list is always [0]
             p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)
 
         else:
@@ -337,6 +338,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     u = []
                 else:
                     x, u = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
+                p = vertcat(p, penalty.weighted_function[idx](x, u, param, penalty.weight, target, penalty.dt))
         out = vertcat(out, sum2(p))
     return out

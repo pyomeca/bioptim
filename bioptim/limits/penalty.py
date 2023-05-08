@@ -997,6 +997,7 @@ class PenaltyFunctionAbstract:
 
         if penalty.cols is not None and index is not None:
             raise ValueError(f"It is not possible to define cols and {_type}_index since they are the same variable")
+
         penalty.cols = index if index is not None else penalty.cols
         if penalty.cols is not None:
             penalty.cols = [penalty.cols] if not isinstance(penalty.cols, (tuple, list)) else penalty.cols
