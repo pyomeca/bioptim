@@ -150,6 +150,7 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
         self.rows = rows if rows is not None else index
         self.cols = cols
+        self.cols_is_set = False  # This is an internal variable that is set after 'set_idx_columns' is called
         self.expand = expand
 
         self.target = None

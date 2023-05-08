@@ -994,6 +994,8 @@ class PenaltyFunctionAbstract:
         _type: str
             The type of penalty (for raise error message purpose)
         """
+        if penalty.cols_is_set:
+            return
 
         if penalty.cols is not None and index is not None:
             raise ValueError(f"It is not possible to define cols and {_type}_index since they are the same variable")
@@ -1006,6 +1008,7 @@ class PenaltyFunctionAbstract:
                 penalty.cols = [
                     cols if isinstance(cols, int) else controller.model.marker_index(cols) for cols in penalty.cols
                 ]
+        penalty.cols_is_set = True
 
     @staticmethod
     def set_axes_rows(penalty: PenaltyOption, axes: list | tuple):
