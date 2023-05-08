@@ -8,7 +8,7 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, horzcat
+from casadi import MX, SX, Function, sum1, sum2, horzcat
 from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
@@ -1504,3 +1504,25 @@ class OptimalControlProgram:
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
 
         self.program_changed = True
+
+    def node_time(self, phase_idx: int, node_idx: int):
+        """
+        Gives the time of the node node_idx of from the phase phase_idx
+
+        Parameters
+        ----------
+        phase_idx: int
+          Index of the phase
+        node_idx: int
+          Index of the node
+
+        Returns
+        -------
+        The node time node_idx from the phase phase_idx
+        """
+        if phase_idx < 0 or phase_idx > self.n_phases - 1:
+            return ValueError(f"phase_index out of range [0:{self.n_phases}]")
+        if node_idx < 0 or node_idx > self.nlp[phase_idx].ns:
+            return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
+        previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
+        return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
