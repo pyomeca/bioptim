@@ -88,7 +88,10 @@ class PenaltyFunctionAbstract:
             if key in all_pn.nlp.variable_mappings:
                 target_mapping = all_pn.nlp.variable_mappings[key]
             else:
-                target_mapping = BiMapping(to_first=list(range(all_pn.nlp.controls[key].cx_start.shape[0])), to_second=list(range(all_pn.nlp.controls[key].cx_start.shape[0])))
+                target_mapping = BiMapping(
+                    to_first=list(range(all_pn.nlp.controls[key].cx_start.shape[0])),
+                    to_second=list(range(all_pn.nlp.controls[key].cx_start.shape[0])),
+                )
             if penalty.integration_rule == IntegralApproximation.RECTANGLE:
                 # todo: for trapezoidal integration
                 penalty.add_target_to_plot(all_pn=all_pn, combine_to=f"{key}_controls", target_mapping=target_mapping)

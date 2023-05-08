@@ -633,7 +633,9 @@ class OptimalControlProgram:
                 else:
                     dof_names_all_phases += [legend]
                     current_dof_mapping += [len(dof_names_all_phases) - 1]
-            phase_mappings.append(BiMapping(to_first=current_dof_mapping, to_second=list(range(len(current_dof_mapping)))))
+            phase_mappings.append(
+                BiMapping(to_first=current_dof_mapping, to_second=list(range(len(current_dof_mapping))))
+            )
             dof_names.append([dof_names_all_phases[i] for i in phase_mappings[i].to_first.map_idx])
         return phase_mappings, dof_names
 

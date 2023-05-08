@@ -686,10 +686,16 @@ class ConfigureProblem:
 
         if "contact_forces" in nlp.plot_mapping:
             contact_names_in_phase = [name for name in nlp.model.contact_names]
-            axes_idx = BiMapping(to_first=nlp.plot_mapping["contact_forces"].map_idx, to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
+            axes_idx = BiMapping(
+                to_first=nlp.plot_mapping["contact_forces"].map_idx,
+                to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+            )
         else:
             contact_names_in_phase = [name for name in nlp.model.contact_names]
-            axes_idx = BiMapping(to_first=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase], to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
+            axes_idx = BiMapping(
+                to_first=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+                to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+            )
 
         nlp.plot["contact_forces"] = CustomPlot(
             lambda t, x, u, p: nlp.contact_forces_func(x, u, p),
@@ -740,15 +746,19 @@ class ConfigureProblem:
                     for name in component_list
                     if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
                 ]
-                phase_mappings = BiMapping(to_first=nlp.plot_mapping["soft_contact_forces"].map_idx, to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase])
+                phase_mappings = BiMapping(
+                    to_first=nlp.plot_mapping["soft_contact_forces"].map_idx,
+                    to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
+                )
             else:
                 soft_contact_names_in_phase = [
                     f"{nlp.model.soft_contact_names[i_sc]}_{name}"
                     for name in component_list
                     if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
                 ]
-                phase_mappings = BiMapping(to_first=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
-                                           to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase]
+                phase_mappings = BiMapping(
+                    to_first=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
+                    to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
                 lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6) : ((i_sc + 1) * 6), :],
@@ -1110,7 +1120,7 @@ class ConfigureProblem:
             as_states,
             as_controls,
             as_states_dot,
-            axes_idx=axes_idx  # nlp.variable_mappings[name].to_first,
+            axes_idx=axes_idx,  # nlp.variable_mappings[name].to_first,
         )
 
     @staticmethod
@@ -1350,10 +1360,16 @@ class ConfigureProblem:
     def _apply_phase_mapping(ocp, nlp, name):
         if nlp.phase_mapping:
             if name in nlp.variable_mappings.keys():
-                double_mapping_to_first = nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.to_first.map_idx).T.tolist()[0]
+                double_mapping_to_first = (
+                    nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.to_first.map_idx).T.tolist()[0]
+                )
                 double_mapping_to_first = [int(double_mapping_to_first[i]) for i in range(len(double_mapping_to_first))]
-                double_mapping_to_second = nlp.variable_mappings[name].to_second.map(nlp.phase_mapping.to_second.map_idx).T.tolist()[0]
-                double_mapping_to_second= [int(double_mapping_to_second[i]) for i in range(len(double_mapping_to_second))]
+                double_mapping_to_second = (
+                    nlp.variable_mappings[name].to_second.map(nlp.phase_mapping.to_second.map_idx).T.tolist()[0]
+                )
+                double_mapping_to_second = [
+                    int(double_mapping_to_second[i]) for i in range(len(double_mapping_to_second))
+                ]
             else:
                 double_mapping_to_first = nlp.phase_mapping.to_first.map_idx
                 double_mapping_to_second = nlp.phase_mapping.to_second.map_idx

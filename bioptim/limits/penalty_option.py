@@ -5,6 +5,7 @@ from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
+
 # from .objective_functions import ObjectiveFcn
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, IntegralApproximation
 from ..misc.mapping import Mapping, BiMapping
@@ -633,7 +634,9 @@ class PenaltyOption(OptionGeneric):
                 color="tab:red",
                 plot_type=plot_type,
                 phase=all_pn.nlp.phase_idx,
-                axes_idx=BiMapping(to_first=list(self.rows), to_second=list(self.rows)),  # TODO verify if not all elements has target
+                axes_idx=BiMapping(
+                    to_first=list(self.rows), to_second=list(self.rows)
+                ),  # TODO verify if not all elements has target
                 node_idx=self.node_idx,
             )
 

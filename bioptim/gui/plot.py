@@ -406,15 +406,31 @@ class PlotOcp:
                                 y_min = nlp.plot[variable].bounds.min[mapping_to_first_index.index(ctr), :].min()
                                 y_max = nlp.plot[variable].bounds.max[mapping_to_first_index.index(ctr), :].max()
                             else:
-                                nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping_to_first_index), nlp.ns)
-                                y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[mapping_to_first_index.index(ctr)] for j in range(nlp.ns)])
-                                y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[mapping_to_first_index.index(ctr)] for j in range(nlp.ns)])
+                                nlp.plot[variable].bounds.check_and_adjust_dimensions(
+                                    len(mapping_to_first_index), nlp.ns
+                                )
+                                y_min = min(
+                                    [
+                                        nlp.plot[variable].bounds.min.evaluate_at(j)[mapping_to_first_index.index(ctr)]
+                                        for j in range(nlp.ns)
+                                    ]
+                                )
+                                y_max = max(
+                                    [
+                                        nlp.plot[variable].bounds.max.evaluate_at(j)[mapping_to_first_index.index(ctr)]
+                                        for j in range(nlp.ns)
+                                    ]
+                                )
                             if y_min.__array__()[0] < y_min_all[var_idx][mapping_to_first_index.index(ctr)]:
                                 y_min_all[var_idx][mapping_to_first_index.index(ctr)] = y_min
                             if y_max.__array__()[0] > y_max_all[var_idx][mapping_to_first_index.index(ctr)]:
                                 y_max_all[var_idx][mapping_to_first_index.index(ctr)] = y_max
 
-                            y_range, _ = self.__compute_ylim(y_min_all[var_idx][mapping_to_first_index.index(ctr)], y_max_all[var_idx][mapping_to_first_index.index(ctr)], 1.25)
+                            y_range, _ = self.__compute_ylim(
+                                y_min_all[var_idx][mapping_to_first_index.index(ctr)],
+                                y_max_all[var_idx][mapping_to_first_index.index(ctr)],
+                                1.25,
+                            )
                             ax.set_ylim(y_range)
 
                     plot_type = self.plot_func[variable][i].type
@@ -506,9 +522,21 @@ class PlotOcp:
                                 ns = nlp.plot[variable].bounds.min.shape[1] - 1
                             else:
                                 ns = nlp.ns
-                            nlp.plot[variable].bounds.check_and_adjust_dimensions(n_elements=len(mapping_to_first_index), n_shooting=ns)
-                            bounds_min = np.array([nlp.plot[variable].bounds.min.evaluate_at(k)[mapping_to_first_index.index(ctr)] for k in range(ns + 1)])
-                            bounds_max = np.array([nlp.plot[variable].bounds.max.evaluate_at(k)[mapping_to_first_index.index(ctr)] for k in range(ns + 1)])
+                            nlp.plot[variable].bounds.check_and_adjust_dimensions(
+                                n_elements=len(mapping_to_first_index), n_shooting=ns
+                            )
+                            bounds_min = np.array(
+                                [
+                                    nlp.plot[variable].bounds.min.evaluate_at(k)[mapping_to_first_index.index(ctr)]
+                                    for k in range(ns + 1)
+                                ]
+                            )
+                            bounds_max = np.array(
+                                [
+                                    nlp.plot[variable].bounds.max.evaluate_at(k)[mapping_to_first_index.index(ctr)]
+                                    for k in range(ns + 1)
+                                ]
+                            )
                             if bounds_min.shape[0] == nlp.ns:
                                 bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
                                 bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
@@ -702,7 +730,10 @@ class PlotOcp:
                             # This is a special case since derivative is not properly integrated
                             val_tempo = np.repeat(val, y_tp.shape[1])[np.newaxis, :]
 
-                        if val_tempo.shape[0] != len(self.plot_func[key][i].phase_mappings.to_first.map_idx) or val_tempo.shape[1] != val.shape[1]:
+                        if (
+                            val_tempo.shape[0] != len(self.plot_func[key][i].phase_mappings.to_first.map_idx)
+                            or val_tempo.shape[1] != val.shape[1]
+                        ):
                             raise RuntimeError(
                                 f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y_tp.shape}"
                             )
@@ -793,7 +824,7 @@ class PlotOcp:
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
-                    val = np.empty((self.variable_sizes[i][key], ))
+                    val = np.empty((self.variable_sizes[i][key],))
                     val.fill(np.nan)
                     if self.plot_func[key][i].compute_derivative:
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
@@ -825,7 +856,10 @@ class PlotOcp:
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
-                        if val_tempo.shape[0] != len(self.plot_func[key][i].phase_mappings.to_first.map_idx) or val_tempo.shape[1] != val.shape[1]:
+                        if (
+                            val_tempo.shape[0] != len(self.plot_func[key][i].phase_mappings.to_first.map_idx)
+                            or val_tempo.shape[1] != val.shape[1]
+                        ):
                             raise RuntimeError(
                                 f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}"
                             )
