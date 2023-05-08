@@ -263,8 +263,10 @@ def test_initial_guess_error_messages():
     """
     This tests that the error messages are properly raised. The OCP is adapted from the getting_started/pendulum.py example.
     """
+    from bioptim.examples.getting_started import pendulum as ocp_module
 
-    biorbd_model_path = "../bioptim/examples/getting_started/models/pendulum.bioMod"
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    biorbd_model_path = bioptim_folder + "/models/pendulum.bioMod"
     bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
