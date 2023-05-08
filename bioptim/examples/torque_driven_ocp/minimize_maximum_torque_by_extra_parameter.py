@@ -7,26 +7,23 @@ from bioptim import (
     DynamicsFcn,
     ObjectiveList,
     ConstraintList,
-    ConstraintFcn,
     BoundsList,
     InitialGuessList,
     Node,
-    QAndQDotBounds,
     ObjectiveFcn,
     BiMappingList,
-    Solver,
-    PenaltyNodeList,
     ParameterList,
     InterpolationType,
     Bounds,
     InitialGuess,
     Objective,
     BiorbdModel,
+    PenaltyController,
 )
 
 
-def custom_constraint_parameters(all_pn: PenaltyNodeList) -> MX:
-    tau = all_pn.nlp.controls["tau"].cx
+def custom_constraint_parameters(all_pn: PenaltyController) -> MX:
+    tau = all_pn.nlp.controls["tau"].cx_start
     idx = all_pn.nlp.parameters.names.index("max_tau")
     max_param = all_pn.nlp.parameters[idx].cx
     val = max_param - tau
@@ -37,21 +34,24 @@ def minimize_parameters(ocp: OptimalControlProgram, value: MX) -> MX:
     return value
 
 
-def my_parameter_function(biorbd_model: biorbd.Model, value: MX):
+def my_parameter_function(bio_model: biorbd.Model, value: MX):
     return
 
 
-def custom_min_parameter(all_pn: PenaltyNodeList) -> MX:
-    idx = all_pn.nlp.parameters.names.index("max_tau")
-    max_param = all_pn.nlp.parameters[idx].cx
-    return max_param
+def custom_min_parameter(controller: PenaltyController) -> MX:
+    idx = controller.nlp.parameters.names.index("max_tau")
+    # max_param = controller.nlp.parameters[idx].cx
+    # val = controller.nlp.mx_to_cx(
+    #     "min_max_tau", max_param, controller.nlp.parameters.cx_start
+    # )
+    return controller.nlp.parameters.cx_start[idx]  # val
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/double_pendulum.bioMod",
+    bio_model_path: str = "models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
 
-    biorbd_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
+    bio_model = (BiorbdModel(bio_model_path), BiorbdModel(bio_model_path))
 
     # Problem parameters
     n_shooting = (40, 40)
@@ -80,11 +80,8 @@ def prepare_ocp(
         penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
     )
 
-
     # Add objective functions
     objective_functions = ObjectiveList()
-    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=0)
-    # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=1)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=0, min_bound=0.1, max_bound=3)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=1, min_bound=0.1, max_bound=3)
     objective_functions.add(custom_min_parameter, custom_type=ObjectiveFcn.Mayer, node=Node.ALL, weight=100000)
@@ -92,8 +89,6 @@ def prepare_ocp(
     # Constraints
     constraints = ConstraintList()
     constraints.add(custom_constraint_parameters, node=Node.ALL, min_bound=0, max_bound=tau_max)
-    # constraints.add(ConstraintFcn.TIME_CONSTRAINT, phase=0, min_bound=0.1, max_bound=3)
-    # constraints.add(ConstraintFcn.TIME_CONSTRAINT, phase=0, min_bound=0.1, max_bound=3)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -102,11 +97,11 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[1]))
-
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    
     #change model bound for -pi, pi
-    for i in range(len(biorbd_model)):
+    for i in range(len(bio_model)):
         x_bounds[i].min[1, :] = -np.pi
         x_bounds[i].max[1, :] = np.pi
 
@@ -122,8 +117,8 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (biorbd_model[0].nb_q + biorbd_model[0].nb_qdot))
-    x_init.add([1] * (biorbd_model[1].nb_q + biorbd_model[1].nb_qdot))
+    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init.add([1] * (bio_model[1].nb_q + bio_model[1].nb_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
@@ -136,7 +131,7 @@ def prepare_ocp(
     u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
 
     return OptimalControlProgram(
-        biorbd_model,
+        bio_model,
         dynamics,
         n_shooting,
         final_time,
@@ -148,6 +143,7 @@ def prepare_ocp(
         constraints=constraints,
         variable_mappings=tau_mappings,
         parameters=parameters,
+        assume_phase_dynamics=True
     )
 
 
@@ -155,14 +151,13 @@ def main():
 
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
-    # ocp.add_plot_penalty()
-    # ocp.print(to_graph=True)
 
-    sol = ocp.solve() # Solver.IPOPT(show_online_optim=Truee
-    # sol.animate()
+    # --- Solve the ocp --- #
+    sol = ocp.solve()
+
+    # --- Show results --- #
+    sol.animate()
     sol.graphs(show_bounds=True)
-    # sol.detailed_cost_values()
-    # print(sol.detailed_cost)
 
 
 if __name__ == "__main__":
