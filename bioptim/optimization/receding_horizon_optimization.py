@@ -384,7 +384,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
     def _initialize_solution(self, states: list, controls: list):
         _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
+        init_controls = InitialGuess(np.concatenate(controls, axis=1)[:, :-1], interpolation=InterpolationType.EACH_FRAME)
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
@@ -395,9 +395,12 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
             xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
             u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
+            x_init=_states,
+            u_init=init_controls,
             skip_continuity=True,
             use_sx=self.original_values["use_sx"],
         )
+        _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
         return Solution(solution_ocp, [_states, _controls])
 
     def _initialize_state_idx_to_cycle(self, options):
