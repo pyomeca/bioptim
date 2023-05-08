@@ -70,7 +70,11 @@ class Objective(PenaltyOption):
             controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
-            pool = controller.get_nlp.J_internal if controller is not None and controller.get_nlp else controller.ocp.J_internal
+            pool = (
+                controller.get_nlp.J_internal
+                if controller is not None and controller.get_nlp
+                else controller.ocp.J_internal
+            )
         elif self.penalty_type == PenaltyType.USER:
             pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
         else:

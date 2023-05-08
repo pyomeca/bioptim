@@ -400,7 +400,9 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def states_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"):
+        def states_equality(
+            binode_constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"
+        ):
             """
             The most common continuity function, that is state before equals state after
 
@@ -430,7 +432,9 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             return states_pre - states_post
 
         @staticmethod
-        def controls_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"):
+        def controls_equality(
+            binode_constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"
+        ):
             """
             The controls before equals controls after
 
@@ -535,8 +539,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             pre_com_dot = pre.model.center_of_mass_velocity(
-                states_pre[pre.states["q"].index, :],
-                states_pre[pre.states["qdot"].index, :]
+                states_pre[pre.states["q"].index, :], states_pre[pre.states["qdot"].index, :]
             )
             post_com_dot = post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 

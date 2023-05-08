@@ -353,7 +353,9 @@ class PenaltyOption(OptionGeneric):
                         raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                     self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
-    def _set_penalty_function(self, controller: PenaltyController | list[PenaltyController, PenaltyController], fcn: MX | SX):
+    def _set_penalty_function(
+        self, controller: PenaltyController | list[PenaltyController, PenaltyController], fcn: MX | SX
+    ):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 
@@ -427,7 +429,9 @@ class PenaltyOption(OptionGeneric):
             ocp = controller.ocp
             name = self.name
             if self.integrate:
-                state_cx_scaled = horzcat(*([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list))
+                state_cx_scaled = horzcat(
+                    *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
+                )
                 control_cx_scaled = controller.controls_scaled.cx_start
             else:
                 state_cx_scaled = controller.states_scaled.cx_start
@@ -730,7 +734,9 @@ class PenaltyOption(OptionGeneric):
             for node_index in node_indices:
                 controllers[-1].t = [node_index]
                 controllers[-1].node_index = node_index
-                penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
+                penalty_function = self.type(
+                    self, controllers if len(controllers) > 1 else controllers[0], **self.params
+                )
                 self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
     def _add_penalty_to_pool(self, controller: PenaltyController | list[PenaltyController, ...]):

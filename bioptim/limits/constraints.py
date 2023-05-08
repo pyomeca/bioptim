@@ -98,9 +98,17 @@ class Constraint(PenaltyOption):
             controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
-            pool = controller.get_nlp.g_internal if controller is not None and controller.get_nlp else controller.ocp.g_internal
+            pool = (
+                controller.get_nlp.g_internal
+                if controller is not None and controller.get_nlp
+                else controller.ocp.g_internal
+            )
         elif self.penalty_type == ConstraintType.IMPLICIT:
-            pool = controller.get_nlp.g_implicit if controller is not None and controller.get_nlp else controller.ocp.g_implicit
+            pool = (
+                controller.get_nlp.g_implicit
+                if controller is not None and controller.get_nlp
+                else controller.ocp.g_implicit
+            )
         elif self.penalty_type == PenaltyType.USER:
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
@@ -292,7 +300,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             value = vertcat(
                 controller.controls["tau"].cx_start + min_bound, controller.controls["tau"].cx_start - max_bound
-            )  
+            )
 
             n_rows = constraint.rows if constraint.rows else int(value.shape[0] / 2)
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
@@ -348,15 +356,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             q = controller.states["q"].mx
             qdot = controller.states["qdot"].mx
             passive_torque = controller.model.passive_joint_torque(q, qdot)
-            tau = (
-                controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
-            )  
+            tau = controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
-            qddot = (
-                controller.controls["qddot"].mx if "qddot" in controller.controls else controller.states["qddot"].mx
-            )  
+            qddot = controller.controls["qddot"].mx if "qddot" in controller.controls else controller.states["qddot"].mx
             if with_contact:
                 model = controller.model.copy()
                 qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
@@ -401,12 +405,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             q = controller.states["q"].mx
             qdot = controller.states["qdot"].mx
-            tau = (
-                controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
-            )  
-            qddot = (
-                controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
-            )  
+            tau = controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
+            qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
             passive_torque = controller.model.passive_joint_torque(q, qdot)
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
@@ -420,7 +420,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # todo: this should be done internally in BiorbdModel
                 f_contact = (
                     controller.controls["fext"].mx if "fext" in controller.controls else controller.states["fext"].mx
-                )  
+                )
                 f_contact_vec = controller.model.reshape_fext_to_fcontact(f_contact)
 
                 tau_id = controller.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)
@@ -456,12 +456,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             q = controller.states["q"].mx
             qdot = controller.states["qdot"].mx
-            qddot = (
-                controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
-            )  
+            qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
 
             # TODO get the index of the marker
-            contact_acceleration = controller.model.rigid_contact_acceleration(q, qdot, qddot, contact_index, contact_axis)
+            contact_acceleration = controller.model.rigid_contact_acceleration(
+                q, qdot, qddot, contact_index, contact_axis
+            )
 
             var = []
             var.extend([controller.states[key] for key in controller.states])
@@ -502,9 +502,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             muscle_tau = controller.model.muscle_joint_torque(muscles_states, q, qdot)
             muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
             muscle_tau = muscle_tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else muscle_tau
-            qddot = (
-                controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
-            )  
+            qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
 
             if controller.get_nlp.external_forces:
                 raise NotImplementedError(
@@ -545,7 +543,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             soft_contact_all = controller.get_nlp.soft_contact_forces_func(
                 controller.states.mx, controller.controls.mx, controller.parameters.mx
-            )  
+            )
             soft_contact_force = soft_contact_all[force_idx]
 
             var = []
@@ -553,9 +551,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             var.extend([controller.controls[key] for key in controller.controls])
             var.extend([param for param in controller.parameters])
 
-            return controller.mx_to_cx(
-                "forward_dynamics", controller.controls["fext"].mx - soft_contact_force, *var
-            )  
+            return controller.mx_to_cx("forward_dynamics", controller.controls["fext"].mx - soft_contact_force, *var)
 
     @staticmethod
     def get_dt(_):
