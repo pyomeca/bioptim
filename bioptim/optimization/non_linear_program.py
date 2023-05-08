@@ -375,3 +375,20 @@ class NonLinearProgram:
                 func_evaluated = func_evaluated.to_mx()
         func = Function(name, cx_param, [func_evaluated])
         return func.expand() if expand else func
+
+    def node_time(self, node_idx: int):
+        """
+        Gives the time for a specific index
+
+        Parameters
+        ----------
+        node_idx: int
+          Index of the node
+
+        Returns
+        -------
+        The time for a specific index
+        """
+        if node_idx < 0 or node_idx > self.ns:
+            return ValueError(f"node_index out of range [0:{self.ns}]")
+        return self.tf / self.ns * node_idx
