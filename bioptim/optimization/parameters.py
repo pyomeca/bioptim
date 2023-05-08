@@ -128,13 +128,13 @@ class Parameter(PenaltyOption):
             The placeholder for what is supposed to be nlp
         """
 
-        old_parameter_cx = ocp.v.parameters_in_list.cx_start
+        old_parameter_cx = ocp.v.parameters_in_list.cx
         ocp.v.add_parameter(self)
 
         # Express the previously defined parameters with the new param set
         state_cx = ocp.cx()
         controls_cx = ocp.cx()
-        parameter_cx = ocp.v.parameters_in_list.cx_start
+        parameter_cx = ocp.v.parameters_in_list.cx
         for p in ocp.v.parameters_in_list:
             if p.penalty_list is None:
                 continue
@@ -407,7 +407,7 @@ class ParameterList(UniquePerProblemOptionList):
         return np.vstack([p.scaling for p in self]) if len(self) else np.array([[1.0]])
 
     @property
-    def cx_start(self):
+    def cx(self):
         """
         The CX vector of all parameters
         """
