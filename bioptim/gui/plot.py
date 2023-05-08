@@ -796,14 +796,15 @@ class PlotOcp:
                             y[:, i_node] = val
                     else:
                         nodes = self.plot_func[key][i].node_idx
-                        if len(nodes) == 1:
-                            y = np.empty((self.variable_sizes[i][key], 1))
-                            y.fill(np.nan)
+                        if nodes is not None:
+                            if len(nodes) == 1:
+                                y = np.empty((self.variable_sizes[i][key], 1))
+                                y.fill(np.nan)
 
-                        if nodes and len(nodes) > 1 and len(nodes) == round(state.shape[1] / step_size):
-                            # Assume we are integrating but did not specify plot as such.
-                            # Therefore the arrival point is missing
-                            nodes += [nodes[-1] + 1]
+                            if nodes and len(nodes) > 1 and len(nodes) == round(state.shape[1] / step_size):
+                                # Assume we are integrating but did not specify plot as such.
+                                # Therefore the arrival point is missing
+                                nodes += [nodes[-1] + 1]
 
                         val = self.plot_func[key][i].function(
                             nodes,
