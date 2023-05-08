@@ -131,6 +131,7 @@ class Parameter(PenaltyOption):
         old_parameter_cx = ocp.v.parameters_in_list.cx_start
         ocp.v.add_parameter(self)
 
+
         # Express the previously defined parameters with the new param set
         state_cx = ocp.cx()
         controls_cx = ocp.cx()
