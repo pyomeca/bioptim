@@ -31,7 +31,11 @@ def test_custom_constraint_multiple_nodes_fail():
     x_init = InitialGuess([0] * 6)
     u_init = InitialGuess([0] * 3)
 
-    with pytest.raises(NotImplementedError, match="Setting custom function for more than one node at a time for when assume_phase_dynamics is set to False is not Implemented"):
+    with pytest.raises(
+            NotImplementedError,
+            match="Setting custom function for more than one node at a time when assume_phase_dynamics "
+                  "is set to False is not Implemented"
+    ):
         OptimalControlProgram(
             BiorbdModel(model_path),
             Dynamics(DynamicsFcn.TORQUE_DRIVEN),

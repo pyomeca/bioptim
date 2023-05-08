@@ -723,7 +723,7 @@ class PenaltyOption(OptionGeneric):
 
             if self.custom_function and len(node_indices) > 1:
                 raise NotImplementedError(
-                    "Setting custom function for more than one node at a time for when assume_phase_dynamics is "
+                    "Setting custom function for more than one node at a time when assume_phase_dynamics is "
                     "set to False is not Implemented"
                 )
 
