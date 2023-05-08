@@ -491,7 +491,8 @@ class OptimizationVariableList:
         The cx of all elements together
         """
 
-        return self.cx_constructor([]) if self.shape == 0 else self._cx_start[:, 0]
+        # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
+        return self.cx_constructor([] if self.shape == 0 else self._cx_start[:, 0])
 
     @property
     def cx_end(self):
@@ -499,7 +500,8 @@ class OptimizationVariableList:
         The cx of all elements together
         """
 
-        return self.cx_constructor([]) if self.shape == 0 else self._cx_end[:, 0]
+        # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
+        return self.cx_constructor([] if self.shape == 0 else self._cx_end[:, 0])
 
     @property
     def cx_intermediates_list(self):

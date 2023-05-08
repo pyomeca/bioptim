@@ -773,8 +773,8 @@ def test_penalty_time_constraint(value):
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom(penalty_origin, value):
-    def custom(pn, mult):
-        my_values = pn.nlp.states[0]["q"].cx_start * mult  # TODO: [0] to [node_index]
+    def custom(controller: PenaltyController, mult):
+        my_values = controller.states["q"].cx_start * mult
         return my_values
 
     ocp = prepare_test_ocp()
@@ -849,8 +849,8 @@ def test_penalty_custom_fail(penalty_origin, value):
 
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds(value):
-    def custom_with_bounds(pn):
-        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
+    def custom_with_bounds(controller: PenaltyController):
+        return -10, controller.states["q"].cx_start, 10
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -867,8 +867,8 @@ def test_penalty_custom_with_bounds(value):
 
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_min_bound(value):
-    def custom_with_bounds(pn):
-        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
+    def custom_with_bounds(controller: PenaltyController):
+        return -10, controller.states["q"].cx_start, 10
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -887,8 +887,8 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
 
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_max_bound(value):
-    def custom_with_bounds(pn):
-        return -10, pn.nlp.states[0]["q"].cx_start, 10  # TODO: [0] to [node_index]
+    def custom_with_bounds(controller: PenaltyController):
+        return -10, controller.states["q"].cx_start, 10
 
     ocp = prepare_test_ocp()
     t = [0]
@@ -940,18 +940,18 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
 
     if node == Node.MID and ns % 2 != 0:
         with pytest.raises(ValueError, match="Number of shooting points must be even to use MID"):
-            _ = penalty._get_penalty_node_list([], nlp)
+            _ = penalty._get_penalty_controller([], nlp)
         return
     elif node == Node.TRANSITION:
         with pytest.raises(RuntimeError, match=" is not a valid node"):
-            _ = penalty._get_penalty_node_list([], nlp)
+            _ = penalty._get_penalty_controller([], nlp)
         return
     elif ns == 1 and node == Node.PENULTIMATE:
         with pytest.raises(ValueError, match="Number of shooting points must be greater than 1"):
-            _ = penalty._get_penalty_node_list([], nlp)
+            _ = penalty._get_penalty_controller([], nlp)
         return
     else:
-        controller = penalty._get_penalty_node_list([], nlp)
+        controller = penalty._get_penalty_controller([], nlp)
 
     x_expected = nlp.X
     u_expected = nlp.U

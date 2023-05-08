@@ -214,7 +214,7 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = multi_thread
 
-    def set_penalty(self, penalty: MX | SX, controller: PenaltyController | list[PenaltyController, ...]):
+    def set_penalty(self, penalty: MX | SX, controller: PenaltyController | list[PenaltyController, PenaltyController]):
         """
         Prepare the dimension and index of the penalty (including the target)
 
@@ -222,7 +222,7 @@ class PenaltyOption(OptionGeneric):
         ----------
         penalty: MX | SX,
             The actual penalty function
-        controller: PenaltyController
+        controller: PenaltyController | list[PenaltyController, PenaltyController]
             The penalty node elements
         """
 
@@ -230,7 +230,7 @@ class PenaltyOption(OptionGeneric):
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
         if self.target is not None:
             if isinstance(controller, list):
-                raise NotImplementedError("Penalty targets with multinodes is not implemented yet")
+                raise RuntimeError("Multinode constraints should call a self defined set_penalty")
 
             self._check_target_dimensions(controller, len(controller.t))
             if self.plot_target:
@@ -353,13 +353,13 @@ class PenaltyOption(OptionGeneric):
                         raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                     self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
-    def _set_penalty_function(self, controller: PenaltyController | list[PenaltyController, ...], fcn: MX | SX):
+    def _set_penalty_function(self, controller: PenaltyController | list[PenaltyController, PenaltyController], fcn: MX | SX):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 
         Parameters
         ----------
-        controller: PenaltyController | list | tuple
+        controller: PenaltyController | list[PenaltyController, PenaltyController]
             The nodes
         fcn: MX | SX
             The value of the penalty function
@@ -396,33 +396,35 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
-        # TODO: Add loop node_index here
+        # TODO: Add loop node_index here Benjamin
         if self.binode_constraint or self.transition:
-            ocp = controller[0].ocp
-            nlp = controller[0].nlp
-            nlp_post = controller[1].nlp
+            controllers = controller
+            pre = controllers[0]
+            post = controllers[1]
+            controller = post  # Recast controller as a normal variable (instead of a list)
+
+            ocp = controller.ocp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
 
-            states_pre_scaled = nlp.states.scaled[0].cx_end  # TODO: [0] to [node_index]
-            states_post_scaled = nlp_post.states.scaled[0].cx_start  # TODO: [0] to [node_index]
-            controls_pre_scaled = nlp.controls.scaled[0].cx_end  # TODO: [0] to [node_index]
-            controls_post_scaled = nlp_post.controls.scaled[0].cx_start  # TODO: [0] to [node_index]
+            states_pre_scaled = pre.states_scaled.cx_end
+            states_post_scaled = post.states_scaled.cx_start
+            controls_pre_scaled = pre.controls_scaled.cx_end
+            controls_post_scaled = post.controls_scaled.cx_start
             state_cx_scaled = vertcat(states_pre_scaled, states_post_scaled)
             control_cx_scaled = vertcat(controls_pre_scaled, controls_post_scaled)
 
         elif self.allnode_constraint:
+            raise NotImplementedError("allnode_constraints seem to be obsolete")
             ocp = controller.ocp
-            nlp = controller[0].nlp
             nlp_all = controller.nlp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
-            states_all_scaled = nlp_all.states.scaled[0].cx_start  # TODO: [0] to [node_index]
-            controls_all_scaled = nlp_all.controls.scaled[0].cx_start  # TODO: [0] to [node_index]
+            states_all_scaled = nlp_all.states_scaled.cx_start
+            controls_all_scaled = nlp_all.controls_scaled.cx_start
             state_cx_scaled = vertcat(states_all_scaled)
             control_cx_scaled = vertcat(controls_all_scaled)
 
         else:
             ocp = controller.ocp
-            nlp = controller.get_nlp
             name = self.name
             if self.integrate:
                 state_cx_scaled = horzcat(*([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list))
@@ -436,11 +438,12 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled = horzcat(state_cx_scaled, controller.states_scaled.cx_end)
                 control_cx_scaled = horzcat(control_cx_scaled, controller.controls_scaled.cx_end)
 
-        param_cx = nlp.cx(controller.parameters.cx_start)
+        # Reference the parameters for ease of access
+        param_cx = controller.parameters.cx_start
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
-        self.function = nlp.to_casadi_func(
+        self.function = controller.to_casadi_func(
             name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, expand=self.expand
         )
         self.function_non_threaded = self.function
@@ -457,7 +460,7 @@ class PenaltyOption(OptionGeneric):
                 param_cx,
             )
 
-        dt_cx = nlp.cx.sym("dt", 1, 1)
+        dt_cx = controller.cx.sym("dt", 1, 1)
         is_trapezoidal = (
             self.integration_rule == IntegralApproximation.TRAPEZOIDAL
             or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
@@ -468,8 +471,8 @@ class PenaltyOption(OptionGeneric):
                 len(self.cols) + 1 if is_trapezoidal else len(self.cols),
             ]
         )
-        target_cx = nlp.cx.sym("target", target_shape)
-        weight_cx = nlp.cx.sym("weight", 1, 1)
+        target_cx = controller.cx.sym("target", target_shape)
+        weight_cx = controller.cx.sym("weight", 1, 1)
         exponent = 2 if self.quadratic and self.weight else 1
 
         if is_trapezoidal:
@@ -489,12 +492,12 @@ class PenaltyOption(OptionGeneric):
             # which only relies on the value of the control at the beginning of the interval
             control_cx_scaled = (
                 horzcat(controller.controls_scaled.cx_start)
-                if nlp.control_type == ControlType.CONSTANT
+                if controller.control_type == ControlType.CONSTANT
                 else horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
             )
             control_cx = (
                 horzcat(controller.controls.cx_start)
-                if nlp.control_type == ControlType.CONSTANT
+                if controller.control_type == ControlType.CONSTANT
                 else horzcat(controller.controls.cx_start, controller.controls.cx_end)
             )
             control_cx_end_scaled = get_u(control_cx_scaled, dt_cx)
@@ -502,9 +505,9 @@ class PenaltyOption(OptionGeneric):
             state_cx_end_scaled = (
                 controller.states_scaled.cx_end
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else nlp.dynamics[controller.node_index](x0=state_cx, p=control_cx_end, params=controller.parameters.cx_start)["xf"]
+                else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx_start)["xf"]
             )
-            self.modified_function = nlp.to_casadi_func(
+            self.modified_function = controller.to_casadi_func(
                 f"{name}",
                 (
                     (
@@ -622,8 +625,6 @@ class PenaltyOption(OptionGeneric):
 
         penalty_type = self.type.get_type()
         if self.node == Node.TRANSITION:
-            controller = []
-
             # Make sure the penalty behave like a PhaseTransition, even though it may be an Objective or Constraint
             self.node = Node.END
             self.node_idx = [0]
@@ -634,54 +635,54 @@ class PenaltyOption(OptionGeneric):
             if not self.states_mapping:
                 self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
-            controller.append(self._get_penalty_node_list(ocp, nlp))
-            controller[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
+            pre = self._get_penalty_controller(ocp, nlp)
+            pre.u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
 
             nlp = ocp.nlp[(nlp.phase_idx + 1) % ocp.n_phases]
             self.node = Node.START
-            controller.append(self._get_penalty_node_list(ocp, nlp))
+            post = self._get_penalty_controller(ocp, nlp)
 
             self.node = Node.TRANSITION
 
-            penalty_type.validate_penalty_time_index(self, controller[0])
-            penalty_type.validate_penalty_time_index(self, controller[1])
-            self.ensure_penalty_sanity(ocp, nlp)
+            penalty_type.validate_penalty_time_index(self, pre)
+            penalty_type.validate_penalty_time_index(self, post)
+            self.ensure_penalty_sanity(ocp, pre.get_nlp)
+            controllers = [pre, post]
 
         elif isinstance(self.node, tuple) and self.binode_constraint:
-            controller = []
-            self.node_list = self.node
+            nodes = self.node
             # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
             # self.transition = True
             self.dt = 1
             # self.phase_pre_idx
             # self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
-                self.states_mapping = BiMapping(
-                    range(nlp.states[0].shape), range(nlp.states[0].shape)
-                )  # TODO: [0] to [node_index]
-            self.node = self.node_list[0]
+                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
+            self.node = nodes[0]
             nlp = ocp.nlp[self.phase_first_idx]
-            controller.append(self._get_penalty_node_list(ocp, nlp))
+            pre = self._get_penalty_controller(ocp, nlp)
             if self.node == Node.END:
-                controller[0].u = [nlp.U[-1]]
+                pre.u = [nlp.U[-1]]
                 # Make an exception to the fact that U is not available for the last node
 
-            self.node = self.node_list[1]
+            self.node = nodes[1]
             nlp = ocp.nlp[self.phase_second_idx]
-            controller.append(self._get_penalty_node_list(ocp, nlp))
+            post = self._get_penalty_controller(ocp, nlp)
             if self.node == Node.END:
-                controller[1].u = [nlp.U[-1]]
+                post.u = [nlp.U[-1]]
                 # Make an exception to the fact that U is not available for the last node
 
             # reset the node list
-            self.node = self.node_list
+            self.node = nodes
 
-            penalty_type.validate_penalty_time_index(self, controller[0])
-            penalty_type.validate_penalty_time_index(self, controller[1])
-            self.node_idx = [controller[0].t[0], controller[1].t[0]]
-            self.ensure_penalty_sanity(ocp, controller[0].nlp)
+            penalty_type.validate_penalty_time_index(self, pre)
+            penalty_type.validate_penalty_time_index(self, post)
+            self.node_idx = [pre.t[0], post.t[0]]
+            self.ensure_penalty_sanity(ocp, pre.get_nlp)
+            controllers = [pre, post]
 
-        elif self.allnode_constraint:  # TODO: clear this if not necessary anymore
+        elif self.allnode_constraint:
+            NotImplementedError("This path seems obsolete")  # TODO verify that. If true remove
             # controller = []
             # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
             # self.transition = True
@@ -691,38 +692,46 @@ class PenaltyOption(OptionGeneric):
             #    self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
             nlp = ocp.nlp[self.phase_idx]
             # controller.append(self._get_penalty_node_list(ocp, nlp))
-            controller = self._get_penalty_node_list(ocp, nlp)
-            penalty_type.validate_penalty_time_index(self, controller)
+            controllers = [self._get_penalty_controller(ocp, nlp)]
+            penalty_type.validate_penalty_time_index(self, controllers[0])
             # self.node_idx = [controller[0].t[0]] # t?
-            penalty_type.validate_penalty_time_index(self, controller)
-            self.node_idx = controller.t
+            penalty_type.validate_penalty_time_index(self, controllers[0])
+            self.node_idx = controllers[0].t
             self.ensure_penalty_sanity(ocp, nlp)
 
         else:
-            controller = self._get_penalty_node_list(ocp, nlp)
-            penalty_type.validate_penalty_time_index(self, controller)
+            controllers = [self._get_penalty_controller(ocp, nlp)]
+            penalty_type.validate_penalty_time_index(self, controllers[0])
             self.ensure_penalty_sanity(ocp, nlp)
             self.dt = penalty_type.get_dt(nlp)
             self.node_idx = (
-                controller.t[:-1]
+                controllers[0].t[:-1]
                 if (
                     self.integration_rule == IntegralApproximation.TRAPEZOIDAL
                     or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
                 )
                 and self.target is not None
-                else controller.t
+                else controllers[0].t
             )
 
         if ocp.assume_phase_dynamics:
-            penalty_function = self.type(self, controller, **self.params)
-            self.set_penalty(penalty_function, controller)
+            penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
+            self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
         else:
-            node_indices = [t for t in controller.t]
+            # The active controller is always last
+            node_indices = [t for t in controllers[-1].t]
+
+            if self.custom_function and len(node_indices) > 1:
+                raise NotImplementedError(
+                    "Setting custom function for more than one node at a time for when assume_phase_dynamics is "
+                    "set to False is not Implemented"
+                )
+
             for node_index in node_indices:
-                controller.t = [node_index]
-                controller.node_index = node_index
-                penalty_function = self.type(self, controller, **self.params)  # TODO: Ask Benjamin
-                self.set_penalty(penalty_function, controller)
+                controllers[-1].t = [node_index]
+                controllers[-1].node_index = node_index
+                penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
+                self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
     def _add_penalty_to_pool(self, controller: PenaltyController | list[PenaltyController, ...]):
         """
@@ -750,7 +759,7 @@ class PenaltyOption(OptionGeneric):
 
         raise RuntimeError("_reset_penalty cannot be called from an abstract class")
 
-    def _get_penalty_node_list(self, ocp, nlp) -> PenaltyController:
+    def _get_penalty_controller(self, ocp, nlp) -> PenaltyController:
         """
         Get the actual node (time, X and U) specified in the penalty
 

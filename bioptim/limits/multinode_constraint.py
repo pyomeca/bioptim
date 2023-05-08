@@ -115,7 +115,7 @@ class BinodeConstraint(Constraint):
             )
 
         ocp = controller[0].ocp
-        nlp = controller[0].nlp
+        nlp = controller[0].get_nlp
         if self.weight == 0:
             pool = nlp.g_internal if nlp else ocp.g_internal
         else:
@@ -400,7 +400,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def states_equality(binode_constraint, controller: PenaltyController, key: str = "all"):
+        def states_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"):
             """
             The most common continuity function, that is state before equals state after
 
@@ -408,7 +408,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list
                     The penalty node elements
 
             Returns
@@ -416,13 +416,9 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(
-                nlp_pre.states[0].get_cx(key, CXStep.CX_END)
-            )  # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(
-                nlp_post.states[0].get_cx(key, CXStep.CX_START)
-            )  # TODO: [0] to [node_index]
+            pre, post = controllers
+            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.get_cx(key, CXStep.CX_END))
+            states_post = binode_constraint.states_mapping.to_first.map(post.states.get_cx(key, CXStep.CX_START))
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -434,7 +430,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             return states_pre - states_post
 
         @staticmethod
-        def controls_equality(binode_constraint, controller: PenaltyController, key: str = "all"):
+        def controls_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"):
             """
             The controls before equals controls after
 
@@ -442,7 +438,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -450,9 +446,9 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the controls after and before
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            controls_pre = nlp_pre.controls[0].get_cx(key, CXStep.CX_END)  # TODO: [0] to [node_index]
-            controls_post = nlp_post.controls[0].get_cx(key, CXStep.CX_START)  # TODO: [0] to [node_index]
+            pre, post = controllers
+            controls_pre = pre.controls.get_cx(key, CXStep.CX_END)
+            controls_post = post.controls.get_cx(key, CXStep.CX_START)
 
             if controls_pre.shape != controls_post.shape:
                 raise RuntimeError(
@@ -464,7 +460,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             return controls_pre - controls_post
 
         @staticmethod
-        def com_equality(binode_constraint, controller: PenaltyController):
+        def com_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController]):
             """
             The centers of mass are equals for the specified phases and the specified nodes
 
@@ -472,7 +468,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -480,17 +476,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(
-                nlp_pre.states[0].cx_end
-            )  # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(
-                nlp_post.states[0].cx_start
-            )  # TODO: [0] to [node_index]
+            pre, post = controllers
+            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.cx_end)
+            states_post = binode_constraint.states_mapping.to_first.map(post.states.cx_start)
 
-            states_post_sym_list = [
-                MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]
-            ]  # TODO: [0] to [node_index]
+            states_post_sym_list = [MX.sym(f"{key}", *post.states[key].mx.shape) for key in post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -500,15 +490,13 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com = nlp_pre.model.center_of_mass(
-                states_pre[nlp_pre.states[0]["q"].index, :]
-            )  # TODO: [0] to [node_index]
-            post_com = nlp_post.model.center_of_mass(states_post_sym_list[0])
+            pre_com = pre.model.center_of_mass(states_pre[pre.states["q"].index, :])
+            post_com = post.model.center_of_mass(states_post_sym_list[0])
 
-            pre_states_cx = nlp_pre.states[0].cx_end  # TODO: [0] to [node_index]
-            post_states_cx = nlp_post.states[0].cx_start  # TODO: [0] to [node_index]
+            pre_states_cx = pre.states.cx_end
+            post_states_cx = post.states.cx_start
 
-            return nlp_pre.to_casadi_func(
+            return pre.to_casadi_func(
                 "com_equality",
                 pre_com - post_com,
                 states_pre,
@@ -516,7 +504,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
-        def com_velocity_equality(binode_constraint, controller: PenaltyController):
+        def com_velocity_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController]):
             """
             The centers of mass velocity are equals for the specified phases and the specified nodes
 
@@ -524,7 +512,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -532,17 +520,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(
-                nlp_pre.states[0].cx_end
-            )  # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(
-                nlp_post.states[0].cx_start
-            )  # TODO: [0] to [node_index]
+            pre, post = controllers
+            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.cx_end)
+            states_post = binode_constraint.states_mapping.to_first.map(post.states.cx_start)
 
-            states_post_sym_list = [
-                MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]
-            ]  # TODO: [0] to [node_index]
+            states_post_sym_list = [MX.sym(f"{key}", *post.states[key].mx.shape) for key in post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -552,16 +534,16 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com_dot = nlp_pre.model.center_of_mass_velocity(
-                states_pre[nlp_pre.states[0]["q"].index, :],
-                states_pre[nlp_pre.states[0]["qdot"].index, :],  # TODO: [0] to [node_index]
+            pre_com_dot = pre.model.center_of_mass_velocity(
+                states_pre[pre.states["q"].index, :],
+                states_pre[pre.states["qdot"].index, :]
             )
-            post_com_dot = nlp_post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
+            post_com_dot = post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
-            pre_states_cx = nlp_pre.states[0].cx_end  # TODO: [0] to [node_index]
-            post_states_cx = nlp_post.states[0].cx_start  # TODO: [0] to [node_index]
+            pre_states_cx = pre.states.cx_end
+            post_states_cx = post.states.cx_start
 
-            return nlp_pre.to_casadi_func(
+            return pre.to_casadi_func(
                 "com_dot_equality",
                 pre_com_dot - post_com_dot,
                 states_pre,
@@ -569,7 +551,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
-        def time_equality(binode_constraint, controller):
+        def time_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController]):
             """
             The duration of one phase must be the same as the duration of another phase
 
@@ -577,7 +559,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -585,10 +567,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the duration of the phases
             """
             time_pre_idx = None
-            for i in range(controller[0].nlp.parameters.cx_start.shape[0]):
-                param_name = controller[0].nlp.parameters.cx_start[i].name()
-                if param_name == "time_phase_" + str(controller[0].nlp.phase_idx):
-                    time_pre_idx = controller[0].nlp.phase_idx
+            pre, post = controllers
+            for i in range(pre.parameters.cx_start.shape[0]):
+                param_name = pre.parameters.cx_start[i].name()
+                if param_name == "time_phase_" + str(pre.phase_idx):
+                    time_pre_idx = pre.phase_idx
             if time_pre_idx is None:
                 raise RuntimeError(
                     f"Time constraint can't be established since the first phase has no time parameter. "
@@ -598,10 +581,10 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             time_post_idx = None
-            for i in range(controller[1].nlp.parameters.cx_start.shape[0]):
-                param_name = controller[1].nlp.parameters.cx_start[i].name()
-                if param_name == "time_phase_" + str(controller[1].nlp.phase_idx):
-                    time_post_idx = controller[1].nlp.phase_idx
+            for i in range(post.parameters.cx_start.shape[0]):
+                param_name = post.parameters.cx_start[i].name()
+                if param_name == "time_phase_" + str(post.phase_idx):
+                    time_post_idx = post.phase_idx
             if time_post_idx is None:
                 raise RuntimeError(
                     f"Time constraint can't be established since the second phase has no time parameter. Time parameter "
@@ -609,15 +592,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"with constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
                 )
 
-            time_pre, time_post = (
-                controller[0].nlp.parameters.cx_start[time_pre_idx],
-                controller[1].nlp.parameters.cx_start[time_post_idx],
-            )
-
+            time_pre, time_post = pre.parameters.cx_start[time_pre_idx], post.parameters.cx_start[time_post_idx]
             return time_pre - time_post
 
         @staticmethod
-        def custom(binode_constraint, controller, **extra_params):
+        def custom(binode_constraint, controllers: list[PenaltyController, PenaltyController], **extra_params):
             """
             Calls the custom transition function provided by the user
 
@@ -625,7 +604,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint: BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -633,8 +612,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The expected difference between the last and first node provided by the user
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            return binode_constraint.custom_function(binode_constraint, nlp_pre, nlp_post, **extra_params)
+            pre, post = controllers
+            return binode_constraint.custom_function(binode_constraint, pre, post, **extra_params)
 
 
 class AllNodeConstraintFunctions(PenaltyFunctionAbstract):

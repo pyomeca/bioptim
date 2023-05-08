@@ -191,7 +191,7 @@ class ObjectiveFunction:
                     The penalty node elements
                 """
 
-                return controller.nlp.cx().ones(1, 1)
+                return controller.cx().ones(1, 1)
 
         @staticmethod
         def get_dt(nlp):
@@ -235,7 +235,7 @@ class ObjectiveFunction:
                     taken into account elsewhere in the code)
                 """
 
-                return controller.nlp.tf
+                return controller.tf
 
         @staticmethod
         def get_dt(_):

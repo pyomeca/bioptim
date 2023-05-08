@@ -887,8 +887,6 @@ class PenaltyFunctionAbstract:
                     f" actual length {len(penalty.node_idx[0])} "
                 )
 
-            node_idx = controller.node_index  # penalty.node_idx[0] if len(penalty.node_idx) == 1 else 0
-
             continuity = controller.states.cx_end 
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(

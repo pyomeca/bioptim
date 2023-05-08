@@ -40,14 +40,12 @@ from bioptim import (
 
 
 def out_of_sphere(controller: PenaltyController, y, z):
-    q = controller.nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
-    marker_q = controller.nlp.model.markers(q)[1]
+    q = controller.states["q"].mx
+    marker_q = controller.model.markers(q)[1]
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 
-    return controller.nlp.mx_to_cx(
-        "out_of_sphere", distance, controller.nlp.states[0]["q"]
-    )  # TODO: [0] to [node_index]
+    return controller.mx_to_cx("out_of_sphere", distance, controller.states["q"])
 
 
 def prepare_ocp_first_pass(

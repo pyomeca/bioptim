@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 
 from casadi import MX, SX, vertcat
 
@@ -61,6 +61,9 @@ class PenaltyController:
         self.p = vertcat(p) if p is not None else p
         self.node_index = node_index
 
+    def __len__(self):
+        return len(self.t)
+
     @property
     def ocp(self):
         return self._ocp
@@ -73,8 +76,13 @@ class PenaltyController:
         """
         return self._nlp
 
-    def __len__(self):
-        return len(self.t)
+    @property
+    def cx(self) -> MX | SX | Callable:
+        return self._nlp.cx
+
+    @property
+    def to_casadi_func(self) -> Callable:
+        return self._nlp.to_casadi_func
 
     @property
     def control_type(self) -> ControlType:
