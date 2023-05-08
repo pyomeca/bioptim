@@ -393,8 +393,9 @@ class PlotOcp:
                 mapping_range_index = list(range(len(nlp.plot[variable].phase_mappings.to_second.map_idx)))
                 for ctr in mapping_range_index:
                     ax = axes[ctr]
-                    if ctr < len(nlp.plot[variable].legend):
-                        ax.set_title(nlp.plot[variable].legend[ctr])
+                    if ctr in mapping_to_first_index:
+                        index_legend = mapping_to_first_index.index(ctr)
+                        ax.set_title(nlp.plot[variable].legend[index_legend])
                     ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(0, self.t[-1][-1])
                     if ctr in mapping_to_first_index:
