@@ -436,9 +436,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             self.nlp[0].x_init = InitialGuess(
                 np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
             )
-            self.nlp[0].x_init.check_and_adjust_dimensions(
-                self.nlp[0].states[0].shape, self.nlp[0].ns
-            )  # TODO : [0] to [node_index]
+            self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.shape, self.nlp[0].ns)
 
         self.nlp[0].x_init.init[:, :] = sol.states["all"]
         return True
