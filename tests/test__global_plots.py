@@ -187,6 +187,7 @@ def test_console_objective_functions():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod")
+    assume_phase_dynamics = ocp.assume_phase_dynamics
     sol = ocp.solve()
     ocp = sol.ocp  # We will override ocp with known and controlled values for the test
 
@@ -198,20 +199,24 @@ def test_console_objective_functions():
     def override_penalty(pen: list[PenaltyOption]):
         for cmp, p in enumerate(pen):
             if p:
-                name = p.name.replace("->", "_").replace(" ", "_")
-                x = MX.sym("x", *p.weighted_function.sparsity_in("i0").shape)
-                u = MX.sym("u", *p.weighted_function.sparsity_in("i1").shape)
-                param = MX.sym("param", *p.weighted_function.sparsity_in("i2").shape)
-                weight = MX.sym("weight", *p.weighted_function.sparsity_in("i3").shape)
-                target = MX.sym("target", *p.weighted_function.sparsity_in("i4").shape)
-                dt = MX.sym("dt", *p.weighted_function.sparsity_in("i5").shape)
+                node_index = p.node_idx[0]  # TODO deal with assume_phase_dynamics=False
+                nlp.states.node_index = node_index
+                nlp.controls.node_index = node_index
 
-                p.function = Function(name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T])
-                p.function_non_threaded = p.function
-                p.weighted_function = Function(
+                name = p.name.replace("->", "_").replace(" ", "_")
+                x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("i0").shape)
+                u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("i1").shape)
+                param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i2").shape)
+                weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i3").shape)
+                target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i4").shape)
+                dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i5").shape)
+
+                p.function[node_index] = Function(name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T])
+                p.function_non_threaded[node_index] = p.function[node_index]
+                p.weighted_function[node_index] = Function(
                     name, [x, u, param, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
                 )
-                p.weighted_function_non_threaded = p.weighted_function
+                p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]
 
     override_penalty(ocp.g_internal)  # Override constraints in the ocp
     override_penalty(ocp.g)  # Override constraints in the ocp
@@ -227,41 +232,147 @@ def test_console_objective_functions():
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
     sol.print_cost()
-    expected_output = (
-        "Solver reported time: 1.2345 sec\n"
-        "Real time: 5.4321 sec\n"
-        "\n"
-        "---- COST FUNCTION VALUES ----\n"
-        "PHASE 0\n"
-        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
-        "\n"
-        "PHASE 1\n"
-        "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
-        "Mayer.CUSTOM: 9.0 (non weighted  6.00)\n"
-        "\n"
-        "PHASE 2\n"
-        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
-        "\n"
-        "Sum cost functions: 429.0\n"
-        "------------------------------\n"
-        "\n"
-        "--------- CONSTRAINTS ---------\n"
-        "PHASE 0\n"
-        "ConstraintFcn.CONTINUITY: 420.0\n"
-        "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
-        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
-        "ConstraintFcn.SUPERIMPOSE_MARKERS: 9.0\n"
-        "\n"
-        "PHASE 1\n"
-        "ConstraintFcn.CONTINUITY: 630.0\n"
-        "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
-        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
-        "\n"
-        "PHASE 2\n"
-        "ConstraintFcn.CONTINUITY: 420.0\n"
-        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
-        "\n"
-        "------------------------------\n"
-    )
+
+    if assume_phase_dynamics:
+        expected_output = (
+            "Solver reported time: 1.2345 sec\n"
+            "Real time: 5.4321 sec\n"
+            "\n"
+            "---- COST FUNCTION VALUES ----\n"
+            "PHASE 0\n"
+            "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
+            "\n"
+            "PHASE 1\n"
+            "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
+            "Mayer.CUSTOM: 9.0 (non weighted  6.00)\n"
+            "\n"
+            "PHASE 2\n"
+            "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
+            "\n"
+            "Sum cost functions: 429.0\n"
+            "------------------------------\n"
+            "\n"
+            "--------- CONSTRAINTS ---------\n"
+            "PHASE 0\n"
+            "ConstraintFcn.CONTINUITY: 420.0\n"
+            "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
+            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+            "ConstraintFcn.SUPERIMPOSE_MARKERS: 9.0\n"
+            "\n"
+            "PHASE 1\n"
+            "ConstraintFcn.CONTINUITY: 630.0\n"
+            "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
+            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+            "\n"
+            "PHASE 2\n"
+            "ConstraintFcn.CONTINUITY: 420.0\n"
+            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+            "\n"
+            "------------------------------\n"
+        )
+    else:
+        expected_output = (
+            "Solver reported time: 1.2345 sec\n"
+            "Real time: 5.4321 sec\n"
+            "\n"
+            "---- COST FUNCTION VALUES ----\n"
+            "PHASE 0\n"
+            "Lagrange.MINIMIZE_CONTROL: 18420.834825358685 (non weighted  187.95)\n"
+            "\n"
+            "PHASE 1\n"
+            "Lagrange.MINIMIZE_CONTROL: 46530.47174762843 (non weighted  287.70)\n"
+            "Mayer.CUSTOM: 9.0 (non weighted  6.00)\n"
+            "\n"
+            "PHASE 2\n"
+            "Lagrange.MINIMIZE_CONTROL: 36637.896493430315 (non weighted  188.74)\n"
+            "\n"
+            "Sum cost functions: 101598.20306641742\n"
+            "------------------------------\n"
+            "\n"
+            "--------- CONSTRAINTS ---------\n"
+            "PHASE 0\n"
+            "ConstraintFcn.CONTINUITY: 21.0\n"
+            "ConstraintFcn.CONTINUITY: 27.0\n"
+            "ConstraintFcn.CONTINUITY: 33.0\n"
+            "ConstraintFcn.CONTINUITY: 39.0\n"
+            "ConstraintFcn.CONTINUITY: 45.0\n"
+            "ConstraintFcn.CONTINUITY: 51.0\n"
+            "ConstraintFcn.CONTINUITY: 57.0\n"
+            "ConstraintFcn.CONTINUITY: 63.0\n"
+            "ConstraintFcn.CONTINUITY: 69.0\n"
+            "ConstraintFcn.CONTINUITY: 75.0\n"
+            "ConstraintFcn.CONTINUITY: 81.0\n"
+            "ConstraintFcn.CONTINUITY: 87.0\n"
+            "ConstraintFcn.CONTINUITY: 93.0\n"
+            "ConstraintFcn.CONTINUITY: 99.0\n"
+            "ConstraintFcn.CONTINUITY: 105.0\n"
+            "ConstraintFcn.CONTINUITY: 111.0\n"
+            "ConstraintFcn.CONTINUITY: 117.0\n"
+            "ConstraintFcn.CONTINUITY: 123.0\n"
+            "ConstraintFcn.CONTINUITY: 129.0\n"
+            "ConstraintFcn.CONTINUITY: 135.0\n"
+            "PhaseTransitionFcn.CONTINUOUS: 141.0\n"
+            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+            "ConstraintFcn.SUPERIMPOSE_MARKERS: 9.0\n"
+            "\n"
+            "PHASE 1\n"
+            "ConstraintFcn.CONTINUITY: 21.0\n"
+            "ConstraintFcn.CONTINUITY: 27.0\n"
+            "ConstraintFcn.CONTINUITY: 33.0\n"
+            "ConstraintFcn.CONTINUITY: 39.0\n"
+            "ConstraintFcn.CONTINUITY: 45.0\n"
+            "ConstraintFcn.CONTINUITY: 51.0\n"
+            "ConstraintFcn.CONTINUITY: 57.0\n"
+            "ConstraintFcn.CONTINUITY: 63.0\n"
+            "ConstraintFcn.CONTINUITY: 69.0\n"
+            "ConstraintFcn.CONTINUITY: 75.0\n"
+            "ConstraintFcn.CONTINUITY: 81.0\n"
+            "ConstraintFcn.CONTINUITY: 87.0\n"
+            "ConstraintFcn.CONTINUITY: 93.0\n"
+            "ConstraintFcn.CONTINUITY: 99.0\n"
+            "ConstraintFcn.CONTINUITY: 105.0\n"
+            "ConstraintFcn.CONTINUITY: 111.0\n"
+            "ConstraintFcn.CONTINUITY: 117.0\n"
+            "ConstraintFcn.CONTINUITY: 123.0\n"
+            "ConstraintFcn.CONTINUITY: 129.0\n"
+            "ConstraintFcn.CONTINUITY: 135.0\n"
+            "ConstraintFcn.CONTINUITY: 141.0\n"
+            "ConstraintFcn.CONTINUITY: 147.0\n"
+            "ConstraintFcn.CONTINUITY: 153.0\n"
+            "ConstraintFcn.CONTINUITY: 159.0\n"
+            "ConstraintFcn.CONTINUITY: 165.0\n"
+            "ConstraintFcn.CONTINUITY: 171.0\n"
+            "ConstraintFcn.CONTINUITY: 177.0\n"
+            "ConstraintFcn.CONTINUITY: 183.0\n"
+            "ConstraintFcn.CONTINUITY: 189.0\n"
+            "ConstraintFcn.CONTINUITY: 195.0\n"
+            "PhaseTransitionFcn.CONTINUOUS: 201.0\n"
+            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+            "\n"
+            "PHASE 2\n"
+            "ConstraintFcn.CONTINUITY: 21.0\n"
+            "ConstraintFcn.CONTINUITY: 27.0\n"
+            "ConstraintFcn.CONTINUITY: 33.0\n"
+            "ConstraintFcn.CONTINUITY: 39.0\n"
+            "ConstraintFcn.CONTINUITY: 45.0\n"
+            "ConstraintFcn.CONTINUITY: 51.0\n"
+            "ConstraintFcn.CONTINUITY: 57.0\n"
+            "ConstraintFcn.CONTINUITY: 63.0\n"
+            "ConstraintFcn.CONTINUITY: 69.0\n"
+            "ConstraintFcn.CONTINUITY: 75.0\n"
+            "ConstraintFcn.CONTINUITY: 81.0\n"
+            "ConstraintFcn.CONTINUITY: 87.0\n"
+            "ConstraintFcn.CONTINUITY: 93.0\n"
+            "ConstraintFcn.CONTINUITY: 99.0\n"
+            "ConstraintFcn.CONTINUITY: 105.0\n"
+            "ConstraintFcn.CONTINUITY: 111.0\n"
+            "ConstraintFcn.CONTINUITY: 117.0\n"
+            "ConstraintFcn.CONTINUITY: 123.0\n"
+            "ConstraintFcn.CONTINUITY: 129.0\n"
+            "ConstraintFcn.CONTINUITY: 135.0\n"
+            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+            "\n"
+            "------------------------------\n"
+        )
     sys.stdout = sys.__stdout__  # Reset redirect.
     assert captured_output.getvalue() == expected_output

@@ -151,6 +151,7 @@ class PenaltyOption(OptionGeneric):
         self.rows = rows if rows is not None else index
         self.cols = cols
         self.cols_is_set = False  # This is an internal variable that is set after 'set_idx_columns' is called
+        self.rows_is_set = False
         self.expand = expand
 
         self.target = None
@@ -462,8 +463,6 @@ class PenaltyOption(OptionGeneric):
                 self.weighted_function.append(None)
                 self.function_non_threaded.append(None)
                 self.weighted_function_non_threaded.append(None)
-        if self.function[node] is not None:
-            raise RuntimeError("Penalty function declared twice. This should not happen, please report.")
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
@@ -750,13 +749,6 @@ class PenaltyOption(OptionGeneric):
         else:
             # The active controller is always last
             node_indices = [t for t in controllers[-1].t]
-
-            if self.custom_function and len(node_indices) > 1:
-                raise NotImplementedError(
-                    "Setting custom function for more than one node at a time when assume_phase_dynamics is "
-                    "set to False is not Implemented"
-                )
-
             for node_index in node_indices:
                 controllers[-1].t = [node_index]
                 controllers[-1].node_index = node_index

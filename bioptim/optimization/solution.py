@@ -1409,7 +1409,7 @@ class Solution:
             else penalty.dt
         )
 
-        if penalty.binode_constraint or penalty.allnode_constraint:
+        if penalty.allnode_constraint:
             penalty.node_idx = [penalty.node_idx]
 
         for idx in penalty.node_idx:
@@ -1508,8 +1508,9 @@ class Solution:
                     else:
                         target = penalty.target[0][..., penalty.node_idx.index(idx)]
 
-            val.append(penalty.function_non_threaded[idx](x, u, p))
-            val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
+            u_tp = [] if sum(penalty.function_non_threaded[idx].size_in(1)) == 0 else u
+            val.append(penalty.function_non_threaded[idx](x, u_tp, p))
+            val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u_tp, p, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)

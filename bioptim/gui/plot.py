@@ -332,11 +332,17 @@ class PlotOcp:
                 for key in nlp.plot:
                     if isinstance(nlp.plot[key], tuple):
                         nlp.plot[key] = nlp.plot[key][0]
+
                     if nlp.plot[key].phase_mappings is None:
+                        node_index = 0  # TODO deal with assume_phase_dynamics=False
+                        if nlp.plot[key].node_idx is not None:
+                            node_index = nlp.plot[key].node_idx[0]
+                        nlp.states.node_index = node_index
+                        nlp.controls.node_index = node_index
+
                         size = (
-                            nlp.plot[key]
-                            .function(
-                                np.nan,
+                            nlp.plot[key].function(
+                                node_index,
                                 np.zeros((nlp.states.shape, 2)),
                                 np.zeros((nlp.controls.shape, 2)),
                                 np.zeros((nlp.parameters.shape, 2)),
@@ -762,11 +768,13 @@ class PlotOcp:
                                         states = state[
                                             :, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size
                                         ]
-
+                                    control_tp = control[:, node_idx : node_idx + 1 + u_mod]
+                                    if np.isnan(control_tp).any():
+                                        control_tp = np.array(())
                                     val = self.plot_func[key][i].function(
                                         node_idx,
                                         states,
-                                        control[:, node_idx : node_idx + 1 + u_mod],
+                                        control_tp,
                                         data_params_in_dyn,
                                         **self.plot_func[key][i].parameters,
                                     )

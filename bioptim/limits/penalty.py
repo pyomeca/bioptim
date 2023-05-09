@@ -690,9 +690,11 @@ class PenaltyFunctionAbstract:
             marker_objective = controller.mx_to_cx("marker", marker, controller.states["q"])
 
             # To align an axis, the other must be equal to 0
-            if penalty.rows is not None:
-                raise ValueError("rows cannot be defined in track_marker_with_segment_axis")
-            penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
+            if not penalty.rows_is_set:
+                if penalty.rows is not None:
+                    raise ValueError("rows cannot be defined in track_marker_with_segment_axis")
+                penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
+                penalty.rows_is_set = True
 
             return marker_objective
 
@@ -1022,10 +1024,14 @@ class PenaltyFunctionAbstract:
         axes: list | tuple
             The marker to index
         """
+        if penalty.rows_is_set:
+            return
 
         if penalty.rows is not None and axes is not None:
             raise ValueError("It is not possible to define rows and axes since they are the same variable")
         penalty.rows = axes if axes is not None else penalty.rows
+
+        penalty.rows_is_set = True
 
     @staticmethod
     def _check_idx(name: str, elements: list | tuple | int, max_n_elements: int = inf, min_n_elements: int = 0):
