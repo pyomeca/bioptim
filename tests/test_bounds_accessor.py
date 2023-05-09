@@ -15,7 +15,6 @@ from bioptim import (
 )
 
 
-
 def test_accessors_on_bounds_option():
     x_min = [-100] * 6
     x_max = [100] * 6
@@ -54,6 +53,7 @@ def test_accessors_on_bounds_option_multidimensional():
         x_bounds.max[:],
         np.array([[0, 150, 200], [0, 10, 10], [0, 10, 10], [100, 10, 10], [100, 10, 10], [100, 150, 200]]),
     )
+
 
 def test_bounds_error_messages():
     """
@@ -101,8 +101,8 @@ def test_bounds_error_messages():
         )
 
     with pytest.raises(
-            RuntimeError,
-            match="If you do not want to provide a u_bounds, you should declare u_bounds=None instead of an empty BoundsList",
+        RuntimeError,
+        match="If you do not want to provide a u_bounds, you should declare u_bounds=None instead of an empty BoundsList",
     ):
         OptimalControlProgram(
             bio_model,
