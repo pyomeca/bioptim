@@ -535,7 +535,9 @@ class PenaltyOption(OptionGeneric):
                 f"{name}",
                 (
                     (
-                        self.function[node](controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx)
+                        self.function[node](
+                            controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx
+                        )
                         - target_cx[:, 0]
                     )
                     ** exponent

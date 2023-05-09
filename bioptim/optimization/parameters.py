@@ -211,9 +211,11 @@ class Parameter(PenaltyOption):
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.v.parameters_in_list.cx_start
 
-        objective.function.append(NonLinearProgram.to_casadi_func(
-            f"{self.name}", fcn[objective.rows, objective.cols], state_cx, control_cx, param_cx, expand=expand
-        ))
+        objective.function.append(
+            NonLinearProgram.to_casadi_func(
+                f"{self.name}", fcn[objective.rows, objective.cols], state_cx, control_cx, param_cx, expand=expand
+            )
+        )
 
         modified_fcn = objective.function[0](state_cx, control_cx, param_cx)
 
@@ -224,11 +226,13 @@ class Parameter(PenaltyOption):
         modified_fcn = modified_fcn - target_cx
         modified_fcn = modified_fcn**2 if objective.quadratic else modified_fcn
 
-        objective.weighted_function.append(Function(  # Do not use nlp.add_casadi_func because all of them must be registered
-            f"{self.name}",
-            [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
-            [weight_cx * modified_fcn * dt_cx],
-        ))
+        objective.weighted_function.append(
+            Function(  # Do not use nlp.add_casadi_func because all of them must be registered
+                f"{self.name}",
+                [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
+                [weight_cx * modified_fcn * dt_cx],
+            )
+        )
 
         if expand:
             objective.function[0].expand()
