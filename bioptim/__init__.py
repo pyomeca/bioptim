@@ -170,7 +170,7 @@ from .dynamics.fatigue.fatigue_dynamics import FatigueList
 from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueStabilized
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
-from .dynamics.ode_solver import OdeSolver
+from .dynamics.ode_solver import OdeSolver, OdeSolverBase
 from .interfaces.solver_options import Solver
 from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from .interfaces.biomodel import BioModel
@@ -193,7 +193,7 @@ from .limits.path_conditions import (
     NoisedInitialGuess,
 )
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
-from .limits.penalty_node import PenaltyNode, PenaltyNodeList
+from .limits.penalty_controller import PenaltyController
 from .misc.enums import (
     Axis,
     Node,

@@ -4,11 +4,10 @@ a the at different marker at the end of each phase. Moreover a constraint on the
 Extra constraints are defined between specific nodes of phases.
 It is designed to show how one can define a binode constraints and objectives in a multiphase optimal control program
 """
+
 from casadi import MX
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
-    PenaltyNode,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -190,10 +189,8 @@ def custom_binode_constraint(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].cx_end)  # TODO: [0] to [node_index]
-    states_post = binode_constraint.states_mapping.to_first.map(
-        nlp_post.states[0].cx_start
-    )  # TODO: [0] to [node_index]
+    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+    states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx_start)
     return states_pre * coef - states_post
 
 

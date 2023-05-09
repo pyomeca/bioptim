@@ -44,9 +44,9 @@ def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgr
     The state derivative
     """
 
-    q = DynamicsFunctions.get(nlp.states[0]["q"], states)  # TODO: [0] to [node_index]
-    qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)  # TODO: [0] to [node_index]
-    tau = DynamicsFunctions.get(nlp.controls[0]["tau"], controls)  # TODO: [0] to [node_index]
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
     force_vector = MX.zeros(6)
     force_vector[5] = 100 * q[0] ** 2

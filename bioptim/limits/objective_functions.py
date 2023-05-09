@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
-from .penalty_node import PenaltyNodeList
+from .penalty_controller import PenaltyController
 from ..misc.enums import Node, IntegralApproximation, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -65,14 +65,18 @@ class Objective(PenaltyOption):
 
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
-    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList | list | tuple):
-        if isinstance(all_pn, (list, tuple)):
-            all_pn = all_pn[0]
+    def _add_penalty_to_pool(self, controller: PenaltyController):
+        if isinstance(controller, (list, tuple)):
+            controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
-            pool = all_pn.nlp.J_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.J_internal
+            pool = (
+                controller.get_nlp.J_internal
+                if controller is not None and controller.get_nlp
+                else controller.ocp.J_internal
+            )
         elif self.penalty_type == PenaltyType.USER:
-            pool = all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+            pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
         else:
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self
@@ -179,7 +183,7 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(_: Objective, all_pn: PenaltyNodeList):
+            def minimize_time(_: Objective, controller: PenaltyController):
                 """
                 Minimizes the duration of the phase
 
@@ -187,11 +191,11 @@ class ObjectiveFunction:
                 ----------
                 _: Objective,
                     The actual constraint to declare
-                all_pn: PenaltyNodeList
+                controller: PenaltyController
                     The penalty node elements
                 """
 
-                return all_pn.nlp.cx().ones(1, 1)
+                return controller.cx().ones(1, 1)
 
         @staticmethod
         def get_dt(nlp):
@@ -214,7 +218,7 @@ class ObjectiveFunction:
             @staticmethod
             def minimize_time(
                 _: Objective,
-                all_pn: PenaltyNodeList,
+                controller: PenaltyController,
                 min_bound: float = None,
                 max_bound: float = None,
             ):
@@ -225,7 +229,7 @@ class ObjectiveFunction:
                 ----------
                 _: Objective,
                     The actual constraint to declare
-                all_pn: PenaltyNodeList
+                controller: PenaltyController
                     The penalty node elements
                 min_bound: float
                     The minimum value the time can take (this is ignored here, but
@@ -235,7 +239,7 @@ class ObjectiveFunction:
                     taken into account elsewhere in the code)
                 """
 
-                return all_pn.nlp.tf
+                return controller.tf
 
         @staticmethod
         def get_dt(_):

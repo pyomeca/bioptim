@@ -448,10 +448,11 @@ def test_custom_constraint_track_markers(ode_solver):
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("random_init", [True, False])
 @pytest.mark.parametrize("interpolation", InterpolationType)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
-def test_initial_guesses(random_init, interpolation, ode_solver):
+def test_initial_guesses(assume_phase_dynamics, random_init, interpolation, ode_solver):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -469,6 +470,7 @@ def test_initial_guesses(random_init, interpolation, ode_solver):
                 random_init=random_init,
                 initial_guess=interpolation,
                 ode_solver=ode_solver,
+                assume_phase_dynamics=assume_phase_dynamics,
             )
         return
 
@@ -1280,7 +1282,7 @@ def test_binode_constraints(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
-    # TODO: Restore that
+    # TODO: Restore that Benjamin
     # @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
     # def test_allnode_objectives(ode_solver):
     #     from bioptim.examples.getting_started import example_allnode_objectives as ocp_module

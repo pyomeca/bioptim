@@ -35,16 +35,17 @@ from bioptim import (
     CostType,
     Solver,
     Solution,
+    PenaltyController,
 )
 
 
-def out_of_sphere(all_pn, y, z):
-    q = all_pn.nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
-    marker_q = all_pn.nlp.model.markers(q)[1]
+def out_of_sphere(controller: PenaltyController, y, z):
+    q = controller.states["q"].mx
+    marker_q = controller.model.markers(q)[1]
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 
-    return all_pn.nlp.mx_to_cx("out_of_sphere", distance, all_pn.nlp.states[0]["q"])  # TODO: [0] to [node_index]
+    return controller.mx_to_cx("out_of_sphere", distance, controller.states["q"])
 
 
 def prepare_ocp_first_pass(
