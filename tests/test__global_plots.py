@@ -211,7 +211,9 @@ def test_console_objective_functions():
                     target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i4").shape)
                     dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i5").shape)
 
-                    p.function[node_index] = Function(name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T])
+                    p.function[node_index] = Function(
+                        name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T]
+                    )
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
                         name, [x, u, param, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]

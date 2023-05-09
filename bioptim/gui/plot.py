@@ -341,7 +341,8 @@ class PlotOcp:
                         nlp.controls.node_index = node_index
 
                         size = (
-                            nlp.plot[key].function(
+                            nlp.plot[key]
+                            .function(
                                 node_index,
                                 np.zeros((nlp.states.shape, 2)),
                                 np.zeros((nlp.controls.shape, 2)),

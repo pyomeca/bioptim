@@ -744,7 +744,11 @@ class PenaltyOption(OptionGeneric):
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
             # Define much more function than needed, but we don't mind since they are reference copy of each other
-            ns = (max(controllers[0].get_nlp.ns, controllers[1].get_nlp.ns) if len(controllers) > 1 else controllers[0].get_nlp.ns) + 1
+            ns = (
+                max(controllers[0].get_nlp.ns, controllers[1].get_nlp.ns)
+                if len(controllers) > 1
+                else controllers[0].get_nlp.ns
+            ) + 1
             self.function = self.function * ns
             self.weighted_function = self.weighted_function * ns
             self.function_non_threaded = self.function_non_threaded * ns
