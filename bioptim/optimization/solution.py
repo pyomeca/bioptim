@@ -948,7 +948,7 @@ class Solution:
                 x0 = sol._states["unscaled"][phase - 1]["all"][:, -1]  # the last node of the previous phase
                 u0 = self._controls["unscaled"][phase - 1]["all"][:, -1]
                 params = self.parameters["all"]
-                val = self.ocp.phase_transitions[phase - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
+                val = self.ocp.phase_transitions[phase - 1].function[0](vertcat(x0, x0), vertcat(u0, u0), params)
                 if val.shape[0] != x0.shape[0]:
                     raise RuntimeError(
                         f"Phase transition must have the same number of states ({val.shape[0]}) "

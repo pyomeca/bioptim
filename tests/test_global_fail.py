@@ -44,6 +44,7 @@ def test_custom_constraint_multiple_nodes_fail():
             constraints=constraints,
             x_init=x_init,
             u_init=u_init,
+            assume_phase_dynamics=False,
         )
 
 

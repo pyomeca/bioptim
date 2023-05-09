@@ -199,24 +199,24 @@ def test_console_objective_functions():
     def override_penalty(pen: list[PenaltyOption]):
         for cmp, p in enumerate(pen):
             if p:
-                node_index = p.node_idx[0]  # TODO deal with assume_phase_dynamics=False
-                nlp.states.node_index = node_index
-                nlp.controls.node_index = node_index
+                for node_index in p.node_idx:
+                    nlp.states.node_index = node_index
+                    nlp.controls.node_index = node_index
 
-                name = p.name.replace("->", "_").replace(" ", "_")
-                x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("i0").shape)
-                u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("i1").shape)
-                param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i2").shape)
-                weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i3").shape)
-                target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i4").shape)
-                dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i5").shape)
+                    name = p.name.replace("->", "_").replace(" ", "_")
+                    x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("i0").shape)
+                    u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("i1").shape)
+                    param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i2").shape)
+                    weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i3").shape)
+                    target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i4").shape)
+                    dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i5").shape)
 
-                p.function[node_index] = Function(name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T])
-                p.function_non_threaded[node_index] = p.function[node_index]
-                p.weighted_function[node_index] = Function(
-                    name, [x, u, param, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
-                )
-                p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]
+                    p.function[node_index] = Function(name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T])
+                    p.function_non_threaded[node_index] = p.function[node_index]
+                    p.weighted_function[node_index] = Function(
+                        name, [x, u, param, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
+                    )
+                    p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]
 
     override_penalty(ocp.g_internal)  # Override constraints in the ocp
     override_penalty(ocp.g)  # Override constraints in the ocp

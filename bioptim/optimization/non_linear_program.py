@@ -109,7 +109,7 @@ class NonLinearProgram:
         Add to the pool of declared casadi function. If the function already exists, it is skipped
     """
 
-    def __init__(self):
+    def __init__(self, assume_phase_dynamics):
         self.casadi_func = {}
         self.contact_forces_func = None
         self.soft_contact_forces_func = None
@@ -154,9 +154,10 @@ class NonLinearProgram:
         self.X_scaled = None
         self.x_scaling = None
         self.X = None
-        self.states = OptimizationVariableContainer()
-        self.states_dot = OptimizationVariableContainer()
-        self.controls = OptimizationVariableContainer()
+        self.assume_phase_dynamics = assume_phase_dynamics
+        self.states = OptimizationVariableContainer(assume_phase_dynamics)
+        self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
+        self.controls = OptimizationVariableContainer(assume_phase_dynamics)
 
     def initialize(self, cx: Callable = None):
         """

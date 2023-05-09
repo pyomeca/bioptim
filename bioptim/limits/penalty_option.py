@@ -742,13 +742,21 @@ class PenaltyOption(OptionGeneric):
         if ocp.assume_phase_dynamics:
             penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
-            self.function = self.function * len(controllers[0])
-            self.weighted_function = self.weighted_function * len(controllers[0])
-            self.function_non_threaded = self.function_non_threaded * len(controllers[0])
-            self.weighted_function_non_threaded = self.weighted_function_non_threaded * len(controllers[0])
+
+            # Define much more function than needed, but we don't mind since they are reference copy of each other
+            ns = (max(controllers[0].get_nlp.ns, controllers[1].get_nlp.ns) if len(controllers) > 1 else controllers[0].get_nlp.ns) + 1
+            self.function = self.function * ns
+            self.weighted_function = self.weighted_function * ns
+            self.function_non_threaded = self.function_non_threaded * ns
+            self.weighted_function_non_threaded = self.weighted_function_non_threaded * ns
         else:
             # The active controller is always last
             node_indices = [t for t in controllers[-1].t]
+            if self.custom_function and len(node_indices) > 1:
+                raise NotImplementedError(
+                    "Setting custom function for more than one node at a time when assume_phase_dynamics is "
+                    "set to False is not Implemented"
+                )
             for node_index in node_indices:
                 controllers[-1].t = [node_index]
                 controllers[-1].node_index = node_index

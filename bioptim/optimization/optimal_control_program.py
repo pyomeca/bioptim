@@ -455,7 +455,7 @@ class OptimalControlProgram:
         self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
-        self.nlp = [NLP() for _ in range(self.n_phases)]
+        self.nlp = [NLP(self.assume_phase_dynamics) for _ in range(self.n_phases)]
         NLP.add(self, "model", bio_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
