@@ -723,8 +723,8 @@ class DynamicsFunctions:
         offset = 0
         for param in nlp.parameters:
             # Call the pre dynamics function
-            if param.function:
-                param.function(nlp.model, parameters[offset : offset + param.size], **param.params)
+            if param.function[0]:
+                param.function[0](nlp.model, parameters[offset : offset + param.size], **param.params)
                 offset += param.size
 
     @staticmethod

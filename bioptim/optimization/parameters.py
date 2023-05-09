@@ -70,7 +70,7 @@ class Parameter(PenaltyOption):
         """
 
         super(Parameter, self).__init__(Parameters, **params)
-        self.function = function
+        self.function.append(function)
 
         if scaling is None:
             scaling = np.array([1.0])
@@ -139,22 +139,22 @@ class Parameter(PenaltyOption):
             if p.penalty_list is None:
                 continue
             for p_list in p.penalty_list[0]:
-                if p_list.weighted_function is None:
+                if not p_list.weighted_function:
                     continue
 
                 dt_cx = ocp.cx.sym("dt", 1, 1)
                 weight_cx = ocp.cx.sym("weight", 1, 1)
-                target_cx = ocp.cx.sym("target", p_list.weighted_function.numel_out(), 1)
+                target_cx = ocp.cx.sym("target", p_list.weighted_function[0].numel_out(), 1)
 
-                p_list.function = Function(
-                    p_list.function.name(),
+                p_list.function[0] = Function(
+                    p_list.function[0].name(),
                     [state_cx, controls_cx, parameter_cx],
-                    [p_list.function(state_cx, controls_cx, old_parameter_cx)],
+                    [p_list.function[0](state_cx, controls_cx, old_parameter_cx)],
                 )
-                p_list.weighted_function = Function(
-                    p_list.function.name(),
+                p_list.weighted_function[0] = Function(
+                    p_list.function[0].name(),
                     [state_cx, controls_cx, parameter_cx, weight_cx, target_cx, dt_cx],
-                    [p_list.weighted_function(state_cx, controls_cx, old_parameter_cx, weight_cx, target_cx, dt_cx)],
+                    [p_list.weighted_function[0](state_cx, controls_cx, old_parameter_cx, weight_cx, target_cx, dt_cx)],
                 )
 
         if self.penalty_list:
@@ -211,11 +211,11 @@ class Parameter(PenaltyOption):
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.v.parameters_in_list.cx_start
 
-        objective.function = NonLinearProgram.to_casadi_func(
+        objective.function.append(NonLinearProgram.to_casadi_func(
             f"{self.name}", fcn[objective.rows, objective.cols], state_cx, control_cx, param_cx, expand=expand
-        )
+        ))
 
-        modified_fcn = objective.function(state_cx, control_cx, param_cx)
+        modified_fcn = objective.function[0](state_cx, control_cx, param_cx)
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
         weight_cx = ocp.cx.sym("weight", fcn.shape[0], 1)
@@ -224,15 +224,15 @@ class Parameter(PenaltyOption):
         modified_fcn = modified_fcn - target_cx
         modified_fcn = modified_fcn**2 if objective.quadratic else modified_fcn
 
-        objective.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
+        objective.weighted_function.append(Function(  # Do not use nlp.add_casadi_func because all of them must be registered
             f"{self.name}",
             [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
             [weight_cx * modified_fcn * dt_cx],
-        )
+        ))
 
         if expand:
-            objective.function.expand()
-            objective.weighted_function.expand()
+            objective.function[0].expand()
+            objective.weighted_function[0].expand()
 
 
 class ParameterList(UniquePerProblemOptionList):

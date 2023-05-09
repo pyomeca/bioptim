@@ -1369,7 +1369,7 @@ class Solution:
             nlp = self.ocp.nlp[idx_phase]
             for param in nlp.parameters:
                 if param.function:
-                    param.function(nlp.model, self.parameters[param.name], **param.params)
+                    param.function[0](nlp.model, self.parameters[param.name], **param.params)
 
             # noinspection PyTypeChecker
             biorbd_model: BiorbdModel = nlp.model
@@ -1508,8 +1508,8 @@ class Solution:
                     else:
                         target = penalty.target[0][..., penalty.node_idx.index(idx)]
 
-            val.append(penalty.function_non_threaded(x, u, p))
-            val_weighted.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, target, dt))
+            val.append(penalty.function_non_threaded[idx](x, u, p))
+            val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)

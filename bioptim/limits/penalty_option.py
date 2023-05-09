@@ -277,7 +277,7 @@ class PenaltyOption(OptionGeneric):
         controller: PenaltyController
             The penalty node elements
         n_time_expected: int
-            The expected shape (n_rows, ns) of the data to track
+            The expected number of columns (n_rows, n_cols) of the data to track
         """
 
         if self.integration_rule == IntegralApproximation.RECTANGLE:
@@ -296,9 +296,13 @@ class PenaltyOption(OptionGeneric):
                 (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
             )
             if self.target[0].shape != shape:
-                raise RuntimeError(
-                    f"target {self.target[0].shape} does not correspond to expected size {shape} for penalty {self.name}"
-                )
+                # A second chance the shape is correct is if the targets are declared but assume_phase_dynamics is False
+                if not controller.ocp.assume_phase_dynamics and self.target[0].shape[-1] == len(self.node_idx):
+                    pass
+                else:
+                    raise RuntimeError(
+                        f"target {self.target[0].shape} does not correspond to expected size {shape} for penalty {self.name}"
+                    )
 
             # If the target is on controls and control is constant, there will be one value missing
             if controller is not None:
@@ -338,9 +342,13 @@ class PenaltyOption(OptionGeneric):
 
             for target in self.target:
                 if target.shape != shape:
-                    raise RuntimeError(
-                        f"target {target.shape} does not correspond to expected size {shape} for penalty {self.name}"
-                    )
+                    # A second chance the shape is correct if assume_phase_dynamics is False
+                    if not controller.ocp.assume_phase_dynamics and target.shape[-1] == len(self.node_idx):
+                        pass
+                    else:
+                        raise RuntimeError(
+                            f"target {target.shape} does not correspond to expected size {shape} for penalty {self.name}"
+                        )
 
             # If the target is on controls and control is constant, there will be one value missing
             if controller is not None:
@@ -619,7 +627,7 @@ class PenaltyOption(OptionGeneric):
                 plot_type=plot_type,
                 phase=controller.phase_idx,
                 axes_idx=Mapping(self.rows),  # TODO verify if not all elements has target
-                node_idx=self.node_idx,
+                node_idx=controller.t,
             )
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
