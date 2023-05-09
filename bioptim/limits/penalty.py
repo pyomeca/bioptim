@@ -956,7 +956,10 @@ class PenaltyFunctionAbstract:
                     hasattr(penalty, "max_bound") and penalty.max_bound is not None
                 ):
                     raise RuntimeError(
-                        "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined"
+                        "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined.\n"
+                        "Please note that you may run into this error message if assume_phase_dynamics "
+                        "was set to False. One workaround is to define your penalty one node at a time instead of "
+                        "using the built-in ALL_SHOOTING (or something similar)."
                     )
                 penalty.min_bound = val[0]
                 penalty.max_bound = val[2]

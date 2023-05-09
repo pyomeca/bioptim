@@ -756,11 +756,6 @@ class PenaltyOption(OptionGeneric):
         else:
             # The active controller is always last
             node_indices = [t for t in controllers[-1].t]
-            if self.custom_function and len(node_indices) > 1:
-                raise NotImplementedError(
-                    "Setting custom function for more than one node at a time when assume_phase_dynamics is "
-                    "set to False is not Implemented"
-                )
             for node_index in node_indices:
                 controllers[-1].t = [node_index]
                 controllers[-1].node_index = node_index
