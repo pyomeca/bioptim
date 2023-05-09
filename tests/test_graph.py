@@ -1,5 +1,4 @@
 from typing import Any
-from sys import platform
 
 import pytest
 import numpy as np

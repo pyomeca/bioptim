@@ -79,7 +79,7 @@ def generate_data(
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus_controls))
 
     symbolic_parameters = MX.sym("u", 0, 0)
-    nlp = NonLinearProgram()
+    nlp = NonLinearProgram(assume_phase_dynamics=True)
     nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
@@ -90,9 +90,9 @@ def generate_data(
     }
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states = OptimizationVariableContainer()
-    nlp.states_dot = OptimizationVariableContainer()
-    nlp.controls = OptimizationVariableContainer()
+    nlp.states = OptimizationVariableContainer(assume_phase_dynamics=True)
+    nlp.states_dot = OptimizationVariableContainer(assume_phase_dynamics=True)
+    nlp.controls = OptimizationVariableContainer(assume_phase_dynamics=True)
     nlp.states.initialize_from_shooting(n_shooting, MX)
     nlp.states_dot.initialize_from_shooting(n_shooting, MX)
     nlp.controls.initialize_from_shooting(n_shooting, MX)

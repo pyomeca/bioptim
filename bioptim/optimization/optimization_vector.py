@@ -296,6 +296,7 @@ class OptimizationVector:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
+            ocp.nlp[p].states.node_index = 0
             if self.ocp.nlp[p].use_states_from_phase_idx == self.ocp.nlp[p].phase_idx:
                 x_array = v_array[offset : offset + self.n_phase_x[p]].reshape(
                     (ocp.nlp[p].states.scaled.shape, -1), order="F"
@@ -316,6 +317,7 @@ class OptimizationVector:
 
         if self.ocp.nlp[0].control_type in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS):
             for p in range(self.ocp.n_phases):
+                ocp.nlp[p].controls.node_index = 0
                 if self.ocp.nlp[p].use_controls_from_phase_idx == self.ocp.nlp[p].phase_idx:
                     u_array = v_array[offset : offset + self.n_phase_u[p]].reshape(
                         (ocp.nlp[p].controls.scaled.shape, -1), order="F"

@@ -254,7 +254,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
             else:
                 _x = nlp.X_scaled[_idx][:, 0]
-                _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
+                if sum(_penalty.weighted_function[_idx].size_in(1)) == 0:
+                    _u = []
+                else:
+                    _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
 
         if _penalty.derivative or _penalty.explicit_derivative:
             if _idx < nlp.ns:
@@ -312,7 +315,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             ) and nlp.control_type == ControlType.CONSTANT:
                 u = horzcat(u, u[:, -1])
 
-            p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)
+            # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
+            p = reshape(penalty.weighted_function[0](x, u, param, penalty.weight, target, penalty.dt), -1, 1)
 
         else:
             p = interface.ocp.cx()
@@ -337,6 +341,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     u = []
                 else:
                     x, u = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
+                p = vertcat(p, penalty.weighted_function[idx](x, u, param, penalty.weight, target, penalty.dt))
         out = vertcat(out, sum2(p))
     return out

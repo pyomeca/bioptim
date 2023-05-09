@@ -691,6 +691,7 @@ def test_acados_bounds_not_implemented(failing):
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,
+        assume_phase_dynamics=True,
     )
 
     def update_functions(mhe, t, _):

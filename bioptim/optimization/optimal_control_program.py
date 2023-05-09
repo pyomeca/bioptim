@@ -8,7 +8,7 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, sum2, horzcat
+from casadi import DM, MX, SX, Function, sum1, horzcat
 from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
@@ -455,7 +455,7 @@ class OptimalControlProgram:
         self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
-        self.nlp = [NLP() for _ in range(self.n_phases)]
+        self.nlp = [NLP(self.assume_phase_dynamics) for _ in range(self.n_phases)]
         NLP.add(self, "model", bio_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
@@ -688,6 +688,7 @@ class OptimalControlProgram:
 
         for nlp in self.nlp:  # Inner-phase
             if state_continuity_weight is None:
+                # Continuity as constraints
                 if self.assume_phase_dynamics:
                     penalty = Constraint(
                         ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
@@ -700,6 +701,7 @@ class OptimalControlProgram:
                         )
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
             else:
+                # Continuity as objectives
                 if self.assume_phase_dynamics:
                     penalty = Objective(
                         ObjectiveFcn.Mayer.CONTINUITY,
@@ -720,19 +722,14 @@ class OptimalControlProgram:
                         )
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
 
-        for pt in self.phase_transitions:  # Inter-phase
-            if not state_continuity_weight:
-                if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
-                    continue
-                # Dynamics must be respected between phases
-                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-                pt.list_index = -1
-                pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
-
-            else:
-                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-                pt.list_index = -1
-                pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
+        for pt in self.phase_transitions:
+            # Phase transition as constraints
+            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                continue
+            # Dynamics must be respected between phases
+            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
 
         if self.binode_constraints or self.allnode_constraints:  # Node-equalities
             if not state_continuity_weight:
@@ -1040,22 +1037,22 @@ class OptimalControlProgram:
                 x_shape = x.shape[1]
                 x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T
 
-            if u.shape[1] == 1:
-                u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling["all"].scaling.shape[0])
-                u_scaling = np.reshape(
-                    np.hstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T, (-1, 1)
-                )
-            else:
-                u_shape = u.shape[1]
-                u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T
-
             x /= x_scaling
-            u /= u_scaling
+            if u.size != 0:
+                if u.shape[1] == 1:
+                    u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling["all"].scaling.shape[0])
+                    u_scaling = np.reshape(
+                        np.hstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T, (-1, 1)
+                    )
+                else:
+                    u_shape = u.shape[1]
+                    u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T
+                u /= u_scaling
 
             out = []
             if penalty.transition or penalty.binode_constraint:
                 out.append(
-                    penalty.weighted_function_non_threaded(
+                    penalty.weighted_function_non_threaded[t](
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
                     )
                 )
@@ -1067,20 +1064,20 @@ class OptimalControlProgram:
                     state_value = x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]]
                 else:
                     state_value = np.zeros(
-                        (x.shape[0], int(penalty.weighted_function_non_threaded.nnz_in(0) / x.shape[0]))
+                        (x.shape[0], int(penalty.weighted_function_non_threaded[t].nnz_in(0) / x.shape[0]))
                     )
 
-                out.append(penalty.weighted_function_non_threaded(state_value, u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded[t](state_value, u, p, penalty.weight, _target, dt))
             elif (
                 penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
             ):
                 out = [
-                    penalty.weighted_function_non_threaded(x[:, [i, i + 1]], u[:, i], p, penalty.weight, _target, dt)
+                    penalty.weighted_function_non_threaded[t](x[:, [i, i + 1]], u[:, i], p, penalty.weight, _target, dt)
                     for i in range(x.shape[1] - 1)
                 ]
             else:
-                out.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded[t](x, u, p, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):

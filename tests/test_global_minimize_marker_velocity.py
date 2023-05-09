@@ -122,7 +122,7 @@ def prepare_ocp(
         objective_functions,
         control_type=control_type,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=False,
     )
 
 

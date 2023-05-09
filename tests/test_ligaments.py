@@ -38,7 +38,7 @@ class OptimalControlProgram:
 )
 def test_torque_driven_with_ligament(with_ligament, cx):
     # Prepare the program
-    nlp = NonLinearProgram()
+    nlp = NonLinearProgram(assume_phase_dynamics=True)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
@@ -94,7 +94,7 @@ def test_torque_driven_with_ligament(with_ligament, cx):
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_torque_derivative_driven_with_ligament(with_ligament, cx):
     # Prepare the program
-    nlp = NonLinearProgram()
+    nlp = NonLinearProgram(assume_phase_dynamics=True)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
@@ -152,7 +152,7 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx):
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_torque_activation_driven_with_ligament(with_ligament, cx):
     # Prepare the program
-    nlp = NonLinearProgram()
+    nlp = NonLinearProgram(assume_phase_dynamics=True)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
@@ -208,7 +208,7 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx):
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_muscle_driven_with_ligament(with_ligament, cx):
     # Prepare the program
-    nlp = NonLinearProgram()
+    nlp = NonLinearProgram(assume_phase_dynamics=True)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_ligament.bioMod"
     )
