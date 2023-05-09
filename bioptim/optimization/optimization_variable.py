@@ -134,6 +134,9 @@ class VariableScalingList(OptionDict):
 
     @staticmethod
     def scaling_fill_phases(ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
+        """
+        Fill the scaling with ones if not defined, in that case, the dimensions of the scaling are chosen to match the number of intial guesses.
+        """
         x_scaling_out = VariableScalingList()
         xdot_scaling_out = VariableScalingList()
         u_scaling_out = VariableScalingList()
