@@ -13,7 +13,6 @@ import pickle
 
 import numpy as np
 from casadi import MX
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -24,6 +23,7 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
+    OdeSolverBase,
 )
 
 
@@ -52,7 +52,8 @@ def prepare_ocp(
     n_shooting: int,
     n_threads: int,
     use_sx: bool = False,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -67,10 +68,14 @@ def prepare_ocp(
         The number of shooting points
     n_threads: int
         The number of threads to use while using multithreading
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     use_sx: bool
         If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -117,7 +122,7 @@ def prepare_ocp(
         n_threads=n_threads,
         use_sx=use_sx,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

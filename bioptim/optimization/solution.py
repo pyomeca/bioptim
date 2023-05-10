@@ -1409,9 +1409,6 @@ class Solution:
             else penalty.dt
         )
 
-        if penalty.allnode_constraint:
-            penalty.node_idx = [penalty.node_idx]
-
         for idx in penalty.node_idx:
             x = []
             u = []
@@ -1436,29 +1433,23 @@ class Solution:
                         )
                     )
                 elif penalty.binode_constraint:
+                    node0 = penalty.binode_idx[0]
+                    node1 = penalty.binode_idx[1]
+
                     x = np.concatenate(
                         (
-                            self._states["scaled"][penalty.phase_first_idx]["all"][:, idx[0]],
-                            self._states["scaled"][penalty.phase_second_idx]["all"][:, idx[1]],
+                            self._states["scaled"][penalty.phase_first_idx]["all"][:, node0],
+                            self._states["scaled"][penalty.phase_second_idx]["all"][:, node1],
                         )
                     )
 
                     # Make an exception to the fact that U is not available for the last node
-                    mod_u0 = 1 if penalty.first_node == Node.END else 0
-                    mod_u1 = 1 if penalty.second_node == Node.END else 0
                     u = np.concatenate(
                         (
-                            self._controls["scaled"][penalty.phase_first_idx]["all"][:, idx[0] - mod_u0],
-                            self._controls["scaled"][penalty.phase_second_idx]["all"][:, idx[1] - mod_u1],
+                            self._controls["scaled"][penalty.phase_first_idx]["all"][:, node0],
+                            self._controls["scaled"][penalty.phase_second_idx]["all"][:, node1],
                         )
                     )
-
-                    # elif penalty.allnode_constraint:
-                    #     x = np.concatenate(
-                    #         (
-                    #             self._states["scaled"][penalty.phase_idx]["all"][:, :],
-                    #         )
-                    #     )
 
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
@@ -1508,9 +1499,11 @@ class Solution:
                     else:
                         target = penalty.target[0][..., penalty.node_idx.index(idx)]
 
-            u_tp = [] if sum(penalty.function_non_threaded[idx].size_in(1)) == 0 else u
-            val.append(penalty.function_non_threaded[idx](x, u_tp, p))
-            val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u_tp, p, penalty.weight, target, dt))
+            # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
+            # casadi function
+            u = u[:, ~np.isnan(np.sum(u, axis=0))]
+            val.append(penalty.function_non_threaded[idx](x, u, p))
+            val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)

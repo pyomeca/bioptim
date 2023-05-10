@@ -19,6 +19,7 @@ def prepare_ocp(
     biorbd_model_path: str = "models/double_pendulum.bioMod",
     biorbd_model_path_modified_inertia: str = "models/double_pendulum_modified_inertia.bioMod",
     n_shooting: tuple = (40, 40),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_modified_inertia))
 
@@ -107,7 +108,7 @@ def prepare_ocp(
         node_mappings=node_mappings,
         phase_transitions=phase_transitions,
         parameter_mappings=parameter_mappings,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

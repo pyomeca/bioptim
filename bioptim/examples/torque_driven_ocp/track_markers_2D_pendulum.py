@@ -26,6 +26,7 @@ from bioptim import (
     Axis,
     PlotType,
     OdeSolver,
+    OdeSolverBase,
     Node,
     Solver,
 )
@@ -68,7 +69,7 @@ def prepare_ocp(
     n_shooting: int,
     markers_ref: np.ndarray,
     tau_ref: np.ndarray,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -85,7 +86,7 @@ def prepare_ocp(
         The markers to track
     tau_ref: np.ndarray
         The generalized forces to track
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
 
     Returns

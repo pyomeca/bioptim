@@ -3,11 +3,11 @@ import os
 import pytest
 import numpy as np
 
-from bioptim import OdeSolver, Solver
+from bioptim import OdeSolver, Solver, OdeSolverBase
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-def test_node_time(ode_solver: OdeSolver):
+def test_node_time(ode_solver: OdeSolverBase):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 

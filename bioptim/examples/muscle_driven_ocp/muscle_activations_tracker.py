@@ -28,6 +28,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Node,
     Solver,
     RigidBodyDynamics,
@@ -201,7 +202,7 @@ def prepare_ocp(
     q_ref: np.ndarray,
     kin_data_to_track: str = "markers",
     use_residual_torque: bool = True,
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     n_threads: int = 1,
 ) -> OptimalControlProgram:
     """
@@ -225,7 +226,7 @@ def prepare_ocp(
         The type of kin data to track ('markers' or 'q')
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     n_threads: int
         The number of threads

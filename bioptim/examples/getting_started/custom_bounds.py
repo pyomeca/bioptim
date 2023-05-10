@@ -16,7 +16,6 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     Node,
@@ -134,6 +133,7 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     interpolation_type: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp for the specified interpolation type
@@ -148,6 +148,10 @@ def prepare_ocp(
         The movement time
     interpolation_type: InterpolationType
         The requested InterpolationType
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -238,7 +242,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

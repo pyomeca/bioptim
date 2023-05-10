@@ -196,6 +196,7 @@ class PenaltyOption(OptionGeneric):
         self.custom_function = custom_function
 
         self.node_idx = []
+        self.binode_idx = None
         self.dt = 0
         self.weight = weight
         self.function: list[Function | None, ...] = []
@@ -207,7 +208,6 @@ class PenaltyOption(OptionGeneric):
         self.integrate = integrate
         self.transition = False
         self.binode_constraint = False
-        self.allnode_constraint = False
         self.phase_pre_idx = None
         self.phase_post_idx = None
         if self.derivative and self.explicit_derivative:
@@ -408,7 +408,6 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
-        # TODO: Add loop node_index here Benjamin
         if self.binode_constraint or self.transition:
             controllers = controller
             pre = controllers[0]
@@ -424,16 +423,6 @@ class PenaltyOption(OptionGeneric):
             controls_post_scaled = post.controls_scaled.cx_start
             state_cx_scaled = vertcat(states_pre_scaled, states_post_scaled)
             control_cx_scaled = vertcat(controls_pre_scaled, controls_post_scaled)
-
-        elif self.allnode_constraint:
-            raise NotImplementedError("allnode_constraints seem to be obsolete")
-            ocp = controller.ocp
-            nlp_all = controller.nlp
-            name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
-            states_all_scaled = nlp_all.states_scaled.cx_start
-            controls_all_scaled = nlp_all.controls_scaled.cx_start
-            state_cx_scaled = vertcat(states_all_scaled)
-            control_cx_scaled = vertcat(controls_all_scaled)
 
         else:
             ocp = controller.ocp
@@ -651,8 +640,6 @@ class PenaltyOption(OptionGeneric):
         penalty_type = self.type.get_type()
         if self.node == Node.TRANSITION:
             # Make sure the penalty behave like a PhaseTransition, even though it may be an Objective or Constraint
-            self.node = Node.END
-            self.node_idx = [0]
             self.transition = True
             self.dt = 1
             self.phase_pre_idx = nlp.phase_idx
@@ -660,6 +647,7 @@ class PenaltyOption(OptionGeneric):
             if not self.states_mapping:
                 self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
+            self.node = Node.END
             pre = self._get_penalty_controller(ocp, nlp)
             pre.u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
 
@@ -667,62 +655,47 @@ class PenaltyOption(OptionGeneric):
             self.node = Node.START
             post = self._get_penalty_controller(ocp, nlp)
 
+            # reset the node
             self.node = Node.TRANSITION
+            self.node_idx = [0]
 
+            # Finalize
             penalty_type.validate_penalty_time_index(self, pre)
             penalty_type.validate_penalty_time_index(self, post)
             self.ensure_penalty_sanity(ocp, pre.get_nlp)
             controllers = [pre, post]
 
         elif isinstance(self.node, tuple) and self.binode_constraint:
-            nodes = self.node
             # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
-            # self.transition = True
+            nodes = self.node
             self.dt = 1
-            # self.phase_pre_idx
-            # self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
                 self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
-            self.node = nodes[0]
+
             nlp = ocp.nlp[self.phase_first_idx]
+            self.node = nodes[0]
             pre = self._get_penalty_controller(ocp, nlp)
             if self.node == Node.END:
                 pre.u = [nlp.U[-1]]
                 # Make an exception to the fact that U is not available for the last node
 
-            self.node = nodes[1]
             nlp = ocp.nlp[self.phase_second_idx]
+            self.node = nodes[1]
             post = self._get_penalty_controller(ocp, nlp)
             if self.node == Node.END:
                 post.u = [nlp.U[-1]]
                 # Make an exception to the fact that U is not available for the last node
 
-            # reset the node list
+            # reset the node
             self.node = nodes
+            self.binode_idx = [pre.t[0], post.t[0]]
+            self.node_idx = [post.t[0]]
 
+            # Finalize
             penalty_type.validate_penalty_time_index(self, pre)
             penalty_type.validate_penalty_time_index(self, post)
-            self.node_idx = [pre.t[0], post.t[0]]
             self.ensure_penalty_sanity(ocp, pre.get_nlp)
             controllers = [pre, post]
-
-        elif self.allnode_constraint:
-            NotImplementedError("This path seems obsolete")  # TODO verify that. If true remove
-            # controller = []
-            # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
-            # self.transition = True
-            self.dt = 1
-            # self.dt = penalty_type.get_dt(controller.nlp)
-            # if not self.states_mapping:
-            #    self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
-            nlp = ocp.nlp[self.phase_idx]
-            # controller.append(self._get_penalty_node_list(ocp, nlp))
-            controllers = [self._get_penalty_controller(ocp, nlp)]
-            penalty_type.validate_penalty_time_index(self, controllers[0])
-            # self.node_idx = [controller[0].t[0]] # t?
-            penalty_type.validate_penalty_time_index(self, controllers[0])
-            self.node_idx = controllers[0].t
-            self.ensure_penalty_sanity(ocp, nlp)
 
         else:
             controllers = [self._get_penalty_controller(ocp, nlp)]
@@ -756,11 +729,6 @@ class PenaltyOption(OptionGeneric):
         else:
             # The active controller is always last
             node_indices = [t for t in controllers[-1].t]
-            if self.custom_function and len(node_indices) > 1:
-                raise NotImplementedError(
-                    "Setting custom function for more than one node at a time when assume_phase_dynamics is "
-                    "set to False is not Implemented"
-                )
             for node_index in node_indices:
                 controllers[-1].t = [node_index]
                 controllers[-1].node_index = node_index

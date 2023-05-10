@@ -14,6 +14,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Solver,
 )
 
@@ -22,7 +23,8 @@ def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int,
     final_time: float,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -34,8 +36,13 @@ def prepare_ocp(
         The number of shooting points
     final_time: float
         The time at final node
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
+
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -93,7 +100,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

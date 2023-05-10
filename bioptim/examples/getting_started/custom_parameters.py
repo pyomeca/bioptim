@@ -23,6 +23,7 @@ from bioptim import (
     InterpolationType,
     ParameterList,
     OdeSolver,
+    OdeSolverBase,
     Solver,
 )
 
@@ -82,19 +83,20 @@ def my_target_function(ocp: OptimalControlProgram, value: MX) -> MX:
 
 
 def prepare_ocp(
-    biorbd_model_path,
-    final_time,
-    n_shooting,
-    optim_gravity,
-    optim_mass,
-    min_g,
-    max_g,
-    target_g,
-    min_m,
-    max_m,
-    target_m,
-    ode_solver=OdeSolver.RK4(),
-    use_sx=False,
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    optim_gravity: bool,
+    optim_mass: bool,
+    min_g: np.ndarray,
+    max_g: np.ndarray,
+    target_g: np.ndarray,
+    min_m: float,
+    max_m: float,
+    target_m: float,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    use_sx: bool = False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -123,10 +125,14 @@ def prepare_ocp(
         The maximal value for the mass
     target_m: float
         The target value for the mass
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     use_sx: bool
         If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -212,7 +218,7 @@ def prepare_ocp(
         parameters=parameters,
         ode_solver=ode_solver,
         use_sx=use_sx,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

@@ -57,7 +57,7 @@ class NonLinearProgram:
         The number of thread to use
     ns: int
         The number of shooting points
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The chosen ode solver
     parameters: ParameterList
         Reference to the optimized parameters in the underlying ocp

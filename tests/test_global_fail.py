@@ -1,4 +1,5 @@
 import pytest
+import re
 
 from casadi import MX
 from bioptim import (
@@ -32,9 +33,13 @@ def test_custom_constraint_multiple_nodes_fail():
     u_init = InitialGuess([0] * 3)
 
     with pytest.raises(
-        NotImplementedError,
-        match="Setting custom function for more than one node at a time when assume_phase_dynamics "
-        "is set to False is not Implemented",
+        RuntimeError,
+        match=re.escape(
+            "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined.\n"
+            "Please note that you may run into this error message if assume_phase_dynamics "
+            "was set to False. One workaround is to define your penalty one node at a time instead of "
+            "using the built-in ALL_SHOOTING (or something similar)."
+        ),
     ):
         OptimalControlProgram(
             BiorbdModel(model_path),
@@ -48,7 +53,8 @@ def test_custom_constraint_multiple_nodes_fail():
         )
 
 
-def test_custom_constraint_mx_fail():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_custom_constraint_mx_fail(assume_phase_dynamics):
     def custom_mx_fail(controller: PenaltyController):
         if controller.u_scaled is None:
             return None
@@ -72,6 +78,7 @@ def test_custom_constraint_mx_fail():
         constraints=constraints,
         x_init=x_init,
         u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     with pytest.raises(RuntimeError, match="Ipopt doesn't support SX/MX types in constraints bounds"):

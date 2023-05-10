@@ -28,11 +28,50 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Solver,
 )
 
 
-def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound, mu, ode_solver=OdeSolver.RK4()):
+def prepare_ocp(
+    biorbd_model_path: str,
+    phase_time: float,
+    n_shooting: int,
+    min_bound: float,
+    max_bound: float,
+    mu: float,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
+):
+    """
+    Prepare the actual control program to be solved
+
+    Parameters
+    ----------
+    biorbd_model_path
+        The path to the dynamic biorbd model
+    phase_time
+        The time of the phase
+    n_shooting
+        The number of discretization points of the phase
+    min_bound
+        The minimal bound of the inequality constraint
+    max_bound
+        The maximal bound of the inequalit constraint
+    mu
+        The coefficient of friction to use in the simulation
+    ode_solver
+        The integrator solver to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
+
+    Returns
+    -------
+    The OCP
+    """
+
     # --- Options --- #
     # BioModel path
     bio_model = BiorbdModel(biorbd_model_path)
@@ -106,7 +145,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
         constraints,
         variable_mappings=dof_mapping,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

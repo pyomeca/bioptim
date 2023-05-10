@@ -32,7 +32,7 @@ def prepare_ocp(
         The path to the bioMod
     use_sx: bool
         If the project should be build in mx [False] or sx [True]
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of integrator
     Returns
     -------

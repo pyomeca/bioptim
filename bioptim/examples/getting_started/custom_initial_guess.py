@@ -29,6 +29,7 @@ from bioptim import (
     InitialGuess,
     InterpolationType,
     OdeSolver,
+    OdeSolverBase,
     VariableScalingList,
     MagnitudeType,
 )
@@ -65,7 +66,7 @@ def prepare_ocp(
     final_time: float,
     random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
-    ode_solver=OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
@@ -82,11 +83,13 @@ def prepare_ocp(
     random_init: bool
         If True, the initial guess will be randomized
     initial_guess: InterpolationType
-        The type of interpolation to use for the initial guesses
-    ode_solver: OdeSolver
+        The type of interpolation to use for the initial guess
+    ode_solver: OdeSolverBase
         The type of ode solver used
     assume_phase_dynamics: bool
-        If the dynamics of each individual node should be computed or assumed to be the same across the phase
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -208,7 +211,7 @@ def main():
     Solve the program for all the InterpolationType available
     """
 
-    sol = None
+    ocp = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
 
