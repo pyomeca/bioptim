@@ -48,7 +48,7 @@ def prepare_ocp(
         The number of shooting points
     initialize_near_solution: bool
         If the initial guess should be almost the solution (this is merely to reduce the time of the tests)
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     constr: bool
         If the constraint should be applied (this is merely to reduce the time of the tests)

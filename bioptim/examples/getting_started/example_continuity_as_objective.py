@@ -72,7 +72,7 @@ def prepare_ocp_first_pass(
         The number of shooting points to define int the direct multiple shooting program
     state_continuity_weight: float
         The weight on the continuity objective.
-    ode_solver: OdeSolver = OdeSolver.RK4()
+    ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM)
@@ -147,7 +147,7 @@ def prepare_ocp_first_pass(
 def prepare_ocp_second_pass(
     biorbd_model_path: str,
     solution: Solution,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
 ) -> OptimalControlProgram:
@@ -158,7 +158,7 @@ def prepare_ocp_second_pass(
     ----------
     biorbd_model_path: str
         The path to the biorbd model
-    ode_solver: OdeSolver = OdeSolver.RK4()
+    ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM)

@@ -19,6 +19,7 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
+    OdeSolverBase,
     CostType,
     Solver,
 )
@@ -28,7 +29,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
 ) -> OptimalControlProgram:
@@ -43,7 +44,7 @@ def prepare_ocp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
-    ode_solver: OdeSolver = OdeSolver.RK4()
+    ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM)

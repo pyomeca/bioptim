@@ -14,6 +14,7 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
+    OdeSolverBase,
     CostType,
     Solver,
     BiorbdModel,
@@ -26,7 +27,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
     with_passive_torque=False,
 ) -> OptimalControlProgram:
@@ -41,12 +42,8 @@ def prepare_ocp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
-    ode_solver: OdeSolver = OdeSolver.RK4()
+    ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
-    use_sx: bool
-        If the SX variable should be used instead of MX (can be extensive on RAM)
-    n_threads: int
-        The number of threads to use in the paralleling (1 = no parallel computing)
     rigidbody_dynamics : RigidBodyDynamics
         rigidbody dynamics DAE or ODE
     with_passive_torque: bool

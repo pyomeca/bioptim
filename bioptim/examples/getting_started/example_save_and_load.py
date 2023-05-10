@@ -68,7 +68,7 @@ def prepare_ocp(
         The number of shooting points
     n_threads: int
         The number of threads to use while using multithreading
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     use_sx: bool
         If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)

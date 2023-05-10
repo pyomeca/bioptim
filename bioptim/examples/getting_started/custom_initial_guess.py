@@ -84,7 +84,7 @@ def prepare_ocp(
         If True, the initial guess will be randomized
     initial_guess: InterpolationType
         The type of interpolation to use for the initial guess
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     assume_phase_dynamics: bool
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the

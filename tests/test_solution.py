@@ -3,11 +3,11 @@ import os
 import pytest
 import numpy as np
 
-from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, ControlType
+from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, ControlType, OdeSolverBase
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-def test_time(ode_solver: OdeSolver):
+def test_time(ode_solver: OdeSolverBase):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -37,7 +37,7 @@ def test_time(ode_solver: OdeSolver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-def test_time_multiphase(ode_solver: OdeSolver):
+def test_time_multiphase(ode_solver: OdeSolverBase):
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
 
@@ -87,7 +87,7 @@ def test_time_multiphase(ode_solver: OdeSolver):
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
 @pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
 def test_generate_time(
-    ode_solver: OdeSolver, merge_phase: bool, keep_intermediate_points: bool, shooting_type: Shooting
+    ode_solver: OdeSolverBase, merge_phase: bool, keep_intermediate_points: bool, shooting_type: Shooting
 ):
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
@@ -216,7 +216,7 @@ def test_generate_time(
     ],
 )
 def test_generate_integrate(
-    ode_solver: OdeSolver,
+    ode_solver: OdeSolverBase,
     merge_phase: bool,
     keep_intermediate_points: bool,
     shooting_type: Shooting,
@@ -339,7 +339,7 @@ def test_generate_integrate(
     ],
 )
 def test_generate_integrate_linear_continuous(
-    ode_solver: OdeSolver,
+    ode_solver: OdeSolverBase,
     merge_phase: bool,
     keep_intermediate_points: bool,
     shooting_type: Shooting,

@@ -75,7 +75,7 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path to the bioMod
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     assume_phase_dynamics: bool
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the

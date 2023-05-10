@@ -53,7 +53,7 @@ def prepare_ocp(
         The number of shooting points
     use_actuators: bool
         If torque or torque activation should be used for the dynamics
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     objective_name: str
         The objective function to run ('MINIMIZE_PREDICTED_COM_HEIGHT',

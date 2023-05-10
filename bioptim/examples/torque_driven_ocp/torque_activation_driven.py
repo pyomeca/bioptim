@@ -36,7 +36,7 @@ def prepare_ocp(
         The number of shooting points
     final_time: float
         The time at final node
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     assume_phase_dynamics: bool
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the

@@ -48,7 +48,7 @@ def prepare_ocp(
         The time at final node
     actuator_type: int
         The type of actuator to use: 1 (torque activations) or 2 (torque max constraints)
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     assume_phase_dynamics: bool
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the

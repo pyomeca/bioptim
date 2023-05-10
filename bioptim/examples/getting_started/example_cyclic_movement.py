@@ -51,7 +51,7 @@ def prepare_ocp(
         The number of shooting points
     loop_from_constraint: bool
         If the looping cost should be a constraint [True] or an objective [False]
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     assume_phase_dynamics: bool
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the

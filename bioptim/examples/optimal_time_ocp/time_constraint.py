@@ -48,7 +48,7 @@ def prepare_ocp(
         The minimal time the phase can have
     time_max: float
         The maximal time the phase can have
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     assume_phase_dynamics: bool
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the

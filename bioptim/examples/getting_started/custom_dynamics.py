@@ -113,7 +113,7 @@ def prepare_ocp(
     problem_type_custom: bool
         If the preparation should be done using the user-defined dynamic function or the normal TORQUE_DRIVEN.
         They should return the same results
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     use_sx: bool
         If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)

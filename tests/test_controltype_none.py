@@ -189,7 +189,7 @@ def prepare_ocp(
         The minimal time for each phase
     time_max: list
         The maximal time for each phase
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     use_sx: bool
         Callable Mx or Sx used for ocp

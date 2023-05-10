@@ -4,11 +4,13 @@ Test for file IO
 import os
 import sys
 import io
+
 import pytest
 import numpy as np
 from bioptim import (
     BiorbdModel,
     OdeSolver,
+    OdeSolverBase,
     ControlType,
     IntegralApproximation,
     OptimalControlProgram,
@@ -20,7 +22,6 @@ from bioptim import (
     Bounds,
     Solver,
 )
-import biorbd_casadi as biorbd
 
 
 def prepare_ocp(
@@ -30,7 +31,7 @@ def prepare_ocp(
     control_type: ControlType,
     objective: str,
     target: np.ndarray = None,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -49,7 +50,7 @@ def prepare_ocp(
         The objective to minimize (torque or power)
     target: np.array
         The target value to reach
-    ode_solver: OdeSolver = OdeSolver.RK4()
+    ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
 
     Returns

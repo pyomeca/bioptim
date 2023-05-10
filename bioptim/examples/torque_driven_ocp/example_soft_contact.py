@@ -34,7 +34,7 @@ def prepare_single_shooting(
     biorbd_model_path: str,
     n_shooting: int,
     final_time: float,
-    ode_solver: OdeSolver,
+    ode_solver: OdeSolverBase,
     n_threads: int = 1,
     use_sx: bool = False,
 ) -> OptimalControlProgram:
@@ -105,7 +105,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int,
     final_time: float,
-    ode_solver: OdeSolver,
+    ode_solver: OdeSolverBase,
     slack: float = 1e-4,
     n_threads: int = 8,
     use_sx: bool = False,

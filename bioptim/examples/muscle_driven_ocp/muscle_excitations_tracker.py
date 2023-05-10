@@ -236,7 +236,7 @@ def prepare_ocp(
         The type of kin data to track ('markers' or 'q')
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     assume_phase_dynamics: bool
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the

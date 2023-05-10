@@ -43,7 +43,7 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path to the bioMod
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
 
     Returns

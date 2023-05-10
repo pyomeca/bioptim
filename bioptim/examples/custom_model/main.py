@@ -15,6 +15,7 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
+    OdeSolverBase,
     CostType,
     Solver,
     DynamicsList,
@@ -27,7 +28,7 @@ def prepare_ocp(
     n_shooting: int,
     configure_dynamics: callable = None,
     dynamics: callable = None,
-    ode_solver: OdeSolver = OdeSolver.RK4(n_integration_steps=5),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -44,7 +45,7 @@ def prepare_ocp(
         The function to configure the dynamics
     dynamics: callable
         The function to define the dynamics
-    ode_solver: OdeSolver = OdeSolver.RK4()
+    ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
 
     Returns

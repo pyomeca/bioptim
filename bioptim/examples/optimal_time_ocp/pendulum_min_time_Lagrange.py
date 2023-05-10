@@ -44,7 +44,7 @@ def prepare_ocp(
         The initial guess for the final time
     n_shooting: int
         The number of shooting points
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     weight: float
         The weighting of the minimized time objective function

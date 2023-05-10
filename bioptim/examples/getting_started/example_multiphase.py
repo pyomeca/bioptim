@@ -46,7 +46,7 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path to the bioMod
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solve to use
     long_optim: bool
         If the solver should solve the precise optimization (500 shooting points) or the approximate (50 points)

@@ -265,7 +265,7 @@ def prepare_ocp_parameters(
         The maximal value for the mass
     target_m: float
         The target value for the mass
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     use_sx: bool
         If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)
@@ -368,7 +368,7 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
     ----------
     biorbd_model_path: str
         The path of the biorbd model
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
 
     Returns

@@ -17,6 +17,7 @@ from bioptim import (
     DynamicsFcn,
     InitialGuess,
     OdeSolver,
+    OdeSolverBase,
     Constraint,
     ConstraintFcn,
     FatigueList,
@@ -42,7 +43,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     fatigue_type: str,
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     torque_level: int = 0,
 ) -> OptimalControlProgram:
     """
@@ -57,7 +58,7 @@ def prepare_ocp(
         The number of shooting points
     fatigue_type: str
         The type of dynamics to apply ("xia" or "michaud")
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     torque_level: int
         0 no residual torque, 1 with residual torque, 2 with fatigable residual torque
