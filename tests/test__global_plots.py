@@ -27,7 +27,7 @@ def test_plot_graphs_one_phase(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
@@ -41,7 +41,11 @@ def test_plot_check_conditioning(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=False, assume_phase_dynamics=assume_phase_dynamics,)
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        long_optim=False,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
     ocp.check_conditioning()
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
@@ -90,7 +94,9 @@ def test_plot_graphs_multi_phases(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics)
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+    )
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -196,7 +202,9 @@ def test_console_objective_functions(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics)
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+    )
     sol = ocp.solve()
     ocp = sol.ocp  # We will override ocp with known and controlled values for the test
 

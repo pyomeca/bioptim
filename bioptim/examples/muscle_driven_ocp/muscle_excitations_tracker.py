@@ -38,7 +38,11 @@ from bioptim.optimization.optimization_variable import OptimizationVariableConta
 
 
 def generate_data(
-    bio_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True, assume_phase_dynamics: bool = True
+    bio_model: BiorbdModel,
+    final_time: float,
+    n_shooting: int,
+    use_residual_torque: bool = True,
+    assume_phase_dynamics: bool = True,
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -327,7 +331,9 @@ def main():
     assume_phase_dynamics = True
 
     # Generate random data to fit
-    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(bio_model, final_time, n_shooting_points, assume_phase_dynamics)
+    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(
+        bio_model, final_time, n_shooting_points, assume_phase_dynamics
+    )
 
     # Track these data
     bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded

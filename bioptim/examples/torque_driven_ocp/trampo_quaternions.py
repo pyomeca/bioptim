@@ -45,7 +45,11 @@ def eul2quat(eul: np.ndarray) -> np.ndarray:
 
 
 def prepare_ocp(
-    biorbd_model_path: str, n_shooting: int, final_time: float, ode_solver: OdeSolverBase = OdeSolver.RK4(), assume_phase_dynamics: bool = True,
+    biorbd_model_path: str,
+    n_shooting: int,
+    final_time: float,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp

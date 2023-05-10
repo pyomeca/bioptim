@@ -67,7 +67,9 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
     return markers_diff
 
 
-def prepare_ocp(biorbd_model_path, ode_solver: OdeSolverBase = OdeSolver.RK4(), assume_phase_dynamics: bool = True) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path, ode_solver: OdeSolverBase = OdeSolver.RK4(), assume_phase_dynamics: bool = True
+) -> OptimalControlProgram:
     """
     Prepare the program
 

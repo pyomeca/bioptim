@@ -41,7 +41,12 @@ def test__getting_started__custom_bounds(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", n_shooting=30, final_time=2, assume_phase_dynamics=assume_phase_dynamics)
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        n_shooting=30,
+        final_time=2,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -89,7 +94,8 @@ def test__getting_started__custom_initial_guess(interpolation, random, assume_ph
         n_shooting=30,
         final_time=2,
         random_init=random,
-        initial_guess=interpolation,assume_phase_dynamics=assume_phase_dynamics,
+        initial_guess=interpolation,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -100,7 +106,8 @@ def test__getting_started__custom_objectives(assume_phase_dynamics):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",assume_phase_dynamics=assume_phase_dynamics,
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -122,7 +129,7 @@ def test__getting_started__custom_parameters(assume_phase_dynamics):
         max_m=30,
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -132,7 +139,9 @@ def test__getting_started__custom_phase_transitions(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics)
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+    )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -145,7 +154,7 @@ def test__getting_started__custom_plotting(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -160,7 +169,7 @@ def test__getting_started__example_cyclic_movement(assume_phase_dynamics):
         n_shooting=30,
         final_time=2,
         loop_from_constraint=True,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -185,7 +194,7 @@ def test__getting_started__example_inequality_constraint(assume_phase_dynamics):
         min_bound=50,
         max_bound=np.inf,
         mu=0.2,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -199,7 +208,11 @@ def test__getting_started__example_multiphase(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=True, assume_phase_dynamics=assume_phase_dynamics)
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        long_optim=True,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -208,7 +221,9 @@ def test__getting_started__example_binode_constraints(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics)
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+    )
 
 
 def test__getting_started__example_optimal_time():
@@ -226,7 +241,7 @@ def test__getting_started__example_save_and_load(assume_phase_dynamics):
         final_time=3,
         n_shooting=100,
         n_threads=4,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -244,7 +259,7 @@ def test__getting_started__pendulum(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -295,7 +310,7 @@ def test__optimal_time_ocp__multiphase_time_constraint(assume_phase_dynamics):
         time_min=time_min,
         time_max=time_max,
         n_shooting=ns,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -309,7 +324,7 @@ def test__optimal_time_ocp__pendulum_min_time_Lagrange(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -323,7 +338,7 @@ def test__optimal_time_ocp__pendulum_min_time_Mayer(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -349,7 +364,8 @@ def test__symmetrical_torque_driven_ocp__symmetry_by_constraint(assume_phase_dyn
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod", assume_phase_dynamics=assume_phase_dynamics,
+        biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -360,8 +376,7 @@ def test__symmetrical_torque_driven_ocp__symmetry_by_mapping(assume_phase_dynami
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
-        assume_phase_dynamics=assume_phase_dynamics
+        biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod", assume_phase_dynamics=assume_phase_dynamics
     )
 
 
@@ -378,7 +393,7 @@ def test__torque_driven_ocp__maximize_predicted_height_CoM(assume_phase_dynamics
         use_actuators=False,
         objective_name="MINIMIZE_COM_VELOCITY",
         com_constraints=True,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -392,7 +407,7 @@ def test__torque_driven_ocp__multi_model_by_constraint(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
         biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
         n_shooting=(5, 5),
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -435,7 +450,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
         biorbd_model_path_with_translations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -448,7 +463,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds(a
     ocp_module.prepare_ocp(
         biorbd_model_path_with_translations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -476,7 +491,7 @@ def test__torque_driven_ocp__track_markers_with_torque_actuators(assume_phase_dy
         n_shooting=30,
         final_time=2,
         actuator_type=1,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -502,7 +517,7 @@ def test__torque_driven_ocp__minimize_segment_velocity(assume_phase_dynamics):
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/triple_pendulum.bioMod",
         n_shooting=5,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -531,7 +546,7 @@ def test__track__track_segment_on_rt(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
         n_shooting=30,
         final_time=1,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -572,7 +587,7 @@ def test__torque_driven_ocp__torque_activation_driven(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/2segments_2dof_2contacts.bioMod",
         final_time=2,
         n_shooting=30,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

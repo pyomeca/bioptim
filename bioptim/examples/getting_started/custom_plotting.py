@@ -35,7 +35,12 @@ def custom_plot_callback(x: MX, q_to_plot: list) -> MX:
     return x[q_to_plot, :]
 
 
-def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int, assume_phase_dynamics: bool = True,) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    assume_phase_dynamics: bool = True,
+) -> OptimalControlProgram:
     """
     Prepare the program
 

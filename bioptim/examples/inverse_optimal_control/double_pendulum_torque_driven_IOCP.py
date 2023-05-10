@@ -25,7 +25,12 @@ from bioptim import (
 )
 
 
-def prepare_ocp(weights, coefficients, biorbd_model_path="models/double_pendulum.bioMod", assume_phase_dynamics: bool = True,):
+def prepare_ocp(
+    weights,
+    coefficients,
+    biorbd_model_path="models/double_pendulum.bioMod",
+    assume_phase_dynamics: bool = True,
+):
     # Parameters of the problem
     biorbd_model = BiorbdModel(biorbd_model_path)
     phase_time = 1.5
