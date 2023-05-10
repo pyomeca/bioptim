@@ -938,7 +938,13 @@ def test_torque_activation_driven_with_residual_torque(
 @pytest.mark.parametrize("with_excitations", [False, True])
 @pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
 def test_muscle_driven(
-    with_excitations, with_contact, with_residual_torque, with_external_force, rigidbody_dynamics, cx, assume_phase_dynamics,
+    with_excitations,
+    with_contact,
+    with_residual_torque,
+    with_external_force,
+    rigidbody_dynamics,
+    cx,
+    assume_phase_dynamics,
 ):
     # Prepare the program
     nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)

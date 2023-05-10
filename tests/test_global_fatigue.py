@@ -7,7 +7,8 @@ from bioptim import OdeSolver, Solver
 from .utils import TestUtils
 
 
-def test_xia_fatigable_muscles():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_xia_fatigable_muscles(assume_phase_dynamics):
     from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)

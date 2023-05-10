@@ -45,6 +45,7 @@ def prepare_ocp(
     fatigue_type: str,
     ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     torque_level: int = 0,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
