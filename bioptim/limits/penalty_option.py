@@ -208,7 +208,6 @@ class PenaltyOption(OptionGeneric):
         self.integrate = integrate
         self.transition = False
         self.binode_constraint = False
-        self.allnode_constraint = False
         self.phase_pre_idx = None
         self.phase_post_idx = None
         if self.derivative and self.explicit_derivative:
@@ -424,16 +423,6 @@ class PenaltyOption(OptionGeneric):
             controls_post_scaled = post.controls_scaled.cx_start
             state_cx_scaled = vertcat(states_pre_scaled, states_post_scaled)
             control_cx_scaled = vertcat(controls_pre_scaled, controls_post_scaled)
-
-        elif self.allnode_constraint:
-            raise NotImplementedError("allnode_constraints seem to be obsolete")
-            ocp = controller.ocp
-            nlp_all = controller.nlp
-            name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
-            states_all_scaled = nlp_all.states_scaled.cx_start
-            controls_all_scaled = nlp_all.controls_scaled.cx_start
-            state_cx_scaled = vertcat(states_all_scaled)
-            control_cx_scaled = vertcat(controls_all_scaled)
 
         else:
             ocp = controller.ocp
@@ -707,24 +696,6 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, post)
             self.ensure_penalty_sanity(ocp, pre.get_nlp)
             controllers = [pre, post]
-
-        elif self.allnode_constraint:
-            NotImplementedError("This path seems obsolete")  # TODO verify that. If true remove
-            # controller = []
-            # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
-            # self.transition = True
-            self.dt = 1
-            # self.dt = penalty_type.get_dt(controller.nlp)
-            # if not self.states_mapping:
-            #    self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
-            nlp = ocp.nlp[self.phase_idx]
-            # controller.append(self._get_penalty_node_list(ocp, nlp))
-            controllers = [self._get_penalty_controller(ocp, nlp)]
-            penalty_type.validate_penalty_time_index(self, controllers[0])
-            # self.node_idx = [controller[0].t[0]] # t?
-            penalty_type.validate_penalty_time_index(self, controllers[0])
-            self.node_idx = controllers[0].t
-            self.ensure_penalty_sanity(ocp, nlp)
 
         else:
             controllers = [self._get_penalty_controller(ocp, nlp)]

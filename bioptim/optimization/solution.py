@@ -1451,13 +1451,6 @@ class Solution:
                         )
                     )
 
-                    # elif penalty.allnode_constraint:
-                    #     x = np.concatenate(
-                    #         (
-                    #             self._states["scaled"][penalty.phase_idx]["all"][:, :],
-                    #         )
-                    #     )
-
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]

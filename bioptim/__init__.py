@@ -114,10 +114,6 @@ BinodeConstraintList
     A list of BinodeConstraint
 BinodeConstraintListFcn
     Selection of valid phase BinodeConstraint functions
-AllNodeConstraintList
-    A list of AllNodeConstraint
-AllNodeConstraintListFcn
-    Selection of valid phase AllNodeConstraint functions
 
 # --- Mapping indices between vector --- #
 Mapping
@@ -179,10 +175,7 @@ from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, Ph
 from .limits.multinode_constraint import (
     BinodeConstraintFcn,
     BinodeConstraintList,
-    BinodeConstraint,
-    AllNodeConstraintFcn,
-    AllNodeConstraintList,
-    AllNodeConstraint,
+    BinodeConstraint
 )
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import (
