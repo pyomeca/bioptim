@@ -477,8 +477,9 @@ def test_initial_guesses(assume_phase_dynamics, random_init, interpolation, ode_
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13954.735000000004)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_cyclic_objective(ode_solver):
+def test_cyclic_objective(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -492,6 +493,7 @@ def test_cyclic_objective(ode_solver):
         n_shooting=10,
         loop_from_constraint=False,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics
     )
     sol = ocp.solve()
 
@@ -529,8 +531,9 @@ def test_cyclic_objective(ode_solver):
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13224.252515047212)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_cyclic_constraint(ode_solver):
+def test_cyclic_constraint(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -544,6 +547,7 @@ def test_cyclic_constraint(ode_solver):
         n_shooting=10,
         loop_from_constraint=True,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics
     )
     sol = ocp.solve()
 
