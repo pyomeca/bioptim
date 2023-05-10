@@ -400,7 +400,7 @@ def test_custom_constraint_track_markers(ode_solver, assume_phase_dynamics):
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("random_init", [True, False])
-@pytest.mark.parametrize("interpolation", InterpolationType)
+@pytest.mark.parametrize("interpolation", [*InterpolationType])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
 def test_initial_guesses(assume_phase_dynamics, random_init, interpolation, ode_solver):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
