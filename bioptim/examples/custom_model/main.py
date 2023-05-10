@@ -27,8 +27,8 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     configure_dynamics: callable = None,
-    dynamics: callable = None,
     ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -43,10 +43,12 @@ def prepare_ocp(
         The number of shooting points to define int the direct multiple shooting program
     configure_dynamics: callable
         The function to configure the dynamics
-    dynamics: callable
-        The function to define the dynamics
     ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -95,7 +97,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=False,
         n_threads=2,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -105,10 +107,7 @@ def main():
     """
 
     # import the custom dynamics and configuration
-    from bioptim.examples.custom_model.custom_package.custom_dynamics import (
-        custom_dynamics,
-        custom_configure_my_dynamics,
-    )
+    from bioptim.examples.custom_model.custom_package.custom_dynamics import custom_configure_my_dynamics
 
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(
@@ -116,7 +115,6 @@ def main():
         final_time=1,
         n_shooting=30,
         configure_dynamics=custom_configure_my_dynamics,
-        dynamics=custom_dynamics,
     )
 
     # Custom plots
@@ -137,7 +135,7 @@ def main():
 
     # --- Animation --- #
     # not implemented yet
-    sol.animate()
+    # sol.animate()
 
 
 if __name__ == "__main__":

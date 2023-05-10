@@ -18,6 +18,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Node,
     Solver,
     Shooting,
