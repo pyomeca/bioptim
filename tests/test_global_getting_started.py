@@ -1150,7 +1150,8 @@ def test_binode_constraints(ode_solver, assume_phase_dynamics):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_multistart():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_multistart(assume_phase_dynamics):
     from bioptim.examples.getting_started import example_multistart as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
