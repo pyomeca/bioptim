@@ -172,11 +172,7 @@ from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from .interfaces.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
-from .limits.multinode_constraint import (
-    BinodeConstraintFcn,
-    BinodeConstraintList,
-    BinodeConstraint
-)
+from .limits.multinode_constraint import BinodeConstraintFcn, BinodeConstraintList, BinodeConstraint
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import (
     BoundsList,

@@ -34,7 +34,10 @@ def minimize_difference(controllers: list[PenaltyController, PenaltyController])
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube.bioMod", ode_solver: OdeSolverBase = OdeSolver.RK4(), long_optim: bool = False, assume_phase_dynamics: bool = True,
+    biorbd_model_path: str = "models/cube.bioMod",
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    long_optim: bool = False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp

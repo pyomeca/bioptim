@@ -66,7 +66,9 @@ def custom_phase_transition(
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube.bioMod", ode_solver: OdeSolverBase = OdeSolver.RK4(), assume_phase_dynamics: bool = True,
+    biorbd_model_path: str = "models/cube.bioMod",
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Parameters

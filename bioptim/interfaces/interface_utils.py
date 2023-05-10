@@ -204,8 +204,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         return target_out
 
     def get_x_and_u_at_idx(_penalty, _idx, is_unscaled):
-        """
-        """
+        """ """
         if _penalty.transition:
             ocp = interface.ocp
             if is_unscaled:
@@ -225,21 +224,47 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             ocp = interface.ocp
 
             # Make an exception to the fact that U is not available for the last node
-            mod_u0 = 1 if ocp.assume_phase_dynamics and (_penalty.first_node == Node.END or _penalty.first_node == ocp.nlp[_penalty.phase_first_idx].ns) else 0
-            mod_u1 = 1 if ocp.assume_phase_dynamics and (_penalty.second_node == Node.END or _penalty.second_node == ocp.nlp[_penalty.phase_second_idx].ns) else 0
+            mod_u0 = (
+                1
+                if ocp.assume_phase_dynamics
+                and (_penalty.first_node == Node.END or _penalty.first_node == ocp.nlp[_penalty.phase_first_idx].ns)
+                else 0
+            )
+            mod_u1 = (
+                1
+                if ocp.assume_phase_dynamics
+                and (_penalty.second_node == Node.END or _penalty.second_node == ocp.nlp[_penalty.phase_second_idx].ns)
+                else 0
+            )
 
             node0 = _penalty.binode_idx[0]
             node1 = _penalty.binode_idx[1]
             if is_unscaled:
                 x_first = ocp.nlp[_penalty.phase_first_idx].X[node0]
                 x_second = ocp.nlp[_penalty.phase_second_idx].X[node1]
-                u_first = ocp.nlp[_penalty.phase_first_idx].U[node0 - mod_u0] if ocp.assume_phase_dynamics or node0 < len(ocp.nlp[_penalty.phase_first_idx].U) else []
-                u_second = ocp.nlp[_penalty.phase_second_idx].U[node1 - mod_u1] if ocp.assume_phase_dynamics or node1 < len(ocp.nlp[_penalty.phase_second_idx].U) else []
+                u_first = (
+                    ocp.nlp[_penalty.phase_first_idx].U[node0 - mod_u0]
+                    if ocp.assume_phase_dynamics or node0 < len(ocp.nlp[_penalty.phase_first_idx].U)
+                    else []
+                )
+                u_second = (
+                    ocp.nlp[_penalty.phase_second_idx].U[node1 - mod_u1]
+                    if ocp.assume_phase_dynamics or node1 < len(ocp.nlp[_penalty.phase_second_idx].U)
+                    else []
+                )
             else:
                 x_first = ocp.nlp[_penalty.phase_first_idx].X_scaled[node0]
                 x_second = ocp.nlp[_penalty.phase_second_idx].X_scaled[node1]
-                u_first = ocp.nlp[_penalty.phase_first_idx].U_scaled[node0 - mod_u0] if ocp.assume_phase_dynamics or node0 < len(ocp.nlp[_penalty.phase_first_idx].U_scaled) else []
-                u_second = ocp.nlp[_penalty.phase_second_idx].U_scaled[node1 - mod_u1] if ocp.assume_phase_dynamics or node1 < len(ocp.nlp[_penalty.phase_second_idx].U_scaled) else []
+                u_first = (
+                    ocp.nlp[_penalty.phase_first_idx].U_scaled[node0 - mod_u0]
+                    if ocp.assume_phase_dynamics or node0 < len(ocp.nlp[_penalty.phase_first_idx].U_scaled)
+                    else []
+                )
+                u_second = (
+                    ocp.nlp[_penalty.phase_second_idx].U_scaled[node1 - mod_u1]
+                    if ocp.assume_phase_dynamics or node1 < len(ocp.nlp[_penalty.phase_second_idx].U_scaled)
+                    else []
+                )
 
             _x = vertcat(x_first, x_second)
             _u = vertcat(u_first, u_second)

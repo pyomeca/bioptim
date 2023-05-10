@@ -34,10 +34,12 @@ def test_custom_constraint_multiple_nodes_fail():
 
     with pytest.raises(
         RuntimeError,
-        match=re.escape("You cannot have non linear bounds for custom constraints and min_bound or max_bound defined.\n"
-                "Please note that you may run into this error message if assume_phase_dynamics "
-                        "was set to False. One workaround is to define your penalty one node at a time instead of "
-                        "using the built-in ALL_SHOOTING (or something similar)."),
+        match=re.escape(
+            "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined.\n"
+            "Please note that you may run into this error message if assume_phase_dynamics "
+            "was set to False. One workaround is to define your penalty one node at a time instead of "
+            "using the built-in ALL_SHOOTING (or something similar)."
+        ),
     ):
         OptimalControlProgram(
             BiorbdModel(model_path),

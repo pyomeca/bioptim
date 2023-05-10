@@ -33,7 +33,16 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path: str, phase_time: float, n_shooting: int, min_bound: float, max_bound: float, mu: float, ode_solver: OdeSolverBase = OdeSolver.RK4(), assume_phase_dynamics: bool = True,):
+def prepare_ocp(
+    biorbd_model_path: str,
+    phase_time: float,
+    n_shooting: int,
+    min_bound: float,
+    max_bound: float,
+    mu: float,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
+):
     """
     Prepare the actual control program to be solved
 
