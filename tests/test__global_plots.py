@@ -8,7 +8,6 @@ import pytest
 
 from casadi import Function, MX
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel
 from bioptim.limits.penalty import PenaltyOption
 
@@ -17,7 +16,8 @@ import matplotlib
 matplotlib.use("Agg")
 
 
-def test_plot_graphs_one_phase():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_plot_graphs_one_phase(assume_phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
@@ -27,25 +27,28 @@ def test_plot_graphs_one_phase():
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
+        assume_phase_dynamics=assume_phase_dynamics
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
 
-def test_plot_check_conditioning():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_plot_check_conditioning(assume_phase_dynamics):
     # Load graphs check conditioning
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=False)
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", long_optim=False, assume_phase_dynamics=assume_phase_dynamics,)
     ocp.check_conditioning()
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
 
-def test_plot_merged_graphs():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_plot_merged_graphs(assume_phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
 
@@ -72,6 +75,7 @@ def test_plot_merged_graphs():
         ode_solver=OdeSolver.RK4(),
         use_residual_torque=True,
         kin_data_to_track="markers",
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(1)
@@ -79,18 +83,20 @@ def test_plot_merged_graphs():
     sol.graphs(automatically_organize=False)
 
 
-def test_plot_graphs_multi_phases():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_plot_graphs_multi_phases(assume_phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod")
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics)
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
 
-def test_add_new_plot():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_add_new_plot(assume_phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
@@ -100,6 +106,7 @@ def test_add_new_plot():
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=20,
         final_time=0.5,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(1)
@@ -138,11 +145,12 @@ def test_add_new_plot():
     os.remove(save_name)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "rigidbody_dynamics",
     [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
 )
-def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics):
+def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_implicit_dynamics as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -152,6 +160,7 @@ def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics):
         n_shooting=5,
         final_time=1,
         rigidbody_dynamics=rigidbody_dynamics,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
@@ -180,14 +189,14 @@ def test_implicit_example():
     ocp_module.prepare_plots(sol_implicit, sol_semi_explicit, sol_explicit)
 
 
-def test_console_objective_functions():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_console_objective_functions(assume_phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod")
-    assume_phase_dynamics = ocp.assume_phase_dynamics
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics)
     sol = ocp.solve()
     ocp = sol.ocp  # We will override ocp with known and controlled values for the test
 
