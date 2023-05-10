@@ -1337,7 +1337,8 @@ def test_multistart(assume_phase_dynamics):
     shutil.rmtree(f"{save_folder}")
 
 
-def test_example_variable_scaling():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_example_variable_scaling(assume_phase_dynamics):
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -1346,6 +1347,7 @@ def test_example_variable_scaling():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1 / 10,
         n_shooting=30,
+        assume_phase_dynamics=assume_phase_dynamics
     )
     sol = ocp.solve()
 
