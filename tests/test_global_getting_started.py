@@ -1106,12 +1106,12 @@ def test_binode_constraints(ode_solver, assume_phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 106090.89337001556)
+    np.testing.assert_almost_equal(f[0, 0], 106087.6125856452)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (3036, 1))
-    np.testing.assert_almost_equal(g, np.zeros((3036, 1)))
+    np.testing.assert_equal(g.shape, (3030, 1))
+    np.testing.assert_almost_equal(g, np.zeros((3030, 1)))
 
     # Check some of the results
     states, controls = sol.states, sol.controls
@@ -1127,8 +1127,8 @@ def test_binode_constraints(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(states[0]["q"][:, 0], states[2]["q"][:, 0])
 
     # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.4968523, 9.81, 0.0236434]))
-    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-0.3839688, 9.81, -0.6037517]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.4910356, 9.81, 0.0118919]))
+    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-0.3776686, 9.81, -0.5934029]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
