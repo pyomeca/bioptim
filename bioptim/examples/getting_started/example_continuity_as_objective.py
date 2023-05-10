@@ -32,6 +32,7 @@ from bioptim import (
     ConstraintFcn,
     ConstraintList,
     OdeSolver,
+    OdeSolverBase,
     CostType,
     Solver,
     Solution,
@@ -53,9 +54,10 @@ def prepare_ocp_first_pass(
     final_time: float,
     n_shooting: int,
     state_continuity_weight: float,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -76,6 +78,10 @@ def prepare_ocp_first_pass(
         If the SX variable should be used instead of MX (can be extensive on RAM)
     n_threads: int
         The number of threads to use in the paralleling (1 = no parallel computing)
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -134,7 +140,7 @@ def prepare_ocp_first_pass(
         use_sx=use_sx,
         n_threads=n_threads,
         state_continuity_weight=state_continuity_weight,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
