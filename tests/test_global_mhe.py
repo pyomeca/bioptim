@@ -2,13 +2,13 @@
 Test for file IO
 """
 import os
-import sys
 import numpy as np
 import pytest
-from bioptim import Solver, MultiCyclicCycleSolutions
+from bioptim import Solver
 
 
-def test_cyclic_nmpc():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_cyclic_nmpc(assume_phase_dynamics):
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles  # True if there are still some cycle to perform
 
@@ -23,6 +23,7 @@ def test_cyclic_nmpc():
         cycle_len=cycle_len,
         cycle_duration=1,
         max_torque=50,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = nmpc.solve(update_functions, solver=Solver.IPOPT())
 

@@ -41,7 +41,15 @@ class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
         return True
 
 
-def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n_cycles_to_advance, max_torque):
+def prepare_nmpc(
+    model_path,
+    cycle_len,
+    cycle_duration,
+    n_cycles_simultaneous,
+    n_cycles_to_advance,
+    max_torque,
+    assume_phase_dynamics: bool = True,
+):
     model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
@@ -90,7 +98,7 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, n_cycles_simultaneous, n
         u_init=u_init,
         x_bounds=x_bound,
         u_bounds=u_bound,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

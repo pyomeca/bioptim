@@ -3,18 +3,16 @@ Tests for SQP interface.
 """
 
 import os
-import sys
 import numpy as np
 from bioptim import Solver
+import pytest
 
 from .utils import TestUtils
 
 
-def test_pendulum():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_pendulum(assume_phase_dynamics):
     from bioptim.examples.sqp_method import pendulum as ocp_module
-
-    if sys.platform == "win32":  # for windows ci
-        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -22,6 +20,7 @@ def test_pendulum():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=30,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.SQP_METHOD(show_online_optim=False)
