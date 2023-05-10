@@ -730,10 +730,15 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     TestUtils.assert_warm_start(ocp, sol, param_decimal=0)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("problem_type_custom", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
+def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import custom_dynamics as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -743,6 +748,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
