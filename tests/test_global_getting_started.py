@@ -344,15 +344,16 @@ def test_pendulum_save_and_load_rk8(use_sx):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_custom_constraint_track_markers(ode_solver):
+def test_custom_constraint_track_markers(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import custom_constraint as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver = ode_solver()
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver, assume_phase_dynamics=assume_phase_dynamics,)
     sol = ocp.solve()
 
     # Check constraints
