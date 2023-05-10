@@ -42,6 +42,7 @@ def prepare_ocp(
     fatigue_type: str,
     split_controls: bool,
     use_sx: bool = True,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -60,6 +61,10 @@ def prepare_ocp(
         If the tau should be split into minus and plus or a if_else should be used
     use_sx: bool
         If the program should be built from SX (True) or MX (False)
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -170,7 +175,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         use_sx=use_sx,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
