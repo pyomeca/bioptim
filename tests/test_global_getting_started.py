@@ -654,9 +654,14 @@ def test_phase_transitions(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 21941.02244926652)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
-def test_parameter_optimization(ode_solver):
+def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import custom_parameters as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver in (OdeSolver.RK8, OdeSolver.COLLOCATION):
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -665,7 +670,7 @@ def test_parameter_optimization(ode_solver):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
-        n_shooting=80,
+        n_shooting=20,
         optim_gravity=True,
         optim_mass=False,
         min_g=np.array([-1, -1, -10]),
@@ -674,13 +679,14 @@ def test_parameter_optimization(ode_solver):
         max_m=30,
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (320, 1))
-    np.testing.assert_almost_equal(g, np.zeros((320, 1)), decimal=6)
+    np.testing.assert_equal(g.shape, (80, 1))
+    np.testing.assert_almost_equal(g, np.zeros((80, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau, gravity = (
@@ -698,56 +704,21 @@ def test_parameter_optimization(ode_solver):
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    if isinstance(ode_solver, OdeSolver.IRK):
-        # Check objective function value
-        f = np.array(sol.cost)
-        np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 359.892132373683, decimal=6)
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 1947.9530924905557, decimal=6)
 
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((7.73915783, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-10.24782316, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((9.1465071, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-8.2425197, 0)))
 
-        # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 0.05059018, -9.8065527]]).T)
+    # gravity parameter
+    np.testing.assert_almost_equal(gravity, np.array([[0, 0.1598677, -9.8530712]]).T)
 
-        # detailed cost values
-        sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 357.32088196158827)
-
-    elif isinstance(ode_solver, OdeSolver.RK8):
-        # Check objective function value
-        f = np.array(sol.cost)
-        np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 359.892132373683, decimal=6)
-
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((7.73915783, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-10.24782316, 0)))
-
-        # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0.0, 0.05059018, -9.8065527]]).T)
-
-        # detailed cost values
-        sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 357.32088196158827)
-
-    else:
-        # Check objective function value
-        f = np.array(sol.cost)
-        np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 359.892132373683, decimal=6)
-
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((7.73915783, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-10.24782316, 0)))
-
-        # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 0.05059018, -9.8065527]]).T)
-
-        # detailed cost values
-        sol.detailed_cost_values()
-        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 357.32088196158827)
+    # detailed cost values
+    sol.detailed_cost_values()
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 1920.540265225351)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
