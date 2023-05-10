@@ -431,6 +431,7 @@ def test_initial_guesses(assume_phase_dynamics, random_init, interpolation, ode_
         random_init=random_init,
         initial_guess=interpolation,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics
     )
 
     sol = ocp.solve()
@@ -585,15 +586,20 @@ def test_cyclic_constraint(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 78921.61000000013)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_phase_transitions(ode_solver):
+def test_phase_transitions(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import custom_phase_transitions as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver = ode_solver()
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver, assume_phase_dynamics=assume_phase_dynamics)
     sol = ocp.solve()
 
     # Check objective function value
