@@ -3,11 +3,9 @@ Test for file IO
 """
 import os
 import pickle
-import sys
 import re
 import sys
 import shutil
-
 
 import pytest
 import numpy as np
@@ -16,6 +14,7 @@ from bioptim import InterpolationType, OdeSolver
 from .utils import TestUtils
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize(
@@ -30,8 +29,16 @@ from .utils import TestUtils
         OdeSolver.COLLOCATION,
     ],
 )
-def test_pendulum(ode_solver, use_sx, n_threads):
+def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if n_threads > 1 and not assume_phase_dynamics:
+        return
+    if not assume_phase_dynamics and ode_solver not in (OdeSolver.RK4, OdeSolver.COLLOCATION):
+        return
+    if ode_solver == OdeSolver.RK8 and not use_sx:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -48,6 +55,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
                 n_threads=n_threads,
                 use_sx=use_sx,
                 ode_solver=ode_solver,
+                assume_phase_dynamics=assume_phase_dynamics,
             )
         return
 
@@ -58,6 +66,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         n_threads=n_threads,
         use_sx=use_sx,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     ocp.print(to_console=True, to_graph=False)
 
