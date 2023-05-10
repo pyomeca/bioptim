@@ -975,11 +975,9 @@ def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
     )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
-def test_contact_forces_inequality_greater_than_constraint(ode_solver):
-    if sys.platform == "win32" and ode_solver == OdeSolver.IRK:
-        return
-
+def test_contact_forces_inequality_greater_than_constraint(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -995,6 +993,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
         max_bound=np.inf,
         mu=0.2,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
