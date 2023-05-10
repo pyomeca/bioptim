@@ -673,7 +673,7 @@ def test_acados_assume_phase_dynamics_reject():
     )
 
     with pytest.raises(
-        NotImplementedError,
+        RuntimeError,
         match=f"ACADOS necessitate assume_phase_dynamics=True",
     ):
         ocp.solve(solver=Solver.ACADOS())

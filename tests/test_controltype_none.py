@@ -290,7 +290,7 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     Prepare and solve and animate a reaching task ocp
     """
 
-    # TODO It seems assume_phase_dynamics=True is broken 
+    # TODO It seems assume_phase_dynamics=True is broken
 
     # number of stimulation corresponding to phases
     n = 10
@@ -298,7 +298,13 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     time_min = [0.01 for _ in range(n)]
     # maximum time between two phase
     time_max = [0.1 for _ in range(n)]
-    ocp = prepare_ocp(n_phase=n, time_min=time_min, time_max=time_max, use_sx=use_sx, assume_phase_dynamics=assume_phase_dynamics,)
+    ocp = prepare_ocp(
+        n_phase=n,
+        time_min=time_min,
+        time_max=time_max,
+        use_sx=use_sx,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))

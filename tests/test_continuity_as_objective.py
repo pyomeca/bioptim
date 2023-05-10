@@ -12,7 +12,11 @@ def test_continuity_as_objective(assume_phase_dynamics):
     model_path = TestUtils.bioptim_folder() + "/examples/getting_started/models/pendulum_maze.bioMod"
 
     ocp = ocp_module.prepare_ocp_first_pass(
-        biorbd_model_path=model_path, final_time=1, n_shooting=3, state_continuity_weight=1000000, assume_phase_dynamics=assume_phase_dynamics
+        biorbd_model_path=model_path,
+        final_time=1,
+        n_shooting=3,
+        state_continuity_weight=1000000,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
