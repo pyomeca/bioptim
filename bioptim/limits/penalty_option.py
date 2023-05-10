@@ -196,6 +196,7 @@ class PenaltyOption(OptionGeneric):
         self.custom_function = custom_function
 
         self.node_idx = []
+        self.binode_idx = None
         self.dt = 0
         self.weight = weight
         self.function: list[Function | None, ...] = []
@@ -408,7 +409,6 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
-        # TODO: Add loop node_index here Benjamin
         if self.binode_constraint or self.transition:
             controllers = controller
             pre = controllers[0]
@@ -651,8 +651,6 @@ class PenaltyOption(OptionGeneric):
         penalty_type = self.type.get_type()
         if self.node == Node.TRANSITION:
             # Make sure the penalty behave like a PhaseTransition, even though it may be an Objective or Constraint
-            self.node = Node.END
-            self.node_idx = [0]
             self.transition = True
             self.dt = 1
             self.phase_pre_idx = nlp.phase_idx
@@ -660,6 +658,7 @@ class PenaltyOption(OptionGeneric):
             if not self.states_mapping:
                 self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
+            self.node = Node.END
             pre = self._get_penalty_controller(ocp, nlp)
             pre.u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
 
@@ -667,42 +666,45 @@ class PenaltyOption(OptionGeneric):
             self.node = Node.START
             post = self._get_penalty_controller(ocp, nlp)
 
+            # reset the node
             self.node = Node.TRANSITION
+            self.node_idx = [0]
 
+            # Finalize
             penalty_type.validate_penalty_time_index(self, pre)
             penalty_type.validate_penalty_time_index(self, post)
             self.ensure_penalty_sanity(ocp, pre.get_nlp)
             controllers = [pre, post]
 
         elif isinstance(self.node, tuple) and self.binode_constraint:
-            nodes = self.node
             # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
-            # self.transition = True
+            nodes = self.node
             self.dt = 1
-            # self.phase_pre_idx
-            # self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not self.states_mapping:
                 self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
-            self.node = nodes[0]
+
             nlp = ocp.nlp[self.phase_first_idx]
+            self.node = nodes[0]
             pre = self._get_penalty_controller(ocp, nlp)
             if self.node == Node.END:
                 pre.u = [nlp.U[-1]]
                 # Make an exception to the fact that U is not available for the last node
 
-            self.node = nodes[1]
             nlp = ocp.nlp[self.phase_second_idx]
+            self.node = nodes[1]
             post = self._get_penalty_controller(ocp, nlp)
             if self.node == Node.END:
                 post.u = [nlp.U[-1]]
                 # Make an exception to the fact that U is not available for the last node
 
-            # reset the node list
+            # reset the node
             self.node = nodes
+            self.binode_idx = [pre.t[0], post.t[0]]
+            self.node_idx = [post.t[0]]
 
+            # Finalize
             penalty_type.validate_penalty_time_index(self, pre)
             penalty_type.validate_penalty_time_index(self, post)
-            self.node_idx = [pre.t[0], post.t[0]]
             self.ensure_penalty_sanity(ocp, pre.get_nlp)
             controllers = [pre, post]
 

@@ -1087,19 +1087,20 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.2005516965424669)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_binode_constraints(ode_solver):
-    if sys.platform == "win32":
-        # This test does not work on Windows for the CI
-        return
-
+def test_binode_constraints(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_binode_constraints as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver = ode_solver()
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver, assume_phase_dynamics=assume_phase_dynamics)
     sol = ocp.solve()
 
     # Check objective function value
