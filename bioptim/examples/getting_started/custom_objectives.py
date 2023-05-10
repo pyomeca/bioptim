@@ -21,6 +21,7 @@ from bioptim import (
     Bounds,
     InitialGuess,
     OdeSolver,
+    OdeSolverBase,
     PenaltyController,
     Solver,
 )
@@ -66,7 +67,7 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
     return markers_diff
 
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControlProgram:
+def prepare_ocp(biorbd_model_path, ode_solver: OdeSolverBase = OdeSolver.RK4(), assume_phase_dynamics: bool = True) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -76,6 +77,10 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
         The path of the biorbd model
     ode_solver: OdeSolver
         The type of ode solver used
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -144,7 +149,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

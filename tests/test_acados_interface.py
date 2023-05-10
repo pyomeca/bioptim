@@ -669,7 +669,7 @@ def test_acados_assume_phase_dynamics_reject():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=10,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=False,
     )
 
     with pytest.raises(

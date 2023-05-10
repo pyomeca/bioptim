@@ -311,7 +311,7 @@ class SelectionMapping(BiMapping):
     def __init__(
         self,
         nb_elements: int = None,
-        independent_indices: tuple[int] = None,
+        independent_indices: tuple[int, ...] = None,
         dependencies: tuple[Dependency, ...] = None,
         **params
     ):

@@ -34,6 +34,7 @@ def prepare_ocp(
     weight: float = 1,
     min_time=0,
     max_time=np.inf,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program
@@ -54,6 +55,10 @@ def prepare_ocp(
         The minimum time allowed for the final node
     max_time: float
         The maximum time allowed for the final node
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -108,7 +113,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

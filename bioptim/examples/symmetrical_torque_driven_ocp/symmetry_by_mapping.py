@@ -42,13 +42,14 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Solver,
 )
 
 
 def prepare_ocp(
     biorbd_model_path: str = "models/cubeSym.bioMod",
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
@@ -60,6 +61,10 @@ def prepare_ocp(
         Path to the bioMod
     ode_solver: OdeSolver
         The ode solver to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------

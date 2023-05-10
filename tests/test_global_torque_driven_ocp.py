@@ -479,10 +479,10 @@ def test_phase_transition_uneven_variable_number_by_bounds():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     # Define the problem
-    biorbd_model_path_withTranslations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
+    biorbd_model_path_with_translations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path_withTranslations=biorbd_model_path_withTranslations,
+        biorbd_model_path_with_translations=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
     )
 
@@ -508,11 +508,11 @@ def test_phase_transition_uneven_variable_number_by_mapping():
 
     # Define the problem
     biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
-    biorbd_model_path_withTranslations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
+    biorbd_model_path_with_translations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=biorbd_model_path,
-        biorbd_model_path_withTranslations=biorbd_model_path_withTranslations,
+        biorbd_model_path_with_translations=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
     )
     sol = ocp.solve()
