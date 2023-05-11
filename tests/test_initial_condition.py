@@ -164,7 +164,7 @@ def test_initial_guess_update(assume_phase_dynamics):
     np.testing.assert_almost_equal(ocp.v.init.init, np.array([[1, 1, 1, 1] * 11 + [3, 3] * 10 + [4]]).T)
 
 
-def test_initial_guess_custom(assume_phase_dynamics):
+def test_initial_guess_custom():
     n_elements = 6
     n_shoot = 10
 
