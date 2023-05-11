@@ -21,11 +21,12 @@ def prepare_ocp(
     biorbd_model_path: str,
     use_sx: bool = False,
     ode_solver=OdeSolver.RK4(),
-    rigidbody_dynamics=RigidBodyDynamics.ODE,
-    with_ligament=False,
+    rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
+
     Parameters
     ----------
     biorbd_model_path: str
@@ -34,6 +35,13 @@ def prepare_ocp(
         If the project should be build in mx [False] or sx [True]
     ode_solver: OdeSolverBase
         The type of integrator
+    rigidbody_dynamics: RigidBodyDynamics
+        The rigidbody dynamics to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
+
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -53,7 +61,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics, with_ligament=with_ligament)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics, with_ligament=True)
 
     # Path constraint
     x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
@@ -97,13 +105,13 @@ def prepare_ocp(
         ode_solver=ode_solver,
         n_threads=8,
         use_sx=use_sx,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
 def main():
     model_path = "./models/mass_point_with_ligament.bioMod"
-    ocp = prepare_ocp(biorbd_model_path=model_path, with_ligament=True)
+    ocp = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve()

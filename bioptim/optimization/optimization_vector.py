@@ -502,6 +502,9 @@ class OptimizationVector:
         ocp = self.ocp
         # Sanity check
         for nlp in ocp.nlp:
+            nlp.states.node_index = 0
+            nlp.controls.node_index = 0
+
             interpolation = nlp.x_init.type
             ns = self.get_ns(phase=nlp.phase_idx, interpolation_type=interpolation)
             if nlp.use_states_from_phase_idx == nlp.phase_idx:

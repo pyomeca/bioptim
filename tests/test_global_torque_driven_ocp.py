@@ -4,16 +4,20 @@ Test for file IO
 import os
 import pytest
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver, BiorbdModel
 from .utils import TestUtils
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 @pytest.mark.parametrize("actuator_type", [None, 2])
-def test_track_markers(ode_solver, actuator_type):
+def test_track_markers(ode_solver, actuator_type, assume_phase_dynamics):
     # Load track_markers
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -25,6 +29,7 @@ def test_track_markers(ode_solver, actuator_type):
         final_time=2,
         actuator_type=actuator_type,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -61,10 +66,15 @@ def test_track_markers(ode_solver, actuator_type):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_markers_changing_constraints(ode_solver):
+def test_track_markers_changing_constraints(ode_solver, assume_phase_dynamics):
     # Load track_markers
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -75,6 +85,7 @@ def test_track_markers_changing_constraints(ode_solver):
         n_shooting=30,
         final_time=2,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -156,10 +167,15 @@ def test_track_markers_changing_constraints(ode_solver):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_markers_with_actuators(ode_solver):
+def test_track_markers_with_actuators(ode_solver, assume_phase_dynamics):
     # Load track_markers
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -171,6 +187,7 @@ def test_track_markers_with_actuators(ode_solver):
         final_time=2,
         actuator_type=1,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -204,10 +221,15 @@ def test_track_markers_with_actuators(ode_solver):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_marker_2D_pendulum(ode_solver):
+def test_track_marker_2D_pendulum(ode_solver, assume_phase_dynamics):
     # Load muscle_activations_contact_tracker
     from bioptim.examples.torque_driven_ocp import track_markers_2D_pendulum as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -228,7 +250,15 @@ def test_track_marker_2D_pendulum(ode_solver):
     if isinstance(ode_solver, OdeSolver.IRK):
         tau_ref = tau_ref * 5
 
-    ocp = ocp_module.prepare_ocp(bio_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(
+        bio_model,
+        final_time,
+        n_shooting,
+        markers_ref,
+        tau_ref,
+        ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
     sol = ocp.solve()
 
     # Check constraints
@@ -285,11 +315,16 @@ def test_track_marker_2D_pendulum(ode_solver):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.IRK, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("defects_type", [DefectType.EXPLICIT, DefectType.IMPLICIT])
-def test_track_marker_2D_pendulum(ode_solver, defects_type):
+def test_track_marker_2D_pendulum(ode_solver, defects_type, assume_phase_dynamics):
     # Load muscle_activations_contact_tracker
     from bioptim.examples.torque_driven_ocp import track_markers_2D_pendulum as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -368,7 +403,8 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type):
     TestUtils.simulate(sol)
 
 
-def test_trampo_quaternions():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_trampo_quaternions(assume_phase_dynamics):
     # Load trampo_quaternion
     from bioptim.examples.torque_driven_ocp import trampo_quaternions as ocp_module
 
@@ -379,7 +415,7 @@ def test_trampo_quaternions():
     final_time = 0.25
     n_shooting = 5
 
-    ocp = ocp_module.prepare_ocp(model_path, n_shooting, final_time)
+    ocp = ocp_module.prepare_ocp(model_path, n_shooting, final_time, assume_phase_dynamics=assume_phase_dynamics)
     sol = ocp.solve()
 
     # Check objective function value
@@ -472,7 +508,8 @@ def test_trampo_quaternions():
     TestUtils.simulate(sol, decimal_value=6)
 
 
-def test_phase_transition_uneven_variable_number_by_bounds():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_phase_transition_uneven_variable_number_by_bounds(assume_phase_dynamics):
     # Load phase_transition_uneven_variable_number_by_bounds
     from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_bounds as ocp_module
 
@@ -484,6 +521,7 @@ def test_phase_transition_uneven_variable_number_by_bounds():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path_with_translations=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -500,7 +538,8 @@ def test_phase_transition_uneven_variable_number_by_bounds():
     np.testing.assert_equal(sol.status, 1)  # Did not converge, therefore the constraints won't be zero
 
 
-def test_phase_transition_uneven_variable_number_by_mapping():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_phase_transition_uneven_variable_number_by_mapping(assume_phase_dynamics):
     # Load phase_transition_uneven_variable_number_by_mapping
     from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
 
@@ -514,6 +553,7 @@ def test_phase_transition_uneven_variable_number_by_mapping():
         biorbd_model_path=biorbd_model_path,
         biorbd_model_path_with_translations=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -557,7 +597,8 @@ def test_phase_transition_uneven_variable_number_by_mapping():
     np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([-0.01901175]))
 
 
-def test_multi_model_by_mapping():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_multi_model_by_mapping(assume_phase_dynamics):
     """
     This test is highly sensitive, do not change anything please.
     """
@@ -576,6 +617,7 @@ def test_multi_model_by_mapping():
             biorbd_model_path=biorbd_model_path,
             biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
             n_shooting=(5, 5),
+            assume_phase_dynamics=assume_phase_dynamics,
         )
     return  # TODO: when it is not broken anymore, the following results should be good
 
@@ -647,8 +689,9 @@ def test_multi_model_by_constraint(assume_phase_dynamics):
     np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([0.01199335]), decimal=6)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_torque_activation_driven(ode_solver):
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
+def test_torque_activation_driven(ode_solver, assume_phase_dynamics):
     # Load track_markers
     from bioptim.examples.torque_driven_ocp import torque_activation_driven as ocp_module
 
@@ -661,6 +704,7 @@ def test_torque_activation_driven(ode_solver):
         n_shooting=30,
         final_time=2,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -694,7 +738,8 @@ def test_torque_activation_driven(ode_solver):
     TestUtils.simulate(sol, decimal_value=4)
 
 
-def test_example_multi_biorbd_model():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_example_multi_biorbd_model(assume_phase_dynamics):
     # Load example_multi_biorbd_model
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
@@ -709,6 +754,7 @@ def test_example_multi_biorbd_model():
         biorbd_model_path=biorbd_model_path,
         biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
         n_shooting=20,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 

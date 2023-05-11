@@ -677,7 +677,7 @@ class Solution:
         return self._controls["scaled"] if len(self._controls["scaled"]) > 1 else self._controls["scaled"][0]
 
     @property
-    def time(self) -> list | dict:
+    def time(self) -> list | dict | np.ndarray:
         """
         Returns the time vector in list if more than one phases, otherwise it returns the only dict
 

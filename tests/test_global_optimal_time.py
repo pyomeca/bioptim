@@ -24,10 +24,15 @@ from bioptim import (
 from .utils import TestUtils
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_pendulum_min_time_mayer(ode_solver):
+def test_pendulum_min_time_mayer(ode_solver, assume_phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -48,6 +53,7 @@ def test_pendulum_min_time_mayer(ode_solver):
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -108,11 +114,16 @@ def test_pendulum_min_time_mayer(ode_solver):
     TestUtils.simulate(sol, decimal_value=5)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 # @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
-def test_pendulum_min_time_mayer_constrained(ode_solver):
+def test_pendulum_min_time_mayer_constrained(ode_solver, assume_phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -137,6 +148,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
         n_shooting=ns,
         ode_solver=ode_solver(),
         min_time=min_ft,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -182,10 +194,15 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
     TestUtils.simulate(sol, decimal_value=6)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_pendulum_max_time_mayer_constrained(ode_solver):
+def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -211,6 +228,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
         ode_solver=ode_solver(),
         max_time=max_ft,
         weight=-1,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -253,10 +271,15 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     TestUtils.simulate(sol, decimal_value=6)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_pendulum_min_time_lagrange(ode_solver):
+def test_pendulum_min_time_lagrange(ode_solver, assume_phase_dynamics):
     # Load pendulum_min_time_Lagrange
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Lagrange as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -277,6 +300,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -372,7 +396,13 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     u_init.add([0] * bio_model.nb_tau)
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'min_bound'")):
         OptimalControlProgram(
-            bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_init=x_init, u_init=u_init
+            bio_model,
+            dynamics,
+            10,
+            2,
+            objective_functions=objective_functions,
+            x_init=x_init,
+            u_init=u_init,
         )
 
 
@@ -403,10 +433,15 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
         )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_time_constraint(ode_solver):
+def test_time_constraint(ode_solver, assume_phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -429,6 +464,7 @@ def test_time_constraint(ode_solver):
         time_min=0.2,
         time_max=1,
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -495,10 +531,15 @@ def test_time_constraint(ode_solver):
     TestUtils.simulate(sol, decimal_value=6)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_monophase_time_constraint(ode_solver):
+def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -509,6 +550,7 @@ def test_monophase_time_constraint(ode_solver):
         time_max=(2, 4, 0.8),
         n_shooting=(20,),
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -552,10 +594,15 @@ def test_monophase_time_constraint(ode_solver):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_multiphase_time_constraint(ode_solver):
+def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -566,6 +613,7 @@ def test_multiphase_time_constraint(ode_solver):
         time_max=(2, 4, 0.8),
         n_shooting=(20, 30, 20),
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -803,7 +851,8 @@ def test_mayer2_neg_multiphase_time_constraint():
         )
 
 
-def test_mayer_multiphase_time_constraint():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_mayer_multiphase_time_constraint(assume_phase_dynamics):
     (
         bio_model,
         n_shooting,
@@ -839,10 +888,12 @@ def test_mayer_multiphase_time_constraint():
         u_bounds,
         objective_functions,
         constraints,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
-def test_lagrange_neg_monophase_time_constraint():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_lagrange_neg_monophase_time_constraint(assume_phase_dynamics):
     (
         bio_model,
         n_shooting,
@@ -879,10 +930,12 @@ def test_lagrange_neg_monophase_time_constraint():
             u_bounds,
             objective_functions,
             constraints,
+            assume_phase_dynamics=assume_phase_dynamics,
         )
 
 
-def test_lagrange1_neg_multiphase_time_constraint():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_lagrange1_neg_multiphase_time_constraint(assume_phase_dynamics):
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         (
             bio_model,
@@ -921,10 +974,12 @@ def test_lagrange1_neg_multiphase_time_constraint():
             u_bounds,
             objective_functions,
             constraints,
+            assume_phase_dynamics=assume_phase_dynamics,
         )
 
 
-def test_lagrange2_neg_multiphase_time_constraint():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_lagrange2_neg_multiphase_time_constraint(assume_phase_dynamics):
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         (
             bio_model,
@@ -963,10 +1018,12 @@ def test_lagrange2_neg_multiphase_time_constraint():
             u_bounds,
             objective_functions,
             constraints,
+            assume_phase_dynamics=assume_phase_dynamics,
         )
 
 
-def test_lagrange_multiphase_time_constraint():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_lagrange_multiphase_time_constraint(assume_phase_dynamics):
     (
         bio_model,
         n_shooting,
@@ -1002,10 +1059,12 @@ def test_lagrange_multiphase_time_constraint():
         u_bounds,
         objective_functions,
         constraints,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
-def test_mayer_neg_two_objectives():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_mayer_neg_two_objectives(assume_phase_dynamics):
     (
         bio_model,
         n_shooting,
@@ -1037,4 +1096,5 @@ def test_mayer_neg_two_objectives():
             x_bounds,
             u_bounds,
             objective_functions,
+            assume_phase_dynamics=assume_phase_dynamics,
         )
