@@ -140,6 +140,7 @@ def prepare_ocp(
         u = np.random.random((ntau, n_shooting))
     elif initial_guess == InterpolationType.ALL_POINTS:
         if ode_solver.is_direct_collocation:
+            ode_solver: OdeSolver.COLLOCATION
             x = np.random.random((nq + nqdot, n_shooting * (ode_solver.polynomial_degree + 1) + 1))
             u = np.random.random((ntau, n_shooting))
         else:

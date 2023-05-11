@@ -1,5 +1,6 @@
-from casadi import MX, SX
 from typing import Protocol, Callable, ClassVar
+
+from casadi import MX, SX
 from ..misc.mapping import BiMapping, BiMappingList
 from ..interfaces.biorbd_model import Bounds
 
