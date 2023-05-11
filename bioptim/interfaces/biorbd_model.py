@@ -16,7 +16,7 @@ from ..misc.mapping import BiMapping, BiMappingList
 check_version(biorbd, "1.9.9", "1.10.0")
 
 
-def _q_mapping(model, mapping: BiMapping = None) -> BiMapping:
+def _q_mapping(model, mapping: BiMapping = None) -> dict:
     """
     This function returns a standard mapping for the q states if None
     and checks if the model has quaternions
@@ -37,7 +37,7 @@ def _q_mapping(model, mapping: BiMapping = None) -> BiMapping:
     return mapping
 
 
-def _qdot_mapping(model, mapping: BiMapping = None) -> BiMapping:
+def _qdot_mapping(model, mapping: BiMapping = None) -> dict:
     """
     This function returns a standard mapping for the qdot states if None
     and checks if the model has quaternions
@@ -50,7 +50,7 @@ def _qdot_mapping(model, mapping: BiMapping = None) -> BiMapping:
     return mapping
 
 
-def _qddot_mapping(model, mapping: BiMapping = None) -> BiMapping:
+def _qddot_mapping(model, mapping: BiMapping = None) -> dict:
     """
     This function returns a standard mapping for the qddot states if None
     and checks if the model has quaternions
@@ -83,12 +83,9 @@ def bounds_from_ranges(model, variables: str | list[str, ...], mapping: BiMappin
     """
     out = Bounds()
 
-    if "q" in variables:
-        q_ranges = model.ranges_from_model("q")
-    if "qdot" in variables:
-        qdot_ranges = model.ranges_from_model("qdot")
-    if "qddot" in variables:
-        qddot_ranges = model.ranges_from_model("qddot")
+    q_ranges = model.ranges_from_model("q") if "q" in variables else None
+    qdot_ranges = model.ranges_from_model("qdot") if "qdot" in variables else None
+    qddot_ranges = model.ranges_from_model("qddot") if "qddot" in variables else None
 
     for var in variables:
         if var == "q":
@@ -264,7 +261,8 @@ class BiorbdModel:
         qddot_joints_biorbd = GeneralizedAcceleration(qddot_joints)
         return self.model.ForwardDynamicsFreeFloatingBase(q_biorbd, qdot_biorbd, qddot_joints_biorbd).to_mx()
 
-    def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
+    @staticmethod
+    def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX:
         return vertcat(qddot_root, qddot_joints)
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
@@ -511,14 +509,14 @@ class BiorbdModel:
         else:
             raise RuntimeError("Wrong variable name")
 
-    def _q_mapping(self, mapping: BiMapping = None) -> BiMapping:
-        return _q_mapping(self.model, mapping)
+    def _q_mapping(self, mapping: BiMapping = None) -> dict:
+        return _q_mapping(self, mapping)
 
-    def _qdot_mapping(self, mapping: BiMapping = None) -> BiMapping:
-        return _qdot_mapping(self.model, mapping)
+    def _qdot_mapping(self, mapping: BiMapping = None) -> dict:
+        return _qdot_mapping(self, mapping)
 
-    def _qddot_mapping(self, mapping: BiMapping = None) -> BiMapping:
-        return _qddot_mapping(self.model, mapping)
+    def _qddot_mapping(self, mapping: BiMapping = None) -> dict:
+        return _qddot_mapping(self, mapping)
 
     def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
@@ -655,7 +653,7 @@ class MultiBiorbdModel:
         return sum(model.nb_root for model in self.models)
 
     @property
-    def segments(self) -> list[biorbd.Segment]:
+    def segments(self) -> tuple[biorbd.Segment, ...]:
         out = ()
         for model in self.models:
             out += model.segments
@@ -978,6 +976,8 @@ class MultiBiorbdModel:
             Second contact with axis Z
             rigid_contact_index(0) = (1, 2)
         """
+
+        model_selected = None
         for i, model in enumerate(self.models):
             if contact_index in self.variable_index("contact", i):
                 model_selected = model
@@ -1010,6 +1010,8 @@ class MultiBiorbdModel:
         return out_max, out_min
 
     def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
+        model_selected = None
+        model_idx = -1
         for i, model in enumerate(self.models):
             if contact_index in self.variable_index("contact", i):
                 model_selected = model
@@ -1087,11 +1089,11 @@ class MultiBiorbdModel:
     def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
-    def _q_mapping(self, mapping: BiMapping = None) -> BiMapping:
+    def _q_mapping(self, mapping: BiMapping = None) -> dict:
         return _q_mapping(self, mapping)
 
-    def _qdot_mapping(self, mapping: BiMapping = None) -> BiMapping:
+    def _qdot_mapping(self, mapping: BiMapping = None) -> dict:
         return _qdot_mapping(self, mapping)
 
-    def _qddot_mapping(self, mapping: BiMapping = None) -> BiMapping:
+    def _qddot_mapping(self, mapping: BiMapping = None) -> dict:
         return _qddot_mapping(self, mapping)

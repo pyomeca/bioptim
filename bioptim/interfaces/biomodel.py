@@ -1,5 +1,5 @@
 from casadi import MX, SX
-from typing import Protocol, Callable
+from typing import Protocol, Callable, ClassVar
 from ..misc.mapping import BiMapping, BiMappingList
 from ..interfaces.biorbd_model import Bounds
 
@@ -11,40 +11,39 @@ class BioModel(Protocol):
     def serialize(self) -> tuple[Callable, dict]:
         """transform the class into a save and load format"""
 
-    gravity: MX
-    """Get the gravity vector"""
+    gravity: MX | ClassVar
 
     def set_gravity(self, new_gravity):
         """Set the gravity vector"""
 
-    nb_tau: int
+    nb_tau: int | ClassVar
     """Get the number of generalized forces"""
 
-    nb_segments: int
+    nb_segments: int | ClassVar
     """Get the number of segment"""
 
     def segment_index(self, segment_name) -> int:
         """Get the segment index from its name"""
 
-    nb_quaternions: int
+    nb_quaternions: int | ClassVar
     """Get the number of quaternion"""
 
-    nb_dof: int
+    nb_dof: int | ClassVar
     """Get the number of dof"""
 
-    nb_q: int
+    nb_q: int | ClassVar
     """Get the number of Q"""
 
-    nb_qdot: int
+    nb_qdot: int | ClassVar
     """Get the number of Qdot"""
 
-    nb_qddot: int
+    nb_qddot: int | ClassVar
     """Get the number of Qddot"""
 
-    nb_root: int
+    nb_root: int | ClassVar
     """Get the number of root Dof"""
 
-    segments: tuple
+    segments: tuple | ClassVar
     """Get all segments"""
 
     def homogeneous_matrices_in_global(self, q, reference_idx, inverse=False) -> tuple:
@@ -65,7 +64,7 @@ class BioModel(Protocol):
         T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
         """
 
-    mass: MX
+    mass: MX | ClassVar
     """Get the mass of the model"""
 
     def center_of_mass(self, q) -> MX:
@@ -86,25 +85,25 @@ class BioModel(Protocol):
         Since we don't know if this is the case, this function is always called
         """
 
-    name_dof: tuple[str, ...]
+    name_dof: tuple[str, ...] | ClassVar
     """Get the name of the degrees of freedom"""
 
-    contact_names: tuple[str, ...]
+    contact_names: tuple[str, ...] | ClassVar
     """Get the name of the contacts"""
 
-    nb_soft_contacts: int
+    nb_soft_contacts: int | ClassVar
     """Get the number of soft contacts"""
 
-    soft_contact_names: tuple[str, ...]
+    soft_contact_names: tuple[str, ...] | ClassVar
     """Get the soft contact names"""
 
-    muscle_names: tuple[str, ...]
+    muscle_names: tuple[str, ...] | ClassVar
     """Get the muscle names"""
 
-    def torque(self, q, qdot, activation) -> MX:
+    def torque(self, activation, q, qdot) -> MX:
         """Get the muscle torque"""
 
-    def forward_dynamics_free_floating_base(self, q, qdot, qddot) -> MX:
+    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
         """compute the free floating base forward dynamics"""
 
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
@@ -113,7 +112,7 @@ class BioModel(Protocol):
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
         """compute the forward dynamics"""
 
-    def constrained_forward_dynamics(self, q, qdot, qddot, external_forces=None) -> MX:
+    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None) -> MX:
         """compute the forward dynamics with constraints"""
 
     def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None) -> MX:
@@ -137,13 +136,13 @@ class BioModel(Protocol):
     def markers(self, q) -> MX:
         """Get the markers of the model"""
 
-    nb_markers: int
+    nb_markers: int | ClassVar
     """Get the number of markers of the model"""
 
     def marker_index(self, name) -> int:
         """Get the index of a marker"""
 
-    nb_rigid_contacts: int
+    nb_rigid_contacts: int | ClassVar
     """Get the number of rigid contacts"""
 
     def marker_velocities(self, q, qdot, reference_index=None) -> MX:
@@ -155,7 +154,7 @@ class BioModel(Protocol):
     def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
         """Get the rigid contact acceleration"""
 
-    marker_names: tuple[str, ...]
+    marker_names: tuple[str, ...] | ClassVar
     """Get the marker names"""
 
     def soft_contact_forces(self, q, qdot) -> MX:
@@ -192,7 +191,8 @@ class BioModel(Protocol):
 
         Returns
         -------
-        The contact forces MX of size [nb_rigid_contacts, 1], or [nb_rigid_contacts, n_frames] if external_forces is not None
+        The contact forces MX of size [nb_rigid_contacts, 1],
+        or [nb_rigid_contacts, n_frames] if external_forces is not None
         """
 
     def passive_joint_torque(self, q, qdot) -> MX:
