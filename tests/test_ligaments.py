@@ -30,13 +30,7 @@ class OptimalControlProgram:
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize(
-    "with_ligament",
-    [
-        False,
-        True
-    ],
-)
+@pytest.mark.parametrize("with_ligament", [False, True])
 def test_torque_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
@@ -274,10 +268,7 @@ def test_muscle_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "rigidbody_dynamics",
-    [
-        RigidBodyDynamics.DAE_FORWARD_DYNAMICS,
-        RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-    ],
+    [RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
 )
 def test_ocp_mass_ligament(rigidbody_dynamics, assume_phase_dynamics):
     from bioptim.examples.torque_driven_ocp import ocp_mass_with_ligament as ocp_module

@@ -54,9 +54,9 @@ def test_maximize_predicted_height_CoM(objective_name, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 0.7719447987404187)
 
         # final position
-        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189654, -0.0904378, -0.7999996,  0.7999996)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189654, -0.0904378, -0.7999996, 0.7999996)))
         # final velocities
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2477864, -1.2847726, -3.5819658,  3.5819658)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2477864, -1.2847726, -3.5819658, 3.5819658)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-18.6635363)))
         np.testing.assert_almost_equal(tau[:, -2], np.array(-0.5142317))
@@ -65,9 +65,9 @@ def test_maximize_predicted_height_CoM(objective_name, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 0.4652603337905152)
 
         # final position
-        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189654, -0.0904378, -0.7999997,  0.7999997)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189654, -0.0904378, -0.7999997, 0.7999997)))
         # final velocities
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2302646, -1.2667316, -3.5316666,  3.5316666)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2302646, -1.2667316, -3.5316666, 3.5316666)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-18.5531974)))
         np.testing.assert_almost_equal(tau[:, -2], np.array(-0.9187262))
@@ -76,9 +76,9 @@ def test_maximize_predicted_height_CoM(objective_name, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 0.46678212036841293)
 
         # final position
-        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189654, -0.0904379, -0.7999998,  0.7999998)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189654, -0.0904379, -0.7999998, 0.7999998)))
         # final velocities
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2640489, -1.3015177, -3.6286507,  3.6286507)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2640489, -1.3015177, -3.6286507, 3.6286507)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-18.7970058)))
         np.testing.assert_almost_equal(tau[:, -2], np.array(-0.1918057))
@@ -102,7 +102,7 @@ def test_maximize_predicted_height_CoM_with_actuators(assume_phase_dynamics):
         n_shooting=20,
         use_actuators=True,
         ode_solver=OdeSolver.RK4(),
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -157,7 +157,7 @@ def test_maximize_predicted_height_CoM_rigidbody_dynamics(rigidbody_dynamics, as
         use_actuators=False,
         ode_solver=ode_solver,
         rigidbody_dynamics=rigidbody_dynamics,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol_opt = Solver.IPOPT(show_online_optim=False)
     sol_opt.set_maximum_iterations(1)

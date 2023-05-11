@@ -356,7 +356,9 @@ def prepare_ocp_parameters(
     )
 
 
-def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4(), assume_phase_dynamics: bool = True) -> OptimalControlProgram:
+def prepare_ocp_custom_objectives(
+    biorbd_model_path, ode_solver=OdeSolver.RK4(), assume_phase_dynamics: bool = True
+) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -455,7 +457,11 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints, assume_p
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(
-        model_path, with_mayer=with_mayer, with_lagrange=with_lagrange, with_constraints=with_constraints, assume_phase_dynamics=assume_phase_dynamics,
+        model_path,
+        with_mayer=with_mayer,
+        with_lagrange=with_lagrange,
+        with_constraints=with_constraints,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     if with_lagrange and with_mayer is not False:
         ocp.nlp[0].J[0].quadratic = False
@@ -482,7 +488,7 @@ def test_parameters(assume_phase_dynamics):
         max_m=30,
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     ocp.nlp[0].parameters.options[0][0].penalty_list.type = None
     ocp.nlp[0].parameters.options[0][0].penalty_list.name = "custom_gravity"

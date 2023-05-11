@@ -197,7 +197,7 @@ def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
         final_time=2,
         n_shooting=10,
         n_threads=4,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     X = InitialGuess([-1, -2, 1, 0.5])
@@ -238,7 +238,7 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
         final_time=2,
         n_shooting=10,
         n_threads=4,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     X = InitialGuess([-1, -2, 0.1, 0.2])
@@ -320,7 +320,7 @@ def test_initial_guess_error_messages(assume_phase_dynamics):
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
-            assume_phase_dynamics=assume_phase_dynamics
+            assume_phase_dynamics=assume_phase_dynamics,
         )
 
     with pytest.raises(
@@ -337,7 +337,7 @@ def test_initial_guess_error_messages(assume_phase_dynamics):
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
-            assume_phase_dynamics=assume_phase_dynamics
+            assume_phase_dynamics=assume_phase_dynamics,
         )
 
     with pytest.raises(
@@ -354,5 +354,5 @@ def test_initial_guess_error_messages(assume_phase_dynamics):
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
-            assume_phase_dynamics=assume_phase_dynamics
+            assume_phase_dynamics=assume_phase_dynamics,
         )

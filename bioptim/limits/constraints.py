@@ -309,7 +309,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if constraint.rows is None:
                 n_rows = value.shape[0] // 2
             else:
-                if not controller.ocp.assume_phase_dynamics and not isinstance(constraint.rows, int) and len(constraint.rows) == value.shape[0]:
+                if (
+                    not controller.ocp.assume_phase_dynamics
+                    and not isinstance(constraint.rows, int)
+                    and len(constraint.rows) == value.shape[0]
+                ):
                     # This is a very special case where assume_phase_dynamics=False declare rows by itself, but because
                     # this constraint is twice the real length (two constraints per value), it declares it too large
                     # on the subsequent pass. In reality, it means the user did not declare 'rows' by themselves.

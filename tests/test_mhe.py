@@ -144,7 +144,7 @@ def test_mhe_redim_xbounds_not_implemented(assume_phase_dynamics):
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     def update_functions(mhe, t, _):
