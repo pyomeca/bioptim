@@ -59,7 +59,6 @@ def prepare_ocp_phase_transitions(
     with_lagrange: bool,
     assume_phase_dynamics: bool,
 ) -> OptimalControlProgram:
-
     # BioModel path
     bio_model = (
         BiorbdModel(biorbd_model_path),

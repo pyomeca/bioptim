@@ -807,7 +807,7 @@ class PenaltyOption(OptionGeneric):
             elif node == Node.ALL:
                 t.extend(range(nlp.ns + 1))
             else:
-                raise RuntimeError(" is not a valid node")
+                raise RuntimeError(f"{node} is not a valid node")
 
         x = [nlp.X[idx] for idx in t]
         x_scaled = [nlp.X_scaled[idx] for idx in t]

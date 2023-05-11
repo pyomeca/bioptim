@@ -15,7 +15,8 @@ def test_noisy_multiphase(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics,
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
@@ -741,7 +742,8 @@ def test_add_wrong_magnitude(magnitude, raised_str, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics,
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
@@ -856,7 +858,8 @@ def test_add_wrong_bounds(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics,
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
