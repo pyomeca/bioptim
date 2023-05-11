@@ -264,9 +264,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return slipping
 
         @staticmethod
-        def torque_max_from_q_and_qdot(constraint: Constraint, controller: PenaltyController, min_torque=None):
+        def torque_max_from_q_and_qdot(
+            constraint: Constraint,
+            controller: PenaltyController,
+            min_torque=None,
+        ):
             """
-            Non linear maximal values of joint torques computed from the torque-position-velocity relationship
+            Nonlinear maximal values of joint torques computed from the torque-position-velocity relationship
 
             Parameters
             ----------
@@ -302,7 +306,17 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls["tau"].cx_start + min_bound, controller.controls["tau"].cx_start - max_bound
             )
 
-            n_rows = constraint.rows if constraint.rows else int(value.shape[0] / 2)
+            if constraint.rows is None:
+                n_rows = value.shape[0] // 2
+            else:
+                if not controller.ocp.assume_phase_dynamics and not isinstance(constraint.rows, int) and len(constraint.rows) == value.shape[0]:
+                    # This is a very special case where assume_phase_dynamics=False declare rows by itself, but because
+                    # this constraint is twice the real length (two constraints per value), it declares it too large
+                    # on the subsequent pass. In reality, it means the user did not declare 'rows' by themselves.
+                    # Therefore, we are acting as such
+                    n_rows = value.shape[0] // 2
+                else:
+                    n_rows = 1 if isinstance(constraint.rows, int) else len(constraint.rows)
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
             constraint.max_bound = [np.inf] * n_rows + [0] * n_rows
             return value

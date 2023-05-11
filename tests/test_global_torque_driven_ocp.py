@@ -4,16 +4,20 @@ Test for file IO
 import os
 import pytest
 import numpy as np
-import biorbd_casadi as biorbd
 from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver, BiorbdModel
 from .utils import TestUtils
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 @pytest.mark.parametrize("actuator_type", [None, 2])
-def test_track_markers(ode_solver, actuator_type):
+def test_track_markers(ode_solver, actuator_type, assume_phase_dynamics):
     # Load track_markers
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -25,6 +29,7 @@ def test_track_markers(ode_solver, actuator_type):
         final_time=2,
         actuator_type=actuator_type,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics
     )
     sol = ocp.solve()
 
