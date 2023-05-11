@@ -30,6 +30,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
     with_passive_torque=False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -48,6 +49,10 @@ def prepare_ocp(
         rigidbody dynamics DAE or ODE
     with_passive_torque: bool
         If the passive torque is used in dynamics
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -111,7 +116,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
