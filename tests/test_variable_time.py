@@ -2,7 +2,6 @@ import numpy as np
 from casadi import MX
 import pytest
 
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     BoundsList,
@@ -27,7 +26,7 @@ from bioptim.optimization.solution import Solution
 from .utils import TestUtils
 
 
-def prepare_ocp(phase_time_constraint, use_parameter):
+def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
     # --- Inputs --- #
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]
@@ -145,14 +144,15 @@ def prepare_ocp(phase_time_constraint, use_parameter):
         constraints,
         ode_solver=ode_solver,
         parameters=parameters,
-        assume_phase_dynamics=False,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("phase_time_constraint", [0, 1, 2])
 @pytest.mark.parametrize("use_parameter", [True, True])
-def test_variable_time(phase_time_constraint, use_parameter):
-    ocp = prepare_ocp(phase_time_constraint, use_parameter)
+def test_variable_time(phase_time_constraint, use_parameter, assume_phase_dynamics):
+    ocp = prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics)
 
     # --- Solve the program --- #
     np.random.seed(42)
