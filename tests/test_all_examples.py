@@ -72,12 +72,7 @@ def test__getting_started__custom_dynamics(assume_phase_dynamics):
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize(
-    "interpolation",
-    [
-        *InterpolationType
-    ]
-)
+@pytest.mark.parametrize("interpolation", [*InterpolationType])
 @pytest.mark.parametrize("random", [True, False])
 def test__getting_started__custom_initial_guess(interpolation, random, assume_phase_dynamics):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module

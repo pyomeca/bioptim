@@ -50,7 +50,7 @@ def test_time_multiphase(ode_solver, assume_phase_dynamics):
         ode_solver=ode_solver(),
         phase_time=(0.2, 0.3, 0.5),
         n_shooting=(3, 4, 5),
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)
@@ -101,7 +101,7 @@ def test_generate_time(ode_solver, merge_phase, keep_intermediate_points, shooti
         ode_solver=ode_solver(),
         phase_time=(0.2, 0.3, 0.5),
         n_shooting=(3, 4, 5),
-        assume_phase_dynamics=assume_phase_dynamics
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)
@@ -204,21 +204,8 @@ def test_generate_time(ode_solver, merge_phase, keep_intermediate_points, shooti
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("merge_phase", [True, False])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
-@pytest.mark.parametrize(
-    "shooting_type",
-    [
-        Shooting.SINGLE,
-        Shooting.SINGLE_DISCONTINUOUS_PHASE,
-        Shooting.MULTIPLE
-    ]
-)
-@pytest.mark.parametrize(
-    "integrator",
-    [
-        SolutionIntegrator.OCP,
-        SolutionIntegrator.SCIPY_RK45
-    ]
-)
+@pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
 def test_generate_integrate(
     ode_solver,
     merge_phase,
@@ -330,21 +317,8 @@ def test_generate_integrate(
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("merge_phase", [True, False])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
-@pytest.mark.parametrize(
-    "shooting_type",
-    [
-        Shooting.SINGLE,
-        Shooting.SINGLE_DISCONTINUOUS_PHASE,
-        Shooting.MULTIPLE
-    ]
-)
-@pytest.mark.parametrize(
-    "integrator",
-    [
-        SolutionIntegrator.OCP,
-        SolutionIntegrator.SCIPY_RK45
-    ]
-)
+@pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
 def test_generate_integrate_linear_continuous(
     ode_solver,
     merge_phase,
