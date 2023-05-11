@@ -47,7 +47,7 @@ def prepare_ocp(
         If the marker to track should be expressed in the global or local reference frame
     control_type: ControlType
         The type of controls
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
 
     Returns
@@ -122,7 +122,7 @@ def prepare_ocp(
         objective_functions,
         control_type=control_type,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=False,
     )
 
 

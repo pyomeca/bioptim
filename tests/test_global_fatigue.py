@@ -1,13 +1,15 @@
 import platform
 import os
 
+import pytest
 import numpy as np
 from bioptim import OdeSolver, Solver
 
 from .utils import TestUtils
 
 
-def test_xia_fatigable_muscles():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_xia_fatigable_muscles(assume_phase_dynamics):
     from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -81,7 +83,8 @@ def test_xia_fatigable_muscles():
     TestUtils.simulate(sol)
 
 
-def test_xia_stabilized_fatigable_muscles():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_xia_stabilized_fatigable_muscles(assume_phase_dynamics):
     from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -94,6 +97,7 @@ def test_xia_stabilized_fatigable_muscles():
         fatigue_type="xia_stabilized",
         ode_solver=OdeSolver.COLLOCATION(),
         torque_level=1,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -156,7 +160,8 @@ def test_xia_stabilized_fatigable_muscles():
     TestUtils.simulate(sol)
 
 
-def test_michaud_fatigable_muscles():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_michaud_fatigable_muscles(assume_phase_dynamics):
     from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -169,6 +174,7 @@ def test_michaud_fatigable_muscles():
         fatigue_type="michaud",
         ode_solver=OdeSolver.COLLOCATION(),
         torque_level=1,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
@@ -192,7 +198,8 @@ def test_michaud_fatigable_muscles():
     TestUtils.simulate(sol)
 
 
-def test_effort_fatigable_muscles():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_effort_fatigable_muscles(assume_phase_dynamics):
     from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -205,6 +212,7 @@ def test_effort_fatigable_muscles():
         fatigue_type="effort",
         ode_solver=OdeSolver.COLLOCATION(),
         torque_level=1,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -258,7 +266,8 @@ def test_effort_fatigable_muscles():
     TestUtils.simulate(sol)
 
 
-def test_fatigable_xia_torque_non_split():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_fatigable_xia_torque_non_split(assume_phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
     # it doesn't pass on macos
@@ -275,6 +284,7 @@ def test_fatigable_xia_torque_non_split():
         fatigue_type="xia",
         split_controls=False,
         use_sx=False,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
@@ -295,67 +305,8 @@ def test_fatigable_xia_torque_non_split():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_fatigable_xia_torque_split():
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=model_path, final_time=1, n_shooting=30, fatigue_type="xia", split_controls=True, use_sx=False
-    )
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 46.97293026598778)
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (480, 1))
-    np.testing.assert_almost_equal(g, np.zeros((480, 1)))
-
-    # Check some of the results
-    states, controls = sol.states, sol.controls
-    q, qdot = states["q"], states["qdot"]
-    ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
-    ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
-    tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
-
-    # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
-    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((9.74835527e-02, 0)))
-    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
-    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.88266826, 1)))
-    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((1.98481921e-02, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((5.69110401e-06, 0)))
-    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
-    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.9891588, 1)))
-    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((1.08355110e-02, 0)))
-
-    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-10.29111867, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((7.0546191, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, True)
-
-    # simulate
-    TestUtils.simulate(sol)
-
-
-def test_fatigable_xia_stabilized_torque_split():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_fatigable_xia_torque_split(assume_phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -364,22 +315,23 @@ def test_fatigable_xia_stabilized_torque_split():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
-        n_shooting=30,
-        fatigue_type="xia_stabilized",
+        n_shooting=10,
+        fatigue_type="xia",
         split_controls=True,
         use_sx=False,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 46.97293026598767)
+    np.testing.assert_almost_equal(f[0, 0], 73.27929222817079)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (480, 1))
-    np.testing.assert_almost_equal(g, np.zeros((480, 1)))
+    np.testing.assert_equal(g.shape, (160, 1))
+    np.testing.assert_almost_equal(g, np.zeros((160, 1)))
 
     # Check some of the results
     states, controls = sol.states, sol.controls
@@ -396,21 +348,21 @@ def test_fatigable_xia_stabilized_torque_split():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
-    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((9.74835527e-02, 0)))
+    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((1.14097518e-01, 0)))
     np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
-    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.88266826, 1)))
+    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.85128364, 1)))
     np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((1.98481921e-02, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((3.46188391e-02, 0)))
     np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((5.69110401e-06, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((1.05233076e-03, 0)))
     np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
-    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.9891588, 1)))
+    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.97572892, 1)))
     np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((1.08355110e-02, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((2.32187531e-02, 0)))
 
-    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-10.29111867, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((7.0546191, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-12.0660082, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.2893453, 0)))
     np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 
     # save and load
@@ -420,7 +372,75 @@ def test_fatigable_xia_stabilized_torque_split():
     TestUtils.simulate(sol)
 
 
-def test_fatigable_michaud_torque_non_split():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_fatigable_xia_stabilized_torque_split(assume_phase_dynamics):
+    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=model_path,
+        final_time=1,
+        n_shooting=10,
+        fatigue_type="xia_stabilized",
+        split_controls=True,
+        use_sx=False,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 73.2792922281799)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (160, 1))
+    np.testing.assert_almost_equal(g, np.zeros((160, 1)))
+
+    # Check some of the results
+    states, controls = sol.states, sol.controls
+    q, qdot = states["q"], states["qdot"]
+    ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
+    ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
+    tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
+    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((1.14097518e-01, 0)))
+    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.85128364, 1)))
+    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((3.46188391e-02, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((1.05233076e-03, 0)))
+    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.97572892, 1)))
+    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((2.32187531e-02, 0)))
+
+    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-12.0660082, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.2893453, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol)
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_fatigable_michaud_torque_non_split(assume_phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -433,6 +453,7 @@ def test_fatigable_michaud_torque_non_split():
         fatigue_type="michaud",
         split_controls=False,
         use_sx=False,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
@@ -453,7 +474,8 @@ def test_fatigable_michaud_torque_non_split():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_fatigable_michaud_torque_split():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_fatigable_michaud_torque_split(assume_phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -466,6 +488,7 @@ def test_fatigable_michaud_torque_split():
         fatigue_type="michaud",
         split_controls=True,
         use_sx=False,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -519,7 +542,8 @@ def test_fatigable_michaud_torque_split():
     TestUtils.simulate(sol, decimal_value=6)
 
 
-def test_fatigable_effort_torque_non_split():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_fatigable_effort_torque_non_split(assume_phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -532,6 +556,7 @@ def test_fatigable_effort_torque_non_split():
         fatigue_type="effort",
         split_controls=False,
         use_sx=False,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
@@ -552,7 +577,8 @@ def test_fatigable_effort_torque_non_split():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_fatigable_effort_torque_split():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_fatigable_effort_torque_split(assume_phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -565,6 +591,7 @@ def test_fatigable_effort_torque_split():
         fatigue_type="effort",
         split_controls=True,
         use_sx=False,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 

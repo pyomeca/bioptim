@@ -73,7 +73,10 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 
 
-def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
+def prepare_ocp(
+    biorbd_model_path: str = "models/mass_point.bioMod",
+    assume_phase_dynamics: bool = True,
+):
     # BioModel path
     m = BiorbdModel(biorbd_model_path)
     m.set_gravity(np.array((0, 0, 0)))
@@ -109,7 +112,7 @@ def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

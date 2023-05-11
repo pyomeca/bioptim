@@ -16,6 +16,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Solver,
     CostType,
     ControlType,
@@ -24,7 +25,7 @@ from bioptim import (
 
 def prepare_ocp(
     biorbd_model_path: str = "models/slider.bioMod",
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     n_shooting: tuple = (20, 20, 20),
     phase_time: tuple = (0.2, 0.3, 0.5),
     control_type: ControlType = ControlType.CONSTANT,
@@ -36,7 +37,7 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path to the bioMod
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solve to use
     n_shooting: tuple
         The number of shooting points for each phase

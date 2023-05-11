@@ -919,7 +919,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
 )
 @pytest.mark.parametrize("ns", [1, 10, 11])
 def test_PenaltyFunctionAbstract_get_node(node, ns):
-    nlp = NLP()
+    nlp = NLP(assume_phase_dynamics=True)
     nlp.control_type = ControlType.CONSTANT
     nlp.ns = ns
     nlp.X = np.linspace(0, -10, ns + 1)

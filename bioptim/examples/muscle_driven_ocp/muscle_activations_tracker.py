@@ -28,6 +28,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Node,
     Solver,
     RigidBodyDynamics,
@@ -66,7 +67,7 @@ def generate_data(
     n_mus = bio_model.nb_muscles
     dt = final_time / n_shooting
 
-    nlp = NonLinearProgram()
+    nlp = NonLinearProgram(assume_phase_dynamics=True)
     nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
@@ -85,9 +86,9 @@ def generate_data(
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states = OptimizationVariableContainer()
-    nlp.states_dot = OptimizationVariableContainer()
-    nlp.controls = OptimizationVariableContainer()
+    nlp.states = OptimizationVariableContainer(assume_phase_dynamics=True)
+    nlp.states_dot = OptimizationVariableContainer(assume_phase_dynamics=True)
+    nlp.controls = OptimizationVariableContainer(assume_phase_dynamics=True)
     nlp.states.initialize_from_shooting(n_shooting, MX)
     nlp.states_dot.initialize_from_shooting(n_shooting, MX)
     nlp.controls.initialize_from_shooting(n_shooting, MX)
@@ -201,7 +202,7 @@ def prepare_ocp(
     q_ref: np.ndarray,
     kin_data_to_track: str = "markers",
     use_residual_torque: bool = True,
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     n_threads: int = 1,
 ) -> OptimalControlProgram:
     """
@@ -225,7 +226,7 @@ def prepare_ocp(
         The type of kin data to track ('markers' or 'q')
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     n_threads: int
         The number of threads

@@ -305,7 +305,7 @@ class ObjectiveFunction:
                 ocp: OptimalControlProgram
                     A reference to the ocp
                 """
-                for mnc in ocp.binode_constraints or ocp.allnode_constraints:
+                for mnc in ocp.binode_constraints:
                     # Equality constraint between nodes
                     first_node_name = (
                         f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name

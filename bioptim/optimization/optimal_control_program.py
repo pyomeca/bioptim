@@ -8,7 +8,7 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, sum2, horzcat
+from casadi import DM, MX, SX, Function, sum1, horzcat
 from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
@@ -29,7 +29,7 @@ from ..limits.constraints import (
     MultinodeConstraintFunction,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
-from ..limits.multinode_constraint import BinodeConstraintList, AllNodeConstraintList
+from ..limits.multinode_constraint import BinodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
@@ -163,7 +163,6 @@ class OptimalControlProgram:
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         binode_constraints: BinodeConstraintList = None,
-        allnode_constraints: AllNodeConstraintList = None,
         x_scaling: VariableScaling | VariableScalingList = None,
         xdot_scaling: VariableScaling | VariableScalingList = None,
         u_scaling: VariableScaling | VariableScalingList = None,
@@ -269,7 +268,6 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "binode_constraints": binode_constraints,
-            "allnode_constraints": allnode_constraints,
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
@@ -301,6 +299,10 @@ class OptimalControlProgram:
             x_bounds_tp = BoundsList()
             x_bounds_tp.add(bounds=x_bounds)
             x_bounds = x_bounds_tp
+        elif isinstance(x_bounds, BoundsList) and len(x_bounds) == 0:
+            raise RuntimeError(
+                "If you do not want to provide an x_bounds, you should declare x_bounds=None instead of an empty BoundsList"
+            )
         elif not isinstance(x_bounds, BoundsList):
             raise RuntimeError("x_bounds should be built from a Bounds or a BoundsList")
 
@@ -310,13 +312,15 @@ class OptimalControlProgram:
             u_bounds_tp = BoundsList()
             u_bounds_tp.add(bounds=u_bounds)
             u_bounds = u_bounds_tp
+        elif isinstance(u_bounds, BoundsList) and len(u_bounds) == 0:
+            raise RuntimeError(
+                "If you do not want to provide a u_bounds, you should declare u_bounds=None instead of an empty BoundsList"
+            )
         elif not isinstance(u_bounds, BoundsList):
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
         if x_init is None:
-            if x_scaling is None:
-                raise RuntimeError("At least x_init or x_scaling should be provided.")
-            x_init = InitialGuessList()
+            raise RuntimeError("Please provide an x_init of type InitialGuess or InitialGuessList.")
         elif isinstance(x_init, InitialGuess):
             if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
                 raise RuntimeError("x_scaling should be provided with a custom x_init")
@@ -329,13 +333,15 @@ class OptimalControlProgram:
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init.init)
             x_init = x_init_tp
+        elif isinstance(x_init, InitialGuessList) and len(x_init) == 0:
+            raise RuntimeError(
+                "You must please declare an initial guess for the states x_init. Here, the InitialGuessList is empty."
+            )
         elif not isinstance(x_init, InitialGuessList):
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
         if u_init is None:
-            if u_scaling is None:
-                raise RuntimeError("At least u_init or u_scaling should be provided.")
-            u_init = InitialGuessList()
+            raise RuntimeError("Please provide an u_init of type InitialGuess or InitialGuessList.")
         elif isinstance(u_init, InitialGuess):
             if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
                 raise RuntimeError("u_scaling should be provided with a custom u_init")
@@ -348,6 +354,10 @@ class OptimalControlProgram:
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init.init)
             u_init = u_init_tp
+        elif isinstance(u_init, InitialGuessList) and len(u_init) == 0:
+            raise RuntimeError(
+                "You must please declare an initial guess for the controls u_init. Here, the InitialGuessList is empty."
+            )
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
@@ -413,11 +423,6 @@ class OptimalControlProgram:
         elif not isinstance(binode_constraints, BinodeConstraintList):
             raise RuntimeError("binode_constraints should be built from an BinodeConstraintList")
 
-        if allnode_constraints is None:
-            allnode_constraints = AllNodeConstraintList()
-        elif not isinstance(allnode_constraints, AllNodeConstraintList):
-            raise RuntimeError("allnode_constraints should be built from an AllNodeConstraintList")
-
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
         elif not isinstance(ode_solver, OdeSolverBase):
@@ -443,7 +448,7 @@ class OptimalControlProgram:
         self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
-        self.nlp = [NLP() for _ in range(self.n_phases)]
+        self.nlp = [NLP(self.assume_phase_dynamics) for _ in range(self.n_phases)]
         NLP.add(self, "model", bio_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
@@ -544,9 +549,8 @@ class OptimalControlProgram:
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
         # TODO: binode_whatever should be handled the same way as constraints and objectives
         self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
-        self.allnode_constraints = allnode_constraints.prepare_allnode_constraints(self)
-        # Skipping creates a valid but unsolvable OCP class
 
+        # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
             self._declare_continuity(state_continuity_weight)
 
@@ -678,6 +682,7 @@ class OptimalControlProgram:
 
         for nlp in self.nlp:  # Inner-phase
             if state_continuity_weight is None:
+                # Continuity as constraints
                 if self.assume_phase_dynamics:
                     penalty = Constraint(
                         ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
@@ -690,6 +695,7 @@ class OptimalControlProgram:
                         )
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
             else:
+                # Continuity as objectives
                 if self.assume_phase_dynamics:
                     penalty = Objective(
                         ObjectiveFcn.Mayer.CONTINUITY,
@@ -710,21 +716,16 @@ class OptimalControlProgram:
                         )
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
 
-        for pt in self.phase_transitions:  # Inter-phase
-            if not state_continuity_weight:
-                if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
-                    continue
-                # Dynamics must be respected between phases
-                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-                pt.list_index = -1
-                pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
+        for pt in self.phase_transitions:
+            # Phase transition as constraints
+            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+                continue
+            # Dynamics must be respected between phases
+            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
 
-            else:
-                pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
-                pt.list_index = -1
-                pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
-
-        if self.binode_constraints or self.allnode_constraints:  # Node-equalities
+        if self.binode_constraints:  # Node-equalities
             if not state_continuity_weight:
                 MultinodeConstraintFunction.Functions.node_equalities(self)
             else:
@@ -1030,22 +1031,22 @@ class OptimalControlProgram:
                 x_shape = x.shape[1]
                 x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T
 
-            if u.shape[1] == 1:
-                u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling["all"].scaling.shape[0])
-                u_scaling = np.reshape(
-                    np.hstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T, (-1, 1)
-                )
-            else:
-                u_shape = u.shape[1]
-                u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T
-
             x /= x_scaling
-            u /= u_scaling
+            if u.size != 0:
+                if u.shape[1] == 1:
+                    u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling["all"].scaling.shape[0])
+                    u_scaling = np.reshape(
+                        np.hstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T, (-1, 1)
+                    )
+                else:
+                    u_shape = u.shape[1]
+                    u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T
+                u /= u_scaling
 
             out = []
             if penalty.transition or penalty.binode_constraint:
                 out.append(
-                    penalty.weighted_function_non_threaded(
+                    penalty.weighted_function_non_threaded[t](
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
                     )
                 )
@@ -1057,20 +1058,20 @@ class OptimalControlProgram:
                     state_value = x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]]
                 else:
                     state_value = np.zeros(
-                        (x.shape[0], int(penalty.weighted_function_non_threaded.nnz_in(0) / x.shape[0]))
+                        (x.shape[0], int(penalty.weighted_function_non_threaded[t].nnz_in(0) / x.shape[0]))
                     )
 
-                out.append(penalty.weighted_function_non_threaded(state_value, u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded[t](state_value, u, p, penalty.weight, _target, dt))
             elif (
                 penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
                 or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
             ):
                 out = [
-                    penalty.weighted_function_non_threaded(x[:, [i, i + 1]], u[:, i], p, penalty.weight, _target, dt)
+                    penalty.weighted_function_non_threaded[t](x[:, [i, i + 1]], u[:, i], p, penalty.weight, _target, dt)
                     for i in range(x.shape[1] - 1)
                 ]
             else:
-                out.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded[t](x, u, p, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):

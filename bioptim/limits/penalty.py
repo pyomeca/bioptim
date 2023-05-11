@@ -698,9 +698,11 @@ class PenaltyFunctionAbstract:
             marker_objective = controller.mx_to_cx("marker", marker, controller.states["q"])
 
             # To align an axis, the other must be equal to 0
-            if penalty.rows is not None:
-                raise ValueError("rows cannot be defined in track_marker_with_segment_axis")
-            penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
+            if not penalty.rows_is_set:
+                if penalty.rows is not None:
+                    raise ValueError("rows cannot be defined in track_marker_with_segment_axis")
+                penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
+                penalty.rows_is_set = True
 
             return marker_objective
 
@@ -962,7 +964,10 @@ class PenaltyFunctionAbstract:
                     hasattr(penalty, "max_bound") and penalty.max_bound is not None
                 ):
                     raise RuntimeError(
-                        "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined"
+                        "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined.\n"
+                        "Please note that you may run into this error message if assume_phase_dynamics "
+                        "was set to False. One workaround is to define your penalty one node at a time instead of "
+                        "using the built-in ALL_SHOOTING (or something similar)."
                     )
                 penalty.min_bound = val[0]
                 penalty.max_bound = val[2]
@@ -1002,9 +1007,12 @@ class PenaltyFunctionAbstract:
         _type: str
             The type of penalty (for raise error message purpose)
         """
+        if penalty.cols_is_set:
+            return
 
         if penalty.cols is not None and index is not None:
             raise ValueError(f"It is not possible to define cols and {_type}_index since they are the same variable")
+
         penalty.cols = index if index is not None else penalty.cols
         if penalty.cols is not None:
             penalty.cols = [penalty.cols] if not isinstance(penalty.cols, (tuple, list)) else penalty.cols
@@ -1013,6 +1021,7 @@ class PenaltyFunctionAbstract:
                 penalty.cols = [
                     cols if isinstance(cols, int) else controller.model.marker_index(cols) for cols in penalty.cols
                 ]
+        penalty.cols_is_set = True
 
     @staticmethod
     def set_axes_rows(penalty: PenaltyOption, axes: list | tuple):
@@ -1026,10 +1035,14 @@ class PenaltyFunctionAbstract:
         axes: list | tuple
             The marker to index
         """
+        if penalty.rows_is_set:
+            return
 
         if penalty.rows is not None and axes is not None:
             raise ValueError("It is not possible to define rows and axes since they are the same variable")
         penalty.rows = axes if axes is not None else penalty.rows
+
+        penalty.rows_is_set = True
 
     @staticmethod
     def _check_idx(name: str, elements: list | tuple | int, max_n_elements: int = inf, min_n_elements: int = 0):

@@ -29,6 +29,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     seed: int = 0,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -43,6 +44,10 @@ def prepare_ocp(
         The number of shooting points to define int the direct multiple shooting program
     seed: int
         The seed to use for the random initial guess
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -100,7 +105,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         n_threads=1,  # You cannot use multi-threading for the resolution of the ocp with multi-start
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     ocp.add_plot_penalty(CostType.ALL)

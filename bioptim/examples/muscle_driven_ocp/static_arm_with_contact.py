@@ -19,6 +19,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Solver,
 )
 
@@ -28,7 +29,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     weight: float,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -44,7 +45,7 @@ def prepare_ocp(
     weight: float
         The weight applied to the SUPERIMPOSE_MARKERS final objective function. The bigger this number is, the greater
         the model will try to reach the marker. This is in relation with the other objective functions
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
 
     Returns

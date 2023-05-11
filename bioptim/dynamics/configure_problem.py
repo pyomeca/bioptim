@@ -858,14 +858,16 @@ class ConfigureProblem:
                 )
 
         # Create a fake accessor for the name of the controls so it can be directly accessed in nlp.controls
-        if split_controls:
-            ConfigureProblem.append_faked_optim_var(name, nlp.controls.scaled, var_names_with_suffix)
-            ConfigureProblem.append_faked_optim_var(name, nlp.controls.unscaled, var_names_with_suffix)
-        else:
-            for meta_suffix in var_names_with_suffix:
-                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.scaled, [name])
-                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.unscaled, [name])
-
+        for node_index in range(nlp.ns):
+            nlp.controls.node_index = node_index
+            if split_controls:
+                ConfigureProblem.append_faked_optim_var(name, nlp.controls.scaled, var_names_with_suffix)
+                ConfigureProblem.append_faked_optim_var(name, nlp.controls.unscaled, var_names_with_suffix)
+            else:
+                for meta_suffix in var_names_with_suffix:
+                    ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.scaled, [name])
+                    ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.unscaled, [name])
+        nlp.controls.node_index = nlp.states.node_index
         return True
 
     @staticmethod

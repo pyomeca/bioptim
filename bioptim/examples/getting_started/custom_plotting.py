@@ -4,7 +4,6 @@ plots and how to expand pre-existing one with new information
 """
 
 from casadi import MX
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -36,7 +35,12 @@ def custom_plot_callback(x: MX, q_to_plot: list) -> MX:
     return x[q_to_plot, :]
 
 
-def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    assume_phase_dynamics: bool = True,
+) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -48,6 +52,10 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         The time at the final node
     n_shooting: int
         The number of shooting points
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
     """
 
     bio_model = BiorbdModel(biorbd_model_path)
@@ -82,7 +90,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         u_init,
         x_bounds,
         u_bounds,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

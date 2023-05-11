@@ -948,7 +948,7 @@ class Solution:
                 x0 = sol._states["unscaled"][phase - 1]["all"][:, -1]  # the last node of the previous phase
                 u0 = self._controls["unscaled"][phase - 1]["all"][:, -1]
                 params = self.parameters["all"]
-                val = self.ocp.phase_transitions[phase - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
+                val = self.ocp.phase_transitions[phase - 1].function[0](vertcat(x0, x0), vertcat(u0, u0), params)
                 if val.shape[0] != x0.shape[0]:
                     raise RuntimeError(
                         f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -1369,7 +1369,7 @@ class Solution:
             nlp = self.ocp.nlp[idx_phase]
             for param in nlp.parameters:
                 if param.function:
-                    param.function(nlp.model, self.parameters[param.name], **param.params)
+                    param.function[0](nlp.model, self.parameters[param.name], **param.params)
 
             # noinspection PyTypeChecker
             biorbd_model: BiorbdModel = nlp.model
@@ -1409,9 +1409,6 @@ class Solution:
             else penalty.dt
         )
 
-        if penalty.binode_constraint or penalty.allnode_constraint:
-            penalty.node_idx = [penalty.node_idx]
-
         for idx in penalty.node_idx:
             x = []
             u = []
@@ -1436,29 +1433,23 @@ class Solution:
                         )
                     )
                 elif penalty.binode_constraint:
+                    node0 = penalty.binode_idx[0]
+                    node1 = penalty.binode_idx[1]
+
                     x = np.concatenate(
                         (
-                            self._states["scaled"][penalty.phase_first_idx]["all"][:, idx[0]],
-                            self._states["scaled"][penalty.phase_second_idx]["all"][:, idx[1]],
+                            self._states["scaled"][penalty.phase_first_idx]["all"][:, node0],
+                            self._states["scaled"][penalty.phase_second_idx]["all"][:, node1],
                         )
                     )
 
                     # Make an exception to the fact that U is not available for the last node
-                    mod_u0 = 1 if penalty.first_node == Node.END else 0
-                    mod_u1 = 1 if penalty.second_node == Node.END else 0
                     u = np.concatenate(
                         (
-                            self._controls["scaled"][penalty.phase_first_idx]["all"][:, idx[0] - mod_u0],
-                            self._controls["scaled"][penalty.phase_second_idx]["all"][:, idx[1] - mod_u1],
+                            self._controls["scaled"][penalty.phase_first_idx]["all"][:, node0],
+                            self._controls["scaled"][penalty.phase_second_idx]["all"][:, node1],
                         )
                     )
-
-                    # elif penalty.allnode_constraint:
-                    #     x = np.concatenate(
-                    #         (
-                    #             self._states["scaled"][penalty.phase_idx]["all"][:, :],
-                    #         )
-                    #     )
 
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
@@ -1508,8 +1499,11 @@ class Solution:
                     else:
                         target = penalty.target[0][..., penalty.node_idx.index(idx)]
 
-            val.append(penalty.function_non_threaded(x, u, p))
-            val_weighted.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, target, dt))
+            # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
+            # casadi function
+            u = u[:, ~np.isnan(np.sum(u, axis=0))]
+            val.append(penalty.function_non_threaded[idx](x, u, p))
+            val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)
