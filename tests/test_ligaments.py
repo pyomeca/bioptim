@@ -28,17 +28,18 @@ class OptimalControlProgram:
         self.implicit_constraints = ConstraintList()
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize(
     "with_ligament",
     [
         False,
-        True,
+        True
     ],
 )
-def test_torque_driven_with_ligament(with_ligament, cx):
+def test_torque_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=True)
+    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
@@ -90,11 +91,12 @@ def test_torque_driven_with_ligament(with_ligament, cx):
         )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_ligament", [False, True])
-def test_torque_derivative_driven_with_ligament(with_ligament, cx):
+def test_torque_derivative_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=True)
+    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
@@ -148,11 +150,12 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx):
         )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_ligament", [False, True])
-def test_torque_activation_driven_with_ligament(with_ligament, cx):
+def test_torque_activation_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=True)
+    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
@@ -204,11 +207,12 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx):
         )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_ligament", [False, True])
-def test_muscle_driven_with_ligament(with_ligament, cx):
+def test_muscle_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=True)
+    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_ligament.bioMod"
     )
@@ -267,21 +271,15 @@ def test_muscle_driven_with_ligament(with_ligament, cx):
         )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "rigidbody_dynamics",
     [
         RigidBodyDynamics.DAE_FORWARD_DYNAMICS,
-        RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
+        RigidBodyDynamics.DAE_INVERSE_DYNAMICS
     ],
 )
-@pytest.mark.parametrize(
-    "with_ligament",
-    [
-        False,
-        True,
-    ],
-)
-def test_ocp_mass_ligament(rigidbody_dynamics, with_ligament):
+def test_ocp_mass_ligament(rigidbody_dynamics, assume_phase_dynamics):
     from bioptim.examples.torque_driven_ocp import ocp_mass_with_ligament as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -292,7 +290,7 @@ def test_ocp_mass_ligament(rigidbody_dynamics, with_ligament):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path,
         rigidbody_dynamics=rigidbody_dynamics,
-        with_ligament=with_ligament,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
 
@@ -303,75 +301,35 @@ def test_ocp_mass_ligament(rigidbody_dynamics, with_ligament):
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        if with_ligament:
-            # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
-            # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
-            # initial and final controls
-            np.testing.assert_almost_equal(
-                tau[:, 0],
-                np.array([2.158472e-16]),
-                decimal=6,
-            )
-            np.testing.assert_almost_equal(tau[:, -2], np.array([1.423733e-17]), decimal=6)
-
-        else:
-            # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([-3.1415927]))
-            # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([-7.2608855]))
-            # initial and final controls
-            np.testing.assert_almost_equal(
-                tau[:, 0],
-                np.array([24.594638]),
-                decimal=6,
-            )
-            np.testing.assert_almost_equal(
-                tau[:, -2],
-                np.array([0.123591]),
-                decimal=6,
-            )
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
+        # initial and final controls
+        np.testing.assert_almost_equal(
+            tau[:, 0],
+            np.array([2.158472e-16]),
+            decimal=6,
+        )
+        np.testing.assert_almost_equal(tau[:, -2], np.array([1.423733e-17]), decimal=6)
 
     else:
-        if with_ligament:
-            # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
-            # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
-            # initial and final controls
-            np.testing.assert_almost_equal(
-                tau[:, 0],
-                np.array([2.158472e-16]),
-                decimal=6,
-            )
-            np.testing.assert_almost_equal(
-                tau[:, -2],
-                np.array([1.423733e-17]),
-                decimal=6,
-            )
-
-        else:
-            # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([-3.1415927]))
-            # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([-7.2608855]))
-            # initial and final controls
-            np.testing.assert_almost_equal(
-                tau[:, 0],
-                np.array([24.594638]),
-                decimal=6,
-            )
-            np.testing.assert_almost_equal(
-                tau[:, -2],
-                np.array([0.123591]),
-                decimal=6,
-            )
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
+        # initial and final controls
+        np.testing.assert_almost_equal(
+            tau[:, 0],
+            np.array([2.158472e-16]),
+            decimal=6,
+        )
+        np.testing.assert_almost_equal(
+            tau[:, -2],
+            np.array([1.423733e-17]),
+            decimal=6,
+        )
