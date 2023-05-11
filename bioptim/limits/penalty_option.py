@@ -568,7 +568,7 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = self.function[node].expand()
             self.weighted_function[node] = self.weighted_function[node].expand()
 
-    def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str):
+    def add_target_to_plot(self, all_pn: PenaltyController, combine_to: str):
         """
         Interface to the plot so it can be properly added to the proper plot
 
@@ -592,7 +592,7 @@ class PenaltyOption(OptionGeneric):
         else:
             self.target_temporaty = self.target[0]
 
-    def _finish_add_target_to_plot(self, all_pn: PenaltyNodeList):
+    def _finish_add_target_to_plot(self, all_pn: PenaltyController):
         """
         Internal interface to add (after having check the target dimensions) the target to the plot if needed
 
