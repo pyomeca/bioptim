@@ -41,8 +41,16 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         """
         Parameters
         ----------
-        window_size: int | list[int]
-            The number of shooting point of the moving window
+        bio_model
+            The model to perform the optimization on
+        dynamics
+            The dynamics equation to use
+        window_len:
+            The length of the sliding window. It is translated into n_shooting in each individual optimization program
+        window_duration
+            The time in second of the sliding window
+        use_sx
+            Same as OCP, but has True as default value
         """
 
         if isinstance(bio_model, (list, tuple)) and len(bio_model) > 1:

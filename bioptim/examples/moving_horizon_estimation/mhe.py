@@ -21,6 +21,7 @@ import casadi as cas
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    BioModel,
     BiorbdModel,
     MovingHorizonEstimator,
     Dynamics,
@@ -89,7 +90,40 @@ def generate_data(bio_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False
     return states, markers, markers_noised, controls
 
 
-def prepare_mhe(bio_model, window_len, window_duration, max_torque, x_init, u_init):
+def prepare_mhe(
+    bio_model: BioModel,
+    window_len: int,
+    window_duration: float,
+    max_torque: float,
+    x_init: np.ndarray,
+    u_init: np.ndarray,
+    assume_phase_dynamics: bool = True,
+):
+    """
+
+    Parameters
+    ----------
+    bio_model
+        The model to perform the optimization on
+    window_len:
+        The length of the sliding window. It is translated into n_shooting in each individual optimization program
+    window_duration
+        The time in second of the sliding window
+    max_torque
+        The maximal torque the model is able to apply
+    x_init
+        The states initial guess
+    u_init
+        The controls initial guess
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
+
+    Returns
+    -------
+
+    """
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, node=Node.ALL, weight=1000, list_index=0)
 
     return MovingHorizonEstimator(
@@ -103,7 +137,7 @@ def prepare_mhe(bio_model, window_len, window_duration, max_torque, x_init, u_in
         x_bounds=bio_model.bounds_from_ranges(["q", "qdot"]),
         u_bounds=Bounds([-max_torque, 0.0], [max_torque, 0.0]),
         n_threads=4,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
