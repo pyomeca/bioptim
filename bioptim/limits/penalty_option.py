@@ -4,7 +4,6 @@ import biorbd_casadi as biorbd
 from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
-from .penalty_node import PenaltyNodeList
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, IntegralApproximation
 from ..misc.mapping import Mapping, BiMapping
