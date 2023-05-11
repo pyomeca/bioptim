@@ -115,7 +115,8 @@ def test_initial_guess_spline():
         np.testing.assert_almost_equal(init.init.evaluate_at(t), expected_val)
 
 
-def test_initial_guess_update():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_initial_guess_update(assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
@@ -125,6 +126,7 @@ def test_initial_guess_update():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     np.testing.assert_almost_equal(ocp.nlp[0].x_init.init, np.zeros((4, 1)))
@@ -162,7 +164,7 @@ def test_initial_guess_update():
     np.testing.assert_almost_equal(ocp.v.init.init, np.array([[1, 1, 1, 1] * 11 + [3, 3] * 10 + [4]]).T)
 
 
-def test_initial_guess_custom():
+def test_initial_guess_custom(assume_phase_dynamics):
     n_elements = 6
     n_shoot = 10
 
@@ -184,7 +186,8 @@ def test_initial_guess_custom():
         np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
-def test_simulate_from_initial_multiple_shoot():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -194,6 +197,7 @@ def test_simulate_from_initial_multiple_shoot():
         final_time=2,
         n_shooting=10,
         n_threads=4,
+        assume_phase_dynamics=assume_phase_dynamics
     )
 
     X = InitialGuess([-1, -2, 1, 0.5])
@@ -222,7 +226,8 @@ def test_simulate_from_initial_multiple_shoot():
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.89, 1.8)))
 
 
-def test_simulate_from_initial_single_shoot():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
@@ -233,6 +238,7 @@ def test_simulate_from_initial_single_shoot():
         final_time=2,
         n_shooting=10,
         n_threads=4,
+        assume_phase_dynamics=assume_phase_dynamics
     )
 
     X = InitialGuess([-1, -2, 0.1, 0.2])
@@ -259,7 +265,8 @@ def test_simulate_from_initial_single_shoot():
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.89, 1.8)))
 
 
-def test_initial_guess_error_messages():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_initial_guess_error_messages(assume_phase_dynamics):
     """
     This tests that the error messages are properly raised. The OCP is adapted from the getting_started/pendulum.py example.
     """
@@ -300,6 +307,7 @@ def test_initial_guess_error_messages():
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
+            assume_phase_dynamics=assume_phase_dynamics,
         )
     with pytest.raises(RuntimeError, match="Please provide an u_init of type InitialGuess or InitialGuessList."):
         OptimalControlProgram(
@@ -312,6 +320,7 @@ def test_initial_guess_error_messages():
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
+            assume_phase_dynamics=assume_phase_dynamics
         )
 
     with pytest.raises(
@@ -328,6 +337,7 @@ def test_initial_guess_error_messages():
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
+            assume_phase_dynamics=assume_phase_dynamics
         )
 
     with pytest.raises(
@@ -344,4 +354,5 @@ def test_initial_guess_error_messages():
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
+            assume_phase_dynamics=assume_phase_dynamics
         )
