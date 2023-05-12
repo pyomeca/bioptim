@@ -411,6 +411,7 @@ class PenaltyOption(OptionGeneric):
             pre = controllers[0]
             post = controllers[1]
             controller = post  # Recast controller as a normal variable (instead of a list)
+            self.node_idx[0] = controller.node_index
 
             ocp = controller.ocp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
@@ -694,16 +695,11 @@ class PenaltyOption(OptionGeneric):
             self.function_non_threaded = self.function_non_threaded * ns
             self.weighted_function_non_threaded = self.weighted_function_non_threaded * ns
         else:
-            # The active controller is always last
-            node_indices = [t for t in controllers[-1].t]
-            for node_index in node_indices:
+            # The active controller is always the last one, and they all should be the same length anyway
+            for node in range(len(controllers[-1])):
                 for controller in controllers:
-                    controller.get_nlp.states.node_index = node_index
-                    controller.get_nlp.states_dot.node_index = node_index
-                    controller.get_nlp.controls.node_index = node_index
+                    controller.node_index = controller.t[node]
 
-                controllers[-1].t = [node_index]
-                controllers[-1].node_index = node_index
                 penalty_function = self.type(
                     self, controllers if len(controllers) > 1 else controllers[0], **self.params
                 )
