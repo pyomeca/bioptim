@@ -28,6 +28,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Node,
     Solver,
     RigidBodyDynamics,
@@ -37,7 +38,11 @@ from bioptim.optimization.optimization_variable import OptimizationVariableConta
 
 
 def generate_data(
-    bio_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
+    bio_model: BiorbdModel,
+    final_time: float,
+    n_shooting: int,
+    use_residual_torque: bool = True,
+    assume_phase_dynamics: bool = True,
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -52,6 +57,10 @@ def generate_data(
         The number of shooting points
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -66,7 +75,7 @@ def generate_data(
     n_mus = bio_model.nb_muscles
     dt = final_time / n_shooting
 
-    nlp = NonLinearProgram()
+    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
     nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
@@ -85,9 +94,9 @@ def generate_data(
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states = OptimizationVariableContainer()
-    nlp.states_dot = OptimizationVariableContainer()
-    nlp.controls = OptimizationVariableContainer()
+    nlp.states = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
+    nlp.states_dot = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
+    nlp.controls = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
     nlp.states.initialize_from_shooting(n_shooting, MX)
     nlp.states_dot.initialize_from_shooting(n_shooting, MX)
     nlp.controls.initialize_from_shooting(n_shooting, MX)
@@ -201,8 +210,9 @@ def prepare_ocp(
     q_ref: np.ndarray,
     kin_data_to_track: str = "markers",
     use_residual_torque: bool = True,
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     n_threads: int = 1,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp to solve
@@ -225,10 +235,14 @@ def prepare_ocp(
         The type of kin data to track ('markers' or 'q')
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     n_threads: int
         The number of threads
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -266,11 +280,11 @@ def prepare_ocp(
     x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
 
     # Define control path constraint
-    activation_min, activation_max, activation_init = 0, 1, 0.5
+    activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
     u_bounds = BoundsList()
     u_init = InitialGuessList()
     if use_residual_torque:
-        tau_min, tau_max, tau_init = -100, 100, 0
+        tau_min, tau_max, tau_init = -100.0, 100.0, 0.0
         u_bounds.add(
             [tau_min] * bio_model.nb_tau + [activation_min] * bio_model.nb_muscles,
             [tau_max] * bio_model.nb_tau + [activation_max] * bio_model.nb_muscles,
@@ -296,7 +310,7 @@ def prepare_ocp(
         objective_functions,
         ode_solver=ode_solver,
         n_threads=n_threads,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

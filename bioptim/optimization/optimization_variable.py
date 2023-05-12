@@ -134,6 +134,9 @@ class VariableScalingList(OptionDict):
 
     @staticmethod
     def scaling_fill_phases(ocp, x_scaling, xdot_scaling, u_scaling, x_init, u_init):
+        """
+        Fill the scaling with ones if not defined, in that case, the dimensions of the scaling are chosen to match the number of intial guesses.
+        """
         x_scaling_out = VariableScalingList()
         xdot_scaling_out = VariableScalingList()
         u_scaling_out = VariableScalingList()
@@ -583,14 +586,30 @@ class OptimizationVariableList:
 
 
 class OptimizationVariableContainer:
-    def __init__(self):
+    def __init__(self, assume_phase_dynamics: bool):
         """
         This is merely a declaration function, it is mandatory to call initialize_from_shooting to get valid structures
+
+        Parameters
+        ----------
+        assume_phase_dynamics
+            If the dynamics is the same for all the phase (effectively always setting _node_index to 0 even though the
+            user sets it to something else)
         """
         self.cx_constructor = None
         self._unscaled: list[OptimizationVariableList, ...] = []
         self._scaled: list[OptimizationVariableList, ...] = []
-        self.node_index = 0  # TODO: [0] to [node_index]
+        self._node_index = 0  # TODO: [0] to [node_index]
+        self.assume_phase_dynamic = assume_phase_dynamics
+
+    @property
+    def node_index(self):
+        return self._node_index
+
+    @node_index.setter
+    def node_index(self, value):
+        if not self.assume_phase_dynamic:
+            self._node_index = value
 
     def initialize_from_shooting(self, n_shooting: int, cx: Callable):
         """

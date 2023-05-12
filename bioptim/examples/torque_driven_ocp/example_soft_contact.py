@@ -18,6 +18,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Node,
     Solver,
     Shooting,
@@ -34,7 +35,7 @@ def prepare_single_shooting(
     biorbd_model_path: str,
     n_shooting: int,
     final_time: float,
-    ode_solver: OdeSolver,
+    ode_solver: OdeSolverBase,
     n_threads: int = 1,
     use_sx: bool = False,
 ) -> OptimalControlProgram:
@@ -105,10 +106,11 @@ def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int,
     final_time: float,
-    ode_solver: OdeSolver,
+    ode_solver: OdeSolverBase,
     slack: float = 1e-4,
     n_threads: int = 8,
     use_sx: bool = False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -195,7 +197,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

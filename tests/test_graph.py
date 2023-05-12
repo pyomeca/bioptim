@@ -1,5 +1,4 @@
 from typing import Any
-from sys import platform
 
 import pytest
 import numpy as np
@@ -58,18 +57,8 @@ def prepare_ocp_phase_transitions(
     with_constraints: bool,
     with_mayer: bool,
     with_lagrange: bool,
+    assume_phase_dynamics: bool,
 ) -> OptimalControlProgram:
-    """
-    Parameters
-    ----------
-    biorbd_model_path: str
-        The path to the bioMod
-
-    Returns
-    -------
-    The ocp ready to be solved
-    """
-
     # BioModel path
     bio_model = (
         BiorbdModel(biorbd_model_path),
@@ -207,7 +196,7 @@ def prepare_ocp_phase_transitions(
         objective_functions,
         constraints,
         phase_transitions=phase_transitions,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -238,6 +227,7 @@ def prepare_ocp_parameters(
     target_m,
     ode_solver=OdeSolver.RK4(),
     use_sx=False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -266,10 +256,14 @@ def prepare_ocp_parameters(
         The maximal value for the mass
     target_m: float
         The target value for the mass
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     use_sx: bool
         If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -357,11 +351,13 @@ def prepare_ocp_parameters(
         parameters=parameters,
         ode_solver=ode_solver,
         use_sx=use_sx,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
-def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControlProgram:
+def prepare_ocp_custom_objectives(
+    biorbd_model_path, ode_solver=OdeSolver.RK4(), assume_phase_dynamics: bool = True
+) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -369,8 +365,12 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
     ----------
     biorbd_model_path: str
         The path of the biorbd model
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -444,18 +444,23 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("with_mayer", [True, False])
 @pytest.mark.parametrize("with_lagrange", [True, False])
 @pytest.mark.parametrize("with_constraints", [True, False])
-def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
+def test_phase_transitions(with_mayer, with_lagrange, with_constraints, assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(
-        model_path, with_mayer=with_mayer, with_lagrange=with_lagrange, with_constraints=with_constraints
+        model_path,
+        with_mayer=with_mayer,
+        with_lagrange=with_lagrange,
+        with_constraints=with_constraints,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     if with_lagrange and with_mayer is not False:
         ocp.nlp[0].J[0].quadratic = False
@@ -464,7 +469,8 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
     OcpToGraph(ocp)._prepare_print()
 
 
-def test_parameters():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_parameters(assume_phase_dynamics):
     optim_gravity = True
     optim_mass = True
     bioptim_folder = TestUtils.bioptim_folder()
@@ -481,6 +487,7 @@ def test_parameters():
         max_m=30,
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     ocp.nlp[0].parameters.options[0][0].penalty_list.type = None
     ocp.nlp[0].parameters.options[0][0].penalty_list.name = "custom_gravity"
@@ -488,11 +495,12 @@ def test_parameters():
     OcpToGraph(ocp)._prepare_print()
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("quadratic", [True, False])
-def test_objectives_target(quadratic):
+def test_objectives_target(quadratic, assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
-    ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path)
+    ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path, assume_phase_dynamics=assume_phase_dynamics)
     ocp.nlp[0].J[1].quadratic = quadratic
     ocp.nlp[0].J[1].target = np.repeat([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], ocp.nlp[0].ns, axis=0).T
     ocp.print(to_graph=False)  # False so it does not attack the programmer with lot of graphs!

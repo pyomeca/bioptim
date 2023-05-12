@@ -2,12 +2,12 @@ import os
 
 import pytest
 import numpy as np
-
 from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, ControlType
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-def test_time(ode_solver: OdeSolver):
+def test_time(ode_solver, assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -18,6 +18,7 @@ def test_time(ode_solver: OdeSolver):
         final_time=2,
         n_shooting=10,
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_maximum_iterations(0)
@@ -36,8 +37,9 @@ def test_time(ode_solver: OdeSolver):
         np.testing.assert_almost_equal(sol.time[4], 0.18611363115940527)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-def test_time_multiphase(ode_solver: OdeSolver):
+def test_time_multiphase(ode_solver, assume_phase_dynamics):
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
 
@@ -48,6 +50,7 @@ def test_time_multiphase(ode_solver: OdeSolver):
         ode_solver=ode_solver(),
         phase_time=(0.2, 0.3, 0.5),
         n_shooting=(3, 4, 5),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)
@@ -82,13 +85,12 @@ def test_time_multiphase(ode_solver: OdeSolver):
         np.testing.assert_almost_equal(sol.time[2][3], 0.5669990521792428)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("merge_phase", [True, False])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
 @pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
-def test_generate_time(
-    ode_solver: OdeSolver, merge_phase: bool, keep_intermediate_points: bool, shooting_type: Shooting
-):
+def test_generate_time(ode_solver, merge_phase, keep_intermediate_points, shooting_type, assume_phase_dynamics):
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
 
@@ -99,6 +101,7 @@ def test_generate_time(
         ode_solver=ode_solver(),
         phase_time=(0.2, 0.3, 0.5),
         n_shooting=(3, 4, 5),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)
@@ -197,30 +200,19 @@ def test_generate_time(
                 np.testing.assert_almost_equal(time[2][0][1], 0.6)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("merge_phase", [True, False])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
-@pytest.mark.parametrize(
-    "shooting_type",
-    [
-        Shooting.SINGLE,
-        Shooting.SINGLE_DISCONTINUOUS_PHASE,
-        Shooting.MULTIPLE,
-    ],
-)
-@pytest.mark.parametrize(
-    "integrator",
-    [
-        SolutionIntegrator.OCP,
-        SolutionIntegrator.SCIPY_RK45,
-    ],
-)
+@pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
 def test_generate_integrate(
-    ode_solver: OdeSolver,
-    merge_phase: bool,
-    keep_intermediate_points: bool,
-    shooting_type: Shooting,
-    integrator: SolutionIntegrator,
+    ode_solver,
+    merge_phase,
+    keep_intermediate_points,
+    shooting_type,
+    integrator,
+    assume_phase_dynamics,
 ):
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
@@ -232,6 +224,7 @@ def test_generate_integrate(
         ode_solver=ode_solver(),
         phase_time=(0.2, 0.3, 0.5),
         n_shooting=(3, 4, 5),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)
@@ -320,30 +313,19 @@ def test_generate_integrate(
         # plt.show()
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("merge_phase", [True, False])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
-@pytest.mark.parametrize(
-    "shooting_type",
-    [
-        Shooting.SINGLE,
-        Shooting.SINGLE_DISCONTINUOUS_PHASE,
-        Shooting.MULTIPLE,
-    ],
-)
-@pytest.mark.parametrize(
-    "integrator",
-    [
-        SolutionIntegrator.OCP,
-        SolutionIntegrator.SCIPY_RK45,
-    ],
-)
+@pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
 def test_generate_integrate_linear_continuous(
-    ode_solver: OdeSolver,
-    merge_phase: bool,
-    keep_intermediate_points: bool,
-    shooting_type: Shooting,
-    integrator: SolutionIntegrator,
+    ode_solver,
+    merge_phase,
+    keep_intermediate_points,
+    shooting_type,
+    integrator,
+    assume_phase_dynamics,
 ):
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
@@ -359,6 +341,7 @@ def test_generate_integrate_linear_continuous(
                 phase_time=(0.2, 0.3, 0.5),
                 n_shooting=(3, 4, 5),
                 control_type=ControlType.LINEAR_CONTINUOUS,
+                assume_phase_dynamics=assume_phase_dynamics,
             )
         return
     ocp = ocp_module.prepare_ocp(
@@ -367,6 +350,7 @@ def test_generate_integrate_linear_continuous(
         phase_time=(0.2, 0.3, 0.5),
         n_shooting=(3, 4, 5),
         control_type=ControlType.LINEAR_CONTINUOUS,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)

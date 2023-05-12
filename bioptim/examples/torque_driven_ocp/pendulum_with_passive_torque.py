@@ -14,6 +14,7 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
+    OdeSolverBase,
     CostType,
     Solver,
     BiorbdModel,
@@ -26,9 +27,10 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
     with_passive_torque=False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -41,16 +43,16 @@ def prepare_ocp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
-    ode_solver: OdeSolver = OdeSolver.RK4()
+    ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
-    use_sx: bool
-        If the SX variable should be used instead of MX (can be extensive on RAM)
-    n_threads: int
-        The number of threads to use in the paralleling (1 = no parallel computing)
     rigidbody_dynamics : RigidBodyDynamics
         rigidbody dynamics DAE or ODE
     with_passive_torque: bool
         If the passive torque is used in dynamics
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -114,7 +116,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

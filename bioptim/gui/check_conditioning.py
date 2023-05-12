@@ -58,13 +58,13 @@ def check_conditioning(ocp):
         for phase in ocp.nlp:
             list_constraints = []
             for constraints in phase.g:
-                # If no constraints then leave
-                if (len(phase.g) == 0) == True:
-                    break
+                node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
+                phase.states.node_index = node_index
+                phase.controls.node_index = node_index
 
                 for axis in range(
                     0,
-                    constraints.function(
+                    constraints.function[node_index](
                         phase.states.cx_start, phase.controls.cx_start, phase.parameters.cx_start
                     ).shape[0],
                 ):
@@ -76,7 +76,7 @@ def check_conditioning(ocp):
 
                     list_constraints.append(
                         jacobian(
-                            constraints.function(
+                            constraints.function[constraints.node_idx[0]](
                                 phase.states.cx_start,
                                 phase.controls.cx_start,
                                 phase.parameters.cx_start,
@@ -129,9 +129,13 @@ def check_conditioning(ocp):
             list_hessian = []
             list_norm = []
             for constraints in phase.g:
+                node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
+                phase.states.node_index = node_index
+                phase.controls.node_index = node_index
+
                 for axis in range(
                     0,
-                    constraints.function(
+                    constraints.function[node_index](
                         phase.states.cx_start, phase.controls.cx_start, phase.parameters.cx_start
                     ).shape[0],
                 ):
@@ -144,7 +148,7 @@ def check_conditioning(ocp):
                             vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx_start])
 
                         hessian_cas = hessian(
-                            constraints.function(
+                            constraints.function[node_index](
                                 phase.states.cx_start,
                                 phase.controls.cx_start,
                                 phase.parameters.cx_start,
@@ -288,6 +292,10 @@ def check_conditioning(ocp):
             for obj in nlp_phase.J:
                 objective = 0
 
+                node_index = obj.node_idx[0]  # TODO deal with assume_phase_dynamics=False
+                nlp_phase.states.node_index = node_index
+                nlp_phase.controls.node_index = node_index
+
                 # Test every possibility
                 if obj.binode_constraint or obj.transition:
                     nlp = ocp.nlp[phase - 1]
@@ -335,8 +343,8 @@ def check_conditioning(ocp):
                     )
                     control_cx_end = get_u(nlp_phase, control_cx, dt_cx)
 
-                if obj.target == None:
-                    p = obj.weighted_function(
+                if obj.target is None:
+                    p = obj.weighted_function[node_index](
                         state_cx,
                         control_cx,
                         nlp_phase.parameters.cx_start,
@@ -345,7 +353,7 @@ def check_conditioning(ocp):
                         obj.dt,
                     )
                 else:
-                    p = obj.weighted_function(
+                    p = obj.weighted_function[node_index](
                         state_cx,
                         control_cx,
                         nlp_phase.parameters.cx_start,

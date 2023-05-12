@@ -28,12 +28,13 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Solver,
 )
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube_with_forces.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
+    biorbd_model_path: str = "models/cube_with_forces.bioMod", ode_solver: OdeSolverBase = OdeSolver.RK4()
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -42,7 +43,7 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path to the bioMod
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
 
     Returns
@@ -105,7 +106,7 @@ def prepare_ocp(
         constraints=constraints,
         external_forces=external_forces,
         ode_solver=ode_solver,
-        assume_phase_dynamics=False,
+        assume_phase_dynamics=False,  # This must be false since external forces change at each node within the phase
     )
 
 

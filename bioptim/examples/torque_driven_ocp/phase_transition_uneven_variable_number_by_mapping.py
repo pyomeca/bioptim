@@ -1,4 +1,3 @@
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -21,10 +20,11 @@ from bioptim import (
 
 def prepare_ocp(
     biorbd_model_path: str = "models/double_pendulum.bioMod",
-    biorbd_model_path_withTranslations: str = "models/double_pendulum_with_translations.bioMod",
+    biorbd_model_path_with_translations: str = "models/double_pendulum_with_translations.bioMod",
     n_shooting: tuple = (40, 40),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
-    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_withTranslations))
+    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_with_translations))
 
     # Problem parameters
     final_time = (1.5, 2.5)
@@ -105,7 +105,7 @@ def prepare_ocp(
         constraints=constraints,
         variable_mappings=tau_mappings,
         phase_transitions=phase_transitions,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

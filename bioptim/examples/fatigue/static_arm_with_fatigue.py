@@ -17,6 +17,7 @@ from bioptim import (
     DynamicsFcn,
     InitialGuess,
     OdeSolver,
+    OdeSolverBase,
     Constraint,
     ConstraintFcn,
     FatigueList,
@@ -42,8 +43,9 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     fatigue_type: str,
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     torque_level: int = 0,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -57,10 +59,15 @@ def prepare_ocp(
         The number of shooting points
     fatigue_type: str
         The type of dynamics to apply ("xia" or "michaud")
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     torque_level: int
         0 no residual torque, 1 with residual torque, 2 with fatigable residual torque
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
+
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -184,7 +191,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=False,
         n_threads=8,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

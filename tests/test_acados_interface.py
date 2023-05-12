@@ -656,6 +656,29 @@ def test_acados_constraints_end_all():
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.19389194, 9.99905781, -2.37713652, -0.19858311)), decimal=6)
 
 
+def test_acados_assume_phase_dynamics_reject():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
+
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        final_time=1,
+        n_shooting=10,
+        assume_phase_dynamics=False,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match=f"ACADOS necessitate assume_phase_dynamics=True",
+    ):
+        ocp.solve(solver=Solver.ACADOS())
+
+
 @pytest.mark.parametrize("failing", ["u_bounds", "x_bounds"])
 def test_acados_bounds_not_implemented(failing):
     if platform == "win32":
@@ -691,6 +714,7 @@ def test_acados_bounds_not_implemented(failing):
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,
+        assume_phase_dynamics=True,
     )
 
     def update_functions(mhe, t, _):

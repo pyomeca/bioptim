@@ -95,6 +95,9 @@ class AcadosInterface(SolverInterface):
         if not isinstance(ocp.cx(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Please set use_sx to True in OCP")
 
+        if not ocp.assume_phase_dynamics:
+            raise RuntimeError("ACADOS necessitate assume_phase_dynamics=True")
+
         super().__init__(ocp)
 
         # solver_options = solver_options.__dict__
@@ -265,14 +268,14 @@ class AcadosInterface(SolverInterface):
                     continue
 
                 if G.node[0] == Node.ALL or G.node[0] == Node.ALL_SHOOTING:
-                    self.all_constr = vertcat(self.all_constr, G.function(x, u, p))
+                    self.all_constr = vertcat(self.all_constr, G.function[0](x, u, p))
                     self.all_g_bounds.concatenate(G.bounds)
                     if G.node[0] == Node.ALL:
-                        self.end_constr = vertcat(self.end_constr, G.function(x, u, p))
+                        self.end_constr = vertcat(self.end_constr, G.function[0](x, u, p))
                         self.end_g_bounds.concatenate(G.bounds)
 
                 elif G.node[0] == Node.END:
-                    self.end_constr = vertcat(self.end_constr, G.function(x, u, p))
+                    self.end_constr = vertcat(self.end_constr, G.function[0](x, u, p))
                     self.end_g_bounds.concatenate(G.bounds)
 
                 else:
@@ -446,41 +449,41 @@ class AcadosInterface(SolverInterface):
                 raise RuntimeError(f"{objectives.type.name} is an incompatible objective term with LINEAR_LS cost type")
 
         def add_nonlinear_ls_lagrange(acados, objectives, x, u, p):
-            acados.lagrange_costs = vertcat(acados.lagrange_costs, objectives.function(x, u, p).reshape((-1, 1)))
-            acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * objectives.function.numel_out()))
+            acados.lagrange_costs = vertcat(acados.lagrange_costs, objectives.function[0](x, u, p).reshape((-1, 1)))
+            acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * objectives.function[0].numel_out()))
 
             node_idx = objectives.node_idx[:-1] if objectives.node[0] == Node.ALL else objectives.node_idx
             if objectives.target is not None:
                 acados.y_ref.append([objectives.target[0][..., idx].T.reshape((-1, 1)) for idx in node_idx])
             else:
-                acados.y_ref.append([np.zeros((objectives.function.numel_out(), 1)) for _ in node_idx])
+                acados.y_ref.append([np.zeros((objectives.function[0].numel_out(), 1)) for _ in node_idx])
 
         def add_nonlinear_ls_mayer(acados, objectives, x, u, p, node=None):
             if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
                 acados.W_0 = linalg.block_diag(
-                    acados.W_0, np.diag([objectives.weight] * objectives.function.numel_out())
+                    acados.W_0, np.diag([objectives.weight] * objectives.function[0].numel_out())
                 )
-                x = x if objectives.function.sparsity_in("i0").shape != (0, 0) else []
-                u = u if objectives.function.sparsity_in("i1").shape != (0, 0) else []
-                acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function(x, u, p).reshape((-1, 1)))
+                x = x if objectives.function[0].sparsity_in("i0").shape != (0, 0) else []
+                u = u if objectives.function[0].sparsity_in("i1").shape != (0, 0) else []
+                acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function[0](x, u, p).reshape((-1, 1)))
 
                 if objectives.target is not None:
                     acados.y_ref_start.append(objectives.target[0][..., 0].T.reshape((-1, 1)))
                 else:
-                    acados.y_ref_start.append(np.zeros((objectives.function.numel_out(), 1)))
+                    acados.y_ref_start.append(np.zeros((objectives.function[0].numel_out(), 1)))
 
             if objectives.node[0] in [Node.END, Node.ALL]:
                 acados.W_e = linalg.block_diag(
-                    acados.W_e, np.diag([objectives.weight] * objectives.function.numel_out())
+                    acados.W_e, np.diag([objectives.weight] * objectives.function[0].numel_out())
                 )
-                x = x if objectives.function.sparsity_in("i0").shape != (0, 0) else []
-                u = u if objectives.function.sparsity_in("i1").shape != (0, 0) else []
-                acados.mayer_costs_e = vertcat(acados.mayer_costs_e, objectives.function(x, u, p).reshape((-1, 1)))
+                x = x if objectives.function[0].sparsity_in("i0").shape != (0, 0) else []
+                u = u if objectives.function[0].sparsity_in("i1").shape != (0, 0) else []
+                acados.mayer_costs_e = vertcat(acados.mayer_costs_e, objectives.function[0](x, u, p).reshape((-1, 1)))
 
                 if objectives.target is not None:
                     acados.y_ref_end.append(objectives.target[0][..., -1].T.reshape((-1, 1)))
                 else:
-                    acados.y_ref_end.append(np.zeros((objectives.function.numel_out(), 1)))
+                    acados.y_ref_end.append(np.zeros((objectives.function[0].numel_out(), 1)))
 
         if ocp.n_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")

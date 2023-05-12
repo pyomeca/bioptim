@@ -25,7 +25,14 @@ from bioptim.optimization.optimization_variable import OptimizationVariableList
 from .utils import TestUtils
 
 
-def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False, implicit=False, use_sx=True):
+def prepare_test_ocp(
+    assume_phase_dynamics,
+    with_muscles=False,
+    with_contact=False,
+    with_actuator=False,
+    implicit=False,
+    use_sx=True,
+):
     bioptim_folder = TestUtils.bioptim_folder()
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
@@ -68,7 +75,18 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     u_init = InitialGuess(np.zeros((nu, 1)))
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
     u_bounds = Bounds(np.zeros((nu, 1)), np.zeros((nu, 1)))
-    ocp = OptimalControlProgram(bio_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=use_sx)
+    ocp = OptimalControlProgram(
+        bio_model,
+        dynamics,
+        10,
+        1.0,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
+        use_sx=use_sx,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
     ocp.nlp[0].J = [[]]
     ocp.nlp[0].g = [[]]
     return ocp
@@ -96,10 +114,11 @@ def test_penalty_targets_shapes():
     np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target[0].shape, (1, 2))
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_time(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_time(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -112,10 +131,11 @@ def test_penalty_minimize_time(penalty_origin, value):
     np.testing.assert_almost_equal(res, np.array(1))
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_state(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_state(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -124,10 +144,11 @@ def test_penalty_minimize_state(penalty_origin, value):
     np.testing.assert_almost_equal(res, np.array([[value]] * 4))
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_qddot(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_qddot(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0, 1]
     x = [DM.ones((8, 1)) * value, DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
@@ -143,10 +164,11 @@ def test_penalty_minimize_qddot(penalty_origin, value):
     np.testing.assert_almost_equal(res, [[value, -9.81 + value, value, value]])
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_track_state(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_track_state(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -159,10 +181,11 @@ def test_penalty_track_state(penalty_origin, value):
     np.testing.assert_almost_equal(res, [[value]] * 4)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_markers(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_markers(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -189,10 +212,11 @@ def test_penalty_minimize_markers(penalty_origin, value):
     np.testing.assert_almost_equal(res, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_track_markers(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_track_markers(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -223,10 +247,11 @@ def test_penalty_track_markers(penalty_origin, value):
     np.testing.assert_almost_equal(res, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_markers_velocity(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_markers_velocity(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -259,10 +284,11 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value):
         )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_track_markers_velocity(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_track_markers_velocity(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -299,10 +325,11 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
         )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_track_super_impose_marker(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_track_super_impose_marker(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -318,11 +345,12 @@ def test_penalty_track_super_impose_marker(penalty_origin, value):
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 @pytest.mark.parametrize("value_intercept", [0.0, 1.0])
-def test_penalty_proportional_state(penalty_origin, value, value_intercept):
-    ocp = prepare_test_ocp()
+def test_penalty_proportional_state(penalty_origin, value, value_intercept, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -359,10 +387,11 @@ def test_penalty_proportional_state(penalty_origin, value, value_intercept):
             np.testing.assert_almost_equal(res, 11)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_proportional_control(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_proportional_control(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [0]
     u = [DM.ones((4, 1)) * value]
@@ -381,10 +410,11 @@ def test_penalty_proportional_control(penalty_origin, value):
     np.testing.assert_almost_equal(res, np.array(u[0][first] - coef * u[0][second]))
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_torque(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_torque(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0, 1]
     x = [0]
     u = [DM.ones((4, 1)) * value]
@@ -394,10 +424,11 @@ def test_penalty_minimize_torque(penalty_origin, value):
     np.testing.assert_almost_equal(res, np.array([[value, value, value, value]]).T)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_track_torque(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_track_torque(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0, 1]
     x = [0]
     u = [DM.ones((4, 1)) * value]
@@ -412,10 +443,11 @@ def test_penalty_track_torque(penalty_origin, value):
     np.testing.assert_almost_equal(res, np.array([[value, value, value, value]]).T)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_muscles_control(penalty_origin, value):
-    ocp = prepare_test_ocp(with_muscles=True)
+def test_penalty_minimize_muscles_control(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(with_muscles=True, assume_phase_dynamics=assume_phase_dynamics)
     t = [0, 1]
     x = [0]
     u = [DM.ones((8, 1)) * value]
@@ -426,10 +458,11 @@ def test_penalty_minimize_muscles_control(penalty_origin, value):
     np.testing.assert_almost_equal(res, np.array([[value, value, value, value, value, value]]).T)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_contact_forces(penalty_origin, value):
-    ocp = prepare_test_ocp(with_contact=True)
+def test_penalty_minimize_contact_forces(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
@@ -443,10 +476,11 @@ def test_penalty_minimize_contact_forces(penalty_origin, value):
         np.testing.assert_almost_equal(res, np.array([[25.6627161, 462.7973306, -94.0182191]]).T)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_track_contact_forces(penalty_origin, value):
-    ocp = prepare_test_ocp(with_contact=True)
+def test_penalty_track_contact_forces(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
@@ -464,9 +498,10 @@ def test_penalty_track_contact_forces(penalty_origin, value):
         np.testing.assert_almost_equal(res.T, [[25.6627161, 462.7973306, -94.0182191]])
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_predicted_com_height(value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_predicted_com_height(value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -478,10 +513,11 @@ def test_penalty_minimize_predicted_com_height(value):
     np.testing.assert_almost_equal(res, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_com_position(value, penalty_origin):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_com_position(value, penalty_origin, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -503,10 +539,11 @@ def test_penalty_minimize_com_position(value, penalty_origin):
     np.testing.assert_almost_equal(res, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_angular_momentum(value, penalty_origin):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_angular_momentum(value, penalty_origin, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -526,11 +563,12 @@ def test_penalty_minimize_angular_momentum(value, penalty_origin):
     np.testing.assert_almost_equal(res, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
 @pytest.mark.parametrize("use_sx", [True, False])
-def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx):
-    ocp = prepare_test_ocp(use_sx=use_sx)
+def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx, assume_phase_dynamics):
+    ocp = prepare_test_ocp(use_sx=use_sx, assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -550,11 +588,12 @@ def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx):
     np.testing.assert_almost_equal(res, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
 @pytest.mark.parametrize("implicit", [True, False])
-def test_penalty_minimize_comddot(value, penalty_origin, implicit):
-    ocp = prepare_test_ocp(with_contact=True, implicit=implicit)
+def test_penalty_minimize_comddot(value, penalty_origin, implicit, assume_phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, implicit=implicit, assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -584,10 +623,11 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit):
         np.testing.assert_almost_equal(res, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_track_segment_with_custom_rt(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_track_segment_with_custom_rt(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -606,10 +646,11 @@ def test_penalty_track_segment_with_custom_rt(penalty_origin, value):
     np.testing.assert_almost_equal(res, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_track_marker_with_segment_axis(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_track_marker_with_segment_axis(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -625,10 +666,11 @@ def test_penalty_track_marker_with_segment_axis(penalty_origin, value):
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_segment_rotation(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_segment_rotation(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -645,10 +687,11 @@ def test_penalty_minimize_segment_rotation(penalty_origin, value):
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_segment_velocity(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_segment_velocity(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -665,10 +708,11 @@ def test_penalty_minimize_segment_velocity(penalty_origin, value):
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_vector_orientation(penalty_origin, value):
-    ocp = prepare_test_ocp()
+def test_penalty_minimize_vector_orientation(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM(np.array([0, 0, value, 0, 0, 0, 0, 0]))]
     u = [0]
@@ -699,10 +743,11 @@ def test_penalty_minimize_vector_orientation(penalty_origin, value):
         np.testing.assert_almost_equal(float(res), 2.566370614359173)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_contact_force_inequality(penalty_origin, value):
-    ocp = prepare_test_ocp(with_contact=True)
+def test_penalty_contact_force_inequality(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
@@ -715,9 +760,10 @@ def test_penalty_contact_force_inequality(penalty_origin, value):
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_non_slipping(value):
-    ocp = prepare_test_ocp(with_contact=True)
+def test_penalty_non_slipping(value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
@@ -731,10 +777,11 @@ def test_penalty_non_slipping(value):
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("value", [2])
 @pytest.mark.parametrize("threshold", [None, 15, -15])
-def test_tau_max_from_actuators(value, threshold):
-    ocp = prepare_test_ocp(with_actuator=True)
+def test_tau_max_from_actuators(value, threshold, assume_phase_dynamics):
+    ocp = prepare_test_ocp(with_actuator=True, assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.zeros((6, 1)), DM.zeros((6, 1))]
     u = [DM.ones((3, 1)) * value, DM.ones((3, 1)) * value]
@@ -753,9 +800,10 @@ def test_tau_max_from_actuators(value, threshold):
         np.testing.assert_almost_equal(res, np.repeat([value + 5, value - 10], 3)[:, np.newaxis])
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_time_constraint(value):
-    ocp = prepare_test_ocp()
+def test_penalty_time_constraint(value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [0]
     u = [0]
@@ -766,14 +814,15 @@ def test_penalty_time_constraint(value):
     np.testing.assert_almost_equal(res, np.array([]))
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_custom(penalty_origin, value):
+def test_penalty_custom(penalty_origin, value, assume_phase_dynamics):
     def custom(controller: PenaltyController, mult):
         my_values = controller.states["q"].cx_start * mult
         return my_values
 
-    ocp = prepare_test_ocp()
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -789,9 +838,10 @@ def test_penalty_custom(penalty_origin, value):
     np.testing.assert_almost_equal(res, [[value * mult]] * 4)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_custom_fail(penalty_origin, value):
+def test_penalty_custom_fail(penalty_origin, value, assume_phase_dynamics):
     def custom_no_mult(ocp, nlp, t, x, u, p):
         my_values = DM.zeros((12, 1)) + x[0]
         return my_values
@@ -800,7 +850,7 @@ def test_penalty_custom_fail(penalty_origin, value):
         my_values = DM.zeros((12, 1)) + x[0] * mult
         return my_values
 
-    ocp = prepare_test_ocp()
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     x = [DM.ones((12, 1)) * value]
     penalty_type = penalty_origin.CUSTOM
 
@@ -843,12 +893,13 @@ def test_penalty_custom_fail(penalty_origin, value):
             exec(f"""penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [], {keyword}=0)""")
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_custom_with_bounds(value):
+def test_penalty_custom_with_bounds(value, assume_phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
         return -10, controller.states["q"].cx_start, 10
 
-    ocp = prepare_test_ocp()
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
@@ -861,12 +912,13 @@ def test_penalty_custom_with_bounds(value):
     np.testing.assert_almost_equal(penalty.max_bound, 10)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_custom_with_bounds_failing_min_bound(value):
+def test_penalty_custom_with_bounds_failing_min_bound(value, assume_phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
         return -10, controller.states["q"].cx_start, 10
 
-    ocp = prepare_test_ocp()
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((12, 1)) * value]
     u = [0]
@@ -881,12 +933,13 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
         penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], []))
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_custom_with_bounds_failing_max_bound(value):
+def test_penalty_custom_with_bounds_failing_max_bound(value, assume_phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
         return -10, controller.states["q"].cx_start, 10
 
-    ocp = prepare_test_ocp()
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((12, 1)) * value]
     u = [0]
@@ -904,22 +957,11 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
         penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], []))
 
 
-@pytest.mark.parametrize(
-    "node",
-    [
-        Node.ALL,
-        Node.ALL_SHOOTING,
-        Node.INTERMEDIATES,
-        Node.START,
-        Node.MID,
-        Node.PENULTIMATE,
-        Node.END,
-        Node.TRANSITION,
-    ],
-)
-@pytest.mark.parametrize("ns", [1, 10, 11])
-def test_PenaltyFunctionAbstract_get_node(node, ns):
-    nlp = NLP()
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("node", [*Node, 2])
+@pytest.mark.parametrize("ns", [3, 10, 11])
+def test_PenaltyFunctionAbstract_get_node(node, ns, assume_phase_dynamics):
+    nlp = NLP(assume_phase_dynamics=assume_phase_dynamics)
     nlp.control_type = ControlType.CONSTANT
     nlp.ns = ns
     nlp.X = np.linspace(0, -10, ns + 1)
@@ -939,7 +981,11 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
             _ = penalty._get_penalty_controller([], nlp)
         return
     elif node == Node.TRANSITION:
-        with pytest.raises(RuntimeError, match=" is not a valid node"):
+        with pytest.raises(RuntimeError, match="Node.TRANSITION is not a valid node"):
+            _ = penalty._get_penalty_controller([], nlp)
+        return
+    elif node == Node.DEFAULT:
+        with pytest.raises(RuntimeError, match="Node.DEFAULT is not a valid node"):
             _ = penalty._get_penalty_controller([], nlp)
         return
     elif ns == 1 and node == Node.PENULTIMATE:
@@ -994,5 +1040,11 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
         np.testing.assert_almost_equal(controller.u, [])
         np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[ns])
         np.testing.assert_almost_equal(controller.u_scaled, [])
+    elif node == 2:
+        np.testing.assert_almost_equal(controller.t, [2])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[2])
+        np.testing.assert_almost_equal(controller.u, u_expected[2])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[2])
+        np.testing.assert_almost_equal(controller.u_scaled, u_expected[2])
     else:
         raise RuntimeError("Something went wrong")

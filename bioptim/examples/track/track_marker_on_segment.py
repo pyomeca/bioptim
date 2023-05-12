@@ -20,6 +20,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Solver,
 )
 
@@ -29,9 +30,10 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     initialize_near_solution: bool,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     constr: bool = True,
     use_sx: bool = False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -46,12 +48,16 @@ def prepare_ocp(
         The number of shooting points
     initialize_near_solution: bool
         If the initial guess should be almost the solution (this is merely to reduce the time of the tests)
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
     constr: bool
         If the constraint should be applied (this is merely to reduce the time of the tests)
     use_sx: bool
         If SX CasADi variables should be used
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -123,7 +129,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
