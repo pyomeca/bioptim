@@ -208,15 +208,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         if _penalty.transition:
             ocp = interface.ocp
             if is_unscaled:
-                x_pre = ocp.nlp[_penalty.phase_pre_idx].X[-1]
-                x_post = ocp.nlp[_penalty.phase_post_idx].X[0][:, 0]
-                u_pre = ocp.nlp[_penalty.phase_pre_idx].U[-1]
-                u_post = ocp.nlp[_penalty.phase_post_idx].U[0]
+                x_pre = ocp.nlp[_penalty.nodes_phase[0]].X[-1]
+                x_post = ocp.nlp[_penalty.nodes_phase[1]].X[0][:, 0]
+                u_pre = ocp.nlp[_penalty.nodes_phase[0]].U[-1]
+                u_post = ocp.nlp[_penalty.nodes_phase[1]].U[0]
             else:
-                x_pre = ocp.nlp[_penalty.phase_pre_idx].X_scaled[-1]
-                x_post = ocp.nlp[_penalty.phase_post_idx].X_scaled[0][:, 0]
-                u_pre = ocp.nlp[_penalty.phase_pre_idx].U_scaled[-1]
-                u_post = ocp.nlp[_penalty.phase_post_idx].U_scaled[0]
+                x_pre = ocp.nlp[_penalty.nodes_phase[0]].X_scaled[-1]
+                x_post = ocp.nlp[_penalty.nodes_phase[1]].X_scaled[0][:, 0]
+                u_pre = ocp.nlp[_penalty.nodes_phase[0]].U_scaled[-1]
+                u_post = ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0]
 
             _x = vertcat(x_pre, x_post)
             _u = vertcat(u_pre, u_post)

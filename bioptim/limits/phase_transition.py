@@ -28,10 +28,6 @@ class PhaseTransition(BinodeConstraint):
         The weight of the cost function
     quadratic: bool
         If the objective function is quadratic
-    phase_pre_idx: int
-        The index of the phase right before the transition
-    phase_post_idx: int
-        The index of the phase right after the transition
     node: Node
         The kind of node
     dt: float
@@ -58,10 +54,8 @@ class PhaseTransition(BinodeConstraint):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
-            phase_first_idx=phase_pre_idx,
-            phase_second_idx=None,
-            first_node=Node.END,
-            second_node=Node.START,
+            nodes_phase=(-1, 0) if transition == transition.CYCLIC else (phase_pre_idx, phase_pre_idx + 1),
+            nodes=(Node.END, Node.START),
             binode_constraint=transition,
             custom_function=custom_function,
             min_bound=min_bound,
@@ -133,19 +127,11 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=continuity_weight)
             for i in range(ocp.n_phases - 1)
         ]
-        for pt in full_phase_transitions:
-            pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
         existing_phases = []
 
         for pt in self:
-            if pt.phase_pre_idx is None:
-                if pt.type == PhaseTransitionFcn.CYCLIC:
-                    pt.phase_pre_idx = ocp.n_phases - 1
-            else:
-                pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
-
-            idx_phase = pt.phase_pre_idx
+            idx_phase = pt.nodes_phase[0]
             if idx_phase >= ocp.n_phases:
                 raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
             existing_phases.append(idx_phase)
@@ -153,7 +139,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             if pt.weight:
                 pt.base = ObjectiveFunction.MayerFunction
 
-            if idx_phase == ocp.n_phases - 1:
+            if idx_phase % ocp.n_phases == ocp.n_phases - 1:
                 # Add a cyclic constraint or objective
                 full_phase_transitions.append(pt)
             else:
@@ -246,7 +232,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             ocp = controllers[0].ocp
-            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape:
+            if ocp.nlp[transition.nodes_phase[0]].states.shape != ocp.nlp[transition.nodes_phase[1]].states.shape:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
@@ -280,7 +266,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 )
                 val = vertcat(val, continuity)
 
-            name = f"PHASE_TRANSITION_{pre.phase_idx}_{post.phase_idx}"
+            name = f"PHASE_TRANSITION_{pre.phase_idx % ocp.n_phases}_{post.phase_idx % ocp.n_phases}"
             func = pre.to_casadi_func(name, val, pre.states.mx, post.states.mx)(cx_end, cx_start)
             return func
 

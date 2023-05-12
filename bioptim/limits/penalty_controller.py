@@ -26,7 +26,7 @@ class PenaltyController:
         x_scaled: list,
         u_scaled: list,
         p: MX | SX | list,
-        node_index: int = 0,
+        node_index: int = None,
     ):
         """
         Parameters

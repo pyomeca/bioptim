@@ -27,14 +27,10 @@ class BinodeConstraint(Constraint):
         The weight of the cost function
     quadratic: bool
         If the objective function is quadratic
-    phase_first_idx: int
-        The first index of the phase of concern
-    phase_second_idx: int
-        The second index of the phase of concern
-    first_node: Node
-        The kind of the first node
-    second_node: Node
-        The kind of the second node
+    nodes_phase: tuple[int, ...]
+        The index of the phase for the corresponding node in nodes
+    nodes: tuple[int | Node, ...]
+        The nodes on which the constraint will be computed on
     dt: float
         The delta time
     node_idx: int
@@ -47,10 +43,8 @@ class BinodeConstraint(Constraint):
 
     def __init__(
         self,
-        phase_first_idx: int,
-        phase_second_idx: int | None,
-        first_node: Node | int,
-        second_node: Node | int,
+        nodes: tuple[int | Node, ...],
+        nodes_phase: tuple[int, ...],
         binode_constraint: Any | Callable = None,
         custom_function: Callable = None,
         min_bound: float = 0,
@@ -79,16 +73,20 @@ class BinodeConstraint(Constraint):
             binode_constraint = BinodeConstraintFcn.CUSTOM
         super(Constraint, self).__init__(penalty=binode_constraint, custom_function=custom_function, **params)
 
-        if first_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
-            if not isinstance(first_node, int):
-                raise NotImplementedError(
-                    "Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
-                )
-        if second_node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
-            if not isinstance(second_node, int):
-                raise NotImplementedError(
-                    "Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
-                )
+        # TODO Allows for ALL_NODE, Benjamin
+        for node in nodes:
+            if node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
+                if not isinstance(node, int):
+                    raise NotImplementedError(
+                        "Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
+                    )
+        for phase in nodes_phase:
+            if not isinstance(phase, int):
+                raise ValueError("nodes_phase should be all positive integers corresponding to the phase index")
+
+        if len(nodes) != len(nodes_phase):
+            raise ValueError("Each of the nodes must have a corresponding nodes_phase")
+
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
@@ -96,13 +94,9 @@ class BinodeConstraint(Constraint):
         self.binode_constraint = True
         self.weight = weight
         self.quadratic = True
-        self.phase_first_idx = phase_first_idx
-        self.phase_second_idx = phase_second_idx
-        self.phase_pre_idx = phase_first_idx
-        self.phase_post_idx = phase_second_idx
-        self.first_node = first_node
-        self.second_node = second_node
-        self.node = self.first_node, self.second_node
+        self.nodes_phase = nodes_phase
+        self.nodes = nodes
+        self.node = None
         self.dt = 1
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL
@@ -195,10 +189,9 @@ class BinodeConstraintList(UniquePerPhaseOptionList):
         """
         full_phase_binode_constraint = []
         for mnc in self:
-            if mnc.phase_first_idx >= ocp.n_phases or mnc.phase_second_idx >= ocp.n_phases:
-                raise RuntimeError("Phase index of the binode_constraint is higher than the number of phases")
-            if mnc.phase_first_idx < 0 or mnc.phase_second_idx < 0:
-                raise RuntimeError("Phase index of the binode_constraint need to be positive")
+            for phase in mnc.nodes_phase:
+                if phase < 0 or phase >= ocp.n_phases:
+                    raise RuntimeError("nodes_phase of the multinode_constraint must be between 0 and number of phases")
 
             if mnc.weight:
                 mnc.base = ObjectiveFunction.MayerFunction

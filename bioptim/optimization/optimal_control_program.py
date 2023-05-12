@@ -718,15 +718,16 @@ class OptimalControlProgram:
             if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
                 continue
             # Dynamics must be respected between phases
-            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.name = f"PHASE_TRANSITION {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
             pt.list_index = -1
-            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
+            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
-        if self.binode_constraints:  # Node-equalities
-            if not state_continuity_weight:
-                MultinodeConstraintFunction.Functions.node_equalities(self)
-            else:
-                ObjectiveFunction.MultinodeFunction.Functions.node_equalities(self)
+        # TODO BENJAMIN
+        # if self.binode_constraints:  # Node-equalities
+        #     if not state_continuity_weight:
+        #         MultinodeConstraintFunction.Functions.node_equalities(self)
+        #     else:
+        #         ObjectiveFunction.MultinodeFunction.Functions.node_equalities(self)
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """

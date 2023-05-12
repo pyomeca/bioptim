@@ -83,42 +83,19 @@ def prepare_ocp(
     binode_constraints = BinodeConstraintList()
     # hard constraint
     binode_constraints.add(
-        BinodeConstraintFcn.STATES_EQUALITY,
-        phase_first_idx=0,
-        phase_second_idx=2,
-        first_node=Node.START,
-        second_node=Node.START,
-        key="all",
+        BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(Node.START, Node.START), key="all"
     )
     # Objectives with the weight as an argument
     binode_constraints.add(
-        BinodeConstraintFcn.STATES_EQUALITY,
-        phase_first_idx=0,
-        phase_second_idx=2,
-        first_node=2,
-        second_node=Node.MID,
-        weight=2,
-        key="all",
+        BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(2, Node.MID), weight=2, key="all"
     )
     # Objectives with the weight as an argument
     binode_constraints.add(
-        BinodeConstraintFcn.STATES_EQUALITY,
-        phase_first_idx=0,
-        phase_second_idx=1,
-        first_node=Node.MID,
-        second_node=Node.END,
-        weight=0.1,
-        key="all",
+        BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 1), nodes=(Node.MID, Node.END), weight=0.1, key="all"
     )
     # Objectives with the weight as an argument
     binode_constraints.add(
-        custom_binode_constraint,
-        phase_first_idx=0,
-        phase_second_idx=1,
-        first_node=Node.MID,
-        second_node=Node.PENULTIMATE,
-        weight=0.1,
-        coef=2,
+        custom_binode_constraint, nodes_phase=(0, 1), nodes=(Node.MID, Node.PENULTIMATE), weight=0.1, coef=2
     )
 
     # Path constraint

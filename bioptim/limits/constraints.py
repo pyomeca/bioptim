@@ -590,7 +590,7 @@ class MultinodeConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def node_equalities(ocp):
             """
-            Add multi node constraints between chosen phases.
+            Add equality constraints between chosen nodes of chosen phases.
 
             Parameters
             ----------
@@ -599,6 +599,7 @@ class MultinodeConstraintFunction(PenaltyFunctionAbstract):
             """
             for mnc in ocp.binode_constraints:
                 # Equality constraint between nodes
+                base_node = mnc.nodes[0]
                 if isinstance(mnc.first_node, int):
                     first_node_name = f"idx {str(mnc.first_node)}"
                 else:
