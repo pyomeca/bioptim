@@ -143,8 +143,8 @@ class BiMapping(OptionGeneric):
         """
         super(BiMapping, self).__init__(**params)
 
-        self.oppose_to_second = None
-        self.oppose_to_first = None
+        self.oppose_to_second = oppose_to_second
+        self.oppose_to_first = oppose_to_first
 
         if isinstance(to_second, (list, tuple, range)):
             to_second = Mapping(map_idx=to_second, oppose=oppose_to_second)

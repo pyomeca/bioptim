@@ -2,6 +2,7 @@
 Test for file IO
 """
 import os
+import platform
 
 import pytest
 import numpy as np
@@ -10,6 +11,10 @@ from bioptim import Solver, MultiCyclicCycleSolutions
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 def test_multi_cyclic_nmpc_get_final(assume_phase_dynamics):
+    if platform.system() != "Linux":
+        # This is a long test and CI is already long for Windows and Mac
+        return
+
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
