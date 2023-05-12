@@ -230,18 +230,23 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            pre, post = controllers
-            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.get_cx(key, CXStep.CX_END))
-            states_post = binode_constraint.states_mapping.to_first.map(post.states.get_cx(key, CXStep.CX_START))
+            ctrl_0 = controllers[0]
+            states_0 = binode_constraint.states_mapping.to_second.map(ctrl_0.states.get_cx(key, CXStep.CX_END))
+            out = ctrl_0.cx.zeros(states_0.shape)
+            for i in range(1, len(controllers)):
+                ctrl_i = controllers[i]
+                states_i = binode_constraint.states_mapping.to_first.map(ctrl_i.states.get_cx(key, CXStep.CX_START))
 
-            if states_pre.shape != states_post.shape:
-                raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
-                    f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
-                    f"transition or supply states_mapping"
-                )
+                if states_0.shape != states_i.shape:
+                    raise RuntimeError(
+                        f"Continuity can't be established since the number of x to be matched is {states_0.shape} in "
+                        f"the pre-transition phase and {states_i.shape} post-transition phase. Please use a custom "
+                        f"transition or supply states_mapping"
+                    )
 
-            return states_pre - states_post
+                out += states_0 - states_i
+
+            return out
 
         @staticmethod
         def controls_equality(
