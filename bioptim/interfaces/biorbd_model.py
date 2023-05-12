@@ -174,7 +174,7 @@ class BiorbdModel:
         return self.model.nbRoot()
 
     @property
-    def segments(self) -> list[biorbd.Segment]:
+    def segments(self) -> tuple[biorbd.Segment]:
         return self.model.segments()
 
     def homogeneous_matrices_in_global(self, q, reference_index, inverse=False):

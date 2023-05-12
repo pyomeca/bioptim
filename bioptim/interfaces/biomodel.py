@@ -1,4 +1,4 @@
-from typing import Protocol, Callable, ClassVar
+from typing import Protocol, Callable
 
 from casadi import MX, SX
 from ..misc.mapping import BiMapping, BiMappingList
@@ -12,40 +12,61 @@ class BioModel(Protocol):
     def serialize(self) -> tuple[Callable, dict]:
         """transform the class into a save and load format"""
 
-    gravity: MX | ClassVar
+    @property
+    def gravity(self) -> MX:
+        """Get the current gravity applied to the model"""
+        return MX()
 
     def set_gravity(self, new_gravity):
         """Set the gravity vector"""
 
-    nb_tau: int | ClassVar
-    """Get the number of generalized forces"""
+    @property
+    def nb_tau(self) -> int:
+        """Get the number of generalized forces"""
+        return -1
 
-    nb_segments: int | ClassVar
-    """Get the number of segment"""
+    @property
+    def nb_segments(self) -> int:
+        """Get the number of segment"""
+        return -1
 
     def segment_index(self, segment_name) -> int:
         """Get the segment index from its name"""
 
-    nb_quaternions: int | ClassVar
-    """Get the number of quaternion"""
+    @property
+    def nb_quaternions(self) -> int:
+        """Get the number of quaternion"""
+        return -1
 
-    nb_dof: int | ClassVar
-    """Get the number of dof"""
+    @property
+    def nb_dof(self) -> int:
+        """Get the number of dof"""
+        return -1
 
-    nb_q: int | ClassVar
-    """Get the number of Q"""
+    @property
+    def nb_q(self) -> int:
+        """Get the number of Generalized coordinates"""
+        return -1
 
-    nb_qdot: int | ClassVar
-    """Get the number of Qdot"""
+    @property
+    def nb_qdot(self) -> int:
+        """Get the number of Generalized velocities"""
+        return -1
 
-    nb_qddot: int | ClassVar
-    """Get the number of Qddot"""
+    @property
+    def nb_qddot(self) -> int:
+        """Get the number of Generalized accelerations"""
+        return -1
 
-    nb_root: int | ClassVar
-    """Get the number of root Dof"""
+    @property
+    def nb_root(self) -> int:
+        """Get the number of root Dof"""
+        return -1
 
-    segments: tuple | ClassVar
-    """Get all segments"""
+    @property
+    def segments(self) -> tuple:
+        """Get all segments"""
+        return ()
 
     def homogeneous_matrices_in_global(self, q, reference_idx, inverse=False) -> tuple:
         """
@@ -65,8 +86,10 @@ class BioModel(Protocol):
         T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
         """
 
-    mass: MX | ClassVar
-    """Get the mass of the model"""
+    @property
+    def mass(self) -> MX:
+        """Get the mass of the model"""
+        return MX()
 
     def center_of_mass(self, q) -> MX:
         """Get the center of mass of the model"""
@@ -86,20 +109,30 @@ class BioModel(Protocol):
         Since we don't know if this is the case, this function is always called
         """
 
-    name_dof: tuple[str, ...] | ClassVar
-    """Get the name of the degrees of freedom"""
+    @property
+    def name_dof(self) -> tuple[str, ...]:
+        """Get the name of the degrees of freedom"""
+        return ()
 
-    contact_names: tuple[str, ...] | ClassVar
-    """Get the name of the contacts"""
+    @property
+    def contact_names(self) -> tuple[str, ...]:
+        """Get the name of the contacts"""
+        return ()
 
-    nb_soft_contacts: int | ClassVar
-    """Get the number of soft contacts"""
+    @property
+    def nb_soft_contacts(self) -> int:
+        """Get the number of soft contacts"""
+        return -1
 
-    soft_contact_names: tuple[str, ...] | ClassVar
-    """Get the soft contact names"""
+    @property
+    def soft_contact_names(self) -> tuple[str, ...]:
+        """Get the soft contact names"""
+        return ()
 
-    muscle_names: tuple[str, ...] | ClassVar
-    """Get the muscle names"""
+    @property
+    def muscle_names(self) -> tuple[str, ...]:
+        """Get the muscle names"""
+        return ()
 
     def torque(self, activation, q, qdot) -> MX:
         """Get the muscle torque"""
@@ -137,14 +170,18 @@ class BioModel(Protocol):
     def markers(self, q) -> MX:
         """Get the markers of the model"""
 
-    nb_markers: int | ClassVar
-    """Get the number of markers of the model"""
+    @property
+    def nb_markers(self) -> int:
+        """Get the number of markers of the model"""
+        return -1
 
     def marker_index(self, name) -> int:
         """Get the index of a marker"""
 
-    nb_rigid_contacts: int | ClassVar
-    """Get the number of rigid contacts"""
+    @property
+    def nb_rigid_contacts(self) -> int:
+        """Get the number of rigid contacts"""
+        return -1
 
     def marker_velocities(self, q, qdot, reference_index=None) -> MX:
         """Get the marker velocities of the model"""
@@ -155,8 +192,10 @@ class BioModel(Protocol):
     def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
         """Get the rigid contact acceleration"""
 
-    marker_names: tuple[str, ...] | ClassVar
-    """Get the marker names"""
+    @property
+    def marker_names(self) -> tuple[str, ...]:
+        """Get the marker names"""
+        return ()
 
     def soft_contact_forces(self, q, qdot) -> MX:
         """Get the soft contact forces in the global frame"""
