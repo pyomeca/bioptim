@@ -96,7 +96,7 @@ class BinodeConstraint(Constraint):
         self.quadratic = True
         self.nodes_phase = nodes_phase
         self.nodes = nodes
-        self.node = None
+        self.node = Node.MULTINODES
         self.dt = 1
         self.node_idx = [0]
         self.penalty_type = PenaltyType.INTERNAL

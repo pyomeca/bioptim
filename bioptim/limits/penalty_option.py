@@ -636,13 +636,15 @@ class PenaltyOption(OptionGeneric):
                 self.name = self.type.name
 
         penalty_type = self.type.get_type()
-        if self.node == Node.TRANSITION:
+        if self.node in [Node.MULTINODES, Node.TRANSITION]:
             # Make sure the penalty behave like a PhaseTransition, even though it may be an Objective or Constraint
+            current_node_type = self.node
             self.dt = 1
             if not self.states_mapping:
                 self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
             controllers = []
+            self.binode_idx = []
             for node, phase_idx in zip(self.nodes, self.nodes_phase):
                 self.node = node
                 nlp = ocp.nlp[phase_idx % ocp.n_phases]
@@ -652,44 +654,13 @@ class PenaltyOption(OptionGeneric):
                     # Make an exception to the fact that U is not available for the last node
                     controllers[-1].u = [nlp.U[-1]]
                 penalty_type.validate_penalty_time_index(self, controllers[-1])
+                self.binode_idx.append(controllers[-1].t[0])
 
             # reset the node
-            self.node = Node.TRANSITION
+            self.node = current_node_type
 
             # Finalize
             self.ensure_penalty_sanity(ocp, controllers[0].get_nlp)
-
-        elif isinstance(self.node, tuple) and self.binode_constraint:
-            # Make sure the penalty behave like a BinodeConstraint, even though it may be an Objective or Constraint
-            nodes = self.node
-            self.dt = 1
-            if not self.states_mapping:
-                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
-
-            nlp = ocp.nlp[self.phase_first_idx]
-            self.node = nodes[0]
-            pre = self._get_penalty_controller(ocp, nlp)
-            if self.node == Node.END:
-                pre.u = [nlp.U[-1]]
-                # Make an exception to the fact that U is not available for the last node
-
-            nlp = ocp.nlp[self.phase_second_idx]
-            self.node = nodes[1]
-            post = self._get_penalty_controller(ocp, nlp)
-            if self.node == Node.END:
-                post.u = [nlp.U[-1]]
-                # Make an exception to the fact that U is not available for the last node
-
-            # reset the node
-            self.node = nodes
-            self.binode_idx = [pre.t[0], post.t[0]]
-            self.node_idx = [post.t[0]]
-
-            # Finalize
-            penalty_type.validate_penalty_time_index(self, pre)
-            penalty_type.validate_penalty_time_index(self, post)
-            self.ensure_penalty_sanity(ocp, pre.get_nlp)
-            controllers = [pre, post]
 
         else:
             controllers = [self._get_penalty_controller(ocp, nlp)]

@@ -1412,40 +1412,22 @@ class Solution:
             u = []
             target = []
             if nlp is not None:
-                if penalty.transition:
-                    phase_post = (phase_idx + 1) % len(self._states["scaled"])
-                    x = np.concatenate(
-                        (
-                            self._states["scaled"][phase_idx]["all"][:, -1],
-                            self._states["scaled"][phase_post]["all"][:, 0],
-                        )
-                    )
-                    u = (
-                        []
-                        if nlp.control_type == ControlType.NONE
-                        else np.concatenate(
-                            (
-                                self._controls["scaled"][phase_idx]["all"][:, -1],
-                                self._controls["scaled"][phase_post]["all"][:, 0],
-                            )
-                        )
-                    )
-                elif penalty.binode_constraint:
+                if penalty.binode_constraint or penalty.transition:
                     node0 = penalty.binode_idx[0]
                     node1 = penalty.binode_idx[1]
 
                     x = np.concatenate(
                         (
-                            self._states["scaled"][penalty.phase_first_idx]["all"][:, node0],
-                            self._states["scaled"][penalty.phase_second_idx]["all"][:, node1],
+                            self._states["scaled"][penalty.nodes_phase[0]]["all"][:, node0],
+                            self._states["scaled"][penalty.nodes_phase[1]]["all"][:, node1],
                         )
                     )
 
                     # Make an exception to the fact that U is not available for the last node
                     u = np.concatenate(
                         (
-                            self._controls["scaled"][penalty.phase_first_idx]["all"][:, node0],
-                            self._controls["scaled"][penalty.phase_second_idx]["all"][:, node1],
+                            self._controls["scaled"][penalty.nodes_phase[0]]["all"][:, node0],
+                            self._controls["scaled"][penalty.nodes_phase[1]]["all"][:, node1],
                         )
                     )
 
@@ -1546,10 +1528,10 @@ class Solution:
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
 
-                if penalty.node != Node.TRANSITION:
-                    node_name = f"{penalty.node[0]}" if isinstance(penalty.node[0], int) else penalty.node[0].name
-                else:
+                if penalty.node in [Node.MULTINODES, Node.TRANSITION]:
                     node_name = penalty.node.name
+                else:
+                    node_name = f"{penalty.node[0]}" if isinstance(penalty.node[0], int) else penalty.node[0].name
 
                 self.detailed_cost += [
                     {

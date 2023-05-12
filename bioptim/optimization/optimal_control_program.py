@@ -25,7 +25,6 @@ from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
     Constraint,
-    MultinodeConstraintFunction,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import BinodeConstraintList
@@ -722,12 +721,25 @@ class OptimalControlProgram:
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
-        # TODO BENJAMIN
-        # if self.binode_constraints:  # Node-equalities
-        #     if not state_continuity_weight:
-        #         MultinodeConstraintFunction.Functions.node_equalities(self)
-        #     else:
-        #         ObjectiveFunction.MultinodeFunction.Functions.node_equalities(self)
+        for mnc in self.binode_constraints:
+            # Equality constraint between nodes
+            if isinstance(mnc.nodes[0], int):
+                first_node_name = f"idx {str(mnc.nodes[0])}"
+            else:
+                first_node_name = mnc.nodes[0].name
+
+            if isinstance(mnc.nodes[1], int):
+                second_node_name = f"idx {str(mnc.nodes[1])}"
+            else:
+                second_node_name = mnc.nodes[1].name
+
+            mnc.name = (
+                f"NODE_EQUALITY "
+                f"Phase {mnc.nodes_phase[0]} Node {first_node_name}"
+                f"->Phase {mnc.nodes_phase[1]} Node {second_node_name}"
+            )
+            mnc.list_index = -1
+            mnc.add_or_replace_to_penalty_pool(self, self.nlp[mnc.nodes_phase[0]])
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """

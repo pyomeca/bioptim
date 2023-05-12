@@ -585,48 +585,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         return "constraints"
 
 
-class MultinodeConstraintFunction(PenaltyFunctionAbstract):
-    class Functions:
-        @staticmethod
-        def node_equalities(ocp):
-            """
-            Add equality constraints between chosen nodes of chosen phases.
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            """
-            for mnc in ocp.binode_constraints:
-                # Equality constraint between nodes
-                base_node = mnc.nodes[0]
-                if isinstance(mnc.first_node, int):
-                    first_node_name = f"idx {str(mnc.first_node)}"
-                else:
-                    first_node_name = mnc.first_node.name
-
-                if isinstance(mnc.second_node, int):
-                    second_node_name = f"idx {str(mnc.second_node)}"
-                else:
-                    second_node_name = mnc.second_node.name
-
-                mnc.name = (
-                    f"NODE_EQUALITY "
-                    f"Phase {mnc.phase_first_idx} Node {first_node_name}"
-                    f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
-                )
-                mnc.list_index = -1
-                mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
-
-        @staticmethod
-        def get_dt(_):
-            return 1
-
-        @staticmethod
-        def penalty_nature() -> str:
-            return "constraints"
-
-
 class ConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions

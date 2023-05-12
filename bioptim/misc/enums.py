@@ -36,6 +36,7 @@ class Node(Enum):
     ALL = "all"  # All the nodes
     ALL_SHOOTING = "all_shooting"  # All the shooting nodes
     TRANSITION = "transition"  # The last node of a phase and the first node of the next phase
+    MULTINODES = "multinodes"  # Constraint an arbitrary number of node to be equal
     DEFAULT = "default"
 
 
