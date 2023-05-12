@@ -85,6 +85,9 @@ def prepare_ocp(
     binode_constraints.add(
         BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(Node.START, Node.START), key="all"
     )
+    binode_constraints.add(
+        BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(Node.START, Node.MID), key="all"
+    )
     # Objectives with the weight as an argument
     binode_constraints.add(
         BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(2, Node.MID), weight=2, key="all"
