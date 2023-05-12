@@ -113,50 +113,54 @@ def prepare_ocp(
     return ocp
 
 
+def construct_filepath(save_path, n_shooting, seed):
+    return f"{save_path}/pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl"
+
+
 def save_results(
     sol: Solution,
-    biorbd_model_path: str,
-    final_time: float,
-    n_shooting: int,
-    seed: int,
-    save_folder: str,
-    only_save_filename: bool = False,
+    *combinatorial_parameters,
+    **extra_parameters,
 ) -> None:
     """
-    Solving the ocp
+    Callback of the post_optimization_callback, this can be used to save the results
+
     Parameters
     ----------
     sol: Solution
-        The solution to the ocp at the current poolf
-    biorbd_model_path: str
-        The path to the biorbd model
-    final_time: float
-        The time in second required to perform the task
-    n_shooting: int
-        The number of shooting points to define int the direct multiple shooting program
-    seed: int
-        The seed to use for the random initial guess
-    only_save_filename: bool
-        True if you want to return only the name of the file without saving, else False
+        The solution to the ocp at the current pool
+    combinatorial_parameters:
+        The current values of the combinatorial_parameters being treated
+    extra_parameters:
+        All the non-combinatorial parameters sent by the user
     """
-    # OptimalControlProgram.save(sol, f"solutions/pendulum_multi_start_random{seed}.bo", stand_alone=True)
-    bio_model = biorbd_model_path.split("/")[-1].removesuffix(".bioMod")
-    filename = f"pendulum_multi_start_random_states_{n_shooting}_{seed}.pkl"
-    if only_save_filename == True:
-        return filename
+
+    bio_model_path, final_time, n_shooting, seed = combinatorial_parameters
+    save_folder = extra_parameters["save_folder"]
+
+    file_path = construct_filepath(save_folder, n_shooting, seed)
     states = sol.states["all"]
-
-    if save_folder:
-        with open(f"{save_folder}/{filename}", "wb") as file:
-            pickle.dump(states, file)
+    with open(file_path, "wb") as file:
+        pickle.dump(states, file)
 
 
-def should_solve(args, save_folder, save_results=save_results):
+def should_solve(*combinatorial_parameters, **extra_parameters):
     """
-    Check if the filename already appears in the folder where files are saved, if not ocp must be solved
+    Callback of the should_solve_callback, this allows the user to instruct bioptim
+
+    Parameters
+    ----------
+    combinatorial_parameters:
+        The current values of the combinatorial_parameters being treated
+    extra_parameters:
+        All the non-combinatorial parameters sent by the user
     """
-    already_done_filenames = os.listdir(f"{save_folder}")
-    return save_results([None], *args, save_folder=save_folder, only_save_filename=True) not in already_done_filenames
+
+    bio_model_path, final_time, n_shooting, seed = combinatorial_parameters
+    save_folder = extra_parameters["save_folder"]
+
+    file_path = construct_filepath(save_folder, n_shooting, seed)
+    return not os.path.exists(file_path)
 
 
 def prepare_multi_start(
@@ -169,7 +173,8 @@ def prepare_multi_start(
     """
     if not isinstance(save_folder, str):
         raise ValueError("save_folder must be an str")
-    os.mkdir(f"{save_folder}")
+    if not os.path.exists(save_folder):
+        os.mkdir(save_folder)
 
     return MultiStart(
         combinatorial_parameters=combinatorial_parameters,
@@ -206,7 +211,7 @@ def main():
     multi_start.solve()
 
     # Delete the solutions
-    shutil.rmtree(f"{save_folder}")
+    shutil.rmtree(save_folder)
 
 
 if __name__ == "__main__":

@@ -90,7 +90,7 @@ class MultiStart:
 
     def _prepare_and_solve_ocp(self, ocp_parameters):
         if self.should_solve_callback is None or self.should_solve_callback[0](
-            ocp_parameters, **self.should_solve_callback[1]
+            *ocp_parameters, **self.should_solve_callback[1]
         ):
             sol = self.prepare_ocp_callback(*ocp_parameters).solve(self.solver)
             self.post_optimization_callback[0](sol, *ocp_parameters, **self.post_optimization_callback[1])
