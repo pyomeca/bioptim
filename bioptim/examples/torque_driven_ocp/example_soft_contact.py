@@ -220,7 +220,7 @@ def main():
     sol = ocp.solve(solv)
 
     sol.animate()
-    sol.print()
+    sol.print_cost()
     sol.graphs()
 
 

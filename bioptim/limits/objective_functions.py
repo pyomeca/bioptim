@@ -307,12 +307,16 @@ class ObjectiveFunction:
                 """
                 for mnc in ocp.binode_constraints:
                     # Equality constraint between nodes
-                    first_node_name = (
-                        f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
-                    )
-                    second_node_name = (
-                        f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
-                    )
+                    if isinstance(mnc.first_node, int):
+                        first_node_name = f"idx {str(mnc.first_node)}"
+                    else:
+                        first_node_name = mnc.first_node.name
+
+                    if isinstance(mnc.second_node, int):
+                        second_node_name = f"idx {str(mnc.second_node)}"
+                    else:
+                        second_node_name = mnc.second_node.name
+
                     mnc.name = (
                         f"NODE_EQUALITY "
                         f"Phase {mnc.phase_first_idx} Node {first_node_name}"

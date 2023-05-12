@@ -5,7 +5,6 @@ The arm must reach a marker while minimizing the muscles activity and the states
 ACADOS and Ipotpt.
 """
 
-import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     BiorbdModel,

@@ -20,11 +20,7 @@ from ..misc.enums import (
 )
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.optimization_variable import (
-    OptimizationVariableList,
-    OptimizationVariable,
-    OptimizationVariableContainer,
-)
+from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
 
@@ -586,6 +582,8 @@ class Solution:
                 else -1
             )
 
+            idx = -1
+            offset = 0
             for p, idx in enumerate(idx_no_intermediate):
                 offset = (
                     (self.ocp.nlp[p].ode_solver.polynomial_degree + 1)
@@ -1516,8 +1514,6 @@ class Solution:
 
         Parameters
         ----------
-        cost_type: CostType
-            The type of cost to console print
         """
 
         for nlp in self.ocp.nlp:

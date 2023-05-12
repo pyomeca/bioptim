@@ -83,9 +83,6 @@ class Solver:
         ----------
         show_online_optim: bool
             If the plot should be shown while optimizing. It will slow down the optimization a bit
-        solver_options: Generic
-            Any options to change the behavior of the solver. To know which options are available, you can refer to the
-            manual of the corresponding solver
         show_options: dict
             The graphs option to pass to PlotOcp
         _tol: float
@@ -499,11 +496,11 @@ class Solver:
             return self._qpsol
 
         @property
-        def set_tol_du(self):
+        def tol_du(self):
             return self._tol_du
 
         @property
-        def set_tol_pr(self):
+        def tol_pr(self):
             return self._tol_pr
 
         def set_beta(self, beta: float):

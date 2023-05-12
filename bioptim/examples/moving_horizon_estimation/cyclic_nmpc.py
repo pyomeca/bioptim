@@ -26,14 +26,14 @@ from bioptim import (
 
 
 class MyCyclicNMPC(CyclicNonlinearModelPredictiveControl):
-    def advance_window_bounds_states(self, sol):
+    def advance_window_bounds_states(self, sol, **extra):
         # Reimplementation of the advance_window method so the rotation of the wheel restart at -pi
         super(MyCyclicNMPC, self).advance_window_bounds_states(sol)
         self.nlp[0].x_bounds[0, 0] = -np.pi
         return True
 
 
-def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque, assume_phase_dynamics):
+def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque, assume_phase_dynamics = True):
     model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 

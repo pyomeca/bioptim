@@ -662,11 +662,11 @@ class MultiBiorbdModel:
     def homogeneous_matrices_in_global(self, q, reference_index, inverse=False):
         raise NotImplementedError("homogeneous_matrices_in_global is not implemented for MultiBiorbdModel")
 
-    def homogeneous_matrices_in_child(self, *args):
+    def homogeneous_matrices_in_child(self) -> tuple:
         raise NotImplementedError("homogeneous_matrices_in_child is not implemented for MultiBiorbdModel")
 
     @property
-    def mass(self) -> list[MX]:
+    def mass(self) -> MX:
         return vertcat(*(model.mass for model in self.models))
 
     def center_of_mass(self, q) -> MX:

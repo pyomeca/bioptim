@@ -103,7 +103,8 @@ class SQPInterface(SolverInterface):
         sol: dict
             A solution structure where the lagrange multipliers are set
         """
-        generic_set_lagrange_multiplier(self, sol)
+        raise NotImplementedError("This is broken")
+        # generic_set_lagrange_multiplier(self, sol)
 
     def dispatch_bounds(self):
         """
