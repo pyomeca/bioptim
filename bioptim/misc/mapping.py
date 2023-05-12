@@ -160,7 +160,6 @@ class BiMapping(OptionGeneric):
         self.to_first = to_first
 
 
-
 class BiMappingList(OptionDict):
     def __init__(self):
         super(BiMappingList, self).__init__()

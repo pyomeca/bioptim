@@ -81,10 +81,14 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100.0, 100.0, 0.0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
-    qddot_min, qddot_max, qddot_init = (-1000.0, 1000.0, 0.0) if (
-        rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-        or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-    ) else (0.0, 0.0, 0.0)
+    qddot_min, qddot_max, qddot_init = (
+        (-1000.0, 1000.0, 0.0)
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+        )
+        else (0.0, 0.0, 0.0)
+    )
 
     x_bounds = BoundsList()
     x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))

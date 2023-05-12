@@ -117,9 +117,7 @@ def main():
     print(f"Time to solve: {sol_acados.real_time_to_optimize}sec")
     print(f"")
 
-    print(
-        f"Results using Ipopt not warm started from ACADOS solution"
-    )
+    print(f"Results using Ipopt not warm started from ACADOS solution")
     print(f"Final objective : {np.nansum(sol_ipopt.cost)}")
     sol_ipopt.print_cost()
     print(f"Time to solve: {sol_ipopt.real_time_to_optimize}sec")
