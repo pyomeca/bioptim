@@ -1118,6 +1118,7 @@ def test_binode_constraints(ode_solver, assume_phase_dynamics):
         assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
+    sol.print_cost()
 
     # Check objective function value
     f = np.array(sol.cost)

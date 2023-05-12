@@ -1413,23 +1413,15 @@ class Solution:
             target = []
             if nlp is not None:
                 if penalty.binode_constraint or penalty.transition:
-                    node0 = penalty.binode_idx[0]
-                    node1 = penalty.binode_idx[1]
+                    x = np.array(())
+                    u = np.array(())
+                    for i in range(len(penalty.nodes_phase)):
+                        node_idx = penalty.binode_idx[i]
+                        phase_idx = penalty.nodes_phase[i]
 
-                    x = np.concatenate(
-                        (
-                            self._states["scaled"][penalty.nodes_phase[0]]["all"][:, node0],
-                            self._states["scaled"][penalty.nodes_phase[1]]["all"][:, node1],
-                        )
-                    )
-
-                    # Make an exception to the fact that U is not available for the last node
-                    u = np.concatenate(
-                        (
-                            self._controls["scaled"][penalty.nodes_phase[0]]["all"][:, node0],
-                            self._controls["scaled"][penalty.nodes_phase[1]]["all"][:, node1],
-                        )
-                    )
+                        x = np.concatenate((x, self._states["scaled"][phase_idx]["all"][:, node_idx]))
+                        # Make an exception to the fact that U is not available for the last node
+                        u = np.concatenate((u, self._controls["scaled"][phase_idx]["all"][:, node_idx]))
 
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
