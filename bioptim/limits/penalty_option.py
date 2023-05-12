@@ -697,6 +697,11 @@ class PenaltyOption(OptionGeneric):
             # The active controller is always last
             node_indices = [t for t in controllers[-1].t]
             for node_index in node_indices:
+                for controller in controllers:
+                    controller.get_nlp.states.node_index = node_index
+                    controller.get_nlp.states_dot.node_index = node_index
+                    controller.get_nlp.controls.node_index = node_index
+
                 controllers[-1].t = [node_index]
                 controllers[-1].node_index = node_index
                 penalty_function = self.type(

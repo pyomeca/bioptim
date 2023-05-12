@@ -338,6 +338,7 @@ class PlotOcp:
                         if nlp.plot[key].node_idx is not None:
                             node_index = nlp.plot[key].node_idx[0]
                         nlp.states.node_index = node_index
+                        nlp.states_dot.node_index = node_index
                         nlp.controls.node_index = node_index
 
                         size = (

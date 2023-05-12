@@ -851,7 +851,9 @@ class ConfigureProblem:
                 for meta_suffix in var_names_with_suffix:
                     ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.scaled, [name])
                     ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.unscaled, [name])
+
         nlp.controls.node_index = nlp.states.node_index
+        nlp.states_dot.node_index = nlp.states.node_index
         return True
 
     @staticmethod

@@ -121,6 +121,18 @@ class PenaltyController:
         return self._nlp.states.unscaled
 
     @property
+    def states_dot(self) -> OptimizationVariableList:
+        """
+        Return the states_dot associated with the current node index
+
+        Returns
+        -------
+        The states_dot at node node_index
+        """
+        self._nlp.states_dot.node_index = self.node_index
+        return self._nlp.states_dot.unscaled
+
+    @property
     def integrate(self):
         return self._nlp.dynamics[self.node_index]
 
@@ -142,6 +154,21 @@ class PenaltyController:
         """
         self._nlp.states.node_index = self.node_index
         return self._nlp.states.scaled
+
+    @property
+    def states_dot_scaled(self) -> OptimizationVariableList:
+        """
+        Return the scaled states_dot associated with the current node index.
+
+        Warning: Most of the time, the user does not want that states but the normal `states_dot`, that said, it can
+        sometime be useful for very limited number of use case.
+
+        Returns
+        -------
+        The scaled states_dot at node node_index
+        """
+        self._nlp.states_dot.node_index = self.node_index
+        return self._nlp.states_dot.scaled
 
     @property
     def controls(self) -> OptimizationVariableList:
