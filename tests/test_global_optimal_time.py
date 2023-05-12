@@ -441,6 +441,10 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_time_constraint(ode_solver, assume_phase_dynamics):
+    if platform.system() != "Linux":
+        # This is a long test and CI is already long for Windows and Mac
+        return
+
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
 
