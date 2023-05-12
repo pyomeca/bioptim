@@ -27,7 +27,7 @@ from bioptim import (
 )
 
 
-class NonControledMethod:
+class NonControlledMethod:
     """
     This is a custom model that inherits from bioptim.CustomModel
     As CustomModel is an abstract class, some methods must be implemented.
@@ -42,7 +42,7 @@ class NonControledMethod:
     def serialize(self) -> tuple[Callable, dict]:
         # This is where you can serialize your model
         # This is useful if you want to save your model and load it later
-        return NonControledMethod, dict()
+        return NonControlledMethod, dict()
 
     @property
     def name_dof(self):
@@ -109,11 +109,7 @@ class NonControledMethod:
             extra_params["t"] = t_node_in_ocp
 
             dynamics_eval = self.custom_dynamics(
-                nlp.states.scaled[0].mx_reduced,  # TODO: [0] to [node_index]
-                nlp.controls.scaled[0].mx_reduced,  # TODO: [0] to [node_index]
-                nlp.parameters.mx,
-                nlp,
-                **extra_params
+                nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced, nlp.parameters.mx, nlp, **extra_params
             )
 
             dynamics_eval_horzcat = (
@@ -123,10 +119,10 @@ class NonControledMethod:
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [
-                nlp.states.scaled[0].mx_reduced,
-                nlp.controls.scaled[0].mx_reduced,
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-            ],  # TODO: [0] to [node_index]
+            ],
             [dynamics_eval_horzcat],
             ["x", "u", "p"],
             ["xdot"],
@@ -200,7 +196,7 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-    custom_model = NonControledMethod()
+    custom_model = NonControlledMethod()
     models = [custom_model for i in range(n_phase)]  # Gives custom_model as model for n phases
     n_shooting = [5 for i in range(n_phase)]  # Gives m node shooting for my n phases problem
     final_time = [0.01 for i in range(n_phase)]  # Set the final time for all my n phases

@@ -383,9 +383,7 @@ class Solution:
             sol_states, sol_controls = _sol[0], _sol[1]
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
-                s.init.check_and_adjust_dimensions(
-                    self.ocp.nlp[p].states.scaled[0].shape, ns, "states"
-                )  # TODO: [0] to [node_index]
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states.scaled.shape, ns, "states")
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
             for p, s in enumerate(sol_controls):
@@ -396,9 +394,7 @@ class Solution:
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
-                s.init.check_and_adjust_dimensions(
-                    self.ocp.nlp[p].controls.scaled[0].shape, self.ns[p], "controls"
-                )  # TODO: [0] to [node_index]
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls.scaled.shape, self.ns[p], "controls")
                 for i in range(self.ns[p] + off):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
@@ -1058,9 +1054,9 @@ class Solution:
                 )
 
             # Dispatch the integrated values to all the keys
-            for key in nlp.states[0]:  # TODO: [0] to [node_index]
+            for key in nlp.states:
                 out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][
-                    nlp.states[0][key].index, :  # TODO: [0] to [node_index]
+                    nlp.states[key].index, :
                 ]
 
         return out

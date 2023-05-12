@@ -257,15 +257,16 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
 
         if _penalty.derivative or _penalty.explicit_derivative:
-            if is_unscaled:
-                x = nlp.X[_idx + 1][:, 0]
-                u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
-            else:
-                x = nlp.X_scaled[_idx + 1][:, 0]
-                u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
+            if _idx < nlp.ns:
+                if is_unscaled:
+                    x = nlp.X[_idx + 1][:, 0]
+                    u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                else:
+                    x = nlp.X_scaled[_idx + 1][:, 0]
+                    u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
 
-            _x = horzcat(_x, x)
-            _u = horzcat(_u, u)
+                _x = horzcat(_x, x)
+                _u = horzcat(_u, u)
 
         if _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
             if is_unscaled:

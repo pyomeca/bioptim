@@ -19,7 +19,7 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     ConstraintList,
-    PenaltyNodeList,
+    PenaltyController,
     Bounds,
     InitialGuess,
     OdeSolver,
@@ -27,14 +27,14 @@ from bioptim import (
 )
 
 
-def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str, method) -> MX:
+def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str, method) -> MX:
     """
     The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
 
     Parameters
     ----------
-    all_pn: PenaltyNodeList
+    controller: PenaltyController
         The penalty node elements
     first_marker: str
         The index of the first marker in the bioMod
@@ -50,27 +50,23 @@ def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second
     """
 
     # Get the index of the markers from their name
-    marker_0_idx = all_pn.nlp.model.marker_index(first_marker)
-    marker_1_idx = all_pn.nlp.model.marker_index(second_marker)
+    marker_0_idx = controller.model.marker_index(first_marker)
+    marker_1_idx = controller.model.marker_index(second_marker)
 
     if method == 0:
         # Convert the function to the required format and then subtract
         from bioptim import BiorbdModel
 
         # noinspection PyTypeChecker
-        model: BiorbdModel = all_pn.nlp.model
-        markers = all_pn.nlp.mx_to_cx(
-            "markers", model.model.markers, all_pn.nlp.states[0]["q"]
-        )  # TODO: [0] to [node_index]
+        model: BiorbdModel = controller.model
+        markers = controller.mx_to_cx("markers", model.model.markers, controller.states["q"])
         markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     else:
         # Do the calculation in biorbd API and then convert to the required format
-        markers = all_pn.nlp.model.markers(all_pn.nlp.states[0]["q"].mx)  # TODO: [0] to [node_index]
+        markers = controller.model.markers(controller.states["q"].mx)
         markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
-        markers_diff = all_pn.nlp.mx_to_cx(
-            "markers", markers_diff, all_pn.nlp.states[0]["q"]
-        )  # TODO: [0] to [node_index]
+        markers_diff = controller.mx_to_cx("markers", markers_diff, controller.states["q"])
 
     return markers_diff
 

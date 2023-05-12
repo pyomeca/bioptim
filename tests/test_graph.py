@@ -24,7 +24,7 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Node,
-    PenaltyNodeList,
+    PenaltyController,
     PhaseTransitionList,
     PhaseTransitionFcn,
     ParameterList,
@@ -34,25 +34,22 @@ from bioptim.gui.graph import OcpToGraph
 from .utils import TestUtils
 
 
-def minimize_difference(all_pn: PenaltyNodeList):
-    return (
-        all_pn[0].nlp.controls[0]["tau"].cx_end - all_pn[1].nlp.controls[0]["tau"].cx_start
-    )  # TODO: [0] to [node_index]
+def minimize_difference(controllers: list[PenaltyController, PenaltyController]):
+    pre, post = controllers
+    return pre.controls["tau"].cx_end - post.controls["tau"].cx_start
 
 
-def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str) -> MX:
+def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str) -> MX:
     # Get the index of the markers from their name
-    marker_0_idx = all_pn.nlp.model.marker_index(first_marker)
-    marker_1_idx = all_pn.nlp.model.marker_index(second_marker)
+    marker_0_idx = controller.model.marker_index(first_marker)
+    marker_1_idx = controller.model.marker_index(second_marker)
 
     # Convert the function to the required format and then subtract
     from bioptim import BiorbdModel
 
     # noinspection PyTypeChecker
-    model: BiorbdModel = all_pn.nlp.model
-    markers = all_pn.nlp.mx_to_cx(
-        "markers", model.model.markers, all_pn.nlp.states[0]["q"]
-    )  # TODO: [0] to [node_index]
+    model: BiorbdModel = controller.model
+    markers = controller.mx_to_cx("markers", model.model.markers, controller.states["q"])
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 
@@ -154,9 +151,10 @@ def prepare_ocp_phase_transitions(
             phase=2,
             list_index=5,
         )
-        constraints.add(
-            custom_func_track_markers, node=Node.ALL, first_marker="m0", second_marker="m1", phase=3, list_index=6
-        )
+        for i in range(n_shooting[3]):
+            constraints.add(
+                custom_func_track_markers, node=i, first_marker="m0", second_marker="m1", phase=3, list_index=6
+            )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -209,6 +207,7 @@ def prepare_ocp_phase_transitions(
         objective_functions,
         constraints,
         phase_transitions=phase_transitions,
+        assume_phase_dynamics=True,
     )
 
 
@@ -358,6 +357,7 @@ def prepare_ocp_parameters(
         parameters=parameters,
         ode_solver=ode_solver,
         use_sx=use_sx,
+        assume_phase_dynamics=True,
     )
 
 
@@ -444,6 +444,7 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
+        assume_phase_dynamics=True,
     )
 
 
@@ -451,9 +452,6 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
 @pytest.mark.parametrize("with_lagrange", [True, False])
 @pytest.mark.parametrize("with_constraints", [True, False])
 def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
-    if platform == "win32":
-        return
-
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(
@@ -467,9 +465,6 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
 
 
 def test_parameters():
-    if platform == "win32":
-        return
-
     optim_gravity = True
     optim_mass = True
     bioptim_folder = TestUtils.bioptim_folder()
@@ -495,9 +490,6 @@ def test_parameters():
 
 @pytest.mark.parametrize("quadratic", [True, False])
 def test_objectives_target(quadratic):
-    if platform == "win32":
-        return
-
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
     ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path)

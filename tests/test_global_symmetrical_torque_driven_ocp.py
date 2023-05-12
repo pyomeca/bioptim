@@ -10,7 +10,8 @@ from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_symmetry_by_mapping(ode_solver):
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_symmetry_by_mapping(ode_solver, assume_phase_dynamics):
     from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -18,6 +19,7 @@ def test_symmetry_by_mapping(ode_solver):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 

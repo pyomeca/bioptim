@@ -8,7 +8,7 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, horzcat
+from casadi import MX, SX, Function, sum1, sum2, horzcat
 from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
@@ -143,7 +143,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: list | tuple | BioModel | MultiBiorbdModel,
+        bio_model: list | tuple | BioModel,
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
@@ -429,6 +429,9 @@ class OptimalControlProgram:
         # Type of CasADi graph
         self.cx = SX if use_sx else MX
 
+        # If the dynamics should be declared individually for each node of the phase or not
+        self.assume_phase_dynamics = assume_phase_dynamics
+
         # Declare optimization variables
         self.program_changed = True
         self.J = []
@@ -518,8 +521,6 @@ class OptimalControlProgram:
         self._check_variable_mapping_consistency_with_node_mapping(
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
-
-        self.assume_phase_dynamics = assume_phase_dynamics
 
         # Prepare the dynamics
         for i in range(self.n_phases):
@@ -831,16 +832,12 @@ class OptimalControlProgram:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
-            for key in nlp.states[0]:  # TODO: [0] to [node_index]
+            for key in nlp.states:
                 if f"{key}_states" in nlp.plot:
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[
-                        nlp.states[0][key].index
-                    ]  # TODO: [0] to [node_index]
-            for key in nlp.controls[0]:  # TODO: [0] to [node_index]
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
+            for key in nlp.controls:
                 if f"{key}_controls" in nlp.plot:
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[
-                        nlp.controls[0][key].index
-                    ]  # TODO: [0] to [node_index]
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
 
     def update_initial_guess(
         self,
@@ -979,7 +976,7 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(t, x, u, p, penalty, dt):
+        def compute_penalty_values(t, x, u, p, penalty, dt: int | Callable):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
@@ -995,7 +992,7 @@ class OptimalControlProgram:
                 Parameters vector
             penalty: Penalty
                 The penalty object containing details on how to compute it
-            dt: float
+            dt: float, Callable
                 Time step for the whole interval
 
             Returns
@@ -1507,3 +1504,25 @@ class OptimalControlProgram:
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
 
         self.program_changed = True
+
+    def node_time(self, phase_idx: int, node_idx: int):
+        """
+        Gives the time of the node node_idx of from the phase phase_idx
+
+        Parameters
+        ----------
+        phase_idx: int
+          Index of the phase
+        node_idx: int
+          Index of the node
+
+        Returns
+        -------
+        The node time node_idx from the phase phase_idx
+        """
+        if phase_idx < 0 or phase_idx > self.n_phases - 1:
+            return ValueError(f"phase_index out of range [0:{self.n_phases}]")
+        if node_idx < 0 or node_idx > self.nlp[phase_idx].ns:
+            return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
+        previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
+        return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)

@@ -4,7 +4,7 @@ import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
 
 from .path_conditions import Bounds
-from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
+from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -63,8 +63,8 @@ class Constraint(PenaltyOption):
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
-    def set_penalty(self, penalty: MX | SX, all_pn: PenaltyNodeList):
-        super(Constraint, self).set_penalty(penalty, all_pn)
+    def set_penalty(self, penalty: MX | SX, controller: PenaltyController):
+        super(Constraint, self).set_penalty(penalty, controller)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
 
@@ -93,13 +93,24 @@ class Constraint(PenaltyOption):
         elif self.bounds.shape[0] != len(self.rows):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
-    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
+    def _add_penalty_to_pool(self, controller: PenaltyController):
+        if isinstance(controller, (list, tuple)):
+            controller = controller[0]  # This is a special case of Node.TRANSITION
+
         if self.penalty_type == PenaltyType.INTERNAL:
-            pool = all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
+            pool = (
+                controller.get_nlp.g_internal
+                if controller is not None and controller.get_nlp
+                else controller.ocp.g_internal
+            )
         elif self.penalty_type == ConstraintType.IMPLICIT:
-            pool = all_pn.nlp.g_implicit if all_pn is not None and all_pn.nlp else all_pn.ocp.g_implicit
+            pool = (
+                controller.get_nlp.g_implicit
+                if controller is not None and controller.get_nlp
+                else controller.ocp.g_implicit
+            )
         elif self.penalty_type == PenaltyType.USER:
-            pool = all_pn.nlp.g if all_pn is not None and all_pn.nlp else all_pn.ocp.g
+            pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
             raise ValueError(f"Invalid constraint type {self.contraint_type}.")
         pool[self.list_index] = self
@@ -192,7 +203,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def non_slipping(
             constraint: Constraint,
-            all_pn: PenaltyNodeList,
+            controller: PenaltyController,
             tangential_component_idx: int,
             normal_component_idx: int,
             static_friction_coefficient: float,
@@ -207,7 +218,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             tangential_component_idx: int
                 Index of the tangential component of the contact force.
@@ -217,8 +228,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             static_friction_coefficient: float
                 Static friction coefficient
             """
-
-            nlp = all_pn.nlp
 
             if isinstance(tangential_component_idx, int):
                 tangential_component_idx = [tangential_component_idx]
@@ -234,9 +243,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
 
-            contact = all_pn.nlp.contact_forces_func(
-                nlp.states[0].cx_start, nlp.controls[0].cx_start, nlp.parameters.cx_start
-            )  # TODO: [0] to [node_index]
+            contact = controller.get_nlp.contact_forces_func(
+                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx_start
+            )
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
                 tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
@@ -255,7 +264,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return slipping
 
         @staticmethod
-        def torque_max_from_q_and_qdot(constraint: Constraint, all_pn: PenaltyNodeList, min_torque=None):
+        def torque_max_from_q_and_qdot(constraint: Constraint, controller: PenaltyController, min_torque=None):
             """
             Non linear maximal values of joint torques computed from the torque-position-velocity relationship
 
@@ -263,36 +272,35 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             min_torque: float
                 Minimum joint torques. This prevent from having too small torques, but introduces an if statement
             """
 
-            nlp = all_pn.nlp
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
 
-            bound = nlp.model.tau_max(nlp.states[0]["q"].mx, nlp.states[0]["qdot"].mx)  # TODO: [0] to [node_index]
-            min_bound = nlp.mx_to_cx(
+            bound = controller.model.tau_max(controller.states["q"].mx, controller.states["qdot"].mx)
+            min_bound = controller.mx_to_cx(
                 "min_bound",
-                nlp.controls[0]["tau"].mapping.to_first.map(bound[1]),  # TODO: [0] to [node_index]
-                nlp.states[0]["q"],  # TODO: [0] to [node_index]
-                nlp.states[0]["qdot"],  # TODO: [0] to [node_index]
+                controller.controls["tau"].mapping.to_first.map(bound[1]),
+                controller.states["q"],
+                controller.states["qdot"],
             )
-            max_bound = nlp.mx_to_cx(
+            max_bound = controller.mx_to_cx(
                 "max_bound",
-                nlp.controls[0]["tau"].mapping.to_first.map(bound[0]),  # TODO: [0] to [node_index]
-                nlp.states[0]["q"],  # TODO: [0] to [node_index]
-                nlp.states[0]["qdot"],  # TODO: [0] to [node_index]
+                controller.controls["tau"].mapping.to_first.map(bound[0]),
+                controller.states["q"],
+                controller.states["qdot"],
             )
             if min_torque:
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
 
             value = vertcat(
-                nlp.controls[0]["tau"].cx_start + min_bound, nlp.controls[0]["tau"].cx_start - max_bound
-            )  # TODO: [0] to [node_index]
+                controller.controls["tau"].cx_start + min_bound, controller.controls["tau"].cx_start - max_bound
+            )
 
             n_rows = constraint.rows if constraint.rows else int(value.shape[0] / 2)
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
@@ -300,7 +308,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return value
 
         @staticmethod
-        def time_constraint(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def time_constraint(_: Constraint, controller: PenaltyController, **unused_param):
             """
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
 
@@ -308,18 +316,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            return all_pn.nlp.tf
+            return controller.tf
 
         @staticmethod
         def qddot_equals_forward_dynamics(
             _: Constraint,
-            all_pn: PenaltyNodeList,
+            controller: PenaltyController,
             with_contact: bool,
             with_passive_torque: bool,
             with_ligament: bool,
@@ -333,7 +341,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             with_contact: bool
                 True if the contact dynamics is handled
@@ -345,36 +353,31 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            nlp = all_pn.nlp
-            q = nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
-            qdot = nlp.states[0]["qdot"].mx  # TODO: [0] to [node_index]
-            passive_torque = nlp.model.passive_joint_torque(q, qdot)
-            tau = (
-                nlp.states[0]["tau"].mx if "tau" in nlp.states[0] else nlp.controls[0]["tau"].mx
-            )  # TODO: [0] to [node_index]
+            q = controller.states["q"].mx
+            qdot = controller.states["qdot"].mx
+            passive_torque = controller.model.passive_joint_torque(q, qdot)
+            tau = controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
             tau = tau + passive_torque if with_passive_torque else tau
-            tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+            tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
-            qddot = (
-                nlp.controls[0]["qddot"].mx if "qddot" in nlp.controls[0] else nlp.states[0]["qddot"].mx
-            )  # TODO: [0] to [node_index]
+            qddot = controller.controls["qddot"].mx if "qddot" in controller.controls else controller.states["qddot"].mx
             if with_contact:
-                model = nlp.model.copy()
+                model = controller.model.copy()
                 qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
             else:
-                qddot_fd = nlp.model.forward_dynamics(q, qdot, tau)
+                qddot_fd = controller.model.forward_dynamics(q, qdot, tau)
 
             var = []
-            var.extend([nlp.states[0][key] for key in nlp.states[0]])  # TODO: [0] to [node_index]
-            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])  # TODO: [0] to [node_index]
-            var.extend([param for param in nlp.parameters])
+            var.extend([controller.states[key] for key in controller.states])
+            var.extend([controller.controls[key] for key in controller.controls])
+            var.extend([param for param in controller.parameters])
 
-            return nlp.mx_to_cx("forward_dynamics", qddot - qddot_fd, *var)
+            return controller.mx_to_cx("forward_dynamics", qddot - qddot_fd, *var)
 
         @staticmethod
         def tau_equals_inverse_dynamics(
             _: Constraint,
-            all_pn: PenaltyNodeList,
+            controller: PenaltyController,
             with_contact: bool,
             with_passive_torque: bool,
             with_ligament: bool,
@@ -388,7 +391,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             with_contact: bool
                 True if the contact dynamics is handled
@@ -400,20 +403,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            nlp = all_pn.nlp
-            q = nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
-            qdot = nlp.states[0]["qdot"].mx  # TODO: [0] to [node_index]
-            tau = (
-                nlp.states[0]["tau"].mx if "tau" in nlp.states[0] else nlp.controls[0]["tau"].mx
-            )  # TODO: [0] to [node_index]
-            qddot = (
-                nlp.states[0]["qddot"].mx if "qddot" in nlp.states[0] else nlp.controls[0]["qddot"].mx
-            )  # TODO: [0] to [node_index]
-            passive_torque = nlp.model.passive_joint_torque(q, qdot)
+            q = controller.states["q"].mx
+            qdot = controller.states["qdot"].mx
+            tau = controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
+            qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
+            passive_torque = controller.model.passive_joint_torque(q, qdot)
             tau = tau + passive_torque if with_passive_torque else tau
-            tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+            tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
-            if nlp.external_forces:
+            if controller.get_nlp.external_forces:
                 raise NotImplementedError(
                     "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
                 )
@@ -421,25 +419,25 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if with_contact:
                 # todo: this should be done internally in BiorbdModel
                 f_contact = (
-                    nlp.controls[0]["fext"].mx if "fext" in nlp.controls[0] else nlp.states[0]["fext"].mx
-                )  # TODO: [0] to [node_index]
-                f_contact_vec = nlp.model.reshape_fext_to_fcontact(f_contact)
+                    controller.controls["fext"].mx if "fext" in controller.controls else controller.states["fext"].mx
+                )
+                f_contact_vec = controller.model.reshape_fext_to_fcontact(f_contact)
 
-                tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)
+                tau_id = controller.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)
 
             else:
-                tau_id = nlp.model.inverse_dynamics(q, qdot, qddot)
+                tau_id = controller.model.inverse_dynamics(q, qdot, qddot)
 
             var = []
-            var.extend([nlp.states[0][key] for key in nlp.states[0]])  # TODO: [0] to [node_index]
-            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])  # TODO: [0] to [node_index]
-            var.extend([param for param in nlp.parameters])
+            var.extend([controller.states[key] for key in controller.states])
+            var.extend([controller.controls[key] for key in controller.controls])
+            var.extend([param for param in controller.parameters])
 
-            return nlp.mx_to_cx("inverse_dynamics", tau_id - tau, *var)
+            return controller.mx_to_cx("inverse_dynamics", tau_id - tau, *var)
 
         @staticmethod
         def implicit_marker_acceleration(
-            _: Constraint, all_pn: PenaltyNodeList, contact_index: int, contact_axis: int, **unused_param
+            _: Constraint, controller: PenaltyController, contact_index: int, contact_axis: int, **unused_param
         ):
             """
             Compute the acceleration of the contact node to set it at zero
@@ -448,7 +446,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             contact_index: int
                 The contact index
@@ -456,26 +454,25 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            nlp = all_pn.nlp
-            q = nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
-            qdot = nlp.states[0]["qdot"].mx  # TODO: [0] to [node_index]
-            qddot = (
-                nlp.states[0]["qddot"].mx if "qddot" in nlp.states[0] else nlp.controls[0]["qddot"].mx
-            )  # TODO: [0] to [node_index]
+            q = controller.states["q"].mx
+            qdot = controller.states["qdot"].mx
+            qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
 
             # TODO get the index of the marker
-            contact_acceleration = nlp.model.rigid_contact_acceleration(q, qdot, qddot, contact_index, contact_axis)
+            contact_acceleration = controller.model.rigid_contact_acceleration(
+                q, qdot, qddot, contact_index, contact_axis
+            )
 
             var = []
-            var.extend([nlp.states[0][key] for key in nlp.states[0]])  # TODO: [0] to [node_index]
-            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])  # TODO: [0] to [node_index]
-            var.extend([nlp.parameters[key] for key in nlp.parameters])
+            var.extend([controller.states[key] for key in controller.states])
+            var.extend([controller.controls[key] for key in controller.controls])
+            var.extend([controller.parameters[key] for key in controller.parameters])
 
-            return nlp.mx_to_cx("contact_acceleration", contact_acceleration, *var)
+            return controller.mx_to_cx("contact_acceleration", contact_acceleration, *var)
 
         @staticmethod
         def tau_from_muscle_equal_inverse_dynamics(
-            _: Constraint, all_pn: PenaltyNodeList, with_passive_torque: bool, with_ligament: bool, **unused_param
+            _: Constraint, controller: PenaltyController, with_passive_torque: bool, with_ligament: bool, **unused_param
         ):
             """
             Compute the difference between symbolic joint torques from muscle and inverse dynamic results
@@ -485,7 +482,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             with_passive_torque: bool
                 True if the passive torque dynamics is handled
@@ -495,39 +492,36 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            nlp = all_pn.nlp
-            q = nlp.states[0]["q"].mx  # TODO: [0] to [node_index]
-            qdot = nlp.states[0]["qdot"].mx  # TODO: [0] to [node_index]
-            muscle_activations = nlp.controls[0]["muscles"].mx  # TODO: [0] to [node_index]
-            muscles_states = nlp.model.state_set()
-            passive_torque = nlp.model.passive_joint_torque(q, qdot)
-            for k in range(len(nlp.controls[0]["muscles"])):
+            q = controller.states["q"].mx
+            qdot = controller.states["qdot"].mx
+            muscle_activations = controller.controls["muscles"].mx
+            muscles_states = controller.model.state_set()
+            passive_torque = controller.model.passive_joint_torque(q, qdot)
+            for k in range(len(controller.controls["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
-            muscle_tau = nlp.model.muscle_joint_torque(muscles_states, q, qdot)
+            muscle_tau = controller.model.muscle_joint_torque(muscles_states, q, qdot)
             muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
-            muscle_tau = muscle_tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else muscle_tau
-            qddot = (
-                nlp.states[0]["qddot"].mx if "qddot" in nlp.states[0] else nlp.controls[0]["qddot"].mx
-            )  # TODO: [0] to [node_index]
+            muscle_tau = muscle_tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else muscle_tau
+            qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
 
-            if nlp.external_forces:
+            if controller.get_nlp.external_forces:
                 raise NotImplementedError(
                     "This implicit constraint tau_from_muscle_equal_inverse_dynamics is not implemented yet with external forces"
                 )
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
                 # fext need to be a mx
 
-            tau_id = nlp.model.inverse_dynamics(q, qdot, qddot)
+            tau_id = controller.model.inverse_dynamics(q, qdot, qddot)
 
             var = []
-            var.extend([nlp.states[0][key] for key in nlp.states[0]])  # TODO: [0] to [node_index]
-            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])  # TODO: [0] to [node_index]
-            var.extend([param for param in nlp.parameters])
+            var.extend([controller.states[key] for key in controller.states])
+            var.extend([controller.controls[key] for key in controller.controls])
+            var.extend([param for param in controller.parameters])
 
-            return nlp.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
+            return controller.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
 
         @staticmethod
-        def implicit_soft_contact_forces(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
+        def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param):
             """
             Compute the difference between symbolic soft contact forces and actual force contact dynamic
 
@@ -535,33 +529,29 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             _: Constraint
                 The actual constraint to declare
-            all_pn: PenaltyNodeList
+            controller: PenaltyController
                 The penalty node elements
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            nlp = all_pn.nlp
-
             force_idx = []
-            for i_sc in range(nlp.model.nb_soft_contacts):
+            for i_sc in range(controller.model.nb_soft_contacts):
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
 
-            soft_contact_all = nlp.soft_contact_forces_func(
-                nlp.states[0].mx, nlp.controls[0].mx, nlp.parameters.mx
-            )  # TODO: [0] to [node_index]
+            soft_contact_all = controller.get_nlp.soft_contact_forces_func(
+                controller.states.mx, controller.controls.mx, controller.parameters.mx
+            )
             soft_contact_force = soft_contact_all[force_idx]
 
             var = []
-            var.extend([nlp.states[0][key] for key in nlp.states[0]])  # TODO: [0] to [node_index]
-            var.extend([nlp.controls[0][key] for key in nlp.controls[0]])  # TODO: [0] to [node_index]
-            var.extend([param for param in nlp.parameters])
+            var.extend([controller.states[key] for key in controller.states])
+            var.extend([controller.controls[key] for key in controller.controls])
+            var.extend([param for param in controller.parameters])
 
-            return nlp.mx_to_cx(
-                "forward_dynamics", nlp.controls[0]["fext"].mx - soft_contact_force, *var
-            )  # TODO: [0] to [node_index]
+            return controller.mx_to_cx("forward_dynamics", controller.controls["fext"].mx - soft_contact_force, *var)
 
     @staticmethod
     def get_dt(_):

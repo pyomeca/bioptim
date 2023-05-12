@@ -108,6 +108,7 @@ def prepare_ocp(
         use_sx=True,
         n_threads=1,
         control_type=control_type,
+        assume_phase_dynamics=True,
     )
 
 
