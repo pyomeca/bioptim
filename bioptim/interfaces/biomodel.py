@@ -77,7 +77,7 @@ class BioModel(Protocol):
         P_R1 the position of any point P in the segment R1 frame.
         """
 
-    def homogeneous_matrices_in_child(self) -> tuple:
+    def homogeneous_matrices_in_child(self, *args) -> tuple:
         """
         Get the homogeneous matrices of all segments in their parent frame,
         such as: P_R1 = T_R1_R2 * P_R2

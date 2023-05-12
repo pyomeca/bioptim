@@ -662,7 +662,7 @@ class MultiBiorbdModel:
     def homogeneous_matrices_in_global(self, q, reference_index, inverse=False):
         raise NotImplementedError("homogeneous_matrices_in_global is not implemented for MultiBiorbdModel")
 
-    def homogeneous_matrices_in_child(self) -> tuple:
+    def homogeneous_matrices_in_child(self, *args) -> tuple:
         raise NotImplementedError("homogeneous_matrices_in_child is not implemented for MultiBiorbdModel")
 
     @property
