@@ -228,6 +228,8 @@ class PenaltyOption(OptionGeneric):
             The penalty node elements
         """
 
+        if self.name == "custom_min_parameter":
+            print('ici')
         self.rows = self._set_dim_idx(self.rows, penalty.rows())
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
         if self.target is not None:
