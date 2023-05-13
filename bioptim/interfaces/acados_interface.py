@@ -159,7 +159,7 @@ class AcadosInterface(SolverInterface):
         # Declare model variables
         x = ocp.nlp[0].states.cx_start
         u = ocp.nlp[0].controls.cx_start
-        p = ocp.nlp[0].parameters.cx_start
+        p = ocp.nlp[0].parameters.cx
         if ocp.v.parameters_in_list:
             for param in ocp.v.parameters_in_list:
                 if str(param.cx)[:11] == f"time_phase_":
@@ -261,7 +261,7 @@ class AcadosInterface(SolverInterface):
         for i, nlp in enumerate(ocp.nlp):
             x = nlp.states.cx_start
             u = nlp.controls.cx_start
-            p = nlp.parameters.cx_start
+            p = nlp.parameters.cx
 
             for g, G in enumerate(nlp.g):
                 if not G:
@@ -570,17 +570,17 @@ class AcadosInterface(SolverInterface):
 
                     if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
                         add_nonlinear_ls_lagrange(
-                            self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start
+                            self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx
                         )
 
                         # Deal with first and last node
                         add_nonlinear_ls_mayer(
-                            self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start
+                            self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx
                         )
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
                         add_nonlinear_ls_mayer(
-                            self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start
+                            self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx
                         )
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
@@ -591,7 +591,7 @@ class AcadosInterface(SolverInterface):
                 nlp = ocp.nlp[0]  # Assume 1 phase
                 for j, J in enumerate(ocp.J):
                     J.node = [Node.END]
-                    add_nonlinear_ls_mayer(self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start)
+                    add_nonlinear_ls_mayer(self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx)
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = (

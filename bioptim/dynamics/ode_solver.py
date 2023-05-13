@@ -432,7 +432,7 @@ class OdeSolver:
                 "ode": nlp.dynamics_func(
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
-                    nlp.parameters.cx_start,
+                    nlp.parameters.cx,
                 ),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
@@ -445,7 +445,7 @@ class OdeSolver:
                     [
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
-                        nlp.parameters.cx_start,
+                        nlp.parameters.cx,
                     ],
                     self._adapt_integrator_output(
                         integrator_func,

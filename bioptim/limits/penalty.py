@@ -361,7 +361,7 @@ class PenaltyFunctionAbstract:
 
             if "qddot" not in controller.states and "qddot" not in controller.controls:
                 return controller.dynamics(
-                    controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx_start
+                    controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
                 )[controller.states["qdot"].index, :]
             elif "qddot" in controller.states:
                 return controller.states["qddot"].cx_start
@@ -574,7 +574,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             contact_force = controller.get_nlp.contact_forces_func(
-                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx_start
+                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
             )
             return contact_force
 
@@ -610,7 +610,7 @@ class PenaltyFunctionAbstract:
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
             soft_contact_force = controller.get_nlp.soft_contact_forces_func(
-                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx_start
+                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
             )
             return soft_contact_force[force_idx]
 
@@ -896,16 +896,16 @@ class PenaltyFunctionAbstract:
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-                continuity -= controller.integrate(x0=cx, p=u, params=controller.parameters.cx_start)["xf"]
+                continuity -= controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["xf"]
                 continuity = vertcat(
                     continuity,
-                    controller.integrate(x0=cx, p=u, params=controller.parameters.cx_start)["defects"],
+                    controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["defects"],
                 )
                 penalty.integrate = True
 
             else:
                 continuity -= controller.integrate(
-                    x0=controller.states.cx_start, p=u, params=controller.parameters.cx_start
+                    x0=controller.states.cx_start, p=u, params=controller.parameters.cx
                 )["xf"]
 
             penalty.explicit_derivative = True

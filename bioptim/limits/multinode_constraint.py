@@ -390,8 +390,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
             time_pre_idx = None
             pre, post = controllers
-            for i in range(pre.parameters.cx_start.shape[0]):
-                param_name = pre.parameters.cx_start[i].name()
+            for i in range(pre.parameters.cx.shape[0]):
+                param_name = pre.parameters.cx[i].name()
                 if param_name == "time_phase_" + str(pre.phase_idx):
                     time_pre_idx = pre.phase_idx
             if time_pre_idx is None:
@@ -403,8 +403,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             time_post_idx = None
-            for i in range(post.parameters.cx_start.shape[0]):
-                param_name = post.parameters.cx_start[i].name()
+            for i in range(post.parameters.cx.shape[0]):
+                param_name = post.parameters.cx[i].name()
                 if param_name == "time_phase_" + str(post.phase_idx):
                     time_post_idx = post.phase_idx
             if time_post_idx is None:
@@ -414,7 +414,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"with constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
                 )
 
-            time_pre, time_post = pre.parameters.cx_start[time_pre_idx], post.parameters.cx_start[time_post_idx]
+            time_pre, time_post = pre.parameters.cx[time_pre_idx], post.parameters.cx[time_post_idx]
             return time_pre - time_post
 
         @staticmethod

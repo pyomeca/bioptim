@@ -65,21 +65,21 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function[node_index](
-                        phase.states.cx_start, phase.controls.cx_start, phase.parameters.cx_start
+                        phase.states.cx_start, phase.controls.cx_start, phase.parameters.cx
                     ).shape[0],
                 ):
                     # depends if there are parameters
                     if phase.parameters.shape == 0:
-                        vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx_start)
+                        vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)
                     else:
-                        vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx_start])
+                        vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx])
 
                     list_constraints.append(
                         jacobian(
                             constraints.function[constraints.node_idx[0]](
                                 phase.states.cx_start,
                                 phase.controls.cx_start,
-                                phase.parameters.cx_start,
+                                phase.parameters.cx,
                             )[axis],
                             vertcat_obj,
                         )
@@ -89,9 +89,9 @@ def check_conditioning(ocp):
 
             # depends if there are parameters
             if phase.parameters.shape == 0:
-                vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx_start)
+                vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)
             else:
-                vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx_start])
+                vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx])
 
             jac_func = Function(
                 "jacobian",
@@ -136,22 +136,22 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function[node_index](
-                        phase.states.cx_start, phase.controls.cx_start, phase.parameters.cx_start
+                        phase.states.cx_start, phase.controls.cx_start, phase.parameters.cx
                     ).shape[0],
                 ):
                     # find all equality constraints
                     if (constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]) == True:
                         # parameters
                         if (phase.parameters.shape == 0) == True:
-                            vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx_start)
+                            vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, phase.parameters.cx)
                         else:
-                            vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx_start])
+                            vertcat_obj = vertcat(*phase.X_scaled, *phase.U_scaled, *[phase.parameters.cx])
 
                         hessian_cas = hessian(
                             constraints.function[node_index](
                                 phase.states.cx_start,
                                 phase.controls.cx_start,
-                                phase.parameters.cx_start,
+                                phase.parameters.cx,
                             )[axis],
                             vertcat_obj,
                         )[0]
@@ -347,7 +347,7 @@ def check_conditioning(ocp):
                     p = obj.weighted_function[node_index](
                         state_cx,
                         control_cx,
-                        nlp_phase.parameters.cx_start,
+                        nlp_phase.parameters.cx,
                         obj.weight,
                         [],
                         obj.dt,
@@ -356,7 +356,7 @@ def check_conditioning(ocp):
                     p = obj.weighted_function[node_index](
                         state_cx,
                         control_cx,
-                        nlp_phase.parameters.cx_start,
+                        nlp_phase.parameters.cx,
                         obj.weight,
                         obj.target,
                         obj.dt,
@@ -368,9 +368,9 @@ def check_conditioning(ocp):
             # create function to build the hessian
             # parameters
             if nlp_phase.parameters.shape == 0:
-                vertcat_obj = vertcat(*nlp_phase.X_scaled, *nlp_phase.U_scaled, nlp_phase.parameters.cx_start)
+                vertcat_obj = vertcat(*nlp_phase.X_scaled, *nlp_phase.U_scaled, nlp_phase.parameters.cx)
             else:
-                vertcat_obj = vertcat(*nlp_phase.X_scaled, *nlp_phase.U_scaled, *[nlp_phase.parameters.cx_start])
+                vertcat_obj = vertcat(*nlp_phase.X_scaled, *nlp_phase.U_scaled, *[nlp_phase.parameters.cx])
 
             hessian_cas = hessian(objective, vertcat_obj)[0]
 

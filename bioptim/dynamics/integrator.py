@@ -71,7 +71,7 @@ class Integrator:
         self.cx = ode_opt["cx"]
         self.x_sym = ode["x_scaled"]
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
-        self.param_sym = ode_opt["param"].cx_start
+        self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
