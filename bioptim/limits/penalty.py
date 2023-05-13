@@ -967,6 +967,29 @@ class PenaltyFunctionAbstract:
 
             return val
 
+        @staticmethod
+        def minimize_parameter(penalty: PenaltyOption, controller: PenaltyController, key: str):
+            """
+            Minimize the specified parameter.
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            key: str
+                The name of the parameter to minimize
+            """
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+
+            return controller.parameters[key].cx
+
+
     @staticmethod
     def add(ocp, nlp):
         """
