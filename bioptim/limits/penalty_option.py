@@ -620,7 +620,7 @@ class PenaltyOption(OptionGeneric):
             else:
                 plot_type = PlotType.POINT
 
-            target_mapping = self.define_target_mapping(controller, self.params['key'])
+            target_mapping = self.define_target_mapping(controller, self.params["key"])
             controller.ocp.add_plot(
                 self.target_plot_name,
                 plot_function,

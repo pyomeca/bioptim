@@ -1113,14 +1113,7 @@ class ConfigureProblem:
         name_q = nlp.model.name_dof
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name,
-            name_q,
-            ocp,
-            nlp,
-            as_states,
-            as_controls,
-            as_states_dot,
-            axes_idx=axes_idx
+            name, name_q, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
 
     @staticmethod

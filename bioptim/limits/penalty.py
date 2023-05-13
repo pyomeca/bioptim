@@ -38,6 +38,7 @@ class PenaltyFunctionAbstract:
         """
         Implementation of all the generic penalty functions
         """
+
         @staticmethod
         def minimize_states(penalty: PenaltyOption, controller: PenaltyController, key: str):
             """
