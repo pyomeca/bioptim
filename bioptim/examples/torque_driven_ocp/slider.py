@@ -16,6 +16,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Solver,
     CostType,
     ControlType,
@@ -24,10 +25,11 @@ from bioptim import (
 
 def prepare_ocp(
     biorbd_model_path: str = "models/slider.bioMod",
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     n_shooting: tuple = (20, 20, 20),
     phase_time: tuple = (0.2, 0.3, 0.5),
     control_type: ControlType = ControlType.CONSTANT,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -36,7 +38,7 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path to the bioMod
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solve to use
     n_shooting: tuple
         The number of shooting points for each phase
@@ -44,6 +46,10 @@ def prepare_ocp(
         The time of each phase
     control_type: ControlType
         The type of control to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -113,7 +119,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         control_type=control_type,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

@@ -9,15 +9,21 @@ from bioptim import OdeSolver
 from .utils import TestUtils
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_symmetry_by_mapping(ode_solver):
+def test_symmetry_by_mapping(ode_solver, assume_phase_dynamics):
     from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -55,15 +61,21 @@ def test_symmetry_by_mapping(ode_solver):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_symmetry_by_constraint(ode_solver):
+def test_symmetry_by_constraint(ode_solver, assume_phase_dynamics):
     from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_constraint as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 

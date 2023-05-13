@@ -70,9 +70,13 @@ class Objective(PenaltyOption):
             controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
-            pool = controller.nlp.J_internal if controller is not None and controller.nlp else controller.ocp.J_internal
+            pool = (
+                controller.get_nlp.J_internal
+                if controller is not None and controller.get_nlp
+                else controller.ocp.J_internal
+            )
         elif self.penalty_type == PenaltyType.USER:
-            pool = controller.nlp.J if controller is not None and controller.nlp else controller.ocp.J
+            pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
         else:
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self
@@ -191,7 +195,7 @@ class ObjectiveFunction:
                     The penalty node elements
                 """
 
-                return controller.nlp.cx().ones(1, 1)
+                return controller.cx().ones(1, 1)
 
         @staticmethod
         def get_dt(nlp):
@@ -235,7 +239,7 @@ class ObjectiveFunction:
                     taken into account elsewhere in the code)
                 """
 
-                return controller.nlp.tf
+                return controller.tf
 
         @staticmethod
         def get_dt(_):
@@ -301,14 +305,18 @@ class ObjectiveFunction:
                 ocp: OptimalControlProgram
                     A reference to the ocp
                 """
-                for mnc in ocp.binode_constraints or ocp.allnode_constraints:
+                for mnc in ocp.binode_constraints:
                     # Equality constraint between nodes
-                    first_node_name = (
-                        f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
-                    )
-                    second_node_name = (
-                        f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
-                    )
+                    if isinstance(mnc.first_node, int):
+                        first_node_name = f"idx {str(mnc.first_node)}"
+                    else:
+                        first_node_name = mnc.first_node.name
+
+                    if isinstance(mnc.second_node, int):
+                        second_node_name = f"idx {str(mnc.second_node)}"
+                    else:
+                        second_node_name = mnc.second_node.name
+
                     mnc.name = (
                         f"NODE_EQUALITY "
                         f"Phase {mnc.phase_first_idx} Node {first_node_name}"

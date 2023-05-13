@@ -4,11 +4,13 @@ Test for file IO
 import os
 import sys
 import io
+
 import pytest
 import numpy as np
 from bioptim import (
     BiorbdModel,
     OdeSolver,
+    OdeSolverBase,
     ControlType,
     IntegralApproximation,
     OptimalControlProgram,
@@ -20,7 +22,6 @@ from bioptim import (
     Bounds,
     Solver,
 )
-import biorbd_casadi as biorbd
 
 
 def prepare_ocp(
@@ -30,7 +31,8 @@ def prepare_ocp(
     control_type: ControlType,
     objective: str,
     target: np.ndarray = None,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -49,8 +51,12 @@ def prepare_ocp(
         The objective to minimize (torque or power)
     target: np.array
         The target value to reach
-    ode_solver: OdeSolver = OdeSolver.RK4()
+    ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -64,14 +70,16 @@ def prepare_ocp(
         objective_functions = Objective(
             ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", integration_rule=integration_rule, target=target
         )
-    if objective == "qdot":
+    elif objective == "qdot":
         objective_functions = Objective(
             ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", integration_rule=integration_rule, target=target
         )
-    if objective == "mayer":
+    elif objective == "mayer":
         objective_functions = Objective(
             ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", integration_rule=integration_rule, target=target
         )
+    else:
+        raise ValueError("Wrong objective")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -108,6 +116,7 @@ def prepare_ocp(
         use_sx=True,
         n_threads=1,
         control_type=control_type,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -125,12 +134,10 @@ def sum_cost_function_output(sol):
     return float(output[idx:])
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "objective",
-    [
-        "torque",
-        "qdot",
-    ],
+    ["torque", "qdot"],
 )
 @pytest.mark.parametrize(
     "control_type",
@@ -144,7 +151,7 @@ def sum_cost_function_output(sol):
         IntegralApproximation.TRUE_TRAPEZOIDAL,
     ],
 )
-def test_pendulum(control_type, integration_rule, objective):
+def test_pendulum(control_type, integration_rule, objective, assume_phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -155,6 +162,7 @@ def test_pendulum(control_type, integration_rule, objective):
         integration_rule=integration_rule,
         objective=objective,
         control_type=control_type,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(5)
@@ -211,12 +219,10 @@ def test_pendulum(control_type, integration_rule, objective):
                 np.testing.assert_almost_equal(j_printed, 18.799673213312587)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "objective",
-    [
-        "torque",
-        "qdot",
-    ],
+    ["torque", "qdot"],
 )
 @pytest.mark.parametrize(
     "control_type",
@@ -230,7 +236,7 @@ def test_pendulum(control_type, integration_rule, objective):
         IntegralApproximation.TRUE_TRAPEZOIDAL,
     ],
 )
-def test_pendulum_collocation(control_type, integration_rule, objective):
+def test_pendulum_collocation(control_type, integration_rule, objective, assume_phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -242,6 +248,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective):
         objective=objective,
         control_type=control_type,
         ode_solver=OdeSolver.COLLOCATION(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(5)
@@ -277,12 +284,10 @@ def test_pendulum_collocation(control_type, integration_rule, objective):
                 np.testing.assert_almost_equal(j_printed, 12.336208562756564)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "objective",
-    [
-        "torque",
-        "qdot",
-    ],
+    ["torque", "qdot"],
 )
 @pytest.mark.parametrize(
     "control_type",
@@ -296,7 +301,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective):
         IntegralApproximation.TRUE_TRAPEZOIDAL,
     ],
 )
-def test_pendulum_target(control_type, integration_rule, objective):
+def test_pendulum_target(control_type, integration_rule, objective, assume_phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -447,6 +452,7 @@ def test_pendulum_target(control_type, integration_rule, objective):
         objective=objective,
         control_type=control_type,
         target=target,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -504,6 +510,7 @@ def test_pendulum_target(control_type, integration_rule, objective):
                 np.testing.assert_almost_equal(j_printed, 55.5377703306112)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "integration_rule",
     [
@@ -512,7 +519,7 @@ def test_pendulum_target(control_type, integration_rule, objective):
         IntegralApproximation.TRUE_TRAPEZOIDAL,
     ],
 )
-def test_error_mayer_trapz(integration_rule):
+def test_error_mayer_trapz(integration_rule, assume_phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -528,4 +535,5 @@ def test_error_mayer_trapz(integration_rule):
             integration_rule=integration_rule,
             objective="mayer",
             control_type=ControlType.LINEAR_CONTINUOUS,
+            assume_phase_dynamics=assume_phase_dynamics,
         )

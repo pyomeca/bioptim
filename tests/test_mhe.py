@@ -19,12 +19,16 @@ from .utils import TestUtils
 from bioptim.misc.enums import SolverType
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
-def test_mhe(solver):
+def test_mhe(solver, assume_phase_dynamics):
     solver = solver()
-    if platform == "win32" and solver.type == SolverType.ACADOS:
-        print("Test for ACADOS on Windows is skipped")
-        return
+    if solver.type == SolverType.ACADOS:
+        if platform == "win32":
+            # ACADOS is not installed on the CI for Windows
+            return
+        if not assume_phase_dynamics:
+            return
 
     from bioptim.examples.moving_horizon_estimation import mhe as ocp_module
 
@@ -63,6 +67,7 @@ def test_mhe(solver):
         max_torque=torque_max,
         x_init=x_init,
         u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
     ).solve(update_functions, **ocp_module.get_solver_options(solver))
 
     if solver.type == SolverType.ACADOS:
@@ -75,7 +80,8 @@ def test_mhe(solver):
         shutil.rmtree(f"./c_generated_code/")
 
 
-def test_mhe_redim_xbounds_and_init():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_mhe_redim_xbounds_and_init(assume_phase_dynamics):
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
@@ -100,6 +106,7 @@ def test_mhe_redim_xbounds_and_init():
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     def update_functions(mhe, t, _):
@@ -108,7 +115,8 @@ def test_mhe_redim_xbounds_and_init():
     mhe.solve(update_functions, Solver.IPOPT())
 
 
-def test_mhe_redim_xbounds_not_implemented():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_mhe_redim_xbounds_not_implemented(assume_phase_dynamics):
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
     nq = bio_model.nb_q
@@ -136,6 +144,7 @@ def test_mhe_redim_xbounds_not_implemented():
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     def update_functions(mhe, t, _):

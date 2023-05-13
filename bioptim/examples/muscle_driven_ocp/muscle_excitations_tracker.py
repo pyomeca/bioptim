@@ -29,6 +29,7 @@ from bioptim import (
     Bounds,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Node,
     Solver,
     RigidBodyDynamics,
@@ -37,7 +38,11 @@ from bioptim.optimization.optimization_variable import OptimizationVariableConta
 
 
 def generate_data(
-    bio_model: BiorbdModel, final_time: float, n_shooting: int, use_residual_torque: bool = True
+    bio_model: BiorbdModel,
+    final_time: float,
+    n_shooting: int,
+    use_residual_torque: bool = True,
+    assume_phase_dynamics: bool = True,
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -52,6 +57,10 @@ def generate_data(
         The number of shooting points
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -79,7 +88,7 @@ def generate_data(
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus_controls))
 
     symbolic_parameters = MX.sym("u", 0, 0)
-    nlp = NonLinearProgram()
+    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
     nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
@@ -90,34 +99,65 @@ def generate_data(
     }
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states = OptimizationVariableContainer()
-    nlp.states_dot = OptimizationVariableContainer()
-    nlp.controls = OptimizationVariableContainer()
+    nlp.states = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
+    nlp.states_dot = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
+    nlp.controls = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
     nlp.states.initialize_from_shooting(n_shooting, MX)
     nlp.states_dot.initialize_from_shooting(n_shooting, MX)
     nlp.controls.initialize_from_shooting(n_shooting, MX)
 
     for node_index in range(n_shooting):
-        nlp.states[node_index].append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
-        nlp.states[node_index].append(
-            "qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"]
+        nlp.states.append(
+            "q", [symbolic_q, symbolic_q], [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"], node_index
         )
-        nlp.states[node_index].append(
-            "muscles", [symbolic_mus_states, symbolic_mus_states], symbolic_mus_states, nlp.variable_mappings["muscles"]
+        nlp.states.append(
+            "qdot",
+            [symbolic_qdot, symbolic_qdot],
+            [symbolic_qdot, symbolic_qdot],
+            symbolic_qdot,
+            nlp.variable_mappings["qdot"],
+            node_index,
+        )
+        nlp.states.append(
+            "muscles",
+            [symbolic_mus_states, symbolic_mus_states],
+            [symbolic_mus_states, symbolic_mus_states],
+            symbolic_mus_states,
+            nlp.variable_mappings["muscles"],
+            node_index,
         )
 
-        nlp.controls[node_index].append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
-        nlp.controls[node_index].append(
+        nlp.controls.append(
+            "tau",
+            [symbolic_tau, symbolic_tau],
+            [symbolic_tau, symbolic_tau],
+            symbolic_tau,
+            nlp.variable_mappings["tau"],
+            node_index,
+        )
+        nlp.controls.append(
             "muscles",
+            [symbolic_mus_controls, symbolic_mus_controls],
             [symbolic_mus_controls, symbolic_mus_controls],
             symbolic_mus_controls,
             nlp.variable_mappings["muscles"],
+            node_index,
         )
-        nlp.states_dot[node_index].append(
-            "qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"]
+        nlp.states_dot.append(
+            "qdot",
+            [symbolic_qdot, symbolic_qdot],
+            [symbolic_qdot, symbolic_qdot],
+            symbolic_qdot,
+            nlp.variable_mappings["qdot"],
+            node_index,
         )
-        nlp.states_dot[node_index].append(
-            "qddot", [symbolic_qddot, symbolic_qddot], symbolic_qddot, nlp.variable_mappings["qddot"]
+        nlp.states_dot.append(
+            "qddot",
+            [symbolic_qddot, symbolic_qddot],
+            [symbolic_qddot, symbolic_qddot],
+            symbolic_qddot,
+            nlp.variable_mappings["qddot"],
+            node_index,
         )
 
     dynamics_func = biorbd.to_casadi_func(
@@ -152,7 +192,7 @@ def generate_data(
         X[:, i] = q
         markers[:, :, i] = markers_func(q[:n_q])
 
-    x_init = np.array([0] * n_q + [0] * n_qdot + [0.5] * n_mus)
+    x_init = np.array([0.0] * n_q + [0.0] * n_qdot + [0.5] * n_mus)
     add_to_data(0, x_init)
     for i, u in enumerate(U.T):
         sol = solve_ivp(dyn_interface, (0, dt), x_init, method="RK45", args=(u,))
@@ -172,7 +212,8 @@ def prepare_ocp(
     q_ref: np.ndarray,
     use_residual_torque: bool,
     kin_data_to_track: str = "markers",
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp to solve
@@ -195,8 +236,12 @@ def prepare_ocp(
         The type of kin data to track ('markers' or 'q')
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -247,7 +292,7 @@ def prepare_ocp(
     u_bounds = BoundsList()
     u_init = InitialGuessList()
     if use_residual_torque:
-        tau_min, tau_max, tau_init = -100, 100, 0
+        tau_min, tau_max, tau_init = -100.0, 100.0, 0.0
         u_bounds.add(
             [tau_min] * bio_model.nb_tau + [excitation_min] * bio_model.nb_muscles,
             [tau_max] * bio_model.nb_tau + [excitation_max] * bio_model.nb_muscles,
@@ -269,7 +314,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -283,9 +328,12 @@ def main():
     final_time = 0.5
     n_shooting_points = 30
     use_residual_torque = True
+    assume_phase_dynamics = True
 
     # Generate random data to fit
-    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(bio_model, final_time, n_shooting_points)
+    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(
+        bio_model, final_time, n_shooting_points, assume_phase_dynamics
+    )
 
     # Track these data
     bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded

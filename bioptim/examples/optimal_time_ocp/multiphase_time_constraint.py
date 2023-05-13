@@ -20,20 +20,22 @@ from bioptim import (
     InitialGuessList,
     OdeSolver,
     Node,
+    OdeSolverBase,
 )
 
 
 def prepare_ocp(
-    final_time: list,
-    time_min: list,
-    time_max: list,
-    n_shooting: list,
+    final_time: tuple,
+    time_min: tuple,
+    time_max: tuple,
+    n_shooting: tuple,
     biorbd_model_path: str = "models/cube.bioMod",
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program. This example can be called as a normal single phase (all list len equals to 1)
-    or as a three phases (all list len equals to 3)
+    or as a three phases program (all list len equals to 3)
 
     Parameters
     ----------
@@ -47,8 +49,12 @@ def prepare_ocp(
         The number of shooting points for each phase
     biorbd_model_path: str
         The path to the bioMod
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solver to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -148,7 +154,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -157,10 +163,10 @@ def main():
     Run a multiphase problem with free time phases and animate the results
     """
 
-    final_time = [2, 5, 4]
-    time_min = [1, 3, 0.1]
-    time_max = [2, 4, 0.8]
-    ns = [20, 30, 20]
+    final_time = (2, 5, 4)
+    time_min = (1, 3, 0.1)
+    time_max = (2, 4, 0.8)
+    ns = (20, 30, 20)
     ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns)
 
     # --- Solve the program --- #

@@ -48,10 +48,10 @@ class BinodeConstraint(Constraint):
     def __init__(
         self,
         phase_first_idx: int,
-        phase_second_idx: int,
+        phase_second_idx: int | None,
         first_node: Node | int,
         second_node: Node | int,
-        binode_constraint: Callable | Any = None,
+        binode_constraint: Any | Callable = None,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
@@ -94,7 +94,6 @@ class BinodeConstraint(Constraint):
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
         self.binode_constraint = True
-        self.allnode_constraint = False
         self.weight = weight
         self.quadratic = True
         self.phase_first_idx = phase_first_idx
@@ -115,120 +114,7 @@ class BinodeConstraint(Constraint):
             )
 
         ocp = controller[0].ocp
-        nlp = controller[0].nlp
-        if self.weight == 0:
-            pool = nlp.g_internal if nlp else ocp.g_internal
-        else:
-            pool = nlp.J_internal if nlp else ocp.J_internal
-        pool[self.list_index] = self
-
-    def ensure_penalty_sanity(self, ocp, nlp):
-        if self.weight == 0:
-            g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        else:
-            g_to_add_to = nlp.J_internal if nlp else ocp.J_internal
-
-        if self.list_index < 0:
-            for i, j in enumerate(g_to_add_to):
-                if not j:
-                    self.list_index = i
-                    return
-            else:
-                g_to_add_to.append([])
-                self.list_index = len(g_to_add_to) - 1
-        else:
-            while self.list_index >= len(g_to_add_to):
-                g_to_add_to.append([])
-            g_to_add_to[self.list_index] = []
-
-
-class AllNodeConstraint(Constraint):
-    """
-    A placeholder for a binode constraints
-
-    Attributes
-    ----------
-    min_bound: list
-        The minimal bound of the binode constraints
-    max_bound: list
-        The maximal bound of the binode constraints
-    bounds: Bounds
-        The bounds (will be filled with min_bound/max_bound)
-    weight: float
-        The weight of the cost function
-    quadratic: bool
-        If the objective function is quadratic
-    phase_idx: int
-        The index of the phase of concern
-    all_node: Node
-        The kind of the node
-    dt: float
-        The delta time
-    node_idx: int
-        The index of the node in nlp pre
-    allnode_constraint: Callable | Any
-        The nature of the cost function is the binode constraint
-    penalty_type: PenaltyType
-        If the penalty is from the user or from bioptim (implicit or internal)
-    """
-
-    def __init__(
-        self,
-        phase_idx: int,
-        node: Node | int,
-        allnode_constraint: Callable | Any = None,
-        custom_function: Callable = None,
-        min_bound: float = 0,
-        max_bound: float = 0,
-        weight: float = 0,
-        **params: Any,
-    ):
-        """
-        Parameters
-        ----------
-        phase_idx: int
-            The index of the phase of concern
-        params:
-            Generic parameters for options
-        """
-
-        force_allnode = False
-        if "force_allnode" in params:
-            # This is a hack to circumvent the apparatus that moves the functions to a custom function
-            # It is necessary for PhaseTransition
-            force_allnode = True
-            del params["force_allnode"]
-
-        if not isinstance(allnode_constraint, AllNodeConstraintFcn) and not force_allnode:
-            custom_function = allnode_constraint
-            allnode_constraint = AllNodeConstraintFcn.CUSTOM
-        super(Constraint, self).__init__(penalty=allnode_constraint, custom_function=custom_function, **params)
-
-        if node is not Node.ALL:
-            if not isinstance(node, int):
-                raise NotImplementedError("Allnode Constraint only works with Node.ALL")
-
-        self.min_bound = min_bound
-        self.max_bound = max_bound
-        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        self.allnode_constraint = True
-        self.binode_constraint = False
-        self.weight = weight
-        self.quadratic = True
-        self.phase_idx = phase_idx
-        self.node = node
-        self.dt = 1
-        self.node_idx = [0]
-        self.penalty_type = PenaltyType.INTERNAL
-
-    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
-        if not isinstance(controller, (list, tuple)):
-            raise RuntimeError(
-                "_add_penalty for multi constraints function was called without a list while it should not"
-            )
-
-        ocp = controller[0].ocp
-        nlp = controller[0].nlp
+        nlp = controller[0].get_nlp
         if self.weight == 0:
             pool = nlp.g_internal if nlp else ocp.g_internal
         else:
@@ -322,73 +208,6 @@ class BinodeConstraintList(UniquePerPhaseOptionList):
         return full_phase_binode_constraint
 
 
-class AllNodeConstraintList(UniquePerPhaseOptionList):
-    """
-    A list of All Node Constraint
-
-    Methods
-    -------
-    add(self, transition: Callable | PhaseTransitionFcn, phase: int = -1, **extra_arguments)
-        Add a new AllNodeConstraint to the list
-    print(self)
-        Print the AllConstraintList to the console
-    prepare_allnode_constraint(self, ocp) -> list
-        Configure all the allnode_constraint and put them in a list
-    """
-
-    def add(self, allnode_constraint: Any, **extra_arguments: Any):
-        """
-        Add a new AllConstraint to the list
-
-        Parameters
-        ----------
-        allnode_constraint: Callable | AllConstraintFcn
-            The chosen phase transition
-        extra_arguments: dict
-            Any parameters to pass to Constraint
-        """
-
-        if not isinstance(allnode_constraint, AllNodeConstraintFcn):
-            extra_arguments["custom_function"] = allnode_constraint
-            allnode_constraint = AllNodeConstraintFcn.CUSTOM
-        super(AllNodeConstraintList, self)._add(
-            option_type=AllNodeConstraint, allnode_constraint=allnode_constraint, phase=-1, **extra_arguments
-        )
-
-    def print(self):
-        """
-        Print the AllNodeConstraintList to the console
-        """
-        raise NotImplementedError("Printing of AllConstraintList is not ready yet")
-
-    def prepare_allnode_constraints(self, ocp) -> list:
-        """
-        Configure all the phase transitions and put them in a list
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-
-        Returns
-        -------
-        The list of all node constraints prepared
-        """
-        full_phase_allnode_constraint = []
-        for mnc in self:
-            if mnc.phase_idx >= ocp.n_phases:
-                raise RuntimeError("Phase index of the allnode_constraint is higher than the number of phases")
-            if mnc.phase_idx < 0:
-                raise RuntimeError("Phase index of the allnode_constraint need to be positive")
-
-            if not mnc.weight:  # ajouter un check, sinon mettre 1
-                mnc.base = 1
-
-            full_phase_allnode_constraint.append(mnc)
-
-        return full_phase_allnode_constraint
-
-
 class BinodeConstraintFunctions(PenaltyFunctionAbstract):
     """
     Internal implementation of the phase transitions
@@ -400,7 +219,9 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def states_equality(binode_constraint, controller: PenaltyController, key: str = "all"):
+        def states_equality(
+            binode_constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"
+        ):
             """
             The most common continuity function, that is state before equals state after
 
@@ -408,7 +229,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list
                     The penalty node elements
 
             Returns
@@ -416,13 +237,9 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(
-                nlp_pre.states[0].get_cx(key, CXStep.CX_END)
-            )  # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(
-                nlp_post.states[0].get_cx(key, CXStep.CX_START)
-            )  # TODO: [0] to [node_index]
+            pre, post = controllers
+            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.get_cx(key, CXStep.CX_END))
+            states_post = binode_constraint.states_mapping.to_first.map(post.states.get_cx(key, CXStep.CX_START))
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -434,7 +251,9 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             return states_pre - states_post
 
         @staticmethod
-        def controls_equality(binode_constraint, controller: PenaltyController, key: str = "all"):
+        def controls_equality(
+            binode_constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"
+        ):
             """
             The controls before equals controls after
 
@@ -442,7 +261,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -450,9 +269,9 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the controls after and before
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            controls_pre = nlp_pre.controls[0].get_cx(key, CXStep.CX_END)  # TODO: [0] to [node_index]
-            controls_post = nlp_post.controls[0].get_cx(key, CXStep.CX_START)  # TODO: [0] to [node_index]
+            pre, post = controllers
+            controls_pre = pre.controls.get_cx(key, CXStep.CX_END)
+            controls_post = post.controls.get_cx(key, CXStep.CX_START)
 
             if controls_pre.shape != controls_post.shape:
                 raise RuntimeError(
@@ -464,7 +283,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             return controls_pre - controls_post
 
         @staticmethod
-        def com_equality(binode_constraint, controller: PenaltyController):
+        def com_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController]):
             """
             The centers of mass are equals for the specified phases and the specified nodes
 
@@ -472,7 +291,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -480,17 +299,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(
-                nlp_pre.states[0].cx_end
-            )  # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(
-                nlp_post.states[0].cx_start
-            )  # TODO: [0] to [node_index]
+            pre, post = controllers
+            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.cx_end)
+            states_post = binode_constraint.states_mapping.to_first.map(post.states.cx_start)
 
-            states_post_sym_list = [
-                MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]
-            ]  # TODO: [0] to [node_index]
+            states_post_sym_list = [MX.sym(f"{key}", *post.states[key].mx.shape) for key in post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -500,15 +313,13 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com = nlp_pre.model.center_of_mass(
-                states_pre[nlp_pre.states[0]["q"].index, :]
-            )  # TODO: [0] to [node_index]
-            post_com = nlp_post.model.center_of_mass(states_post_sym_list[0])
+            pre_com = pre.model.center_of_mass(states_pre[pre.states["q"].index, :])
+            post_com = post.model.center_of_mass(states_post_sym_list[0])
 
-            pre_states_cx = nlp_pre.states[0].cx_end  # TODO: [0] to [node_index]
-            post_states_cx = nlp_post.states[0].cx_start  # TODO: [0] to [node_index]
+            pre_states_cx = pre.states.cx_end
+            post_states_cx = post.states.cx_start
 
-            return nlp_pre.to_casadi_func(
+            return pre.to_casadi_func(
                 "com_equality",
                 pre_com - post_com,
                 states_pre,
@@ -516,7 +327,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
-        def com_velocity_equality(binode_constraint, controller: PenaltyController):
+        def com_velocity_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController]):
             """
             The centers of mass velocity are equals for the specified phases and the specified nodes
 
@@ -524,7 +335,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -532,17 +343,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            states_pre = binode_constraint.states_mapping.to_second.map(
-                nlp_pre.states[0].cx_end
-            )  # TODO: [0] to [node_index]
-            states_post = binode_constraint.states_mapping.to_first.map(
-                nlp_post.states[0].cx_start
-            )  # TODO: [0] to [node_index]
+            pre, post = controllers
+            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.cx_end)
+            states_post = binode_constraint.states_mapping.to_first.map(post.states.cx_start)
 
-            states_post_sym_list = [
-                MX.sym(f"{key}", *nlp_post.states[0][key].mx.shape) for key in nlp_post.states[0]
-            ]  # TODO: [0] to [node_index]
+            states_post_sym_list = [MX.sym(f"{key}", *post.states[key].mx.shape) for key in post.states]
             states_post_sym = vertcat(*states_post_sym_list)
 
             if states_pre.shape != states_post.shape:
@@ -552,16 +357,15 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"transition or supply states_mapping"
                 )
 
-            pre_com_dot = nlp_pre.model.center_of_mass_velocity(
-                states_pre[nlp_pre.states[0]["q"].index, :],
-                states_pre[nlp_pre.states[0]["qdot"].index, :],  # TODO: [0] to [node_index]
+            pre_com_dot = pre.model.center_of_mass_velocity(
+                states_pre[pre.states["q"].index, :], states_pre[pre.states["qdot"].index, :]
             )
-            post_com_dot = nlp_post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
+            post_com_dot = post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
-            pre_states_cx = nlp_pre.states[0].cx_end  # TODO: [0] to [node_index]
-            post_states_cx = nlp_post.states[0].cx_start  # TODO: [0] to [node_index]
+            pre_states_cx = pre.states.cx_end
+            post_states_cx = post.states.cx_start
 
-            return nlp_pre.to_casadi_func(
+            return pre.to_casadi_func(
                 "com_dot_equality",
                 pre_com_dot - post_com_dot,
                 states_pre,
@@ -569,7 +373,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             )(pre_states_cx, post_states_cx)
 
         @staticmethod
-        def time_equality(binode_constraint, controller):
+        def time_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController]):
             """
             The duration of one phase must be the same as the duration of another phase
 
@@ -577,7 +381,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint : BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -585,10 +389,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the duration of the phases
             """
             time_pre_idx = None
-            for i in range(controller[0].nlp.parameters.cx_start.shape[0]):
-                param_name = controller[0].nlp.parameters.cx_start[i].name()
-                if param_name == "time_phase_" + str(controller[0].nlp.phase_idx):
-                    time_pre_idx = controller[0].nlp.phase_idx
+            pre, post = controllers
+            for i in range(pre.parameters.cx_start.shape[0]):
+                param_name = pre.parameters.cx_start[i].name()
+                if param_name == "time_phase_" + str(pre.phase_idx):
+                    time_pre_idx = pre.phase_idx
             if time_pre_idx is None:
                 raise RuntimeError(
                     f"Time constraint can't be established since the first phase has no time parameter. "
@@ -598,10 +403,10 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             time_post_idx = None
-            for i in range(controller[1].nlp.parameters.cx_start.shape[0]):
-                param_name = controller[1].nlp.parameters.cx_start[i].name()
-                if param_name == "time_phase_" + str(controller[1].nlp.phase_idx):
-                    time_post_idx = controller[1].nlp.phase_idx
+            for i in range(post.parameters.cx_start.shape[0]):
+                param_name = post.parameters.cx_start[i].name()
+                if param_name == "time_phase_" + str(post.phase_idx):
+                    time_post_idx = post.phase_idx
             if time_post_idx is None:
                 raise RuntimeError(
                     f"Time constraint can't be established since the second phase has no time parameter. Time parameter "
@@ -609,15 +414,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"with constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
                 )
 
-            time_pre, time_post = (
-                controller[0].nlp.parameters.cx_start[time_pre_idx],
-                controller[1].nlp.parameters.cx_start[time_post_idx],
-            )
-
+            time_pre, time_post = pre.parameters.cx_start[time_pre_idx], post.parameters.cx_start[time_post_idx]
             return time_pre - time_post
 
         @staticmethod
-        def custom(binode_constraint, controller, **extra_params):
+        def custom(binode_constraint, controllers: list[PenaltyController, PenaltyController], **extra_params):
             """
             Calls the custom transition function provided by the user
 
@@ -625,7 +426,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             binode_constraint: BinodeConstraint
                 A reference to the phase transition
-            controller: PenaltyController
+            controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
 
             Returns
@@ -633,40 +434,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The expected difference between the last and first node provided by the user
             """
 
-            nlp_pre, nlp_post = controller[0].nlp, controller[1].nlp
-            return binode_constraint.custom_function(binode_constraint, nlp_pre, nlp_post, **extra_params)
-
-
-class AllNodeConstraintFunctions(PenaltyFunctionAbstract):
-    """
-    Internal implementation of the phase transitions
-    """
-
-    class Functions:
-        """
-        Implementation of all the AllNode Constraint
-        """
-
-        @staticmethod
-        def custom(allnode_constraint, controller, **extra_params):
-            """
-            Calls the custom transition function provided by the user
-
-            Parameters
-            ----------
-            allnode_constraint: AllNodeConstraint
-                A reference to the phase transition
-            controller: PenaltyController
-                    The penalty node elements
-
-            Returns
-            -------
-            The expected difference between the last and first node provided by the user
-            """
-
-            nlp_all = controller.nlp
-
-            return allnode_constraint.custom_function(allnode_constraint, nlp_all, **extra_params)
+            pre, post = controllers
+            return binode_constraint.custom_function(binode_constraint, pre, post, **extra_params)
 
 
 class BinodeConstraintFcn(FcnEnum):
@@ -688,19 +457,3 @@ class BinodeConstraintFcn(FcnEnum):
         """
 
         return BinodeConstraintFunctions
-
-
-class AllNodeConstraintFcn(FcnEnum):
-    """
-    Selection of valid allnode constraint functions
-    """
-
-    CUSTOM = (AllNodeConstraintFunctions.Functions.custom,)
-
-    @staticmethod
-    def get_type():
-        """
-        Returns the type of the penalty
-        """
-
-        return AllNodeConstraintFunctions

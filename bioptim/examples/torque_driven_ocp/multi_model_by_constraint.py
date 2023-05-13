@@ -1,4 +1,3 @@
-import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     BiorbdModel,
@@ -22,6 +21,7 @@ def prepare_ocp(
     biorbd_model_path: str = "models/double_pendulum.bioMod",
     biorbd_model_path_modified_inertia: str = "models/double_pendulum_modified_inertia.bioMod",
     n_shooting: tuple = (40, 40),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_modified_inertia))
 
@@ -102,10 +102,7 @@ def prepare_ocp(
     u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
 
     phase_transitions = PhaseTransitionList()
-    phase_transitions.add(
-        PhaseTransitionFcn.DISCONTINUOUS,
-        phase_pre_idx=0,
-    )
+    phase_transitions.add(PhaseTransitionFcn.DISCONTINUOUS, phase_pre_idx=0)
 
     return OptimalControlProgram(
         bio_model,
@@ -120,7 +117,7 @@ def prepare_ocp(
         variable_mappings=tau_mappings,
         phase_transitions=phase_transitions,
         binode_constraints=binode_constraints,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

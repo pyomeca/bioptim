@@ -10,9 +10,14 @@ from bioptim import OdeSolver, DefectType
 from .utils import TestUtils
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
-def test_muscle_driven_ocp(ode_solver):
+def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
     from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -22,6 +27,7 @@ def test_muscle_driven_ocp(ode_solver):
         n_shooting=5,
         weight=1,
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -113,8 +119,9 @@ def test_muscle_driven_ocp(ode_solver):
     TestUtils.simulate(sol, decimal_value=5)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_muscle_driven_ocp(ode_solver):
+def test_muscle_driven_ocp_implicit(ode_solver, assume_phase_dynamics):
     from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -126,6 +133,7 @@ def test_muscle_driven_ocp(ode_solver):
         n_shooting=5,
         weight=1,
         ode_solver=ode_solver_obj,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 

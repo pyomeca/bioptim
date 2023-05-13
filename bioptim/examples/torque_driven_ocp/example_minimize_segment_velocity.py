@@ -14,18 +14,16 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
-    ConstraintList,
-    ConstraintFcn,
-    Node,
 )
 
 
 def prepare_ocp(
     biorbd_model_path: str = "models/triple_pendulum.bioMod",
     n_shooting: int = 40,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     # Adding the models to the same phase
-    bio_model = BiorbdModel((biorbd_model_path))
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     final_time = 1.5
@@ -74,7 +72,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

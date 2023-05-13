@@ -1,9 +1,11 @@
 import os
 import numpy as np
 from bioptim import OdeSolver
+import pytest
 
 
-def test_soft_contact():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_soft_contact(assume_phase_dynamics):
     from bioptim.examples.torque_driven_ocp import example_soft_contact as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -17,6 +19,7 @@ def test_soft_contact():
         n_threads=8,
         use_sx=False,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     ocp.print(to_console=True, to_graph=False)

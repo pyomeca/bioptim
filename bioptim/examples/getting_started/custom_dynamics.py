@@ -25,6 +25,7 @@ from bioptim import (
     Bounds,
     InitialGuess,
     OdeSolver,
+    OdeSolverBase,
     NonLinearProgram,
     Solver,
     DynamicsEvaluation,
@@ -59,9 +60,9 @@ def custom_dynamic(
     The derivative of the states in the tuple[MX | SX] format
     """
 
-    q = DynamicsFunctions.get(nlp.states[0]["q"], states)  # TODO : [0] to [node_index]
-    qdot = DynamicsFunctions.get(nlp.states[0]["qdot"], states)  # TODO : [0] to [node_index]
-    tau = DynamicsFunctions.get(nlp.controls[0]["tau"], controls)  # TODO : [0] to [node_index]
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
@@ -98,8 +99,9 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_addit
 def prepare_ocp(
     biorbd_model_path: str,
     problem_type_custom: bool = True,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -111,10 +113,14 @@ def prepare_ocp(
     problem_type_custom: bool
         If the preparation should be done using the user-defined dynamic function or the normal TORQUE_DRIVEN.
         They should return the same results
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
     use_sx: bool
         If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -174,7 +180,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

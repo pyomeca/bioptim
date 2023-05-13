@@ -23,6 +23,7 @@ from bioptim import (
     Bounds,
     InitialGuess,
     OdeSolver,
+    OdeSolverBase,
     PhaseTransitionList,
     PhaseTransitionFcn,
     Solver,
@@ -34,7 +35,8 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     loop_from_constraint: bool,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -49,8 +51,12 @@ def prepare_ocp(
         The number of shooting points
     loop_from_constraint: bool
         If the looping cost should be a constraint [True] or an objective [False]
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -110,7 +116,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         phase_transitions=phase_transitions,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

@@ -21,6 +21,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Node,
     Solver,
     CostType,
@@ -28,13 +29,15 @@ from bioptim import (
 
 
 def minimize_difference(controllers: list[PenaltyController, PenaltyController]):
-    pre = controllers[0]
-    post = controllers[1]
-    return pre.nlp.controls[0].cx_end - post.nlp.controls[0].cx_start  # TODO: [0] to [node_index]
+    pre, post = controllers
+    return pre.controls.cx_end - post.controls.cx_start
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4(), long_optim: bool = False
+    biorbd_model_path: str = "models/cube.bioMod",
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    long_optim: bool = False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -43,10 +46,14 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path to the bioMod
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solve to use
     long_optim: bool
         If the solver should solve the precise optimization (500 shooting points) or the approximate (50 points)
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -132,7 +139,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

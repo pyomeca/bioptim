@@ -15,8 +15,6 @@ class OptimizationVector:
         A reference to the ocp
     parameters_in_list: ParameterList
         A list of all the parameters in the ocp
-    x: MX, SX
-        The optimization variable for the states
     x_bounds: list
         A list of state bounds for each phase
     x_init: list
@@ -25,8 +23,6 @@ class OptimizationVector:
         The number of states of all the phases
     n_phase_x: list
         The number of states per phases
-    u: MX, SX
-        The optimization variable for the controls
     u_bounds: list
         A list of control bounds for each phase
     u_init: list
@@ -214,7 +210,7 @@ class OptimizationVector:
         """
         nlp = self.ocp.nlp[phase]
         n_points = nlp.ode_solver.polynomial_degree + 1
-        x_init_vector = np.zeros((nlp.states.scaled[0].shape, self.n_phase_x[phase] // nlp.states.scaled[0].shape))
+        x_init_vector = np.zeros((nlp.states.scaled.shape, self.n_phase_x[phase] // nlp.states.scaled.shape))
         init_values = (
             self.ocp.original_values["x_init"][phase].init
             if isinstance(self.ocp.original_values["x_init"], InitialGuessList)
@@ -298,18 +294,19 @@ class OptimizationVector:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
+            ocp.nlp[p].states.node_index = 0
             if self.ocp.nlp[p].use_states_from_phase_idx == self.ocp.nlp[p].phase_idx:
                 x_array = v_array[offset : offset + self.n_phase_x[p]].reshape(
-                    (ocp.nlp[p].states.scaled[0].shape, -1), order="F"  # TODO: [0] to [node_index]
+                    (ocp.nlp[p].states.scaled.shape, -1), order="F"
                 )
                 data_states[p_idx]["all"] = x_array
                 offset_var = 0
-                for var in ocp.nlp[p].states.scaled[0]:  # TODO: [0] to [node_index]
+                for var in ocp.nlp[p].states.scaled:
                     data_states[p_idx][var] = x_array[
-                        offset_var : offset_var + len(ocp.nlp[p].states.scaled[0][var]),
-                        :,  # TODO: [0] to [node_index]
+                        offset_var : offset_var + len(ocp.nlp[p].states.scaled[var]),
+                        :,
                     ]
-                    offset_var += len(ocp.nlp[p].states.scaled[0][var])
+                    offset_var += len(ocp.nlp[p].states.scaled[var])
                 p_idx += 1
                 offset += self.n_phase_x[p]
 
@@ -318,18 +315,19 @@ class OptimizationVector:
 
         if self.ocp.nlp[0].control_type in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS):
             for p in range(self.ocp.n_phases):
+                ocp.nlp[p].controls.node_index = 0
                 if self.ocp.nlp[p].use_controls_from_phase_idx == self.ocp.nlp[p].phase_idx:
                     u_array = v_array[offset : offset + self.n_phase_u[p]].reshape(
-                        (ocp.nlp[p].controls.scaled[0].shape, -1), order="F"  # TODO: [0] to [node_index]
+                        (ocp.nlp[p].controls.scaled.shape, -1), order="F"
                     )
                     data_controls[p_idx]["all"] = u_array
                     offset_var = 0
-                    for var in ocp.nlp[p].controls.scaled[0]:  # TODO: [0] to [node_index]
+                    for var in ocp.nlp[p].controls.scaled:
                         data_controls[p_idx][var] = u_array[
-                            offset_var : offset_var + len(ocp.nlp[p].controls.scaled[0][var]),
-                            :,  # TODO: [0] to [node_index]
+                            offset_var : offset_var + len(ocp.nlp[p].controls.scaled[var]),
+                            :,
                         ]
-                        offset_var += len(ocp.nlp[p].controls.scaled[0][var])  # TODO: [0] to [node_index]
+                        offset_var += len(ocp.nlp[p].controls.scaled[var])
                     p_idx += 1
                     offset += self.n_phase_u[p]
 
@@ -369,15 +367,13 @@ class OptimizationVector:
                         x_scaled[nlp.phase_idx].append(
                             nlp.cx.sym(
                                 "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
-                                nlp.states.scaled[0].shape,  # TODO: [0] to [node_index]
+                                nlp.states.scaled.shape,
                                 nlp.ode_solver.polynomial_degree + 1,
                             )
                         )
                     else:
                         x_scaled[nlp.phase_idx].append(
-                            nlp.cx.sym(
-                                "X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.scaled[0].shape, 1
-                            )  # TODO: [0] to [node_index]
+                            nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.scaled.shape, 1)
                         )
                     x[nlp.phase_idx].append(x_scaled[nlp.phase_idx][k] * nlp.x_scaling["all"].scaling)
                 else:
@@ -389,9 +385,7 @@ class OptimizationVector:
                         nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                     ):
                         u_scaled[nlp.phase_idx].append(
-                            nlp.cx.sym(
-                                "U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.scaled[0].shape, 1
-                            )  # TODO: [0] to [node_index]
+                            nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.scaled.shape, 1)
                         )
                         u[nlp.phase_idx].append(u_scaled[nlp.phase_idx][0] * nlp.u_scaling["all"].scaling)
                 else:
@@ -506,6 +500,9 @@ class OptimizationVector:
         ocp = self.ocp
         # Sanity check
         for nlp in ocp.nlp:
+            nlp.states.node_index = 0
+            nlp.controls.node_index = 0
+
             interpolation = nlp.x_init.type
             ns = self.get_ns(phase=nlp.phase_idx, interpolation_type=interpolation)
             if nlp.use_states_from_phase_idx == nlp.phase_idx:

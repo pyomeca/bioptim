@@ -1,26 +1,22 @@
-import os
+import pytest
 import numpy as np
 from bioptim import (
     Solver,
 )
 
 
-def test_custom_model():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_custom_model(assume_phase_dynamics):
     from bioptim.examples.custom_model import main as ocp_module
     from bioptim.examples.custom_model.custom_package import my_model as model
-    from bioptim.examples.custom_model.custom_package import (
-        custom_dynamics as dynamics,
-        custom_configure_my_dynamics as configure_dynamics,
-    )
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    from bioptim.examples.custom_model.custom_package import custom_configure_my_dynamics as configure_dynamics
 
     ocp = ocp_module.prepare_ocp(
         model=model.MyModel(),
         final_time=1,
         n_shooting=30,
         configure_dynamics=configure_dynamics,
-        dynamics=dynamics,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     np.testing.assert_almost_equal(ocp.nlp[0].model.nb_q, 1)

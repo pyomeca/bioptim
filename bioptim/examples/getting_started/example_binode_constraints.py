@@ -18,6 +18,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     OdeSolver,
+    OdeSolverBase,
     Node,
     Solver,
     BinodeConstraintList,
@@ -29,7 +30,8 @@ from bioptim import (
 
 def prepare_ocp(
     biorbd_model_path: str = "models/cube.bioMod",
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -38,8 +40,12 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path to the bioMod
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The ode solve to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -157,7 +163,7 @@ def prepare_ocp(
         constraints,
         binode_constraints=binode_constraints,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -189,10 +195,8 @@ def custom_binode_constraint(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states[0].cx_end)  # TODO: [0] to [node_index]
-    states_post = binode_constraint.states_mapping.to_first.map(
-        nlp_post.states[0].cx_start
-    )  # TODO: [0] to [node_index]
+    states_pre = binode_constraint.states_mapping.to_second.map(nlp_pre.states.cx_end)
+    states_post = binode_constraint.states_mapping.to_first.map(nlp_post.states.cx_start)
     return states_pre * coef - states_post
 
 

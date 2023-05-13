@@ -9,7 +9,6 @@ each shooting nodes such that inverse_dynamics(q,qdot,qddot) - tau = 0.
 Finally, once it finished optimizing, it animates the model using the optimal solution.
 """
 
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -19,6 +18,7 @@ from bioptim import (
     InitialGuess,
     ObjectiveFcn,
     OdeSolver,
+    OdeSolverBase,
     CostType,
     Solver,
     BoundsList,
@@ -34,10 +34,11 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK1(n_integration_steps=1),
+    ode_solver: OdeSolverBase = OdeSolver.RK1(n_integration_steps=1),
     use_sx: bool = False,
     n_threads: int = 1,
     rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -50,7 +51,7 @@ def prepare_ocp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
-    ode_solver: OdeSolver = OdeSolver.RK4()
+    ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM)
@@ -58,6 +59,11 @@ def prepare_ocp(
         The number of threads to use in the paralleling (1 = no parallel computing)
     rigidbody_dynamics: RigidBodyDynamics
         rigidbody dynamics ODE or DAE
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
+
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -72,14 +78,17 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics)
 
     # Path constraint
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max, tau_init = -100.0, 100.0, 0.0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
-    if (
-        rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-        or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-    ):
-        qddot_min, qddot_max, qddot_init = -1000, 1000, 0
+    qddot_min, qddot_max, qddot_init = (
+        (-1000.0, 1000.0, 0.0)
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+        )
+        else (0.0, 0.0, 0.0)
+    )
 
     x_bounds = BoundsList()
     x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
@@ -126,7 +135,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

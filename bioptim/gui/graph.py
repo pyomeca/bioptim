@@ -316,6 +316,10 @@ class OcpToConsole(GraphAbstract):
         Print ocp structure in the console
         """
         for phase_idx in range(self.ocp.n_phases):
+            # We only need to use the first index since the bounds are not depend on the dynamics
+            self.ocp.nlp[phase_idx].states.node_index = 0
+            self.ocp.nlp[phase_idx].controls.node_index = 0
+
             print(f"PHASE: {phase_idx}")
             print(f"**********")
             print(f"BOUNDS:")
@@ -324,8 +328,8 @@ class OcpToConsole(GraphAbstract):
                 phase_idx,
                 self.ocp.nlp[phase_idx].x_bounds,
                 [
-                    self.ocp.nlp[phase_idx].states[0].cx_start[i].name()  # TODO: [0] to [node_index]
-                    for i in range(self.ocp.nlp[phase_idx].states[0].cx_start.shape[0])  # TODO: [0] to [node_index]
+                    self.ocp.nlp[phase_idx].states.cx_start[i].name()
+                    for i in range(self.ocp.nlp[phase_idx].states.cx_start.shape[0])
                 ],
             )
             print(f"**********")
@@ -334,8 +338,8 @@ class OcpToConsole(GraphAbstract):
                 phase_idx,
                 self.ocp.nlp[phase_idx].u_bounds,
                 [
-                    self.ocp.nlp[phase_idx].controls[0].cx_start[i].name()
-                    for i in range(self.ocp.nlp[phase_idx].controls[0].cx_start.shape[0])
+                    self.ocp.nlp[phase_idx].controls.cx_start[i].name()
+                    for i in range(self.ocp.nlp[phase_idx].controls.cx_start.shape[0])
                 ],
             )
             print(f"**********")

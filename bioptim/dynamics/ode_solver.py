@@ -119,6 +119,9 @@ class RK(OdeSolverBase):
         A list of integrators
         """
 
+        nlp.states.node_index = node_index
+        nlp.controls.node_index = node_index
+
         ode_opt = {
             "t0": 0,
             "tf": nlp.dt,
@@ -132,14 +135,14 @@ class RK(OdeSolverBase):
         }
 
         ode = {
-            "x_unscaled": nlp.states[node_index].cx_start,
-            "x_scaled": nlp.states.scaled[node_index].cx_start,
-            "p_unscaled": nlp.controls[node_index].cx_start
+            "x_unscaled": nlp.states.cx_start,
+            "x_scaled": nlp.states.scaled.cx_start,
+            "p_unscaled": nlp.controls.cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
-            else horzcat(nlp.controls[node_index].cx_start, nlp.controls[node_index].cx_end),
-            "p_scaled": nlp.controls.scaled[node_index].cx_start
+            else horzcat(nlp.controls.cx_start, nlp.controls.cx_end),
+            "p_scaled": nlp.controls.scaled.cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
-            else horzcat(nlp.controls.scaled[node_index].cx_start, nlp.controls.scaled[node_index].cx_end),
+            else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
@@ -282,6 +285,9 @@ class OdeSolver:
             A list of integrators
             """
 
+            nlp.states.node_index = node_index
+            nlp.controls.node_index = node_index
+
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
 
@@ -292,11 +298,10 @@ class OdeSolver:
                 )
 
             ode = {
-                "x_unscaled": [nlp.states[node_index].cx_start] + nlp.states[node_index].cx_intermediates_list,
-                "x_scaled": [nlp.states.scaled[node_index].cx_start]
-                + nlp.states.scaled[node_index].cx_intermediates_list,
-                "p_unscaled": nlp.controls[node_index].cx_start,
-                "p_scaled": nlp.controls.scaled[node_index].cx_start,
+                "x_unscaled": [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
+                "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
+                "p_unscaled": nlp.controls.cx_start,
+                "p_scaled": nlp.controls.scaled.cx_start,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -326,8 +331,6 @@ class OdeSolver:
 
         Attributes
         ----------
-        polynomial_degree: int
-            The degree of the implicit RK
         method: str
             The method of interpolation ("legendre" or "radau")
         defects_type: DefectType
@@ -393,7 +396,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:  # TODO: add node_index
+        def integrator(self, ocp, nlp, node_index: int) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -410,6 +413,10 @@ class OdeSolver:
             -------
             A list of integrators
             """
+
+            nlp.states.node_index = node_index
+            nlp.controls.node_index = node_index
+
             if not isinstance(ocp.cx(), MX):
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
             if ocp.v.parameters_in_list.shape != 0:
@@ -420,11 +427,11 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "x": nlp.states.scaled[node_index].cx_start,
-                "p": nlp.controls.scaled[node_index].cx_start,
+                "x": nlp.states.scaled.cx_start,
+                "p": nlp.controls.scaled.cx_start,
                 "ode": nlp.dynamics_func(
-                    nlp.states.scaled[node_index].cx_start,
-                    nlp.controls.scaled[node_index].cx_start,
+                    nlp.states.scaled.cx_start,
+                    nlp.controls.scaled.cx_start,
                     nlp.parameters.cx_start,
                 ),
             }
@@ -436,14 +443,14 @@ class OdeSolver:
                 Function(
                     "integrator",
                     [
-                        nlp.states.scaled[node_index].cx_start,
-                        nlp.controls.scaled[node_index].cx_start,
+                        nlp.states.scaled.cx_start,
+                        nlp.controls.scaled.cx_start,
                         nlp.parameters.cx_start,
                     ],
                     self._adapt_integrator_output(
                         integrator_func,
-                        nlp.states.scaled[node_index].cx_start,
-                        nlp.controls.scaled[node_index].cx_start,
+                        nlp.states.scaled.cx_start,
+                        nlp.controls.scaled.cx_start,
                     ),
                     ["x0", "p", "params"],
                     ["xf", "xall"],

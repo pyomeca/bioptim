@@ -57,7 +57,7 @@ class NonLinearProgram:
         The number of thread to use
     ns: int
         The number of shooting points
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The chosen ode solver
     parameters: ParameterList
         Reference to the optimized parameters in the underlying ocp
@@ -109,7 +109,7 @@ class NonLinearProgram:
         Add to the pool of declared casadi function. If the function already exists, it is skipped
     """
 
-    def __init__(self):
+    def __init__(self, assume_phase_dynamics):
         self.casadi_func = {}
         self.contact_forces_func = None
         self.soft_contact_forces_func = None
@@ -154,9 +154,10 @@ class NonLinearProgram:
         self.X_scaled = None
         self.x_scaling = None
         self.X = None
-        self.states = OptimizationVariableContainer()
-        self.states_dot = OptimizationVariableContainer()
-        self.controls = OptimizationVariableContainer()
+        self.assume_phase_dynamics = assume_phase_dynamics
+        self.states = OptimizationVariableContainer(assume_phase_dynamics)
+        self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
+        self.controls = OptimizationVariableContainer(assume_phase_dynamics)
 
     def initialize(self, cx: Callable = None):
         """
@@ -375,3 +376,20 @@ class NonLinearProgram:
                 func_evaluated = func_evaluated.to_mx()
         func = Function(name, cx_param, [func_evaluated])
         return func.expand() if expand else func
+
+    def node_time(self, node_idx: int):
+        """
+        Gives the time for a specific index
+
+        Parameters
+        ----------
+        node_idx: int
+          Index of the node
+
+        Returns
+        -------
+        The time for a specific index
+        """
+        if node_idx < 0 or node_idx > self.ns:
+            return ValueError(f"node_index out of range [0:{self.ns}]")
+        return self.tf / self.ns * node_idx

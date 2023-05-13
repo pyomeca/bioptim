@@ -72,27 +72,21 @@ class TauFatigue(MultiFatigueModel):
         var = self.models[suffix]
         target_load = self._get_target_load(var, suffix, nlp, controls, index)
         fatigue = [
-            DynamicsFunctions.get(nlp.states[0][f"{self.model_type()}_{suffix}_{dyn_suffix}"], states)[
-                index, :
-            ]  # TODO: [0] to [node_index]
+            DynamicsFunctions.get(nlp.states[f"{self.model_type()}_{suffix}_{dyn_suffix}"], states)[index, :]
             for dyn_suffix in var.suffix(variable_type=VariableType.STATES)
         ]
         current_dxdt = var.apply_dynamics(target_load, *fatigue)
 
         for i, dyn_suffix in enumerate(var.suffix(variable_type=VariableType.STATES)):
-            dxdt[nlp.states[0][f"{self.model_type()}_{suffix}_{dyn_suffix}"].index[index], :] = current_dxdt[
-                i
-            ]  # TODO: [0] to [node_index]
+            dxdt[nlp.states[f"{self.model_type()}_{suffix}_{dyn_suffix}"].index[index], :] = current_dxdt[i]
 
         return dxdt
 
     def _get_target_load(self, var: FatigueModel, suffix: str, nlp, controls, index: int):
-        if self.model_type() not in nlp.controls[0]:  # TODO: [0] to [node_index]
+        if self.model_type() not in nlp.controls:
             raise NotImplementedError(f"Fatigue dynamics without {self.model_type()} controls is not implemented yet")
 
-        val = DynamicsFunctions.get(nlp.controls[0][f"{self.model_type()}_{suffix}"], controls)[
-            index, :
-        ]  # TODO: [0] to [node_index]
+        val = DynamicsFunctions.get(nlp.controls[f"{self.model_type()}_{suffix}"], controls)[index, :]
         if not self.split_controls:
             if var.scaling < 0:
                 val = if_else(lt(val, 0), val, 0)

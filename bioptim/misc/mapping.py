@@ -143,6 +143,9 @@ class BiMapping(OptionGeneric):
         """
         super(BiMapping, self).__init__(**params)
 
+        self.oppose_to_second = oppose_to_second
+        self.oppose_to_first = oppose_to_first
+
         if isinstance(to_second, (list, tuple, range)):
             to_second = Mapping(map_idx=to_second, oppose=oppose_to_second)
         if isinstance(to_first, (list, tuple, range)):
@@ -311,7 +314,7 @@ class SelectionMapping(BiMapping):
     def __init__(
         self,
         nb_elements: int = None,
-        independent_indices: tuple[int] = None,
+        independent_indices: tuple[int, ...] = None,
         dependencies: tuple[Dependency, ...] = None,
         **params
     ):
@@ -377,7 +380,7 @@ class SelectionMapping(BiMapping):
                     selection_matrix[dependency.dependent_index][dependency.reference_index] *= dependency.factor
 
         first = selection_matrix @ index_dof
-        dependency_matrix = [None for i in range(len(first))]
+        dependency_matrix: list = [None for _ in range(len(first))]
         oppose = []
         for i in range(len(first)):
             if first[i] != 0 and first[i] > 0:
@@ -386,8 +389,7 @@ class SelectionMapping(BiMapping):
                 oppose.append(i)
                 dependency_matrix[i] = int(abs(first[i]) - 1)
 
-        @staticmethod
-        def _build_to_second(dependency_matrix: list, independent_indices: list):
+        def _build_to_second(dependency_matrix: list, independent_indices: tuple):
             """
             Build the to_second vector used in BiMapping thanks to the dependency matrix of the elements in the system
             and the vector of independent indices
@@ -423,13 +425,6 @@ class SelectionMapping(BiMapping):
 class NodeMapping(OptionGeneric):
     """
     Mapping of two node sets between each other
-
-    Attributes
-    ----------
-    to_second: Mapping
-        The mapping that links the first variable to the second
-    to_first: Mapping
-        The mapping that links the second variable to the first
     """
 
     # TODO: should take care of Node individually instead of all the phase necessarily

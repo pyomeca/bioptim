@@ -258,9 +258,7 @@ class PlotOcp:
         self.top_margin: int | None = None
         self.height_step: int | None = None
         self.width_step: int | None = None
-        self._organize_windows(
-            len(self.ocp.nlp[0].states[0]) + len(self.ocp.nlp[0].controls[0])
-        )  # TODO : [0] to [node_index]
+        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -334,13 +332,20 @@ class PlotOcp:
                 for key in nlp.plot:
                     if isinstance(nlp.plot[key], tuple):
                         nlp.plot[key] = nlp.plot[key][0]
+
                     if nlp.plot[key].phase_mappings is None:
+                        node_index = 0  # TODO deal with assume_phase_dynamics=False
+                        if nlp.plot[key].node_idx is not None:
+                            node_index = nlp.plot[key].node_idx[0]
+                        nlp.states.node_index = node_index
+                        nlp.controls.node_index = node_index
+
                         size = (
                             nlp.plot[key]
                             .function(
-                                np.nan,
-                                np.zeros((nlp.states[0].shape, 2)),  # TODO : [0] to [node_index]
-                                np.zeros((nlp.controls[0].shape, 2)),  # TODO : [0] to [node_index]
+                                node_index,
+                                np.zeros((nlp.states.shape, 2)),
+                                np.zeros((nlp.controls.shape, 2)),
                                 np.zeros((nlp.parameters.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )
@@ -634,14 +639,14 @@ class PlotOcp:
 
             n_elements = data_time[i].shape[0]
             state = np.ndarray((0, n_elements))
-            for s in nlp.states[0]:  # TODO: [0] to [node_index]
+            for s in nlp.states:
                 if nlp.use_states_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_states, (list, tuple)):
                         state = np.concatenate((state, data_states[i][s]))
                     else:
                         state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.controls[0]:  # TODO: [0] to [node_index]
+            for s in nlp.controls:
                 if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_controls, (list, tuple)):
                         control = np.concatenate((control, data_controls[i][s]))
@@ -764,11 +769,13 @@ class PlotOcp:
                                         states = state[
                                             :, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size
                                         ]
-
+                                    control_tp = control[:, node_idx : node_idx + 1 + u_mod]
+                                    if np.isnan(control_tp).any():
+                                        control_tp = np.array(())
                                     val = self.plot_func[key][i].function(
                                         node_idx,
                                         states,
-                                        control[:, node_idx : node_idx + 1 + u_mod],
+                                        control_tp,
                                         data_params_in_dyn,
                                         **self.plot_func[key][i].parameters,
                                     )

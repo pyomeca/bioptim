@@ -21,6 +21,7 @@ from bioptim import (
     Bounds,
     InitialGuess,
     OdeSolver,
+    OdeSolverBase,
     PenaltyController,
     Solver,
 )
@@ -49,28 +50,26 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
     """
 
     # Get the index of the markers from their name
-    marker_0_idx = controller.nlp.model.marker_index(first_marker)
-    marker_1_idx = controller.nlp.model.marker_index(second_marker)
+    marker_0_idx = controller.model.marker_index(first_marker)
+    marker_1_idx = controller.model.marker_index(second_marker)
 
     if method == 0:
         # Convert the function to the required format and then subtract
-        markers = controller.nlp.mx_to_cx(
-            "markers", controller.nlp.model.markers, controller.nlp.states[0]["q"]
-        )  # TODO: [0] to [node_index]
+        markers = controller.mx_to_cx("markers", controller.model.markers, controller.states["q"])
         markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     else:
         # Do the calculation in biorbd API and then convert to the required format
-        markers = controller.nlp.model.markers(controller.nlp.states[0]["q"].mx)  # TODO: [0] to [node_index]
+        markers = controller.model.markers(controller.states["q"].mx)
         markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
-        markers_diff = controller.nlp.mx_to_cx(
-            "markers", markers_diff, controller.nlp.states[0]["q"]
-        )  # TODO: [0] to [node_index]
+        markers_diff = controller.mx_to_cx("markers", markers_diff, controller.states["q"])
 
     return markers_diff
 
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path, ode_solver: OdeSolverBase = OdeSolver.RK4(), assume_phase_dynamics: bool = True
+) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -78,8 +77,12 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
     ----------
     biorbd_model_path: str
         The path of the biorbd model
-    ode_solver: OdeSolver
+    ode_solver: OdeSolverBase
         The type of ode solver used
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -148,7 +151,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
