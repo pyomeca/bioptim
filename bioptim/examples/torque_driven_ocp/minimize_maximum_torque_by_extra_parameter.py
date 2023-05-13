@@ -19,13 +19,14 @@ from bioptim import (
     Objective,
     BiorbdModel,
     PenaltyController,
+    ParameterObjectiveList,
 )
 
 
-def custom_constraint_parameters(all_pn: PenaltyController) -> MX:
-    tau = all_pn.nlp.controls["tau"].cx_start
-    idx = all_pn.nlp.parameters.names.index("max_tau")
-    max_param = all_pn.nlp.parameters[idx].cx
+def custom_constraint_parameters(controller: PenaltyController) -> MX:
+    tau = controller.controls["tau"].cx_start
+    idx = controller.parameters.names.index("max_tau")
+    max_param = controller.parameters[idx].cx
     val = max_param - tau
     return val
 
@@ -39,12 +40,12 @@ def my_parameter_function(bio_model: biorbd.Model, value: MX):
 
 
 def custom_min_parameter(controller: PenaltyController) -> MX:
-    idx = controller.nlp.parameters.names.index("max_tau")
+    idx = controller.parameters.names.index("max_tau")
     # max_param = controller.nlp.parameters[idx].cx
     # val = controller.nlp.mx_to_cx(
-    #     "min_max_tau", max_param, controller.nlp.parameters.cx_start
+    #     "min_max_tau", max_param, controller.nlp.parameters.cx
     # )
-    return controller.nlp.parameters.cx_start[idx]  # val
+    return controller.parameters.cx[idx]  # val
 
 
 def prepare_ocp(
@@ -69,7 +70,7 @@ def prepare_ocp(
     parameter_initial_guess = InitialGuess(0)
     parameter_bounds = Bounds(0, tau_max, interpolation=InterpolationType.CONSTANT)
 
-    parameter_objective_functions = Objective(minimize_parameters, weight=10000, quadratic=True, custom_type=ObjectiveFcn.Parameter)
+    # parameter_objective_functions = Objective(minimize_parameters, weight=10000, quadratic=True, custom_type=ObjectiveFcn.Parameter)
 
     parameters.add(
         "max_tau",  # The name of the parameter
@@ -77,8 +78,11 @@ def prepare_ocp(
         parameter_initial_guess,  # The initial guess
         parameter_bounds,  # The bounds
         size=1,
-        penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
     )
+
+    # # Add phase independant objective functions
+    # parameter_objective_functions = ParameterObjectiveList()
+    # parameter_objective_functions.add(parameter_objective_functions, weight=1000, quadratic=True)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -140,6 +144,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        # parameter_objective_functions=parameter_objective_functions,
         constraints=constraints,
         variable_mappings=tau_mappings,
         parameters=parameters,
