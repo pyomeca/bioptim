@@ -659,6 +659,7 @@ class ConstraintFcn(FcnEnum):
     TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
     TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
+    TRACK_PARAMETER = (PenaltyFunctionAbstract.Functions.minimize_parameter,)
 
     @staticmethod
     def get_type():
@@ -713,3 +714,167 @@ class ImplicitConstraintFcn(FcnEnum):
         """
 
         return ConstraintFunction
+
+
+class ParameterConstraint(PenaltyOption):
+    """
+    A placeholder for a parameter constraint
+
+    Attributes
+    ----------
+    min_bound: np.ndarray
+        The vector of minimum bound of the constraint. Default is 0
+    max_bound: np.ndarray
+        The vector of maximal bound of the constraint. Default is 0
+    """
+
+    def __init__(
+        self,
+        parameter_constraint: Any,
+        min_bound: np.ndarray | float = None,
+        max_bound: np.ndarray | float = None,
+        quadratic: bool = False,
+        **params: Any,
+    ):
+        """
+        Parameters
+        ----------
+        parameter_constraint: ConstraintFcn
+            The chosen parameter constraint
+        min_bound: np.ndarray
+            The vector of minimum bound of the constraint. Default is 0
+        max_bound: np.ndarray
+            The vector of maximal bound of the constraint. Default is 0
+        quadratic: bool
+            If the penalty is quadratic
+        params:
+            Generic parameters for options
+        """
+        custom_function = None
+        if not isinstance(parameter_constraint, (ConstraintFcn, ImplicitConstraintFcn)):
+            custom_function = parameter_constraint
+            parameter_constraint = ConstraintFcn.CUSTOM
+
+        super(ParameterConstraint, self).__init__(
+            penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **params
+        )
+
+        if isinstance(parameter_constraint, ImplicitConstraintFcn):
+            self.penalty_type = ConstraintType.IMPLICIT  # doing this puts the relevance of this enum in question
+
+        self.min_bound = min_bound
+        self.max_bound = max_bound
+        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+
+    def set_penalty(self, penalty: MX | SX, controller: PenaltyController):
+        super(ParameterConstraint, self).set_penalty(penalty, controller)
+        self.min_bound = 0 if self.min_bound is None else self.min_bound
+        self.max_bound = 0 if self.max_bound is None else self.max_bound
+
+    def add_or_replace_to_penalty_pool(self, ocp, nlp):
+        if self.type == ConstraintFcn.TIME_CONSTRAINT:
+            self.node = Node.END
+
+        super(ParameterConstraint, self).add_or_replace_to_penalty_pool(ocp, nlp)
+
+        self.min_bound = np.array(self.min_bound) if isinstance(self.min_bound, (list, tuple)) else self.min_bound
+        self.max_bound = np.array(self.max_bound) if isinstance(self.max_bound, (list, tuple)) else self.max_bound
+
+        if self.bounds.shape[0] == 0:
+            for i in self.rows:
+                min_bound = (
+                    self.min_bound[i]
+                    if hasattr(self.min_bound, "__getitem__") and self.min_bound.shape[0] > 1
+                    else self.min_bound
+                )
+                max_bound = (
+                    self.max_bound[i]
+                    if hasattr(self.max_bound, "__getitem__") and self.max_bound.shape[0] > 1
+                    else self.max_bound
+                )
+                self.bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
+        elif self.bounds.shape[0] != len(self.rows):
+            raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
+
+    def _add_penalty_to_pool(self, controller: PenaltyController):
+        if isinstance(controller, (list, tuple)):
+            controller = controller[0]  # This is a special case of Node.TRANSITION
+
+        if self.penalty_type == PenaltyType.INTERNAL:
+            pool = (
+                controller.get_nlp.g_internal
+                if controller is not None and controller.get_nlp
+                else controller.ocp.g_internal
+            )
+        elif self.penalty_type == ConstraintType.IMPLICIT:
+            pool = (
+                controller.get_nlp.g_implicit
+                if controller is not None and controller.get_nlp
+                else controller.ocp.g_implicit
+            )
+        elif self.penalty_type == PenaltyType.USER:
+            pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
+        else:
+            raise ValueError(f"Invalid constraint type {self.penalty_type}.")
+        pool[self.list_index] = self
+
+    def ensure_penalty_sanity(self, ocp, nlp):
+        if self.penalty_type == PenaltyType.INTERNAL:
+            g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
+        elif self.penalty_type == ConstraintType.IMPLICIT:
+            g_to_add_to = nlp.g_implicit if nlp else ocp.g_implicit
+        elif self.penalty_type == PenaltyType.USER:
+            g_to_add_to = nlp.g if nlp else ocp.g
+        else:
+            raise ValueError(f"Invalid Type of Constraint {self.penalty_type}")
+
+        if self.list_index < 0:
+            for i, j in enumerate(g_to_add_to):
+                if not j:
+                    self.list_index = i
+                    return
+            else:
+                g_to_add_to.append([])
+                self.list_index = len(g_to_add_to) - 1
+        else:
+            while self.list_index >= len(g_to_add_to):
+                g_to_add_to.append([])
+            g_to_add_to[self.list_index] = []
+
+
+class ParameterConstraintList(OptionList):
+    """
+    A list of ParameterConstraint if more than one is required
+
+    Methods
+    -------
+    add(self, parameter_constraint: Callable | "ConstraintFcn", **extra_arguments)
+        Add a new Constraint to the list
+    print(self)
+        Print the ParameterConstraintList to the console
+    """
+
+    def add(self, parameter_constraint: Callable | ParameterConstraint | Any, **extra_arguments: Any):
+        """
+        Add a new constraint to the list
+
+        Parameters
+        ----------
+        parameter_constraint: Callable | Constraint | ConstraintFcn
+            The chosen parameter constraint
+        extra_arguments: dict
+            Any parameters to pass to Constraint
+        """
+
+        if isinstance(parameter_constraint, Constraint):
+            self.copy(parameter_constraint)
+
+        else:
+            super(ParameterConstraintList, self)._add(option_type=ParameterConstraint, parameter_constraint=parameter_constraint, **extra_arguments)
+
+    def print(self):
+        """
+        Print the ParameterConstraintList to the console
+        """
+        # TODO: Print all elements in the console
+        raise NotImplementedError("Printing of ParameterConstraintList is not ready yet")
