@@ -1120,7 +1120,7 @@ class ConfigureProblem:
             as_states,
             as_controls,
             as_states_dot,
-            axes_idx=axes_idx,  # nlp.variable_mappings[name].to_first,
+            axes_idx=axes_idx
         )
 
     @staticmethod

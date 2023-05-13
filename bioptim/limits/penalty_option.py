@@ -230,12 +230,6 @@ class PenaltyOption(OptionGeneric):
 
         self.rows = self._set_dim_idx(self.rows, penalty.rows())
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
-        # self.plot_mappings = None
-        # if "key" in self.params.keys():
-        #     if all_pn.nlp.variable_mappings in self.params["key"]:
-        #         if self.name == "MINIMIZE_CONTROL":
-        #             if self.params["key"] in all_pn.nlp.controls.keys():
-        #                 self.plot_mapping = all_pn[self.phase].
         if self.target is not None:
             if isinstance(controller, list):
                 raise RuntimeError("Multinode constraints should call a self defined set_penalty")
@@ -568,7 +562,18 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = self.function[node].expand()
             self.weighted_function[node] = self.weighted_function[node].expand()
 
-    def add_target_to_plot(self, all_pn: PenaltyController, combine_to: str):
+    @staticmethod
+    def define_target_mapping(controller: PenaltyController, key: str):
+        if key in controller.get_nlp.variable_mappings:
+            target_mapping = controller.get_nlp.variable_mappings[key]
+        else:
+            target_mapping = BiMapping(
+                to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+                to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+            )
+        return target_mapping
+
+    def add_target_to_plot(self, controller: PenaltyController, combine_to: str):
         """
         Interface to the plot so it can be properly added to the proper plot
 
@@ -585,14 +590,14 @@ class PenaltyOption(OptionGeneric):
 
         self.target_plot_name = combine_to
         # if the target is n x ns, we need to add a dimension (n x ns + 1) to make it compatible with the plot
-        if self.target[0].shape[1] == all_pn.nlp.ns:
+        if self.target[0].shape[1] == controller.get_nlp.ns:
             self.target_to_plot = np.concatenate(
                 (self.target[0], np.nan * np.ndarray((self.target[0].shape[0], 1))), axis=1
             )
         else:
             self.target_temporaty = self.target[0]
 
-    def _finish_add_target_to_plot(self, all_pn: PenaltyController):
+    def _finish_add_target_to_plot(self, controller: PenaltyController):
         """
         Internal interface to add (after having check the target dimensions) the target to the plot if needed
 
@@ -615,14 +620,15 @@ class PenaltyOption(OptionGeneric):
             else:
                 plot_type = PlotType.POINT
 
+            target_mapping = self.define_target_mapping(controller, self.params['key'])
             controller.ocp.add_plot(
                 self.target_plot_name,
                 plot_function,
                 penalty=self if plot_type == PlotType.POINT else None,
                 color="tab:red",
                 plot_type=plot_type,
-                phase=all_pn.nlp.phase_idx,
-                axes_idx=Mapping(self.rows),  # TODO verify if not all elements has target
+                phase=controller.get_nlp.phase_idx,
+                axes_idx=target_mapping,  # TODO verify if not all elements has target
                 node_idx=controller.t,
             )
 

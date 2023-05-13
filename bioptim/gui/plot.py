@@ -400,7 +400,8 @@ class PlotOcp:
                     ax = axes[ctr]
                     if ctr in mapping_to_first_index:
                         index_legend = mapping_to_first_index.index(ctr)
-                        ax.set_title(nlp.plot[variable].legend[index_legend])
+                        if len(nlp.plot[variable].legend) > index_legend:
+                            ax.set_title(nlp.plot[variable].legend[index_legend])
                     ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(0, self.t[-1][-1])
                     if ctr in mapping_to_first_index:
@@ -514,9 +515,7 @@ class PlotOcp:
 
                 legend_without_duplicate_labels(ax)
 
-                # for ctr in mapping_range_index:
                 for ctr, ax in enumerate(axes):
-                    # ax = axes[ctr]
                     if ctr in mapping_to_first_index:
                         intersections_time = self.find_phases_intersections()
                         for time in intersections_time:
