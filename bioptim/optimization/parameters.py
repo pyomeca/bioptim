@@ -209,7 +209,7 @@ class Parameter(PenaltyOption):
         # Do not use nlp.add_casadi_func because all functions must be registered
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
-        param_cx = ocp.v.parameters_in_list.cx_start
+        param_cx = ocp.v.parameters_in_list.cx
 
         objective.function.append(
             NonLinearProgram.to_casadi_func(

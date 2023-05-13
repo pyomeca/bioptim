@@ -445,7 +445,7 @@ class PenaltyOption(OptionGeneric):
 
         # Alias some variables
         node = controller.node_index
-        param_cx = controller.parameters.cx_start
+        param_cx = controller.parameters.cx
 
         # Sanity check on outputs
         if len(self.function) <= node:
@@ -519,7 +519,7 @@ class PenaltyOption(OptionGeneric):
             state_cx_end_scaled = (
                 controller.states_scaled.cx_end
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx_start)["xf"]
+                else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx)["xf"]
             )
             modified_function = controller.to_casadi_func(
                 f"{name}",
@@ -815,4 +815,4 @@ class PenaltyOption(OptionGeneric):
         x_scaled = [nlp.X_scaled[idx] for idx in t]
         u = [nlp.U[idx] for idx in t if idx != nlp.ns]
         u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
-        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx_start)
+        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx)

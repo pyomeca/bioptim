@@ -244,7 +244,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.max_bound = np.array([np.inf, np.inf])
 
             contact = controller.get_nlp.contact_forces_func(
-                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx_start
+                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
             )
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
