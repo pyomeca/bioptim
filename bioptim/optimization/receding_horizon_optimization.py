@@ -475,7 +475,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def __init__(
         self,
-        bio_model: list | tuple,
+        bio_model: list | tuple | BioModel,
         dynamics: Dynamics | DynamicsList,
         cycle_len: int | list | tuple,
         cycle_duration: int | float | list | tuple,
@@ -564,8 +564,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         if get_all_iterations:
             final_solution.append(solution[1])
 
+        cycle_solutions_output = []
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
-            cycle_solutions_output = []
             for sol in solution[1]:
                 _states, _controls = self.export_cycles(sol)
                 cycle_solutions_output.append(self._initialize_one_cycle(_states, _controls))

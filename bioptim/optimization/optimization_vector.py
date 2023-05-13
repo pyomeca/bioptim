@@ -15,8 +15,6 @@ class OptimizationVector:
         A reference to the ocp
     parameters_in_list: ParameterList
         A list of all the parameters in the ocp
-    x: MX, SX
-        The optimization variable for the states
     x_bounds: list
         A list of state bounds for each phase
     x_init: list

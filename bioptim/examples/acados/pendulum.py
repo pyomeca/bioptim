@@ -7,7 +7,6 @@ This simple example is a good place to start investigating bioptim using ACADOS 
 dynamics out there (the joint torque driven), it defines an objective function and some boundaries and initial guesses
 """
 
-import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     BiorbdModel,

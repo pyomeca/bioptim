@@ -35,8 +35,8 @@ def prepare_ocp(
 ):
     # BioModel path
     bio_model = BiorbdModel(biorbd_model_path)
-    tau_min, tau_max, tau_init = -500, 500, 0
-    activation_min, activation_max, activation_init = 0, 1, 0.5
+    tau_min, tau_max, tau_init = -500.0, 500.0, 0.0
+    activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
 
     # Add objective functions
     objective_functions = ObjectiveList()

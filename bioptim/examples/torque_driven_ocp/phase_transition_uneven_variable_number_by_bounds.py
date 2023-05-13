@@ -1,4 +1,3 @@
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -13,9 +12,6 @@ from bioptim import (
     ObjectiveFcn,
     BiMappingList,
     Axis,
-    PhaseTransitionList,
-    PhaseTransitionFcn,
-    BiMapping,
     Solver,
 )
 

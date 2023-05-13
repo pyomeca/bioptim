@@ -48,10 +48,10 @@ class BinodeConstraint(Constraint):
     def __init__(
         self,
         phase_first_idx: int,
-        phase_second_idx: int,
+        phase_second_idx: int | None,
         first_node: Node | int,
         second_node: Node | int,
-        binode_constraint: Callable | Any = None,
+        binode_constraint: Any | Callable = None,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,

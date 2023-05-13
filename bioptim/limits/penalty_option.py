@@ -268,7 +268,7 @@ class PenaltyOption(OptionGeneric):
             raise RuntimeError(f"{self.name} index must be a list of integer")
         return dim
 
-    def _check_target_dimensions(self, controller: PenaltyController, n_time_expected: int):
+    def _check_target_dimensions(self, controller: PenaltyController | None, n_time_expected: int):
         """
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay

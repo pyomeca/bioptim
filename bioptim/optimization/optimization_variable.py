@@ -102,6 +102,9 @@ class VariableScalingList(OptionDict):
         if isinstance(scaling, VariableScaling):
             self.add(key=scaling.key, scaling=scaling.scaling, phase=phase)
         else:
+            if scaling is None:
+                raise ValueError("Scaling cannot be None")
+
             for i, elt in enumerate(scaling):
                 if elt <= 0:
                     raise RuntimeError(

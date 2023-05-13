@@ -10,9 +10,6 @@ from .interface_utils import (
 )
 from .solver_interface import SolverInterface
 from ..interfaces.solver_options import Solver
-from ..limits.path_conditions import Bounds
-from ..limits.phase_transition import PhaseTransitionFcn
-from ..misc.enums import InterpolationType, ControlType, Node, SolverType, IntegralApproximation
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 from ..misc.enums import (

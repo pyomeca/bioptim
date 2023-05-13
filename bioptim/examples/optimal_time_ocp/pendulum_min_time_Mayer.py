@@ -134,7 +134,6 @@ def main():
 
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}, good job Mayer!")
-    sol.print()
     sol.animate()
 
 

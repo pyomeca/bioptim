@@ -14,9 +14,6 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
-    ConstraintList,
-    ConstraintFcn,
-    Node,
 )
 
 
@@ -26,7 +23,7 @@ def prepare_ocp(
     assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     # Adding the models to the same phase
-    bio_model = BiorbdModel((biorbd_model_path))
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Problem parameters
     final_time = 1.5
