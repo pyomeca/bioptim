@@ -480,8 +480,8 @@ class OptimalControlProgram:
 
         # Prepare the parameters to optimize
         self.phase_transitions = []
-        if len(parameters) > 0:
-            self.update_parameters(parameters)
+        # if len(parameters) > 0:
+        #     self.update_parameters(parameters)
 
         # Prepare the parameter mappings
         if parameter_mappings is None:
