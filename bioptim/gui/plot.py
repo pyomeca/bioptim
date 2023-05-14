@@ -781,11 +781,9 @@ class PlotOcp:
                         else:
                             y = np.empty((len(self.plot_func[key][i].node_idx),))
                             y.fill(np.nan)
-                            val = np.empty((len(self.plot_func[key][i].node_idx),))
-                            val.fill(np.nan)
                             for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                                 if self.plot_func[key][i].parameters["penalty"].transition:
-                                    val_tempo = self.plot_func[key][i].function(
+                                    val = self.plot_func[key][i].function(
                                         node_idx,
                                         np.hstack(
                                             (
@@ -815,15 +813,13 @@ class PlotOcp:
                                     control_tp = control[:, node_idx : node_idx + 1 + u_mod]
                                     if np.isnan(control_tp).any():
                                         control_tp = np.array(())
-                                    val_tempo = self.plot_func[key][i].function(
+                                    val = self.plot_func[key][i].function(
                                         node_idx,
                                         states,
                                         control_tp,
                                         data_params_in_dyn,
                                         **self.plot_func[key][i].parameters,
                                     )
-                                for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
-                                    val[axe_index] = val_tempo[ctr]
                                 y[i_node] = val[i_var]
                         self.ydata.append(y)
 
