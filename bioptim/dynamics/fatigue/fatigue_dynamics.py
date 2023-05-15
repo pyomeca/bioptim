@@ -400,7 +400,7 @@ class FatigueList(OptionDict):
     def __contains__(self, item):
         return item in self.options[0]
 
-    def __getitem__(self, item: int | str | list | tuple) -> FatigueUniqueList:
+    def __getitem__(self, item: int | str | list | tuple) -> dict | FatigueUniqueList:
         return super(FatigueList, self).__getitem__(item)
 
     def print(self):

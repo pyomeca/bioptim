@@ -9,7 +9,6 @@ each shooting nodes such that inverse_dynamics(q,qdot,qddot) - tau = 0.
 Finally, once it finished optimizing, it animates the model using the optimal solution.
 """
 
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -79,14 +78,17 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics)
 
     # Path constraint
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max, tau_init = -100.0, 100.0, 0.0
 
     # Be careful to let the accelerations not to much bounded to find the same solution in implicit dynamics
-    if (
-        rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-        or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-    ):
-        qddot_min, qddot_max, qddot_init = -1000, 1000, 0
+    qddot_min, qddot_max, qddot_init = (
+        (-1000.0, 1000.0, 0.0)
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+        )
+        else (0.0, 0.0, 0.0)
+    )
 
     x_bounds = BoundsList()
     x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))

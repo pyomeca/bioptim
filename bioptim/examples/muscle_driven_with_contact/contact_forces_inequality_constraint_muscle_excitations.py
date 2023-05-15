@@ -31,8 +31,8 @@ from bioptim import (
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4()):
     bio_model = BiorbdModel(biorbd_model_path)
-    torque_min, torque_max, torque_init = -500, 500, 0
-    activation_min, activation_max, activation_init = 0, 1, 0.5
+    torque_min, torque_max, torque_init = -500.0, 500.0, 0.0
+    activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
     dof_mapping = BiMappingList()
 
     # adds a bimapping to bimappinglist

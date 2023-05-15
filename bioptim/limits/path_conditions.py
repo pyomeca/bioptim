@@ -701,7 +701,7 @@ class InitialGuess(OptionGeneric):
         return len(self.init) > 0
 
     @property
-    def shape(self) -> int:
+    def shape(self) -> tuple[int, int]:
         """
         Get the size of the InitialGuess
 
