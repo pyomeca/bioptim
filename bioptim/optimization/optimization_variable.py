@@ -458,8 +458,8 @@ class OptimizationVariableList:
         if index < 0 or index > 2:
             raise ValueError(
                 "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
-                "add more penalties than available. You can try to split them into more penalties or use "
-                "assume_phase_dynamics=False.")
+                "add more penalties than available in a multinode constraint. You can try to split the constraints "
+                "into more penalties or use assume_phase_dynamics=False.")
 
         else:
             self._current_cx_to_get = index
@@ -503,7 +503,7 @@ class OptimizationVariableList:
 
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
         self._cx_start = vertcat(self._cx_start, cx[0])
-        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) + 1)//2])
+        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1)//2])
         self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
@@ -538,7 +538,7 @@ class OptimizationVariableList:
             raise NotImplementedError("cx should be of dimension 3 (start, mid, end)")
 
         self._cx_start = vertcat(self._cx_start, cx[0])
-        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) + 1)//2])
+        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1)//2])
         self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):

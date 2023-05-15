@@ -60,9 +60,11 @@ def custom_binode_constraint(
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube.bioMod",
+    biorbd_model_path: str,
+    n_shootings: tuple,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     assume_phase_dynamics: bool = True,
+    with_too_much_constraints: bool = False,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -77,6 +79,10 @@ def prepare_ocp(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    with_too_much_constraints: bool
+        This is to show what happens in the case too many constraints are declared in the multinode constraints (that
+        is more than three in the same phase). It will raise ValueError if assume_phase_dynamics is True since maximum
+        three nodes are created by phase. If is it set too False, it will work just fine
 
     Returns
     -------
@@ -86,7 +92,6 @@ def prepare_ocp(
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
-    n_shooting = (100, 300, 100)
     final_time = (2, 5, 4)
     tau_min, tau_max, tau_init = -100, 100, 0
 
@@ -129,6 +134,21 @@ def prepare_ocp(
         custom_binode_constraint, nodes_phase=(0, 1), nodes=(Node.MID, Node.PENULTIMATE), weight=0.1, coef=2
     )
 
+    # This is a useless constraint (as it already does that anyway) to show how to add three constraints on the same
+    # phase. More than 3 will only work with assume_phase_dynamics to False
+    binode_constraints.add(
+        BinodeConstraintFcn.CONTROLS_EQUALITY,
+        nodes_phase=(1, 1, 1),
+        nodes=(Node.START, Node.MID, Node.PENULTIMATE),
+        index=2,
+    )
+    # This constraint is for documentation purposes. Up to 3 nodes, it will work, but it won't for more than 3 if
+    # assume_phase_dynamics is set to True
+    if with_too_much_constraints:
+        binode_constraints.add(
+            BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0, 0, 0), nodes=(0, 1, 2, 3), key="all"
+        )
+
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
@@ -161,7 +181,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         bio_model,
         dynamics,
-        n_shooting,
+        n_shootings,
         final_time,
         x_init,
         u_init,
@@ -180,7 +200,7 @@ def main():
     Defines a multiphase ocp and animate the results
     """
 
-    ocp = prepare_ocp()
+    ocp = prepare_ocp(biorbd_model_path="models/cube.bioMod", n_shootings=(100, 300, 100))
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
