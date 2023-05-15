@@ -36,24 +36,18 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> O
     # hard constraint
     multinode_constraints.add(
         MultinodeConstraintFcn.STATES_EQUALITY,
-        phase_first_idx=phase_1,
-        phase_second_idx=phase_2,
-        first_node=Node.START,
-        second_node=Node.START,
+        nodes_phase=(phase_1, phase_2),
+        nodes=(Node.START, Node.START),
     )
     multinode_constraints.add(
         MultinodeConstraintFcn.COM_EQUALITY,
-        phase_first_idx=phase_1,
-        phase_second_idx=phase_2,
-        first_node=Node.START,
-        second_node=Node.START,
+        nodes_phase=(phase_1, phase_2),
+        nodes=(Node.START, Node.START),
     )
     multinode_constraints.add(
         MultinodeConstraintFcn.COM_VELOCITY_EQUALITY,
-        phase_first_idx=phase_1,
-        phase_second_idx=phase_2,
-        first_node=Node.START,
-        second_node=Node.START,
+        nodes_phase=(phase_1, phase_2),
+        nodes=(Node.START, Node.START),
     )
 
     # Path constraint
@@ -109,10 +103,8 @@ def test_multinode_fail_first_node(node):
     if node in [Node.START, Node.MID, Node.PENULTIMATE, Node.END, 0]:
         multinode_constraints.add(
             MultinodeConstraintFcn.STATES_EQUALITY,
-            phase_first_idx=0,
-            phase_second_idx=2,
-            first_node=node,
-            second_node=Node.START,
+            nodes_phase=(0, 2),
+            nodes=(node, Node.START),
         )
     else:
         with pytest.raises(
@@ -121,10 +113,8 @@ def test_multinode_fail_first_node(node):
         ):
             multinode_constraints.add(
                 MultinodeConstraintFcn.STATES_EQUALITY,
-                phase_first_idx=0,
-                phase_second_idx=2,
-                first_node=node,
-                second_node=Node.START,
+                nodes_phase=(0, 2),
+                nodes=(node, Node.START),
             )
 
 
@@ -136,10 +126,8 @@ def test_multinode_fail_second_node(node):
     if node in [Node.START, Node.MID, Node.PENULTIMATE, Node.END, 0]:
         multinode_constraints.add(
             MultinodeConstraintFcn.STATES_EQUALITY,
-            phase_first_idx=0,
-            phase_second_idx=2,
-            first_node=node,
-            second_node=Node.START,
+            nodes_phase=(0, 2),
+            nodes=(node, Node.START),
         )
     else:
         with pytest.raises(
@@ -148,10 +136,8 @@ def test_multinode_fail_second_node(node):
         ):
             multinode_constraints.add(
                 MultinodeConstraintFcn.STATES_EQUALITY,
-                phase_first_idx=0,
-                phase_second_idx=2,
-                first_node=Node.START,
-                second_node=node,
+                nodes_phase=(0, 2),
+                nodes=(Node.START, node),
             )
 
 
