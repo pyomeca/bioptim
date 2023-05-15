@@ -6,7 +6,7 @@ from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
-from ..misc.enums import Node, InterpolationType, PenaltyType, CXStep
+from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
@@ -230,12 +230,14 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
+            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+
             ctrl_0 = controllers[0]
-            states_0 = binode_constraint.states_mapping.to_second.map(ctrl_0.states.get_cx(key, CXStep.CX_START))
+            states_0 = binode_constraint.states_mapping.to_second.map(ctrl_0.states[key].cx)
             out = ctrl_0.cx.zeros(states_0.shape)
             for i in range(1, len(controllers)):
                 ctrl_i = controllers[i]
-                states_i = binode_constraint.states_mapping.to_first.map(ctrl_i.states.get_cx(key, CXStep.CX_START))
+                states_i = binode_constraint.states_mapping.to_first.map(ctrl_i.states[key].cx)
 
                 if states_0.shape != states_i.shape:
                     raise RuntimeError(
@@ -267,18 +269,25 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the controls after and before
             """
 
-            pre, post = controllers
-            controls_pre = pre.controls.get_cx(key, CXStep.CX_END)
-            controls_post = post.controls.get_cx(key, CXStep.CX_START)
+            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
 
-            if controls_pre.shape != controls_post.shape:
-                raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {controls_pre.shape} in the "
-                    f"pre-transition phase and {controls_post.shape} post-transition phase. Please use a custom "
-                    f"transition or supply states_mapping"
-                )
+            ctrl_0 = controllers[0]
+            controls_0 = ctrl_0.controls[key].cx
+            out = ctrl_0.cx.zeros(controls_0.shape)
+            for i in range(1, len(controllers)):
+                ctrl_i = controllers[i]
+                controls_i = ctrl_i.controls[key].cx
 
-            return controls_pre - controls_post
+                if controls_0.shape != controls_i.shape:
+                    raise RuntimeError(
+                        f"Continuity can't be established since the number of x to be matched is {controls_0.shape} in "
+                        f"the pre-transition phase and {controls_i.shape} post phase. Please use a custom "
+                        f"multi_node"
+                    )
+
+                out += controls_0 - controls_i
+
+            return out
 
         @staticmethod
         def com_equality(binode_constraint, controllers: list[PenaltyController, PenaltyController]):
@@ -297,9 +306,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
+            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+
             pre, post = controllers
-            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.cx_end)
-            states_post = binode_constraint.states_mapping.to_first.map(post.states.cx_start)
+            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.cx)
+            states_post = binode_constraint.states_mapping.to_first.map(post.states.cx)
 
             states_post_sym_list = [MX.sym(f"{key}", *post.states[key].mx.shape) for key in post.states]
             states_post_sym = vertcat(*states_post_sym_list)
@@ -314,8 +325,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             pre_com = pre.model.center_of_mass(states_pre[pre.states["q"].index, :])
             post_com = post.model.center_of_mass(states_post_sym_list[0])
 
-            pre_states_cx = pre.states.cx_end
-            post_states_cx = post.states.cx_start
+            pre_states_cx = pre.states.cx
+            post_states_cx = post.states.cx
 
             return pre.to_casadi_func(
                 "com_equality",
@@ -341,9 +352,11 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
+            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+
             pre, post = controllers
-            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.cx_end)
-            states_post = binode_constraint.states_mapping.to_first.map(post.states.cx_start)
+            states_pre = binode_constraint.states_mapping.to_second.map(pre.states.cx)
+            states_post = binode_constraint.states_mapping.to_first.map(post.states.cx)
 
             states_post_sym_list = [MX.sym(f"{key}", *post.states[key].mx.shape) for key in post.states]
             states_post_sym = vertcat(*states_post_sym_list)
@@ -360,8 +373,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             )
             post_com_dot = post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
-            pre_states_cx = pre.states.cx_end
-            post_states_cx = post.states.cx_start
+            pre_states_cx = pre.states.cx
+            post_states_cx = post.states.cx
 
             return pre.to_casadi_func(
                 "com_dot_equality",
@@ -386,10 +399,13 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             -------
             The difference between the duration of the phases
             """
+
+            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+
             time_pre_idx = None
             pre, post = controllers
-            for i in range(pre.parameters.cx_start.shape[0]):
-                param_name = pre.parameters.cx_start[i].name()
+            for i in range(pre.parameters.cx.shape[0]):
+                param_name = pre.parameters.cx[i].name()
                 if param_name == "time_phase_" + str(pre.phase_idx):
                     time_pre_idx = pre.phase_idx
             if time_pre_idx is None:
@@ -401,8 +417,8 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 )
 
             time_post_idx = None
-            for i in range(post.parameters.cx_start.shape[0]):
-                param_name = post.parameters.cx_start[i].name()
+            for i in range(post.parameters.cx.shape[0]):
+                param_name = post.parameters.cx[i].name()
                 if param_name == "time_phase_" + str(post.phase_idx):
                     time_post_idx = post.phase_idx
             if time_post_idx is None:
@@ -412,7 +428,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                     f"with constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
                 )
 
-            time_pre, time_post = pre.parameters.cx_start[time_pre_idx], post.parameters.cx_start[time_post_idx]
+            time_pre, time_post = pre.parameters.cx[time_pre_idx], post.parameters.cx[time_post_idx]
             return time_pre - time_post
 
         @staticmethod
@@ -432,7 +448,20 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The expected difference between the last and first node provided by the user
             """
 
+            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
             return binode_constraint.custom_function(binode_constraint, controllers, **extra_params)
+
+        @staticmethod
+        def _prepare_controller_cx(controllers: list[PenaltyController, ...]):
+            """
+            Prepare the current_cx_to_get for each of the controller. Basically it finds if this constraint as more than
+            one usage. If it does, it increments a counter of the cx used, up to the maximum. On assume_phase_dynamics
+            being False, this is useless, as all the constraints uses cx_start.
+            """
+            existing_phases = []
+            for controller in controllers:
+                controller.cx_index_to_get = sum([i == controller.phase_idx for i in existing_phases])
+                existing_phases.append(controller.phase_idx)
 
 
 class BinodeConstraintFcn(FcnEnum):

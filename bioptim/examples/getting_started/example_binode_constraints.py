@@ -28,6 +28,37 @@ from bioptim import (
 )
 
 
+def custom_binode_constraint(
+    binode_constraint: BinodeConstraint, controllers: list[PenaltyController, ...], coef: float
+) -> MX:
+    """
+    The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
+    determine the transition. If coef=1, then this function mimics the PhaseTransitionFcn.CONTINUOUS
+
+    coef is a user defined extra variables and can be anything. It is to show how to pass variables from the
+    PhaseTransitionList to that function
+
+    Parameters
+    ----------
+    binode_constraint: BinodeConstraint
+        The placeholder for the binode_constraint
+    controllers: list[PenaltyController, ...]
+        All the controller for the penalties
+    coef: float
+        The coefficient of the phase transition (makes no physical sens)
+
+    Returns
+    -------
+    The constraint such that: c(x) = 0
+    """
+
+    # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
+    # mapping stuff (it is merely for the sake of example how to use the mappings)
+    states_pre = binode_constraint.states_mapping.to_second.map(controllers[0].states.cx)
+    states_post = binode_constraint.states_mapping.to_first.map(controllers[1].states.cx)
+    return states_pre * coef - states_post
+
+
 def prepare_ocp(
     biorbd_model_path: str = "models/cube.bioMod",
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
@@ -142,37 +173,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )
-
-
-def custom_binode_constraint(
-    binode_constraint: BinodeConstraint, controllers: list[PenaltyController, ...], coef: float
-) -> MX:
-    """
-    The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
-    determine the transition. If coef=1, then this function mimics the PhaseTransitionFcn.CONTINUOUS
-
-    coef is a user defined extra variables and can be anything. It is to show how to pass variables from the
-    PhaseTransitionList to that function
-
-    Parameters
-    ----------
-    binode_constraint: BinodeConstraint
-        The placeholder for the binode_constraint
-    controllers: list[PenaltyController, ...]
-        All the controller for the penalties
-    coef: float
-        The coefficient of the phase transition (makes no physical sens)
-
-    Returns
-    -------
-    The constraint such that: c(x) = 0
-    """
-
-    # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
-    # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = binode_constraint.states_mapping.to_second.map(controllers[0].states.cx)
-    states_post = binode_constraint.states_mapping.to_first.map(controllers[1].states.cx)
-    return states_pre * coef - states_post
 
 
 def main():

@@ -416,14 +416,9 @@ class PenaltyOption(OptionGeneric):
 
             state_cx_scaled = ocp.cx()
             control_cx_scaled = ocp.cx()
-            phases_dealt_with = []
             for ctrl in controllers:
-                if ocp.assume_phase_dynamics and ctrl.phase_idx in phases_dealt_with:
-                    # All nodes in a phase are the same, no need to add them more than once
-                    continue
-                phases_dealt_with.append(ctrl.phase_idx)
-                state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
-                control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
+                state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
+                control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
 
         else:
             ocp = controller.ocp
@@ -683,6 +678,8 @@ class PenaltyOption(OptionGeneric):
         if ocp.assume_phase_dynamics:
             for controller in controllers:
                 controller.node_index = 0
+                controller.cx_index_to_get = 0
+
             penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
@@ -701,6 +698,7 @@ class PenaltyOption(OptionGeneric):
             for node in range(len(controllers[-1])):
                 for controller in controllers:
                     controller.node_index = controller.t[node]
+                    controller.cx_index_to_get = 0
 
                 penalty_function = self.type(
                     self, controllers if len(controllers) > 1 else controllers[0], **self.params

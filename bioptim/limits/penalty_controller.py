@@ -60,6 +60,7 @@ class PenaltyController:
         self.u_scaled = u_scaled
         self.p = vertcat(p) if p is not None else p
         self.node_index = node_index
+        self.cx_index_to_get = 0
 
     def __len__(self):
         return len(self.t)
@@ -118,7 +119,9 @@ class PenaltyController:
         The states at node node_index
         """
         self._nlp.states.node_index = self.node_index
-        return self._nlp.states.unscaled
+        out = self._nlp.states.unscaled
+        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        return out
 
     @property
     def states_dot(self) -> OptimizationVariableList:
@@ -130,7 +133,9 @@ class PenaltyController:
         The states_dot at node node_index
         """
         self._nlp.states_dot.node_index = self.node_index
-        return self._nlp.states_dot.unscaled
+        out = self._nlp.states_dot.unscaled
+        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        return out
 
     @property
     def integrate(self):
@@ -153,7 +158,9 @@ class PenaltyController:
         The scaled states at node node_index
         """
         self._nlp.states.node_index = self.node_index
-        return self._nlp.states.scaled
+        out = self._nlp.states.scaled
+        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        return out
 
     @property
     def states_dot_scaled(self) -> OptimizationVariableList:
@@ -168,7 +175,10 @@ class PenaltyController:
         The scaled states_dot at node node_index
         """
         self._nlp.states_dot.node_index = self.node_index
-        return self._nlp.states_dot.scaled
+
+        out = self._nlp.states_dot.scaled
+        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        return out
 
     @property
     def controls(self) -> OptimizationVariableList:
@@ -180,7 +190,9 @@ class PenaltyController:
         The controls at node node_index
         """
         self._nlp.controls.node_index = self.node_index
-        return self._nlp.controls.unscaled
+        out = self._nlp.controls.unscaled
+        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        return out
 
     @property
     def controls_scaled(self) -> OptimizationVariableList:
@@ -195,7 +207,9 @@ class PenaltyController:
         The scaled controls at node node_index
         """
         self._nlp.controls.node_index = self.node_index
-        return self._nlp.controls.scaled
+        out = self._nlp.controls.scaled
+        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        return out
 
     @property
     def parameters(self) -> OptimizationVariableList:

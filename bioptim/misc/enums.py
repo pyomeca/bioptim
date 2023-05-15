@@ -168,11 +168,6 @@ class DefectType(Enum):
     NOT_APPLICABLE = "not_applicable"
 
 
-class CXStep(Enum):
-    CX_END = "cx_end"
-    CX_START = "cx_start"
-
-
 class MagnitudeType(Enum):
     RELATIVE = "relative"
     ABSOLUTE = "absolute"

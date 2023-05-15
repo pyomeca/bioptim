@@ -5,7 +5,6 @@ from casadi import MX, SX, vertcat
 
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric, OptionDict
-from ..misc.enums import CXStep
 
 
 class VariableScaling(OptionGeneric):
@@ -279,6 +278,7 @@ class OptimizationVariable:
         self.index: [range, list] = index
         self.mapping: BiMapping = mapping
         self.parent_list: OptimizationVariableList = parent_list
+        self._current_cx_to_get = lambda: self.cx_start
 
     def __len__(self):
         """
@@ -289,6 +289,10 @@ class OptimizationVariable:
         The number of element (correspond to the nrows of the MX)
         """
         return len(self.index)
+
+    @property
+    def cx(self):
+        return self._current_cx_to_get()
 
     @property
     def cx_start(self):
@@ -360,6 +364,7 @@ class OptimizationVariableList:
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
         self.cx_constructor = cx_constructor
+        self._current_cx_to_get = lambda: self.cx_start
 
     def __getitem__(self, item: int | str | list | range):
         """
@@ -382,7 +387,7 @@ class OptimizationVariableList:
                 index = []
                 for elt in self.elements:
                     index.extend(list(elt.index))
-                return OptimizationVariable("all", self.mx, self.cx_start, index, None)
+                return OptimizationVariable("all", self.mx, self.cx_start, index, None, self)
 
             for elt in self.elements:
                 if item == elt.name:
@@ -404,11 +409,36 @@ class OptimizationVariableList:
     def __setitem__(self, key, value: OptimizationVariable):
         self.elements.append(value)
 
-    def get_cx(self, key, cx_type):
-        if key == "all":
-            return self.cx_start if cx_type == CXStep.CX_START else self.cx_end
+    def set_current_cx_to_get_index(self, ocp, index: int):
+        """
+        Set the value of current_cx_to_get to corresponding index (cx_start for 0, cx_mid for 1, cx_end for 2) if
+        ocp.assume_phase_dynamics. Otherwise, it is always cx_start
+
+        Parameters
+        ----------
+        index
+            The index to set the current cx to
+        """
+
+        if not ocp.assume_phase_dynamics:
+            self._current_cx_to_get = lambda: self.cx_start
+            return
+
+        if index == 0:
+            self._current_cx_to_get = lambda: self.cx_start
+
+        elif index == 1:
+            # TODO Change that to cx_mid Benjamin
+            self._current_cx_to_get = lambda: self.cx_end
+
+        elif index == 2:
+            self._current_cx_to_get = lambda: self.cx_end
+
         else:
-            return self[key].cx_start if cx_type == CXStep.CX_START else self[key].cx_end
+            raise ValueError(
+                "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
+                "add more penalties than available. You can try to split them into more penalties or use "
+                "assume_phase_dynamics=False.")
 
     def append_fake(self, name: str, index: MX | SX | list, mx: MX, bimapping: BiMapping):
         """
@@ -492,14 +522,15 @@ class OptimizationVariableList:
     @property
     def cx(self):
         """
-        Most of the time, one wants cx_start (even though they are interested in arrival node. Getting cx_end only make
-        sens if the user needs to compare the starting point AND arrival point of a specific node.
+        Return the current cx to get. This is to get the user an easy accessor to the proper cx to get. Indeed, in the
+        backend, we may need to redirect the user toward cx_start, cx_mid or cx_end, but they may not know which to use.
+        CX is expected to return the proper cx to the user.
 
         Returns
         -------
-        THe cx related to the current state
+        Tne cx related to the current state
         """
-        return self.cx_start
+        return self._current_cx_to_get()
 
     @property
     def cx_start(self):
@@ -659,14 +690,14 @@ class OptimizationVariableContainer:
         """
         This method allows to intercept the scaled item and return the current node_index
         """
-        return self._unscaled[self.node_index]  # TODO: [0] to [node_index]
+        return self._unscaled[self.node_index]
 
     @property
     def scaled(self):
         """
         This method allows to intercept the scaled item and return the current node_index
         """
-        return self._scaled[self.node_index]  # TODO: [0] to [node_index]
+        return self._scaled[self.node_index]
 
     def keys(self):
         return self.unscaled.keys()
