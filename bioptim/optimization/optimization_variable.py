@@ -278,7 +278,6 @@ class OptimizationVariable:
         self.index: [range, list] = index
         self.mapping: BiMapping = mapping
         self.parent_list: OptimizationVariableList = parent_list
-        self._current_cx_to_get = lambda: self.cx_start
 
     def __len__(self):
         """
@@ -292,7 +291,18 @@ class OptimizationVariable:
 
     @property
     def cx(self):
-        return self._current_cx_to_get()
+        if self.parent_list is not None:
+            if self.parent_list.current_cx_to_get == 0:
+                return self.cx_start
+            elif self.parent_list.current_cx_to_get == 1:
+                # TODO Benjamin
+                return self.cx_end
+            elif self.parent_list.current_cx_to_get == 2:
+                return self.cx_end
+            else:
+                raise NotImplementedError("This cx is not implemented. Please contact a programmer")
+        else:
+            return self.cx_start()
 
     @property
     def cx_start(self):
@@ -305,7 +315,7 @@ class OptimizationVariable:
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
                 "Typically 'all' cannot be used"
             )
-        return self.parent_list.cx_start[self.index, :]  # TODO: ADD [self.index, :]
+        return self.parent_list.cx_start[self.index, :]
 
     @property
     def cx_end(self):
@@ -318,7 +328,7 @@ class OptimizationVariable:
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
                 "Typically 'all' cannot be used"
             )
-        return self.parent_list.cx_end[self.index, :]  # TODO: ADD [self.index, :]
+        return self.parent_list.cx_end[self.index, :]
 
 
 class OptimizationVariableList:
@@ -356,7 +366,7 @@ class OptimizationVariableList:
         The number of variables in the list
     """
 
-    def __init__(self, cx_constructor):
+    def __init__(self, cx_constructor, assume_phase_dynamics):
         self.elements: list = []
         self.fake_elements: list = []
         self._cx_start: MX | SX | np.ndarray = np.array([])
@@ -364,7 +374,8 @@ class OptimizationVariableList:
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
         self.cx_constructor = cx_constructor
-        self._current_cx_to_get = lambda: self.cx_start
+        self._current_cx_to_get = 0
+        self.assume_phase_dynamics = assume_phase_dynamics
 
     def __getitem__(self, item: int | str | list | range):
         """
@@ -409,7 +420,12 @@ class OptimizationVariableList:
     def __setitem__(self, key, value: OptimizationVariable):
         self.elements.append(value)
 
-    def set_current_cx_to_get_index(self, ocp, index: int):
+    @property
+    def current_cx_to_get(self):
+        return self._current_cx_to_get
+
+    @current_cx_to_get.setter
+    def current_cx_to_get(self, index: int):
         """
         Set the value of current_cx_to_get to corresponding index (cx_start for 0, cx_mid for 1, cx_end for 2) if
         ocp.assume_phase_dynamics. Otherwise, it is always cx_start
@@ -420,25 +436,18 @@ class OptimizationVariableList:
             The index to set the current cx to
         """
 
-        if not ocp.assume_phase_dynamics:
-            self._current_cx_to_get = lambda: self.cx_start
+        if not self.assume_phase_dynamics:
+            self._current_cx_to_get = 0
             return
 
-        if index == 0:
-            self._current_cx_to_get = lambda: self.cx_start
-
-        elif index == 1:
-            # TODO Change that to cx_mid Benjamin
-            self._current_cx_to_get = lambda: self.cx_end
-
-        elif index == 2:
-            self._current_cx_to_get = lambda: self.cx_end
-
-        else:
+        if index < 0 or index > 2:
             raise ValueError(
                 "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
                 "add more penalties than available. You can try to split them into more penalties or use "
                 "assume_phase_dynamics=False.")
+
+        else:
+            self._current_cx_to_get = index
 
     def append_fake(self, name: str, index: MX | SX | list, mx: MX, bimapping: BiMapping):
         """
@@ -530,7 +539,16 @@ class OptimizationVariableList:
         -------
         Tne cx related to the current state
         """
-        return self._current_cx_to_get()
+
+        if self._current_cx_to_get == 0:
+            return self.cx_start
+        elif self._current_cx_to_get == 1:
+            # TODO Change that to cx_mid Benjamin
+            return self.cx_end
+        elif self._current_cx_to_get == 2:
+            return self.cx_end
+        else:
+            NotImplementedError("This should not happen, please contact a programmer!")
 
     @property
     def cx_start(self):
@@ -674,8 +692,8 @@ class OptimizationVariableContainer:
 
         for node_index in range(n_shooting):
             self.cx_constructor = cx
-            self._scaled.append(OptimizationVariableList(cx))
-            self._unscaled.append(OptimizationVariableList(cx))
+            self._scaled.append(OptimizationVariableList(cx, self.assume_phase_dynamic))
+            self._unscaled.append(OptimizationVariableList(cx, self.assume_phase_dynamic))
 
     def __getitem__(self, item: int | str):
         if isinstance(item, int):

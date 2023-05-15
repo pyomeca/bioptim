@@ -1417,13 +1417,7 @@ class Solution:
                 if penalty.binode_constraint or penalty.transition:
                     x = np.array(())
                     u = np.array(())
-                    phases_dealt_with = []
                     for i in range(len(penalty.nodes_phase)):
-                        if nlp.assume_phase_dynamics and penalty.nodes_phase[i] in phases_dealt_with:
-                            # All nodes in a phase are the same, no need to add them more than once
-                            continue
-                        phases_dealt_with.append(penalty.nodes_phase[i])
-
                         node_idx = penalty.binode_idx[i]
                         phase_idx = penalty.nodes_phase[i]
 

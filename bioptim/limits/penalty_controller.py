@@ -120,7 +120,7 @@ class PenaltyController:
         """
         self._nlp.states.node_index = self.node_index
         out = self._nlp.states.unscaled
-        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        out.current_cx_to_get = self.cx_index_to_get
         return out
 
     @property
@@ -134,7 +134,7 @@ class PenaltyController:
         """
         self._nlp.states_dot.node_index = self.node_index
         out = self._nlp.states_dot.unscaled
-        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        out.current_cx_to_get = self.cx_index_to_get
         return out
 
     @property
@@ -159,7 +159,7 @@ class PenaltyController:
         """
         self._nlp.states.node_index = self.node_index
         out = self._nlp.states.scaled
-        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        out.current_cx_to_get = self.cx_index_to_get
         return out
 
     @property
@@ -177,7 +177,7 @@ class PenaltyController:
         self._nlp.states_dot.node_index = self.node_index
 
         out = self._nlp.states_dot.scaled
-        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        out.current_cx_to_get = self.cx_index_to_get
         return out
 
     @property
@@ -191,7 +191,7 @@ class PenaltyController:
         """
         self._nlp.controls.node_index = self.node_index
         out = self._nlp.controls.unscaled
-        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        out.current_cx_to_get = self.cx_index_to_get
         return out
 
     @property
@@ -208,7 +208,7 @@ class PenaltyController:
         """
         self._nlp.controls.node_index = self.node_index
         out = self._nlp.controls.scaled
-        out.set_current_cx_to_get_index(self.ocp, self.cx_index_to_get)
+        out.current_cx_to_get = self.cx_index_to_get
         return out
 
     @property
