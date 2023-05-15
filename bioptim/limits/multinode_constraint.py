@@ -73,12 +73,12 @@ class BinodeConstraint(Constraint):
             binode_constraint = BinodeConstraintFcn.CUSTOM
         super(Constraint, self).__init__(penalty=binode_constraint, custom_function=custom_function, **params)
 
-        # TODO Allows for ALL_NODE, Benjamin
         for node in nodes:
             if node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
                 if not isinstance(node, int):
-                    raise NotImplementedError(
-                        "Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int."
+                    raise ValueError(
+                        "Multinode constraint only works with Node.START, Node.MID, "
+                        "Node.PENULTIMATE, Node.END or a node index (int)."
                     )
         for phase in nodes_phase:
             if not isinstance(phase, int):

@@ -9,7 +9,7 @@ import shutil
 
 import pytest
 import numpy as np
-from bioptim import InterpolationType, OdeSolver
+from bioptim import InterpolationType, OdeSolver, BiorbdModel, BinodeConstraintList, BinodeConstraintFcn, OptimalControlProgram, DynamicsList, DynamicsFcn, Node
 
 from .utils import TestUtils
 
@@ -1150,6 +1150,27 @@ def test_binode_constraints(ode_solver, assume_phase_dynamics):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+
+@pytest.mark.parametrize("node", [*Node, 0, 3])
+def test_binode_constraints_wrong_nodes(node):
+    binode_constraints = BinodeConstraintList()
+
+    if node in (Node.START, Node.MID, Node.PENULTIMATE, Node.END) or isinstance(node, int):
+        binode_constraints.add(
+            BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
+        )
+    else:
+        with pytest.raises(
+                ValueError,
+                match=re.escape(
+                    "Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, "
+                    "Node.END or a node index (int)."
+                )
+        ):
+            binode_constraints.add(
+                BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
+            )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
