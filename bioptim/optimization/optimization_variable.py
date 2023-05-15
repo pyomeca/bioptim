@@ -295,8 +295,7 @@ class OptimizationVariable:
             if self.parent_list.current_cx_to_get == 0:
                 return self.cx_start
             elif self.parent_list.current_cx_to_get == 1:
-                # TODO Benjamin
-                return self.cx_end
+                return self.cx_mid
             elif self.parent_list.current_cx_to_get == 2:
                 return self.cx_end
             else:
@@ -316,6 +315,19 @@ class OptimizationVariable:
                 "Typically 'all' cannot be used"
             )
         return self.parent_list.cx_start[self.index, :]
+
+    @property
+    def cx_mid(self):
+        """
+        The CX of the variable
+        """
+
+        if self.parent_list is None:
+            raise RuntimeError(
+                "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
+                "Typically 'all' cannot be used"
+            )
+        return self.parent_list.cx_mid[self.index, :]
 
     @property
     def cx_end(self):
@@ -341,6 +353,8 @@ class OptimizationVariableList:
         Each of the variable separated
     _cx_start: MX | SX
         The symbolic MX or SX of the list (starting point)
+    _cx_mid: MX | SX
+        The symbolic MX or SX of the list (mid point)
     _cx_end: MX | SX
         The symbolic MX or SX of the list (ending point)
     mx_reduced: MX
@@ -370,6 +384,7 @@ class OptimizationVariableList:
         self.elements: list = []
         self.fake_elements: list = []
         self._cx_start: MX | SX | np.ndarray = np.array([])
+        self._cx_mid: MX | SX | np.ndarray = np.array([])
         self._cx_end: MX | SX | np.ndarray = np.array([])
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
@@ -483,8 +498,12 @@ class OptimizationVariableList:
             The Mapping of the MX against CX
         """
 
+        if len(cx) < 3:
+            raise NotImplementedError("cx should be of dimension 3 (start, mid, end)")
+
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
         self._cx_start = vertcat(self._cx_start, cx[0])
+        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) + 1)//2])
         self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
@@ -515,7 +534,11 @@ class OptimizationVariableList:
             The scaled optimization variable associated with this variable
         """
 
+        if len(cx) < 3:
+            raise NotImplementedError("cx should be of dimension 3 (start, mid, end)")
+
         self._cx_start = vertcat(self._cx_start, cx[0])
+        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) + 1)//2])
         self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
@@ -543,8 +566,7 @@ class OptimizationVariableList:
         if self._current_cx_to_get == 0:
             return self.cx_start
         elif self._current_cx_to_get == 1:
-            # TODO Change that to cx_mid Benjamin
-            return self.cx_end
+            return self.cx_mid
         elif self._current_cx_to_get == 2:
             return self.cx_end
         else:
@@ -558,6 +580,15 @@ class OptimizationVariableList:
 
         # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
         return self.cx_constructor([] if self.shape == 0 else self._cx_start[:, 0])
+
+    @property
+    def cx_mid(self):
+        """
+        The cx of all elements together
+        """
+
+        # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
+        return self.cx_constructor([] if self.shape == 0 else self._cx_mid[:, 0])
 
     @property
     def cx_end(self):
@@ -613,7 +644,7 @@ class OptimizationVariableList:
         The size of the CX
         """
 
-        return self._cx_end.shape[0]
+        return self._cx_start.shape[0]
 
     def __len__(self):
         """
