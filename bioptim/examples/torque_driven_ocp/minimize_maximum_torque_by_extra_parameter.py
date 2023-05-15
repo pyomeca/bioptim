@@ -70,7 +70,7 @@ def prepare_ocp(
     parameter_initial_guess = InitialGuess(0)
     parameter_bounds = Bounds(0, tau_max, interpolation=InterpolationType.CONSTANT)
 
-    # parameter_objective_functions = Objective(minimize_parameters, weight=10000, quadratic=True, custom_type=ObjectiveFcn.Parameter)
+    parameter_objective_function = Objective(minimize_parameters, weight=10000, quadratic=True, custom_type=ObjectiveFcn.Parameter)
 
     parameters.add(
         "max_tau",  # The name of the parameter
@@ -80,9 +80,10 @@ def prepare_ocp(
         size=1,
     )
 
-    # # Add phase independant objective functions
-    # parameter_objective_functions = ParameterObjectiveList()
-    # parameter_objective_functions.add(parameter_objective_functions, weight=1000, quadratic=True)
+    # Add phase independant objective functions
+    parameter_objectives = ParameterObjectiveList()
+    # parameter_objectives.add(parameter_objective_functions, weight=1000, quadratic=True)
+    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=1000, quadratic=True)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -144,7 +145,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        # parameter_objective_functions=parameter_objective_functions,
+        parameter_objectives=parameter_objectives,
         constraints=constraints,
         variable_mappings=tau_mappings,
         parameters=parameters,

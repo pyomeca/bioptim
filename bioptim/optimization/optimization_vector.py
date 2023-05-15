@@ -79,6 +79,11 @@ class OptimizationVector:
         self.n_all_u = 0
         self.n_phase_u = []
 
+        # self.p_scaled: MX | SX | list = []
+        # self.p_bounds = []
+        # self.p_init = []
+        # self.n_all_p = 0
+
         for _ in range(self.ocp.n_phases):
             self.x_scaled.append([])
             self.x_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
@@ -89,6 +94,10 @@ class OptimizationVector:
             self.u_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
             self.u_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
             self.n_phase_u.append(0)
+
+        # self.p_scaled.append([])
+        # self.p_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
+        # self.p_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
 
     @property
     def vector(self):

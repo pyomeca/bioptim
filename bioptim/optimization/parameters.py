@@ -106,94 +106,111 @@ class Parameter(PenaltyOption):
     def shape(self):
         return self.cx.shape[0]
 
-    # def add_or_replace_to_penalty_pool(self, ocp, _):
-    #     """
-    #     Doing some configuration on the parameter and add it to the list of parameter_to_optimize
-    #
-    #     Parameters
-    #     ----------
-    #     ocp: OptimalControlProgram
-    #         A reference to the ocp
-    #     _: Any
-    #         The placeholder for what is supposed to be nlp
-    #     """
-    #
-    #     old_parameter_cx = ocp.v.parameters_in_list.cx
+    # def add_parameter_to_v(self, ocp):
     #     ocp.v.add_parameter(self)
-    #
-    #     # # Express the previously defined parameters with the new param set
-    #     # state_cx = ocp.cx()
-    #     # controls_cx = ocp.cx()
-    #     # parameter_cx = ocp.v.parameters_in_list.cx
-    #     # for p in ocp.v.parameters_in_list:
-    #     #     if p.penalty_list is None:
-    #     #         continue
-    #     #     for p_list in p.penalty_list[0]:
-    #     #         if not p_list.weighted_function:
-    #     #             continue
-    #     #             # ???
-    #     #
-    #     #         dt_cx = ocp.cx.sym("dt", 1, 1)
-    #     #         weight_cx = ocp.cx.sym("weight", 1, 1)
-    #     #         target_cx = ocp.cx.sym("target", p_list.weighted_function[0].numel_out(), 1)
-    #     #
-    #     #         p_list.function[0] = Function(
-    #     #             p_list.function[0].name(),
-    #     #             [state_cx, controls_cx, parameter_cx],
-    #     #             [p_list.function[0](state_cx, controls_cx, old_parameter_cx)],
-    #     #         )
-    #     #         p_list.weighted_function[0] = Function(
-    #     #             p_list.function[0].name(),
-    #     #             [state_cx, controls_cx, parameter_cx, weight_cx, target_cx, dt_cx],
-    #     #             [p_list.weighted_function[0](state_cx, controls_cx, old_parameter_cx, weight_cx, target_cx, dt_cx)],
-    #     #         )
-    #     #
-    #     # # if self.penalty_list:
-    #     #     if ocp.phase_transitions:
-    #     #         raise NotImplementedError("Updating parameters while having phase_transition is not supported yet")
-    #     #
-    #     #     if isinstance(self.penalty_list, Objective):
-    #     #         penalty_list_tp = ObjectiveList()
-    #     #         penalty_list_tp.add(self.penalty_list)
-    #     #         self.penalty_list = penalty_list_tp
-    #     #     elif not isinstance(self.penalty_list, ObjectiveList):
-    #     #         raise RuntimeError("penalty_list should be built from an Objective or ObjectiveList")
-    #     #
-    #     #     if len(self.penalty_list) > 1 or len(self.penalty_list[0]) > 1:
-    #     #         raise NotImplementedError("Parameters with more that one penalty is not implemented yet")
-    #     #
-    #     #     for penalty in self.penalty_list[0]:
-    #     #         # Sanity check
-    #     #         if not isinstance(penalty.type, ObjectiveFcn.Parameter):
-    #     #             raise RuntimeError("Parameters should be declared custom_type=ObjectiveFcn.Parameters")
-    #     #         if penalty.node != Node.DEFAULT:
-    #     #             raise RuntimeError("Parameters are timeless optimization, node=Node.DEFAULT should be declared")
-    #     #
-    #     #         func = penalty.custom_function
-    #     #
-    #     #         controller = PenaltyController(ocp, None, [], [], [], [], [], [])
-    #     #         val = func(ocp, self.cx * self.scaling, **penalty.params)
-    #     #         self.set_penalty(ocp, penalty, val, target_ns=1)
-    #     #         penalty.ensure_penalty_sanity(ocp, None)
-    #     #         penalty._add_penalty_to_pool(controller)
+
+
+    def add_or_replace_to_parameter_penalty_pool(self, ocp, penalty):
+        """
+        ...
+        """
+        if not self.name:
+            if self.type.name == "CUSTOM":
+                self.name = self.custom_function.__name__ ###
+            else:
+                self.name = self.type.name
+
+        # penalty_type = self.type.get_type()
+        #
+        # controllers = [self._get_penalty_controller(ocp, nlp)]
+        # penalty_type.validate_penalty_time_index(self, controllers[0])
+        # self.ensure_penalty_sanity(ocp, nlp)
+        # self.dt = penalty_type.get_dt(nlp)
+        #
+        # state_cx = ocp.cx()
+        # controls_cx = ocp.cx()
+        # parameter_cx = ocp.v.parameters_in_list.cx
+        #
+        # dt_cx = ocp.cx.sym("dt", 1, 1)
+        # weight_cx = ocp.cx.sym("weight", 1, 1)
+        # target_cx = ocp.cx.sym("target", penalty.target, 1)
+        #
+        # # The active controller is always last
+        penalty_function = self.type(self, penalty, **self.params)
+        self.set_penalty(ocp, penalty_function, expand)
+
+
+
+        #
+        # # Express the previously defined parameters with the new param set
+        # state_cx = ocp.cx()
+        # controls_cx = ocp.cx()
+        # parameter_cx = ocp.v.parameters_in_list.cx
+        # # for p in ocp.v.parameters_in_list:
+        # #     if p.penalty_list is None:
+        # #         continue
+        # #     for p_list in p.penalty_list[0]:
+        # #         if not p_list.weighted_function:
+        # #             continue
+        # #             # ???
+        #
+        # dt_cx = ocp.cx.sym("dt", 1, 1)
+        # weight_cx = ocp.cx.sym("weight", 1, 1)
+        # target_cx = ocp.cx.sym("target", penalty.target, 1)
+        #
+        # p_list.function[0] = Function(
+        #     p_list.function[0].name(),
+        #     [state_cx, controls_cx, parameter_cx],
+        #     [p_list.function[0](state_cx, controls_cx, parameter_cx)],
+        # )
+        # p_list.weighted_function[0] = Function(
+        #     p_list.function[0].name(),
+        #     [state_cx, controls_cx, parameter_cx, weight_cx, target_cx, dt_cx],
+        #     [p_list.weighted_function[0](state_cx, controls_cx, parameter_cx, weight_cx, target_cx, dt_cx)],
+        # )
+        #
+        # # if self.penalty_list:
+        # if ocp.phase_transitions:
+        #     raise NotImplementedError("Updating parameters while having phase_transition is not supported yet")
+        #
+        # if isinstance(self.penalty_list, Objective):
+        #     penalty_list_tp = ObjectiveList()
+        #     penalty_list_tp.add(self.penalty_list)
+        #     self.penalty_list = penalty_list_tp
+        # elif not isinstance(self.penalty_list, ObjectiveList):
+        #     raise RuntimeError("penalty_list should be built from an Objective or ObjectiveList")
+        #
+        # if len(self.penalty_list) > 1 or len(self.penalty_list[0]) > 1:
+        #     raise NotImplementedError("Parameters with more that one penalty is not implemented yet")
+        #
+        # for penalty in self.penalty_list[0]:
+        #     # Sanity check
+        #     if not isinstance(penalty.type, ObjectiveFcn.Parameter):
+        #         raise RuntimeError("Parameters should be declared custom_type=ObjectiveFcn.Parameters")
+        #     if penalty.node != Node.DEFAULT:
+        #         raise RuntimeError("Parameters are timeless optimization, node=Node.DEFAULT should be declared")
+        #
+        #     func = penalty.custom_function
+        #
+        #     controller = PenaltyController(ocp, None, [], [], [], [], [], [])
+        #     val = func(ocp, self.cx * self.scaling, **penalty.params)
+        #     self.set_penalty(ocp, penalty, val, target_ns=1)
+        #     penalty.ensure_penalty_sanity(ocp, None)
+        #     penalty._add_penalty_to_pool(controller)
+
 
     def set_penalty(
         self,
         ocp,
         objective: Objective,
         penalty: MX | SX,
-        combine_to: str = None,
-        target_ns: int = -1,
         expand: bool = False,
     ):
+        # TODO: j'en etais ici
         objective.rows = self._set_dim_idx(self.rows, penalty.rows())
         objective.cols = self._set_dim_idx(self.cols, penalty.columns())
         objective.node_idx = [0]
         objective.dt = 1
-        if objective.target is not None:
-            objective._check_target_dimensions(None, target_ns)
-            if combine_to is not None:
-                objective.add_target_to_plot(None, combine_to)
         self._set_penalty_function(ocp, objective, penalty, expand)
 
     def _set_penalty_function(self, ocp, objective, fcn: MX | SX, expand: bool = False):

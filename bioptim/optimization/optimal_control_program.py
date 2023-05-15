@@ -26,10 +26,12 @@ from ..limits.constraints import (
     ConstraintList,
     Constraint,
     MultinodeConstraintFunction,
+    ParameterConstraintList,
+    ParameterConstraint,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import BinodeConstraintList
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList, ParameterObjective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
 from ..limits.penalty import PenaltyOption
@@ -162,6 +164,8 @@ class OptimalControlProgram:
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         binode_constraints: BinodeConstraintList = None,
+        parameter_objectives: ParameterObjectiveList | ParameterObjective = None,
+        parameter_constraints: ParameterConstraintList | ParameterConstraint = None,
         x_scaling: VariableScaling | VariableScalingList = None,
         xdot_scaling: VariableScaling | VariableScalingList = None,
         u_scaling: VariableScaling | VariableScalingList = None,
@@ -202,6 +206,10 @@ class OptimalControlProgram:
             All the constraints of the program
         parameters: Parameter | ParameterList
             All the parameters to optimize of the program
+        parameter_objectives: ParameterObjective | ParameterObjectiveList
+            All the parameter objectives to optimize of the program
+        parameter_constraints: ParameterConstraint | ParameterConstraintList
+            All the parameter constraints of the program
         external_forces: list[list, ...] | tuple[list, ...]
             The external forces acting on the center of mass of the segments specified in the bioMod
         ode_solver: OdeSolverBase
@@ -267,6 +275,8 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "binode_constraints": binode_constraints,
+            "parameter_objectives": parameter_objectives,
+            "parameter_constraints": parameter_constraints,
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
@@ -422,6 +432,24 @@ class OptimalControlProgram:
         elif not isinstance(binode_constraints, BinodeConstraintList):
             raise RuntimeError("binode_constraints should be built from an BinodeConstraintList")
 
+        if parameter_objectives is None:
+            parameter_objectives = ParameterObjectiveList()
+        elif isinstance(parameter_objectives, ParameterObjective):
+            parameter_objectives_tp = ParameterObjectiveList()
+            parameter_objectives_tp.add(parameter_objectives)
+            parameter_objectives = parameter_objectives_tp
+        elif not isinstance(parameter_objectives, ParameterObjectiveList):
+            raise RuntimeError("objective_functions should be built from an Objective or ObjectiveList")
+
+        if parameter_constraints is None:
+            parameter_constraints = ParameterConstraintList()
+        elif isinstance(constraints, ParameterConstraint):
+            parameter_constraints_tp = ParameterConstraintList()
+            parameter_constraints_tp.add(parameter_constraints)
+            parameter_constraints = parameter_constraints_tp
+        elif not isinstance(parameter_constraints, ParameterConstraintList):
+            raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
+
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
         elif not isinstance(ode_solver, OdeSolverBase):
@@ -480,8 +508,6 @@ class OptimalControlProgram:
 
         # Prepare the parameters to optimize
         self.phase_transitions = []
-        # if len(parameters) > 0:
-        #     self.update_parameters(parameters)
 
         # Prepare the parameter mappings
         if parameter_mappings is None:
@@ -489,6 +515,10 @@ class OptimalControlProgram:
         if "time" not in parameter_mappings.keys():
             parameter_mappings.add("time", [i for i in range(self.n_phases)], [i for i in range(self.n_phases)])
         self.parameter_mappings = parameter_mappings
+
+        # Add the parameters
+        if len(parameters) > 0:
+            self.update_parameters(parameters) #TODO: I think parameters other than time are not mapped
 
         # Declare the time to optimize
         self._define_time(phase_time, objective_functions, constraints)
@@ -556,9 +586,11 @@ class OptimalControlProgram:
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
         self.update_constraints(constraints)
+        self.update_parameter_constraints(parameter_constraints)
 
         # Prepare objectives
         self.update_objectives(objective_functions)
+        self.update_parameter_objectives(parameter_objectives)
 
     @classmethod
     def from_loaded_data(cls, data):
@@ -749,6 +781,29 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
 
+
+    def update_parameter_objectives(self, new_objective_function: ParameterObjective | ParameterObjectiveList):
+        """
+        The main user interface to add or modify a parameter objective functions in the ocp
+
+        Parameters
+        ----------
+        new_objective_function: ParameterObjective | ParameterObjectiveList
+            The parameter objective to add to the ocp
+        """
+
+        if isinstance(new_objective_function, ParameterObjective):
+            self.__modify_parameter_penalty(new_objective_function)
+
+        elif isinstance(new_objective_function, ParameterObjectiveList):
+            for objective_in_phase in new_objective_function:
+                for objective in objective_in_phase:
+                    self.__modify_parameter_penalty(objective)
+
+
+        else:
+            raise RuntimeError("new_objective_function must be a ParameterObjective or an ParameterObjectiveList")
+
     def update_objectives_target(self, target, phase=None, list_index=None):
         """
         Fast accessor to update the target of a specific objective function. To update target of global objective
@@ -793,6 +848,25 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
+
+    def update_parameter_constraints(self, new_constraint: ParameterConstraint | ParameterConstraintList):
+        """
+        The main user interface to add or modify a parameter constraint in the ocp
+
+        Parameters
+        ----------
+        new_constraint: ParameterConstraint | ParameterConstraintList
+            The parameter constraint to add to the ocp
+        """
+
+        if isinstance(new_constraint, ParameterConstraint):
+            raise RuntimeError("ParameterConstraint are not implemented yet, but could be a good addition. If you run into this error, please contact the developpers by openning an issue on the GitHub page.")
+        elif isinstance(new_constraint, ParameterConstraintList):
+            if new_constraint.options != [[]]:
+                raise RuntimeError("ParameterConstraint are not implemented yet, but could be a good addition. If you run into this error, please contact the developpers by openning an issue on the GitHub page.")
+        else:
+            raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
+
     def update_parameters(self, new_parameters: Parameter | ParameterList):
         """
         The main user interface to add or modify parameters in the ocp
@@ -804,11 +878,13 @@ class OptimalControlProgram:
         """
 
         if isinstance(new_parameters, Parameter):
-            self.__modify_penalty(new_parameters)
+            # self.__modify_penalty(new_parameters)
+            self.v.add_parameter(new_parameters)
 
         elif isinstance(new_parameters, ParameterList):
             for parameter in new_parameters:
-                self.__modify_penalty(parameter)
+                self.v.add_parameter(parameter)
+                # self.__modify_penalty(parameter)
         else:
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
@@ -1504,6 +1580,29 @@ class OptimalControlProgram:
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
 
         self.program_changed = True
+
+
+    def __modify_parameter_penalty(self, new_penalty: PenaltyOption | Parameter):
+        """
+        The internal function to modify a parameter penalty. It is also stored in the original_values, meaning that if one
+        overrides an objective only the latter is preserved when saved
+
+        Parameters
+        ----------
+        new_penalty: PenaltyOption | Parameter
+            Any valid option to add to the program
+        """
+
+        if not new_penalty:
+            return
+
+        # Copy to self.original_values so it can be save/load
+        pen = new_penalty.type.get_type()
+        self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
+        self.v.parameters_in_list[0].add_or_replace_to_parameter_penalty_pool(self, new_penalty)
+
+        self.program_changed = True
+
 
     def node_time(self, phase_idx: int, node_idx: int):
         """
