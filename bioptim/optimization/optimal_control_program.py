@@ -160,7 +160,7 @@ class OptimalControlProgram:
         node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
-        binode_constraints: BinodeConstraintList = None,
+        multinode_constraints: BinodeConstraintList = None,
         x_scaling: VariableScaling | VariableScalingList = None,
         xdot_scaling: VariableScaling | VariableScalingList = None,
         u_scaling: VariableScaling | VariableScalingList = None,
@@ -265,7 +265,7 @@ class OptimalControlProgram:
             "node_mappings": node_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
-            "binode_constraints": binode_constraints,
+            "multinode_constraints": multinode_constraints,
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
@@ -416,10 +416,10 @@ class OptimalControlProgram:
         elif not isinstance(phase_transitions, PhaseTransitionList):
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
-        if binode_constraints is None:
-            binode_constraints = BinodeConstraintList()
-        elif not isinstance(binode_constraints, BinodeConstraintList):
-            raise RuntimeError("binode_constraints should be built from an BinodeConstraintList")
+        if multinode_constraints is None:
+            multinode_constraints = BinodeConstraintList()
+        elif not isinstance(multinode_constraints, BinodeConstraintList):
+            raise RuntimeError("multinode_constraints should be built from an BinodeConstraintList")
 
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
@@ -545,8 +545,8 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-        # TODO: binode_whatever should be handled the same way as constraints and objectives
-        self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
+        # TODO: multinode_whatever should be handled the same way as constraints and objectives
+        self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
 
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
@@ -721,7 +721,7 @@ class OptimalControlProgram:
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
-        for mnc in self.binode_constraints:
+        for mnc in self.multinode_constraints:
             # Equality constraint between nodes
             if isinstance(mnc.nodes[0], int):
                 first_node_name = f"idx {str(mnc.nodes[0])}"
@@ -1054,7 +1054,7 @@ class OptimalControlProgram:
                 u /= u_scaling
 
             out = []
-            if penalty.transition or penalty.binode_constraint:
+            if penalty.transition or penalty.multinode_constraint:
                 out.append(
                     penalty.weighted_function_non_threaded[t](
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt

@@ -44,8 +44,8 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6, phase=1)
 
     # Multi-node constraints
-    binode_constraints = BinodeConstraintList()
-    binode_constraints.add(
+    multinode_constraints = BinodeConstraintList()
+    multinode_constraints.add(
         BinodeConstraintFcn.TIME_CONSTRAINT,
         phase_first_idx=0,
         phase_second_idx=1,
@@ -53,7 +53,7 @@ def prepare_ocp(
         second_node=Node.END,
     )
     for i in range(n_shooting[0]):
-        binode_constraints.add(
+        multinode_constraints.add(
             BinodeConstraintFcn.CONTROLS_EQUALITY,
             phase_first_idx=0,
             phase_second_idx=1,
@@ -116,7 +116,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         variable_mappings=tau_mappings,
         phase_transitions=phase_transitions,
-        binode_constraints=binode_constraints,
+        multinode_constraints=multinode_constraints,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

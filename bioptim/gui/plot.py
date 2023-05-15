@@ -715,7 +715,7 @@ class PlotOcp:
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
                     for i_var in range(self.variable_sizes[i][key]):
-                        if self.plot_func[key][i].parameters["penalty"].binode_constraint:
+                        if self.plot_func[key][i].parameters["penalty"].multinode_constraint:
                             y = np.array([np.nan])
                             phase_1 = self.plot_func[key][i].parameters["penalty"].phase_second_idx
                             phase_2 = self.plot_func[key][i].parameters["penalty"].phase_first_idx

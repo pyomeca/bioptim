@@ -2,7 +2,7 @@
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement and
 a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
 Extra constraints are defined between specific nodes of phases.
-It is designed to show how one can define a binode constraints and objectives in a multiphase optimal control program
+It is designed to show how one can define a multinode constraints and objectives in a multiphase optimal control program
 """
 
 from casadi import MX
@@ -28,8 +28,8 @@ from bioptim import (
 )
 
 
-def custom_binode_constraint(
-    binode_constraint: BinodeConstraint, controllers: list[PenaltyController, ...], coef: float
+def custom_multinode_constraint(
+    constraint: BinodeConstraint, controllers: list[PenaltyController, ...], coef: float
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
@@ -40,8 +40,8 @@ def custom_binode_constraint(
 
     Parameters
     ----------
-    binode_constraint: BinodeConstraint
-        The placeholder for the binode_constraint
+    constraint: BinodeConstraint
+        The placeholder for the multinode_constraint
     controllers: list[PenaltyController, ...]
         All the controller for the penalties
     coef: float
@@ -54,8 +54,8 @@ def custom_binode_constraint(
 
     # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = binode_constraint.states_mapping.to_second.map(controllers[0].states.cx)
-    states_post = binode_constraint.states_mapping.to_first.map(controllers[1].states.cx)
+    states_pre = constraint.states_mapping.to_second.map(controllers[0].states.cx)
+    states_post = constraint.states_mapping.to_first.map(controllers[1].states.cx)
     return states_pre * coef - states_post
 
 
@@ -116,27 +116,27 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2)
 
     # Constraints
-    binode_constraints = BinodeConstraintList()
+    multinode_constraints = BinodeConstraintList()
     # hard constraint
-    binode_constraints.add(
+    multinode_constraints.add(
         BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2, 2), nodes=(Node.START, Node.START, Node.MID), key="all"
     )
     # Objectives with the weight as an argument
-    binode_constraints.add(
+    multinode_constraints.add(
         BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(2, Node.MID), weight=2, key="all"
     )
     # Objectives with the weight as an argument
-    binode_constraints.add(
+    multinode_constraints.add(
         BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 1), nodes=(Node.MID, Node.END), weight=0.1, key="all"
     )
     # Objectives with the weight as an argument
-    binode_constraints.add(
-        custom_binode_constraint, nodes_phase=(0, 1), nodes=(Node.MID, Node.PENULTIMATE), weight=0.1, coef=2
+    multinode_constraints.add(
+        custom_multinode_constraint, nodes_phase=(0, 1), nodes=(Node.MID, Node.PENULTIMATE), weight=0.1, coef=2
     )
 
     # This is a useless constraint (as it already does that anyway) to show how to add three constraints on the same
     # phase. More than 3 will only work with assume_phase_dynamics to False
-    binode_constraints.add(
+    multinode_constraints.add(
         BinodeConstraintFcn.CONTROLS_EQUALITY,
         nodes_phase=(1, 1, 1),
         nodes=(Node.START, Node.MID, Node.PENULTIMATE),
@@ -145,7 +145,7 @@ def prepare_ocp(
     # This constraint is for documentation purposes. Up to 3 nodes, it will work, but it won't for more than 3 if
     # assume_phase_dynamics is set to True
     if with_too_much_constraints:
-        binode_constraints.add(
+        multinode_constraints.add(
             BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0, 0, 0), nodes=(0, 1, 2, 3), key="all"
         )
 
@@ -189,7 +189,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
-        binode_constraints=binode_constraints,
+        multinode_constraints=multinode_constraints,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )

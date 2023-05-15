@@ -1414,11 +1414,11 @@ class Solution:
             u = []
             target = []
             if nlp is not None:
-                if penalty.binode_constraint or penalty.transition:
+                if penalty.multinode_constraint or penalty.transition:
                     x = np.array(())
                     u = np.array(())
                     for i in range(len(penalty.nodes_phase)):
-                        node_idx = penalty.binode_idx[i]
+                        node_idx = penalty.multinode_idx[i]
                         phase_idx = penalty.nodes_phase[i]
 
                         x = np.concatenate((x, self._states["scaled"][phase_idx]["all"][:, node_idx]))

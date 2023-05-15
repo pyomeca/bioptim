@@ -194,7 +194,7 @@ class PenaltyOption(OptionGeneric):
         self.custom_function = custom_function
 
         self.node_idx = []
-        self.binode_idx = None
+        self.multinode_idx = None
         self.dt = 0
         self.weight = weight
         self.function: list[Function | None, ...] = []
@@ -205,7 +205,7 @@ class PenaltyOption(OptionGeneric):
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
         self.transition = False
-        self.binode_constraint = False
+        self.multinode_constraint = False
         self.nodes_phase = None  # This is relevant for multinodes
         self.nodes = None  # This is relevant for multinodes
         if self.derivative and self.explicit_derivative:
@@ -406,7 +406,7 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
-        if self.binode_constraint or self.transition:
+        if self.multinode_constraint or self.transition:
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
 
             controllers = controller
@@ -642,7 +642,7 @@ class PenaltyOption(OptionGeneric):
                 self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
             controllers = []
-            self.binode_idx = []
+            self.multinode_idx = []
             for node, phase_idx in zip(self.nodes, self.nodes_phase):
                 self.node = node
                 nlp = ocp.nlp[phase_idx % ocp.n_phases]
@@ -652,7 +652,7 @@ class PenaltyOption(OptionGeneric):
                     # Make an exception to the fact that U is not available for the last node
                     controllers[-1].u = [nlp.U[-1]]
                 penalty_type.validate_penalty_time_index(self, controllers[-1])
-                self.binode_idx.append(controllers[-1].t[0])
+                self.multinode_idx.append(controllers[-1].t[0])
 
             # reset the node
             self.node = current_node_type

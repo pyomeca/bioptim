@@ -206,8 +206,8 @@ def test__getting_started__example_multiphase(assume_phase_dynamics):
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test__getting_started__example_binode_constraints(assume_phase_dynamics):
-    from bioptim.examples.getting_started import example_binode_constraints as ocp_module
+def test__getting_started__example_multinode_constraints(assume_phase_dynamics):
+    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 

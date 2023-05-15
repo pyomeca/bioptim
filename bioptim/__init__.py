@@ -109,7 +109,7 @@ PhaseTransitionList
 PhaseTransitionFcn
     Selection of valid phase transition functions
 
-# --- Managing the binode constraint for multiphase programs at specified nodes--- #
+# --- Managing the multinode constraint for multiphase programs at specified nodes--- #
 BinodeConstraintList
     A list of BinodeConstraint
 BinodeConstraintListFcn

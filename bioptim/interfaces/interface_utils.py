@@ -205,7 +205,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
     def get_x_and_u_at_idx(_penalty, _idx, is_unscaled):
         """ """
-        if _penalty.binode_constraint or _penalty.transition:
+        if _penalty.multinode_constraint or _penalty.transition:
             ocp = interface.ocp
 
             def get_control_modificator(index):
@@ -224,7 +224,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             _u = ocp.cx()
             for i in range(len(_penalty.nodes_phase)):
                 nlp_i = ocp.nlp[_penalty.nodes_phase[i]]
-                index_i = _penalty.binode_idx[i]
+                index_i = _penalty.multinode_idx[i]
                 ui_mode = get_control_modificator(i)
 
                 if is_unscaled:

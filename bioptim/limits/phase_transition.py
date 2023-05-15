@@ -56,12 +56,12 @@ class PhaseTransition(BinodeConstraint):
         super(PhaseTransition, self).__init__(
             nodes_phase=(-1, 0) if transition == transition.CYCLIC else (phase_pre_idx, phase_pre_idx + 1),
             nodes=(Node.END, Node.START),
-            binode_constraint=transition,
+            multinode_constraint=transition,
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
             weight=weight if weight is not None else 0,
-            force_binode=True,
+            force_multinode=True,
             **params,
         )
 

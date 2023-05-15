@@ -1101,8 +1101,8 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_binode_constraints(ode_solver, assume_phase_dynamics):
-    from bioptim.examples.getting_started import example_binode_constraints as ocp_module
+def test_multinode_constraints(ode_solver, assume_phase_dynamics):
+    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
@@ -1153,15 +1153,15 @@ def test_binode_constraints(ode_solver, assume_phase_dynamics):
 
 
 @pytest.mark.parametrize("node", [*Node, 0, 3])
-def test_binode_constraints_wrong_nodes(node):
-    binode_constraints = BinodeConstraintList()
+def test_multinode_constraints_wrong_nodes(node):
+    multinode_constraints = BinodeConstraintList()
 
     if node in (Node.START, Node.MID, Node.PENULTIMATE, Node.END) or isinstance(node, int):
-        binode_constraints.add(
+        multinode_constraints.add(
             BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
         )
         with pytest.raises(ValueError, match=re.escape("Each of the nodes must have a corresponding nodes_phase")):
-            binode_constraints.add(
+            multinode_constraints.add(
                 BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0,), nodes=(Node.START, node), key="all"
             )
     else:
@@ -1172,7 +1172,7 @@ def test_binode_constraints_wrong_nodes(node):
                 "Node.END or a node index (int)."
             ),
         ):
-            binode_constraints.add(
+            multinode_constraints.add(
                 BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
             )
 
@@ -1180,8 +1180,8 @@ def test_binode_constraints_wrong_nodes(node):
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("too_much_constraints", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
-def test_binode_constraints_too_much_constraints(ode_solver, too_much_constraints, assume_phase_dynamics):
-    from bioptim.examples.getting_started import example_binode_constraints as ocp_module
+def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constraints, assume_phase_dynamics):
+    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
