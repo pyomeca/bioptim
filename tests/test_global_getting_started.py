@@ -9,7 +9,7 @@ import shutil
 
 import pytest
 import numpy as np
-from bioptim import InterpolationType, OdeSolver, BiorbdModel, BinodeConstraintList, BinodeConstraintFcn, OptimalControlProgram, DynamicsList, DynamicsFcn, Node
+from bioptim import InterpolationType, OdeSolver, BinodeConstraintList, BinodeConstraintFcn, Node
 
 from .utils import TestUtils
 
@@ -1160,13 +1160,17 @@ def test_binode_constraints_wrong_nodes(node):
         binode_constraints.add(
             BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
         )
+        with pytest.raises(ValueError, match=re.escape("Each of the nodes must have a corresponding nodes_phase")):
+            binode_constraints.add(
+                BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0,), nodes=(Node.START, node), key="all"
+            )
     else:
         with pytest.raises(
-                ValueError,
-                match=re.escape(
-                    "Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, "
-                    "Node.END or a node index (int)."
-                )
+            ValueError,
+            match=re.escape(
+                "Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, "
+                "Node.END or a node index (int)."
+            ),
         ):
             binode_constraints.add(
                 BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
@@ -1178,15 +1182,17 @@ def test_binode_constraints_wrong_nodes(node):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_binode_constraints_too_much_constraints(ode_solver, too_much_constraints, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_binode_constraints as ocp_module
+
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver = ode_solver()
     if assume_phase_dynamics and too_much_constraints:
         with pytest.raises(
-            ValueError, match=
-                "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
-                "add more penalties than available in a multinode constraint. You can try to split the constraints "
-                "into more penalties or use assume_phase_dynamics=False."):
+            ValueError,
+            match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
+            "add more penalties than available in a multinode constraint. You can try to split the constraints "
+            "into more penalties or use assume_phase_dynamics=False.",
+        ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
                 n_shootings=(8, 8, 8),

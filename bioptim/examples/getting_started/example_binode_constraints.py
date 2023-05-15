@@ -24,7 +24,7 @@ from bioptim import (
     BinodeConstraintList,
     BinodeConstraintFcn,
     BinodeConstraint,
-    PenaltyController
+    PenaltyController,
 )
 
 

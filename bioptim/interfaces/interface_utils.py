@@ -212,7 +212,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 return (
                     1
                     if ocp.assume_phase_dynamics
-                    and (_penalty.nodes[index] == Node.END or _penalty.nodes[index] == ocp.nlp[_penalty.nodes_phase[index]].ns)
+                    and (
+                        _penalty.nodes[index] == Node.END
+                        or _penalty.nodes[index] == ocp.nlp[_penalty.nodes_phase[index]].ns
+                    )
                     else 0
                 )
 
@@ -226,11 +229,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
                 if is_unscaled:
                     _x_tp = nlp_i.X[index_i]
-                    _u_tp = (
-                        nlp_i.U[index_i - ui_mode]
-                        if ocp.assume_phase_dynamics or index_i < len(nlp_i.U)
-                        else []
-                    )
+                    _u_tp = nlp_i.U[index_i - ui_mode] if ocp.assume_phase_dynamics or index_i < len(nlp_i.U) else []
                 else:
                     _x_tp = nlp_i.X_scaled[index_i]
                     _u_tp = (
