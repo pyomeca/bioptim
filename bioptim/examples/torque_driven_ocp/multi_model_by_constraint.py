@@ -47,18 +47,14 @@ def prepare_ocp(
     multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(
         MultinodeConstraintFcn.TIME_CONSTRAINT,
-        phase_first_idx=0,
-        phase_second_idx=1,
-        first_node=Node.END,
-        second_node=Node.END,
+        nodes_phase=(0, 1),
+        nodes=(Node.END, Node.END),
     )
     for i in range(n_shooting[0]):
         multinode_constraints.add(
             MultinodeConstraintFcn.CONTROLS_EQUALITY,
-            phase_first_idx=0,
-            phase_second_idx=1,
-            first_node=i,
-            second_node=i,
+            nodes_phase=(0, 1),
+            nodes=(i, i),
             key="all",
         )
 

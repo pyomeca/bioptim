@@ -212,7 +212,9 @@ def test__getting_started__example_multinode_constraints(assume_phase_dynamics):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
+        n_shootings=(8, 8, 8),
     )
 
 
