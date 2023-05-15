@@ -27,7 +27,7 @@ from ..limits.constraints import (
     Constraint,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
-from ..limits.multinode_constraint import BinodeConstraintList
+from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
@@ -160,7 +160,7 @@ class OptimalControlProgram:
         node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
-        multinode_constraints: BinodeConstraintList = None,
+        multinode_constraints: MultinodeConstraintList = None,
         x_scaling: VariableScaling | VariableScalingList = None,
         xdot_scaling: VariableScaling | VariableScalingList = None,
         u_scaling: VariableScaling | VariableScalingList = None,
@@ -417,9 +417,9 @@ class OptimalControlProgram:
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
         if multinode_constraints is None:
-            multinode_constraints = BinodeConstraintList()
-        elif not isinstance(multinode_constraints, BinodeConstraintList):
-            raise RuntimeError("multinode_constraints should be built from an BinodeConstraintList")
+            multinode_constraints = MultinodeConstraintList()
+        elif not isinstance(multinode_constraints, MultinodeConstraintList):
+            raise RuntimeError("multinode_constraints should be built from an MultinodeConstraintList")
 
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()

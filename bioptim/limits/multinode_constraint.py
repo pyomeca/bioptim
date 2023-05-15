@@ -11,7 +11,7 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 
 
-class BinodeConstraint(Constraint):
+class MultinodeConstraint(Constraint):
     """
     A placeholder for a multinode constraints
 
@@ -68,9 +68,9 @@ class BinodeConstraint(Constraint):
             force_multinode = True
             del params["force_multinode"]
 
-        if not isinstance(multinode_constraint, BinodeConstraintFcn) and not force_multinode:
+        if not isinstance(multinode_constraint, MultinodeConstraintFcn) and not force_multinode:
             custom_function = multinode_constraint
-            multinode_constraint = BinodeConstraintFcn.CUSTOM
+            multinode_constraint = MultinodeConstraintFcn.CUSTOM
         super(Constraint, self).__init__(penalty=multinode_constraint, custom_function=custom_function, **params)
 
         for node in nodes:
@@ -135,44 +135,44 @@ class BinodeConstraint(Constraint):
             g_to_add_to[self.list_index] = []
 
 
-class BinodeConstraintList(UniquePerPhaseOptionList):
+class MultinodeConstraintList(UniquePerPhaseOptionList):
     """
     A list of Bi Node Constraint
 
     Methods
     -------
     add(self, transition: Callable | PhaseTransitionFcn, phase: int = -1, **extra_arguments)
-        Add a new BinodeConstraint to the list
+        Add a new MultinodeConstraint to the list
     print(self)
-        Print the BinodeConstraintList to the console
+        Print the MultinodeConstraintList to the console
     prepare_multinode_constraint(self, ocp) -> list
         Configure all the multinode_constraint and put them in a list
     """
 
     def add(self, multinode_constraint: Any, **extra_arguments: Any):
         """
-        Add a new BiNodeConstraint to the list
+        Add a new MultinodeConstraint to the list
 
         Parameters
         ----------
-        multinode_constraint: Callable | BinodeConstraintFcn
+        multinode_constraint: Callable | MultinodeConstraintFcn
             The chosen phase transition
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
 
-        if not isinstance(multinode_constraint, BinodeConstraintFcn):
+        if not isinstance(multinode_constraint, MultinodeConstraintFcn):
             extra_arguments["custom_function"] = multinode_constraint
-            multinode_constraint = BinodeConstraintFcn.CUSTOM
-        super(BinodeConstraintList, self)._add(
-            option_type=BinodeConstraint, multinode_constraint=multinode_constraint, phase=-1, **extra_arguments
+            multinode_constraint = MultinodeConstraintFcn.CUSTOM
+        super(MultinodeConstraintList, self)._add(
+            option_type=MultinodeConstraint, multinode_constraint=multinode_constraint, phase=-1, **extra_arguments
         )
 
     def print(self):
         """
-        Print the BiNodeConstraintList to the console
+        Print the MultinodeConstraintList to the console
         """
-        raise NotImplementedError("Printing of BiNodeConstraintList is not ready yet")
+        raise NotImplementedError("Printing of MultinodeConstraintList is not ready yet")
 
     def prepare_multinode_constraints(self, ocp) -> list:
         """
@@ -201,26 +201,24 @@ class BinodeConstraintList(UniquePerPhaseOptionList):
         return full_phase_multinode_constraint
 
 
-class BinodeConstraintFunctions(PenaltyFunctionAbstract):
+class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
     """
     Internal implementation of the phase transitions
     """
 
     class Functions:
         """
-        Implementation of all the Binode Constraint
+        Implementation of all the Multinode Constraint
         """
 
         @staticmethod
-        def states_equality(
-            constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"
-        ):
+        def states_equality(constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"):
             """
             The most common continuity function, that is state before equals state after
 
             Parameters
             ----------
-            constraint : BinodeConstraint
+            constraint : MultinodeConstraint
                 A reference to the phase transition
             controllers: list
                     The penalty node elements
@@ -230,7 +228,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
 
             ctrl_0 = controllers[0]
             states_0 = constraint.states_mapping.to_second.map(ctrl_0.states[key].cx)
@@ -251,15 +249,13 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def controls_equality(
-            constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"
-        ):
+        def controls_equality(constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"):
             """
             The controls before equals controls after
 
             Parameters
             ----------
-            constraint : BinodeConstraint
+            constraint : MultinodeConstraint
                 A reference to the phase transition
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
@@ -269,7 +265,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the controls after and before
             """
 
-            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
 
             ctrl_0 = controllers[0]
             controls_0 = ctrl_0.controls[key].cx
@@ -296,7 +292,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             Parameters
             ----------
-            constraint : BinodeConstraint
+            constraint : MultinodeConstraint
                 A reference to the phase transition
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
@@ -306,7 +302,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
 
             pre, post = controllers
             states_pre = constraint.states_mapping.to_second.map(pre.states.cx)
@@ -342,7 +338,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             Parameters
             ----------
-            constraint : BinodeConstraint
+            constraint : MultinodeConstraint
                 A reference to the phase transition
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
@@ -352,7 +348,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
 
             pre, post = controllers
             states_pre = constraint.states_mapping.to_second.map(pre.states.cx)
@@ -390,7 +386,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             Parameters
             ----------
-            constraint : BinodeConstraint
+            constraint : MultinodeConstraint
                 A reference to the phase transition
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
@@ -400,7 +396,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The difference between the duration of the phases
             """
 
-            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
 
             time_pre_idx = None
             pre, post = controllers
@@ -438,7 +434,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             Parameters
             ----------
-            constraint: BinodeConstraint
+            constraint: MultinodeConstraint
                 A reference to the phase transition
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
@@ -448,7 +444,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The expected difference between the last and first node provided by the user
             """
 
-            BinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
             return constraint.custom_function(constraint, controllers, **extra_params)
 
         @staticmethod
@@ -464,17 +460,17 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
                 existing_phases.append(controller.phase_idx)
 
 
-class BinodeConstraintFcn(FcnEnum):
+class MultinodeConstraintFcn(FcnEnum):
     """
     Selection of valid multinode constraint functions
     """
 
-    STATES_EQUALITY = (BinodeConstraintFunctions.Functions.states_equality,)
-    CONTROLS_EQUALITY = (BinodeConstraintFunctions.Functions.controls_equality,)
-    CUSTOM = (BinodeConstraintFunctions.Functions.custom,)
-    COM_EQUALITY = (BinodeConstraintFunctions.Functions.com_equality,)
-    COM_VELOCITY_EQUALITY = (BinodeConstraintFunctions.Functions.com_velocity_equality,)
-    TIME_CONSTRAINT = (BinodeConstraintFunctions.Functions.time_equality,)
+    STATES_EQUALITY = (MultinodeConstraintFunctions.Functions.states_equality,)
+    CONTROLS_EQUALITY = (MultinodeConstraintFunctions.Functions.controls_equality,)
+    CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
+    COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
+    COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
+    TIME_CONSTRAINT = (MultinodeConstraintFunctions.Functions.time_equality,)
 
     @staticmethod
     def get_type():
@@ -482,4 +478,4 @@ class BinodeConstraintFcn(FcnEnum):
         Returns the type of the penalty
         """
 
-        return BinodeConstraintFunctions
+        return MultinodeConstraintFunctions

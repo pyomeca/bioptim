@@ -21,15 +21,15 @@ from bioptim import (
     OdeSolverBase,
     Node,
     Solver,
-    BinodeConstraintList,
-    BinodeConstraintFcn,
-    BinodeConstraint,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
+    MultinodeConstraint,
     PenaltyController,
 )
 
 
 def custom_multinode_constraint(
-    constraint: BinodeConstraint, controllers: list[PenaltyController, ...], coef: float
+    constraint: MultinodeConstraint, controllers: list[PenaltyController, ...], coef: float
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
@@ -40,7 +40,7 @@ def custom_multinode_constraint(
 
     Parameters
     ----------
-    constraint: BinodeConstraint
+    constraint: MultinodeConstraint
         The placeholder for the multinode_constraint
     controllers: list[PenaltyController, ...]
         All the controller for the penalties
@@ -116,18 +116,21 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2)
 
     # Constraints
-    multinode_constraints = BinodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
     # hard constraint
     multinode_constraints.add(
-        BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2, 2), nodes=(Node.START, Node.START, Node.MID), key="all"
+        MultinodeConstraintFcn.STATES_EQUALITY,
+        nodes_phase=(0, 2, 2),
+        nodes=(Node.START, Node.START, Node.MID),
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
-        BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(2, Node.MID), weight=2, key="all"
+        MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(2, Node.MID), weight=2, key="all"
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
-        BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 1), nodes=(Node.MID, Node.END), weight=0.1, key="all"
+        MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 1), nodes=(Node.MID, Node.END), weight=0.1, key="all"
     )
     # Objectives with the weight as an argument
     multinode_constraints.add(
@@ -137,7 +140,7 @@ def prepare_ocp(
     # This is a useless constraint (as it already does that anyway) to show how to add three constraints on the same
     # phase. More than 3 will only work with assume_phase_dynamics to False
     multinode_constraints.add(
-        BinodeConstraintFcn.CONTROLS_EQUALITY,
+        MultinodeConstraintFcn.CONTROLS_EQUALITY,
         nodes_phase=(1, 1, 1),
         nodes=(Node.START, Node.MID, Node.PENULTIMATE),
         index=2,
@@ -146,7 +149,7 @@ def prepare_ocp(
     # assume_phase_dynamics is set to True
     if with_too_much_constraints:
         multinode_constraints.add(
-            BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0, 0, 0), nodes=(0, 1, 2, 3), key="all"
+            MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0, 0, 0), nodes=(0, 1, 2, 3), key="all"
         )
 
     # Path constraint

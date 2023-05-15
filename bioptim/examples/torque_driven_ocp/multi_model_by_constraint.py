@@ -12,8 +12,8 @@ from bioptim import (
     BiMappingList,
     PhaseTransitionList,
     PhaseTransitionFcn,
-    BinodeConstraintList,
-    BinodeConstraintFcn,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
 )
 
 
@@ -44,9 +44,9 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6, phase=1)
 
     # Multi-node constraints
-    multinode_constraints = BinodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(
-        BinodeConstraintFcn.TIME_CONSTRAINT,
+        MultinodeConstraintFcn.TIME_CONSTRAINT,
         phase_first_idx=0,
         phase_second_idx=1,
         first_node=Node.END,
@@ -54,7 +54,7 @@ def prepare_ocp(
     )
     for i in range(n_shooting[0]):
         multinode_constraints.add(
-            BinodeConstraintFcn.CONTROLS_EQUALITY,
+            MultinodeConstraintFcn.CONTROLS_EQUALITY,
             phase_first_idx=0,
             phase_second_idx=1,
             first_node=i,

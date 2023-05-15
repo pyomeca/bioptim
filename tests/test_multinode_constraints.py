@@ -1,8 +1,8 @@
 import pytest
 from bioptim import (
     BiorbdModel,
-    BinodeConstraintList,
-    BinodeConstraintFcn,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
     Node,
     OdeSolver,
     OptimalControlProgram,
@@ -32,24 +32,24 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> O
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
-    multinode_constraints = BinodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
     # hard constraint
     multinode_constraints.add(
-        BinodeConstraintFcn.STATES_EQUALITY,
+        MultinodeConstraintFcn.STATES_EQUALITY,
         phase_first_idx=phase_1,
         phase_second_idx=phase_2,
         first_node=Node.START,
         second_node=Node.START,
     )
     multinode_constraints.add(
-        BinodeConstraintFcn.COM_EQUALITY,
+        MultinodeConstraintFcn.COM_EQUALITY,
         phase_first_idx=phase_1,
         phase_second_idx=phase_2,
         first_node=Node.START,
         second_node=Node.START,
     )
     multinode_constraints.add(
-        BinodeConstraintFcn.COM_VELOCITY_EQUALITY,
+        MultinodeConstraintFcn.COM_VELOCITY_EQUALITY,
         phase_first_idx=phase_1,
         phase_second_idx=phase_2,
         first_node=Node.START,
@@ -104,11 +104,11 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> O
 @pytest.mark.parametrize("node", [*Node, 0])
 def test_multinode_fail_first_node(node):
     # Constraints
-    multinode_constraints = BinodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
     # hard constraint
     if node in [Node.START, Node.MID, Node.PENULTIMATE, Node.END, 0]:
         multinode_constraints.add(
-            BinodeConstraintFcn.STATES_EQUALITY,
+            MultinodeConstraintFcn.STATES_EQUALITY,
             phase_first_idx=0,
             phase_second_idx=2,
             first_node=node,
@@ -117,10 +117,10 @@ def test_multinode_fail_first_node(node):
     else:
         with pytest.raises(
             NotImplementedError,
-            match="Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+            match="Multinode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
         ):
             multinode_constraints.add(
-                BinodeConstraintFcn.STATES_EQUALITY,
+                MultinodeConstraintFcn.STATES_EQUALITY,
                 phase_first_idx=0,
                 phase_second_idx=2,
                 first_node=node,
@@ -131,11 +131,11 @@ def test_multinode_fail_first_node(node):
 @pytest.mark.parametrize("node", [*Node, 0])
 def test_multinode_fail_second_node(node):
     # Constraints
-    multinode_constraints = BinodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
     # hard constraint
     if node in [Node.START, Node.MID, Node.PENULTIMATE, Node.END, 0]:
         multinode_constraints.add(
-            BinodeConstraintFcn.STATES_EQUALITY,
+            MultinodeConstraintFcn.STATES_EQUALITY,
             phase_first_idx=0,
             phase_second_idx=2,
             first_node=node,
@@ -144,10 +144,10 @@ def test_multinode_fail_second_node(node):
     else:
         with pytest.raises(
             NotImplementedError,
-            match="Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+            match="Multinode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
         ):
             multinode_constraints.add(
-                BinodeConstraintFcn.STATES_EQUALITY,
+                MultinodeConstraintFcn.STATES_EQUALITY,
                 phase_first_idx=0,
                 phase_second_idx=2,
                 first_node=Node.START,

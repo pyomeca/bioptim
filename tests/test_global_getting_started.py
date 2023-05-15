@@ -9,7 +9,7 @@ import shutil
 
 import pytest
 import numpy as np
-from bioptim import InterpolationType, OdeSolver, BinodeConstraintList, BinodeConstraintFcn, Node
+from bioptim import InterpolationType, OdeSolver, MultinodeConstraintList, MultinodeConstraintFcn, Node
 
 from .utils import TestUtils
 
@@ -1154,15 +1154,15 @@ def test_multinode_constraints(ode_solver, assume_phase_dynamics):
 
 @pytest.mark.parametrize("node", [*Node, 0, 3])
 def test_multinode_constraints_wrong_nodes(node):
-    multinode_constraints = BinodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
 
     if node in (Node.START, Node.MID, Node.PENULTIMATE, Node.END) or isinstance(node, int):
         multinode_constraints.add(
-            BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
+            MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
         )
         with pytest.raises(ValueError, match=re.escape("Each of the nodes must have a corresponding nodes_phase")):
             multinode_constraints.add(
-                BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0,), nodes=(Node.START, node), key="all"
+                MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0,), nodes=(Node.START, node), key="all"
             )
     else:
         with pytest.raises(
@@ -1173,7 +1173,7 @@ def test_multinode_constraints_wrong_nodes(node):
             ),
         ):
             multinode_constraints.add(
-                BinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
+                MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
             )
 
 
