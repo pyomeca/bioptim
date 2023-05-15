@@ -134,8 +134,9 @@ class Parameter(PenaltyOption):
     ):
         # penalty.rows = self.size
         # penalty.cols = 1
-        penalty.node_idx = [None]
+        penalty.node_idx = [0]
         penalty.dt = 1
+        penalty.multi_thread = False
         self._set_penalty_function(ocp, controller, penalty, penalty_function, expand)
 
     def _set_penalty_function(self, ocp, controller, penalty, penalty_function: MX | SX, expand: bool = False):
