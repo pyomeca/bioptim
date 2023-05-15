@@ -490,6 +490,18 @@ class OptimizationVariableList:
         self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
 
     @property
+    def cx(self):
+        """
+        Most of the time, one wants cx_start (even though they are interested in arrival node. Getting cx_end only make
+        sens if the user needs to compare the starting point AND arrival point of a specific node.
+
+        Returns
+        -------
+        THe cx related to the current state
+        """
+        return self.cx_start
+
+    @property
     def cx_start(self):
         """
         The cx of all elements together

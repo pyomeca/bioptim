@@ -1127,8 +1127,8 @@ def test_binode_constraints(ode_solver, assume_phase_dynamics):
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (3036, 1))
-    np.testing.assert_almost_equal(g, np.zeros((3036, 1)))
+    np.testing.assert_equal(g.shape, (3030, 1))
+    np.testing.assert_almost_equal(g, np.zeros((3030, 1)))
 
     # Check some of the results
     states, controls = sol.states, sol.controls

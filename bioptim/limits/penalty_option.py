@@ -407,21 +407,23 @@ class PenaltyOption(OptionGeneric):
                 raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
         if self.binode_constraint or self.transition:
-            controllers = controller
-            pre = controllers[0]
-            post = controllers[1]
-            controller = post  # Recast controller as a normal variable (instead of a list)
-            self.node_idx[0] = controller.node_index
-
-            ocp = controller.ocp
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
 
-            states_pre_scaled = pre.states_scaled.cx_end
-            states_post_scaled = post.states_scaled.cx_start
-            controls_pre_scaled = pre.controls_scaled.cx_end
-            controls_post_scaled = post.controls_scaled.cx_start
-            state_cx_scaled = vertcat(states_pre_scaled, states_post_scaled)
-            control_cx_scaled = vertcat(controls_pre_scaled, controls_post_scaled)
+            controllers = controller
+            controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
+            ocp = controller.ocp
+            self.node_idx[0] = controller.node_index
+
+            state_cx_scaled = ocp.cx()
+            control_cx_scaled = ocp.cx()
+            phases_dealt_with = []
+            for ctrl in controllers:
+                if ocp.assume_phase_dynamics and ctrl.phase_idx in phases_dealt_with:
+                    # All nodes in a phase are the same, no need to add them more than once
+                    continue
+                phases_dealt_with.append(ctrl.phase_idx)
+                state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
+                control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
 
         else:
             ocp = controller.ocp

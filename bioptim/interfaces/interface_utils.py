@@ -219,7 +219,13 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             # Make an exception to the fact that U is not available for the last node
             _x = ocp.cx()
             _u = ocp.cx()
+            phases_dealt_with = []
             for i in range(len(_penalty.nodes_phase)):
+                if ocp.assume_phase_dynamics and _penalty.nodes_phase[i] in phases_dealt_with:
+                    # All nodes in a phase are the same, no need to add them more than once
+                    continue
+                phases_dealt_with.append(_penalty.nodes_phase[i])
+
                 nlp_i = ocp.nlp[_penalty.nodes_phase[i]]
                 index_i = _penalty.binode_idx[i]
                 ui_mode = get_control_modificator(i)
@@ -343,5 +349,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 else:
                     x, u = get_x_and_u_at_idx(penalty, idx, is_unscaled)
                 p = vertcat(p, penalty.weighted_function[idx](x, u, param, penalty.weight, target, penalty.dt))
+
         out = vertcat(out, sum2(p))
     return out

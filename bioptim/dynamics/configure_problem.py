@@ -912,7 +912,7 @@ class ConfigureProblem:
                         _cx[node_index][j] = vertcat(
                             _cx[node_index][j],
                             nlp.cx.sym(
-                                f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{node_index + initial_node}_{j}",
+                                f"{sign}{name}_{name_elements[abs(idx)]}_phase{nlp.phase_idx}_node{node_index + initial_node}.{j}",
                                 1,
                                 1,
                             ),

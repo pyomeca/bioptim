@@ -231,7 +231,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             ctrl_0 = controllers[0]
-            states_0 = binode_constraint.states_mapping.to_second.map(ctrl_0.states.get_cx(key, CXStep.CX_END))
+            states_0 = binode_constraint.states_mapping.to_second.map(ctrl_0.states.get_cx(key, CXStep.CX_START))
             out = ctrl_0.cx.zeros(states_0.shape)
             for i in range(1, len(controllers)):
                 ctrl_i = controllers[i]
@@ -432,8 +432,7 @@ class BinodeConstraintFunctions(PenaltyFunctionAbstract):
             The expected difference between the last and first node provided by the user
             """
 
-            pre, post = controllers
-            return binode_constraint.custom_function(binode_constraint, pre, post, **extra_params)
+            return binode_constraint.custom_function(binode_constraint, controllers, **extra_params)
 
 
 class BinodeConstraintFcn(FcnEnum):
