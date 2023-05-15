@@ -987,7 +987,8 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return controller.parameters[key].cx
+            idx = controller.parameters.names.index(key)
+            return Function('minimize_parameter', [controller.parameters.cx], [controller.parameters.cx[idx]])(controller.parameters.cx)
 
 
     @staticmethod
