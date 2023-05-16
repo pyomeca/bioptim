@@ -628,27 +628,6 @@ class ConstraintFcn(FcnEnum):
         return ConstraintFunction
 
 
-class MultinodeConstraintFcn(FcnEnum):
-    """
-    Selection of valid constraint functions
-
-    Methods
-    -------
-    def get_type() -> Callable
-        Returns the type of the penalty
-    """
-
-    CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
-
-    @staticmethod
-    def get_type():
-        """
-        Returns the type of the penalty
-        """
-
-        return MultinodeConstraintFunction
-
-
 class ImplicitConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions

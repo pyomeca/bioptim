@@ -414,6 +414,12 @@ class PenaltyOption(OptionGeneric):
             ocp = controller.ocp
             self.node_idx[0] = controller.node_index
 
+            from ..limits.multinode_constraint import MultinodeConstraint
+            self: MultinodeConstraint
+            self.all_nodes_index = []
+            for ctrl in controllers:
+                self.all_nodes_index.extend(ctrl.t)
+
             state_cx_scaled = ocp.cx()
             control_cx_scaled = ocp.cx()
             for ctrl in controllers:

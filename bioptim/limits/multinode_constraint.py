@@ -92,13 +92,15 @@ class MultinodeConstraint(Constraint):
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
         self.multinode_constraint = True
-        self.weight = weight
+        self.weight = weight if weight is not None else 0
+
         self.quadratic = True
         self.nodes_phase = nodes_phase
         self.nodes = nodes
         self.node = Node.MULTINODES
         self.dt = 1
         self.node_idx = [0]
+        self.all_nodes_index = []  # This is filled when nodes are collapsed as actual time indices
         self.penalty_type = PenaltyType.INTERNAL
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController, PenaltyController]):
@@ -109,17 +111,17 @@ class MultinodeConstraint(Constraint):
 
         ocp = controller[0].ocp
         nlp = controller[0].get_nlp
-        if self.weight == 0:
-            pool = nlp.g_internal if nlp else ocp.g_internal
-        else:
+        if self.weight:
             pool = nlp.J_internal if nlp else ocp.J_internal
+        else:
+            pool = nlp.g_internal if nlp else ocp.g_internal
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):
-        if self.weight == 0:
-            g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        else:
+        if self.weight:
             g_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+        else:
+            g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
 
         if self.list_index < 0:
             for i, j in enumerate(g_to_add_to):

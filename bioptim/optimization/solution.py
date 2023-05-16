@@ -211,6 +211,7 @@ class Solution:
             self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
             self.model = nlp.model
             self.states = nlp.states
+            self.states_dot = nlp.states_dot
             self.controls = nlp.controls
             self.dynamics = nlp.dynamics
             self.dynamics_func = nlp.dynamics_func

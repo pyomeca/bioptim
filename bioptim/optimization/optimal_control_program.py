@@ -1112,10 +1112,9 @@ class OptimalControlProgram:
                     "label": penalty.name,
                     "compute_derivative": penalty.derivative or penalty.explicit_derivative or penalty.integrate,
                     "integration_rule": penalty.integration_rule,
+                    "plot_type": PlotType.POINT,
+                    "node_idx": penalty.node_idx,
                 }
-
-                plot_params["plot_type"] = PlotType.POINT
-                plot_params["node_idx"] = penalty.node_idx
 
                 self.add_plot(**plot_params)
 

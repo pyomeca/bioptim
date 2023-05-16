@@ -10,6 +10,7 @@ from matplotlib.ticker import StrMethodFormatter
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
+from ..limits.multinode_constraint import MultinodeConstraint
 from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, IntegralApproximation
 from ..misc.mapping import Mapping
 from ..optimization.solution import Solution
@@ -717,10 +718,11 @@ class PlotOcp:
                     for i_var in range(self.variable_sizes[i][key]):
                         if self.plot_func[key][i].parameters["penalty"].multinode_constraint:
                             y = np.array([np.nan])
-                            phase_1 = self.plot_func[key][i].parameters["penalty"].phase_second_idx
-                            phase_2 = self.plot_func[key][i].parameters["penalty"].phase_first_idx
-                            node_idx_1 = self.plot_func[key][i].node_idx[0]
-                            node_idx_2 = self.plot_func[key][i].node_idx[1]
+                            penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
+                            phase_1 = penalty.nodes_phase[1]
+                            phase_2 = penalty.nodes_phase[0]
+                            node_idx_1 = penalty.all_nodes_index[1]
+                            node_idx_2 = penalty.all_nodes_index[0]
                             x_phase_1 = data_states[phase_1]["all"][:, node_idx_1 * step_size]
                             x_phase_2 = data_states[phase_2]["all"][:, node_idx_2 * step_size]
                             u_phase_1 = data_controls[phase_1]["all"][:, node_idx_1]
