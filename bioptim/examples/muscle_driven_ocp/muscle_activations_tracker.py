@@ -106,8 +106,9 @@ def generate_data(
             "q",
             [symbolic_q, symbolic_q, symbolic_q],
             [symbolic_q, symbolic_q, symbolic_q],
-            symbolic_q, nlp.variable_mappings["q"],
-            node_index
+            symbolic_q,
+            nlp.variable_mappings["q"],
+            node_index,
         )
         nlp.states.append(
             "qdot",

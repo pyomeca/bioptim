@@ -415,6 +415,7 @@ class PenaltyOption(OptionGeneric):
             self.node_idx[0] = controller.node_index
 
             from ..limits.multinode_constraint import MultinodeConstraint
+
             self: MultinodeConstraint
             self.all_nodes_index = []
             for ctrl in controllers:

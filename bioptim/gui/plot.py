@@ -724,8 +724,20 @@ class PlotOcp:
                             for tp in range(len(penalty.nodes_phase)):
                                 phase_tp = penalty.nodes_phase[tp]
                                 node_idx_tp = penalty.all_nodes_index[tp]
-                                x_phase_tp = np.hstack((x_phase_tp, data_states[phase_tp]["all"][:, node_idx_tp * step_size][:, np.newaxis]))
-                                u_phase_tp = np.hstack((u_phase_tp, data_controls[phase_tp]["all"][:, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0) ][:, np.newaxis]))
+                                x_phase_tp = np.hstack(
+                                    (
+                                        x_phase_tp,
+                                        data_states[phase_tp]["all"][:, node_idx_tp * step_size][:, np.newaxis],
+                                    )
+                                )
+                                u_phase_tp = np.hstack(
+                                    (
+                                        u_phase_tp,
+                                        data_controls[phase_tp]["all"][
+                                            :, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0)
+                                        ][:, np.newaxis],
+                                    )
+                                )
                             y[0] = self.plot_func[key][i].function(
                                 self.plot_func[key][i].node_idx[0],
                                 x_phase_tp,
