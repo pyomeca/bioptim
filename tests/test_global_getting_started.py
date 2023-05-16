@@ -943,8 +943,8 @@ def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
     # detailed cost values
     sol.detailed_cost_values()
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19397.605252449728)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 48129.27750487157)
-    np.testing.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 0.0)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.30851703399819436)
+    np.testing.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 48129.27750487157)
     np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 38560.82580432337)
 
     # state no intermediate
