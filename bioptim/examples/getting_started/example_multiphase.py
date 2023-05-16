@@ -25,7 +25,7 @@ from bioptim import (
     Node,
     Solver,
     CostType,
-    PhaseTransitionList,
+    MultinodeConstraintList,
 )
 
 
@@ -77,11 +77,12 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
 
-    phase_transition = PhaseTransitionList()
-    phase_transition.add(
+    multinode_constraint = MultinodeConstraintList()
+    multinode_constraint.add(
         minimize_difference,
         weight=100,
-        phase_pre_idx=1,
+        nodes_phase=(1, 2),
+        nodes=(Node.PENULTIMATE, Node.START),
         quadratic=True,
     )
 
@@ -139,7 +140,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
-        phase_transitions=phase_transition,
+        multinode_constraints=multinode_constraint,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )
