@@ -344,7 +344,8 @@ class UniquePerProblemOption(UniquePerProblemOptionList):
     Here the implementation is pretty specific to parameters, but it could be generalized if needed.
     """
 
-    import numpy as np #TODO: chang if needed
+    import numpy as np  # TODO: chang if needed
+
     def __init__(
         self,
         index: list = None,

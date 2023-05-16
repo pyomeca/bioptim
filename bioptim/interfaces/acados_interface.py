@@ -574,14 +574,10 @@ class AcadosInterface(SolverInterface):
                         )
 
                         # Deal with first and last node
-                        add_nonlinear_ls_mayer(
-                            self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx
-                        )
+                        add_nonlinear_ls_mayer(self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx)
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
-                        add_nonlinear_ls_mayer(
-                            self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx
-                        )
+                        add_nonlinear_ls_mayer(self, J, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx)
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 

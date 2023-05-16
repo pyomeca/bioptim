@@ -31,7 +31,13 @@ from ..limits.constraints import (
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import BinodeConstraintList
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList, ParameterObjective
+from ..limits.objective_functions import (
+    ObjectiveFcn,
+    ObjectiveList,
+    Objective,
+    ParameterObjectiveList,
+    ParameterObjective,
+)
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
 from ..limits.penalty import PenaltyOption
@@ -518,7 +524,7 @@ class OptimalControlProgram:
 
         # Add the parameters
         if len(parameters) > 0:
-            self.update_parameters(parameters) #TODO: I think parameters other than time are not mapped
+            self.update_parameters(parameters)  # TODO: I think parameters other than time are not mapped
 
         # Declare the time to optimize
         self._define_time(phase_time, objective_functions, constraints)
@@ -781,7 +787,6 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
 
-
     def update_parameter_objectives(self, new_objective_function: ParameterObjective | ParameterObjectiveList):
         """
         The main user interface to add or modify a parameter objective functions in the ocp
@@ -799,7 +804,6 @@ class OptimalControlProgram:
             for objective_in_phase in new_objective_function:
                 for objective in objective_in_phase:
                     self.__modify_parameter_penalty(objective)
-
 
         else:
             raise RuntimeError("new_objective_function must be a ParameterObjective or an ParameterObjectiveList")
@@ -848,7 +852,6 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
-
     def update_parameter_constraints(self, new_constraint: ParameterConstraint | ParameterConstraintList):
         """
         The main user interface to add or modify a parameter constraint in the ocp
@@ -860,10 +863,14 @@ class OptimalControlProgram:
         """
 
         if isinstance(new_constraint, ParameterConstraint):
-            raise RuntimeError("ParameterConstraint are not implemented yet, but could be a good addition. If you run into this error, please contact the developpers by openning an issue on the GitHub page.")
+            raise RuntimeError(
+                "ParameterConstraint are not implemented yet, but could be a good addition. If you run into this error, please contact the developpers by openning an issue on the GitHub page."
+            )
         elif isinstance(new_constraint, ParameterConstraintList):
             if new_constraint.options != [[]]:
-                raise RuntimeError("ParameterConstraint are not implemented yet, but could be a good addition. If you run into this error, please contact the developpers by openning an issue on the GitHub page.")
+                raise RuntimeError(
+                    "ParameterConstraint are not implemented yet, but could be a good addition. If you run into this error, please contact the developpers by openning an issue on the GitHub page."
+                )
         else:
             raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
 
@@ -1581,7 +1588,6 @@ class OptimalControlProgram:
 
         self.program_changed = True
 
-
     def __modify_parameter_penalty(self, new_penalty: PenaltyOption | Parameter):
         """
         The internal function to modify a parameter penalty. It is also stored in the original_values, meaning that if one
@@ -1602,7 +1608,6 @@ class OptimalControlProgram:
         self.v.parameters_in_list[0].add_or_replace_to_parameter_penalty_pool(self, new_penalty)
 
         self.program_changed = True
-
 
     def node_time(self, phase_idx: int, node_idx: int):
         """

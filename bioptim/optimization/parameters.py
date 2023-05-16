@@ -109,14 +109,13 @@ class Parameter(PenaltyOption):
     # def add_parameter_to_v(self, ocp):
     #     ocp.v.add_parameter(self)
 
-
     def add_or_replace_to_parameter_penalty_pool(self, ocp, penalty):
         """
         ...
         """
         if not penalty.name:
             if penalty.type.name == "CUSTOM":
-                penalty.name = penalty.custom_function.__name__ ###
+                penalty.name = penalty.custom_function.__name__
             else:
                 penalty.name = penalty.type.name
 

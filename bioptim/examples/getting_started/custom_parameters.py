@@ -191,7 +191,14 @@ def prepare_ocp(
             scaling=np.array([1, 1, 10.0]),
             extra_value=1,  # You can define as many extra arguments as you want
         )
-        parameter_objectives.add(my_target_function, weight=1000, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g, key="gravity_xyz")
+        parameter_objectives.add(
+            my_target_function,
+            weight=1000,
+            quadratic=True,
+            custom_type=ObjectiveFcn.Parameter,
+            target=target_g,
+            key="gravity_xyz",
+        )
 
     if optim_mass:
         bound_mass = Bounds(min_m, max_m, interpolation=InterpolationType.CONSTANT)
@@ -205,8 +212,14 @@ def prepare_ocp(
             size=1,  # The number of elements this particular parameter vector has
             scaling=np.array([10.0]),
         )
-        parameter_objectives.add(my_target_function, weight=100, quadratic=True, custom_type=ObjectiveFcn.Parameter,
-                                 target=target_m, key="mass")
+        parameter_objectives.add(
+            my_target_function,
+            weight=100,
+            quadratic=True,
+            custom_type=ObjectiveFcn.Parameter,
+            target=target_m,
+            key="mass",
+        )
 
     return OptimalControlProgram(
         bio_model,
