@@ -128,7 +128,6 @@ class Parameter(PenaltyOption):
         penalty_function: MX | SX,
         expand: bool = False,
     ):
-
         penalty.node_idx = [0]
         penalty.dt = 1
         penalty.multi_thread = False
