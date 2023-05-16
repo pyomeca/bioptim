@@ -476,16 +476,36 @@ class ParameterObjective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(self, parameter_objective: Any, **params: Any):
+    def __init__(self, parameter_objective: Any, custom_type: Any = None, **params: Any):
         """
         Parameters
         ----------
         parameter_objective: ObjectiveFcn.Lagrange | ObjectiveFcn.Mayer | Callable[OptimalControlProgram, MX]
             The chosen objective function
+        custom_type: ObjectiveFcn.Parameter | Callable
+            The custom parameter objective function
         params: dict
             Generic parameters for options
         """
-        super(ParameterObjective, self).__init__(penalty=parameter_objective, **params)
+        custom_function = None
+        if not isinstance(parameter_objective, ObjectiveFcn.Parameter):
+            custom_function = parameter_objective
+
+            if custom_type is None:
+                raise RuntimeError(
+                    "Custom parameter objective function detected, but custom_function is missing. "
+                    "It should ObjectiveFcn.Parameter"
+                )
+            parameter_objective = custom_type(custom_type.CUSTOM)
+            if isinstance(parameter_objective, ObjectiveFcn.Parameter):
+                pass
+            else:
+                raise RuntimeError(
+                    "Custom parameter objective function detected, but custom_function is invalid. "
+                    "It should either be ObjectiveFcn.Parameter"
+                )
+
+        super(ParameterObjective, self).__init__(penalty=parameter_objective, custom_function=custom_function, **params)
 
     def _add_penalty_to_pool(self, controller: PenaltyController):
         if isinstance(controller, (list, tuple)):
@@ -538,6 +558,10 @@ class ParameterObjective(PenaltyOption):
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         super(ParameterObjective, self).add_or_replace_to_penalty_pool(ocp, nlp)
+
+    @staticmethod
+    def get_type():
+        return "parameter_objective"
 
 
 class ParameterObjectiveList(OptionList):
