@@ -112,7 +112,7 @@ class Constraint(PenaltyOption):
         elif self.penalty_type == PenaltyType.USER:
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
-            raise ValueError(f"Invalid constraint type {self.contraint_type}.")
+            raise ValueError(f"Invalid constraint type {self.penalty_type}.")
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):
@@ -264,9 +264,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return slipping
 
         @staticmethod
-        def torque_max_from_q_and_qdot(constraint: Constraint, controller: PenaltyController, min_torque=None):
+        def torque_max_from_q_and_qdot(
+            constraint: Constraint,
+            controller: PenaltyController,
+            min_torque=None,
+        ):
             """
-            Non linear maximal values of joint torques computed from the torque-position-velocity relationship
+            Nonlinear maximal values of joint torques computed from the torque-position-velocity relationship
 
             Parameters
             ----------
@@ -302,7 +306,26 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls["tau"].cx_start + min_bound, controller.controls["tau"].cx_start - max_bound
             )
 
-            n_rows = constraint.rows if constraint.rows else int(value.shape[0] / 2)
+            if constraint.rows is None:
+                n_rows = value.shape[0] // 2
+            else:
+                if (
+                    not controller.ocp.assume_phase_dynamics
+                    and not isinstance(constraint.rows, int)
+                    and len(constraint.rows) == value.shape[0]
+                ):
+                    # This is a very special case where assume_phase_dynamics=False declare rows by itself, but because
+                    # this constraint is twice the real length (two constraints per value), it declares it too large
+                    # on the subsequent pass. In reality, it means the user did not declare 'rows' by themselves.
+                    # Therefore, we are acting as such
+                    n_rows = value.shape[0] // 2
+                else:
+                    if isinstance(constraint.rows, int):
+                        n_rows = 1
+                    elif isinstance(constraint.rows, (tuple, list)):
+                        n_rows = len(constraint.rows)
+                    else:
+                        raise ValueError("Wrong type for rows")
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
             constraint.max_bound = [np.inf] * n_rows + [0] * n_rows
             return value
@@ -576,12 +599,16 @@ class MultinodeConstraintFunction(PenaltyFunctionAbstract):
             """
             for mnc in ocp.binode_constraints:
                 # Equality constraint between nodes
-                first_node_name = (
-                    f"idx {str(mnc.first_node)}" if isinstance(mnc.first_node, int) else mnc.first_node.name
-                )
-                second_node_name = (
-                    f"idx {str(mnc.second_node)}" if isinstance(mnc.second_node, int) else mnc.second_node.name
-                )
+                if isinstance(mnc.first_node, int):
+                    first_node_name = f"idx {str(mnc.first_node)}"
+                else:
+                    first_node_name = mnc.first_node.name
+
+                if isinstance(mnc.second_node, int):
+                    second_node_name = f"idx {str(mnc.second_node)}"
+                else:
+                    second_node_name = mnc.second_node.name
+
                 mnc.name = (
                     f"NODE_EQUALITY "
                     f"Phase {mnc.phase_first_idx} Node {first_node_name}"

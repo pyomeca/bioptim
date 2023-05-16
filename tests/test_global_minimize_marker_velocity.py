@@ -29,6 +29,7 @@ def prepare_ocp(
     marker_in_first_coordinates_system: bool,
     control_type: ControlType,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare an ocp that targets some marker velocities, either by finite differences or by jacobian
@@ -49,6 +50,10 @@ def prepare_ocp(
         The type of controls
     ode_solver: OdeSolverBase
         The ode solver to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -122,12 +127,13 @@ def prepare_ocp(
         objective_functions,
         control_type=control_type,
         ode_solver=ode_solver,
-        assume_phase_dynamics=False,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_and_minimize_marker_displacement_global(ode_solver):
+def test_track_and_minimize_marker_displacement_global(ode_solver, assume_phase_dynamics):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
@@ -138,6 +144,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
         marker_in_first_coordinates_system=False,
         control_type=ControlType.CONSTANT,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -172,8 +179,9 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_and_minimize_marker_displacement_RT(ode_solver):
+def test_track_and_minimize_marker_displacement_RT(ode_solver, assume_phase_dynamics):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
@@ -184,6 +192,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
         marker_in_first_coordinates_system=True,
         control_type=ControlType.CONSTANT,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -219,8 +228,9 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_and_minimize_marker_velocity(ode_solver):
+def test_track_and_minimize_marker_velocity(ode_solver, assume_phase_dynamics):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
@@ -231,6 +241,7 @@ def test_track_and_minimize_marker_velocity(ode_solver):
         marker_in_first_coordinates_system=True,
         control_type=ControlType.CONSTANT,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -264,11 +275,12 @@ def test_track_and_minimize_marker_velocity(ode_solver):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
+def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, assume_phase_dynamics):
     # Load track_and_minimize_marker_velocity
-    ode_solver = ode_solver()
-    if isinstance(ode_solver, OdeSolver.IRK):
+    if ode_solver == OdeSolver.IRK:
+        ode_solver = ode_solver()
         with pytest.raises(
             NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
         ):
@@ -280,8 +292,10 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
                 marker_in_first_coordinates_system=True,
                 control_type=ControlType.LINEAR_CONTINUOUS,
                 ode_solver=ode_solver,
+                assume_phase_dynamics=assume_phase_dynamics,
             )
     else:
+        ode_solver = ode_solver()
         ocp = prepare_ocp(
             biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
             n_shooting=5,
@@ -290,6 +304,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
             marker_in_first_coordinates_system=True,
             control_type=ControlType.LINEAR_CONTINUOUS,
             ode_solver=ode_solver,
+            assume_phase_dynamics=assume_phase_dynamics,
         )
         sol = ocp.solve()
 

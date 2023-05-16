@@ -15,8 +15,6 @@ class OptimizationVector:
         A reference to the ocp
     parameters_in_list: ParameterList
         A list of all the parameters in the ocp
-    x: MX, SX
-        The optimization variable for the states
     x_bounds: list
         A list of state bounds for each phase
     x_init: list
@@ -502,6 +500,9 @@ class OptimizationVector:
         ocp = self.ocp
         # Sanity check
         for nlp in ocp.nlp:
+            nlp.states.node_index = 0
+            nlp.controls.node_index = 0
+
             interpolation = nlp.x_init.type
             ns = self.get_ns(phase=nlp.phase_idx, interpolation_type=interpolation)
             if nlp.use_states_from_phase_idx == nlp.phase_idx:

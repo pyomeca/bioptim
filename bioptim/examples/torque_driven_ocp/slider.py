@@ -29,6 +29,7 @@ def prepare_ocp(
     n_shooting: tuple = (20, 20, 20),
     phase_time: tuple = (0.2, 0.3, 0.5),
     control_type: ControlType = ControlType.CONSTANT,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -45,6 +46,10 @@ def prepare_ocp(
         The time of each phase
     control_type: ControlType
         The type of control to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
 
     Returns
     -------
@@ -114,7 +119,7 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         control_type=control_type,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

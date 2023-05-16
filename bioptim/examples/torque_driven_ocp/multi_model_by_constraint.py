@@ -102,10 +102,7 @@ def prepare_ocp(
     u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
 
     phase_transitions = PhaseTransitionList()
-    phase_transitions.add(
-        PhaseTransitionFcn.DISCONTINUOUS,
-        phase_pre_idx=0,
-    )
+    phase_transitions.add(PhaseTransitionFcn.DISCONTINUOUS, phase_pre_idx=0)
 
     return OptimalControlProgram(
         bio_model,

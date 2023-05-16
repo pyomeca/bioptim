@@ -47,7 +47,7 @@ class PhaseTransition(BinodeConstraint):
     def __init__(
         self,
         phase_pre_idx: int = None,
-        transition: Callable | Any = None,
+        transition: Any | Callable = None,
         weight: float = 0,
         custom_function: Callable = None,
         min_bound: float = 0,

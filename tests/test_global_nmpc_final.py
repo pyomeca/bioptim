@@ -2,12 +2,19 @@
 Test for file IO
 """
 import os
-import sys
+import platform
+
+import pytest
 import numpy as np
 from bioptim import Solver, MultiCyclicCycleSolutions
 
 
-def test_multi_cyclic_nmpc_get_final():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_multi_cyclic_nmpc_get_final(assume_phase_dynamics):
+    if platform.system() != "Linux":
+        # This is a long test and CI is already long for Windows and Mac
+        return
+
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
@@ -26,6 +33,7 @@ def test_multi_cyclic_nmpc_get_final():
         n_cycles_simultaneous=n_cycles_simultaneous,
         n_cycles_to_advance=n_cycles_to_advance,
         max_torque=50,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = nmpc.solve(
         update_functions,
@@ -93,8 +101,10 @@ def test_multi_cyclic_nmpc_get_final():
     np.testing.assert_almost_equal(sol[2][3].cost.toarray().squeeze(), 18.6181199)
 
 
-def test_multi_cyclic_nmpc_not_get_final():
-    if sys.platform == "win32":  # cannot run on windows with the ci
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_multi_cyclic_nmpc_not_get_final(assume_phase_dynamics):
+    if platform.system() != "Linux":
+        # This is a long test and CI is already long for Windows and Mac
         return
 
     def update_functions(_nmpc, cycle_idx, _sol):
@@ -115,6 +125,7 @@ def test_multi_cyclic_nmpc_not_get_final():
         n_cycles_simultaneous=n_cycles_simultaneous,
         n_cycles_to_advance=n_cycles_to_advance,
         max_torque=50,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = nmpc.solve(
         update_functions,

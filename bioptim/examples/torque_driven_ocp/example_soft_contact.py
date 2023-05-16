@@ -110,6 +110,7 @@ def prepare_ocp(
     slack: float = 1e-4,
     n_threads: int = 8,
     use_sx: bool = False,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -196,7 +197,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -219,7 +220,7 @@ def main():
     sol = ocp.solve(solv)
 
     sol.animate()
-    sol.print()
+    sol.print_cost()
     sol.graphs()
 
 

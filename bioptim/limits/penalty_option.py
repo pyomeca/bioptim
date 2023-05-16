@@ -268,7 +268,7 @@ class PenaltyOption(OptionGeneric):
             raise RuntimeError(f"{self.name} index must be a list of integer")
         return dim
 
-    def _check_target_dimensions(self, controller: PenaltyController, n_time_expected: int):
+    def _check_target_dimensions(self, controller: PenaltyController | None, n_time_expected: int):
         """
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
@@ -819,7 +819,7 @@ class PenaltyOption(OptionGeneric):
             elif node == Node.ALL:
                 t.extend(range(nlp.ns + 1))
             else:
-                raise RuntimeError(" is not a valid node")
+                raise RuntimeError(f"{node} is not a valid node")
 
         x = [nlp.X[idx] for idx in t]
         x_scaled = [nlp.X_scaled[idx] for idx in t]

@@ -93,6 +93,7 @@ def solve_ivp_interface(
         y_final = np.array([], dtype=np.float64).reshape(x0.shape[0], 0)
         x0i = x0
 
+        y = None
         for s, t_eval_step in enumerate(t_eval):
             u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
 

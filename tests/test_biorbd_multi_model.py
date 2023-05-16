@@ -30,7 +30,7 @@ def test_biorbd_model_import():
         MultiBiorbdModel([1])
 
 
-# TODO: test all casses with models containing at least on element (muscles, contacts, ...)
+# TODO: test all cases with models containing at least on element (muscles, contacts, ...)
 def test_biorbd_model():
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 

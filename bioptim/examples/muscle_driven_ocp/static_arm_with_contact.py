@@ -78,8 +78,8 @@ def prepare_ocp(
     x_init.add([1.57] * bio_model.nb_q + [0] * bio_model.nb_qdot)
 
     # Define control path constraint
-    muscle_min, muscle_max, muscle_init = 0, 1, 0.5
-    tau_min, tau_max, tau_init = -1, 1, 0
+    muscle_min, muscle_max, muscle_init = 0.0, 1.0, 0.5
+    tau_min, tau_max, tau_init = -1.0, 1.0, 0.0
     u_bounds = BoundsList()
     u_bounds.add(
         [tau_min] * bio_model.nb_tau + [muscle_min] * bio_model.nb_muscles,

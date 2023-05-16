@@ -7,7 +7,8 @@ import numpy as np
 from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver
 
 
-def test_merge_phases_one_phase():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_merge_phases_one_phase(assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -17,6 +18,7 @@ def test_merge_phases_one_phase():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -29,7 +31,8 @@ def test_merge_phases_one_phase():
         np.testing.assert_almost_equal(sol_merged.controls[key], sol.controls[key])
 
 
-def test_merge_phases_multi_phase():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_merge_phases_multi_phase(assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -37,6 +40,7 @@ def test_merge_phases_multi_phase():
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -57,7 +61,8 @@ def test_merge_phases_multi_phase():
         np.testing.assert_almost_equal(sol_merged.controls[key], expected)
 
 
-def test_interpolate():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_interpolate(assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -69,6 +74,7 @@ def test_interpolate():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=n_shooting,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -100,14 +106,19 @@ def test_interpolate():
         sol.interpolate([n_frames, n_frames])
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-def test_interpolate_multiphases(ode_solver):
+def test_interpolate_multiphases(ode_solver, assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver())
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
     solver = Solver.IPOPT()
     solver.set_print_level(0)
@@ -143,7 +154,8 @@ def test_interpolate_multiphases(ode_solver):
         sol.interpolate([n_frames, n_frames])
 
 
-def test_interpolate_multiphases_merge_phase():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_interpolate_multiphases_merge_phase(assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -151,6 +163,7 @@ def test_interpolate_multiphases_merge_phase():
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -176,9 +189,10 @@ def test_interpolate_multiphases_merge_phase():
         _ = sol_interp.controls
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.SCIPY_RK45, SolutionIntegrator.OCP])
-def test_integrate(integrator, ode_solver):
+def test_integrate(integrator, ode_solver, assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -191,6 +205,7 @@ def test_integrate(integrator, ode_solver):
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -241,9 +256,10 @@ def test_integrate(integrator, ode_solver):
         _ = sol_integrated.controls
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("keep_intermediate_points", [False, True])
-def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
+def test_integrate_single_shoot(keep_intermediate_points, ode_solver, assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -256,6 +272,7 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -300,9 +317,10 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
         _ = sol_integrated.controls
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("keep_intermediate_points", [False, True])
-def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
+def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, assume_phase_dynamics):
     if ode_solver == OdeSolver.COLLOCATION and platform != "linux-64":
         # For some reason, the test fails on Mac
         warnings.warn("Test test_integrate_single_shoot_use_scipy skiped on Mac")
@@ -320,6 +338,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -468,11 +487,12 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
         _ = sol_integrated.controls
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
 @pytest.mark.parametrize("merge", [False, True])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
-def test_integrate_all_cases(shooting, merge, integrator, ode_solver):
+def test_integrate_all_cases(shooting, merge, integrator, ode_solver, assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -485,6 +505,7 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver):
         final_time=1,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -549,23 +570,22 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver):
         _ = sol_integrated.controls
 
 
-@pytest.mark.parametrize(
-    "ode_solver",
-    [
-        OdeSolver.RK4,
-        OdeSolver.COLLOCATION,
-    ],
-)
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
-def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, ode_solver):
+def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, ode_solver, assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", ode_solver=ode_solver())
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
     solver = Solver.IPOPT()
     solver.set_print_level(0)
@@ -637,11 +657,12 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
         _ = sol_integrated.controls
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
 @pytest.mark.parametrize("keep_intermediate_points", [True, False])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
-def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integrator, ode_solver):
+def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integrator, ode_solver, assume_phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -650,6 +671,7 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     solver = Solver.IPOPT()

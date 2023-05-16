@@ -20,11 +20,7 @@ from ..misc.enums import (
 )
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.optimization_variable import (
-    OptimizationVariableList,
-    OptimizationVariable,
-    OptimizationVariableContainer,
-)
+from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
 
@@ -586,6 +582,8 @@ class Solution:
                 else -1
             )
 
+            idx = -1
+            offset = 0
             for p, idx in enumerate(idx_no_intermediate):
                 offset = (
                     (self.ocp.nlp[p].ode_solver.polynomial_degree + 1)
@@ -677,7 +675,7 @@ class Solution:
         return self._controls["scaled"] if len(self._controls["scaled"]) > 1 else self._controls["scaled"][0]
 
     @property
-    def time(self) -> list | dict:
+    def time(self) -> list | dict | np.ndarray:
         """
         Returns the time vector in list if more than one phases, otherwise it returns the only dict
 
@@ -1516,8 +1514,6 @@ class Solution:
 
         Parameters
         ----------
-        cost_type: CostType
-            The type of cost to console print
         """
 
         for nlp in self.ocp.nlp:

@@ -5,7 +5,6 @@ The arm must reach a marker while minimizing the muscles activity and the states
 ACADOS and Ipopt.
 """
 
-import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     BiorbdModel,
@@ -26,8 +25,8 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
     # --- Options --- #
     # BioModel path
     bio_model = BiorbdModel(biorbd_model_path)
-    tau_min, tau_max, tau_init = -50, 50, 0
-    muscle_min, muscle_max, muscle_init = 0, 1, 0.5
+    tau_min, tau_max, tau_init = -50.0, 50.0, 0.0
+    muscle_min, muscle_max, muscle_init = 0.0, 1.0, 0.5
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -82,9 +81,6 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
 
 
 def main():
-    # Options
-    warm_start_ipopt_from_acados_solution = False
-
     # --- Solve the program using ACADOS --- #
     ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=1, n_shooting=100, use_sx=True)
 
@@ -94,11 +90,10 @@ def main():
     sol_acados = ocp_acados.solve(solver=solver_acados)
 
     # --- Solve the program using IPOPT --- #
-    x_warm = sol_acados["qqdot"] if warm_start_ipopt_from_acados_solution else None
     ocp_ipopt = prepare_ocp(
         biorbd_model_path="models/arm26.bioMod",
         final_time=1,
-        x_warm=x_warm,
+        x_warm=None,
         n_shooting=51,
         use_sx=False,
         n_threads=6,
@@ -122,10 +117,7 @@ def main():
     print(f"Time to solve: {sol_acados.real_time_to_optimize}sec")
     print(f"")
 
-    print(
-        f"Results using Ipopt{'' if warm_start_ipopt_from_acados_solution else ' not'} "
-        f"warm started from ACADOS solution"
-    )
+    print(f"Results using Ipopt not warm started from ACADOS solution")
     print(f"Final objective : {np.nansum(sol_ipopt.cost)}")
     sol_ipopt.print_cost()
     print(f"Time to solve: {sol_ipopt.real_time_to_optimize}sec")

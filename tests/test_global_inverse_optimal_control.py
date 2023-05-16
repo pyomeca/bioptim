@@ -3,16 +3,23 @@ Test for file IO
 """
 import os
 import numpy as np
+import pytest
 
 
-def test_double_pendulum_torque_driven_IOCP():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_double_pendulum_torque_driven_IOCP(assume_phase_dynamics):
     # Load double pendulum ocp
     from bioptim.examples.inverse_optimal_control import double_pendulum_torque_driven_IOCP as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
 
-    ocp = ocp_module.prepare_ocp(weights=[0.4, 0.3, 0.3], coefficients=[1, 1, 1], biorbd_model_path=biorbd_model_path)
+    ocp = ocp_module.prepare_ocp(
+        weights=[0.4, 0.3, 0.3],
+        coefficients=[1, 1, 1],
+        biorbd_model_path=biorbd_model_path,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
     sol = ocp.solve()
 

@@ -21,7 +21,8 @@ from bioptim import (
 from .utils import TestUtils
 
 
-def test_double_update_bounds_and_init():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_double_update_bounds_and_init(assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
     nq = bio_model.nb_q
@@ -31,7 +32,15 @@ def test_double_update_bounds_and_init():
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
     u_init = InitialGuess([0] * bio_model.nb_tau)
-    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0, x_init=x_init, u_init=u_init)
+    ocp = OptimalControlProgram(
+        bio_model,
+        dynamics,
+        ns,
+        1.0,
+        x_init=x_init,
+        u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
     x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
@@ -70,7 +79,8 @@ def test_double_update_bounds_and_init():
         ocp.update_bounds(x_init, u_init)
 
 
-def test_update_bounds_and_init_with_param():
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+def test_update_bounds_and_init_with_param(assume_phase_dynamics):
     def my_parameter_function(bio_model, value, extra_value):
         new_gravity = MX.zeros(3, 1)
         new_gravity[2] = value + extra_value
@@ -105,7 +115,16 @@ def test_update_bounds_and_init_with_param():
 
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_tau))
     u_init = InitialGuess([0] * bio_model.nb_tau)
-    ocp = OptimalControlProgram(bio_model, dynamics, ns, 1.0, parameters=parameters, x_init=x_init, u_init=u_init)
+    ocp = OptimalControlProgram(
+        bio_model,
+        dynamics,
+        ns,
+        1.0,
+        parameters=parameters,
+        x_init=x_init,
+        u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
     x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
@@ -191,18 +210,9 @@ def test_add_wrong_param():
         )
 
 
-@pytest.mark.parametrize(
-    "interpolation",
-    [
-        InterpolationType.CONSTANT,
-        InterpolationType.LINEAR,
-        InterpolationType.SPLINE,
-        InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        InterpolationType.EACH_FRAME,
-        InterpolationType.ALL_POINTS,
-    ],
-)
-def test_update_noised_init_rk4(interpolation):
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("interpolation", [*InterpolationType])
+def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
@@ -224,6 +234,7 @@ def test_update_noised_init_rk4(interpolation):
         ode_solver=OdeSolver.RK4(),
         x_init=x_init,
         u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     # Path constraint and control path constraints
@@ -261,6 +272,11 @@ def test_update_noised_init_rk4(interpolation):
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
         x = np.random.random((nq + nqdot, 5))
         u = np.random.random((ntau, 5))
+    elif interpolation == InterpolationType.CUSTOM:
+        x = lambda y: np.array([0] * (nq + nqdot))
+        u = lambda y: np.array([tau_init] * ntau)
+    else:
+        raise NotImplementedError("Interpolation type not implemented")
 
     np.random.seed(0)
     x_init = NoisedInitialGuess(
@@ -448,7 +464,7 @@ def test_update_noised_init_rk4(interpolation):
                 ]
             )
 
-        if interpolation == InterpolationType.EACH_FRAME:
+        elif interpolation == InterpolationType.EACH_FRAME:
             expected = np.array(
                 [
                     [0.00292881],
@@ -487,24 +503,56 @@ def test_update_noised_init_rk4(interpolation):
                 ]
             )
 
+        elif interpolation == InterpolationType.CUSTOM:
+            expected = np.array(
+                [
+                    [0.00292881],
+                    [0.0],
+                    [0.0],
+                    [0.0],
+                    [0.0],
+                    [0.0],
+                    [0.01291136],
+                    [0.00583576],
+                    [-0.01464717],
+                    [0.53482051],
+                    [0.41798243],
+                    [0.37593374],
+                    [0.0061658],
+                    [-0.00249651],
+                    [0.03665925],
+                    [-0.53905199],
+                    [0.34954208],
+                    [-0.04840646],
+                    [0.00269299],
+                    [0.0],
+                    [1.67],
+                    [0.0],
+                    [0.0],
+                    [0.0],
+                    [-1.5269023],
+                    [1.77867567],
+                    [-0.94177755],
+                    [0.55968409],
+                    [0.08739329],
+                    [1.09693476],
+                    [-1.42658685],
+                    [-0.34135224],
+                    [-0.17539867],
+                ]
+            )
+        else:
+            raise NotImplementedError("Interpolation type not implemented in the tests")
+
         np.testing.assert_almost_equal(ocp.v.init.init, expected)
 
         with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
             ocp.update_bounds(x_init, u_init)
 
 
-@pytest.mark.parametrize(
-    "interpolation",
-    [
-        InterpolationType.CONSTANT,
-        InterpolationType.LINEAR,
-        InterpolationType.SPLINE,
-        InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        InterpolationType.EACH_FRAME,
-        InterpolationType.ALL_POINTS,
-    ],
-)
-def test_update_noised_init_collocation(interpolation):
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("interpolation", [*InterpolationType])
+def test_update_noised_init_collocation(interpolation, assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
@@ -519,7 +567,14 @@ def test_update_noised_init_collocation(interpolation):
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
     u_init = InitialGuess([0] * bio_model.nb_tau)
     ocp = OptimalControlProgram(
-        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init
+        bio_model,
+        dynamics,
+        n_shooting=ns,
+        phase_time=phase_time,
+        ode_solver=solver,
+        x_init=x_init,
+        u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     # Path constraint and control path constraints
@@ -558,6 +613,9 @@ def test_update_noised_init_collocation(interpolation):
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
         x = np.random.random((nq + nqdot, 5))
         u = np.random.random((ntau, 5))
+    elif interpolation == InterpolationType.CUSTOM:
+        x = lambda y: np.array([0] * (nq + nqdot))
+        u = lambda y: np.array([tau_init] * ntau)
     else:
         raise NotImplementedError("This interpolation is not implemented yet")
 
@@ -595,18 +653,9 @@ def test_update_noised_init_collocation(interpolation):
         ocp.update_bounds(x_init, u_init)
 
 
-@pytest.mark.parametrize(
-    "interpolation",
-    [
-        InterpolationType.CONSTANT,
-        InterpolationType.LINEAR,
-        InterpolationType.SPLINE,
-        InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        InterpolationType.EACH_FRAME,
-        InterpolationType.ALL_POINTS,
-    ],
-)
-def test_update_noised_initial_guess_rk4(interpolation):
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("interpolation", [*InterpolationType])
+def test_update_noised_initial_guess_rk4(interpolation, assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
@@ -615,9 +664,19 @@ def test_update_noised_initial_guess_rk4(interpolation):
     ns = 3
     phase_time = 1.0
 
+    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    u_init = InitialGuess([0] * bio_model.nb_tau)
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time)
+    ocp = OptimalControlProgram(
+        bio_model,
+        dynamics,
+        n_shooting=ns,
+        phase_time=phase_time,
+        x_init=x_init,
+        u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
     # Path constraint and control path constraints
     x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
@@ -663,6 +722,12 @@ def test_update_noised_initial_guess_rk4(interpolation):
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
         x = InitialGuess(np.random.random((nq + nqdot, 5)), interpolation=interpolation, t=t)
         u = InitialGuess(np.random.random((ntau, 5)), interpolation=interpolation, t=t)
+    elif interpolation == InterpolationType.CUSTOM:
+        x = InitialGuess(lambda y: np.array([0] * (nq + nqdot)), interpolation=interpolation)
+        u = InitialGuess(lambda y: np.array([tau_init] * ntau), interpolation=interpolation)
+
+    else:
+        raise NotImplementedError("This interpolation is not implemented yet")
 
     x_init = NoisedInitialGuess(
         initial_guess=x,
@@ -693,195 +758,236 @@ def test_update_noised_initial_guess_rk4(interpolation):
         if interpolation == InterpolationType.CONSTANT:
             expected = np.array(
                 [
-                    0.7962362,
-                    -0.1,
-                    -0.1,
-                    -0.1,
-                    -0.1,
-                    -0.1,
-                    0.81352143,
-                    -0.00688011,
-                    0.01307359,
-                    -0.18074267,
-                    0.01555492,
-                    -0.22651269,
-                    0.80695982,
-                    -0.00883833,
-                    -0.03012256,
-                    -0.19991527,
-                    -0.04276021,
-                    -0.13059937,
-                    0.80295975,
-                    -0.1,
-                    1.47,
-                    -0.1,
-                    -0.1,
-                    -0.1,
-                    -0.25091976,
-                    0.19731697,
-                    -0.88383278,
-                    0.90142861,
-                    -0.68796272,
-                    0.73235229,
-                    0.46398788,
-                    -0.68801096,
-                    0.20223002,
-                ]
+                    -0.00752759,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.02704286,
+                    -0.01376022,
+                    0.02614717,
+                    -0.36148533,
+                    0.03110985,
+                    -0.45302538,
+                    0.01391964,
+                    -0.01767666,
+                    -0.06024513,
+                    -0.39983054,
+                    -0.08552041,
+                    -0.26119874,
+                    0.00591951,
+                    0.0,
+                    1.67,
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.50183952,
+                    0.39463394,
+                    -1.76766555,
+                    1.80285723,
+                    -1.37592544,
+                    1.46470458,
+                    0.92797577,
+                    -1.37602192,
+                    0.40446005,
+                ],
             )
         elif interpolation == InterpolationType.LINEAR:
             expected = np.array(
                 [
-                    1.79623620e00,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    2.06352143e00,
-                    -6.88010959e-03,
-                    4.05573586e-01,
-                    -1.80742667e-01,
-                    1.55549247e-02,
-                    -2.26512688e-01,
-                    2.20000000e00,
-                    -8.83832776e-03,
-                    7.54877435e-01,
-                    -1.99915269e-01,
-                    -4.27602059e-02,
-                    -1.30599369e-01,
-                    2.20000000e00,
-                    -1.00000000e-01,
-                    1.47000000e00,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    1.19908024e00,
-                    1.00073170e01,
-                    1.39616722e00,
-                    1.38476195e00,
-                    9.12203728e00,
-                    1.49235229e00,
-                    -1.93454497e-02,
-                    9.12198904e00,
-                    -5.57769977e-01,
+                    0.99247241,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.27704286,
+                    -0.01376022,
+                    0.41864717,
+                    -0.36148533,
+                    0.03110985,
+                    -0.45302538,
+                    1.51391964,
+                    -0.01767666,
+                    0.72475487,
+                    -0.39983054,
+                    -0.08552041,
+                    -0.26119874,
+                    1.75591951,
+                    0.0,
+                    1.67,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.94816048,
+                    10.20463394,
+                    0.51233445,
+                    2.28619056,
+                    8.43407456,
+                    2.22470458,
+                    0.44464243,
+                    8.43397808,
+                    -0.35553995,
                 ]
             )
         elif interpolation == InterpolationType.SPLINE:
             expected = np.array(
                 [
-                    1.39489469e00,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    1.11672435e00,
-                    6.65627498e-01,
-                    2.05044956e-01,
-                    1.57276580e-01,
-                    4.41795628e-01,
-                    1.47886691e-03,
-                    9.62969993e-01,
-                    4.57938262e-01,
-                    1.52256794e-01,
-                    2.03847059e-01,
-                    5.28820074e-01,
-                    1.12785129e-01,
-                    9.50893802e-01,
-                    -1.00000000e-01,
-                    1.47000000e00,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    6.97965775e-01,
-                    8.81549995e-01,
-                    2.54876264e-02,
-                    1.86521820e00,
-                    -2.20956562e-01,
-                    1.06270452e00,
-                    1.30112101e00,
-                    -5.07835040e-01,
-                    7.90965478e-01,
+                    0.59113089,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    0.33024578,
+                    0.65874739,
+                    0.21811854,
+                    -0.02346609,
+                    0.45735055,
+                    -0.22503382,
+                    0.16992981,
+                    0.44909993,
+                    0.12213423,
+                    0.00393179,
+                    0.48605987,
+                    -0.01781424,
+                    0.15385356,
+                    -0.1,
+                    1.67,
+                    -0.1,
+                    -0.1,
+                    -0.1,
+                    0.44704601,
+                    1.07886696,
+                    -0.85834515,
+                    2.76664681,
+                    -0.90891928,
+                    1.79505682,
+                    1.76510889,
+                    -1.195846,
+                    0.9931955,
                 ]
             )
 
         elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             expected = np.array(
                 [
-                    1.79623620e00,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    2.20000000e00,
-                    -6.88010959e-03,
-                    7.98073586e-01,
-                    -1.80742667e-01,
-                    1.55549247e-02,
-                    -2.26512688e-01,
-                    2.20000000e00,
-                    -8.83832776e-03,
-                    7.54877435e-01,
-                    -1.99915269e-01,
-                    -4.27602059e-02,
-                    -1.30599369e-01,
-                    2.20000000e00,
-                    -1.00000000e-01,
-                    1.47000000e00,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    -1.00000000e-01,
-                    1.19908024e00,
-                    1.00073170e01,
-                    1.39616722e00,
-                    9.01428613e-01,
-                    9.12203728e00,
-                    7.32352292e-01,
-                    4.63987884e-01,
-                    9.12198904e00,
-                    2.02230023e-01,
+                    0.99247241,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.52704286,
+                    -0.01376022,
+                    0.81114717,
+                    -0.36148533,
+                    0.03110985,
+                    -0.45302538,
+                    1.51391964,
+                    -0.01767666,
+                    0.72475487,
+                    -0.39983054,
+                    -0.08552041,
+                    -0.26119874,
+                    1.50591951,
+                    0.0,
+                    1.67,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.94816048,
+                    10.20463394,
+                    0.51233445,
+                    1.80285723,
+                    8.43407456,
+                    1.46470458,
+                    0.92797577,
+                    8.43397808,
+                    0.40446005,
                 ]
             )
 
-        if interpolation == InterpolationType.EACH_FRAME:
+        elif interpolation == InterpolationType.EACH_FRAME:
             expected = np.array(
                 [
-                    0.7962362,
+                    -0.00752759,
                     -0.1,
                     -0.1,
                     -0.1,
-                    -0.1,
-                    -0.1,
-                    1.14685476,
+                    0.0,
+                    0.0,
+                    0.36037619,
                     0.9,
-                    2.34640692,
-                    3.15259067,
-                    0.01555492,
-                    -0.22651269,
-                    1.47362648,
+                    2.3594805,
+                    2.971848,
+                    0.03110985,
+                    -0.45302538,
+                    0.6805863,
                     0.9,
-                    2.6365441,
-                    3.4667514,
-                    -0.04276021,
-                    -0.13059937,
-                    1.80295975,
+                    2.60642154,
+                    3.26683613,
+                    -0.08552041,
+                    -0.26119874,
+                    1.00591951,
                     -0.1,
                     1.47,
                     -0.1,
-                    -0.1,
-                    -0.1,
-                    -0.25091976,
-                    0.19731697,
-                    -0.88383278,
-                    0.90142861,
-                    -0.68796272,
-                    0.73235229,
-                    0.46398788,
-                    -0.68801096,
-                    0.20223002,
+                    0.0,
+                    0.0,
+                    -0.50183952,
+                    0.39463394,
+                    -1.76766555,
+                    1.80285723,
+                    -1.37592544,
+                    1.46470458,
+                    0.92797577,
+                    -1.37602192,
+                    0.40446005,
                 ]
             )
+
+        elif interpolation == InterpolationType.CUSTOM:
+            expected = np.array(
+                [
+                    -0.00752759,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.02704286,
+                    -0.01376022,
+                    0.02614717,
+                    -0.36148533,
+                    0.03110985,
+                    -0.45302538,
+                    0.01391964,
+                    -0.01767666,
+                    -0.06024513,
+                    -0.39983054,
+                    -0.08552041,
+                    -0.26119874,
+                    0.00591951,
+                    0.0,
+                    1.67,
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.50183952,
+                    0.39463394,
+                    -1.76766555,
+                    1.80285723,
+                    -1.37592544,
+                    1.46470458,
+                    0.92797577,
+                    -1.37602192,
+                    0.40446005,
+                ]
+            )
+        else:
+            raise NotImplementedError("Interpolation type not implemented yet")
 
         np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
 
@@ -889,8 +995,9 @@ def test_update_noised_initial_guess_rk4(interpolation):
             ocp.update_bounds(x_init, u_init)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("n_extra", [0, 1])
-def test_update_noised_initial_guess_rk4(n_extra):
+def test_update_noised_initial_guess_rk4_with_extra(n_extra, assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
@@ -904,7 +1011,15 @@ def test_update_noised_initial_guess_rk4(n_extra):
 
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
     u_init = InitialGuess([0] * bio_model.nb_tau)
-    ocp = OptimalControlProgram(bio_model, dynamics, n_shooting=ns, phase_time=phase_time, x_init=x_init, u_init=u_init)
+    ocp = OptimalControlProgram(
+        bio_model,
+        dynamics,
+        n_shooting=ns,
+        phase_time=phase_time,
+        x_init=x_init,
+        u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
 
     # Path constraint and control path constraints
     x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
@@ -1006,18 +1121,9 @@ def test_update_noised_initial_guess_rk4(n_extra):
         ocp.update_bounds(x_init, u_init)
 
 
-@pytest.mark.parametrize(
-    "interpolation",
-    [
-        InterpolationType.CONSTANT,
-        InterpolationType.LINEAR,
-        InterpolationType.SPLINE,
-        InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        InterpolationType.EACH_FRAME,
-        InterpolationType.ALL_POINTS,
-    ],
-)
-def test_update_noised_initial_guess_collocation(interpolation):
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("interpolation", [*InterpolationType])
+def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
@@ -1033,7 +1139,14 @@ def test_update_noised_initial_guess_collocation(interpolation):
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
     u_init = InitialGuess([0] * bio_model.nb_tau)
     ocp = OptimalControlProgram(
-        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init
+        bio_model,
+        dynamics,
+        n_shooting=ns,
+        phase_time=phase_time,
+        ode_solver=solver,
+        x_init=x_init,
+        u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     # Path constraint and control path constraints
@@ -1080,6 +1193,11 @@ def test_update_noised_initial_guess_collocation(interpolation):
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
         x = InitialGuess(np.random.random((nq + nqdot, 5)), interpolation=interpolation, t=t)
         u = InitialGuess(np.random.random((ntau, 5)), interpolation=interpolation, t=t)
+    elif interpolation == InterpolationType.CUSTOM:
+        x = InitialGuess(lambda y: np.array([0] * (nq + nqdot)), interpolation=interpolation)
+        u = InitialGuess(lambda y: np.array([tau_init] * ntau), interpolation=interpolation)
+    else:
+        raise NotImplementedError("This interpolation is not implemented yet")
 
     x_init = NoisedInitialGuess(
         initial_guess=x,
@@ -1112,13 +1230,9 @@ def test_update_noised_initial_guess_collocation(interpolation):
         ocp.update_bounds(x_init, u_init)
 
 
-@pytest.mark.parametrize(
-    "interpolation",
-    [
-        InterpolationType.CONSTANT,
-    ],
-)
-def test_update_noised_initial_guess_list(interpolation):
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("interpolation", [*InterpolationType])
+def test_update_noised_initial_guess_list(interpolation, assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
@@ -1134,7 +1248,14 @@ def test_update_noised_initial_guess_list(interpolation):
     x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
     u_init = InitialGuess([0] * bio_model.nb_tau)
     ocp = OptimalControlProgram(
-        bio_model, dynamics, n_shooting=ns, phase_time=phase_time, ode_solver=solver, x_init=x_init, u_init=u_init
+        bio_model,
+        dynamics,
+        n_shooting=ns,
+        phase_time=phase_time,
+        ode_solver=solver,
+        x_init=x_init,
+        u_init=u_init,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     # Path constraint and control path constraints

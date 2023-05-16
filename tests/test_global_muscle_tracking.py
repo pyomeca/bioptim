@@ -10,11 +10,18 @@ from bioptim import OdeSolver, Solver, BiorbdModel
 from .utils import TestUtils
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 @pytest.mark.parametrize("n_threads", [1, 2])
-def test_muscle_activations_and_states_tracking(ode_solver, n_threads):
+def test_muscle_activations_and_states_tracking(ode_solver, n_threads, assume_phase_dynamics):
     # Load muscle_activations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
+    if n_threads > 1 and not assume_phase_dynamics:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -43,6 +50,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads):
         kin_data_to_track="q",
         ode_solver=ode_solver(),
         n_threads=n_threads,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     solver = Solver.IPOPT()
     # solver.set_maximum_iterations(10)
@@ -136,10 +144,15 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads):
     TestUtils.simulate(sol, decimal_value=5)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
+def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, assume_phase_dynamics):
     # Load muscle_activations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -167,6 +180,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
         ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
 
