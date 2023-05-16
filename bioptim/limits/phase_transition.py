@@ -231,6 +231,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node after applying the impulse equations
             """
 
+            MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+
             ocp = controllers[0].ocp
             if ocp.nlp[transition.nodes_phase[0]].states.shape != ocp.nlp[transition.nodes_phase[1]].states.shape:
                 raise RuntimeError(
@@ -239,27 +241,20 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
 
             # Aliases
             pre, post = controllers
-
-            # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
-            # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
-            # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
-            # EDIT 1: using multinode constraint this should work now
-            model = post.model.copy()
-
             if post.model.nb_rigid_contacts == 0:
                 warn("The chosen model does not have any rigid contact")
 
             # Todo scaled?
             q_pre = pre.states["q"].mx
             qdot_pre = pre.states["qdot"].mx
-            qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
+            qdot_impact = post.model.qdot_from_impact(q_pre, qdot_pre)
 
             val = []
             cx_start = []
             cx_end = []
             for key in pre.states:
-                cx_end = vertcat(cx_end, pre.states[key].mapping.to_second.map(pre.states[key].cx_end))
-                cx_start = vertcat(cx_start, post.states[key].mapping.to_second.map(post.states[key].cx_start))
+                cx_end = vertcat(cx_end, pre.states[key].mapping.to_second.map(pre.states[key].cx))
+                cx_start = vertcat(cx_start, post.states[key].mapping.to_second.map(post.states[key].cx))
                 post_mx = post.states[key].mx
                 continuity = post.states["qdot"].mapping.to_first.map(
                     qdot_impact - post_mx if key == "qdot" else pre.states[key].mx - post_mx
