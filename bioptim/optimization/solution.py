@@ -1365,9 +1365,9 @@ class Solution:
 
             # Convert parameters to actual values
             nlp = self.ocp.nlp[idx_phase]
-            for param in nlp.parameters:
-                if param.function:
-                    param.function[0](nlp.model, self.parameters[param.name], **param.params)
+            # for param in nlp.parameters:
+            #     if param.function:
+            #         param.function[0](nlp.model, self.parameters[param.name], **param.params)  # pariterre?
 
             # noinspection PyTypeChecker
             biorbd_model: BiorbdModel = nlp.model
