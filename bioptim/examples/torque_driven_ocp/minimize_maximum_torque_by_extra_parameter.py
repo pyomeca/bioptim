@@ -30,22 +30,12 @@ def custom_constraint_parameters(controller: PenaltyController) -> MX:
     val = max_param - tau
     return val
 
-
-def minimize_parameters(ocp: OptimalControlProgram, value: MX) -> MX:
-    return value
-
-
 def my_parameter_function(bio_model: biorbd.Model, value: MX):
     return
 
-
 def custom_min_parameter(controller: PenaltyController) -> MX:
-    idx = controller.parameters.names.index("max_tau")
-    # max_param = controller.nlp.parameters[idx].cx
-    # val = controller.nlp.mx_to_cx(
-    #     "min_max_tau", max_param, controller.nlp.parameters.cx
-    # )
-    return controller.parameters.cx[idx]  # val
+    idx = controller.parameters.names.index("max_tau")  # this does not work if the parameters are not of size 1
+    return controller.parameters.cx[idx]
 
 
 def prepare_ocp(
@@ -70,8 +60,6 @@ def prepare_ocp(
     parameter_initial_guess = InitialGuess(0)
     parameter_bounds = Bounds(0, tau_max, interpolation=InterpolationType.CONSTANT)
 
-    parameter_objective_function = Objective(minimize_parameters, weight=10000, quadratic=True, custom_type=ObjectiveFcn.Parameter)
-
     parameters.add(
         "max_tau",  # The name of the parameter
         my_parameter_function,  # The function that modifies the biorbd model
@@ -82,14 +70,13 @@ def prepare_ocp(
 
     # Add phase independant objective functions
     parameter_objectives = ParameterObjectiveList()
-    # parameter_objectives.add(parameter_objective_functions, weight=1000, quadratic=True)
+    parameter_objectives.add(custom_min_parameter, custom_type=ObjectiveFcn.Parameter, weight=1000, quadratic=True)
     parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=1000, quadratic=True)
 
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=0, min_bound=0.1, max_bound=3)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=1, min_bound=0.1, max_bound=3)
-    objective_functions.add(custom_min_parameter, custom_type=ObjectiveFcn.Mayer, node=Node.ALL, weight=100000)
 
     # Constraints
     constraints = ConstraintList()
