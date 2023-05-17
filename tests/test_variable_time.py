@@ -126,7 +126,9 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
             size=1,
             extra_value=1,
         )
-        parameter_objectives.add(my_target_function,  weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g)
+        parameter_objectives.add(
+            my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
+        )
 
     # ------------- #
 
