@@ -384,7 +384,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
             qddot = controller.controls["qddot"].mx if "qddot" in controller.controls else controller.states["qddot"].mx
-            qddot_fd = controller.model.forward_dynamics(q, qdot, tau)
+            if with_contact:
+                qddot_fd = controller.model.constrained_forward_dynamics(q, qdot, tau)
+            else:
+                qddot_fd = controller.model.forward_dynamics(q, qdot, tau)
 
             var = []
             var.extend([controller.states[key] for key in controller.states])

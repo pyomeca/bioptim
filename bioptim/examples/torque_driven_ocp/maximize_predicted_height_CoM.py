@@ -37,7 +37,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     objective_name: str = "MINIMIZE_PREDICTED_COM_HEIGHT",
     com_constraints: bool = False,
-    rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+    rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.DAE_FORWARD_DYNAMICS,
     assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
