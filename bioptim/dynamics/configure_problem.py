@@ -1040,7 +1040,11 @@ class ConfigureProblem:
 
         if as_controls:
             for node_index in range(
-                (1 if ocp.assume_phase_dynamics else (nlp.ns + (1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0)))
+                (
+                    1
+                    if ocp.assume_phase_dynamics
+                    else (nlp.ns + (1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0))
+                )
             ):
                 cx_scaled = (
                     ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx

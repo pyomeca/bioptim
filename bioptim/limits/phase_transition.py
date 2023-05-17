@@ -159,8 +159,11 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(transition, controllers: list[PenaltyController, PenaltyController],
-            states_mapping: list[BiMapping, ...] = None,):
+        def continuous(
+            transition,
+            controllers: list[PenaltyController, PenaltyController],
+            states_mapping: list[BiMapping, ...] = None,
+        ):
             """
             The most common continuity function, that is state before equals state after
 
@@ -182,7 +185,9 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.states_equality(transition, controllers, "all", states_mapping=states_mapping)
+            return MultinodeConstraintFunctions.Functions.states_equality(
+                transition, controllers, "all", states_mapping=states_mapping
+            )
 
         @staticmethod
         def discontinuous(transition, controllers: list[PenaltyController, PenaltyController]):

@@ -405,6 +405,7 @@ class PenaltyOption(OptionGeneric):
 
         if self.multinode_constraint or self.transition:
             from ..limits.multinode_constraint import MultinodeConstraint
+
             self: MultinodeConstraint
 
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")

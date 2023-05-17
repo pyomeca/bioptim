@@ -111,7 +111,9 @@ def test_multinode_fail_first_node(node):
     else:
         with pytest.raises(
             ValueError,
-            match=re.escape("Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."),
+            match=re.escape(
+                "Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."
+            ),
         ):
             multinode_constraints.add(
                 MultinodeConstraintFcn.STATES_EQUALITY,
@@ -133,9 +135,10 @@ def test_multinode_fail_second_node(node):
         )
     else:
         with pytest.raises(
-                ValueError,
-                match=re.escape(
-                    "Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."),
+            ValueError,
+            match=re.escape(
+                "Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."
+            ),
         ):
             multinode_constraints.add(
                 MultinodeConstraintFcn.STATES_EQUALITY,

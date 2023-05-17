@@ -248,7 +248,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             out = ctrl_0.cx.zeros(states_0.shape)
             for i in range(1, len(controllers)):
                 ctrl_i = controllers[i]
-                states_i = states_mapping[i-1].to_first.map(ctrl_i.states[key].cx)
+                states_i = states_mapping[i - 1].to_first.map(ctrl_i.states[key].cx)
 
                 if states_0.shape != states_i.shape:
                     raise RuntimeError(
