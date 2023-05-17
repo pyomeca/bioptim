@@ -1067,6 +1067,8 @@ class ConfigureProblem:
         if as_states_dot:
             for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
                 n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+                if n_cx < 3:
+                    n_cx = 3
                 cx_scaled = (
                     ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[node_index][name].original_cx
                     if copy_states_dot
