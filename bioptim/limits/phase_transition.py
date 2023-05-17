@@ -172,8 +172,10 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                     The penalty node elements
             states_mapping: list
                 A list of the mapping for the states between nodes. It should provide a mapping between 0 and i, where
-                the first (0) link the controllers[0].state to a number of values and the rest (1..end) maps to that
-                same number of values. Therefore, the dimension should be 'len(controllers)'
+                the first (0) link the controllers[0].state to a number of values using to_second. Thereafter, the
+                to_first is used sequentially for all the controllers (meaning controllers[1] uses the
+                states_mapping[0].to_first. Therefore, the dimension of the states_mapping
+                should be 'len(controllers) - 1'
 
             Returns
             -------

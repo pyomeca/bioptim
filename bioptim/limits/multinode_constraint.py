@@ -230,8 +230,10 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                 The penalty node elements
             states_mapping: list
                 A list of the mapping for the states between nodes. It should provide a mapping between 0 and i, where
-                the first (0) link the controllers[0].state to a number of values and the rest (1..end) maps to that
-                same number of values. Therefore, the dimension should be 'len(controllers)'
+                the first (0) link the controllers[0].state to a number of values using to_second. Thereafter, the
+                to_first is used sequentially for all the controllers (meaning controllers[1] uses the
+                states_mapping[0].to_first. Therefore, the dimension of the states_mapping
+                should be 'len(controllers) - 1'
 
             Returns
             -------
@@ -246,7 +248,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             out = ctrl_0.cx.zeros(states_0.shape)
             for i in range(1, len(controllers)):
                 ctrl_i = controllers[i]
-                states_i = states_mapping[i].to_first.map(ctrl_i.states[key].cx)
+                states_i = states_mapping[i-1].to_first.map(ctrl_i.states[key].cx)
 
                 if states_0.shape != states_i.shape:
                     raise RuntimeError(
@@ -443,14 +445,20 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
                 The penalty node elements
             states_mapping: list
                 A list of the mapping for the states between nodes. It should provide a mapping between 0 and i, where
-                the first (0) link the controllers[0].state to a number of values and the rest (1..end) maps to that
-                same number of values. Therefore, the dimension should be 'len(controllers)'
+                the first (0) link the controllers[0].state to a number of values using to_second. Thereafter, the
+                to_first is used sequentially for all the controllers (meaning controllers[1] uses the
+                states_mapping[0].to_first. Therefore, the dimension of the states_mapping
+                should be 'len(controllers) - 1'
             """
 
             if states_mapping is None:
                 states_mapping = []
                 for controller in controllers:
                     states_mapping.append(BiMapping(range(controller.states.shape), range(controller.states.shape)))
+            else:
+                if not isinstance(states_mapping, (list, tuple)) and len(controllers) == 2:
+                    states_mapping = [states_mapping]
+
             return states_mapping
 
 
