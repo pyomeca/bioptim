@@ -238,7 +238,9 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                         else []
                     )
 
-                _x = vertcat(_x, _x_tp)
+                # 0th column since this constraint can only be applied to a single point. This is to account for
+                # the COLLOCATION which will have multiple column, but are not intended to be used here
+                _x = vertcat(_x, _x_tp[:, 0])
                 _u = vertcat(_u, _u_tp)
 
         elif _penalty.integrate:

@@ -1451,7 +1451,7 @@ class Solution:
                         x = (
                             self.states_no_intermediate["all"][:, col_x_idx]
                             if len(self.phase_time) - 1 == 1
-                            else self.states_no_intermediate[0][phase_idx]["all"][:, col_x_idx]
+                            else self.states_no_intermediate[phase_idx]["all"][:, col_x_idx]
                         )
                     else:
                         x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]
