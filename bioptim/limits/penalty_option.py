@@ -99,7 +99,6 @@ class PenaltyOption(OptionGeneric):
         index: list = None,
         rows: list | tuple | range | np.ndarray = None,
         cols: list | tuple | range | np.ndarray = None,
-        states_mapping: BiMapping = None,
         custom_function: Callable = None,
         penalty_type: PenaltyType = PenaltyType.USER,
         multi_thread: bool = None,
@@ -188,8 +187,6 @@ class PenaltyOption(OptionGeneric):
             )
             else True
         )
-
-        self.states_mapping = states_mapping
 
         self.custom_function = custom_function
 
@@ -645,8 +642,6 @@ class PenaltyOption(OptionGeneric):
             # Make sure the penalty behave like a PhaseTransition, even though it may be an Objective or Constraint
             current_node_type = self.node
             self.dt = 1
-            if not self.states_mapping:
-                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
             controllers = []
             self.multinode_idx = []

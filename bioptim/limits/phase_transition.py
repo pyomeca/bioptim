@@ -10,6 +10,7 @@ from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..misc.enums import Node, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
+from ..misc.mapping import BiMapping
 
 
 class PhaseTransition(MultinodeConstraint):
@@ -158,7 +159,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(transition, controllers: list[PenaltyController, PenaltyController]):
+        def continuous(transition, controllers: list[PenaltyController, PenaltyController],
+            states_mapping: list[BiMapping, ...] = None,):
             """
             The most common continuity function, that is state before equals state after
 
@@ -168,13 +170,17 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 A reference to the phase transition
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
+            states_mapping: list
+                A list of the mapping for the states between nodes. It should provide a mapping between 0 and i, where
+                the first (0) link the controllers[0].state to a number of values and the rest (1..end) maps to that
+                same number of values. Therefore, the dimension should be 'len(controllers)'
 
             Returns
             -------
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.states_equality(transition, controllers, "all")
+            return MultinodeConstraintFunctions.Functions.states_equality(transition, controllers, "all", states_mapping=states_mapping)
 
         @staticmethod
         def discontinuous(transition, controllers: list[PenaltyController, PenaltyController]):

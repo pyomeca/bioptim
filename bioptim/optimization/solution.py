@@ -1367,12 +1367,8 @@ class Solution:
         for idx_phase, data in enumerate(states):
             if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
                 raise NotImplementedError("Animation is only implemented for biorbd models")
-
             # Convert parameters to actual values
             nlp = self.ocp.nlp[idx_phase]
-            for param in nlp.parameters:
-                if param.function:
-                    param.function[0](nlp.model, self.parameters[param.name], **param.params)
 
             # noinspection PyTypeChecker
             biorbd_model: BiorbdModel = nlp.model

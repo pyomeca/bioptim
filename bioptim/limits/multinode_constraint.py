@@ -1,7 +1,5 @@
 from typing import Callable, Any
 
-from casadi import vertcat, MX
-
 from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
@@ -9,6 +7,7 @@ from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
+from ..misc.mapping import BiMapping
 
 
 class MultinodeConstraint(Constraint):
@@ -214,7 +213,12 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def states_equality(constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"):
+        def states_equality(
+            constraint,
+            controllers: list[PenaltyController, ...],
+            key: str = "all",
+            states_mapping: list[BiMapping, ...] = None,
+        ):
             """
             The most common continuity function, that is state before equals state after
 
@@ -223,7 +227,11 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             constraint : MultinodeConstraint
                 A reference to the phase transition
             controllers: list
-                    The penalty node elements
+                The penalty node elements
+            states_mapping: list
+                A list of the mapping for the states between nodes. It should provide a mapping between 0 and i, where
+                the first (0) link the controllers[0].state to a number of values and the rest (1..end) maps to that
+                same number of values. Therefore, the dimension should be 'len(controllers)'
 
             Returns
             -------
@@ -231,13 +239,14 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+            states_mapping = MultinodeConstraintFunctions.Functions._prepare_states_mapping(controllers, states_mapping)
 
             ctrl_0 = controllers[0]
-            states_0 = constraint.states_mapping.to_second.map(ctrl_0.states[key].cx)
+            states_0 = states_mapping[0].to_second.map(ctrl_0.states[key].cx)
             out = ctrl_0.cx.zeros(states_0.shape)
             for i in range(1, len(controllers)):
                 ctrl_i = controllers[i]
-                states_i = constraint.states_mapping.to_first.map(ctrl_i.states[key].cx)
+                states_i = states_mapping[i].to_first.map(ctrl_i.states[key].cx)
 
                 if states_0.shape != states_i.shape:
                     raise RuntimeError(
@@ -251,7 +260,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def controls_equality(constraint, controllers: list[PenaltyController, PenaltyController], key: str = "all"):
+        def controls_equality(constraint, controllers: list[PenaltyController, ...], key: str = "all"):
             """
             The controls before equals controls after
 
@@ -259,7 +268,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             constraint : MultinodeConstraint
                 A reference to the phase transition
-            controllers: list[PenaltyController, PenaltyController]
+            controllers: list[PenaltyController, ...]
                     The penalty node elements
 
             Returns
@@ -288,7 +297,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def com_equality(constraint, controllers: list[PenaltyController, PenaltyController]):
+        def com_equality(constraint, controllers: list[PenaltyController, ...]):
             """
             The centers of mass are equals for the specified phases and the specified nodes
 
@@ -296,7 +305,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             constraint : MultinodeConstraint
                 A reference to the phase transition
-            controllers: list[PenaltyController, PenaltyController]
+            controllers: list[PenaltyController, ...]
                     The penalty node elements
 
             Returns
@@ -306,35 +315,17 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
 
-            pre, post = controllers
-            states_pre = constraint.states_mapping.to_second.map(pre.states.cx)
-            states_post = constraint.states_mapping.to_first.map(post.states.cx)
+            com_0 = controllers[0].model.center_of_mass(controllers[0].states["q"].cx)
 
-            states_post_sym_list = [MX.sym(f"{key}", *post.states[key].mx.shape) for key in post.states]
-            states_post_sym = vertcat(*states_post_sym_list)
+            out = controllers[0].cx.zeros((3, 1))
+            for i in range(1, len(controllers)):
+                com_i = controllers[i].model.center_of_mass(controllers[i].states["q"].cx)
+                out += com_0 - com_i
 
-            if states_pre.shape != states_post.shape:
-                raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
-                    f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
-                    f"transition or supply states_mapping"
-                )
-
-            pre_com = pre.model.center_of_mass(states_pre[pre.states["q"].index, :])
-            post_com = post.model.center_of_mass(states_post_sym_list[0])
-
-            pre_states_cx = pre.states.cx
-            post_states_cx = post.states.cx
-
-            return pre.to_casadi_func(
-                "com_equality",
-                pre_com - post_com,
-                states_pre,
-                states_post_sym,
-            )(pre_states_cx, post_states_cx)
+            return out
 
         @staticmethod
-        def com_velocity_equality(constraint, controllers: list[PenaltyController, PenaltyController]):
+        def com_velocity_equality(constraint, controllers: list[PenaltyController, ...]):
             """
             The centers of mass velocity are equals for the specified phases and the specified nodes
 
@@ -342,7 +333,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             ----------
             constraint : MultinodeConstraint
                 A reference to the phase transition
-            controllers: list[PenaltyController, PenaltyController]
+            controllers: list[PenaltyController, ...]
                     The penalty node elements
 
             Returns
@@ -352,34 +343,18 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
 
-            pre, post = controllers
-            states_pre = constraint.states_mapping.to_second.map(pre.states.cx)
-            states_post = constraint.states_mapping.to_first.map(post.states.cx)
-
-            states_post_sym_list = [MX.sym(f"{key}", *post.states[key].mx.shape) for key in post.states]
-            states_post_sym = vertcat(*states_post_sym_list)
-
-            if states_pre.shape != states_post.shape:
-                raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
-                    f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
-                    f"transition or supply states_mapping"
-                )
-
-            pre_com_dot = pre.model.center_of_mass_velocity(
-                states_pre[pre.states["q"].index, :], states_pre[pre.states["qdot"].index, :]
+            com_dot_0 = controllers[0].model.center_of_mass_velocity(
+                controllers[0].states["q"].cx, controllers[0].states["qdot"].cx
             )
-            post_com_dot = post.model.center_of_mass_velocity(states_post_sym_list[0], states_post_sym_list[1])
 
-            pre_states_cx = pre.states.cx
-            post_states_cx = post.states.cx
+            out = controllers[0].cx.zeros((3, 1))
+            for i in range(1, len(controllers)):
+                com_dot_i = controllers[i].model.center_of_mass_velocity(
+                    controllers[i].states["q"].cx, controllers[i].states["qdot"].cx
+                )
+                out += com_dot_0 - com_dot_i
 
-            return pre.to_casadi_func(
-                "com_dot_equality",
-                pre_com_dot - post_com_dot,
-                states_pre,
-                states_post_sym,
-            )(pre_states_cx, post_states_cx)
+            return out
 
         @staticmethod
         def time_equality(constraint, controllers: list[PenaltyController, PenaltyController]):
@@ -400,34 +375,30 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
 
             MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
 
-            time_pre_idx = None
-            pre, post = controllers
-            for i in range(pre.parameters.cx.shape[0]):
-                param_name = pre.parameters.cx[i].name()
-                if param_name == "time_phase_" + str(pre.phase_idx):
-                    time_pre_idx = pre.phase_idx
-            if time_pre_idx is None:
-                raise RuntimeError(
-                    f"Time constraint can't be established since the first phase has no time parameter. "
-                    f"\nTime parameter can be added with : "
-                    f"\nobjective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
-                    f"\nwith constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
-                )
+            def get_time_parameter_idx(controller: PenaltyController, i_phase):
+                time_idx = None
+                for i in range(controller.parameters.cx.shape[0]):
+                    param_name = controller.parameters.cx[i].name()
+                    if param_name == "time_phase_" + str(controller.phase_idx):
+                        time_idx = controller.phase_idx
+                if time_idx is None:
+                    raise RuntimeError(
+                        f"Time constraint can't be established since the {i_phase}th phase has no time parameter. "
+                        f"\nTime parameter can be added with : "
+                        f"\nobjective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
+                        f"\nwith constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
+                    )
+                return time_idx
 
-            time_post_idx = None
-            for i in range(post.parameters.cx.shape[0]):
-                param_name = post.parameters.cx[i].name()
-                if param_name == "time_phase_" + str(post.phase_idx):
-                    time_post_idx = post.phase_idx
-            if time_post_idx is None:
-                raise RuntimeError(
-                    f"Time constraint can't be established since the second phase has no time parameter. Time parameter "
-                    f"can be added with : objective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
-                    f"with constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
-                )
+            time_idx = [get_time_parameter_idx(controller, i) for i, controller in enumerate(controllers)]
 
-            time_pre, time_post = pre.parameters.cx[time_pre_idx], post.parameters.cx[time_post_idx]
-            return time_pre - time_post
+            time_0 = controllers[0].parameters.cx[time_idx[0]]
+            out = controllers[0].cx.zeros((1, 1))
+            for i in range(1, len(controllers)):
+                time_i = controllers[i].parameters.cx[time_idx[i]]
+                out += time_0 - time_i
+
+            return out
 
         @staticmethod
         def custom(constraint, controllers: list[PenaltyController, PenaltyController], **extra_params):
@@ -460,6 +431,27 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             for controller in controllers:
                 controller.cx_index_to_get = sum([i == controller.phase_idx for i in existing_phases])
                 existing_phases.append(controller.phase_idx)
+
+        @staticmethod
+        def _prepare_states_mapping(controllers: list[PenaltyController, ...], states_mapping: list[BiMapping, ...]):
+            """
+            Prepare a new state_mappings if None is sent. Otherwise, it simply returns the current states_mapping
+
+            Parameters
+            ----------
+            controllers: list
+                The penalty node elements
+            states_mapping: list
+                A list of the mapping for the states between nodes. It should provide a mapping between 0 and i, where
+                the first (0) link the controllers[0].state to a number of values and the rest (1..end) maps to that
+                same number of values. Therefore, the dimension should be 'len(controllers)'
+            """
+
+            if states_mapping is None:
+                states_mapping = []
+                for controller in controllers:
+                    states_mapping.append(BiMapping(range(controller.states.shape), range(controller.states.shape)))
+            return states_mapping
 
 
 class MultinodeConstraintFcn(FcnEnum):
