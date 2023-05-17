@@ -9,17 +9,12 @@ from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, Multinode
 
 
 class MultinodeConstraint(MultinodePenalty):
-    def __init__(
-        self,
-        *args,
-        min_bound: float = 0,
-        max_bound: float = 0,
-        **kwargs
-    ):
+    def __init__(self, *args, min_bound: float = 0, max_bound: float = 0, **kwargs):
         if "weight" in kwargs and kwargs["weight"] is not None:
             raise ValueError(
                 "MultinodeConstraints can't declare weight, use MultinodeObjective instead. If you were defining a "
-                "custom function that uses 'weight' as parameter, please use another keyword.")
+                "custom function that uses 'weight' as parameter, please use another keyword."
+            )
 
         super(MultinodeConstraint, self).__init__(MultinodeConstraintFcn, *args, **kwargs)
 
@@ -83,7 +78,10 @@ class MultinodeConstraintList(MultinodePenaltyList):
         """
 
         super(MultinodeConstraintList, self).add(
-            option_type=MultinodeConstraint, multinode_penalty=multinode_constraint, _multinode_penalty_fcn=MultinodeConstraintFcn, **extra_arguments
+            option_type=MultinodeConstraint,
+            multinode_penalty=multinode_constraint,
+            _multinode_penalty_fcn=MultinodeConstraintFcn,
+            **extra_arguments,
         )
 
 

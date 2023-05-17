@@ -408,7 +408,13 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
     def print(self):
         raise NotImplementedError("Print is not implemented for MultinodePenaltyList")
 
-    def add(self,  multinode_penalty: Any, option_type: type = None, _multinode_penalty_fcn: type | Any = None, **extra_arguments: Any):
+    def add(
+        self,
+        multinode_penalty: Any,
+        option_type: type = None,
+        _multinode_penalty_fcn: type | Any = None,
+        **extra_arguments: Any,
+    ):
         """
         Add a new MultinodePenalty to the list
 

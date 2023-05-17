@@ -6,13 +6,7 @@ from .objective_functions import ObjectiveFunction
 
 
 class MultinodeObjective(MultinodePenalty):
-    def __init__(
-        self,
-        *args,
-        weight: float = 0,
-        **kwargs
-    ):
-
+    def __init__(self, *args, weight: float = 0, **kwargs):
         super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn, *args, **kwargs)
 
         self.weight = weight if weight is not None else 0
@@ -46,7 +40,10 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         """
 
         super(MultinodeObjectiveList, self).add(
-            option_type=MultinodeObjective, multinode_penalty=multinode_objective, _multinode_penalty_fcn=MultinodeObjectiveFcn, **extra_arguments
+            option_type=MultinodeObjective,
+            multinode_penalty=multinode_objective,
+            _multinode_penalty_fcn=MultinodeObjectiveFcn,
+            **extra_arguments
         )
 
 
