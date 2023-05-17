@@ -30,7 +30,9 @@ class MultinodeConstraint(MultinodePenalty):
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         super(MultinodeConstraint, self).add_or_replace_to_penalty_pool(ocp, nlp)
+        self.set_bounds()
 
+    def set_bounds(self):
         self.min_bound = np.array(self.min_bound) if isinstance(self.min_bound, (list, tuple)) else self.min_bound
         self.max_bound = np.array(self.max_bound) if isinstance(self.max_bound, (list, tuple)) else self.max_bound
 

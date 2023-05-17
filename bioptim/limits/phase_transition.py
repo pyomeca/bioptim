@@ -3,17 +3,19 @@ from warnings import warn
 
 from casadi import vertcat, MX
 
-from .multinode_constraint import MultinodeConstraint, MultinodePenaltyFunctions
+from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
+from .multinode_objective import MultinodeObjectiveFcn
+from .multinode_constraint import MultinodeConstraintFcn, MultinodeConstraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
-from ..misc.enums import Node, PenaltyType
+from ..misc.enums import Node, PenaltyType, InterpolationType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 from ..misc.mapping import BiMapping
 
 
-class PhaseTransition(MultinodeConstraint):
+class PhaseTransition(MultinodePenalty):
     """
     A placeholder for a transition of state
 
@@ -55,19 +57,33 @@ class PhaseTransition(MultinodeConstraint):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
+            MultinodeObjectiveFcn if weight else MultinodeConstraintFcn,
             nodes_phase=(-1, 0) if transition == transition.CYCLIC else (phase_pre_idx, phase_pre_idx + 1),
             nodes=(Node.END, Node.START),
             multinode_penalty=transition,
             custom_function=custom_function,
-            min_bound=min_bound,
-            max_bound=max_bound,
-            weight=weight,
             force_multinode=True,
             **params,
         )
 
+        self.weight = 0 if weight is None else weight
+        self.min_bound = min_bound
+        self.max_bound = max_bound
+        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.node = Node.TRANSITION
         self.transition = True
+
+    def add_or_replace_to_penalty_pool(self, ocp, nlp):
+        super(PhaseTransition, self).add_or_replace_to_penalty_pool(ocp, nlp)
+        if not self.weight:
+            self: MultinodeConstraint
+            MultinodeConstraint.set_bounds(self)
+
+    def _get_pool_to_add_penalty(self, ocp, nlp):
+        if not self.weight:
+            return nlp.g_internal if nlp else ocp.g_internal
+        else:
+            return nlp.J_internal if nlp else ocp.J_internal
 
 
 class PhaseTransitionList(UniquePerPhaseOptionList):

@@ -44,8 +44,6 @@ def custom_phase_transition(
 
     Parameters
     ----------
-    transition: PhaseTransition
-        The placeholder for the transition
     controllers: list[PenaltyController, PenaltyController]
         The controller for all the nodes in the penalty
     coef: float
