@@ -971,6 +971,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, assume_phase_dynamics):
     tp = OptimizationVariableList(MX)
     tp.append("param", [MX(), MX()], MX(), BiMapping([], []))
     nlp.parameters = tp["param"]
+    nlp.parameters.cx = tp["param"].cx_start
 
     pn = []
     penalty = PenaltyOption(pn)
