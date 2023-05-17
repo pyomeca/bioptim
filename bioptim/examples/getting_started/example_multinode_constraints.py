@@ -23,6 +23,8 @@ from bioptim import (
     Solver,
     MultinodeConstraintList,
     MultinodeConstraintFcn,
+    MultinodeObjectiveList,
+    MultinodeObjectiveFcn,
     PenaltyController,
     BiMapping,
 )
@@ -127,15 +129,16 @@ def prepare_ocp(
         key="all",
     )
     # Objectives with the weight as an argument
-    multinode_constraints.add(
-        MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(2, Node.MID), weight=2, key="all"
+    multinode_objectives = MultinodeObjectiveList()
+    multinode_objectives.add(
+        MultinodeObjectiveFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(2, Node.MID), weight=2, key="all"
     )
     # Objectives with the weight as an argument
-    multinode_constraints.add(
-        MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 1), nodes=(Node.MID, Node.END), weight=0.1, key="all"
+    multinode_objectives.add(
+        MultinodeObjectiveFcn.STATES_EQUALITY, nodes_phase=(0, 1), nodes=(Node.MID, Node.END), weight=0.1, key="all"
     )
     # Objectives with the weight as an argument
-    multinode_constraints.add(
+    multinode_objectives.add(
         custom_multinode_constraint, nodes_phase=(0, 1), nodes=(Node.MID, Node.PENULTIMATE), weight=0.1, coef=2
     )
 
@@ -195,6 +198,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         multinode_constraints=multinode_constraints,
+        multinode_objectives=multinode_objectives,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )

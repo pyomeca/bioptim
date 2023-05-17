@@ -221,7 +221,7 @@ def test_console_objective_functions(assume_phase_dynamics):
                     nlp.states_dot.node_index = node_index
                     nlp.controls.node_index = node_index
 
-                    name = p.name.replace("->", "_").replace(" ", "_")
+                    name = p.name.replace("->", "_").replace(" ", "_").replace(",", "_").replace(":", "_").replace(".", "_").replace("__", "_")
                     x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("i0").shape)
                     u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("i1").shape)
                     param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i2").shape)
@@ -263,7 +263,7 @@ def test_console_objective_functions(assume_phase_dynamics):
             "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
             "\n"
             "PHASE 1\n"
-            "MultinodeConstraintFcn.CUSTOM: 6.0 (non weighted  3.00)\n"
+            "MultinodeObjectiveFcn.CUSTOM: 6.0 (non weighted  3.00)\n"
             "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
             "\n"
             "PHASE 2\n"
@@ -300,7 +300,7 @@ def test_console_objective_functions(assume_phase_dynamics):
             "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
             "\n"
             "PHASE 1\n"
-            "MultinodeConstraintFcn.CUSTOM: 6.0 (non weighted  3.00)\n"
+            "MultinodeObjectiveFcn.CUSTOM: 6.0 (non weighted  3.00)\n"
             "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
             "\n"
             "PHASE 2\n"

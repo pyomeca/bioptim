@@ -112,7 +112,7 @@ def test_multinode_fail_first_node(node):
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."
+                "Multinode penalties only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."
             ),
         ):
             multinode_constraints.add(
@@ -158,13 +158,13 @@ def test_multinode_wrong_phase(phase_1, phase_2, assume_phase_dynamics):
     if phase_1 == 4 or (phase_1 == 0 and phase_2 == 4) or (phase_1 == -1 and phase_2 == 4):
         with pytest.raises(
             ValueError,
-            match="nodes_phase of the multinode_constraint must be between 0 and number of phases",
+            match="nodes_phase of the multinode_penalty must be between 0 and number of phases",
         ):
             prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
     elif phase_1 == -1 or (phase_1 == 0 and phase_2 == -1):
         with pytest.raises(
             ValueError,
-            match="nodes_phase of the multinode_constraint must be between 0 and number of phases",
+            match="nodes_phase of the multinode_penalty must be between 0 and number of phases",
         ):
             prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
     else:
