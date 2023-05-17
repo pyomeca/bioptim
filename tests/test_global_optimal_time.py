@@ -2,6 +2,7 @@
 Test for file IO
 """
 import os
+import platform
 import pytest
 import re
 
@@ -118,6 +119,10 @@ def test_pendulum_min_time_mayer(ode_solver, assume_phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 # @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
 def test_pendulum_min_time_mayer_constrained(ode_solver, assume_phase_dynamics):
+    if platform.system() != "Linux":
+        # This is a long test and CI is already long for Windows and Mac
+        return
+
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
@@ -436,6 +441,10 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_time_constraint(ode_solver, assume_phase_dynamics):
+    if platform.system() != "Linux":
+        # This is a long test and CI is already long for Windows and Mac
+        return
+
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
 

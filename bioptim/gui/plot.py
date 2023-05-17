@@ -628,8 +628,14 @@ class PlotOcp:
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
-                for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                    self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
+                if data_params["time"].shape[0] != len(data_states):
+                    data_params["time"] = self.ocp.parameter_mappings["time"].to_second.map(data_params["time"][0])
+                    for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
+                        self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
+
+                else:
+                    for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
+                        self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
@@ -805,10 +811,15 @@ class PlotOcp:
                             y[:, i_node] = val
                     else:
                         nodes = self.plot_func[key][i].node_idx
-                        if nodes and len(nodes) > 1 and len(nodes) == round(state.shape[1] / step_size):
-                            # Assume we are integrating but did not specify plot as such.
-                            # Therefore the arrival point is missing
-                            nodes += [nodes[-1] + 1]
+                        if nodes is not None:
+                            if len(nodes) == 1:
+                                y = np.empty((self.variable_sizes[i][key], 1))
+                                y.fill(np.nan)
+
+                            if nodes and len(nodes) > 1 and len(nodes) == round(state.shape[1] / step_size):
+                                # Assume we are integrating but did not specify plot as such.
+                                # Therefore the arrival point is missing
+                                nodes += [nodes[-1] + 1]
 
                         val = self.plot_func[key][i].function(
                             nodes,
