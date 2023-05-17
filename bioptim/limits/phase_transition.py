@@ -3,7 +3,7 @@ from warnings import warn
 
 from casadi import vertcat, MX
 
-from .multinode_constraint import MultinodeConstraint, MultinodeConstraintFunctions
+from .multinode_constraint import MultinodeConstraint, MultinodePenaltyFunctions
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
@@ -45,7 +45,7 @@ class PhaseTransition(MultinodeConstraint):
         self,
         phase_pre_idx: int = None,
         transition: Any | Callable = None,
-        weight: float = 0,
+        weight: float = None,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
@@ -57,7 +57,7 @@ class PhaseTransition(MultinodeConstraint):
         super(PhaseTransition, self).__init__(
             nodes_phase=(-1, 0) if transition == transition.CYCLIC else (phase_pre_idx, phase_pre_idx + 1),
             nodes=(Node.END, Node.START),
-            multinode_constraint=transition,
+            multinode_penalty=transition,
             custom_function=custom_function,
             min_bound=min_bound,
             max_bound=max_bound,
@@ -185,7 +185,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MultinodeConstraintFunctions.Functions.states_equality(
+            return MultinodePenaltyFunctions.Functions.states_equality(
                 transition, controllers, "all", states_mapping=states_mapping
             )
 
@@ -225,7 +225,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return MultinodeConstraintFunctions.Functions.states_equality(transition, controllers, "all")
+            return MultinodePenaltyFunctions.Functions.states_equality(transition, controllers, "all")
 
         @staticmethod
         def impact(transition, controllers: list[PenaltyController, PenaltyController]):
@@ -244,7 +244,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node after applying the impulse equations
             """
 
-            MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
 
             ocp = controllers[0].ocp
             if ocp.nlp[transition.nodes_phase[0]].states.shape != ocp.nlp[transition.nodes_phase[1]].states.shape:
@@ -288,7 +288,7 @@ class PhaseTransitionFcn(FcnEnum):
     DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
-    CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
+    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
     @staticmethod
     def get_type():

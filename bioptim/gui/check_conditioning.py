@@ -300,7 +300,7 @@ def check_conditioning(ocp):
                 nlp_phase.controls.node_index = node_index
 
                 # Test every possibility
-                if obj.multinode_constraint or obj.transition:
+                if obj.multinode_penalty or obj.transition:
                     nlp = ocp.nlp[phase - 1]
                     nlp_post = nlp_phase
                     states_pre = nlp.states.cx_end

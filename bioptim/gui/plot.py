@@ -722,7 +722,7 @@ class PlotOcp:
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
                     for i_var in range(self.variable_sizes[i][key]):
-                        if self.plot_func[key][i].parameters["penalty"].multinode_constraint:
+                        if self.plot_func[key][i].parameters["penalty"].multinode_penalty:
                             y = np.array([np.nan])
                             penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
                             x_phase_tp = np.ndarray((data_states[0]["all"].shape[0], 0))

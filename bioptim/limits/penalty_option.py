@@ -202,7 +202,7 @@ class PenaltyOption(OptionGeneric):
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
         self.transition = False
-        self.multinode_constraint = False
+        self.multinode_penalty = False
         self.nodes_phase = None  # This is relevant for multinodes
         self.nodes = None  # This is relevant for multinodes
         if self.derivative and self.explicit_derivative:
@@ -403,12 +403,12 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
-        if self.multinode_constraint or self.transition:
+        if self.multinode_penalty or self.transition:
             from ..limits.multinode_constraint import MultinodeConstraint
 
             self: MultinodeConstraint
 
-            name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
+            name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_").replace(":", "_").replace("__", "_")
 
             controllers = controller
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)

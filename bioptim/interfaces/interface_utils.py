@@ -205,7 +205,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
     def get_x_and_u_at_idx(_penalty, _idx, is_unscaled):
         """ """
-        if _penalty.multinode_constraint or _penalty.transition:
+        if _penalty.multinode_penalty or _penalty.transition:
             ocp = interface.ocp
 
             def get_control_modificator(index):

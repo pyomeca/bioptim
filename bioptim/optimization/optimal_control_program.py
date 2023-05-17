@@ -28,6 +28,7 @@ from ..limits.constraints import (
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList
+from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
@@ -161,6 +162,7 @@ class OptimalControlProgram:
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
+        multinode_objectives: MultinodeObjectiveList = None,
         x_scaling: VariableScaling | VariableScalingList = None,
         xdot_scaling: VariableScaling | VariableScalingList = None,
         u_scaling: VariableScaling | VariableScalingList = None,
@@ -266,6 +268,7 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "multinode_constraints": multinode_constraints,
+            "multinode_objectives": multinode_objectives,
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
@@ -421,6 +424,11 @@ class OptimalControlProgram:
         elif not isinstance(multinode_constraints, MultinodeConstraintList):
             raise RuntimeError("multinode_constraints should be built from an MultinodeConstraintList")
 
+        if multinode_objectives is None:
+            multinode_objectives = MultinodeObjectiveList()
+        elif not isinstance(multinode_objectives, MultinodeObjectiveList):
+            raise RuntimeError("multinode_objectives should be built from an MultinodeObjectiveList")
+
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
         elif not isinstance(ode_solver, OdeSolverBase):
@@ -545,8 +553,8 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-        # TODO: multinode_whatever should be handled the same way as constraints and objectives
-        self.multinode_constraints = multinode_constraints.prepare_multinode_constraints(self)
+        multinode_constraints.add_or_replace_to_penalty_pool(self)
+        multinode_objectives.add_or_replace_to_penalty_pool(self)
 
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
@@ -720,26 +728,6 @@ class OptimalControlProgram:
             pt.name = f"PHASE_TRANSITION {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
-
-        for mnc in self.multinode_constraints:
-            # Equality constraint between nodes
-            if isinstance(mnc.nodes[0], int):
-                first_node_name = f"idx {str(mnc.nodes[0])}"
-            else:
-                first_node_name = mnc.nodes[0].name
-
-            if isinstance(mnc.nodes[1], int):
-                second_node_name = f"idx {str(mnc.nodes[1])}"
-            else:
-                second_node_name = mnc.nodes[1].name
-
-            mnc.name = (
-                f"NODE_EQUALITY "
-                f"Phase {mnc.nodes_phase[0]} Node {first_node_name}"
-                f"->Phase {mnc.nodes_phase[1]} Node {second_node_name}"
-            )
-            mnc.list_index = -1
-            mnc.add_or_replace_to_penalty_pool(self, self.nlp[mnc.nodes_phase[0]])
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """
@@ -1054,7 +1042,7 @@ class OptimalControlProgram:
                 u /= u_scaling
 
             out = []
-            if penalty.transition or penalty.multinode_constraint:
+            if penalty.transition or penalty.multinode_penalty:
                 out.append(
                     penalty.weighted_function_non_threaded[t](
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt

@@ -1413,7 +1413,7 @@ class Solution:
             u = []
             target = []
             if nlp is not None:
-                if penalty.multinode_constraint or penalty.transition:
+                if penalty.multinode_penalty or penalty.transition:
                     x = np.array(())
                     u = np.array(())
                     for i in range(len(penalty.nodes_phase)):
