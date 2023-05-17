@@ -155,6 +155,7 @@ class ConfigureProblem:
         with_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
+        with_close_loop_constraints: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
@@ -174,6 +175,8 @@ class ConfigureProblem:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_close_loop_constraints: bool
+            If the dynamic with holonomic constraints should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
@@ -264,6 +267,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_close_loop_constraints=with_close_loop_constraints,
             )
 
         # Declared soft contacts controls
@@ -283,6 +287,7 @@ class ConfigureProblem:
                 rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_close_loop_constraints=with_close_loop_constraints,
             )
 
         # Configure the contact forces

@@ -76,6 +76,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
+        with_close_loop_constraints: bool,
         rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
     ) -> DynamicsEvaluation:
@@ -98,6 +99,8 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_close_loop_constraints: bool
+            If the dynamic with holonomic constraints should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         fatigue : FatigueList
@@ -135,7 +138,7 @@ class DynamicsFunctions:
             dxdt[nlp.states["qdot"].index, :] = qddot
             dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
         else:
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, with_close_loop_constraints)
             dxdt = MX(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
             dxdt[nlp.states["qdot"].index, :] = ddq
@@ -232,6 +235,7 @@ class DynamicsFunctions:
         with_passive_torque: bool,
         with_residual_torque: bool,
         with_ligament: bool,
+        with_close_loop_constraints: bool,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -254,6 +258,8 @@ class DynamicsFunctions:
             If the dynamic should be added with residual torques
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_close_loop_constraints: bool
+            If the dynamic with holonomic constraints should be used
 
         Returns
         ----------
@@ -274,7 +280,7 @@ class DynamicsFunctions:
             tau += nlp.model.ligament_joint_torque(q, qdot)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, with_close_loop_constraints)
 
         dq = horzcat(*[dq for _ in range(ddq.shape[1])])
 
@@ -290,6 +296,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
+        with_close_loop_constraints: bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -312,6 +319,8 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_close_loop_constraints: bool
+            If the dynamic with holonomic constraints should be used
 
         Returns
         ----------
@@ -342,7 +351,7 @@ class DynamicsFunctions:
             dxdt[nlp.states["qddot"].index, :] = dddq
             dxdt[nlp.states["tau"].index, :] = dtau
         else:
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, with_close_loop_constraints)
             dxdt = MX(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
             dxdt[nlp.states["qdot"].index, :] = ddq
@@ -451,6 +460,7 @@ class DynamicsFunctions:
         with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         with_residual_torque: bool = False,
+        with_close_loop_constraints: bool = False,
         fatigue=None,
     ) -> DynamicsEvaluation:
         """
@@ -478,6 +488,8 @@ class DynamicsFunctions:
             To define fatigue elements
         with_residual_torque: bool
             If the dynamic should be added with residual torques
+        with_close_loop_constraints: bool
+            If the dynamic should be added with holonomic constraints
 
         Returns
         ----------
@@ -539,7 +551,7 @@ class DynamicsFunctions:
             dxdt[nlp.states["q"].index, :] = dq
             dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
         else:
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, with_close_loop_constraints)
             dxdt = MX(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
             dxdt[nlp.states["qdot"].index, :] = ddq
@@ -746,6 +758,7 @@ class DynamicsFunctions:
         qdot: MX | SX,
         tau: MX | SX,
         with_contact: bool,
+        with_close_loop_constraints: bool,
     ):
         """
         Easy accessor to derivative of qdot
@@ -762,6 +775,8 @@ class DynamicsFunctions:
             The value of tau from "get"
         with_contact: bool
             If the dynamics with contact should be used
+        with_close_loop_constraints: bool
+            If the dynamics with holonomic constraints should be used
 
         Returns
         -------
@@ -779,7 +794,7 @@ class DynamicsFunctions:
                 dxdt[:, i] = qdot_var.mapping.to_first.map(qddot)
             return dxdt
         else:
-            if with_contact:
+            if with_contact or with_close_loop_constraints:
                 qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau)
             else:
                 qddot = nlp.model.forward_dynamics(q, qdot, tau)
