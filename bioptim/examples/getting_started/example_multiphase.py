@@ -29,7 +29,7 @@ from bioptim import (
 )
 
 
-def minimize_difference(constraint, controllers: list[PenaltyController, PenaltyController]):
+def minimize_difference(controllers: list[PenaltyController, PenaltyController]):
     pre, post = controllers
     return pre.controls.cx - post.controls.cx
 

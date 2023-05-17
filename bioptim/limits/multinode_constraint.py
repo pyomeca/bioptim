@@ -447,7 +447,7 @@ class MultinodeConstraintFunctions(PenaltyFunctionAbstract):
             """
 
             MultinodeConstraintFunctions.Functions._prepare_controller_cx(controllers)
-            return constraint.custom_function(constraint, controllers, **extra_params)
+            return constraint.custom_function(controllers, **extra_params)
 
         @staticmethod
         def _prepare_controller_cx(controllers: list[PenaltyController, ...]):
