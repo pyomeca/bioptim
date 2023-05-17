@@ -948,8 +948,10 @@ class Solution:
             if phase != 0:
                 x0 = sol._states["unscaled"][phase - 1]["all"][:, -1]  # the last node of the previous phase
                 u0 = self._controls["unscaled"][phase - 1]["all"][:, -1]
+                if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
+                    u0 = vertcat(u0, u0)
                 params = self.parameters["all"]
-                val = self.ocp.phase_transitions[phase - 1].function[0](vertcat(x0, x0), vertcat(u0, u0), params)
+                val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params)
                 if val.shape[0] != x0.shape[0]:
                     raise RuntimeError(
                         f"Phase transition must have the same number of states ({val.shape[0]}) "
