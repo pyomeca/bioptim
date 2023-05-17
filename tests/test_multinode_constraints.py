@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from bioptim import (
     BiorbdModel,
@@ -108,8 +110,8 @@ def test_multinode_fail_first_node(node):
         )
     else:
         with pytest.raises(
-            NotImplementedError,
-            match="Multinode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+            ValueError,
+            match=re.escape("Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."),
         ):
             multinode_constraints.add(
                 MultinodeConstraintFcn.STATES_EQUALITY,
@@ -131,8 +133,9 @@ def test_multinode_fail_second_node(node):
         )
     else:
         with pytest.raises(
-            NotImplementedError,
-            match="Multinode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+                ValueError,
+                match=re.escape(
+                    "Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."),
         ):
             multinode_constraints.add(
                 MultinodeConstraintFcn.STATES_EQUALITY,
@@ -143,7 +146,7 @@ def test_multinode_fail_second_node(node):
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("phase_1", [-1, 0, 4])
-@pytest.mark.parametrize("phase_2", [-1, 0, 4])
+@pytest.mark.parametrize("phase_2", [-1, 1, 4])
 def test_multinode_wrong_phase(phase_1, phase_2, assume_phase_dynamics):
     model = TestUtils.bioptim_folder() + "/examples/getting_started/models/cube.bioMod"
 
@@ -151,14 +154,14 @@ def test_multinode_wrong_phase(phase_1, phase_2, assume_phase_dynamics):
 
     if phase_1 == 4 or (phase_1 == 0 and phase_2 == 4) or (phase_1 == -1 and phase_2 == 4):
         with pytest.raises(
-            RuntimeError,
-            match="Phase index of the multinode_constraint is higher than the number of phases",
+            ValueError,
+            match="nodes_phase of the multinode_constraint must be between 0 and number of phases",
         ):
             prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
     elif phase_1 == -1 or (phase_1 == 0 and phase_2 == -1):
         with pytest.raises(
-            RuntimeError,
-            match="Phase index of the multinode_constraint need to be positive",
+            ValueError,
+            match="nodes_phase of the multinode_constraint must be between 0 and number of phases",
         ):
             prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
     else:

@@ -193,7 +193,7 @@ class MultinodeConstraintList(UniquePerPhaseOptionList):
         for mnc in self:
             for phase in mnc.nodes_phase:
                 if phase < 0 or phase >= ocp.n_phases:
-                    raise RuntimeError("nodes_phase of the multinode_constraint must be between 0 and number of phases")
+                    raise ValueError("nodes_phase of the multinode_constraint must be between 0 and number of phases")
 
             if mnc.weight:
                 mnc.base = ObjectiveFunction.MayerFunction

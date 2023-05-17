@@ -407,6 +407,9 @@ class PenaltyOption(OptionGeneric):
                 raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
         if self.multinode_constraint or self.transition:
+            from ..limits.multinode_constraint import MultinodeConstraint
+            self: MultinodeConstraint
+
             name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_")
 
             controllers = controller
@@ -414,9 +417,6 @@ class PenaltyOption(OptionGeneric):
             ocp = controller.ocp
             self.node_idx[0] = controller.node_index
 
-            from ..limits.multinode_constraint import MultinodeConstraint
-
-            self: MultinodeConstraint
             self.all_nodes_index = []
             for ctrl in controllers:
                 self.all_nodes_index.extend(ctrl.t)
