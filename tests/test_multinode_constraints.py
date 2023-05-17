@@ -137,7 +137,7 @@ def test_multinode_fail_second_node(node):
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "Multinode constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."
+                "Multinode penalties only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."
             ),
         ):
             multinode_constraints.add(

@@ -27,7 +27,7 @@ from bioptim import (
     PhaseTransitionList,
     PhaseTransitionFcn,
     ParameterList,
-    MultinodeConstraintList,
+    MultinodeObjectiveList,
 )
 
 from bioptim.gui.graph import OcpToGraph
@@ -75,7 +75,7 @@ def prepare_ocp_phase_transitions(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    multinode_constraints = MultinodeConstraintList()
+    multinode_objectives = MultinodeObjectiveList()
     if with_lagrange:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
@@ -88,7 +88,8 @@ def prepare_ocp_phase_transitions(
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, phase=0, node=1)
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, weight=0, phase=3, marker_index=[0, 1])
-        multinode_constraints.add(
+
+        multinode_objectives.add(
             minimize_difference,
             weight=100,
             nodes_phase=(1, 2),
@@ -197,7 +198,7 @@ def prepare_ocp_phase_transitions(
         objective_functions,
         constraints,
         phase_transitions=phase_transitions,
-        multinode_constraints=multinode_constraints,
+        multinode_objectives=multinode_objectives,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

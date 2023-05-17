@@ -725,7 +725,7 @@ class OptimalControlProgram:
             if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
                 continue
             # Dynamics must be respected between phases
-            pt.name = f"PHASE_TRANSITION {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
+            pt.name = f"PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 

@@ -221,7 +221,16 @@ def test_console_objective_functions(assume_phase_dynamics):
                     nlp.states_dot.node_index = node_index
                     nlp.controls.node_index = node_index
 
-                    name = p.name.replace("->", "_").replace(" ", "_").replace(",", "_").replace(":", "_").replace(".", "_").replace("__", "_")
+                    name = (
+                        p.name.replace("->", "_")
+                        .replace(" ", "_")
+                        .replace("(", "_")
+                        .replace(")", "_")
+                        .replace(",", "_")
+                        .replace(":", "_")
+                        .replace(".", "_")
+                        .replace("__", "_")
+                    )
                     x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("i0").shape)
                     u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("i1").shape)
                     param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i2").shape)

@@ -456,7 +456,10 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
                 if phase < 0 or phase >= ocp.n_phases:
                     raise ValueError("nodes_phase of the multinode_penalty must be between 0 and number of phases")
 
-            node_names = [f"Phase {phase} node {node.name if isinstance(node, Node) else node}, " for node, phase in zip(mnc.nodes, mnc.nodes_phase)]
+            node_names = [
+                f"Phase {phase} node {node.name if isinstance(node, Node) else node}, "
+                for node, phase in zip(mnc.nodes, mnc.nodes_phase)
+            ]
             mnc.name = "".join(("Multinode: ", *node_names))[:-2]
 
             if mnc.weight:

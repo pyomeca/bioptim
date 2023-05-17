@@ -408,7 +408,16 @@ class PenaltyOption(OptionGeneric):
 
             self: MultinodeConstraint
 
-            name = self.name.replace("->", "_").replace(" ", "_").replace(",", "_").replace(":", "_").replace(".", "_").replace("__", "_")
+            name = (
+                self.name.replace("->", "_")
+                .replace(" ", "_")
+                .replace("(", "_")
+                .replace(")", "_")
+                .replace(",", "_")
+                .replace(":", "_")
+                .replace(".", "_")
+                .replace("__", "_")
+            )
 
             controllers = controller
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
