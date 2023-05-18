@@ -106,10 +106,6 @@ class Parameter(PenaltyOption):
     def shape(self):
         return self.cx.shape[0]
 
-    # def add_parameter_to_v(self, ocp):
-    #     ocp.v.add_parameter(self)
-
-
     def add_or_replace_to_parameter_penalty_pool(self, ocp, penalty):
         """
         ...
@@ -132,8 +128,7 @@ class Parameter(PenaltyOption):
         penalty_function: MX | SX,
         expand: bool = False,
     ):
-        # penalty.rows = self.size
-        # penalty.cols = 1
+
         penalty.node_idx = [0]
         penalty.dt = 1
         penalty.multi_thread = False
@@ -154,7 +149,7 @@ class Parameter(PenaltyOption):
         modified_fcn = penalty.function[0](state_cx, control_cx, param_cx)
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
-        weight_cx = ocp.cx.sym("weight", penalty_function.shape[0], 1)
+        weight_cx = ocp.cx.sym("weight", 1, 1)  # penalty_function.shape[0]
         target_cx = ocp.cx.sym("target", modified_fcn.shape)
 
         modified_fcn = modified_fcn - target_cx
