@@ -27,6 +27,7 @@ from bioptim import (
     PhaseTransitionList,
     PhaseTransitionFcn,
     ParameterList,
+    ParameterObjectiveList,
 )
 
 from bioptim.gui.graph import OcpToGraph
@@ -209,8 +210,12 @@ def set_mass(bio_model: BiorbdModel, value: MX):
     bio_model.segments[0].characteristics().setMass(value)
 
 
-def my_target_function(ocp: OptimalControlProgram, value: MX) -> MX:
-    return value
+def my_target_function(controller: PenaltyController, key: str) -> MX:
+    if key == "gravity_xyz":
+        idx = [0, 1, 2]
+    elif key == "mass":
+        idx = 3
+    return controller.parameters.cx[idx]
 
 
 def prepare_ocp_parameters(
@@ -301,42 +306,37 @@ def prepare_ocp_parameters(
 
     # Define the parameter to optimize
     parameters = ParameterList()
+    parameter_objectives = ParameterObjectiveList()
 
     if optim_gravity:
         # Give the parameter some min and max bounds
         bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
         # and an initial condition
         initial_gravity = InitialGuess((min_g + max_g) / 2)
-        # and an objective function
-        parameter_objective_functions = Objective(
-            my_target_function, weight=1000, quadratic=False, custom_type=ObjectiveFcn.Parameter, target=target_g
-        )
         parameters.add(
             "gravity_xyz",  # The name of the parameter
             my_parameter_function,  # The function that modifies the biorbd model
             initial_gravity,  # The initial guess
             bound_gravity,  # The bounds
             size=3,  # The number of elements this particular parameter vector has
-            penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
             scaling=np.array([1, 1, 10.0]),
             extra_value=1,  # You can define as many extra arguments as you want
         )
+        parameter_objectives.add(my_target_function, weight=1000, quadratic=False, custom_type=ObjectiveFcn.Parameter, target=target_g, key="gravity_xyz")
+
 
     if optim_mass:
         bound_mass = Bounds(min_m, max_m, interpolation=InterpolationType.CONSTANT)
         initial_mass = InitialGuess((min_m + max_m) / 2)
-        mass_objective_functions = Objective(
-            my_target_function, weight=100, quadratic=False, custom_type=ObjectiveFcn.Parameter, target=target_m
-        )
         parameters.add(
             "mass",  # The name of the parameter
             set_mass,  # The function that modifies the biorbd model
             initial_mass,  # The initial guess
             bound_mass,  # The bounds
             size=1,  # The number of elements this particular parameter vector has
-            penalty_list=mass_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
             scaling=np.array([10.0]),
         )
+        parameter_objectives.add(my_target_function, weight=100, quadratic=False, custom_type=ObjectiveFcn.Parameter, target=target_m, key="mass")
 
     return OptimalControlProgram(
         bio_model,
@@ -489,8 +489,6 @@ def test_parameters(assume_phase_dynamics):
         target_m=20,
         assume_phase_dynamics=assume_phase_dynamics,
     )
-    ocp.nlp[0].parameters.options[0][0].penalty_list.type = None
-    ocp.nlp[0].parameters.options[0][0].penalty_list.name = "custom_gravity"
     ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
     OcpToGraph(ocp)._prepare_print()
 
