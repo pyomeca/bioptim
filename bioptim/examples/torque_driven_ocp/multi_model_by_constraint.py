@@ -71,8 +71,7 @@ def prepare_ocp(
     # Phase 0
     x_bounds[0][0, 0] = -np.pi
     x_bounds[0][1, 0] = 0
-    x_bounds[0].min[0, 2] = np.pi - 0.1
-    x_bounds[0].max[0, 2] = np.pi + 0.1
+    x_bounds[0][0, 2] = np.pi - 0.1
     x_bounds[0][1, 2] = 0
 
     # Phase 1

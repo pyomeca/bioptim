@@ -654,7 +654,7 @@ def test_multi_model_by_constraint(assume_phase_dynamics):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
-        n_shooting=(5, 5),
+        n_shooting=(10, 10),
         assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
@@ -662,31 +662,31 @@ def test_multi_model_by_constraint(assume_phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.5107063028032374)
+    np.testing.assert_almost_equal(f[0, 0], 0.04740285157601976)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (46, 1))
-    np.testing.assert_almost_equal(g, np.zeros((46, 1)), decimal=6)
+    np.testing.assert_equal(g.shape, (91, 1))
+    np.testing.assert_almost_equal(g, np.zeros((91, 1)), decimal=6)
 
     # Check some of the results
     states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04160406, 0.0]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array([3.04159265, 0.0]), decimal=6)
     np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array([-3.14159265, 0.0]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.04159811, 0.0]), decimal=4)
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array([3.04159556, 0.0]), decimal=6)
     # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.01125483, -0.117985]), decimal=6)
-    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([0.22579906, 0.34658032]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([-0.00157528, -0.12793446]), decimal=6)
-    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([0.36640239, 0.61472294]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([-3.00092807, 30.65783905]), decimal=6)
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array([21.45602772, -31.30375218]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array([21.57613433, -31.41588182]), decimal=6)
+    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array([-2.9510863, 30.7688616]), decimal=6)
     # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([0.00144884]), decimal=6)
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([0.01199335]), decimal=6)
-    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([0.00144884]), decimal=6)
-    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([0.01199335]), decimal=6)
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([-0.00143335]), decimal=6)
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-5.20964055e-05]), decimal=6)
+    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([-0.00143335]), decimal=6)
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([-5.20964055e-05]), decimal=6)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
