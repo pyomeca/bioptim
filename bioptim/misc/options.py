@@ -320,7 +320,16 @@ class UniquePerProblemOptionList(OptionList):
         super(UniquePerProblemOptionList, self).copy(option)
 
     def __getitem__(self, index) -> Any:
-        return super(UniquePerProblemOptionList, self).__getitem__(0)[index]
+        if isinstance(index, str):
+            if index not in self.names:
+                raise RuntimeError(f"The key {index} is not in the parameter names.")
+            else:
+                idx = self.names.index(index)
+                return self[idx]
+        elif isinstance(index, int):
+            return super(UniquePerProblemOptionList, self).__getitem__(0)[index]
+        else:
+            raise RuntimeError(f"The parameter index must be an int | str | list, here the type is {type(index)}.")
 
     def __next__(self) -> int:
         self._iter_idx += 1
@@ -337,37 +346,37 @@ class UniquePerProblemOptionList(OptionList):
         """
         raise NotImplementedError("Printing of UniquePerProblemOptionList is not ready yet")
 
-
-class UniquePerProblemOption(UniquePerProblemOptionList):
-    """
-    UniquePerProblemOption that cannot change throughout phases (e.g., parameters).
-    Here the implementation is pretty specific to parameters, but it could be generalized if needed.
-    """
-
-    import numpy as np #TODO: chang if needed
-    def __init__(
-        self,
-        index: list = None,
-        rows: list | tuple | range | np.ndarray = None,
-        cols: list | tuple | range | np.ndarray = None,
-        expand: bool = False,
-        **params: Any,
-    ):
-        """
-        Parameters...
-        """
-
-        super(UniquePerProblemOption, self).__init__(phase=phase, type=penalty, **params)
-
-        if index is not None and rows is not None:
-            raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
-        self.rows = rows if rows is not None else index
-        self.cols = cols
-        self.cols_is_set = False  # This is an internal variable that is set after 'set_idx_columns' is called
-        self.rows_is_set = False
-        self.expand = expand
-
-        # Sanity check on outputs
-        if len(self.function) <= node:
-            for _ in range(len(self.function), node + 1):
-                self.function.append(None)
+#
+# class UniquePerProblemOption(UniquePerProblemOptionList):
+#     """
+#     UniquePerProblemOption that cannot change throughout phases (e.g., parameters).
+#     Here the implementation is pretty specific to parameters, but it could be generalized if needed.
+#     """
+#
+#     import numpy as np #TODO: chang if needed
+#     def __init__(
+#         self,
+#         index: list = None,
+#         rows: list | tuple | range | np.ndarray = None,
+#         cols: list | tuple | range | np.ndarray = None,
+#         expand: bool = False,
+#         **params: Any,
+#     ):
+#         """
+#         Parameters...
+#         """
+#
+#         super(UniquePerProblemOption, self).__init__(phase=phase, type=penalty, **params)
+#
+#         if index is not None and rows is not None:
+#             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
+#         self.rows = rows if rows is not None else index
+#         self.cols = cols
+#         self.cols_is_set = False  # This is an internal variable that is set after 'set_idx_columns' is called
+#         self.rows_is_set = False
+#         self.expand = expand
+#
+#         # Sanity check on outputs
+#         if len(self.function) <= node:
+#             for _ in range(len(self.function), node + 1):
+#                 self.function.append(None)

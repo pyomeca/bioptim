@@ -1,6 +1,6 @@
 import numpy as np
 import biorbd_casadi as biorbd
-from casadi import MX, mmax
+from casadi import MX
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -16,7 +16,6 @@ from bioptim import (
     InterpolationType,
     Bounds,
     InitialGuess,
-    Objective,
     BiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
@@ -25,8 +24,7 @@ from bioptim import (
 
 def custom_constraint_parameters(controller: PenaltyController) -> MX:
     tau = controller.controls["tau"].cx_start
-    idx = controller.parameters.names.index("max_tau")
-    max_param = controller.parameters[idx].cx
+    max_param = controller.parameters["max_tau"].cx
     val = max_param - tau
     return val
 
@@ -34,8 +32,7 @@ def my_parameter_function(bio_model: biorbd.Model, value: MX):
     return
 
 def custom_min_parameter(controller: PenaltyController) -> MX:
-    idx = controller.parameters.names.index("max_tau")  # this does not work if the parameters are not of size 1
-    return controller.parameters.cx[idx]
+    return controller.parameters["max_tau"].cx
 
 
 def prepare_ocp(

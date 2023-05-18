@@ -80,11 +80,7 @@ def my_target_function(controller: PenaltyController, key: str) -> MX:
     The value to minimize. If a target value exist (target parameters) it is automatically added, and therefore
     should not be added by hand here (that is, the next line should not read: return value - target)
     """
-    if key == "gravity_xyz":
-        idx = [0, 1, 2]
-    elif key == "mass":
-        idx = 3
-    return controller.parameters.cx[idx]
+    return controller.parameters[key].cx
 
 
 def prepare_ocp(

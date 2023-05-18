@@ -169,23 +169,6 @@ class Parameter(PenaltyOption):
         pool = controller.ocp.J
         pool.append(penalty)  # [self.list_index] =
 
-    def _add_penalty_to_pool(self, controller: PenaltyController):
-        if isinstance(controller, (list, tuple)):
-            controller = controller[0]  # This is a special case of Node.TRANSITION
-
-        if self.penalty_type == PenaltyType.INTERNAL:
-            pool = (
-                controller.get_nlp.J_internal
-                if controller is not None and controller.get_nlp
-                else controller.ocp.J_internal
-            )
-        elif self.penalty_type == PenaltyType.USER:
-            pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
-        else:
-            raise ValueError(f"Invalid objective type {self.penalty_type}.")
-        pool[self.list_index] = self
-
-
 class ParameterList(UniquePerProblemOptionList):
     """
     A list of Parameter
@@ -230,6 +213,7 @@ class ParameterList(UniquePerProblemOptionList):
 
         # This cx_type was introduced after Casadi changed the behavior of vertcat which now returns a DM.
         self.cx_type = MX  # Assume MX for now, if needed, optimal control program will set this properly
+        self.parameters_names_for_idx = []
 
     def add(
         self,
@@ -289,6 +273,7 @@ class ParameterList(UniquePerProblemOptionList):
                 scaling=scaling,
                 **extra_arguments,
             )
+            self.parameters_names_for_idx += [parameter_name for _ in range(size)]
 
     def __contains__(self, item: str) -> bool:
         """
