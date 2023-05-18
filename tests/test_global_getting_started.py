@@ -715,7 +715,7 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1947.9530924905557, decimal=6)
+    np.testing.assert_almost_equal(f[0, 0], 1947.9530924905557, decimal=6)  # 78013.68624275683
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((9.1465071, 0)))
