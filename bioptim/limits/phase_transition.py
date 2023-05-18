@@ -4,8 +4,7 @@ from warnings import warn
 from casadi import vertcat, MX
 
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
-from .multinode_objective import MultinodeObjectiveFcn
-from .multinode_constraint import MultinodeConstraintFcn, MultinodeConstraint
+from .multinode_constraint import MultinodeConstraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController

@@ -6,7 +6,7 @@ import numpy as np
 
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, IntegralApproximation
-from ..misc.mapping import Mapping, BiMapping
+from ..misc.mapping import Mapping
 from ..misc.options import OptionGeneric
 
 

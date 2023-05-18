@@ -25,7 +25,6 @@ from bioptim import (
     PhaseTransitionList,
     OdeSolver,
     OdeSolverBase,
-    PhaseTransition,
     BiMapping,
     Solver,
     PenaltyController,
