@@ -260,4 +260,3 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, a
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
-
