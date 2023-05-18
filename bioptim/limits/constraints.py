@@ -319,7 +319,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             with_contact: bool,
             with_passive_torque: bool,
             with_ligament: bool,
-            with_close_loop_constraints: bool,
             **unused_param,
         ):
             """
@@ -338,8 +337,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 True if the passive torque dynamics is handled
             with_ligament: bool
                 True if the ligament dynamics is handled
-            with_close_loop_constraints: bool
-                True if the close loop dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -353,7 +350,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
             qddot = nlp.controls["qddot"].mx if "qddot" in nlp.controls else nlp.states["qddot"].mx
-            if with_contact or with_close_loop_constraints:
+            if with_contact:
                 model = nlp.model.copy()
                 qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
             else:
@@ -391,8 +388,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 True if the passive torque dynamics is handled
             with_ligament: bool
                 True if the ligament dynamics is handled
-            with_close_loop_constraints: bool
-                True if the close loop dynamics is handled
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """

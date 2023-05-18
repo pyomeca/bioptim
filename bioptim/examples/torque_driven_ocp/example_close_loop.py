@@ -56,7 +56,7 @@ def prepare_ocp(biorbd_model_path: str, phase_time, n_shooting, ode_solver: OdeS
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_close_loop_constraints=True)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True)
     # dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
@@ -92,6 +92,7 @@ def prepare_ocp(biorbd_model_path: str, phase_time, n_shooting, ode_solver: OdeS
     x_bounds[1][:, 0] = pose_together + [0] * n_qdot
 
     x_bounds.add(bounds=bio_model[2].bounds_from_ranges(["q", "qdot"]))
+    x_bounds[2][:, 0] = pose_at_first_node + [0] * n_qdot
 
 
     # Initial guess
