@@ -57,12 +57,11 @@ class PhaseTransition(MultinodePenalty):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
-            MultinodeObjectiveFcn if weight else MultinodeConstraintFcn,
+            PhaseTransitionFcn,
             nodes_phase=(-1, 0) if transition == transition.CYCLIC else (phase_pre_idx, phase_pre_idx + 1),
             nodes=(Node.END, Node.START),
             multinode_penalty=transition,
             custom_function=custom_function,
-            force_multinode=True,
             **params,
         )
 
@@ -72,6 +71,7 @@ class PhaseTransition(MultinodePenalty):
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.node = Node.TRANSITION
         self.transition = True
+        self.quadratic = True
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         super(PhaseTransition, self).add_or_replace_to_penalty_pool(ocp, nlp)

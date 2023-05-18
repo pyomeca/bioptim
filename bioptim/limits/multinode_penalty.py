@@ -42,14 +42,7 @@ class MultinodePenalty(PenaltyOption):
         custom_function: Callable = None,
         **params: Any,
     ):
-        force_multinode = False
-        if "force_multinode" in params:
-            # This is a hack to circumvent the apparatus that moves the functions to a custom function
-            # It is necessary for PhaseTransition
-            force_multinode = True
-            del params["force_multinode"]
-
-        if not isinstance(multinode_penalty, _multinode_penalty_fcn) and not force_multinode:
+        if not isinstance(multinode_penalty, _multinode_penalty_fcn):
             custom_function = multinode_penalty
             multinode_penalty = _multinode_penalty_fcn.CUSTOM
 
