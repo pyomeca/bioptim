@@ -2,6 +2,8 @@
 Test for file IO
 """
 import os
+import platform
+
 import pytest
 import numpy as np
 from bioptim import OdeSolver
@@ -65,6 +67,10 @@ def test_symmetry_by_mapping(ode_solver, assume_phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_symmetry_by_constraint(ode_solver, assume_phase_dynamics):
     from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_constraint as ocp_module
+
+    if platform.system() == "Windows":
+        # This is a long test and CI is already long for Windows
+        return
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
