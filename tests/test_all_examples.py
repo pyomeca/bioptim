@@ -390,35 +390,6 @@ def test__torque_driven_ocp__maximize_predicted_height_CoM(assume_phase_dynamics
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test__torque_driven_ocp__multi_model_by_constraint(assume_phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import multi_model_by_constraint as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
-        biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
-        n_shooting=(5, 5),
-        assume_phase_dynamics=assume_phase_dynamics,
-    )
-
-
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test__torque_driven_ocp__multi_model_by_mapping(assume_phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import multi_model_by_mapping as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    with pytest.raises(NotImplementedError, match="Mapping over phases is broken"):
-        ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
-            biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
-            n_shooting=(5, 5),
-            assume_phase_dynamics=assume_phase_dynamics,
-        )
-
-
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 def test__torque_driven_ocp__multi_biorbd_model(assume_phase_dynamics):
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
