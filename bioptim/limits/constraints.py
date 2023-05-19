@@ -385,8 +385,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             qddot = controller.controls["qddot"].mx if "qddot" in controller.controls else controller.states["qddot"].mx
             if with_contact:
-                model = controller.model.copy()
-                qddot_fd = model.constrained_forward_dynamics(q, qdot, tau)
+                qddot_fd = controller.model.constrained_forward_dynamics(q, qdot, tau)
             else:
                 qddot_fd = controller.model.forward_dynamics(q, qdot, tau)
 
@@ -585,47 +584,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         return "constraints"
 
 
-class MultinodeConstraintFunction(PenaltyFunctionAbstract):
-    class Functions:
-        @staticmethod
-        def node_equalities(ocp):
-            """
-            Add multi node constraints between chosen phases.
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            """
-            for mnc in ocp.binode_constraints:
-                # Equality constraint between nodes
-                if isinstance(mnc.first_node, int):
-                    first_node_name = f"idx {str(mnc.first_node)}"
-                else:
-                    first_node_name = mnc.first_node.name
-
-                if isinstance(mnc.second_node, int):
-                    second_node_name = f"idx {str(mnc.second_node)}"
-                else:
-                    second_node_name = mnc.second_node.name
-
-                mnc.name = (
-                    f"NODE_EQUALITY "
-                    f"Phase {mnc.phase_first_idx} Node {first_node_name}"
-                    f"->Phase {mnc.phase_second_idx} Node {second_node_name}"
-                )
-                mnc.list_index = -1
-                mnc.add_or_replace_to_penalty_pool(ocp, ocp.nlp[mnc.phase_first_idx])
-
-        @staticmethod
-        def get_dt(_):
-            return 1
-
-        @staticmethod
-        def penalty_nature() -> str:
-            return "constraints"
-
-
 class ConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions
@@ -668,27 +626,6 @@ class ConstraintFcn(FcnEnum):
         """
 
         return ConstraintFunction
-
-
-class MultinodeConstraintFcn(FcnEnum):
-    """
-    Selection of valid constraint functions
-
-    Methods
-    -------
-    def get_type() -> Callable
-        Returns the type of the penalty
-    """
-
-    CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
-
-    @staticmethod
-    def get_type():
-        """
-        Returns the type of the penalty
-        """
-
-        return MultinodeConstraintFunction
 
 
 class ImplicitConstraintFcn(FcnEnum):

@@ -501,6 +501,7 @@ class OptimizationVector:
         # Sanity check
         for nlp in ocp.nlp:
             nlp.states.node_index = 0
+            nlp.states_dot.node_index = 0
             nlp.controls.node_index = 0
 
             interpolation = nlp.x_init.type

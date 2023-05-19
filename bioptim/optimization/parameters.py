@@ -337,6 +337,10 @@ class ParameterList(UniquePerProblemOptionList):
 
     @property
     def cx(self):
+        return self.cx_start
+
+    @property
+    def cx_start(self):
         """
         The CX vector of all parameters
         """

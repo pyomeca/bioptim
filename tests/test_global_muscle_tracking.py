@@ -3,6 +3,7 @@ Test for file IO
 """
 import os
 import pytest
+import platform
 
 import numpy as np
 from bioptim import OdeSolver, Solver, BiorbdModel
@@ -149,6 +150,10 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, assume_ph
 def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, assume_phase_dynamics):
     # Load muscle_activations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
+
+    if platform.system() == "Windows" and not assume_phase_dynamics:
+        # This is a long test and CI is already long for Windows
+        return
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:

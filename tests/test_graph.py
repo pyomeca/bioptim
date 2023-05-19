@@ -28,6 +28,7 @@ from bioptim import (
     PhaseTransitionFcn,
     ParameterList,
     ParameterObjectiveList,
+    MultinodeObjectiveList,
 )
 
 from bioptim.gui.graph import OcpToGraph
@@ -36,7 +37,7 @@ from .utils import TestUtils
 
 def minimize_difference(controllers: list[PenaltyController, PenaltyController]):
     pre, post = controllers
-    return pre.controls["tau"].cx_end - post.controls["tau"].cx_start
+    return pre.controls["tau"].cx - post.controls["tau"].cx
 
 
 def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str) -> MX:
@@ -75,6 +76,7 @@ def prepare_ocp_phase_transitions(
 
     # Add objective functions
     objective_functions = ObjectiveList()
+    multinode_objectives = MultinodeObjectiveList()
     if with_lagrange:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
@@ -87,12 +89,12 @@ def prepare_ocp_phase_transitions(
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, phase=0, node=1)
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, weight=0, phase=3, marker_index=[0, 1])
-        objective_functions.add(
+
+        multinode_objectives.add(
             minimize_difference,
-            custom_type=ObjectiveFcn.Mayer,
-            node=Node.TRANSITION,
             weight=100,
-            phase=1,
+            nodes_phase=(1, 2),
+            nodes=(Node.PENULTIMATE, Node.START),
             quadratic=True,
         )
 
@@ -197,6 +199,7 @@ def prepare_ocp_phase_transitions(
         objective_functions,
         constraints,
         phase_transitions=phase_transitions,
+        multinode_objectives=multinode_objectives,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

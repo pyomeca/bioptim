@@ -109,11 +109,15 @@ PhaseTransitionList
 PhaseTransitionFcn
     Selection of valid phase transition functions
 
-# --- Managing the binode constraint for multiphase programs at specified nodes--- #
-BinodeConstraintList
-    A list of BinodeConstraint
-BinodeConstraintListFcn
-    Selection of valid phase BinodeConstraint functions
+# --- Managing the multinode constraint and objective for multiphase programs at specified nodes--- #
+MultinodeConstraintList
+    A list of MultinodeConstraint
+MultinodeConstraintListFcn
+    Selection of valid phase MultinodeConstraint functions
+MultinodeObjectiveList
+    A list of MultinodeObjective
+MultinodeObjectiveListFcn
+    Selection of valid phase MultinodeObjective functions
 
 # --- Mapping indices between vector --- #
 Mapping
@@ -172,7 +176,8 @@ from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from .interfaces.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraint, ParameterConstraintList
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
-from .limits.multinode_constraint import BinodeConstraintFcn, BinodeConstraintList, BinodeConstraint
+from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
+from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjective, ParameterObjectiveList
 from .limits.path_conditions import (
     BoundsList,

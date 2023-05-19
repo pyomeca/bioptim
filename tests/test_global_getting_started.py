@@ -6,10 +6,11 @@ import pickle
 import re
 import sys
 import shutil
+import platform
 
 import pytest
 import numpy as np
-from bioptim import InterpolationType, OdeSolver
+from bioptim import InterpolationType, OdeSolver, MultinodeConstraintList, MultinodeConstraintFcn, Node
 
 from .utils import TestUtils
 
@@ -31,6 +32,10 @@ from .utils import TestUtils
 )
 def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
+
+    if platform.system() == "Windows" and ode_solver != OdeSolver.RK4:
+        # This is a long test and CI is already long for Windows
+        return
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if n_threads > 1 and not assume_phase_dynamics:
@@ -175,6 +180,10 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
+
+    if platform.system() == "Windows" and not assume_phase_dynamics:
+        # This is a long test and CI is already long for Windows
+        return
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if n_threads > 1 and not assume_phase_dynamics:
@@ -944,8 +953,8 @@ def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
     # detailed cost values
     sol.detailed_cost_values()
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19397.605252449728)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 48129.27750487157)
-    np.testing.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 0.0)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.30851703399819436)
+    np.testing.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 48129.27750487157)
     np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 38560.82580432337)
 
     # state no intermediate
@@ -1102,8 +1111,8 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_binode_constraints(ode_solver, assume_phase_dynamics):
-    from bioptim.examples.getting_started import example_binode_constraints as ocp_module
+def test_multinode_constraints(ode_solver, assume_phase_dynamics):
+    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
@@ -1115,20 +1124,22 @@ def test_binode_constraints(ode_solver, assume_phase_dynamics):
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        n_shootings=(8, 10, 8),
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
+    sol.print_cost()
 
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 106087.6125856452)
+    np.testing.assert_almost_equal(f[0, 0], 106577.60874445777)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (3030, 1))
-    np.testing.assert_almost_equal(g, np.zeros((3030, 1)))
+    np.testing.assert_equal(g.shape, (187, 1))
+    np.testing.assert_almost_equal(g, np.zeros((187, 1)))
 
     # Check some of the results
     states, controls = sol.states, sol.controls
@@ -1144,11 +1155,69 @@ def test_binode_constraints(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(states[0]["q"][:, 0], states[2]["q"][:, 0])
 
     # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.4910356, 9.81, 0.0118919]))
-    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-0.3776686, 9.81, -0.5934029]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.32977862, 9.81, 0.0]))
+    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-1.2, 9.81, -1.884]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+
+@pytest.mark.parametrize("node", [*Node, 0, 3])
+def test_multinode_constraints_wrong_nodes(node):
+    multinode_constraints = MultinodeConstraintList()
+
+    if node in (Node.START, Node.MID, Node.PENULTIMATE, Node.END) or isinstance(node, int):
+        multinode_constraints.add(
+            MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
+        )
+        with pytest.raises(ValueError, match=re.escape("Each of the nodes must have a corresponding nodes_phase")):
+            multinode_constraints.add(
+                MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0,), nodes=(Node.START, node), key="all"
+            )
+    else:
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Multinode penalties only works with Node.START, Node.MID, Node.PENULTIMATE, "
+                "Node.END or a node index (int)."
+            ),
+        ):
+            multinode_constraints.add(
+                MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
+            )
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("too_much_constraints", [True, False])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
+def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constraints, assume_phase_dynamics):
+    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ode_solver = ode_solver()
+    if assume_phase_dynamics and too_much_constraints:
+        with pytest.raises(
+            ValueError,
+            match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
+            "add more penalties than available in a multinode constraint. You can try to split the constraints "
+            "into more penalties or use assume_phase_dynamics=False.",
+        ):
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+                n_shootings=(8, 8, 8),
+                ode_solver=ode_solver,
+                assume_phase_dynamics=assume_phase_dynamics,
+                with_too_much_constraints=too_much_constraints,
+            )
+    else:
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+            n_shootings=(8, 8, 8),
+            ode_solver=ode_solver,
+            assume_phase_dynamics=assume_phase_dynamics,
+            with_too_much_constraints=too_much_constraints,
+        )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
