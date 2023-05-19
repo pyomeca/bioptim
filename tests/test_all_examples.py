@@ -206,13 +206,15 @@ def test__getting_started__example_multiphase(assume_phase_dynamics):
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test__getting_started__example_binode_constraints(assume_phase_dynamics):
-    from bioptim.examples.getting_started import example_binode_constraints as ocp_module
+def test__getting_started__example_multinode_constraints(assume_phase_dynamics):
+    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
+        n_shootings=(8, 8, 8),
     )
 
 
@@ -385,35 +387,6 @@ def test__torque_driven_ocp__maximize_predicted_height_CoM(assume_phase_dynamics
         com_constraints=True,
         assume_phase_dynamics=assume_phase_dynamics,
     )
-
-
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test__torque_driven_ocp__multi_model_by_constraint(assume_phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import multi_model_by_constraint as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
-        biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
-        n_shooting=(5, 5),
-        assume_phase_dynamics=assume_phase_dynamics,
-    )
-
-
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test__torque_driven_ocp__multi_model_by_mapping(assume_phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import multi_model_by_mapping as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    with pytest.raises(NotImplementedError, match="Mapping over phases is broken"):
-        ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
-            biorbd_model_path_modified_inertia=bioptim_folder + "/models/double_pendulum_modified_inertia.bioMod",
-            n_shooting=(5, 5),
-            assume_phase_dynamics=assume_phase_dynamics,
-        )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])

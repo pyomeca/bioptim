@@ -60,6 +60,7 @@ def check_conditioning(ocp):
             for constraints in phase.g:
                 node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
                 phase.states.node_index = node_index
+                phase.states_dot.node_index = node_index
                 phase.controls.node_index = node_index
 
                 for axis in range(
@@ -131,6 +132,7 @@ def check_conditioning(ocp):
             for constraints in phase.g:
                 node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
                 phase.states.node_index = node_index
+                phase.states_dot.node_index = node_index
                 phase.controls.node_index = node_index
 
                 for axis in range(
@@ -294,10 +296,11 @@ def check_conditioning(ocp):
 
                 node_index = obj.node_idx[0]  # TODO deal with assume_phase_dynamics=False
                 nlp_phase.states.node_index = node_index
+                nlp_phase.states_dot.node_index = node_index
                 nlp_phase.controls.node_index = node_index
 
                 # Test every possibility
-                if obj.binode_constraint or obj.transition:
+                if obj.multinode_penalty or obj.transition:
                     nlp = ocp.nlp[phase - 1]
                     nlp_post = nlp_phase
                     states_pre = nlp.states.cx_end

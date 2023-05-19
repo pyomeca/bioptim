@@ -1,8 +1,10 @@
+import re
+
 import pytest
 from bioptim import (
     BiorbdModel,
-    BinodeConstraintList,
-    BinodeConstraintFcn,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
     Node,
     OdeSolver,
     OptimalControlProgram,
@@ -32,28 +34,22 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> O
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
-    binode_constraints = BinodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
     # hard constraint
-    binode_constraints.add(
-        BinodeConstraintFcn.STATES_EQUALITY,
-        phase_first_idx=phase_1,
-        phase_second_idx=phase_2,
-        first_node=Node.START,
-        second_node=Node.START,
+    multinode_constraints.add(
+        MultinodeConstraintFcn.STATES_EQUALITY,
+        nodes_phase=(phase_1, phase_2),
+        nodes=(Node.START, Node.START),
     )
-    binode_constraints.add(
-        BinodeConstraintFcn.COM_EQUALITY,
-        phase_first_idx=phase_1,
-        phase_second_idx=phase_2,
-        first_node=Node.START,
-        second_node=Node.START,
+    multinode_constraints.add(
+        MultinodeConstraintFcn.COM_EQUALITY,
+        nodes_phase=(phase_1, phase_2),
+        nodes=(Node.START, Node.START),
     )
-    binode_constraints.add(
-        BinodeConstraintFcn.COM_VELOCITY_EQUALITY,
-        phase_first_idx=phase_1,
-        phase_second_idx=phase_2,
-        first_node=Node.START,
-        second_node=Node.START,
+    multinode_constraints.add(
+        MultinodeConstraintFcn.COM_VELOCITY_EQUALITY,
+        nodes_phase=(phase_1, phase_2),
+        nodes=(Node.START, Node.START),
     )
 
     # Path constraint
@@ -95,84 +91,80 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> O
         x_bounds,
         u_bounds,
         objective_functions,
-        binode_constraints=binode_constraints,
+        multinode_constraints=multinode_constraints,
         ode_solver=OdeSolver.RK4(),
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
 @pytest.mark.parametrize("node", [*Node, 0])
-def test_binode_fail_first_node(node):
+def test_multinode_fail_first_node(node):
     # Constraints
-    binode_constraints = BinodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
     # hard constraint
     if node in [Node.START, Node.MID, Node.PENULTIMATE, Node.END, 0]:
-        binode_constraints.add(
-            BinodeConstraintFcn.STATES_EQUALITY,
-            phase_first_idx=0,
-            phase_second_idx=2,
-            first_node=node,
-            second_node=Node.START,
+        multinode_constraints.add(
+            MultinodeConstraintFcn.STATES_EQUALITY,
+            nodes_phase=(0, 2),
+            nodes=(node, Node.START),
         )
     else:
         with pytest.raises(
-            NotImplementedError,
-            match="Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+            ValueError,
+            match=re.escape(
+                "Multinode penalties only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."
+            ),
         ):
-            binode_constraints.add(
-                BinodeConstraintFcn.STATES_EQUALITY,
-                phase_first_idx=0,
-                phase_second_idx=2,
-                first_node=node,
-                second_node=Node.START,
+            multinode_constraints.add(
+                MultinodeConstraintFcn.STATES_EQUALITY,
+                nodes_phase=(0, 2),
+                nodes=(node, Node.START),
             )
 
 
 @pytest.mark.parametrize("node", [*Node, 0])
-def test_binode_fail_second_node(node):
+def test_multinode_fail_second_node(node):
     # Constraints
-    binode_constraints = BinodeConstraintList()
+    multinode_constraints = MultinodeConstraintList()
     # hard constraint
     if node in [Node.START, Node.MID, Node.PENULTIMATE, Node.END, 0]:
-        binode_constraints.add(
-            BinodeConstraintFcn.STATES_EQUALITY,
-            phase_first_idx=0,
-            phase_second_idx=2,
-            first_node=node,
-            second_node=Node.START,
+        multinode_constraints.add(
+            MultinodeConstraintFcn.STATES_EQUALITY,
+            nodes_phase=(0, 2),
+            nodes=(node, Node.START),
         )
     else:
         with pytest.raises(
-            NotImplementedError,
-            match="Binode Constraint only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a int.",
+            ValueError,
+            match=re.escape(
+                "Multinode penalties only works with Node.START, Node.MID, Node.PENULTIMATE, Node.END or a node index (int)."
+            ),
         ):
-            binode_constraints.add(
-                BinodeConstraintFcn.STATES_EQUALITY,
-                phase_first_idx=0,
-                phase_second_idx=2,
-                first_node=Node.START,
-                second_node=node,
+            multinode_constraints.add(
+                MultinodeConstraintFcn.STATES_EQUALITY,
+                nodes_phase=(0, 2),
+                nodes=(Node.START, node),
             )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("phase_1", [-1, 0, 4])
-@pytest.mark.parametrize("phase_2", [-1, 0, 4])
-def test_binode_wrong_phase(phase_1, phase_2, assume_phase_dynamics):
+@pytest.mark.parametrize("phase_2", [-1, 1, 4])
+def test_multinode_wrong_phase(phase_1, phase_2, assume_phase_dynamics):
     model = TestUtils.bioptim_folder() + "/examples/getting_started/models/cube.bioMod"
 
     # For reducing time assume_phase_dynamics=False is skipped for the failing tests
 
     if phase_1 == 4 or (phase_1 == 0 and phase_2 == 4) or (phase_1 == -1 and phase_2 == 4):
         with pytest.raises(
-            RuntimeError,
-            match="Phase index of the binode_constraint is higher than the number of phases",
+            ValueError,
+            match="nodes_phase of the multinode_penalty must be between 0 and number of phases",
         ):
             prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
     elif phase_1 == -1 or (phase_1 == 0 and phase_2 == -1):
         with pytest.raises(
-            RuntimeError,
-            match="Phase index of the binode_constraint need to be positive",
+            ValueError,
+            match="nodes_phase of the multinode_penalty must be between 0 and number of phases",
         ):
             prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
     else:

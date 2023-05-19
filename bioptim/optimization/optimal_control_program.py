@@ -25,10 +25,10 @@ from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
     Constraint,
-    MultinodeConstraintFunction,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
-from ..limits.multinode_constraint import BinodeConstraintList
+from ..limits.multinode_constraint import MultinodeConstraintList
+from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
@@ -161,7 +161,8 @@ class OptimalControlProgram:
         node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
-        binode_constraints: BinodeConstraintList = None,
+        multinode_constraints: MultinodeConstraintList = None,
+        multinode_objectives: MultinodeObjectiveList = None,
         x_scaling: VariableScaling | VariableScalingList = None,
         xdot_scaling: VariableScaling | VariableScalingList = None,
         u_scaling: VariableScaling | VariableScalingList = None,
@@ -266,7 +267,8 @@ class OptimalControlProgram:
             "node_mappings": node_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
-            "binode_constraints": binode_constraints,
+            "multinode_constraints": multinode_constraints,
+            "multinode_objectives": multinode_objectives,
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
@@ -417,10 +419,15 @@ class OptimalControlProgram:
         elif not isinstance(phase_transitions, PhaseTransitionList):
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
-        if binode_constraints is None:
-            binode_constraints = BinodeConstraintList()
-        elif not isinstance(binode_constraints, BinodeConstraintList):
-            raise RuntimeError("binode_constraints should be built from an BinodeConstraintList")
+        if multinode_constraints is None:
+            multinode_constraints = MultinodeConstraintList()
+        elif not isinstance(multinode_constraints, MultinodeConstraintList):
+            raise RuntimeError("multinode_constraints should be built from an MultinodeConstraintList")
+
+        if multinode_objectives is None:
+            multinode_objectives = MultinodeObjectiveList()
+        elif not isinstance(multinode_objectives, MultinodeObjectiveList):
+            raise RuntimeError("multinode_objectives should be built from an MultinodeObjectiveList")
 
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
@@ -546,8 +553,8 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-        # TODO: binode_whatever should be handled the same way as constraints and objectives
-        self.binode_constraints = binode_constraints.prepare_binode_constraints(self)
+        multinode_constraints.add_or_replace_to_penalty_pool(self)
+        multinode_objectives.add_or_replace_to_penalty_pool(self)
 
         # Skipping creates a valid but unsolvable OCP class
         if not skip_continuity:
@@ -720,15 +727,9 @@ class OptimalControlProgram:
             if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
                 continue
             # Dynamics must be respected between phases
-            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.name = f"PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
             pt.list_index = -1
-            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.phase_pre_idx])
-
-        if self.binode_constraints:  # Node-equalities
-            if not state_continuity_weight:
-                MultinodeConstraintFunction.Functions.node_equalities(self)
-            else:
-                ObjectiveFunction.MultinodeFunction.Functions.node_equalities(self)
+            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """
@@ -1043,7 +1044,7 @@ class OptimalControlProgram:
                 u /= u_scaling
 
             out = []
-            if penalty.transition or penalty.binode_constraint:
+            if penalty.transition or penalty.multinode_penalty:
                 out.append(
                     penalty.weighted_function_non_threaded[t](
                         x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
@@ -1101,10 +1102,9 @@ class OptimalControlProgram:
                     "label": penalty.name,
                     "compute_derivative": penalty.derivative or penalty.explicit_derivative or penalty.integrate,
                     "integration_rule": penalty.integration_rule,
+                    "plot_type": PlotType.POINT,
+                    "node_idx": penalty.node_idx,
                 }
-
-                plot_params["plot_type"] = PlotType.POINT
-                plot_params["node_idx"] = penalty.node_idx
 
                 self.add_plot(**plot_params)
 

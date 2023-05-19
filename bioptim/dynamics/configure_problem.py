@@ -867,7 +867,9 @@ class ConfigureProblem:
                 for meta_suffix in var_names_with_suffix:
                     ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.scaled, [name])
                     ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.unscaled, [name])
+
         nlp.controls.node_index = nlp.states.node_index
+        nlp.states_dot.node_index = nlp.states.node_index
         return True
 
     @staticmethod
@@ -926,7 +928,7 @@ class ConfigureProblem:
                         _cx[node_index][j] = vertcat(
                             _cx[node_index][j],
                             nlp.cx.sym(
-                                f"{sign}{name}_{name_elements[abs(idx)]}_{nlp.phase_idx}_{node_index + initial_node}_{j}",
+                                f"{sign}{name}_{name_elements[abs(idx)]}_phase{nlp.phase_idx}_node{node_index + initial_node}.{j}",
                                 1,
                                 1,
                             ),
@@ -1031,7 +1033,7 @@ class ConfigureProblem:
 
         if as_states:
             for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
-                n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
+                n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
                 cx_scaled = (
                     ocp.nlp[nlp.use_states_from_phase_idx].states[node_index][name].original_cx
                     if copy_states
@@ -1054,12 +1056,16 @@ class ConfigureProblem:
 
         if as_controls:
             for node_index in range(
-                (1 if ocp.assume_phase_dynamics else nlp.ns)
-            ):  # TODO: This may or may not be a problem for CONTROL_TYPE.LinearContinuous
+                (
+                    1
+                    if ocp.assume_phase_dynamics
+                    else (nlp.ns + (1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0))
+                )
+            ):
                 cx_scaled = (
                     ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
                     if copy_controls
-                    else define_cx_scaled(n_col=2, n_shooting=0, initial_node=node_index)
+                    else define_cx_scaled(n_col=3, n_shooting=0, initial_node=node_index)
                 )
                 cx = (
                     ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
@@ -1080,7 +1086,9 @@ class ConfigureProblem:
 
         if as_states_dot:
             for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
-                n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
+                n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+                if n_cx < 3:
+                    n_cx = 3
                 cx_scaled = (
                     ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[node_index][name].original_cx
                     if copy_states_dot
