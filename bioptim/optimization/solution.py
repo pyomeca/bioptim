@@ -211,6 +211,7 @@ class Solution:
             self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
             self.model = nlp.model
             self.states = nlp.states
+            self.states_dot = nlp.states_dot
             self.controls = nlp.controls
             self.dynamics = nlp.dynamics
             self.dynamics_func = nlp.dynamics_func
@@ -226,6 +227,7 @@ class Solution:
             self.parameters = nlp.parameters
             self.x_scaling = nlp.x_scaling
             self.u_scaling = nlp.u_scaling
+            self.assume_phase_dynamics = nlp.assume_phase_dynamics
 
     class SimplifiedOCP:
         """
@@ -264,6 +266,7 @@ class Solution:
             self.g_implicit = ocp.g_implicit
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
+            self.assume_phase_dynamics = ocp.assume_phase_dynamics
 
     def __init__(self, ocp, sol: dict | list | tuple | np.ndarray | DM | None):
         """
@@ -945,8 +948,10 @@ class Solution:
             if phase != 0:
                 x0 = sol._states["unscaled"][phase - 1]["all"][:, -1]  # the last node of the previous phase
                 u0 = self._controls["unscaled"][phase - 1]["all"][:, -1]
+                if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
+                    u0 = vertcat(u0, u0)
                 params = self.parameters["all"]
-                val = self.ocp.phase_transitions[phase - 1].function[0](vertcat(x0, x0), vertcat(u0, u0), params)
+                val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params)
                 if val.shape[0] != x0.shape[0]:
                     raise RuntimeError(
                         f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -1362,12 +1367,8 @@ class Solution:
         for idx_phase, data in enumerate(states):
             if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
                 raise NotImplementedError("Animation is only implemented for biorbd models")
-
             # Convert parameters to actual values
             nlp = self.ocp.nlp[idx_phase]
-            for param in nlp.parameters:
-                if param.function:
-                    param.function[0](nlp.model, self.parameters[param.name], **param.params)
 
             # noinspection PyTypeChecker
             biorbd_model: BiorbdModel = nlp.model
@@ -1412,42 +1413,16 @@ class Solution:
             u = []
             target = []
             if nlp is not None:
-                if penalty.transition:
-                    phase_post = (phase_idx + 1) % len(self._states["scaled"])
-                    x = np.concatenate(
-                        (
-                            self._states["scaled"][phase_idx]["all"][:, -1],
-                            self._states["scaled"][phase_post]["all"][:, 0],
-                        )
-                    )
-                    u = (
-                        []
-                        if nlp.control_type == ControlType.NONE
-                        else np.concatenate(
-                            (
-                                self._controls["scaled"][phase_idx]["all"][:, -1],
-                                self._controls["scaled"][phase_post]["all"][:, 0],
-                            )
-                        )
-                    )
-                elif penalty.binode_constraint:
-                    node0 = penalty.binode_idx[0]
-                    node1 = penalty.binode_idx[1]
+                if penalty.multinode_penalty or penalty.transition:
+                    x = np.array(())
+                    u = np.array(())
+                    for i in range(len(penalty.nodes_phase)):
+                        node_idx = penalty.multinode_idx[i]
+                        phase_idx = penalty.nodes_phase[i]
 
-                    x = np.concatenate(
-                        (
-                            self._states["scaled"][penalty.phase_first_idx]["all"][:, node0],
-                            self._states["scaled"][penalty.phase_second_idx]["all"][:, node1],
-                        )
-                    )
-
-                    # Make an exception to the fact that U is not available for the last node
-                    u = np.concatenate(
-                        (
-                            self._controls["scaled"][penalty.phase_first_idx]["all"][:, node0],
-                            self._controls["scaled"][penalty.phase_second_idx]["all"][:, node1],
-                        )
-                    )
+                        x = np.concatenate((x, self._states["scaled"][phase_idx]["all"][:, node_idx]))
+                        # Make an exception to the fact that U is not available for the last node
+                        u = np.concatenate((u, self._controls["scaled"][phase_idx]["all"][:, node_idx]))
 
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
@@ -1472,7 +1447,7 @@ class Solution:
                         x = (
                             self.states_no_intermediate["all"][:, col_x_idx]
                             if len(self.phase_time) - 1 == 1
-                            else self.states_no_intermediate[0][phase_idx]["all"][:, col_x_idx]
+                            else self.states_no_intermediate[phase_idx]["all"][:, col_x_idx]
                         )
                     else:
                         x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]
@@ -1546,10 +1521,10 @@ class Solution:
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
 
-                if penalty.node != Node.TRANSITION:
-                    node_name = f"{penalty.node[0]}" if isinstance(penalty.node[0], int) else penalty.node[0].name
-                else:
+                if penalty.node in [Node.MULTINODES, Node.TRANSITION]:
                     node_name = penalty.node.name
+                else:
+                    node_name = f"{penalty.node[0]}" if isinstance(penalty.node[0], int) else penalty.node[0].name
 
                 self.detailed_cost += [
                     {

@@ -25,12 +25,13 @@ from bioptim import (
     Node,
     Solver,
     CostType,
+    MultinodeObjectiveList,
 )
 
 
 def minimize_difference(controllers: list[PenaltyController, PenaltyController]):
     pre, post = controllers
-    return pre.controls.cx_end - post.controls.cx_start
+    return pre.controls.cx - post.controls.cx
 
 
 def prepare_ocp(
@@ -75,12 +76,13 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
-    objective_functions.add(
+
+    multinode_objective = MultinodeObjectiveList()
+    multinode_objective.add(
         minimize_difference,
-        custom_type=ObjectiveFcn.Mayer,
-        node=Node.TRANSITION,
         weight=100,
-        phase=1,
+        nodes_phase=(1, 2),
+        nodes=(Node.PENULTIMATE, Node.START),
         quadratic=True,
     )
 
@@ -138,6 +140,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
+        multinode_objectives=multinode_objective,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )
