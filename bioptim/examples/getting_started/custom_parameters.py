@@ -145,7 +145,7 @@ def prepare_ocp(
     n_tau = bio_model.nb_tau
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -178,31 +178,46 @@ def prepare_ocp(
         initial_gravity = InitialGuess((min_g + max_g) / 2)
         # and an objective function
 
+        g_scaling = np.array([1, 1, 10.0])
         parameters.add(
             "gravity_xyz",  # The name of the parameter
             my_parameter_function,  # The function that modifies the biorbd model
             initial_gravity,  # The initial guess
             bound_gravity,  # The bounds
             size=3,  # The number of elements this particular parameter vector has
-            scaling=np.array([1, 1, 10.0]),
+            scaling=g_scaling,  # The scaling of the parameter
             extra_value=1,  # You can define as many extra arguments as you want
         )
-        parameter_objectives.add(my_target_function, weight=1000, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g, key="gravity_xyz")
+        parameter_objectives.add(
+            my_target_function,
+            weight=10000, 
+            quadratic=True,
+            custom_type=ObjectiveFcn.Parameter,
+            target=target_g/g_scaling,  # Make sure your target fits the scaling
+            key="gravity_xyz"
+        )
 
     if optim_mass:
         bound_mass = Bounds(min_m, max_m, interpolation=InterpolationType.CONSTANT)
         initial_mass = InitialGuess((min_m + max_m) / 2)
 
+        m_scaling = np.array([10.0])
         parameters.add(
             "mass",  # The name of the parameter
             set_mass,  # The function that modifies the biorbd model
             initial_mass,  # The initial guess
             bound_mass,  # The bounds
             size=1,  # The number of elements this particular parameter vector has
-            scaling=np.array([10.0]),
+            scaling=m_scaling,  # The scaling of the parameter
         )
-        parameter_objectives.add(my_target_function, weight=100, quadratic=True, custom_type=ObjectiveFcn.Parameter,
-                                 target=target_m, key="mass")
+        parameter_objectives.add(
+            my_target_function,
+            weight=10000,
+            quadratic=True,
+            custom_type=ObjectiveFcn.Parameter,
+            target=target_m/m_scaling,  # Make sure your target fits the scaling
+            key="mass"
+        )
 
     return OptimalControlProgram(
         bio_model,
@@ -227,7 +242,7 @@ def main():
     Solve and print the optimized value for the gravity and animate the solution
     """
     optim_gravity = True
-    optim_mass = True
+    optim_mass = False # True
     ocp = prepare_ocp(
         biorbd_model_path="models/pendulum.bioMod",
         final_time=3,
@@ -247,6 +262,7 @@ def main():
 
     # --- Get the results --- #
     if optim_gravity:
+        print(sol.parameters["gravity_xyz"])
         gravity = sol.parameters["gravity_xyz"]
         print(f"Optimized gravity: {gravity[:, 0]}")
 
