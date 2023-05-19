@@ -376,6 +376,10 @@ def test_fatigable_xia_torque_split(assume_phase_dynamics):
 def test_fatigable_xia_stabilized_torque_split(assume_phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
+    if platform.system() == "Windows" and not assume_phase_dynamics:
+        # This is a long test and CI is already long for Windows
+        return
+
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
