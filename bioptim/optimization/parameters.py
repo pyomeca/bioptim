@@ -213,7 +213,6 @@ class ParameterList(UniquePerProblemOptionList):
 
         # This cx_type was introduced after Casadi changed the behavior of vertcat which now returns a DM.
         self.cx_type = MX  # Assume MX for now, if needed, optimal control program will set this properly
-        self.parameters_names_for_idx = []
 
     def add(
         self,
@@ -273,7 +272,6 @@ class ParameterList(UniquePerProblemOptionList):
                 scaling=scaling,
                 **extra_arguments,
             )
-            self.parameters_names_for_idx += [parameter_name for _ in range(size)]
 
     def __contains__(self, item: str) -> bool:
         """

@@ -211,11 +211,7 @@ def set_mass(bio_model: BiorbdModel, value: MX):
 
 
 def my_target_function(controller: PenaltyController, key: str) -> MX:
-    if key == "gravity_xyz":
-        idx = [0, 1, 2]
-    elif key == "mass":
-        idx = 3
-    return controller.parameters.cx[idx]
+    return controller.parameters[key].cx
 
 
 def prepare_ocp_parameters(

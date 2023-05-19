@@ -321,6 +321,8 @@ class UniquePerProblemOptionList(OptionList):
 
     def __getitem__(self, index) -> Any:
         if isinstance(index, str):
+            if index == "all":
+                return self
             if index not in self.names:
                 raise RuntimeError(f"The key {index} is not in the parameter names.")
             else:
