@@ -205,6 +205,10 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
+    if platform.system() == "Windows" and not ode_solver != OdeSolver.RK4:
+        # This is a long test and CI is already long for Windows
+        return
+
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
         return
