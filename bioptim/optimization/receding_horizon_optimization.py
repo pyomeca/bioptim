@@ -14,7 +14,7 @@ from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions, ControlType
 from ..interfaces.solver_options import Solver
-from ..optimization.optimization_variable import VariableScaling
+from ..optimization.variable_scaling import VariableScaling
 from ..interfaces.biomodel import BioModel
 
 

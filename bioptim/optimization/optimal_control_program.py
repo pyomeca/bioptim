@@ -51,7 +51,7 @@ from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
-from ..optimization.optimization_variable import VariableScalingList, VariableScaling
+from ..optimization.variable_scaling import VariableScalingList
 from ..gui.check_conditioning import check_conditioning
 
 
@@ -163,9 +163,9 @@ class OptimalControlProgram:
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
         multinode_objectives: MultinodeObjectiveList = None,
-        x_scaling: VariableScaling | VariableScalingList = None,
-        xdot_scaling: VariableScaling | VariableScalingList = None,
-        u_scaling: VariableScaling | VariableScalingList = None,
+        x_scaling: VariableScalingList | tuple[VariableScalingList, ...] = None,
+        xdot_scaling: VariableScalingList | tuple[VariableScalingList, ...] = None,
+        u_scaling: VariableScalingList | tuple[VariableScalingList, ...] = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -191,12 +191,12 @@ class OptimalControlProgram:
             The bounds for the states
         u_bounds: Bounds | BoundsList
             The bounds for the controls
-        x_scaling: VariableScaling | VariableScalingList
-            The scaling for the states
-        xdot_scaling: VariableScaling | VariableScalingList
-            The scaling for the states derivative
-        u_scaling: VariableScaling | VariableScalingList
-            The scaling for the controls
+        x_scaling: VariableScalingList | tuple[VariableScalingList, ...]
+            The scaling for the states at each phase, if only one is sent, then the scaling is copied over the phases
+        xdot_scaling: VariableScalingList | tuple[VariableScalingList, ...]
+            The scaling for the states derivative, if only one is sent, then the scaling is copied over the phases
+        u_scaling: VariableScalingList | tuple[VariableScalingList, ...]
+            The scaling for the controls, if only one is sent, then the scaling is copied over the phases
         objective_functions: Objective | ObjectiveList
             All the objective function of the program
         constraints: Constraint | ConstraintList
@@ -232,7 +232,7 @@ class OptimalControlProgram:
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
 
-        bio_model = self.check_quaternions_hasattr(bio_model)
+        bio_model = self._check_quaternions_hasattr(bio_model)
 
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(bio_model)
@@ -362,32 +362,9 @@ class OptimalControlProgram:
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
-        if x_scaling is None:
-            x_scaling = VariableScalingList()
-        elif isinstance(x_scaling, VariableScaling):
-            x_scaling_tp = VariableScalingList()
-            x_scaling_tp.add(scaling=x_scaling)
-            x_scaling = x_scaling_tp
-        elif not isinstance(x_scaling, VariableScalingList):
-            raise RuntimeError("x_scaling should be built from a VariableScaling or a VariableScalingList")
-
-        if xdot_scaling is None:
-            xdot_scaling = VariableScalingList()
-        elif isinstance(xdot_scaling, VariableScaling):
-            xdot_scaling_tp = VariableScalingList()
-            xdot_scaling_tp.add(scaling=xdot_scaling)
-            xdot_scaling = xdot_scaling_tp
-        elif not isinstance(xdot_scaling, VariableScalingList):
-            raise RuntimeError("xdot_scaling should be built from a VariableScaling or a VariableScalingList")
-
-        if u_scaling is None:
-            u_scaling = VariableScalingList()
-        elif isinstance(u_scaling, VariableScaling):
-            u_scaling_tp = VariableScalingList()
-            u_scaling_tp.add(scaling=u_scaling)
-            u_scaling = u_scaling_tp
-        elif not isinstance(u_scaling, VariableScalingList):
-            raise RuntimeError("u_scaling should be built from a VariableScaling or a VariableScalingList")
+        x_scaling = self._prepare_scaling_for_phase("x_scaling", x_scaling)
+        xdot_scaling = self._prepare_scaling_for_phase("xdot_scaling", xdot_scaling)
+        u_scaling = self._prepare_scaling_for_phase("u_scaling", u_scaling)
 
         if objective_functions is None:
             objective_functions = ObjectiveList()
@@ -512,13 +489,10 @@ class OptimalControlProgram:
         variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
-        # Add the scaling of the variables
-        x_scaling, xdot_scaling, u_scaling = x_scaling.scaling_fill_phases(
-            self, x_scaling, xdot_scaling, u_scaling, x_init, u_init
-        )
-        NLP.add(self, "x_scaling", x_scaling, True)
-        NLP.add(self, "xdot_scaling", xdot_scaling, True)
-        NLP.add(self, "u_scaling", u_scaling, True)
+        # Do not copy singleton since x_scaling was already dealt with before
+        NLP.add(self, "x_scaling", x_scaling, False)
+        NLP.add(self, "xdot_scaling", xdot_scaling, False)
+        NLP.add(self, "u_scaling", u_scaling, False)
 
         # Prepare the node mappings
         if node_mappings is None:
@@ -538,6 +512,8 @@ class OptimalControlProgram:
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
+            self.nlp[i].x_scaling.define_all(self.nlp[i].states.keys())
+            self.nlp[i].u_scaling.define_all(self.nlp[i].controls.keys())
 
         self.isdef_x_init = False
         self.isdef_u_init = False
@@ -649,7 +625,7 @@ class OptimalControlProgram:
         return phase_mappings, dof_names
 
     @staticmethod
-    def check_quaternions_hasattr(biomodels: list[BioModel]) -> list[BioModel]:
+    def _check_quaternions_hasattr(biomodels: list[BioModel]) -> list[BioModel]:
         """
         This functions checks if the biomodels have quaternions and if not we set an attribute to nb_quaternion to 0
 
@@ -671,6 +647,17 @@ class OptimalControlProgram:
                 setattr(model, "nb_quaternions", 0)
 
         return biomodels
+
+    def _prepare_scaling_for_phase(self, name, scaling):
+        if scaling is None:
+            scaling = VariableScalingList()
+        if isinstance(scaling, VariableScalingList):
+            out = []
+            for _ in range(self.n_phases):
+                out.append(scaling.copy())
+            return out
+        else:
+            raise RuntimeError(f"{name} should be built from a VariableScalingList or a tuple of which")
 
     def _declare_continuity(self, state_continuity_weight: float = None) -> None:
         """

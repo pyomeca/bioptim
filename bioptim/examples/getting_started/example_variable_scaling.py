@@ -90,7 +90,7 @@ def prepare_ocp(
 
     # Variable scaling
     x_scaling = VariableScalingList()
-    x_scaling.add("q", scaling=[1, 3])  # declare keys in order, so that they are concatenated in the right order
+    x_scaling.add("q", scaling=[1, 3])
     x_scaling.add("qdot", scaling=[85, 85])
 
     u_scaling = VariableScalingList()

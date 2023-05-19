@@ -452,12 +452,10 @@ class Solution:
             states[phase] = {}
             controls[phase] = {}
             for key, value in states_scaled[phase].items():
-                states[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(
-                    states_scaled[phase][key].shape[0], states_scaled[phase][key].shape[1]
-                )
+                states[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(states_scaled[phase][key].shape[1])
             for key, value in controls_scaled[phase].items():
                 controls[phase][key] = value * ocp.nlp[phase].u_scaling[key].to_array(
-                    controls_scaled[phase][key].shape[0], controls_scaled[phase][key].shape[1]
+                    controls_scaled[phase][key].shape[1]
                 )
 
         return states, controls

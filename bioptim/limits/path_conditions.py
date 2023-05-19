@@ -7,7 +7,7 @@ from numpy import array, ndarray
 
 from ..misc.enums import InterpolationType, MagnitudeType
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..optimization.optimization_variable import VariableScaling
+from ..optimization.variable_scaling import VariableScaling
 
 
 class PathCondition(np.ndarray):

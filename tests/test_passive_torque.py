@@ -12,6 +12,7 @@ from bioptim import (
     Dynamics,
     ConstraintList,
     Solver,
+    VariableScalingList,
 )
 from bioptim.optimization.optimization_vector import OptimizationVector
 from .utils import TestUtils
@@ -41,9 +42,9 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     nlp.ns = 5
     nlp.cx = cx
     nlp.initialize(cx)
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -120,9 +121,9 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, a
     nlp.ns = 5
     nlp.cx = cx
     nlp.initialize(cx)
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -214,9 +215,9 @@ def test_torque_activation_driven_with_passive_torque(
     nlp.ns = 5
     nlp.cx = cx
     nlp.initialize(cx)
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
@@ -326,9 +327,9 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     nlp.ns = 5
     nlp.cx = cx
     nlp.initialize(cx)
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
 

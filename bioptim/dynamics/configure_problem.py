@@ -21,7 +21,6 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
-from ..optimization.optimization_variable import VariableScaling
 
 
 class ConfigureProblem:
@@ -965,17 +964,11 @@ class ConfigureProblem:
         )
 
         if as_states and name not in nlp.x_scaling:
-            nlp.x_scaling[name] = VariableScaling(
-                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
-            )
+            nlp.x_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_states_dot and name not in nlp.xdot_scaling:
-            nlp.xdot_scaling[name] = VariableScaling(
-                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
-            )
+            nlp.xdot_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls and name not in nlp.u_scaling:
-            nlp.u_scaling[name] = VariableScaling(
-                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
-            )
+            nlp.u_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
         mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[0][name].mx]

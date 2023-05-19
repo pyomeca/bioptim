@@ -128,16 +128,16 @@ class OptimizationVector:
 
         v_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for phase, x_bound in enumerate(self.x_bounds):
-            v_bounds.concatenate(
-                x_bound.scale(self.ocp.nlp[phase].x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * n_steps + 1))
-            )
+            nlp = self.ocp.nlp[phase]
+            v_bounds.concatenate(x_bound.scale(nlp.x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * n_steps + 1)))
 
         for phase, u_bound in enumerate(self.u_bounds):
+            nlp = self.ocp.nlp[phase]
             if self.ocp.nlp[0].control_type == ControlType.LINEAR_CONTINUOUS:
                 ns = self.ocp.nlp[phase].ns + 1
             else:
                 ns = self.ocp.nlp[phase].ns
-            v_bounds.concatenate(u_bound.scale(self.ocp.nlp[phase].u_scaling["all"].to_vector(ns)))
+            v_bounds.concatenate(u_bound.scale(nlp.u_scaling["all"].to_vector(ns)))
 
         for param in self.parameters_in_list:
             v_bounds.concatenate(param.bounds.scale(param.scaling))
@@ -173,20 +173,18 @@ class OptimizationVector:
             if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
                 v_init.concatenate(
                     self._init_linear_interpolation(phase=phase).scale(
-                        self.ocp.nlp[phase].x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * steps + 1),
+                        nlp.x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * steps + 1),
                     )
                 )
             else:
                 v_init.concatenate(
-                    x_init.scale(self.ocp.nlp[phase].x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * steps + 1))
+                    x_init.scale(nlp.x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * steps + 1))
                 )
 
         for phase, u_init in enumerate(self.u_init):
-            if self.ocp.nlp[0].control_type == ControlType.LINEAR_CONTINUOUS:
-                ns = self.ocp.nlp[phase].ns + 1
-            else:
-                ns = self.ocp.nlp[phase].ns
-            v_init.concatenate(u_init.scale(self.ocp.nlp[phase].u_scaling["all"].to_vector(ns)))
+            nlp = self.ocp.nlp[phase]
+            ns = nlp.ns + (1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0)
+            v_init.concatenate(u_init.scale(nlp.u_scaling["all"].to_vector(ns)))
 
         for param in self.parameters_in_list:
             v_init.concatenate(param.initial_guess.scale(param.scaling))
