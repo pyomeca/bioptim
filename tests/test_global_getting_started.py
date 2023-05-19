@@ -727,11 +727,11 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(f[0, 0], 39.76808255974793, decimal=6)
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((5.4295578, 0.       )))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-9.81147449,  0.       )))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((5.4295578, 0.0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-9.81147449, 0.0)))
 
     # gravity parameter
-    np.testing.assert_almost_equal(gravity, np.array([[0, 5.71034786e-04, -9.81124095e+00]]).T)
+    np.testing.assert_almost_equal(gravity, np.array([[0, 5.71034786e-04, -9.81124095e00]]).T)
 
     # detailed cost values
     sol.detailed_cost_values()

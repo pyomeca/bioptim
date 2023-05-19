@@ -904,9 +904,9 @@ class PenaltyFunctionAbstract:
                 penalty.integrate = True
 
             else:
-                continuity -= controller.integrate(
-                    x0=controller.states.cx_start, p=u, params=controller.parameters.cx
-                )["xf"]
+                continuity -= controller.integrate(x0=controller.states.cx_start, p=u, params=controller.parameters.cx)[
+                    "xf"
+                ]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
@@ -987,8 +987,9 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return Function('minimize_parameter', [controller.parameters.cx], [controller.parameters[key].cx])(controller.parameters.cx)
-
+            return Function("minimize_parameter", [controller.parameters.cx], [controller.parameters[key].cx])(
+                controller.parameters.cx
+            )
 
     @staticmethod
     def add(ocp, nlp):

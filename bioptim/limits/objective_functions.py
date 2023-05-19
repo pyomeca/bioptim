@@ -161,6 +161,7 @@ class ObjectiveList(OptionList):
     def print(self):
         raise NotImplementedError("Printing of ObjectiveList is not ready yet")
 
+
 class ObjectiveFunction:
     """
     Internal (re)implementation of the penalty functions
@@ -543,7 +544,9 @@ class ParameterObjectiveList(OptionList):
         if isinstance(parameter_objective, ParameterObjective):
             self.copy(parameter_objective)
         else:
-            super(ParameterObjectiveList, self)._add(option_type=ParameterObjective, parameter_objective=parameter_objective, **extra_arguments)
+            super(ParameterObjectiveList, self)._add(
+                option_type=ParameterObjective, parameter_objective=parameter_objective, **extra_arguments
+            )
 
     def print(self):
         raise NotImplementedError("Printing of ParameterObjectiveList is not ready yet")

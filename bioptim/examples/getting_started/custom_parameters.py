@@ -193,8 +193,8 @@ def prepare_ocp(
             weight=10000,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_g/g_scaling,  # Make sure your target fits the scaling
-            key="gravity_xyz"
+            target=target_g / g_scaling,  # Make sure your target fits the scaling
+            key="gravity_xyz",
         )
 
     if optim_mass:
@@ -215,8 +215,8 @@ def prepare_ocp(
             weight=10000,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_m/m_scaling,  # Make sure your target fits the scaling
-            key="mass"
+            target=target_m / m_scaling,  # Make sure your target fits the scaling
+            key="mass",
         )
 
     return OptimalControlProgram(

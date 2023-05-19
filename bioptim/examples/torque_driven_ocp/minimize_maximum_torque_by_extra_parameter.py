@@ -30,8 +30,10 @@ def custom_constraint_parameters(controller: PenaltyController) -> MX:
     val = max_param - tau
     return val
 
+
 def my_parameter_function(bio_model: biorbd.Model, value: MX):
     return
+
 
 def custom_min_parameter(controller: PenaltyController) -> MX:
     return controller.parameters["max_tau"].cx
@@ -40,7 +42,6 @@ def custom_min_parameter(controller: PenaltyController) -> MX:
 def prepare_ocp(
     bio_model_path: str = "models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
-
     bio_model = (BiorbdModel(bio_model_path), BiorbdModel(bio_model_path))
 
     # Problem parameters
@@ -94,8 +95,8 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
     x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
-    
-    #change model bound for -pi, pi
+
+    # change model bound for -pi, pi
     for i in range(len(bio_model)):
         x_bounds[i].min[1, :] = -np.pi
         x_bounds[i].max[1, :] = np.pi
@@ -140,12 +141,11 @@ def prepare_ocp(
         constraints=constraints,
         variable_mappings=tau_mappings,
         parameters=parameters,
-        assume_phase_dynamics=True
+        assume_phase_dynamics=True,
     )
 
 
 def main():
-
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 

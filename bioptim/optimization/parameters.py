@@ -112,7 +112,7 @@ class Parameter(PenaltyOption):
         """
         if not penalty.name:
             if penalty.type.name == "CUSTOM":
-                penalty.name = penalty.custom_function.__name__ ###
+                penalty.name = penalty.custom_function.__name__
             else:
                 penalty.name = penalty.type.name
 
@@ -148,7 +148,7 @@ class Parameter(PenaltyOption):
         modified_fcn = penalty.function[0](state_cx, control_cx, param_cx)
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
-        weight_cx = ocp.cx.sym("weight", 1, 1)  # penalty_function.shape[0]
+        weight_cx = ocp.cx.sym("weight", 1, 1)
         target_cx = ocp.cx.sym("target", modified_fcn.shape)
 
         modified_fcn = modified_fcn - target_cx
@@ -167,7 +167,8 @@ class Parameter(PenaltyOption):
             penalty.weighted_function[0].expand()
 
         pool = controller.ocp.J
-        pool.append(penalty)  # [self.list_index] =
+        pool.append(penalty)
+
 
 class ParameterList(UniquePerProblemOptionList):
     """

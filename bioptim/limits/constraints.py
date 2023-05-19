@@ -807,7 +807,9 @@ class ParameterConstraintList(OptionList):
             self.copy(parameter_constraint)
 
         else:
-            super(ParameterConstraintList, self)._add(option_type=ParameterConstraint, parameter_constraint=parameter_constraint, **extra_arguments)
+            super(ParameterConstraintList, self)._add(
+                option_type=ParameterConstraint, parameter_constraint=parameter_constraint, **extra_arguments
+            )
 
     def print(self):
         """

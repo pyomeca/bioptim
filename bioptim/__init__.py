@@ -178,7 +178,13 @@ from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, Param
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
-from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjective, ParameterObjectiveList
+from .limits.objective_functions import (
+    ObjectiveFcn,
+    ObjectiveList,
+    Objective,
+    ParameterObjective,
+    ParameterObjectiveList,
+)
 from .limits.path_conditions import (
     BoundsList,
     Bounds,
