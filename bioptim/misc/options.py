@@ -347,38 +347,3 @@ class UniquePerProblemOptionList(OptionList):
         Print the UniquePerProblemOptionList to the console
         """
         raise NotImplementedError("Printing of UniquePerProblemOptionList is not ready yet")
-
-#
-# class UniquePerProblemOption(UniquePerProblemOptionList):
-#     """
-#     UniquePerProblemOption that cannot change throughout phases (e.g., parameters).
-#     Here the implementation is pretty specific to parameters, but it could be generalized if needed.
-#     """
-#
-#     import numpy as np #TODO: chang if needed
-#     def __init__(
-#         self,
-#         index: list = None,
-#         rows: list | tuple | range | np.ndarray = None,
-#         cols: list | tuple | range | np.ndarray = None,
-#         expand: bool = False,
-#         **params: Any,
-#     ):
-#         """
-#         Parameters...
-#         """
-#
-#         super(UniquePerProblemOption, self).__init__(phase=phase, type=penalty, **params)
-#
-#         if index is not None and rows is not None:
-#             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
-#         self.rows = rows if rows is not None else index
-#         self.cols = cols
-#         self.cols_is_set = False  # This is an internal variable that is set after 'set_idx_columns' is called
-#         self.rows_is_set = False
-#         self.expand = expand
-#
-#         # Sanity check on outputs
-#         if len(self.function) <= node:
-#             for _ in range(len(self.function), node + 1):
-#                 self.function.append(None)
