@@ -190,7 +190,7 @@ def prepare_ocp(
         )
         parameter_objectives.add(
             my_target_function,
-            weight=10000, 
+            weight=10000,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
             target=target_g/g_scaling,  # Make sure your target fits the scaling
@@ -242,7 +242,7 @@ def main():
     Solve and print the optimized value for the gravity and animate the solution
     """
     optim_gravity = True
-    optim_mass = False # True
+    optim_mass = True
     ocp = prepare_ocp(
         biorbd_model_path="models/pendulum.bioMod",
         final_time=3,

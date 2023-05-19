@@ -1450,6 +1450,8 @@ class Solution:
                         )
                     )
 
+                elif "Lagrange" not in penalty.type.__str__() and "Mayer" not in penalty.type.__str__():
+                    target = penalty.target[0]
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
@@ -1500,9 +1502,13 @@ class Solution:
 
             # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
             # casadi function
-            u = u[:, ~np.isnan(np.sum(u, axis=0))]
-            val.append(penalty.function_non_threaded[idx](x, u, p))
-            val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
+            if "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__():
+                u = u[:, ~np.isnan(np.sum(u, axis=0))]
+                val.append(penalty.function_non_threaded[idx](x, u, p))
+                val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
+            else:
+                val.append(penalty.function[idx](x, u, p))
+                val_weighted.append(penalty.weighted_function[idx](x, u, p, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)
@@ -1525,6 +1531,11 @@ class Solution:
                 self.detailed_cost += [
                     {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
                 ]
+        for penalty in self.ocp.J:
+            val, val_weighted = self._get_penalty_cost(self.ocp.nlp[0], penalty)
+            self.detailed_cost += [
+                {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
+            ]
         return
 
     def print_cost(self, cost_type: CostType = CostType.ALL):
