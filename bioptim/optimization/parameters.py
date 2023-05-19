@@ -453,9 +453,9 @@ class ParameterList(UniquePerProblemOptionList):
         The initial guess of all parameters
         """
 
-        _init = InitialGuess(interpolation=InterpolationType.CONSTANT)
+        _init = InitialGuessList(interpolation=InterpolationType.CONSTANT)
         for p in self:
-            _init.concatenate(p.initial_guess)
+            _init[p.name] = p.initial_guess
         return _init
 
     @property

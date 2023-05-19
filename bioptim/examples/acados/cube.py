@@ -14,7 +14,7 @@ from bioptim import (
     ObjectiveFcn,
     ObjectiveList,
     Bounds,
-    InitialGuess,
+    InitialGuessList,
     OdeSolver,
     Solver,
 )
@@ -29,12 +29,15 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
 
     # Path constraint
     x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * bio_model.nb_q
+    x_init["qdot"] = [0] * bio_model.nb_qdot
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
-    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
+    u_init = InitialGuessList()
+    u_init["tau"] = [tau_init] * bio_model.nb_tau
 
     return OptimalControlProgram(
         bio_model,

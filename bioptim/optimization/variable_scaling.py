@@ -1,5 +1,3 @@
-from typing import Any
-
 import numpy as np
 
 from ..misc.options import OptionGeneric, OptionDict
@@ -14,15 +12,19 @@ class VariableScaling(OptionGeneric):
             The scaling of the variables
         """
 
-        super(VariableScaling, self).__init__()
+        super(VariableScaling, self).__init__(**kwargs)
 
         if isinstance(scaling, list):
             scaling = np.array(scaling)
         elif not (isinstance(scaling, np.ndarray) or isinstance(scaling, VariableScaling)):
             raise RuntimeError(f"Scaling must be a list or a numpy array, not {type(scaling)}")
 
-        self.scaling = scaling
         self.key = key
+        self.scaling = scaling
+
+    @property
+    def value(self):
+        return self.scaling
 
     @property
     def shape(self):
@@ -58,8 +60,7 @@ class VariableScalingList(OptionDict):
     """
 
     def __init__(self):
-        super(VariableScalingList, self).__init__()
-        self._all: tuple[str, ...] | None = None
+        super(VariableScalingList, self).__init__(sub_type=VariableScaling)
 
     def add(
         self,
@@ -91,66 +92,17 @@ class VariableScalingList(OptionDict):
                     raise RuntimeError(
                         f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0."
                     )
-            super(VariableScalingList, self)._add(key=key, phase=phase, scaling=scaling, option_type=VariableScaling)
-
-    def define_all(self, all: tuple[str, ...]):
-        """
-        Define what "all" means (basically the order of the all. This should not be set by the user as it is
-        automatically set
-
-        Parameters
-        ----------
-        all
-            The tuple of the all
-        """
-        self._all = all
-
-    def __getitem__(self, item: int | tuple[str, ...] | str) -> VariableScaling | Any:
-        """
-        Get the ith option of the list
-
-        Parameters
-        ----------
-        item: int
-            The index of the option to get
-
-        Returns
-        -------
-        The ith option of the list (Any being a VariableScalingList
-        """
-
-        if isinstance(item, str) and item == "all":
-            if self._all is None:
-                raise RuntimeError("The scaling with 'all' was called prior to be defined. Please call the "
-                                   "'define_all' method before trying to get the 'all' index")
-            return self[self._all]
-
-        if isinstance(item, (list, tuple)):
-            out = np.ndarray((0, 1))
-            for i in item:
-                out = np.append(out, self[i].scaling)
-            return VariableScaling("not named", out)
-
-        if isinstance(item, int):
-            # Request VariableScalingList for a particular phase
-            out = VariableScalingList()
-            for key in self.keys():
-                out.add(key, self.options[item][key])
-            return out
-
-        if isinstance(item, str):
-            if len(self.options) != 1:
-                raise ValueError("Indexing VariableScalingList with 'str' with more than one dimension is a mistake."
-                                 "Call the function index first with the index of the phase you want to fetch")
-            return self.options[0][item]
-
-        raise ValueError("Wrong type in getting scaling")
+            super(VariableScalingList, self)._add(key=key, phase=phase, scaling=scaling)
 
     def copy(self):
         out = VariableScalingList()
         for key in self.keys():
             out.add(key, self[key])
         return out
+
+    @property
+    def param_when_copying(self):
+        return {}
 
     def __contains__(self, item):
         return item in self.options[0]

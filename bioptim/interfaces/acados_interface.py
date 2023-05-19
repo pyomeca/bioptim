@@ -167,7 +167,7 @@ class AcadosInterface(SolverInterface):
 
         self.nparams = ocp.nlp[0].parameters.shape
         param_list = ocp.v.parameters_in_list
-        self.params_initial_guess = param_list.initial_guess.scale(param_list.scaling)
+        self.params_initial_guess = param_list.initial_guess["all"].scale(param_list.scaling)
         self.params_initial_guess.check_and_adjust_dimensions(self.nparams, 1)
         self.params_bounds = param_list.bounds.scale(param_list.scaling)
         self.params_bounds.check_and_adjust_dimensions(self.nparams, 1)

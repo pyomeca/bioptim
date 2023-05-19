@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 from numpy import array, ndarray
 
 from ..misc.enums import InterpolationType, MagnitudeType
-from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
+from ..misc.options import UniquePerPhaseOptionList, OptionGeneric, OptionDict
 from ..optimization.variable_scaling import VariableScaling
 
 
@@ -623,6 +623,7 @@ class InitialGuess(OptionGeneric):
 
     def __init__(
         self,
+        key,
         initial_guess: np.ndarray | list | tuple | float | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         **parameters: Any,
@@ -642,10 +643,14 @@ class InitialGuess(OptionGeneric):
         if isinstance(initial_guess, PathCondition):
             self.init = initial_guess
         else:
+            if "type" in parameters:
+                interpolation = parameters["type"]
+                del parameters["type"]
             self.init = PathCondition(initial_guess, interpolation=interpolation, **parameters)
 
         super(InitialGuess, self).__init__(**parameters)
         self.type = interpolation
+        self.key = key
 
     def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
         """
@@ -687,7 +692,7 @@ class InitialGuess(OptionGeneric):
             The scaling factor
         """
 
-        return InitialGuess(self.init / scaling, interpolation=self.type)
+        return InitialGuess("scaled", self.init / scaling, interpolation=self.type)
 
     def __bool__(self) -> bool:
         """
@@ -768,6 +773,10 @@ class InitialGuess(OptionGeneric):
             magnitude_type=magnitude_type,
             **self.params,
         )
+
+    @property
+    def value(self):
+        return self.init
 
 
 class NoisedInitialGuess(InitialGuess):
@@ -976,7 +985,7 @@ class NoisedInitialGuess(InitialGuess):
             )
 
 
-class InitialGuessList(UniquePerPhaseOptionList):
+class InitialGuessList(OptionDict):
     """
     A list of InitialGuess if more than one is required
 
@@ -1000,7 +1009,16 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Add noise to each initial guesses from an InitialGuessList
     """
 
-    def add(self, initial_guess: InitialGuess | np.ndarray | list | tuple = None, **extra_arguments: Any):
+    def __init__(self, *args, **kwargs):
+        super(InitialGuessList, self).__init__(sub_type=InitialGuess)
+
+    def add(
+        self,
+        key,
+        initial_guess: InitialGuess | np.ndarray | list | tuple = None,
+        interpolation: InterpolationType = InterpolationType.CONSTANT,
+        **extra_arguments: Any,
+    ):
         """
         Add a new initial guess to the list
 
@@ -1013,9 +1031,17 @@ class InitialGuessList(UniquePerPhaseOptionList):
         """
 
         if isinstance(initial_guess, InitialGuess):
-            self.copy(initial_guess)
+            self.copy(initial_guess, key)
+            self.type = initial_guess.type
         else:
-            super(InitialGuessList, self)._add(initial_guess=initial_guess, option_type=InitialGuess, **extra_arguments)
+            super(InitialGuessList, self)._add(
+                key,
+                initial_guess=initial_guess,
+                option_type=InitialGuess,
+                interpolation=interpolation,
+                **extra_arguments,
+            )
+            self.type = interpolation
 
     def print(self):
         """
@@ -1202,3 +1228,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
                 magnitude_type=magnitude_type,
                 **self[i].params,
             )
+
+    @property
+    def param_when_copying(self):
+        return {"type": self.type}

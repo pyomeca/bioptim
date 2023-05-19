@@ -57,13 +57,13 @@ def generic_solve(interface) -> dict:
         interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
 
     v_bounds = interface.ocp.v.bounds
-    v_init = interface.ocp.v.init
+    v_init = interface.ocp.v.init_vector
     interface.sqp_limits = {
         "lbx": v_bounds.min,
         "ubx": v_bounds.max,
         "lbg": all_g_bounds.min,
         "ubg": all_g_bounds.max,
-        "x0": v_init.init,
+        "x0": v_init,
     }
 
     if interface.lam_g is not None:

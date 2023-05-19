@@ -48,6 +48,7 @@ from ..misc.enums import (
     Node,
 )
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
+from ..misc.options import OptionDict
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
@@ -362,9 +363,12 @@ class OptimalControlProgram:
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
-        x_scaling = self._prepare_scaling_for_phase("x_scaling", x_scaling)
-        xdot_scaling = self._prepare_scaling_for_phase("xdot_scaling", xdot_scaling)
-        u_scaling = self._prepare_scaling_for_phase("u_scaling", u_scaling)
+        x_init = self._prepare_option_dict_for_phase("x_init", x_init, InitialGuessList)
+        u_init = self._prepare_option_dict_for_phase("u_init", u_init, InitialGuessList)
+
+        x_scaling = self._prepare_option_dict_for_phase("x_scaling", x_scaling, VariableScalingList)
+        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
+        u_scaling = self._prepare_option_dict_for_phase("u_scaling", u_scaling, VariableScalingList)
 
         if objective_functions is None:
             objective_functions = ObjectiveList()
@@ -512,8 +516,12 @@ class OptimalControlProgram:
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
-            self.nlp[i].x_scaling.define_all(self.nlp[i].states.keys())
-            self.nlp[i].u_scaling.define_all(self.nlp[i].controls.keys())
+
+            self.nlp[i].x_scaling.define_meaning_of_key_all(self.nlp[i].states.keys())
+            self.nlp[i].u_scaling.define_meaning_of_key_all(self.nlp[i].controls.keys())
+
+            self.nlp[i].x_init.define_meaning_of_key_all(self.nlp[i].states.keys())
+            self.nlp[i].u_init.define_meaning_of_key_all(self.nlp[i].controls.keys())
 
         self.isdef_x_init = False
         self.isdef_u_init = False
@@ -648,20 +656,21 @@ class OptimalControlProgram:
 
         return biomodels
 
-    def _prepare_scaling_for_phase(self, name, scaling):
-        if scaling is None:
-            scaling = VariableScalingList()
+    def _prepare_option_dict_for_phase(self, name: str, option_dict: OptionDict, option_dict_type: type) -> Any:
+        if option_dict is None:
+            option_dict = option_dict_type()
 
-        if not isinstance(scaling, VariableScalingList):
-            raise RuntimeError(f"{name} should be built from a VariableScalingList or a tuple of which")
+        if not isinstance(option_dict, option_dict_type):
+            raise RuntimeError(f"{name} should be built from a {option_dict_type.__name__} or a tuple of which")
 
-        if len(scaling) == 1 and self.n_phases > 1:
-            scaling_phase_0 = scaling[0]
+        option_dict: Any
+        if len(option_dict) == 1 and self.n_phases > 1:
+            scaling_phase_0 = option_dict[0]
             for i in range(1, self.n_phases):
-                scaling.add(None, [], phase=1)  # Force the creation of the structure internally
+                option_dict.add(None, [], phase=i)  # Force the creation of the structure internally
                 for key in scaling_phase_0.keys():
-                    scaling.add(key, scaling_phase_0[key], phase=i)
-        return scaling
+                    option_dict.add(key, scaling_phase_0[key], phase=i)
+        return option_dict
 
     def _declare_continuity(self, state_continuity_weight: float = None) -> None:
         """
@@ -833,9 +842,9 @@ class OptimalControlProgram:
 
     def update_initial_guess(
         self,
-        x_init: InitialGuess | InitialGuessList = InitialGuessList(),
-        u_init: InitialGuess | InitialGuessList = InitialGuessList(),
-        param_init: InitialGuess | InitialGuessList = InitialGuessList(),
+        x_init: InitialGuessList = None,
+        u_init: InitialGuessList = None,
+        param_init: InitialGuessList = None,
     ):
         """
         The main user interface to add initial guesses in the ocp
@@ -850,25 +859,30 @@ class OptimalControlProgram:
             The parameters initial guess to add
         """
 
-        if self.nlp[0].ode_solver.is_direct_collocation and self.nlp[0].x_init.init.shape[0] != 0:
+        if self.nlp[0].ode_solver.is_direct_collocation and self.nlp[0].x_init["all"].init.shape[0] != 0:
             raise NotImplementedError(
                 "It is not possible to use initial guess with NoisedInitialGuess "
                 "as it won't produce the expected randomness"
             )
 
-        if x_init:
-            NLP.add_path_condition(self, x_init, "x_init", InitialGuess, InitialGuessList)
-        if u_init:
-            NLP.add_path_condition(self, u_init, "u_init", InitialGuess, InitialGuessList)
+        for i in range(self.n_phases):
+            if x_init:
+                origin_phase = 0 if len(x_init) == 1 else i
+                for key in x_init[origin_phase].keys():
+                    self.nlp[i].x_init[key] = x_init[origin_phase][key]
+                self.isdef_x_init = True
 
-        if isinstance(param_init, InitialGuess):
-            param_init_list = InitialGuessList()
-            param_init_list.add(param_init)
-        else:
-            param_init_list = param_init
+            if u_init:
+                for key in u_init.keys():
+                    origin_phase = 0 if len(u_init) == 1 else i
+                    self.nlp[i].u_init[key] = u_init[origin_phase][key]
+                self.isdef_u_init = True
 
-        for param in param_init_list:
-            if not param.name:
+        if param_init is None:
+            param_init = InitialGuessList()
+
+        for param in param_init.keys():
+            if not param.key:
                 raise ValueError("update_initial_guess must specify a name for the parameters")
             try:
                 idx = self.v.parameters_in_list.index(param.name)

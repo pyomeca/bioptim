@@ -183,7 +183,6 @@ from .limits.path_conditions import (
     BoundsList,
     Bounds,
     InitialGuessList,
-    InitialGuess,
     NoisedInitialGuess,
 )
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess

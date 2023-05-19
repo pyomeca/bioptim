@@ -21,7 +21,7 @@ from bioptim import (
     ConstraintList,
     PenaltyController,
     Bounds,
-    InitialGuess,
+    InitialGuessList,
     OdeSolver,
     OdeSolverBase,
     Solver,
@@ -123,12 +123,15 @@ def prepare_ocp(
     x_bounds[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * bio_model.nb_q
+    x_init["qdot"] = [0] * bio_model.nb_qdot
 
     # Define control path constraint
     u_bounds = Bounds([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
 
-    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
+    u_init = InitialGuessList()
+    u_init["tau"] = [tau_init] * bio_model.nb_tau
 
     # ------------- #
 

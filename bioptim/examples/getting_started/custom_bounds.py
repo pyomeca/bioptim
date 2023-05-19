@@ -27,7 +27,7 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    InitialGuess,
+    InitialGuessList,
     InterpolationType,
 )
 
@@ -228,8 +228,12 @@ def prepare_ocp(
         raise NotImplementedError("Not implemented yet")
 
     # Initial guess
-    x_init = InitialGuess([0] * (nq + nqdot))
-    u_init = InitialGuess([tau_init] * ntau)
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * nq
+    x_init["qdot"] = [0] * nqdot
+
+    u_init = InitialGuessList()
+    u_init["tau"] = [tau_init] * ntau
 
     return OptimalControlProgram(
         bio_model,

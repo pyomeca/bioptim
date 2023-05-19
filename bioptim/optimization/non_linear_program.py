@@ -5,7 +5,7 @@ from casadi import SX, MX, Function, horzcat
 
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
-from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
+from ..limits.path_conditions import Bounds, InitialGuessList, BoundsList
 from ..misc.enums import ControlType
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
@@ -142,7 +142,7 @@ class NonLinearProgram:
         self.t_initial_guess = None
         self.variable_mappings = {}
         self.u_bounds = Bounds()
-        self.u_init = InitialGuess()
+        self.u_init = InitialGuessList()
         self.U_scaled = None
         self.u_scaling = None
         self.U = None
@@ -150,7 +150,7 @@ class NonLinearProgram:
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
         self.x_bounds = Bounds()
-        self.x_init = InitialGuess()
+        self.x_init = InitialGuessList()
         self.X_scaled = None
         self.x_scaling = None
         self.X = None

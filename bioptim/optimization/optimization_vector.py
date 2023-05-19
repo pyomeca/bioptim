@@ -82,12 +82,12 @@ class OptimizationVector:
         for _ in range(self.ocp.n_phases):
             self.x_scaled.append([])
             self.x_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
-            self.x_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
+            self.x_init.append(InitialGuessList(interpolation=InterpolationType.CONSTANT))
             self.n_phase_x.append(0)
 
             self.u_scaled.append([])
             self.u_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
-            self.u_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
+            self.u_init.append(InitialGuessList(interpolation=InterpolationType.CONSTANT))
             self.n_phase_u.append(0)
 
     @property
@@ -145,7 +145,7 @@ class OptimizationVector:
         return v_bounds
 
     @property
-    def init(self):
+    def init_vector(self):
         """
         Format the x, u and p init so they are in one nice (and useful) vector
 
@@ -153,7 +153,7 @@ class OptimizationVector:
         -------
         The vector of all init
         """
-        v_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
+        v_init = np.ndarray((0, 1))
         if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(
             self.ocp.nlp[0].ode_solver, OdeSolver.IRK
         ):
@@ -163,35 +163,35 @@ class OptimizationVector:
 
         for phase, x_init in enumerate(self.x_init):
             nlp = self.ocp.nlp[phase]
-
-            if isinstance(self.ocp.original_values["x_init"], InitialGuessList):
-                original_x_init = self.ocp.original_values["x_init"][phase]
-            else:
-                original_x_init = self.ocp.original_values["x_init"]
+            original_x_init = self.ocp.original_values["x_init"]
             interpolation_type = None if original_x_init is None else original_x_init.type
 
-            if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
-                v_init.concatenate(
-                    self._init_linear_interpolation(phase=phase).scale(
-                        nlp.x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * steps + 1),
+            for key in nlp.states.keys():
+                if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
+                    print("coucou")
+                    np.concatenate(
+                        v_init,
+                        self._init_linear_interpolation(phase=phase).scale(
+                            nlp.x_scaling["all"].to_vector(nlp.ns * steps + 1),
+                        ),
                     )
-                )
-            else:
-                v_init.concatenate(
-                    x_init.scale(nlp.x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * steps + 1))
-                )
+                else:
+                    v_init = np.concatenate(
+                        (v_init, x_init[key].scale(nlp.x_scaling[key].to_vector(nlp.ns * steps + 1)).init)
+                    )
 
         for phase, u_init in enumerate(self.u_init):
             nlp = self.ocp.nlp[phase]
             ns = nlp.ns + (1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0)
-            v_init.concatenate(u_init.scale(nlp.u_scaling["all"].to_vector(ns)))
+            for key in nlp.controls.keys():
+                v_init = np.concatenate((v_init, u_init[key].scale(nlp.u_scaling[key].to_vector(ns)).init))
 
         for param in self.parameters_in_list:
-            v_init.concatenate(param.initial_guess.scale(param.scaling))
+            v_init = np.concatenate((v_init, param.initial_guess.scale(param.scaling).init))
 
         return v_init
 
-    def _init_linear_interpolation(self, phase: int) -> InitialGuess:
+    def _init_linear_interpolation(self, phase: int) -> InitialGuessList:
         """
         Perform linear interpolation between shooting nodes so that initial guess values are defined for each
         collocation point
@@ -231,7 +231,9 @@ class OptimizationVector:
             x_init_vector[idx_state, -1] = state[nlp.ns]
 
         x_init_reshaped = x_init_vector.reshape((1, -1), order="F").T
-        return InitialGuess(x_init_reshaped)
+        out = InitialGuessList()
+        out.add("not named", x_init_reshaped)
+        return out
 
     def extract_phase_time(self, data: np.ndarray | DM) -> list:
         """
@@ -508,58 +510,61 @@ class OptimizationVector:
                 if nlp.ode_solver.is_direct_shooting:
                     if nlp.x_init.type == InterpolationType.ALL_POINTS:
                         raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                nlp.x_init.check_and_adjust_dimensions(nlp.states.shape, ns)
+                for key in nlp.states.keys():
+                    nlp.x_init[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], ns)
 
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
-                    nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    nlp.u_init.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
-                else:
-                    raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
+                for key in nlp.controls.keys():
+                    if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+                        nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns - 1)
+                    elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns)
+                    else:
+                        raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                nx = nlp.states.shape
-                if nlp.ode_solver.is_direct_collocation and nlp.x_init.type != InterpolationType.EACH_FRAME:
-                    all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
-                    outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
-                    repeat = nlp.ode_solver.polynomial_degree + 1
-                else:
-                    all_nx = nx * (nlp.ns + 1)
-                    outer_offset = nx
+                for key in nlp.states.keys():
                     repeat = 1
+                    if nlp.ode_solver.is_direct_collocation and nlp.x_init.type != InterpolationType.EACH_FRAME:
+                        repeat += nlp.ode_solver.polynomial_degree
 
-                x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
-                for k in range(nlp.ns + 1):
-                    for p in range(repeat if k != nlp.ns else 1):
-                        span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
-                        point = k if k != 0 else 0 if p == 0 else 1
-                        if isinstance(nlp.x_init, NoisedInitialGuess):
-                            if nlp.x_init.type == InterpolationType.ALL_POINTS:
+                    collapsed_values = np.ndarray((0,))
+                    for k in range(nlp.ns + 1):
+                        for p in range(repeat if k != nlp.ns else 1):
+                            point = k if k != 0 else 0 if p == 0 else 1
+                            if isinstance(nlp.x_init, NoisedInitialGuess):
+                                if nlp.x_init.type == InterpolationType.ALL_POINTS:
+                                    point = k * repeat + p
+                            elif (
+                                isinstance(nlp.x_init, InitialGuess) and nlp.x_init.type == InterpolationType.EACH_FRAME
+                            ):
                                 point = k * repeat + p
-                        elif isinstance(nlp.x_init, InitialGuess) and nlp.x_init.type == InterpolationType.EACH_FRAME:
-                            point = k * repeat + p
-                        x_init.init[span, 0] = nlp.x_init.init.evaluate_at(shooting_point=point)
-                self.x_init[i_phase] = x_init
+                            collapsed_values = np.concatenate(
+                                (collapsed_values, nlp.x_init[key].init.evaluate_at(shooting_point=point))
+                            )
+                    self.x_init[i_phase][key] = InitialGuess(key, initial_guess=collapsed_values)
 
             # For controls
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
-                    ns = nlp.ns
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    ns = nlp.ns + 1
-                else:
-                    raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-                nu = nlp.controls.shape
-                all_nu = nu * ns
-                u_init = InitialGuess([0] * all_nu, interpolation=InterpolationType.CONSTANT)
-                for k in range(ns):
-                    u_init.init[k * nu : (k + 1) * nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
+                for key in nlp.controls.keys():
+                    if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+                        ns = nlp.ns
+                    elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        ns = nlp.ns + 1
+                    else:
+                        raise NotImplementedError(
+                            f"Multiple shooting problem not implemented yet for {nlp.control_type}"
+                        )
 
-                self.u_init[i_phase] = u_init
+                    collapsed_values = np.ndarray((0,))
+                    for k in range(ns):
+                        collapsed_values = np.concatenate(
+                            (collapsed_values, nlp.u_init[key].init.evaluate_at(shooting_point=k))
+                        )
+                    self.u_init[i_phase][key] = InitialGuess(key, initial_guess=collapsed_values)
 
     def add_parameter(self, param: Parameter):
         """

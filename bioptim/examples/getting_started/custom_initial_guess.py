@@ -26,7 +26,7 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Bounds,
-    InitialGuess,
+    InitialGuessList,
     InterpolationType,
     OdeSolver,
     OdeSolverBase,
@@ -66,7 +66,7 @@ def prepare_ocp(
     final_time: float,
     random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
-    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
@@ -160,8 +160,16 @@ def prepare_ocp(
     else:
         raise RuntimeError("Initial guess not implemented yet")
 
-    x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
-    u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
+    if not isinstance(x, np.ndarray):
+        x = np.array([x]).T
+    if not isinstance(u, np.ndarray):
+        u = np.array([u]).T
+
+    x_init = InitialGuessList()
+    x_init.add("q", x[:nq, :], t=t, interpolation=initial_guess, **extra_params_x)
+    x_init.add("qdot", x[nq:, :], t=t, interpolation=initial_guess, **extra_params_x)
+    u_init = InitialGuessList()
+    u_init.add("tau", u, t=t, interpolation=initial_guess, **extra_params_u)
     if random_init:
         x_init = x_init.add_noise(
             bounds=x_bounds,
@@ -219,7 +227,7 @@ def main():
         ocp = None
         try:
             ocp = prepare_ocp(
-                "models/cube.bioMod", n_shooting=30, final_time=2, random_init=True, initial_guess=initial_guess
+                "models/cube.bioMod", n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess
             )
         except ValueError as message:
             if str(message) == "InterpolationType.ALL_POINTS must only be used with direct collocation":

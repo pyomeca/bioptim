@@ -22,7 +22,7 @@ from bioptim import (
     MovingHorizonEstimator,
     Dynamics,
     DynamicsFcn,
-    InitialGuess,
+    InitialGuessList,
     InterpolationType,
     Solver,
 )
@@ -693,8 +693,10 @@ def test_acados_bounds_not_implemented(failing):
     n_cycles = 3
     window_len = 5
     window_duration = 0.2
-    x_init = InitialGuess(np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
-    u_init = InitialGuess(np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
+    x_init = InitialGuessList()
+    x_init["final"] = np.zeros((nq * 2, 1))
+    u_init = InitialGuessList()
+    u_init["final"] = np.zeros((ntau, 1))
     if failing == "u_bounds":
         x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)))
         u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)

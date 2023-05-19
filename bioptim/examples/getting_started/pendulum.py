@@ -15,7 +15,7 @@ from bioptim import (
     DynamicsFcn,
     Dynamics,
     Bounds,
-    InitialGuess,
+    InitialGuessList,
     ObjectiveFcn,
     Objective,
     OdeSolver,
@@ -76,9 +76,9 @@ def prepare_ocp(
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
-    x_init = InitialGuess([0] * (n_q + n_qdot))
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * bio_model.nb_q
+    x_init["qdot"] = [0] * bio_model.nb_qdot
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
@@ -86,7 +86,8 @@ def prepare_ocp(
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = InitialGuess([tau_init] * n_tau)
+    u_init = InitialGuessList()
+    u_init.add("tau", [tau_init] * n_tau)
 
     return OptimalControlProgram(
         bio_model,
@@ -123,7 +124,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))  # platform.system() == "Linux"))
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #

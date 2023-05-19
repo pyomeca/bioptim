@@ -936,7 +936,7 @@ class ConfigureProblem:
             return
 
         if name not in nlp.variable_mappings:
-            nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
+            nlp.variable_mappings.add(name, bimapping=BiMapping(range(len(name_elements)), range(len(name_elements))))
 
         if not ocp.assume_phase_dynamics and (
             nlp.use_states_from_phase_idx != nlp.phase_idx
@@ -963,6 +963,13 @@ class ConfigureProblem:
             and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0]
         )
 
+        # Declare the x_init for that variable
+        if as_states and name not in nlp.x_init:
+            nlp.x_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
+        if as_controls and name not in nlp.u_init:
+            nlp.u_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
+
+        # Declare the scaling for that variable
         if as_states and name not in nlp.x_scaling:
             nlp.x_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_states_dot and name not in nlp.xdot_scaling:
