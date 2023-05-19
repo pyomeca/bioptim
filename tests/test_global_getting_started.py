@@ -6,6 +6,7 @@ import pickle
 import re
 import sys
 import shutil
+import platform
 
 import pytest
 import numpy as np
@@ -175,6 +176,10 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
+
+    if platform.system() == "Windows" and not assume_phase_dynamics:
+        # This is a long test and CI is already long for Windows
+        return
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if n_threads > 1 and not assume_phase_dynamics:
