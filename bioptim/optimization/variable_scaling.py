@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 
 from ..misc.options import OptionGeneric, OptionDict
@@ -103,7 +105,7 @@ class VariableScalingList(OptionDict):
         """
         self._all = all
 
-    def __getitem__(self, item: int | tuple[str, ...] | str) -> VariableScaling | dict:
+    def __getitem__(self, item: int | tuple[str, ...] | str) -> VariableScaling | Any:
         """
         Get the ith option of the list
 
@@ -114,7 +116,7 @@ class VariableScalingList(OptionDict):
 
         Returns
         -------
-        The ith option of the list
+        The ith option of the list (Any being a VariableScalingList
         """
 
         if isinstance(item, str) and item == "all":
@@ -129,7 +131,20 @@ class VariableScalingList(OptionDict):
                 out = np.append(out, self[i].scaling)
             return VariableScaling("not named", out)
 
-        return super(VariableScalingList, self).__getitem__(item)
+        if isinstance(item, int):
+            # Request VariableScalingList for a particular phase
+            out = VariableScalingList()
+            for key in self.keys():
+                out.add(key, self.options[item][key])
+            return out
+
+        if isinstance(item, str):
+            if len(self.options) != 1:
+                raise ValueError("Indexing VariableScalingList with 'str' with more than one dimension is a mistake."
+                                 "Call the function index first with the index of the phase you want to fetch")
+            return self.options[0][item]
+
+        raise ValueError("Wrong type in getting scaling")
 
     def copy(self):
         out = VariableScalingList()

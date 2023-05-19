@@ -163,9 +163,9 @@ class OptimalControlProgram:
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
         multinode_objectives: MultinodeObjectiveList = None,
-        x_scaling: VariableScalingList | tuple[VariableScalingList, ...] = None,
-        xdot_scaling: VariableScalingList | tuple[VariableScalingList, ...] = None,
-        u_scaling: VariableScalingList | tuple[VariableScalingList, ...] = None,
+        x_scaling: VariableScalingList = None,
+        xdot_scaling: VariableScalingList = None,
+        u_scaling: VariableScalingList = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -191,11 +191,11 @@ class OptimalControlProgram:
             The bounds for the states
         u_bounds: Bounds | BoundsList
             The bounds for the controls
-        x_scaling: VariableScalingList | tuple[VariableScalingList, ...]
+        x_scaling: VariableScalingList
             The scaling for the states at each phase, if only one is sent, then the scaling is copied over the phases
-        xdot_scaling: VariableScalingList | tuple[VariableScalingList, ...]
+        xdot_scaling: VariableScalingList
             The scaling for the states derivative, if only one is sent, then the scaling is copied over the phases
-        u_scaling: VariableScalingList | tuple[VariableScalingList, ...]
+        u_scaling: VariableScalingList
             The scaling for the controls, if only one is sent, then the scaling is copied over the phases
         objective_functions: Objective | ObjectiveList
             All the objective function of the program
@@ -490,9 +490,9 @@ class OptimalControlProgram:
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
         # Do not copy singleton since x_scaling was already dealt with before
-        NLP.add(self, "x_scaling", x_scaling, False)
-        NLP.add(self, "xdot_scaling", xdot_scaling, False)
-        NLP.add(self, "u_scaling", u_scaling, False)
+        NLP.add(self, "x_scaling", x_scaling, True)
+        NLP.add(self, "xdot_scaling", xdot_scaling, True)
+        NLP.add(self, "u_scaling", u_scaling, True)
 
         # Prepare the node mappings
         if node_mappings is None:
@@ -651,13 +651,17 @@ class OptimalControlProgram:
     def _prepare_scaling_for_phase(self, name, scaling):
         if scaling is None:
             scaling = VariableScalingList()
-        if isinstance(scaling, VariableScalingList):
-            out = []
-            for _ in range(self.n_phases):
-                out.append(scaling.copy())
-            return out
-        else:
+
+        if not isinstance(scaling, VariableScalingList):
             raise RuntimeError(f"{name} should be built from a VariableScalingList or a tuple of which")
+
+        if len(scaling) == 1 and self.n_phases > 1:
+            scaling_phase_0 = scaling[0]
+            for i in range(1, self.n_phases):
+                scaling.add(None, [], phase=1)  # Force the creation of the structure internally
+                for key in scaling_phase_0.keys():
+                    scaling.add(key, scaling_phase_0[key], phase=i)
+        return scaling
 
     def _declare_continuity(self, state_continuity_weight: float = None) -> None:
         """
