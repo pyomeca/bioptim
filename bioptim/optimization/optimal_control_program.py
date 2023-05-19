@@ -860,10 +860,12 @@ class OptimalControlProgram:
         """
 
         if isinstance(new_constraint, ParameterConstraint):
-            raise RuntimeError("ParameterConstraint are not implemented yet, but could be a good addition. If you run into this error, please contact the developpers by openning an issue on the GitHub page.")
+            # This should work, but was not fully tested
+            self.__modify_parameter_penalty(new_constraint)
         elif isinstance(new_constraint, ParameterConstraintList):
-            if new_constraint.options != [[]]:
-                raise RuntimeError("ParameterConstraint are not implemented yet, but could be a good addition. If you run into this error, please contact the developpers by openning an issue on the GitHub page.")
+            for constraint_in_phase in new_constraint:
+                for constraint in constraint_in_phase:
+                    self.__modify_parameter_penalty(constraint)
         else:
             raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
 
@@ -878,13 +880,11 @@ class OptimalControlProgram:
         """
 
         if isinstance(new_parameters, Parameter):
-            # self.__modify_penalty(new_parameters)
             self.v.add_parameter(new_parameters)
 
         elif isinstance(new_parameters, ParameterList):
             for parameter in new_parameters:
                 self.v.add_parameter(parameter)
-                # self.__modify_penalty(parameter)
         else:
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 

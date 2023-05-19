@@ -19,6 +19,8 @@ from bioptim import (
     BiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
+    ParameterConstraintList,
+    ConstraintFcn,
 )
 
 
@@ -69,6 +71,10 @@ def prepare_ocp(
     parameter_objectives = ParameterObjectiveList()
     parameter_objectives.add(custom_min_parameter, custom_type=ObjectiveFcn.Parameter, weight=1000, quadratic=True)
     parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=1000, quadratic=True)
+
+    # Add phase independant constraint functions
+    parameter_constraints = ParameterConstraintList()
+    parameter_constraints.add(ConstraintFcn.TRACK_PARAMETER, min_bound=-100, max_bound=100)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -130,6 +136,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         parameter_objectives=parameter_objectives,
+        parameter_constraints=parameter_constraints,
         constraints=constraints,
         variable_mappings=tau_mappings,
         parameters=parameters,
