@@ -10,6 +10,7 @@ from matplotlib.ticker import StrMethodFormatter
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
+from ..limits.multinode_constraint import MultinodeConstraint
 from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, IntegralApproximation
 from ..misc.mapping import Mapping
 from ..optimization.solution import Solution
@@ -338,6 +339,7 @@ class PlotOcp:
                         if nlp.plot[key].node_idx is not None:
                             node_index = nlp.plot[key].node_idx[0]
                         nlp.states.node_index = node_index
+                        nlp.states_dot.node_index = node_index
                         nlp.controls.node_index = node_index
 
                         size = (
@@ -720,29 +722,35 @@ class PlotOcp:
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
                     for i_var in range(self.variable_sizes[i][key]):
-                        if self.plot_func[key][i].parameters["penalty"].binode_constraint:
+                        if self.plot_func[key][i].parameters["penalty"].multinode_penalty:
                             y = np.array([np.nan])
-                            phase_1 = self.plot_func[key][i].parameters["penalty"].phase_second_idx
-                            phase_2 = self.plot_func[key][i].parameters["penalty"].phase_first_idx
-                            node_idx_1 = self.plot_func[key][i].node_idx[0]
-                            node_idx_2 = self.plot_func[key][i].node_idx[1]
-                            x_phase_1 = data_states[phase_1]["all"][:, node_idx_1 * step_size]
-                            x_phase_2 = data_states[phase_2]["all"][:, node_idx_2 * step_size]
-                            u_phase_1 = data_controls[phase_1]["all"][:, node_idx_1]
-                            u_phase_2 = data_controls[phase_2]["all"][:, node_idx_2]
-                            val = self.plot_func[key][i].function(
-                                self.plot_func[key][i].node_idx[0],
-                                np.hstack((x_phase_1, x_phase_2)),
-                                np.hstack(
+                            penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
+                            x_phase_tp = np.ndarray((data_states[0]["all"].shape[0], 0))
+                            u_phase_tp = np.ndarray((data_controls[0]["all"].shape[0], 0))
+                            for tp in range(len(penalty.nodes_phase)):
+                                phase_tp = penalty.nodes_phase[tp]
+                                node_idx_tp = penalty.all_nodes_index[tp]
+                                x_phase_tp = np.hstack(
                                     (
-                                        u_phase_1,
-                                        u_phase_2,
+                                        x_phase_tp,
+                                        data_states[phase_tp]["all"][:, node_idx_tp * step_size][:, np.newaxis],
                                     )
-                                ),
+                                )
+                                u_phase_tp = np.hstack(
+                                    (
+                                        u_phase_tp,
+                                        data_controls[phase_tp]["all"][
+                                            :, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0)
+                                        ][:, np.newaxis],
+                                    )
+                                )
+                            y[0] = self.plot_func[key][i].function(
+                                self.plot_func[key][i].node_idx[0],
+                                x_phase_tp,
+                                u_phase_tp,
                                 data_params_in_dyn,
                                 **self.plot_func[key][i].parameters,
-                            )
-                            y[0] = val[i_var]
+                            )[i_var]
                         else:
                             y = np.empty((len(self.plot_func[key][i].node_idx),))
                             y.fill(np.nan)

@@ -25,15 +25,14 @@ from bioptim import (
     PhaseTransitionList,
     OdeSolver,
     OdeSolverBase,
-    PhaseTransition,
     BiMapping,
     Solver,
-    NonLinearProgram,
+    PenaltyController,
 )
 
 
 def custom_phase_transition(
-    transition: PhaseTransition, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, coef: float
+    controllers: list[PenaltyController, PenaltyController], coef: float, states_mapping: BiMapping = None
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
@@ -44,12 +43,8 @@ def custom_phase_transition(
 
     Parameters
     ----------
-    transition: PhaseTransition
-        The placeholder for the transition
-    nlp_pre: NonLinearProgram
-        The nonlinear program of the pre phase
-    nlp_post: NonLinearProgram
-        The nonlinear program of the post phase
+    controllers: list[PenaltyController, PenaltyController]
+        The controller for all the nodes in the penalty
     coef: float
         The coefficient of the phase transition (makes no physical sens)
 
@@ -57,10 +52,14 @@ def custom_phase_transition(
     -------
     The constraint such that: c(x) = 0
     """
-    # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
-    # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = transition.states_mapping.to_second.map(nlp_pre.states.cx_end)
-    states_post = transition.states_mapping.to_first.map(nlp_post.states.cx_start)
+
+    # states_mapping can be defined as an argument (such as coef). For this particular example, one could simply
+    # ignore the mapping stuff (it is merely for the sake of example how to use the mappings)
+    if states_mapping is None:
+        states_mapping = BiMapping(range(controllers[0].states.cx.shape[0]), range(controllers[1].states.cx.shape[0]))
+
+    states_pre = states_mapping.to_second.map(controllers[0].states.cx)
+    states_post = states_mapping.to_first.map(controllers[1].states.cx)
 
     return states_pre * coef - states_post
 

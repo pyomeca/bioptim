@@ -411,6 +411,10 @@ class ParameterList(UniquePerProblemOptionList):
         return np.vstack([p.scaling for p in self]) if len(self) else np.array([[1.0]])
 
     @property
+    def cx(self):
+        return self.cx_start
+
+    @property
     def cx_start(self):
         """
         The CX vector of all parameters

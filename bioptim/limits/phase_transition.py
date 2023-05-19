@@ -3,16 +3,18 @@ from warnings import warn
 
 from casadi import vertcat, MX
 
-from .multinode_constraint import BinodeConstraint, BinodeConstraintFunctions
+from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
+from .multinode_constraint import MultinodeConstraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
-from ..misc.enums import Node, PenaltyType
+from ..misc.enums import Node, PenaltyType, InterpolationType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
+from ..misc.mapping import BiMapping
 
 
-class PhaseTransition(BinodeConstraint):
+class PhaseTransition(MultinodePenalty):
     """
     A placeholder for a transition of state
 
@@ -28,10 +30,6 @@ class PhaseTransition(BinodeConstraint):
         The weight of the cost function
     quadratic: bool
         If the objective function is quadratic
-    phase_pre_idx: int
-        The index of the phase right before the transition
-    phase_post_idx: int
-        The index of the phase right after the transition
     node: Node
         The kind of node
     dt: float
@@ -48,7 +46,7 @@ class PhaseTransition(BinodeConstraint):
         self,
         phase_pre_idx: int = None,
         transition: Any | Callable = None,
-        weight: float = 0,
+        weight: float = None,
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
@@ -58,21 +56,33 @@ class PhaseTransition(BinodeConstraint):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
-            phase_first_idx=phase_pre_idx,
-            phase_second_idx=None,
-            first_node=Node.END,
-            second_node=Node.START,
-            binode_constraint=transition,
+            PhaseTransitionFcn,
+            nodes_phase=(-1, 0) if transition == transition.CYCLIC else (phase_pre_idx, phase_pre_idx + 1),
+            nodes=(Node.END, Node.START),
+            multinode_penalty=transition,
             custom_function=custom_function,
-            min_bound=min_bound,
-            max_bound=max_bound,
-            weight=weight if weight is not None else 0,
-            force_binode=True,
             **params,
         )
 
+        self.weight = 0 if weight is None else weight
+        self.min_bound = min_bound
+        self.max_bound = max_bound
+        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.node = Node.TRANSITION
         self.transition = True
+        self.quadratic = True
+
+    def add_or_replace_to_penalty_pool(self, ocp, nlp):
+        super(PhaseTransition, self).add_or_replace_to_penalty_pool(ocp, nlp)
+        if not self.weight:
+            self: MultinodeConstraint
+            MultinodeConstraint.set_bounds(self)
+
+    def _get_pool_to_add_penalty(self, ocp, nlp):
+        if not self.weight:
+            return nlp.g_internal if nlp else ocp.g_internal
+        else:
+            return nlp.J_internal if nlp else ocp.J_internal
 
 
 class PhaseTransitionList(UniquePerPhaseOptionList):
@@ -133,19 +143,11 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=continuity_weight)
             for i in range(ocp.n_phases - 1)
         ]
-        for pt in full_phase_transitions:
-            pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
 
         existing_phases = []
 
         for pt in self:
-            if pt.phase_pre_idx is None:
-                if pt.type == PhaseTransitionFcn.CYCLIC:
-                    pt.phase_pre_idx = ocp.n_phases - 1
-            else:
-                pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
-
-            idx_phase = pt.phase_pre_idx
+            idx_phase = pt.nodes_phase[0]
             if idx_phase >= ocp.n_phases:
                 raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
             existing_phases.append(idx_phase)
@@ -153,7 +155,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
             if pt.weight:
                 pt.base = ObjectiveFunction.MayerFunction
 
-            if idx_phase == ocp.n_phases - 1:
+            if idx_phase % ocp.n_phases == ocp.n_phases - 1:
                 # Add a cyclic constraint or objective
                 full_phase_transitions.append(pt)
             else:
@@ -172,7 +174,11 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(transition, controllers: list[PenaltyController, PenaltyController]):
+        def continuous(
+            transition,
+            controllers: list[PenaltyController, PenaltyController],
+            states_mapping: list[BiMapping, ...] = None,
+        ):
             """
             The most common continuity function, that is state before equals state after
 
@@ -182,13 +188,21 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 A reference to the phase transition
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
+            states_mapping: list
+                A list of the mapping for the states between nodes. It should provide a mapping between 0 and i, where
+                the first (0) link the controllers[0].state to a number of values using to_second. Thereafter, the
+                to_first is used sequentially for all the controllers (meaning controllers[1] uses the
+                states_mapping[0].to_first. Therefore, the dimension of the states_mapping
+                should be 'len(controllers) - 1'
 
             Returns
             -------
             The difference between the state after and before
             """
 
-            return BinodeConstraintFunctions.Functions.states_equality(transition, controllers, "all")
+            return MultinodePenaltyFunctions.Functions.states_equality(
+                transition, controllers, "all", states_mapping=states_mapping
+            )
 
         @staticmethod
         def discontinuous(transition, controllers: list[PenaltyController, PenaltyController]):
@@ -226,7 +240,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node
             """
 
-            return BinodeConstraintFunctions.Functions.states_equality(transition, controllers, "all")
+            return MultinodePenaltyFunctions.Functions.states_equality(transition, controllers, "all")
 
         @staticmethod
         def impact(transition, controllers: list[PenaltyController, PenaltyController]):
@@ -245,42 +259,37 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node after applying the impulse equations
             """
 
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+
             ocp = controllers[0].ocp
-            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape:
+            if ocp.nlp[transition.nodes_phase[0]].states.shape != ocp.nlp[transition.nodes_phase[1]].states.shape:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
 
             # Aliases
             pre, post = controllers
-
-            # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
-            # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
-            # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
-            # EDIT 1: using multinode constraint this should work now
-            model = post.model.copy()
-
             if post.model.nb_rigid_contacts == 0:
                 warn("The chosen model does not have any rigid contact")
 
             # Todo scaled?
             q_pre = pre.states["q"].mx
             qdot_pre = pre.states["qdot"].mx
-            qdot_impact = model.qdot_from_impact(q_pre, qdot_pre)
+            qdot_impact = post.model.qdot_from_impact(q_pre, qdot_pre)
 
             val = []
             cx_start = []
             cx_end = []
             for key in pre.states:
-                cx_end = vertcat(cx_end, pre.states[key].mapping.to_second.map(pre.states[key].cx_end))
-                cx_start = vertcat(cx_start, post.states[key].mapping.to_second.map(post.states[key].cx_start))
+                cx_end = vertcat(cx_end, pre.states[key].mapping.to_second.map(pre.states[key].cx))
+                cx_start = vertcat(cx_start, post.states[key].mapping.to_second.map(post.states[key].cx))
                 post_mx = post.states[key].mx
                 continuity = post.states["qdot"].mapping.to_first.map(
                     qdot_impact - post_mx if key == "qdot" else pre.states[key].mx - post_mx
                 )
                 val = vertcat(val, continuity)
 
-            name = f"PHASE_TRANSITION_{pre.phase_idx}_{post.phase_idx}"
+            name = f"PHASE_TRANSITION_{pre.phase_idx % ocp.n_phases}_{post.phase_idx % ocp.n_phases}"
             func = pre.to_casadi_func(name, val, pre.states.mx, post.states.mx)(cx_end, cx_start)
             return func
 
@@ -294,7 +303,7 @@ class PhaseTransitionFcn(FcnEnum):
     DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
-    CUSTOM = (BinodeConstraintFunctions.Functions.custom,)
+    CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
     @staticmethod
     def get_type():

@@ -93,7 +93,7 @@ def prepare_test_ocp(
 
 
 def get_penalty_value(ocp, penalty, t, x, u, p):
-    val = penalty.type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], []), **penalty.params)
+    val = penalty.type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], [], 0), **penalty.params)
     if isinstance(val, float):
         return val
 
@@ -125,7 +125,7 @@ def test_penalty_minimize_time(penalty_origin, value, assume_phase_dynamics):
 
     penalty_type = penalty_origin.MINIMIZE_TIME
     penalty = Objective(penalty_type)
-    penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], []))
+    penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], [], 0))
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
     np.testing.assert_almost_equal(res, np.array(1))
@@ -930,7 +930,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value, assume_phase_dynami
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], []))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], [], 0))
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -954,7 +954,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value, assume_phase_dynami
         RuntimeError,
         match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
     ):
-        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], []))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], [], 0))
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -968,8 +968,8 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, assume_phase_dynamics):
     nlp.U = np.linspace(10, 19, ns)
     nlp.X_scaled = nlp.X
     nlp.U_scaled = nlp.U
-    tp = OptimizationVariableList(MX)
-    tp.append("param", [MX(), MX()], MX(), BiMapping([], []))
+    tp = OptimizationVariableList(MX, assume_phase_dynamics=assume_phase_dynamics)
+    tp.append("param", [MX(), MX(), MX()], MX(), BiMapping([], []))
     nlp.parameters = tp["param"]
 
     pn = []
@@ -982,6 +982,10 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, assume_phase_dynamics):
         return
     elif node == Node.TRANSITION:
         with pytest.raises(RuntimeError, match="Node.TRANSITION is not a valid node"):
+            _ = penalty._get_penalty_controller([], nlp)
+        return
+    elif node == Node.MULTINODES:
+        with pytest.raises(RuntimeError, match="Node.MULTINODES is not a valid node"):
             _ = penalty._get_penalty_controller([], nlp)
         return
     elif node == Node.DEFAULT:
