@@ -574,13 +574,7 @@ class PenaltyOption(OptionGeneric):
 
     @staticmethod
     def define_target_mapping(controller: PenaltyController, key: str):
-        if key in controller.get_nlp.variable_mappings:
-            target_mapping = controller.get_nlp.variable_mappings[key]
-        else:
-            target_mapping = BiMapping(
-                to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
-                to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
-            )
+        target_mapping = controller.get_nlp.variable_mappings[key]
         return target_mapping
 
     def add_target_to_plot(self, controller: PenaltyController, combine_to: str):
@@ -600,7 +594,7 @@ class PenaltyOption(OptionGeneric):
 
         self.target_plot_name = combine_to
         # if the target is n x ns, we need to add a dimension (n x ns + 1) to make it compatible with the plot
-        if self.target[0].shape[1] == controller.get_nlp.ns:
+        if self.target[0].shape[1] == controller.ns:
             self.target_to_plot = np.concatenate(
                 (self.target[0], np.nan * np.ndarray((self.target[0].shape[0], 1))), axis=1
             )
