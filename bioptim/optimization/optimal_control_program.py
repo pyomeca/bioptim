@@ -25,7 +25,6 @@ from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
     Constraint,
-    MultinodeConstraintFunction,
     ParameterConstraintList,
     ParameterConstraint,
 )
