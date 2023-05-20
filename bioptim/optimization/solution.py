@@ -1426,7 +1426,12 @@ class Solution:
                         # Make an exception to the fact that U is not available for the last node
                         u = np.concatenate((u, self._controls["scaled"][phase_idx]["all"][:, node_idx]))
 
-                elif "Lagrange" not in penalty.type.__str__() and "Mayer" not in penalty.type.__str__() and "MultinodeObjectiveFcn" not in penalty.type.__str__() and "ConstraintFcn" not in penalty.type.__str__():
+                elif (
+                    "Lagrange" not in penalty.type.__str__()
+                    and "Mayer" not in penalty.type.__str__()
+                    and "MultinodeObjectiveFcn" not in penalty.type.__str__()
+                    and "ConstraintFcn" not in penalty.type.__str__()
+                ):
                     if penalty.target is not None:
                         target = penalty.target[0]
                 else:
@@ -1479,7 +1484,12 @@ class Solution:
 
             # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
             # casadi function
-            if "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__() or "MultinodeObjectiveFcn" in penalty.type.__str__() or "ConstraintFcn" in penalty.type.__str__():
+            if (
+                "Lagrange" in penalty.type.__str__()
+                or "Mayer" in penalty.type.__str__()
+                or "MultinodeObjectiveFcn" in penalty.type.__str__()
+                or "ConstraintFcn" in penalty.type.__str__()
+            ):
                 u = u[:, ~np.isnan(np.sum(u, axis=0))]
                 val.append(penalty.function_non_threaded[idx](x, u, p))
                 val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
