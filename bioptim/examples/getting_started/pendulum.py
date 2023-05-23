@@ -73,25 +73,25 @@ def prepare_ocp(
     # Path constraint
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0  # Start and end at 0...
+    x_bounds["q"][1, -1] = 3.14  # ...but end with pendulum 180 degrees rotated
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
-    x_bounds["q"][:, [0, -1]] = 0
-    x_bounds["q"][1, -1] = 3.14
-    x_bounds["qdot"][:, [0, -1]] = 0
+    x_bounds["qdot"][:, [0, -1]] = 0  # Start and end without any velocity
 
-    # Initial guess
+    # Initial guess (optional since it is 0, we show how to initialize anyway)
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
     x_init["qdot"] = [0] * bio_model.nb_qdot
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
-    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
-    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
+    u_bounds["tau"] = [-100] * n_tau, [100] * n_tau  # Limit the strength of the pendulum to (-100 to 100)...
+    u_bounds["tau"][1, :] = 0  # ...but remove the capability to actively rotate
 
+    # Initial guess (optional since it is 0, we show how to initialize anyway)
     u_init = InitialGuessList()
-    u_init["tau"] = [tau_init] * n_tau
+    u_init["tau"] = [0] * n_tau
 
     return OptimalControlProgram(
         bio_model,

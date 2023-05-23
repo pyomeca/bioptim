@@ -147,10 +147,10 @@ class OptimalControlProgram:
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
-        x_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
-        u_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
         x_bounds: Bounds | BoundsList = None,
         u_bounds: Bounds | BoundsList = None,
+        x_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
+        u_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
         parameters: Parameter | ParameterList = None,
@@ -322,44 +322,24 @@ class OptimalControlProgram:
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
         if x_init is None:
-            raise RuntimeError("Please provide an x_init of type InitialGuess or InitialGuessList.")
-        elif isinstance(x_init, InitialGuess):
-            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
-                raise RuntimeError("x_scaling should be provided with a custom x_init")
-            x_init_tp = InitialGuessList()
-            x_init_tp.add(x_init)
-            x_init = x_init_tp
-        elif isinstance(x_init, NoisedInitialGuess):
+            x_init = InitialGuessList()
+        if isinstance(x_init, NoisedInitialGuess):
             if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
                 raise RuntimeError("x_scaling ans xdot_scaling should be provided with a custom x_init")
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init.init)
             x_init = x_init_tp
-        elif isinstance(x_init, InitialGuessList) and len(x_init) == 0:
-            raise RuntimeError(
-                "You must please declare an initial guess for the states x_init. Here, the InitialGuessList is empty."
-            )
         elif not isinstance(x_init, InitialGuessList):
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
         if u_init is None:
-            raise RuntimeError("Please provide an u_init of type InitialGuess or InitialGuessList.")
-        elif isinstance(u_init, InitialGuess):
-            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
-                raise RuntimeError("u_scaling should be provided with a custom u_init")
-            u_init_tp = InitialGuessList()
-            u_init_tp.add(u_init)
-            u_init = u_init_tp
-        elif isinstance(u_init, NoisedInitialGuess):
+            u_init = InitialGuessList()
+        if isinstance(u_init, NoisedInitialGuess):
             if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
                 raise RuntimeError("u_scaling should be provided with a custom u_init")
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init.init)
             u_init = u_init_tp
-        elif isinstance(u_init, InitialGuessList) and len(u_init) == 0:
-            raise RuntimeError(
-                "You must please declare an initial guess for the controls u_init. Here, the InitialGuessList is empty."
-            )
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
