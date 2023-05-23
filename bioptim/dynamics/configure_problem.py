@@ -936,7 +936,7 @@ class ConfigureProblem:
             return
 
         if name not in nlp.variable_mappings:
-            nlp.variable_mappings.add(name, bimapping=BiMapping(range(len(name_elements)), range(len(name_elements))))
+            nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
 
         if not ocp.assume_phase_dynamics and (
             nlp.use_states_from_phase_idx != nlp.phase_idx

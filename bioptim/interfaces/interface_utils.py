@@ -111,7 +111,7 @@ def generic_dispatch_bounds(interface):
     """
 
     all_g = interface.ocp.cx()
-    all_g_bounds = Bounds("not named", interpolation=InterpolationType.CONSTANT)
+    all_g_bounds = Bounds("all_g", interpolation=InterpolationType.CONSTANT)
 
     all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g_internal))
     for g in interface.ocp.g_internal:

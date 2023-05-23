@@ -204,7 +204,7 @@ class OptimizationVector:
 
         x_init_reshaped = x_init_vector.reshape((1, -1), order="F").T
         out = InitialGuessList()
-        out.add("not named", x_init_reshaped)
+        out.add("x_init_linear", x_init_reshaped)
         return out
 
     def extract_phase_time(self, data: np.ndarray | DM) -> list:

@@ -363,6 +363,9 @@ class OptimalControlProgram:
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
+        x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)
+        u_bounds = self._prepare_option_dict_for_phase("u_bounds", u_bounds, BoundsList)
+
         x_init = self._prepare_option_dict_for_phase("x_init", x_init, InitialGuessList)
         u_init = self._prepare_option_dict_for_phase("u_init", u_init, InitialGuessList)
 
@@ -475,7 +478,7 @@ class OptimalControlProgram:
         if parameter_mappings is None:
             parameter_mappings = BiMappingList()
         if "time" not in parameter_mappings.keys():
-            parameter_mappings.add("time", [i for i in range(self.n_phases)], [i for i in range(self.n_phases)])
+            parameter_mappings.add("time", to_second=[i for i in range(self.n_phases)], to_first=[i for i in range(self.n_phases)])
         self.parameter_mappings = parameter_mappings
 
         # Declare the time to optimize

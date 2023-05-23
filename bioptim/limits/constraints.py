@@ -61,7 +61,7 @@ class Constraint(PenaltyOption):
 
         self.min_bound = min_bound
         self.max_bound = max_bound
-        self.bounds = Bounds("not named", interpolation=InterpolationType.CONSTANT)
+        self.bounds = Bounds("constraints", interpolation=InterpolationType.CONSTANT)
 
     def set_penalty(self, penalty: MX | SX, controller: PenaltyController):
         super(Constraint, self).set_penalty(penalty, controller)

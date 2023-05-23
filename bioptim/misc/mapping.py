@@ -161,17 +161,14 @@ class BiMapping(OptionGeneric):
 
 
 class BiMappingList(OptionDict):
-    def __init__(self):
-        super(BiMappingList, self).__init__(sub_type=BiMapping)
-
     def add(
         self,
         name: str,
+        bimapping: BiMapping = None,
         to_second: Mapping | int | list | tuple | range = None,
         to_first: Mapping | int | list | tuple | range = None,
         oppose_to_second: Mapping | int | list | tuple | range = None,
         oppose_to_first: Mapping | int | list | tuple | range = None,
-        bimapping: BiMapping = None,
         phase: int = -1,
     ):
         """
@@ -227,6 +224,9 @@ class BiMappingList(OptionDict):
                 oppose_to_second=oppose_to_second,
                 oppose_to_first=oppose_to_first,
             )
+
+    def __init__(self):
+        super(BiMappingList, self).__init__(sub_type=BiMapping)
 
     def variable_mapping_fill_phases(self, n_phases):
         for mappings in self.options:

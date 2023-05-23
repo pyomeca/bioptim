@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 from numpy import array, ndarray
 
 from ..misc.enums import InterpolationType, MagnitudeType
-from ..misc.options import UniquePerPhaseOptionList, OptionGeneric, OptionDict
+from ..misc.options import OptionGeneric, OptionDict
 from ..optimization.variable_scaling import VariableScaling
 
 
@@ -542,6 +542,7 @@ class BoundsList(OptionDict):
 
     def __init__(self, *args, **kwargs):
         super(BoundsList, self).__init__(sub_type=Bounds)
+        self.type = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
 
     def __setitem__(self, key, value):
         if isinstance(value, (list, tuple)):
@@ -557,6 +558,7 @@ class BoundsList(OptionDict):
         bounds: Bounds = None,
         min_bound: PathCondition | np.ndarray | list | tuple = None,
         max_bound: PathCondition | np.ndarray | list | tuple = None,
+        interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         **extra_arguments,
     ):
         """
@@ -580,10 +582,16 @@ class BoundsList(OptionDict):
             if bounds.phase == -1 and key in self.keys():
                 bounds.phase = len(self.options) if self.options[0] else 0
             self.copy(bounds, key)
+            self.type = bounds.type
         else:
             super(BoundsList, self)._add(
-                key=key, min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments
+                key=key, min_bound=min_bound, max_bound=max_bound, option_type=Bounds, interpolation=interpolation, **extra_arguments
             )
+            self.type = interpolation
+
+    @property
+    def param_when_copying(self):
+        return {}
 
     def __getitem__(self, item: int | str) -> Bounds:
         """
@@ -787,10 +795,6 @@ class InitialGuess(OptionGeneric):
             magnitude_type=magnitude_type,
             **self.params,
         )
-
-    @property
-    def value(self):
-        return self.init
 
 
 class NoisedInitialGuess(InitialGuess):
@@ -1025,6 +1029,7 @@ class InitialGuessList(OptionDict):
 
     def __init__(self, *args, **kwargs):
         super(InitialGuessList, self).__init__(sub_type=InitialGuess)
+        self.type = InterpolationType.CONSTANT
 
     def add(
         self,
