@@ -1403,9 +1403,11 @@ class Solution:
                         node_idx = penalty.multinode_idx[i]
                         phase_idx = penalty.nodes_phase[i]
 
-                        x = np.concatenate((x, self._states["scaled"][phase_idx]["all"][:, node_idx]))
-                        # Make an exception to the fact that U is not available for the last node
-                        u = np.concatenate((u, self._controls["scaled"][phase_idx]["all"][:, node_idx]))
+                        for key in nlp.states:
+                            x = np.concatenate((x, self._states["scaled"][phase_idx][key][:, node_idx]))
+                        for key in nlp.controls:
+                            # Make an exception to the fact that U is not available for the last node
+                            u = np.concatenate((u, self._controls["scaled"][phase_idx][key][:, node_idx]))
 
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
@@ -1431,7 +1433,7 @@ class Solution:
                             "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
                         ):
                             x[nlp.states[key].index, :] = (
-                                self.states_no_intermediate["all"][:, col_x_idx]
+                                self.states_no_intermediate[key][:, col_x_idx]
                                 if len(self.phase_time) - 1 == 1
                                 else self.states_no_intermediate[phase_idx][key][:, col_x_idx]
                             )
