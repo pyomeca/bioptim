@@ -181,7 +181,6 @@ from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiv
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import (
     BoundsList,
-    Bounds,
     InitialGuessList,
     NoisedInitialGuess,
 )

@@ -864,12 +864,6 @@ class OptimalControlProgram:
             The parameters initial guess to add
         """
 
-        if self.nlp[0].ode_solver.is_direct_collocation and len(self.nlp[0].x_init.keys()) != 0:
-            raise NotImplementedError(
-                "It is not possible to use initial guess with NoisedInitialGuess "
-                "as it won't produce the expected randomness"
-            )
-
         for i in range(self.n_phases):
             if x_init:
                 origin_phase = 0 if len(x_init) == 1 else i

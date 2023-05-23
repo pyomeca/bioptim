@@ -119,10 +119,17 @@ class OptimizationVector:
         """
         v_bounds_min = np.ndarray((0, 1))
         v_bounds_max = np.ndarray((0, 1))
+
         for phase, x_bound in enumerate(self.x_bounds):
+            nlp = self.ocp.nlp[phase]
+            repeat = 1
+            if nlp.ode_solver.is_direct_collocation:
+                repeat += nlp.ode_solver.polynomial_degree
+
             for k in range(self.ocp.nlp[phase].ns + 1):
-                v_bounds_min = np.concatenate((v_bounds_min, x_bound.min[:, k:k+1]))
-                v_bounds_max = np.concatenate((v_bounds_max, x_bound.max[:, k:k+1]))
+                x_slice = slice(repeat * k, repeat * (k+1), None)
+                v_bounds_min = np.concatenate((v_bounds_min, np.reshape(x_bound.min[:, x_slice].T, (-1, 1))))
+                v_bounds_max = np.concatenate((v_bounds_max, np.reshape(x_bound.max[:, x_slice].T, (-1, 1))))
 
         for phase, u_bound in enumerate(self.u_bounds):
             for k in range(self.ocp.nlp[phase].ns + 1):
@@ -149,8 +156,14 @@ class OptimizationVector:
         """
         v_init = np.ndarray((0, 1))
         for phase, x_init in enumerate(self.x_init):
+            nlp = self.ocp.nlp[phase]
+            repeat = 1
+            if nlp.ode_solver.is_direct_collocation:
+                repeat += nlp.ode_solver.polynomial_degree
+
             for k in range(self.ocp.nlp[phase].ns + 1):
-                v_init = np.concatenate((v_init, x_init.init[:, k:k+1]))
+                x_slice = slice(repeat * k, repeat * (k+1), None)
+                v_init = np.concatenate((v_init,  np.reshape(x_init.init[:, x_slice].T, (-1, 1))))
 
         for phase, u_init in enumerate(self.u_init):
             for k in range(self.ocp.nlp[phase].ns + 1):
@@ -409,14 +422,15 @@ class OptimizationVector:
                 if nlp.ode_solver.is_direct_collocation:
                     repeat += nlp.ode_solver.polynomial_degree
 
-                collapsed_values_min = np.ndarray((nlp.states.shape, nlp.ns + 1))
-                collapsed_values_max = np.ndarray((nlp.states.shape, nlp.ns + 1))
+                collapsed_values_min = np.ndarray((nlp.states.shape, (nlp.ns * repeat) + 1))
+                collapsed_values_max = np.ndarray((nlp.states.shape, (nlp.ns * repeat) + 1))
                 for k in range(nlp.ns + 1):
                     for p in range(repeat if k != nlp.ns else 1):
                         point = k if k != 0 else 0 if p == 0 else 1
+                        x_slice = slice(repeat * k + p, repeat * k + p + 1, None)
                         for key in nlp.states:
-                            collapsed_values_min[nlp.states[key].index, k] = nlp.x_bounds[key].min.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
-                            collapsed_values_max[nlp.states[key].index, k] = nlp.x_bounds[key].max.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                            collapsed_values_min[nlp.states[key].index, x_slice] = (nlp.x_bounds[key].min.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling)[:, np.newaxis]
+                            collapsed_values_max[nlp.states[key].index, x_slice] = (nlp.x_bounds[key].max.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling)[:, np.newaxis]
                 self.x_bounds[i_phase] = Bounds("x_bounds", min_bound=collapsed_values_min, max_bound=collapsed_values_max, interpolation=InterpolationType.EACH_FRAME)
 
             # For controls
@@ -498,9 +512,10 @@ class OptimizationVector:
                 if nlp.ode_solver.is_direct_collocation and nlp.x_init.type != InterpolationType.EACH_FRAME:
                     repeat += nlp.ode_solver.polynomial_degree
 
-                collapsed_values = np.ndarray((nlp.states.shape, nlp.ns + 1))
+                collapsed_values = np.ndarray((nlp.states.shape, (nlp.ns * repeat) + 1))
                 for k in range(nlp.ns + 1):
                     for p in range(repeat if k != nlp.ns else 1):
+                        x_slice = slice(repeat * k + p, repeat * k + p + 1, None)
                         point = k if k != 0 else 0 if p == 0 else 1
                         for key in nlp.states:
                             if isinstance(nlp.x_init, NoisedInitialGuess):
@@ -510,7 +525,7 @@ class OptimizationVector:
                                 isinstance(nlp.x_init, InitialGuess) and nlp.x_init.type == InterpolationType.EACH_FRAME
                             ):
                                 point = k * repeat + p
-                            collapsed_values[nlp.states[key].index, k] = nlp.x_init[key].init.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                            collapsed_values[nlp.states[key].index, x_slice] = (nlp.x_init[key].init.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling)[:, np.newaxis]
                 self.x_init[i_phase] = InitialGuess("x_init", initial_guess=collapsed_values, interpolation=InterpolationType.EACH_FRAME)
 
             # For controls
