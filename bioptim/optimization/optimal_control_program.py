@@ -1024,25 +1024,18 @@ class OptimalControlProgram:
                 if penalty.target is not None and isinstance(t, int)
                 else []
             )
-            if x.shape[1] == 1:
-                x_shape = int(x.shape[0] / self.nlp[penalty.phase].x_scaling["all"].scaling.shape[0])
-                x_scaling = np.reshape(
-                    np.hstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T, (-1, 1)
-                )
-            else:
-                x_shape = x.shape[1]
-                x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T
 
+            x_scaling = np.concatenate([
+                np.repeat(self.nlp[penalty.phase].x_scaling[key].scaling[:, np.newaxis], x.shape[1], axis=1)
+                for key in self.nlp[penalty.phase].states
+            ])
             x /= x_scaling
+
             if u.size != 0:
-                if u.shape[1] == 1:
-                    u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling["all"].scaling.shape[0])
-                    u_scaling = np.reshape(
-                        np.hstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T, (-1, 1)
-                    )
-                else:
-                    u_shape = u.shape[1]
-                    u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T
+                u_scaling = np.concatenate([
+                    np.repeat(self.nlp[penalty.phase].u_scaling[key].scaling[:, np.newaxis], u.shape[1], axis=1)
+                    for key in self.nlp[penalty.phase].controls
+                ])
                 u /= u_scaling
 
             out = []
