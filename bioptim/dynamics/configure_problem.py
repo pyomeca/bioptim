@@ -208,164 +208,12 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue)
         # Declare stochastic variables
         if is_stochastic:
-            ConfigureProblem.configure_c(ocp, nlp, True, False)  # Noise propagation matrix (to compute the derivative of the covariance matrix)
-            ConfigureProblem.configure_a(ocp, nlp, True, False)  # Noise injection matrix (to compute the derivative of the covariance matrix)
-
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-        ):
-            ConfigureProblem.configure_qddot(ocp, nlp, False, True, True)
-        elif (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
-        ):
-            ConfigureProblem.configure_qddot(ocp, nlp, True, False, True)
-            ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
-        else:
-            ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
-
-        # Algebraic constraints of rigidbody dynamics if needed
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
-        ):
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-                with_contact=with_contact,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-            )
-            if with_contact:
-                # qddot is continuous with RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
-                # so the consistency constraint of the marker acceleration can only be set to zero
-                # at the first shooting node
-                node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
-                ConfigureProblem.configure_contact_forces(ocp, nlp, False, True)
-                for ii in range(nlp.model.nb_rigid_contacts):
-                    for jj in nlp.model.rigid_contact_index(ii):
-                        ocp.implicit_constraints.add(
-                            ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
-                            with_contact=with_contact,
-                            contact_index=ii,
-                            contact_axis=jj,
-                            node=node,
-                            constraint_type=ConstraintType.IMPLICIT,
-                            phase=nlp.phase_idx,
-                        )
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-        ):
-            # contacts forces are directly handled with this constraint
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
-                with_contact=with_contact,
-                phase=nlp.phase_idx,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-            )
-
-        # Declared soft contacts controls
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
-
-        # Configure the actual ODE of the dynamics
-        if nlp.dynamics_type.dynamic_function:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            ConfigureProblem.configure_dynamics_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.torque_driven,
-                with_contact=with_contact,
-                fatigue=fatigue,
-                rigidbody_dynamics=rigidbody_dynamics,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-            )
-
-        # Configure the contact forces
-        if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
-        # Configure the soft contact forces
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        # Algebraic constraints of soft contact forces if needed
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
-
-
-    @staticmethod
-    def stochastic_torque_driven(
-        ocp,
-        nlp,
-        with_contact: bool = False,
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
-        fatigue: FatigueList = None,
-    ):
-        """
-        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
-        soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used
-        fatigue: FatigueList
-            A list of fatigue elements
-
-        """
-        # if with_contact and nlp.model.nb_contacts == 0:
-        #     raise ValueError("No contact defined in the .bioMod, set with_contact to False")
-        # if nlp.model.nb_soft_contacts != 0:
-        #     if (
-        #         soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
-        #         and soft_contacts_dynamics != SoftContactDynamics.ODE
-        #     ):
-        #         raise ValueError(
-        #             "soft_contacts_dynamics can be used only with SoftContactDynamics.ODE or SoftContactDynamics.CONSTRAINT"
-        #         )
-        #
-        #     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        #         if soft_contacts_dynamics == SoftContactDynamics.ODE:
-        #             raise ValueError(
-        #                 "Soft contacts dynamics should not be used with SoftContactDynamics.ODE "
-        #                 "when rigidbody dynamics is not RigidBodyDynamics.ODE . "
-        #                 "Please set soft_contacts_dynamics=SoftContactDynamics.CONSTRAINT"
-        #             )
-
-        # $$$$$
-        # Declared rigidbody states and controls
-        ConfigureProblem.configure_q(ocp, nlp, True, False)  # TODO add fatigue=False to all others
-        ConfigureProblem.configure_c(ocp, nlp)  # Noise propagation matrix (to compute the derivative of the covariance matrix)
-        ConfigureProblem.configure_a(ocp, nlp)  # Noise injection matrix (to compute the derivative of the covariance matrix)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-        ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue)
-
+            ConfigureProblem.configure_c(ocp, nlp)  # Noise propagation matrix (to compute the derivative of the covariance matrix)
+            ConfigureProblem.configure_a(ocp, nlp)  # Noise injection matrix (to compute the derivative of the covariance matrix)
+            ConfigureProblem.configure_cov(ocp, nlp)  # The actual covariance matrix
+            nlp.stochastic_variables["w_motor"] = MX.sym("w_motor", nlp.model.nb_q, 1)  # The state noise vector (to build funtions, not an optimization variable)
+            nlp.stochastic_variables["w_position_feedback"] = MX.sym("w_position_feedback", nlp.model.nb_q, 1)  # The state noise vector (to build funtions, not an optimization variable)
+            nlp.stochastic_variables["w_velocity_feedback"] = MX.sym("w_velocity_feedback", nlp.model.nb_q, 1)  # The state noise vector (to build funtions, not an optimization variable)
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -1631,7 +1479,6 @@ class DynamicsFcn(FcnEnum):
     """
 
     TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
-    STOCHASTIC_TORQUE_DRIVEN = (ConfigureProblem.stochastic_torque_driven,)
     TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
     JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)
