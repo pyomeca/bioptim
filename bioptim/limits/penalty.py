@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
@@ -912,6 +912,27 @@ class PenaltyFunctionAbstract:
             penalty.multi_thread = True
 
             return continuity
+
+        @staticmethod
+        def covariance_matrix_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
+
+            sigma_w = 10 ** (-1)  # How do we choose?
+            dt = 1 / controller.ns
+            dg_dw = -controller.stochastic_variables["c"].cx_start * dt
+            dg_dx = - (controller.stochastic_variables["a"].cx_start * dt / 2 + MX_eye(
+                controller.stochastic_variables["a"].cx_start.shape[0], 1))  # intégration trapézoidale ??
+            dg_dz = MX_eye(controller.stochastic_variables["a"].cx_end.shape[0], 1) - controller.stochastic_variables[
+                "a"].cx_end * dt / 2  # ???
+            mk = dg_dz ** (-1)
+
+            pk = mk * (dg_dx * controller.stochastic_variables["cov"].cx_start * dg_dx.T + dg_dw * sigma_w * dg_dw.T) * mk.T
+            p_implicit_deffect = pk - controller.stochastic_variables["c"].cx  # TODO: This computes p at node k+1
+
+            penalty.expand = controller.get_nlp.dynamics_type.expand
+            penalty.explicit_derivative = True
+            penalty.multi_thread = True
+
+            return p_implicit_deffect
 
         @staticmethod
         def custom(penalty: PenaltyOption, controller: PenaltyController | list, **parameters: Any):

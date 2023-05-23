@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -543,6 +543,27 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return controller.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
 
         @staticmethod
+        def a_equals_jacobian_expected_states(_: Constraint, controller: PenaltyController, stochastic_states_integrated, **unused_param):
+            """
+            ...
+            """
+            implicit_dynamic_defect = controller.states.cx_end - stochastic_states_integrated
+            a_implicit_defect = jacobian(implicit_dynamic_defect, controller.states.cx_start) + jacobian(
+                implicit_dynamic_defect, controller.states_dot.cx_start) * controller.stochastic_variables["a"].cx_start
+            return controller.mx_to_cx("a_implicit_defect", a_implicit_defect)
+
+        @staticmethod
+        def c_equals_jacobian_motor_noise(_: Constraint, controller: PenaltyController, stochastic_states_integrated, **unused_param):
+            """
+            ...
+            """
+            implicit_dynamic_defect = controller.states.cx_end - stochastic_states_integrated
+            c_implicit_defect = jacobian(stochastic_states_integrated,
+                                         controller.stochastic_variables["w_motor"].cx_start) + jacobian(
+                implicit_dynamic_defect, controller.states_dot.cx_start) * controller.stochastic_variables["c"].cx_start
+            return controller.mx_to_cx("c_implicit_defect", c_implicit_defect)
+
+        @staticmethod
         def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param):
             """
             Compute the difference between symbolic soft contact forces and actual force contact dynamic
@@ -617,6 +638,7 @@ class ConstraintFcn(FcnEnum):
     TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
     TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
+    COVARIANCE_MATRIX_CONINUITY = (PenaltyFunctionAbstract.Functions.covariance_matrix_continuity,)
 
     @staticmethod
     def get_type():
@@ -642,6 +664,8 @@ class ImplicitConstraintFcn(FcnEnum):
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
     CONTACT_ACCELERATION_EQUALS_ZERO = (ConstraintFunction.Functions.implicit_marker_acceleration,)
     TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
+    A_EQUALS_JACOBIAN_EXPECTED_STATES = (ConstraintFunction.Functions.a_equals_jacobian_expected_states,)
+    C_EQUALS_JACOBIAN_MOTOR_NOISE = (ConstraintFunction.Functions.c_equals_jacobian_motor_noise,)
 
     @staticmethod
     def get_type():
