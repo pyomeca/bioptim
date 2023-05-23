@@ -944,8 +944,8 @@ class Solution:
         # Get the first frame of the phase
         if shooting_type == Shooting.SINGLE:
             if phase != 0:
-                x0 = sol._states["unscaled"][phase - 1]["all"][:, -1]  # the last node of the previous phase
-                u0 = self._controls["unscaled"][phase - 1]["all"][:, -1]
+                x0 = np.concatenate([self._states["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].states])
+                u0 = np.concatenate([self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls])
                 if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
                     u0 = vertcat(u0, u0)
                 params = self.parameters["all"]
@@ -959,17 +959,13 @@ class Solution:
                 x0 += np.array(val)[:, 0]
                 return x0
             else:
-                return self._states["unscaled"][phase]["all"][:, 0]
+                return np.concatenate([self._states["unscaled"][phase][key][:, 0:1] for key in self.ocp.nlp[phase].states])
 
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            return self._states["unscaled"][phase]["all"][:, 0]
+            return np.concatenate([self._states["unscaled"][phase][key][:, 0:1] for key in self.ocp.nlp[phase].states])
 
         elif shooting_type == Shooting.MULTIPLE:
-            return (
-                self.states_no_intermediate[phase]["all"][:, :-1]
-                if len(self.ocp.nlp) > 1
-                else self.states_no_intermediate["all"][:, :-1]
-            )
+            return np.concatenate([(self.states_no_intermediate[phase][key][:, :-1] if len(self.ocp.nlp) > 1 else self.states_no_intermediate[key][:, :-1])  for key in self.ocp.nlp[phase].states])
         else:
             raise NotImplementedError(f"Shooting type {shooting_type} is not implemented")
 
@@ -1018,10 +1014,10 @@ class Solution:
             u = (
                 np.array([])
                 if nlp.control_type == ControlType.NONE
-                else self._controls["unscaled"][controls_phase_idx]["all"]
+                else np.concatenate([self._controls["unscaled"][controls_phase_idx][key] for key in self.ocp.nlp[controls_phase_idx].controls])
             )
             if integrator != SolutionIntegrator.OCP:
-                out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_interface(
+                integrated_sol = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
                     keep_intermediate_points=keep_intermediate_points,
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
@@ -1033,7 +1029,7 @@ class Solution:
                 )
 
             else:
-                out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_bioptim_interface(
+                integrated_sol = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
                     x0=x0,
@@ -1043,22 +1039,18 @@ class Solution:
                     shooting_type=shooting_type,
                     control_type=nlp.control_type,
                 )
-
-            if shooting_type == Shooting.MULTIPLE:
-                # last node of the phase is not integrated but do exist as an independent node
-                out._states["unscaled"][states_phase_idx]["all"] = np.concatenate(
-                    (
-                        out._states["unscaled"][states_phase_idx]["all"],
-                        self._states["unscaled"][states_phase_idx]["all"][:, -1:],
-                    ),
-                    axis=1,
-                )
-
-            # Dispatch the integrated values to all the keys
             for key in nlp.states:
-                out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][
-                    nlp.states[key].index, :
-                ]
+                out._states["unscaled"][states_phase_idx][key] = integrated_sol[nlp.states[key].index, :]
+
+                if shooting_type == Shooting.MULTIPLE:
+                    # last node of the phase is not integrated but do exist as an independent node
+                    out._states["unscaled"][states_phase_idx][key] = np.concatenate(
+                        (
+                            out._states["unscaled"][states_phase_idx][key],
+                            self._states["unscaled"][states_phase_idx][key][:, -1:],
+                        ),
+                        axis=1,
+                    )
 
         return out
 

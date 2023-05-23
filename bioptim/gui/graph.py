@@ -325,24 +325,24 @@ class OcpToConsole(GraphAbstract):
             print(f"**********")
             print(f"BOUNDS:")
             print(f"STATES: InterpolationType.{self.ocp.nlp[phase_idx].x_bounds.type.name}")
-            self.print_bounds(
-                phase_idx,
-                self.ocp.nlp[phase_idx].x_bounds,
-                [
-                    self.ocp.nlp[phase_idx].states.cx_start[i].name()
-                    for i in range(self.ocp.nlp[phase_idx].states.cx_start.shape[0])
-                ],
-            )
+            for key in self.ocp.nlp[phase_idx].states:
+                self.print_bounds(
+                    self.ocp.nlp[phase_idx].x_bounds[key],
+                    [
+                        self.ocp.nlp[phase_idx].states[key].cx_start[i].name()
+                        for i in range(self.ocp.nlp[phase_idx].states[key].cx_start.shape[0])
+                    ],
+                )
             print(f"**********")
             print(f"CONTROLS: InterpolationType.{self.ocp.nlp[phase_idx].u_bounds.type.name}")
-            self.print_bounds(
-                phase_idx,
-                self.ocp.nlp[phase_idx].u_bounds,
-                [
-                    self.ocp.nlp[phase_idx].controls.cx_start[i].name()
-                    for i in range(self.ocp.nlp[phase_idx].controls.cx_start.shape[0])
-                ],
-            )
+            for key in self.ocp.nlp[phase_idx].controls:
+                self.print_bounds(
+                    self.ocp.nlp[phase_idx].u_bounds[key],
+                    [
+                        self.ocp.nlp[phase_idx].controls[key].cx_start[i].name()
+                        for i in range(self.ocp.nlp[phase_idx].controls[key].cx_start.shape[0])
+                    ],
+                )
             print(f"**********")
             print(f"PARAMETERS: ")
             print("")
@@ -395,20 +395,17 @@ class OcpToConsole(GraphAbstract):
                         print(f"*** Implicit Constraint: {constraint.name}")
                 print("")
 
-    def print_bounds(self, phase_idx: int, bounds: Bounds, col_name: list[str]):
+    def print_bounds(self, bounds: Bounds, col_name: list[str]):
         """
         Print ocp bounds in the console
 
         Parameters
         ----------
-        phase_idx: int
-            The phase index
         bounds: Bounds
             The controls or states bounds
         col_name: list[str]
             The list of controls or states name
         """
-        nlp = self.ocp.nlp[phase_idx]
 
         if bounds.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             title = ["", "Beginning", "Middle", "End"]
