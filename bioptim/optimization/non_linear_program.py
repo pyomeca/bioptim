@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import casadi
-from casadi import SX, MX, Function, horzcat
+from casadi import SX, MX, Function, horzcat, jacobian, eye
 
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
@@ -395,3 +395,32 @@ class NonLinearProgram:
         if node_idx < 0 or node_idx > self.ns:
             return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.tf / self.ns * node_idx
+
+    def prepare_stochastic_dynamic(self):
+        """
+        ...
+        """
+
+        # TODO: include w in the dynamic equation
+
+        stochastic_states_integrated = self.integrate_subject_to_motor_noise(x0=self.states.cx_start, p=self.controls.cx_start, w=self.stochastic_variables["w"].cx_start,  params=self.parameters.cx_start)["xf"]
+        implicit_dynamic_defect = self.states.cx_end - stochastic_states_integrated
+        a_implicit_defect = jacobian(implicit_dynamic_defect, self.states.cx_start) + jacobian(implicit_dynamic_defect, self.states_dot.cx_start) * self.stochastic_variables["a"].cx_start
+        # TODO: add A_implicit_defect implicit constraint to penalty pool
+        c_implicit_defect = jacobian(implicit_dynamic_defect, self.stochastic_variables["w"].cx_start) + jacobian(
+            implicit_dynamic_defect, self.states_dot.cx_start) * self.stochastic_variables["c"].cx_start
+        # TODO: add C_implicit_defect implicit constraint to penalty pool
+
+        sigma_w = 10 ** (-1)  # How do we choose?
+        dt = 1 / self.ns
+        dg_dw = -self.stochastic_variables["c"].cx_start * dt
+        dg_dx = - (self.stochastic_variables["a"].cx_start * dt/2 + eye(self.stochastic_variables["a"].cx_start.shape[0], 1))  # intégration trapézoidale ??
+        dg_dz = eye(self.stochastic_variables["a"].cx_end.shape[0], 1) - self.stochastic_variables["a"].cx_end * dt/2  # ???
+        mk = dg_dz ** (-1)
+
+        pk = mk * (dg_dx * self.stochastic_variables["cov"].cx_start * dg_dx.T + dg_dw * sigma_w * dg_dw.T) * mk.T
+        p_implicit_deffect = pk - self.stochastic_variables["c"].cx  # TODO: This computes p at node k+1
+
+        for i in range(self.ns):
+            # apply the contraints at each nodes
+
