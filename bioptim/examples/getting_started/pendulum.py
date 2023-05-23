@@ -14,7 +14,6 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    Bounds,
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
@@ -129,7 +128,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))  # platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
