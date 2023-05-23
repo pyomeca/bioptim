@@ -1372,14 +1372,12 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "c"
-        name_c = []
-        for name_1 in nlp.model.name_dof:
-            for name_2 in nlp.model.name_dof:
-                name_c += [name_1 + "_&_" + name_2]
+        name_c = nlp.model.name_dof
+        # TODO: put a NaN on the last node (like controls in piecewise constant)
 
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q**2)), list(range(nlp.model.nb_q**2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q)), list(range(nlp.model.nb_q)))
 
         ConfigureProblem.configure_new_variable(
             name,
@@ -1407,8 +1405,8 @@ class ConfigureProblem:
         name_a = []
         for name_1 in nlp.model.name_dof:
             for name_2 in nlp.model.name_dof:
-                name_a += [name_1 + "_x_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q)), list(range(nlp.model.nb_q)))
+                name_a += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q**2)), list(range(nlp.model.nb_q**2)))
         ConfigureProblem.configure_new_variable(
             name,
             name_a,
@@ -1422,28 +1420,29 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_a(ocp, nlp):
+    def configure_cov(ocp, nlp):
         """
-        Configure the generalized coordinates
+        Configure the covariance matrix P representing the motor noise.
 
         Parameters
         ----------
         nlp: NonLinearProgram
             A reference to the phase
         """
-        name = "c"
-        name_c = []
+        name = "cov"
+        name_cov = []
         for name_1 in nlp.model.name_dof:
             for name_2 in nlp.model.name_dof:
-                name_c += ["c_" + name_1 + "_x_" + name_2]
+                name_cov += [name_1 + "_&_" + name_2]
         ConfigureProblem.configure_new_variable(
             name,
-            name_c,
+            name_cov,
             ocp,
             nlp,
             as_states=False,
             as_controls=False,
             as_states_dot=False,
+            as_stochastic=True,
             skip_plot=True,
         )
 
