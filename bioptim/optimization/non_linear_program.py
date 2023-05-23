@@ -6,8 +6,7 @@ from casadi import SX, MX, Function, horzcat, jacobian, MX_eye
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
-from ..limits.constraints import ImplicitConstraintFcn, ConstraintFcn, Constraint
-from ..misc.enums import ControlType, Node, ConstraintType, PenaltyType
+from ..misc.enums import ControlType, Node
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
@@ -397,35 +396,4 @@ class NonLinearProgram:
             return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.tf / self.ns * node_idx
 
-
-    def prepare_stochastic_dynamics(self, ocp):
-        """
-        ...
-        """
-        # TODO: add feedback with a reference kinematics to follow + self.stochastic_variables["k"].cx_start
-
-        stochastic_states_integrated = self.dynamics_func(x=self.states.cx_start, u=self.controls.cx_start+self.stochastic_variables["w_motor"].cx_start,  p=self.parameters.cx_start)["xdot"]
-
-        penalty_a = ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.A_EQUALS_JACOBIAN_EXPECTED_STATES,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=self.phase_idx,
-                stochastic_states_integrated=stochastic_states_integrated,
-
-            )
-        penalty_a.add_or_replace_to_penalty_pool(ocp, self)
-
-        penalty_c = ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.C_EQUALS_JACOBIAN_MOTOR_NOISE,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=self.phase_idx,
-                stochastic_states_integrated=stochastic_states_integrated,
-
-            )
-        penalty_c.add_or_replace_to_penalty_pool(ocp, self)
-
-        penalty_p = Constraint(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
-        penalty_p.add_or_replace_to_penalty_pool(ocp, self)
 

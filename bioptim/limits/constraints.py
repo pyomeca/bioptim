@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -549,8 +549,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             implicit_dynamic_defect = controller.states.cx_end - stochastic_states_integrated
             a_implicit_defect = jacobian(implicit_dynamic_defect, controller.states.cx_start) + jacobian(
-                implicit_dynamic_defect, controller.states_dot.cx_start) * controller.stochastic_variables["a"].cx_start
-            return controller.mx_to_cx("a_implicit_defect", a_implicit_defect)
+                implicit_dynamic_defect, controller.states_dot.cx_start) * controller.stochastic_variables[controller.node_index]["a"].cx_start
+            # TODO: see what to do with non piecewice constant
+            fun = Function("a_implicit_defect", [controller.states.cx, controller.controls.cx, controller.parameters.cx, controller.stochastic_variables[controller.node_index]['all'].cx], [a_implicit_defect])
+            return fun(controller.states.cx, controller.controls.cx, controller.parameters.cx, controller.stochastic_variables.cx)
 
         @staticmethod
         def c_equals_jacobian_motor_noise(_: Constraint, controller: PenaltyController, stochastic_states_integrated, **unused_param):
@@ -559,9 +561,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             implicit_dynamic_defect = controller.states.cx_end - stochastic_states_integrated
             c_implicit_defect = jacobian(stochastic_states_integrated,
-                                         controller.stochastic_variables["w_motor"].cx_start) + jacobian(
+                                         controller.stochastic_variables[controller.node_index]["w_motor"].cx_start) + jacobian(
                 implicit_dynamic_defect, controller.states_dot.cx_start) * controller.stochastic_variables["c"].cx_start
-            return controller.mx_to_cx("c_implicit_defect", c_implicit_defect)
+            fun = Function("c_implicit_defect", [controller.states.cx, controller.controls.cx, controller.parameters.cx, controller.stochastic_variables.cx], [c_implicit_defect])
+            return fun(controller.states.cx, controller.controls.cx, controller.parameters.cx, controller.stochastic_variables.cx_start)
 
         @staticmethod
         def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param):

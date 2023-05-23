@@ -25,6 +25,7 @@ from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
     Constraint,
+    ImplicitConstraintFcn,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList
@@ -46,6 +47,7 @@ from ..misc.enums import (
     InterpolationType,
     PenaltyType,
     Node,
+    ConstraintType,
 )
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
@@ -538,7 +540,6 @@ class OptimalControlProgram:
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
-            self.nlp[i].prepare_stochastic_dynamics(self)
 
         self.isdef_x_init = False
         self.isdef_u_init = False
@@ -549,6 +550,10 @@ class OptimalControlProgram:
         self.update_initial_guess(x_init, u_init)
         # Define the actual NLP problem
         self.v.define_ocp_shooting_points()
+
+        # Prepare the dynamics
+        for i in range(self.n_phases):
+            self._prepare_stochastic_dynamics(self.nlp[i])
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
@@ -729,6 +734,35 @@ class OptimalControlProgram:
             pt.name = f"PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
+
+    def _prepare_stochastic_dynamics(self, nlp):
+        """
+        ...
+        """
+        # TODO: add feedback with a reference kinematics to follow + self.stochastic_variables["k"].cx_start
+
+        stochastic_states_integrated = nlp.dynamics_func(x=nlp.states.cx_start, u=nlp.controls.cx_start+nlp.stochastic_variables["w_motor"].cx_start,  p=nlp.parameters.cx_start)["xdot"]
+
+        penalty_a = Constraint(
+                ImplicitConstraintFcn.A_EQUALS_JACOBIAN_EXPECTED_STATES,
+                node=Node.ALL_SHOOTING,
+                penalty_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+                stochastic_states_integrated=stochastic_states_integrated,
+            )
+        penalty_a.add_or_replace_to_penalty_pool(self, nlp)
+
+        penalty_c = Constraint(
+                ImplicitConstraintFcn.C_EQUALS_JACOBIAN_MOTOR_NOISE,
+                node=Node.ALL_SHOOTING,
+                penalty_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+                stochastic_states_integrated=stochastic_states_integrated,
+            )
+        penalty_c.add_or_replace_to_penalty_pool(self, nlp)
+
+        penalty_cov = Constraint(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
+        penalty_cov.add_or_replace_to_penalty_pool(self, nlp)
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """
