@@ -141,13 +141,7 @@ class BiMapping(OptionGeneric):
         oppose_to_first: Mapping | int | list | tuple | range
             Index to multiply by -1 of the to_first mapping
         """
-
-        key = "all"
-        if "key" in params:
-            key = params["key"]
-            del params["key"]
-
-        super(BiMapping, self).__init__(key=key, **params)
+        super(BiMapping, self).__init__(**params)
 
         self.oppose_to_second = oppose_to_second
         self.oppose_to_first = oppose_to_first

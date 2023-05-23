@@ -56,11 +56,11 @@ def generic_solve(interface) -> dict:
     else:
         interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
 
-    v_bounds = interface.ocp.v.bounds
+    v_bounds = interface.ocp.v.bounds_vectors
     v_init = interface.ocp.v.init_vector
     interface.sqp_limits = {
-        "lbx": v_bounds.min,
-        "ubx": v_bounds.max,
+        "lbx": v_bounds[0],
+        "ubx": v_bounds[1],
         "lbg": all_g_bounds.min,
         "ubg": all_g_bounds.max,
         "x0": v_init,
@@ -111,7 +111,7 @@ def generic_dispatch_bounds(interface):
     """
 
     all_g = interface.ocp.cx()
-    all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+    all_g_bounds = Bounds("not named", interpolation=InterpolationType.CONSTANT)
 
     all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g_internal))
     for g in interface.ocp.g_internal:

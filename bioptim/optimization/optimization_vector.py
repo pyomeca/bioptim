@@ -4,7 +4,6 @@ from casadi import vertcat, DM, MX, SX
 from .parameters import ParameterList, Parameter
 from ..limits.path_conditions import Bounds, InitialGuess, InitialGuessList, NoisedInitialGuess
 from ..misc.enums import ControlType, InterpolationType
-from ..dynamics.ode_solver import OdeSolver
 
 
 class OptimizationVector:
@@ -81,13 +80,13 @@ class OptimizationVector:
 
         for _ in range(self.ocp.n_phases):
             self.x_scaled.append([])
-            self.x_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
-            self.x_init.append(InitialGuessList(interpolation=InterpolationType.CONSTANT))
+            self.x_bounds.append(Bounds("x_bounds", interpolation=InterpolationType.CONSTANT))
+            self.x_init.append(InitialGuess("x_init", interpolation=InterpolationType.CONSTANT))
             self.n_phase_x.append(0)
 
             self.u_scaled.append([])
-            self.u_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
-            self.u_init.append(InitialGuessList(interpolation=InterpolationType.CONSTANT))
+            self.u_bounds.append(Bounds("u_bounds", interpolation=InterpolationType.CONSTANT))
+            self.u_init.append(InitialGuess("u_init", interpolation=InterpolationType.CONSTANT))
             self.n_phase_u.append(0)
 
     @property
@@ -110,39 +109,34 @@ class OptimizationVector:
         return vertcat(*x_scaled, *u_scaled, self.parameters_in_list.cx_start)
 
     @property
-    def bounds(self):
+    def bounds_vectors(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Format the x, u and p bounds so they are in one nice (and useful) vector
 
         Returns
         -------
-        The vector of all bounds
+        The vector of all bounds (min, max)
         """
-
-        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(
-            self.ocp.nlp[0].ode_solver, OdeSolver.IRK
-        ):
-            n_steps = self.ocp.nlp[0].ode_solver.steps + 1
-        else:
-            n_steps = 1
-
-        v_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        v_bounds_min = np.ndarray((0, 1))
+        v_bounds_max = np.ndarray((0, 1))
         for phase, x_bound in enumerate(self.x_bounds):
-            nlp = self.ocp.nlp[phase]
-            v_bounds.concatenate(x_bound.scale(nlp.x_scaling["all"].to_vector(self.ocp.nlp[phase].ns * n_steps + 1)))
+            for k in range(self.ocp.nlp[phase].ns + 1):
+                v_bounds_min = np.concatenate((v_bounds_min, x_bound.min[:, k:k+1]))
+                v_bounds_max = np.concatenate((v_bounds_max, x_bound.max[:, k:k+1]))
 
         for phase, u_bound in enumerate(self.u_bounds):
-            nlp = self.ocp.nlp[phase]
-            if self.ocp.nlp[0].control_type == ControlType.LINEAR_CONTINUOUS:
-                ns = self.ocp.nlp[phase].ns + 1
-            else:
-                ns = self.ocp.nlp[phase].ns
-            v_bounds.concatenate(u_bound.scale(nlp.u_scaling["all"].to_vector(ns)))
+            for k in range(self.ocp.nlp[phase].ns + 1):
+                if u_bound.min[:, k:k+1].shape[1] != 0:
+                    v_bounds_min = np.concatenate((v_bounds_min, u_bound.min[:, k:k+1]))
+                    v_bounds_max = np.concatenate((v_bounds_max, u_bound.max[:, k:k+1]))
 
         for param in self.parameters_in_list:
-            v_bounds.concatenate(param.bounds.scale(param.scaling))
+            # TODO Benjamin harmonize
+            bound = param.bounds.scale(param.scaling)
+            v_bounds_min = np.concatenate((v_bounds_min, bound.min))
+            v_bounds_max = np.concatenate((v_bounds_max, bound.max))
 
-        return v_bounds
+        return v_bounds_min, v_bounds_max
 
     @property
     def init_vector(self):
@@ -154,39 +148,17 @@ class OptimizationVector:
         The vector of all init
         """
         v_init = np.ndarray((0, 1))
-        if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.COLLOCATION) and not isinstance(
-            self.ocp.nlp[0].ode_solver, OdeSolver.IRK
-        ):
-            steps = self.ocp.nlp[0].ode_solver.steps + 1
-        else:
-            steps = 1
-
         for phase, x_init in enumerate(self.x_init):
-            nlp = self.ocp.nlp[phase]
-            original_x_init = self.ocp.original_values["x_init"]
-            interpolation_type = None if original_x_init is None else original_x_init.type
-
-            for key in nlp.states.keys():
-                if nlp.ode_solver.is_direct_collocation and interpolation_type == InterpolationType.EACH_FRAME:
-                    print("coucou")
-                    np.concatenate(
-                        v_init,
-                        self._init_linear_interpolation(phase=phase).scale(
-                            nlp.x_scaling["all"].to_vector(nlp.ns * steps + 1),
-                        ),
-                    )
-                else:
-                    v_init = np.concatenate(
-                        (v_init, x_init[key].scale(nlp.x_scaling[key].to_vector(nlp.ns * steps + 1)).init)
-                    )
+            for k in range(self.ocp.nlp[phase].ns + 1):
+                v_init = np.concatenate((v_init, x_init.init[:, k:k+1]))
 
         for phase, u_init in enumerate(self.u_init):
-            nlp = self.ocp.nlp[phase]
-            ns = nlp.ns + (1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0)
-            for key in nlp.controls.keys():
-                v_init = np.concatenate((v_init, u_init[key].scale(nlp.u_scaling[key].to_vector(ns)).init))
+            for k in range(self.ocp.nlp[phase].ns + 1):
+                if u_init.init[:, k:k+1].shape[1] != 0:
+                    v_init = np.concatenate((v_init, u_init.init[:, k:k+1]))
 
         for param in self.parameters_in_list:
+            # TODO Harmonize Benjamin
             v_init = np.concatenate((v_init, param.initial_guess.scale(param.scaling).init))
 
         return v_init
@@ -375,7 +347,7 @@ class OptimizationVector:
                         x_scaled[nlp.phase_idx].append(
                             nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.scaled.shape, 1)
                         )
-                    x[nlp.phase_idx].append(x_scaled[nlp.phase_idx][k] * nlp.x_scaling["all"].scaling)
+                    x[nlp.phase_idx].append(x_scaled[nlp.phase_idx][k] * np.concatenate([nlp.x_scaling[key].scaling for key in nlp.states.keys()]))
                 else:
                     x_scaled[nlp.phase_idx] = x_scaled[nlp.use_states_from_phase_idx]
                     x[nlp.phase_idx] = x[nlp.use_states_from_phase_idx]
@@ -387,7 +359,7 @@ class OptimizationVector:
                         u_scaled[nlp.phase_idx].append(
                             nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.scaled.shape, 1)
                         )
-                        u[nlp.phase_idx].append(u_scaled[nlp.phase_idx][0] * nlp.u_scaling["all"].scaling)
+                        u[nlp.phase_idx].append(u_scaled[nlp.phase_idx][0] * np.concatenate([nlp.u_scaling[key].scaling for key in nlp.controls.keys()]))
                 else:
                     u_scaled[nlp.phase_idx] = u_scaled[nlp.use_controls_from_phase_idx]
                     u[nlp.phase_idx] = u[nlp.use_controls_from_phase_idx]
@@ -419,38 +391,35 @@ class OptimizationVector:
 
         # Sanity check
         for nlp in ocp.nlp:
-            if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
-            if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
-                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
-                else:
-                    raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
+            for key in nlp.states:
+                if nlp.use_states_from_phase_idx == nlp.phase_idx:
+                    nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
+            for key in nlp.controls:
+                if nlp.use_controls_from_phase_idx == nlp.phase_idx:
+                    if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+                        nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns - 1)
+                    elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns)
+                    else:
+                        raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                nx = nlp.states.shape
+                repeat = 1
                 if nlp.ode_solver.is_direct_collocation:
-                    all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
-                    outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
-                    repeat = nlp.ode_solver.polynomial_degree + 1
-                else:
-                    all_nx = nx * (nlp.ns + 1)
-                    outer_offset = nx
-                    repeat = 1
-                x_bounds = Bounds([0] * all_nx, [0] * all_nx, interpolation=InterpolationType.CONSTANT)
+                    repeat += nlp.ode_solver.polynomial_degree
+
+                collapsed_values_min = np.ndarray((nlp.states.shape, nlp.ns + 1))
+                collapsed_values_max = np.ndarray((nlp.states.shape, nlp.ns + 1))
                 for k in range(nlp.ns + 1):
                     for p in range(repeat if k != nlp.ns else 1):
-                        span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
                         point = k if k != 0 else 0 if p == 0 else 1
-                        x_bounds.min[span, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=point)
-                        x_bounds.max[span, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=point)
-
-                self.x_bounds[i_phase] = x_bounds
+                        for key in nlp.states:
+                            collapsed_values_min[nlp.states[key].index, k] = nlp.x_bounds[key].min.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                            collapsed_values_max[nlp.states[key].index, k] = nlp.x_bounds[key].max.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                self.x_bounds[i_phase] = Bounds("x_bounds", min_bound=collapsed_values_min, max_bound=collapsed_values_max, interpolation=InterpolationType.EACH_FRAME)
 
             # For controls
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
@@ -460,14 +429,15 @@ class OptimizationVector:
                     ns = nlp.ns + 1
                 else:
                     raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-                nu = nlp.controls.shape
-                all_nu = nu * ns
-                u_bounds = Bounds([0] * all_nu, [0] * all_nu, interpolation=InterpolationType.CONSTANT)
-                for k in range(ns):
-                    u_bounds.min[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
-                    u_bounds.max[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
 
-                self.u_bounds[i_phase] = u_bounds
+                collapsed_values_min = np.ndarray((nlp.controls.shape, ns))
+                collapsed_values_max = np.ndarray((nlp.controls.shape, ns))
+                for k in range(ns):
+                    for key in nlp.controls:
+                        collapsed_values_min[nlp.controls[key].index, k] = nlp.u_bounds[key].min.evaluate_at(shooting_point=k) / nlp.u_scaling[key].scaling
+                        collapsed_values_max[nlp.controls[key].index, k] = nlp.u_bounds[key].max.evaluate_at(shooting_point=k) / nlp.u_scaling[key].scaling
+
+                self.u_bounds[i_phase] = Bounds("u_bounds", min_bound=collapsed_values_min, max_bound=collapsed_values_max, interpolation=InterpolationType.EACH_FRAME)
 
     def get_ns(self, phase: int, interpolation_type: InterpolationType) -> int:
         """
@@ -510,11 +480,11 @@ class OptimizationVector:
                 if nlp.ode_solver.is_direct_shooting:
                     if nlp.x_init.type == InterpolationType.ALL_POINTS:
                         raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                for key in nlp.states.keys():
+                for key in nlp.states:
                     nlp.x_init[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], ns)
 
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                for key in nlp.controls.keys():
+                for key in nlp.controls:
                     if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                         nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns - 1)
                     elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -526,15 +496,15 @@ class OptimizationVector:
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                for key in nlp.states.keys():
-                    repeat = 1
-                    if nlp.ode_solver.is_direct_collocation and nlp.x_init.type != InterpolationType.EACH_FRAME:
-                        repeat += nlp.ode_solver.polynomial_degree
+                repeat = 1
+                if nlp.ode_solver.is_direct_collocation and nlp.x_init.type != InterpolationType.EACH_FRAME:
+                    repeat += nlp.ode_solver.polynomial_degree
 
-                    collapsed_values = np.ndarray((0,))
-                    for k in range(nlp.ns + 1):
-                        for p in range(repeat if k != nlp.ns else 1):
-                            point = k if k != 0 else 0 if p == 0 else 1
+                collapsed_values = np.ndarray((nlp.states.shape, nlp.ns + 1))
+                for k in range(nlp.ns + 1):
+                    for p in range(repeat if k != nlp.ns else 1):
+                        point = k if k != 0 else 0 if p == 0 else 1
+                        for key in nlp.states:
                             if isinstance(nlp.x_init, NoisedInitialGuess):
                                 if nlp.x_init.type == InterpolationType.ALL_POINTS:
                                     point = k * repeat + p
@@ -542,29 +512,25 @@ class OptimizationVector:
                                 isinstance(nlp.x_init, InitialGuess) and nlp.x_init.type == InterpolationType.EACH_FRAME
                             ):
                                 point = k * repeat + p
-                            collapsed_values = np.concatenate(
-                                (collapsed_values, nlp.x_init[key].init.evaluate_at(shooting_point=point))
-                            )
-                    self.x_init[i_phase][key] = InitialGuess(key, initial_guess=collapsed_values)
+                            collapsed_values[nlp.states[key].index, k] = nlp.x_init[key].init.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                self.x_init[i_phase] = InitialGuess("x_init", initial_guess=collapsed_values, interpolation=InterpolationType.EACH_FRAME)
 
             # For controls
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                for key in nlp.controls.keys():
-                    if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
-                        ns = nlp.ns
-                    elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                        ns = nlp.ns + 1
-                    else:
-                        raise NotImplementedError(
-                            f"Multiple shooting problem not implemented yet for {nlp.control_type}"
-                        )
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+                    ns = nlp.ns
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    ns = nlp.ns + 1
+                else:
+                    raise NotImplementedError(
+                        f"Multiple shooting problem not implemented yet for {nlp.control_type}"
+                    )
 
-                    collapsed_values = np.ndarray((0,))
-                    for k in range(ns):
-                        collapsed_values = np.concatenate(
-                            (collapsed_values, nlp.u_init[key].init.evaluate_at(shooting_point=k))
-                        )
-                    self.u_init[i_phase][key] = InitialGuess(key, initial_guess=collapsed_values)
+                collapsed_values = np.ndarray((nlp.controls.shape, ns))
+                for k in range(ns):
+                    for key in nlp.controls:
+                        collapsed_values[nlp.controls[key].index, k] = nlp.u_init[key].init.evaluate_at(shooting_point=k) / nlp.u_scaling[key].scaling
+                self.u_init[i_phase] = InitialGuess("u_init", initial_guess=collapsed_values, interpolation=InterpolationType.EACH_FRAME)
 
     def add_parameter(self, param: Parameter):
         """

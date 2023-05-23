@@ -260,7 +260,6 @@ class OptionDict(OptionList):
     def __init__(self, sub_type: type = None):
         super(OptionDict, self).__init__()
         self.options = [{}]
-        self._all: tuple[str, ...] | None = None
         self.sub_type = sub_type
 
     def add(self, *args, **kwargs):
@@ -279,18 +278,6 @@ class OptionDict(OptionList):
             self.options.append({})
         return
 
-    def define_meaning_of_key_all(self, all: tuple[str, ...]):
-        """
-        Define what "all" means (basically the order of the all. This should not be set by the user as it is
-        automatically set
-
-        Parameters
-        ----------
-        all
-            The tuple of the all
-        """
-        self._all = all
-
     def __setitem__(self, key, value):
         if isinstance(key, str):
             if len(self.options) != 1:
@@ -301,14 +288,6 @@ class OptionDict(OptionList):
             self.add(key, value)
 
     def __getitem__(self, item: int | str | list | tuple) -> dict | Any:
-        if isinstance(item, str) and item == "all":
-            if self._all is None:
-                raise RuntimeError(
-                    "The scaling with 'all' was called prior to be defined. Please call the "
-                    "'define_all' method before trying to get the 'all' index"
-                )
-            return self[self._all]
-
         if isinstance(item, str):
             if len(self.options) != 1:
                 raise ValueError(
@@ -335,6 +314,7 @@ class OptionDict(OptionList):
             data = np.ndarray(n_dim)
             for i in item:
                 data = np.concatenate((data, self.options[0][i].value))
+            # TODO Benjamin
             return self.sub_type("all", data, **self.param_when_copying)
 
         raise ValueError("Wrong type in getting scaling")

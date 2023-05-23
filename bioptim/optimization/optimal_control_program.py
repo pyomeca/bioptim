@@ -517,12 +517,6 @@ class OptimalControlProgram:
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
-            self.nlp[i].x_scaling.define_meaning_of_key_all(self.nlp[i].states.keys())
-            self.nlp[i].u_scaling.define_meaning_of_key_all(self.nlp[i].controls.keys())
-
-            self.nlp[i].x_init.define_meaning_of_key_all(self.nlp[i].states.keys())
-            self.nlp[i].u_init.define_meaning_of_key_all(self.nlp[i].controls.keys())
-
         self.isdef_x_init = False
         self.isdef_u_init = False
         self.isdef_x_bounds = False
@@ -824,21 +818,29 @@ class OptimalControlProgram:
         u_bounds: Bounds | BoundsList
             The control bounds to add
         """
+        for i in range(self.n_phases):
+            if x_bounds:
+                origin_phase = 0 if len(x_bounds) == 1 else i
+                for key in x_bounds[origin_phase].keys():
+                    self.nlp[i].x_bounds[key] = x_bounds[origin_phase][key]
+                self.isdef_x_bounds = True
 
-        if x_bounds:
-            NLP.add_path_condition(self, x_bounds, "x_bounds", Bounds, BoundsList)
-        if u_bounds:
-            NLP.add_path_condition(self, u_bounds, "u_bounds", Bounds, BoundsList)
+            if u_bounds:
+                for key in u_bounds.keys():
+                    origin_phase = 0 if len(u_bounds) == 1 else i
+                    self.nlp[i].u_bounds[key] = u_bounds[origin_phase][key]
+                self.isdef_u_bounds = True
+
         if self.isdef_x_bounds and self.isdef_u_bounds:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
             for key in nlp.states:
                 if f"{key}_states" in nlp.plot:
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[key]
             for key in nlp.controls:
                 if f"{key}_controls" in nlp.plot:
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[key]
 
     def update_initial_guess(
         self,
@@ -859,7 +861,7 @@ class OptimalControlProgram:
             The parameters initial guess to add
         """
 
-        if self.nlp[0].ode_solver.is_direct_collocation and self.nlp[0].x_init["all"].init.shape[0] != 0:
+        if self.nlp[0].ode_solver.is_direct_collocation and len(self.nlp[0].x_init.keys()) != 0:
             raise NotImplementedError(
                 "It is not possible to use initial guess with NoisedInitialGuess "
                 "as it won't produce the expected randomness"
@@ -1251,6 +1253,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             if self.n_phases == 1:
                 if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                    # TODO Benjamin
                     u_init_guess.add(ctrl["all"], interpolation=InterpolationType.EACH_FRAME)
                 else:
                     u_init_guess.add(ctrl["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)

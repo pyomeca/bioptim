@@ -337,6 +337,7 @@ class Bounds(OptionGeneric):
 
     def __init__(
         self,
+        key,
         min_bound: Callable | PathCondition | np.ndarray | list | tuple | float = None,
         max_bound: Callable | PathCondition | np.ndarray | list | tuple | float = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
@@ -375,6 +376,7 @@ class Bounds(OptionGeneric):
         self.t = None
         self.extra_params = self.min.extra_params
         self.n_shooting = self.min.n_shooting
+        self.key = key
 
     def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
         """
@@ -523,7 +525,7 @@ class Bounds(OptionGeneric):
         self.max.n_shooting = ns
 
 
-class BoundsList(UniquePerPhaseOptionList):
+class BoundsList(OptionDict):
     """
     A list of Bounds if more than one is required
 
@@ -538,11 +540,23 @@ class BoundsList(UniquePerPhaseOptionList):
         Print the BoundsList to the console
     """
 
+    def __init__(self, *args, **kwargs):
+        super(BoundsList, self).__init__(sub_type=Bounds)
+
+    def __setitem__(self, key, value):
+        if isinstance(value, (list, tuple)):
+            self.add(key, min_bound=value[0], max_bound=value[1])
+            return
+
+        if isinstance(key, str):
+            super(BoundsList, self).__setitem__(key, value)
+
     def add(
         self,
+        key,
+        bounds: Bounds = None,
         min_bound: PathCondition | np.ndarray | list | tuple = None,
         max_bound: PathCondition | np.ndarray | list | tuple = None,
-        bounds: Bounds = None,
         **extra_arguments,
     ):
         """
@@ -563,15 +577,15 @@ class BoundsList(UniquePerPhaseOptionList):
         if bounds and (min_bound or max_bound):
             RuntimeError("min_bound/max_bound and bounds cannot be set alongside")
         if isinstance(bounds, Bounds):
-            if bounds.phase == -1:
+            if bounds.phase == -1 and key in self.keys():
                 bounds.phase = len(self.options) if self.options[0] else 0
-            self.copy(bounds)
+            self.copy(bounds, key)
         else:
             super(BoundsList, self)._add(
-                min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments
+                key=key, min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments
             )
 
-    def __getitem__(self, item) -> Bounds:
+    def __getitem__(self, item: int | str) -> Bounds:
         """
         Get the ith option of the list
 
@@ -692,7 +706,7 @@ class InitialGuess(OptionGeneric):
             The scaling factor
         """
 
-        return InitialGuess("scaled", self.init / scaling, interpolation=self.type)
+        return InitialGuess(f"{self.key}_scaled", self.init / scaling, interpolation=self.type)
 
     def __bool__(self) -> bool:
         """
