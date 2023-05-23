@@ -25,7 +25,7 @@ from bioptim import (
     ObjectiveFcn,
     ConstraintList,
     ConstraintFcn,
-    Bounds,
+    BoundsList,
     InitialGuessList,
     InterpolationType,
     OdeSolver,
@@ -36,7 +36,7 @@ from bioptim import (
 
 
 def custom_init_func(
-    current_shooting_point: int, my_values: np.ndarray, n_shooting_custom: int, **extra_params
+    current_shooting_point: int, my_values: np.ndarray, n_shooting_custom: int, var_key: str, **extra_params
 ) -> np.ndarray:
     """
     The custom function for the x and u initial guesses (this particular one mimics linear interpolation)
@@ -48,6 +48,8 @@ def custom_init_func(
         and [0; n_shooting_custom[ for the controls
     my_values: np.ndarray
         The values provided by the user
+    var_key: str
+        The slicing to do
     n_shooting_custom: int
         The number of shooting point
 
@@ -57,7 +59,16 @@ def custom_init_func(
     """
 
     # Linear interpolation created with custom function
-    return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / n_shooting_custom
+    if var_key == "q":
+        rows = range(extra_params["nq"])
+    elif var_key == "qdot":
+        rows = range(extra_params["nq"], extra_params["nq"] * 2)
+    elif var_key == "tau":
+        rows = range(extra_params["nq"])
+    else:
+        raise ValueError("Wrong state_key")
+
+    return my_values[rows, 0] + (my_values[rows, -1] - my_values[rows, 0]) * current_shooting_point / n_shooting_custom
 
 
 def prepare_ocp(
@@ -117,10 +128,16 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint and control path constraints
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[1:6, [0, -1]] = 0
-    x_bounds[2, -1] = 1.57
-    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][1:, [0, -1]] = 0  # Start and end at 0, except for translation...
+    x_bounds["q"][2, -1] = 1.57  # ...and end with cube 90 degrees rotated
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0  # Start and end without any velocity
+
+    # Define control path constraint
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [-100] * bio_model.nb_tau, [100] * bio_model.nb_tau
 
     # Initial guesses
     t = None
@@ -155,34 +172,43 @@ def prepare_ocp(
         # The custom function refers to the one at the beginning of the file. It emulates a Linear interpolation
         x = custom_init_func
         u = custom_init_func
-        extra_params_x = {"my_values": np.random.random((nq + nqdot, 2)), "n_shooting_custom": n_shooting}
-        extra_params_u = {"my_values": np.random.random((ntau, 2)), "n_shooting_custom": n_shooting}
+        extra_params_x = {"my_values": np.random.random((nq + nqdot, 2)), "n_shooting_custom": n_shooting, "nq": bio_model.nb_q}
+        extra_params_u = {"my_values": np.random.random((ntau, 2)), "n_shooting_custom": n_shooting, "nq": bio_model.nb_q}
     else:
         raise RuntimeError("Initial guess not implemented yet")
 
-    if not isinstance(x, np.ndarray):
-        x = np.array([x]).T
-    if not isinstance(u, np.ndarray):
-        u = np.array([u]).T
-
     x_init = InitialGuessList()
-    x_init.add("q", x[:nq, :], t=t, interpolation=initial_guess, **extra_params_x)
-    x_init.add("qdot", x[nq:, :], t=t, interpolation=initial_guess, **extra_params_x)
     u_init = InitialGuessList()
-    u_init.add("tau", u, t=t, interpolation=initial_guess, **extra_params_u)
+    if initial_guess != InterpolationType.CUSTOM:
+        if not isinstance(x, np.ndarray):
+            x = np.array([x]).T
+        if not isinstance(u, np.ndarray):
+            u = np.array([u]).T
+
+        x_init.add("q", x[:nq, :], t=t, interpolation=initial_guess, **extra_params_x)
+        x_init.add("qdot", x[nq:, :], t=t, interpolation=initial_guess, **extra_params_x)
+
+        u_init.add("tau", u, t=t, interpolation=initial_guess, **extra_params_u)
+    else:
+        x_init.add("q", x, t=t, interpolation=initial_guess, var_key="q", **extra_params_x)
+        x_init.add("qdot", x, t=t, interpolation=initial_guess, var_key="qdot", **extra_params_x)
+        u_init.add("tau", u, t=t, interpolation=initial_guess, var_key="tau", **extra_params_u)
+
     if random_init:
-        x_init = x_init.add_noise(
-            bounds=x_bounds,
-            magnitude=1,
-            magnitude_type=MagnitudeType.RELATIVE,
-            n_shooting=n_shooting + 1,
-            bound_push=0.1,
-        )
-        u_init = u_init.add_noise(
-            bounds=u_bounds,
-            n_shooting=n_shooting,
-            bound_push=0.1,
-        )
+        for key in x_init.keys():
+            x_init[key] = x_init[key].add_noise(
+                bounds=x_bounds[key],
+                magnitude=1,
+                magnitude_type=MagnitudeType.RELATIVE,
+                n_shooting=n_shooting + 1,
+                bound_push=0.1,
+            )
+        for key in u_init.keys():
+            u_init[key] = u_init[key].add_noise(
+                bounds=u_bounds[key],
+                n_shooting=n_shooting,
+                bound_push=0.1,
+            )
 
     # Variable scaling
     x_scaling = VariableScalingList()
@@ -201,12 +227,12 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        objective_functions=objective_functions,
+        constraints=constraints,
         ode_solver=ode_solver,
         x_scaling=x_scaling,
         xdot_scaling=xdot_scaling,

@@ -179,11 +179,7 @@ from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, Ph
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
-from .limits.path_conditions import (
-    BoundsList,
-    InitialGuessList,
-    NoisedInitialGuess,
-)
+from .limits.path_conditions import BoundsList, InitialGuessList
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_controller import PenaltyController
 from .misc.enums import (

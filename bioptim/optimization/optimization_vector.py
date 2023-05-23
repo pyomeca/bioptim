@@ -509,7 +509,7 @@ class OptimizationVector:
             # For states
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 repeat = 1
-                if nlp.ode_solver.is_direct_collocation and nlp.x_init.type != InterpolationType.EACH_FRAME:
+                if nlp.ode_solver.is_direct_collocation:
                     repeat += nlp.ode_solver.polynomial_degree
 
                 collapsed_values = np.ndarray((nlp.states.shape, (nlp.ns * repeat) + 1))

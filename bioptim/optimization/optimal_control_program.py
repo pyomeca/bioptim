@@ -31,7 +31,7 @@ from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
-from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
+from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
@@ -147,10 +147,10 @@ class OptimalControlProgram:
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
-        x_bounds: Bounds | BoundsList = None,
-        u_bounds: Bounds | BoundsList = None,
-        x_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
-        u_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
+        x_bounds: BoundsList = None,
+        u_bounds: BoundsList = None,
+        x_init: InitialGuessList | None = None,
+        u_init: InitialGuessList | None = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
         parameters: Parameter | ParameterList = None,
@@ -323,24 +323,12 @@ class OptimalControlProgram:
 
         if x_init is None:
             x_init = InitialGuessList()
-        if isinstance(x_init, NoisedInitialGuess):
-            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
-                raise RuntimeError("x_scaling ans xdot_scaling should be provided with a custom x_init")
-            x_init_tp = InitialGuessList()
-            x_init_tp.add(x_init.init)
-            x_init = x_init_tp
-        elif not isinstance(x_init, InitialGuessList):
+        if not isinstance(x_init, InitialGuessList):
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
         if u_init is None:
             u_init = InitialGuessList()
-        if isinstance(u_init, NoisedInitialGuess):
-            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
-                raise RuntimeError("u_scaling should be provided with a custom u_init")
-            u_init_tp = InitialGuessList()
-            u_init_tp.add(u_init.init)
-            u_init = u_init_tp
-        elif not isinstance(u_init, InitialGuessList):
+        if not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
         x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)

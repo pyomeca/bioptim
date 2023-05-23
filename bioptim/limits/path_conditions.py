@@ -785,6 +785,7 @@ class InitialGuess(OptionGeneric):
         """
 
         return NoisedInitialGuess(
+            key=self.key,
             initial_guess=self.init,
             interpolation=self.type,
             bounds=bounds,
@@ -824,6 +825,7 @@ class NoisedInitialGuess(InitialGuess):
 
     def __init__(
         self,
+        key,
         initial_guess: np.ndarray | list | tuple | float | Callable | PathCondition | InitialGuess = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         bounds: Bounds | BoundsList = None,
@@ -869,7 +871,7 @@ class NoisedInitialGuess(InitialGuess):
 
         # test if initial_guess is a np.array, tuple or list
         if isinstance(initial_guess, (np.ndarray, tuple, list)):
-            self.init = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
+            self.init = InitialGuess(key, initial_guess, interpolation=interpolation, **parameters)
 
         if isinstance(initial_guess, InitialGuess):
             interpolation = initial_guess.type
@@ -891,6 +893,7 @@ class NoisedInitialGuess(InitialGuess):
         )
 
         super(NoisedInitialGuess, self).__init__(
+            key=key,
             initial_guess=self.noised_initial_guess,
             interpolation=interpolation
             if interpolation == InterpolationType.ALL_POINTS  # interpolation should always be done at each data point
@@ -940,7 +943,7 @@ class NoisedInitialGuess(InitialGuess):
         if isinstance(initial_guess, InitialGuess):
             tp = initial_guess
         else:
-            tp = InitialGuess(initial_guess, interpolation=interpolation, **parameters)
+            tp = InitialGuess("init", initial_guess, interpolation=interpolation, **parameters)
 
         if tp.type == InterpolationType.EACH_FRAME:
             n_columns = self.n_shooting - 1  # As it will add 1 by itself later
@@ -981,6 +984,7 @@ class NoisedInitialGuess(InitialGuess):
                 initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point)
 
         init_instance = InitialGuess(
+            "noised",
             initial_guess_matrix,
             interpolation=interpolation
             if interpolation == InterpolationType.ALL_POINTS
