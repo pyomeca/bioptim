@@ -1109,25 +1109,18 @@ class Solution:
         for _ in range(len(data_states)):
             out._states["unscaled"].append({})
         for p in range(len(data_states)):
-            x_phase = data_states[p]["all"]
-            n_elements = x_phase.shape[0]
+            for key in nlp.states:
+                x_phase = data_states[p][key]
+                n_elements = x_phase.shape[0]
 
-            t_phase = t_all[p]
-            t_phase, time_index = np.unique(t_phase, return_index=True)
-            t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
-            x_interpolate = np.ndarray((n_elements, n_frames[p]))
-            for j in range(n_elements):
-                s = sci_interp.splrep(t_phase, x_phase[j, time_index], k=1)
-                x_interpolate[j, :] = sci_interp.splev(t_int, s)
-            out._states["unscaled"][p]["all"] = x_interpolate
-
-            offset = 0
-            for key in data_states[p]:
-                if key == "all":
-                    continue
-                n_elements = data_states[p][key].shape[0]
-                out._states["unscaled"][p][key] = out._states["unscaled"][p]["all"][offset : offset + n_elements]
-                offset += n_elements
+                t_phase = t_all[p]
+                t_phase, time_index = np.unique(t_phase, return_index=True)
+                t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
+                x_interpolate = np.ndarray((n_elements, n_frames[p]))
+                for j in range(n_elements):
+                    s = sci_interp.splrep(t_phase, x_phase[j, time_index], k=1)
+                    x_interpolate[j, :] = sci_interp.splev(t_int, s)
+                out._states["unscaled"][p][key] = x_interpolate
 
         out.is_interpolated = True
         return out
@@ -1439,22 +1432,27 @@ class Solution:
                     elif penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
                         if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                             col_u_idx.append((idx + 1))
-                    if nlp.ode_solver.is_direct_collocation and (
-                        "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
-                    ):
-                        x = (
-                            self.states_no_intermediate["all"][:, col_x_idx]
-                            if len(self.phase_time) - 1 == 1
-                            else self.states_no_intermediate[phase_idx]["all"][:, col_x_idx]
-                        )
-                    else:
-                        x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]
 
-                    u = (
-                        []
-                        if nlp.control_type == ControlType.NONE
-                        else self._controls["scaled"][phase_idx]["all"][:, col_u_idx]
-                    )
+                    x = np.ndarray((nlp.states.shape, len(col_x_idx)))
+                    for key in nlp.states:
+                        if nlp.ode_solver.is_direct_collocation and (
+                            "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
+                        ):
+                            x[nlp.states[key].index, :] = (
+                                self.states_no_intermediate["all"][:, col_x_idx]
+                                if len(self.phase_time) - 1 == 1
+                                else self.states_no_intermediate[phase_idx][key][:, col_x_idx]
+                            )
+                        else:
+                            x[nlp.states[key].index, :] = self._states["scaled"][phase_idx][key][:, col_x_idx]
+
+                    u = np.ndarray((nlp.controls.shape, len(col_u_idx)))
+                    for key in nlp.controls:
+                        u[nlp.controls[key].index, :] = (
+                            []
+                            if nlp.control_type == ControlType.NONE
+                            else self._controls["scaled"][phase_idx][key][:, col_u_idx]
+                        )
                     if penalty.target is None:
                         target = []
                     elif (
