@@ -503,6 +503,7 @@ class OptimizationVector:
             nlp.states.node_index = 0
             nlp.states_dot.node_index = 0
             nlp.controls.node_index = 0
+            nlp.stochastic_variables.node_index = 0
 
             interpolation = nlp.x_init.type
             ns = self.get_ns(phase=nlp.phase_idx, interpolation_type=interpolation)

@@ -158,6 +158,7 @@ class NonLinearProgram:
         self.states = OptimizationVariableContainer(assume_phase_dynamics)
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
         self.controls = OptimizationVariableContainer(assume_phase_dynamics)
+        self.stochastic_variables = OptimizationVariableContainer(assume_phase_dynamics)
 
     def initialize(self, cx: Callable = None):
         """
@@ -180,6 +181,7 @@ class NonLinearProgram:
         self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+        self.stochastic_variables.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):

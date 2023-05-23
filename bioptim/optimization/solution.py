@@ -213,6 +213,7 @@ class Solution:
             self.states = nlp.states
             self.states_dot = nlp.states_dot
             self.controls = nlp.controls
+            self.stochastic_variables = nlp.stochastic_variables
             self.dynamics = nlp.dynamics
             self.dynamics_func = nlp.dynamics_func
             self.ode_solver = nlp.ode_solver

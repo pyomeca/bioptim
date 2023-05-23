@@ -155,6 +155,7 @@ class ConfigureProblem:
         with_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
+        is_stochastic: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
@@ -203,6 +204,165 @@ class ConfigureProblem:
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, True, False)
+        ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
+        ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue)
+        # Declare stochastic variables
+        if is_stochastic:
+            ConfigureProblem.configure_c(ocp, nlp, True, False)  # Noise propagation matrix (to compute the derivative of the covariance matrix)
+            ConfigureProblem.configure_a(ocp, nlp, True, False)  # Noise injection matrix (to compute the derivative of the covariance matrix)
+
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+        ):
+            ConfigureProblem.configure_qddot(ocp, nlp, False, True, True)
+        elif (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+        ):
+            ConfigureProblem.configure_qddot(ocp, nlp, True, False, True)
+            ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
+        else:
+            ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
+
+        # Algebraic constraints of rigidbody dynamics if needed
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+        ):
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                penalty_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+                with_contact=with_contact,
+                with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
+            )
+            if with_contact:
+                # qddot is continuous with RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+                # so the consistency constraint of the marker acceleration can only be set to zero
+                # at the first shooting node
+                node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
+                ConfigureProblem.configure_contact_forces(ocp, nlp, False, True)
+                for ii in range(nlp.model.nb_rigid_contacts):
+                    for jj in nlp.model.rigid_contact_index(ii):
+                        ocp.implicit_constraints.add(
+                            ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
+                            with_contact=with_contact,
+                            contact_index=ii,
+                            contact_axis=jj,
+                            node=node,
+                            constraint_type=ConstraintType.IMPLICIT,
+                            phase=nlp.phase_idx,
+                        )
+        if (
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
+        ):
+            # contacts forces are directly handled with this constraint
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                constraint_type=ConstraintType.IMPLICIT,
+                with_contact=with_contact,
+                phase=nlp.phase_idx,
+                with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
+            )
+
+        # Declared soft contacts controls
+        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
+
+        # Configure the actual ODE of the dynamics
+        if nlp.dynamics_type.dynamic_function:
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+        else:
+            ConfigureProblem.configure_dynamics_function(
+                ocp,
+                nlp,
+                DynamicsFunctions.torque_driven,
+                with_contact=with_contact,
+                fatigue=fatigue,
+                rigidbody_dynamics=rigidbody_dynamics,
+                with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
+            )
+
+        # Configure the contact forces
+        if with_contact:
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+        # Configure the soft contact forces
+        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+        # Algebraic constraints of soft contact forces if needed
+        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                penalty_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+            )
+
+
+    @staticmethod
+    def stochastic_torque_driven(
+        ocp,
+        nlp,
+        with_contact: bool = False,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
+        fatigue: FatigueList = None,
+    ):
+        """
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        with_contact: bool
+            If the dynamic with contact should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used
+        soft_contacts_dynamics: SoftContactDynamics
+            which soft contact dynamic should be used
+        fatigue: FatigueList
+            A list of fatigue elements
+
+        """
+        # if with_contact and nlp.model.nb_contacts == 0:
+        #     raise ValueError("No contact defined in the .bioMod, set with_contact to False")
+        # if nlp.model.nb_soft_contacts != 0:
+        #     if (
+        #         soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
+        #         and soft_contacts_dynamics != SoftContactDynamics.ODE
+        #     ):
+        #         raise ValueError(
+        #             "soft_contacts_dynamics can be used only with SoftContactDynamics.ODE or SoftContactDynamics.CONSTRAINT"
+        #         )
+        #
+        #     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        #         if soft_contacts_dynamics == SoftContactDynamics.ODE:
+        #             raise ValueError(
+        #                 "Soft contacts dynamics should not be used with SoftContactDynamics.ODE "
+        #                 "when rigidbody dynamics is not RigidBodyDynamics.ODE . "
+        #                 "Please set soft_contacts_dynamics=SoftContactDynamics.CONSTRAINT"
+        #             )
+
+        # $$$$$
+        # Declared rigidbody states and controls
+        ConfigureProblem.configure_q(ocp, nlp, True, False)  # TODO add fatigue=False to all others
+        ConfigureProblem.configure_c(ocp, nlp)  # Noise propagation matrix (to compute the derivative of the covariance matrix)
+        ConfigureProblem.configure_a(ocp, nlp)  # Noise injection matrix (to compute the derivative of the covariance matrix)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
         ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue)
 
@@ -865,6 +1025,7 @@ class ConfigureProblem:
         as_states: bool,
         as_controls: bool,
         as_states_dot: bool = False,
+        as_stochastic: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
@@ -888,6 +1049,8 @@ class ConfigureProblem:
             If the new variable should be added to the state_dot variable set
         as_controls: bool
             If the new variable should be added to the control variable set
+        as_stochastic: bool
+            If the new variable should be added to the stochastic variable set
         fatigue: FatigueList
             The list of fatigable item
         combine_name: str
@@ -983,6 +1146,7 @@ class ConfigureProblem:
             [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0][name].mx]
         )
         mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[0][name].mx]
+        mx_stochastic = []
 
         # todo: if mapping on variables, what do we do with mapping on the nodes
         for i in nlp.variable_mappings[name].to_second.map_idx:
@@ -997,23 +1161,27 @@ class ConfigureProblem:
             if not copy_controls:
                 mx_controls.append(MX.sym(var_name, 1, 1))
 
+            mx_stochastic.append(MX.sym(var_name, 1, 1))
+
         mx_states = vertcat(*mx_states)
         mx_states_dot = vertcat(*mx_states_dot)
         mx_controls = vertcat(*mx_controls)
+        mx_stochastic = vertcat(*mx_stochastic)
 
         if not axes_idx:
             axes_idx = Mapping(range(len(name_elements)))
 
-        legend = []
-        for idx, name_el in enumerate(name_elements):
-            if idx is not None and idx in axes_idx.map_idx:
-                current_legend = f"{name}_{name_el}"
-                for i in range(ocp.n_phases):
-                    if as_states:
-                        current_legend += f"-{ocp.nlp[i].use_states_from_phase_idx}"
-                    if as_controls:
-                        current_legend += f"-{ocp.nlp[i].use_controls_from_phase_idx}"
-                legend += [current_legend]
+        if not skip_plot:
+            legend = []
+            for idx, name_el in enumerate(name_elements):
+                if idx is not None and idx in axes_idx.map_idx:
+                    current_legend = f"{name}_{name_el}"
+                    for i in range(ocp.n_phases):
+                        if as_states:
+                            current_legend += f"-{ocp.nlp[i].use_states_from_phase_idx}"
+                        if as_controls:
+                            current_legend += f"-{ocp.nlp[i].use_controls_from_phase_idx}"
+                    legend += [current_legend]
 
         if as_states:
             for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
@@ -1084,6 +1252,15 @@ class ConfigureProblem:
                     else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
                 )
                 nlp.states_dot.append(name, cx[0], cx_scaled[0], mx_states_dot, nlp.variable_mappings[name], node_index)
+
+        if as_stochastic:
+            for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
+                n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+                if n_cx < 3:
+                    n_cx = 3
+                cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
+                cx = define_cx_unscaled(cx_scaled, np.ones(cx_scaled[0][0].shape))
+                nlp.stochastic_variables.append(name, cx[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index)
 
     @staticmethod
     def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
@@ -1182,6 +1359,93 @@ class ConfigureProblem:
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+
+
+    @staticmethod
+    def configure_c(ocp, nlp):
+        """
+        Configure the stochastic variable matrix C representing the injection of motor noise.
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "c"
+        name_c = []
+        for name_1 in nlp.model.name_dof:
+            for name_2 in nlp.model.name_dof:
+                name_c += [name_1 + "_&_" + name_2]
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q**2)), list(range(nlp.model.nb_q**2)))
+
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_c,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
+    def configure_a(ocp, nlp):
+        """
+        Configure the stochastic variable matrix A representing the propagation of motor noise.
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "a"
+        name_a = []
+        for name_1 in nlp.model.name_dof:
+            for name_2 in nlp.model.name_dof:
+                name_a += [name_1 + "_x_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q)), list(range(nlp.model.nb_q)))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_a,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
+    def configure_a(ocp, nlp):
+        """
+        Configure the generalized coordinates
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "c"
+        name_c = []
+        for name_1 in nlp.model.name_dof:
+            for name_2 in nlp.model.name_dof:
+                name_c += ["c_" + name_1 + "_x_" + name_2]
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_c,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            skip_plot=True,
+        )
 
     @staticmethod
     def configure_tau(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
@@ -1368,6 +1632,7 @@ class DynamicsFcn(FcnEnum):
     """
 
     TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
+    STOCHASTIC_TORQUE_DRIVEN = (ConfigureProblem.stochastic_torque_driven,)
     TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
     JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)

@@ -138,6 +138,20 @@ class PenaltyController:
         return out
 
     @property
+    def stochastic_variables(self) -> OptimizationVariableList:
+        """
+        Return the stochastic_variables associated with the current node index
+
+        Returns
+        -------
+        The stochastic_variables at node node_index
+        """
+        self._nlp.stochastic_variables.node_index = self.node_index
+        out = self._nlp.stochastic_variables.unscaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
     def integrate(self):
         return self._nlp.dynamics[self.node_index]
 
