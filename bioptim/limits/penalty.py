@@ -916,17 +916,26 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def covariance_matrix_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
 
+            P_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
+            A_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
+            A_end_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
+            i = 0
+            for dof_1 in range(controller.states["q"].cx.shape[0]):
+                for dof_2 in range(controller.states["q"].cx.shape[0]):
+                    P_matrix[dof_1, dof_2] = controller.stochastic_variables["cov"].cx_start[i]
+                    A_matrix[dof_1, dof_2] = controller.stochastic_variables["a"].cx_start[i]
+                    A_end_matrix[dof_1, dof_2] = controller.stochastic_variables["a"].cx_end[i]
+                    i += 1
+
             sigma_w = 10 ** (-1)  # How do we choose?
             dt = 1 / controller.ns
             dg_dw = -controller.stochastic_variables["c"].cx_start * dt
-            dg_dx = - (controller.stochastic_variables["a"].cx_start * dt / 2 + MX_eye(
-                controller.stochastic_variables["a"].cx_start.shape[0], 1))  # intégration trapézoidale ??
-            dg_dz = MX_eye(controller.stochastic_variables["a"].cx_end.shape[0], 1) - controller.stochastic_variables[
-                "a"].cx_end * dt / 2  # ???
+            dg_dx = - (A_matrix * dt / 2 + MX_eye(A_matrix.shape[0])) # intégration trapézoidale ??
+            dg_dz = MX_eye(A_matrix.shape[0]) - A_end_matrix * dt / 2  # ???
             mk = dg_dz ** (-1)
 
-            pk = mk * (dg_dx * controller.stochastic_variables["cov"].cx_start * dg_dx.T + dg_dw * sigma_w * dg_dw.T) * mk.T
-            p_implicit_deffect = pk - controller.stochastic_variables["c"].cx  # TODO: This computes p at node k+1
+            pk = mk @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ mk.T
+            p_implicit_deffect = pk - P_matrix  # TODO: This computes p at node k+1
 
             penalty.expand = controller.get_nlp.dynamics_type.expand
             penalty.explicit_derivative = True
