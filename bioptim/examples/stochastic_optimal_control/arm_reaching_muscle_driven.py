@@ -8,6 +8,8 @@ The expected joint angles (x_mean) are optimized like in  deterministic OCP, but
 reduce uncertainty. This covariance matrix is computed from the expected states.
 """
 import platform
+from casadi import SX, MX, vertcat
+import numpy as np
 
 from bioptim import (
     OptimalControlProgram,
@@ -23,7 +25,58 @@ from bioptim import (
     Solver,
     BiorbdModel,
     ObjectiveList,
+    NonLinearProgram,
+    DynamicsEvaluation,
+    DynamicsFunctions,
+    ConfigureProblem,
+    DynamicsList,
+    VariableScalingList,
 )
+
+
+
+def forward_dynamics_with_friction(
+    states: MX | SX,
+    controls: MX | SX,
+    parameters: MX | SX,
+    nlp: NonLinearProgram,
+    my_additional_factor=1,
+) -> DynamicsEvaluation:
+
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    muscle_activation = DynamicsFunctions.get(nlp.controls["muscle"], controls)
+
+    M = nlp.model.Inertia(q[:, i])
+    joint_friction = np.array([[0.05, 0.025], [0.025, 0.05]])
+
+    # ddtheta(:, i) = M\(T(:, i) + T_EXT(:, i) - C - B * qdot(:, i));
+
+    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
+    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
+    ddq = nlp.model.forward_dynamics(q, qdot, tau)
+
+    # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
+    # as the first argument of DynamicsEvaluation or
+    # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
+    # which may be useful for IRK or COLLOCATION integrators
+    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+
+
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+
+    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
+    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
+    ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
+    ConfigureProblem.configure_tau(ocp, nlp, False, True)
+    ConfigureProblem.configure_muscles(ocp, nlp, False, True)
+
+    ConfigureProblem.configure_c(ocp, nlp)
+    ConfigureProblem.configure_a(ocp, nlp)
+    ConfigureProblem.configure_cov(ocp, nlp)
+    ConfigureProblem.configure_w_motor(ocp, nlp)
+    ConfigureProblem.configure_w_position_feedback(ocp, nlp)
+    ConfigureProblem.configure_w_velocity_feedback(ocp, nlp)
 
 
 def prepare_ocp(
@@ -58,14 +111,16 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STOCHASTIC_VARIABLE, key="cov")
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscle", wight=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STOCHASTIC_VARIABLE, key="cov", weight=1)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, is_stochastic=True)
+    dynamics = DynamicsList()
+    dynamics.add(custom_configure, dynamic_function=forward_dynamics_with_friction)
 
     # Path constraint
     x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
+    # TODO: add the initial position
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
@@ -75,17 +130,25 @@ def prepare_ocp(
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
+    n_muscles = bio_model.nb_muscles
     n_tau = bio_model.nb_tau
-    tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
+    u_bounds = Bounds([-100] * n_tau + [0] * n_muscles, [100] * n_tau + [1] * n_muscles)
 
-    u_init = InitialGuess([tau_init] * n_tau)
+    u_init = InitialGuess([0] * (n_tau + n_muscles))
 
     # This should probably be done automatically
     n_stochastic = n_q + n_q**2 + n_q**2 + n_q + n_q + n_q
-    s_bounds = Bounds([tau_min] * n_stochastic, [tau_max] * n_stochastic)
-    s_init = InitialGuess([0] * n_stochastic)
+    s_bounds = Bounds([-100] * n_stochastic, [100] * n_stochastic)
+    s_init = InitialGuess([0] * n_stochastic)  # TODO: to be changed probable really bad
+
+    # Variable scaling
+    x_scaling = VariableScalingList()
+    x_scaling.add("q", scaling=[1, 1])
+    x_scaling.add("qdot", scaling=[1, 1])
+
+    u_scaling = VariableScalingList()
+    u_scaling.add("tau", scaling=[1, 1])
+    u_scaling.add("muscles", scaling=[1, 1])
 
     # TODO: we should probably change the name stochastic_variables -> helper_variables ?
     # TODO: add end effector position and velocity correction
@@ -110,9 +173,9 @@ def prepare_ocp(
 
 def main():
 
-    import bioviz
-    b = bioviz.Viz("models/LeuvenArmModel.bioMod")
-    b.exec()
+    # import bioviz
+    # b = bioviz.Viz("models/LeuvenArmModel.bioMod")
+    # b.exec()
 
     # --- Prepare the ocp --- #
     # TODO change the model to their model
@@ -121,7 +184,7 @@ def main():
     n_shooting = int(final_time/dt)
 
     # TODO: devrait-il y avoir ns ou ns+1 P ?
-    ocp = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=final_time, n_shooting=n_shooting)
+    ocp = prepare_ocp(biorbd_model_path="models/LeuvenArmModel.bioMod", final_time=final_time, n_shooting=n_shooting)
 
     # Custom plots
     # ocp.add_plot_penalty(CostType.ALL)
