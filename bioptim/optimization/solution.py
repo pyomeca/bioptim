@@ -308,6 +308,7 @@ class Solution:
         self._states = {}
         self._controls = {}
         self.parameters = {}
+        self._stochastic_variables = {}
         self.phase_time = []
 
         def init_from_dict(_sol: dict):
@@ -337,7 +338,7 @@ class Solution:
             self.status = _sol["status"]
 
             # Extract the data now for further use
-            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["scaled"], self._controls["scaled"], self.parameters, self._stochastic_variables = self.ocp.v.to_dictionaries(self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
@@ -403,7 +404,7 @@ class Solution:
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
-            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["scaled"], self._controls["scaled"], self.parameters, self._stochastic_variables = self.ocp.v.to_dictionaries(self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
@@ -422,7 +423,7 @@ class Solution:
             """
 
             self.vector = _sol
-            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["scaled"], self._controls["scaled"], self.parameters, self._stochastic_variables = self.ocp.v.to_dictionaries(self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )

@@ -150,8 +150,10 @@ class OptimalControlProgram:
         phase_time: int | float | list | tuple,
         x_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
         u_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
+        s_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
         x_bounds: Bounds | BoundsList = None,
         u_bounds: Bounds | BoundsList = None,
+        s_bounds: Bounds | BoundsList = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
         parameters: Parameter | ParameterList = None,
@@ -253,8 +255,10 @@ class OptimalControlProgram:
             "phase_time": phase_time,
             "x_init": x_init,
             "u_init": u_init,
+            "s_init": s_init,
             "x_bounds": x_bounds,
             "u_bounds": u_bounds,
+            "s_bounds": s_bounds,
             "x_scaling": x_scaling,
             "xdot_scaling": xdot_scaling,
             "u_scaling": u_scaling,
@@ -322,6 +326,19 @@ class OptimalControlProgram:
         elif not isinstance(u_bounds, BoundsList):
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
+        if s_bounds is None:
+            s_bounds = BoundsList()
+        elif isinstance(s_bounds, Bounds):
+            s_bounds_tp = BoundsList()
+            s_bounds_tp.add(bounds=s_bounds)
+            s_bounds = s_bounds_tp
+        elif isinstance(s_bounds, BoundsList) and len(s_bounds) == 0:
+            raise RuntimeError(
+                "If you do not want to provide a s_bounds, you should declare s_bounds=None instead of an empty BoundsList"
+            )
+        elif not isinstance(s_bounds, BoundsList):
+            raise RuntimeError("s_bounds should be built from a Bounds or a BoundsList")
+
         if x_init is None:
             raise RuntimeError("Please provide an x_init of type InitialGuess or InitialGuessList.")
         elif isinstance(x_init, InitialGuess):
@@ -363,6 +380,27 @@ class OptimalControlProgram:
             )
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
+
+        if s_init is None:
+            raise RuntimeError("Please provide an s_init of type InitialGuess or InitialGuessList.")
+        elif isinstance(s_init, InitialGuess):
+            if s_init.type == InterpolationType.CUSTOM and u_scaling is None:
+                raise RuntimeError("s_scaling should be provided with a custom s_init")
+            s_init_tp = InitialGuessList()
+            s_init_tp.add(s_init)
+            s_init = s_init_tp
+        elif isinstance(s_init, NoisedInitialGuess):
+            if s_init.type == InterpolationType.CUSTOM and s_scaling is None:
+                raise RuntimeError("u_scaling should be provided with a custom u_init")
+            s_init_tp = InitialGuessList()
+            s_init_tp.add(s_init.init)
+            s_init = s_init_tp
+        elif isinstance(s_init, InitialGuessList) and len(s_init) == 0:
+            raise RuntimeError(
+                "You must please declare an initial guess for the controls s_init. Here, the InitialGuessList is empty."
+            )
+        elif not isinstance(s_init, InitialGuessList):
+            raise RuntimeError("s_init should be built from a InitialGuess or InitialGuessList")
 
         if x_scaling is None:
             x_scaling = VariableScalingList()
@@ -543,11 +581,13 @@ class OptimalControlProgram:
 
         self.isdef_x_init = False
         self.isdef_u_init = False
+        self.isdef_s_init = False
         self.isdef_x_bounds = False
         self.isdef_u_bounds = False
+        self.isdef_s_bounds = False
 
-        self.update_bounds(x_bounds, u_bounds)
-        self.update_initial_guess(x_init, u_init)
+        self.update_bounds(x_bounds, u_bounds, s_bounds=s_bounds)
+        self.update_initial_guess(x_init, u_init, s_init=s_init)
         # Define the actual NLP problem
         self.v.define_ocp_shooting_points()
 
@@ -741,14 +781,11 @@ class OptimalControlProgram:
         """
         # TODO: add feedback with a reference kinematics to follow + self.stochastic_variables["k"].cx_start
 
-        stochastic_states_integrated = nlp.dynamics_func(x=nlp.states.cx_start, u=nlp.controls.cx_start+nlp.stochastic_variables["w_motor"].cx_start,  p=nlp.parameters.cx_start)["xdot"]
-
         penalty_a = Constraint(
                 ImplicitConstraintFcn.A_EQUALS_JACOBIAN_EXPECTED_STATES,
                 node=Node.ALL_SHOOTING,
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
-                stochastic_states_integrated=stochastic_states_integrated,
             )
         penalty_a.add_or_replace_to_penalty_pool(self, nlp)
 
@@ -757,7 +794,6 @@ class OptimalControlProgram:
                 node=Node.ALL_SHOOTING,
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
-                stochastic_states_integrated=stochastic_states_integrated,
             )
         penalty_c.add_or_replace_to_penalty_pool(self, nlp)
 
@@ -848,7 +884,7 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-    def update_bounds(self, x_bounds: Bounds | BoundsList = BoundsList(), u_bounds: Bounds | BoundsList = BoundsList()):
+    def update_bounds(self, x_bounds: Bounds | BoundsList = BoundsList(), u_bounds: Bounds | BoundsList = BoundsList(), s_bounds: Bounds | BoundsList = BoundsList()):
         """
         The main user interface to add bounds in the ocp
 
@@ -858,13 +894,17 @@ class OptimalControlProgram:
             The state bounds to add
         u_bounds: Bounds | BoundsList
             The control bounds to add
+        s_bounds: Bounds | BoundsList
+            The stochastic variables bounds to add
         """
 
         if x_bounds:
             NLP.add_path_condition(self, x_bounds, "x_bounds", Bounds, BoundsList)
         if u_bounds:
             NLP.add_path_condition(self, u_bounds, "u_bounds", Bounds, BoundsList)
-        if self.isdef_x_bounds and self.isdef_u_bounds:
+        if s_bounds:
+            NLP.add_path_condition(self, s_bounds, "s_bounds", Bounds, BoundsList)
+        if self.isdef_x_bounds and self.isdef_u_bounds and self.isdef_s_bounds:
             self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
@@ -880,6 +920,7 @@ class OptimalControlProgram:
         x_init: InitialGuess | InitialGuessList = InitialGuessList(),
         u_init: InitialGuess | InitialGuessList = InitialGuessList(),
         param_init: InitialGuess | InitialGuessList = InitialGuessList(),
+        s_init: InitialGuess | InitialGuessList = InitialGuessList(),
     ):
         """
         The main user interface to add initial guesses in the ocp
@@ -892,6 +933,8 @@ class OptimalControlProgram:
             The control initial guess to add
         param_init: Bounds | BoundsList
             The parameters initial guess to add
+        s_init: Bounds | BoundsList
+            The stochastic variables initial guess to add
         """
 
         if self.nlp[0].ode_solver.is_direct_collocation and self.nlp[0].x_init.init.shape[0] != 0:
@@ -920,7 +963,10 @@ class OptimalControlProgram:
             except ValueError:
                 raise ValueError("update_initial_guess cannot declare new parameters")
 
-        if self.isdef_x_init and self.isdef_u_init:
+        if s_init:
+            NLP.add_path_condition(self, s_init, "s_init", InitialGuess, InitialGuessList)
+
+        if self.isdef_x_init and self.isdef_u_init and self.isdef_s_init:
             self.v.define_ocp_initial_guess()
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):

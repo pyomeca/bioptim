@@ -79,6 +79,12 @@ class OptimizationVector:
         self.n_all_u = 0
         self.n_phase_u = []
 
+        self.s: MX | SX | list = []
+        self.s_bounds = []
+        self.s_init = []
+        self.n_all_s = 0
+        self.n_phase_s = []
+
         for _ in range(self.ocp.n_phases):
             self.x_scaled.append([])
             self.x_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
@@ -89,6 +95,11 @@ class OptimizationVector:
             self.u_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
             self.u_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
             self.n_phase_u.append(0)
+
+            self.s.append([])
+            self.s_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))  #TODO: what should be the appropriate bounds and init?
+            self.s_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
+            self.n_phase_s.append(0)
 
     @property
     def vector(self):
@@ -102,12 +113,14 @@ class OptimizationVector:
 
         x_scaled = []
         u_scaled = []
+        s = []
         for nlp in self.ocp.nlp:
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 x_scaled += [self.x_scaled[nlp.phase_idx].reshape((-1, 1))]
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                 u_scaled += [self.u_scaled[nlp.phase_idx]]
-        return vertcat(*x_scaled, *u_scaled, self.parameters_in_list.cx_start)
+            s += [self.s[nlp.phase_idx]]
+        return vertcat(*x_scaled, *u_scaled, self.parameters_in_list.cx_start, *s)
 
     @property
     def bounds(self):
@@ -141,6 +154,9 @@ class OptimizationVector:
 
         for param in self.parameters_in_list:
             v_bounds.concatenate(param.bounds.scale(param.scaling))
+
+        for phase, s_bound in enumerate(self.s_bounds):
+            v_bounds.concatenate(s_bound)
 
         return v_bounds
 
@@ -190,6 +206,9 @@ class OptimizationVector:
 
         for param in self.parameters_in_list:
             v_init.concatenate(param.initial_guess.scale(param.scaling))
+
+        for phase, s_init in enumerate(self.s_init):
+            v_init.concatenate(s_init)
 
         return v_init
 
@@ -286,9 +305,11 @@ class OptimizationVector:
 
         data_states = []
         data_controls = []
+        data_stochastic_variables= []
         for _ in range(self.ocp.n_phases):
             data_states.append({})
             data_controls.append({})
+            data_stochastic_variables.append({})
         data_parameters = {}
 
         offset = 0
@@ -343,7 +364,24 @@ class OptimizationVector:
             if len(data_parameters[param.name].shape) == 1:
                 data_parameters[param.name] = data_parameters[param.name][:, np.newaxis]
 
-        return data_states, data_controls, data_parameters
+        p_idx = 0
+        for p in range(self.ocp.n_phases):
+            ocp.nlp[p].stochastic_variables.node_index = 0
+            s_array = v_array[offset : offset + self.n_phase_s[p]].reshape(
+                (ocp.nlp[p].stochastic_variables.shape, -1), order="F"
+            )
+            data_stochastic_variables[p_idx]["all"] = s_array
+            offset_var = 0
+            for var in ocp.nlp[p].stochastic_variables:
+                data_stochastic_variables[p_idx][var] = s_array[
+                    offset_var : offset_var + len(ocp.nlp[p].stochastic_variables[var]),
+                    :,
+                ]
+                offset_var += len(ocp.nlp[p].stochastic_variables[var])
+            p_idx += 1
+            offset += self.n_phase_s[p]
+
+        return data_states, data_controls, data_parameters, data_stochastic_variables
 
     def define_ocp_shooting_points(self):
         """
@@ -353,11 +391,13 @@ class OptimizationVector:
         x_scaled = []
         u = []
         u_scaled = []
+        s = []
         for nlp in self.ocp.nlp:
             x.append([])
             x_scaled.append([])
             u.append([])
             u_scaled.append([])
+            s.append([])
             if nlp.control_type not in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.NONE):
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
@@ -392,6 +432,10 @@ class OptimizationVector:
                     u_scaled[nlp.phase_idx] = u_scaled[nlp.use_controls_from_phase_idx]
                     u[nlp.phase_idx] = u[nlp.use_controls_from_phase_idx]
 
+                s[nlp.phase_idx].append(
+                    nlp.cx.sym("S_" + str(nlp.phase_idx) + "_" + str(k), nlp.stochastic_variables.shape, 1)
+                )
+
             nlp.X_scaled = x_scaled[nlp.phase_idx]
             nlp.X = x[nlp.phase_idx]
             self.x_scaled[nlp.phase_idx] = vertcat(
@@ -406,9 +450,13 @@ class OptimizationVector:
             self.n_phase_u[nlp.phase_idx] = (
                 self.u_scaled[nlp.phase_idx].size()[0] if nlp.phase_idx == nlp.use_controls_from_phase_idx else 0
             )
+            nlp.S = s[nlp.phase_idx]
+            self.s[nlp.phase_idx] = vertcat(*s[nlp.phase_idx])
+            self.n_phase_s[nlp.phase_idx] = self.s[nlp.phase_idx].size()[0]
 
         self.n_all_x = sum(self.n_phase_x)
         self.n_all_u = sum(self.n_phase_u)
+        self.n_all_s = sum(self.n_phase_s)
 
     def define_ocp_bounds(self):
         """
@@ -428,6 +476,7 @@ class OptimizationVector:
                     nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
                 else:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
+            nlp.s_bounds.check_and_adjust_dimensions(nlp.stochastic_variables.shape, nlp.ns)
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
@@ -468,6 +517,17 @@ class OptimizationVector:
                     u_bounds.max[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
 
                 self.u_bounds[i_phase] = u_bounds
+
+            # For stochastic variables
+            n_stochastic = nlp.stochastic_variables.shape
+            ns = nlp.ns + 1
+            all_n_stochastic = n_stochastic * ns
+            s_bounds = Bounds([0] * all_n_stochastic, [0] * all_n_stochastic, interpolation=InterpolationType.CONSTANT)
+            for k in range(ns):
+                s_bounds.min[k * n_stochastic: (k + 1) * n_stochastic, 0] = nlp.s_bounds.min.evaluate_at(shooting_point=k)
+                s_bounds.max[k * n_stochastic: (k + 1) * n_stochastic, 0] = nlp.s_bounds.max.evaluate_at(shooting_point=k)
+
+            self.s_bounds[i_phase] = s_bounds
 
     def get_ns(self, phase: int, interpolation_type: InterpolationType) -> int:
         """
@@ -521,6 +581,8 @@ class OptimizationVector:
                 else:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
+            nlp.s_init.check_and_adjust_dimensions(nlp.stochastic_variables.shape, ns)
+
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
@@ -563,6 +625,16 @@ class OptimizationVector:
                     u_init.init[k * nu : (k + 1) * nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
 
                 self.u_init[i_phase] = u_init
+
+            # For stochastic variables
+            ns = nlp.ns + 1
+            n_stochastic = nlp.stochastic_variables.shape
+            all_ns = n_stochastic * ns
+            s_init = InitialGuess([0] * all_ns, interpolation=InterpolationType.CONSTANT)
+            for k in range(ns):
+                s_init.init[k * n_stochastic: (k + 1) * n_stochastic, 0] = nlp.s_init.init.evaluate_at(shooting_point=k)
+
+            self.s_init[i_phase] = s_init
 
     def add_parameter(self, param: Parameter):
         """
