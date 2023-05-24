@@ -306,6 +306,7 @@ class ObjectiveFcn:
         MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
         MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+        MINIMIZE_STOCHASTIC_VARIABLE = (PenaltyFunctionAbstract.Functions.minimize_stochastic_variables,)
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
         MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
         TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)

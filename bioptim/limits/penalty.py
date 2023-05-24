@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
@@ -90,6 +90,28 @@ class PenaltyFunctionAbstract:
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
             return controller.controls[key].cx_start
+
+        @staticmethod
+        def minimize_stochastic_variables(penalty: PenaltyOption, controller: PenaltyController, key: str):
+            """
+            Minimize a stochastic variable.
+            By default, this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            key: str
+                The name of the controls to minimize
+            """
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+
+            return controller.stochastic_variables[key].cx_start
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, controller: PenaltyController, key: str):
