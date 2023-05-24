@@ -5,7 +5,7 @@ neuro-musculoskeletal models in the presence of noise"(https://doi.org/10.1371/j
 The task is to unfold the arm to reach a target further from the trunk.
 Noise is added on the motor execution (wM) and on the feedback (wEE and wEE_dot).
 The expected joint angles (x_mean) are optimized like in  deterministic OCP, but the covariance matrix is minimized to
-reduce incertainty. This covariance matrix is computed from the expected states.
+reduce uncertainty. This covariance matrix is computed from the expected states.
 """
 import platform
 
@@ -22,6 +22,7 @@ from bioptim import (
     CostType,
     Solver,
     BiorbdModel,
+    ObjectiveList,
 )
 
 
@@ -56,7 +57,9 @@ def prepare_ocp(
     bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STOCHASTIC_VARIABLE, key="cov")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, is_stochastic=True)
@@ -79,6 +82,14 @@ def prepare_ocp(
 
     u_init = InitialGuess([tau_init] * n_tau)
 
+    # This should probably be done automatically
+    n_stochastic = n_q + n_q**2 + n_q**2 + n_q + n_q + n_q
+    s_bounds = Bounds([tau_min] * n_stochastic, [tau_max] * n_stochastic)
+    s_init = InitialGuess([0] * n_stochastic)
+
+    # TODO: we should probably change the name stochastic_variables -> helper_variables ?
+    # TODO: add end effector position and velocity correction
+
     return OptimalControlProgram(
         bio_model,
         dynamics,
@@ -86,8 +97,10 @@ def prepare_ocp(
         final_time,
         x_init=x_init,
         u_init=u_init,
+        s_init=s_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
+        s_bounds=s_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         n_threads=n_threads,
@@ -103,9 +116,11 @@ def main():
 
     # --- Prepare the ocp --- #
     # TODO change the model to their model
-    dt = 0.01
+    dt = 0.1  # 0.01
     final_time = 0.8
     n_shooting = int(final_time/dt)
+
+    # TODO: devrait-il y avoir ns ou ns+1 P ?
     ocp = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=final_time, n_shooting=n_shooting)
 
     # Custom plots
@@ -115,8 +130,8 @@ def main():
     # ocp.check_conditioning()
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
-    sol.graphs()
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))  # platform.system() == "Linux"
+    # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
     sol.animate()
