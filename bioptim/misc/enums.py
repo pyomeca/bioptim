@@ -181,3 +181,13 @@ class MultiCyclicCycleSolutions(Enum):
     NONE = "none"
     FIRST_CYCLES = "first_cycles"
     ALL_CYCLES = "all_cycles"
+
+
+class OcpType(Enum):
+    """
+    Selection of the type of optimization problem to be solved.
+    """
+
+    OCP = "optimal_control_problem"
+    OFCP = "optimal_feedback_control_problem"
+    SOCP = "stochastic_optimal_control_problem"
