@@ -1209,6 +1209,34 @@ class ConfigureProblem:
 
 
     @staticmethod
+    def configure_k(ocp, nlp):
+        """
+        Configure the optimal feedback gain matrix K.
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "k"
+        name_k = []
+        for name_1 in nlp.model.name_muscles:
+            for name_2 in nlp.model.name_dof:
+                name_k += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_muscles*nlp.model.nb_q)), list(range(nlp.model.nb_muscles*nlp.model.nb_q)))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_k,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
     def configure_c(ocp, nlp):
         """
         Configure the stochastic variable matrix C representing the injection of motor noise.
@@ -1295,6 +1323,59 @@ class ConfigureProblem:
         )
 
     @staticmethod
+    def configure_ee_ref(ocp, nlp):
+        """
+        Configure the reference kinematics.
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "ee_ref"
+        name_ee_ref = [i.to_string() for i in nlp.model.name_dof] + [i.to_string()+"_dot" for i in nlp.model.name_dof]  # quaternions ?
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q+nlp.model.nb_qdot)), list(range(nlp.model.nb_q+nlp.model.nb_qdot)))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_ee_ref,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
+    def configure_m(ocp, nlp):
+        """
+        Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "m"
+        name_m = []
+        for name_1 in nlp.model.name_dof:
+            for name_2 in nlp.model.name_dof:
+                name_m += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q ** 2)), list(range(nlp.model.nb_q ** 2)))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_m,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
     def configure_w_motor(ocp, nlp):
         """
         Configure the vector of motor noise. (This variable should not be optimized, it is only used to compute the jacobian)
@@ -1321,7 +1402,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_w_position_feedback(ocp, nlp):
         """
-        Configure the vector of positio feedback noise. (This variable should not be optimized, it is only used to compute the jacobian)
+        Configure the vector of position feedback noise. (This variable should not be optimized, it is only used to compute the jacobian)
 
         Parameters
         ----------

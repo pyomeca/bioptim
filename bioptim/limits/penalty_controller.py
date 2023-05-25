@@ -4,7 +4,7 @@ from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, Node
 
 
 class PenaltyController:
@@ -249,3 +249,23 @@ class PenaltyController:
         The scaled parameters
         """
         return self._nlp.parameters.scaled
+
+    def restore_matrix_form_from_vector(self, variable, shape_0, shape_1, node: Node, key: str = "all"):
+        """
+        Restore the matrix form of the variables
+
+        """
+        matrix = MX(shape_0, shape_1)
+        i = 0
+        for s0 in range(shape_0):
+            for s1 in range(shape_1):
+                if isinstance(node, Node.START):
+                    matrix[s0, s1] = variable[key].cx_start[i]
+                elif isinstance(node, Node.MID):
+                    matrix[s0, s1] = variable[key].cx_mid[i]
+                elif isinstance(node, Node.END):
+                    matrix[s0, s1] = variable[key].cx_end[i]
+                else:
+                    raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
+                i += 1
+        return matrix
