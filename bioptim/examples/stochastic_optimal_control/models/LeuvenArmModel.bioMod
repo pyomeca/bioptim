@@ -8,20 +8,18 @@ segment base
         0 0 0
         0 0 0
     meshfile mesh/ground_ribs.vtp
-    meshrt 3.14/2 0 0 xyz 0.05 0.14 -0.02  // -0.017545 -0.007 0.17
+    meshrt 3.14/2 0 0 xyz 0.05 0.14 -0.02
 endsegment
 
 segment upperArm
     parent base
     RTinMatrix    1
     RT
-        1    0    0    0
         0    1    0    0
-        0    0    1    0
+        -1    0    0    0
+        0    0    -1    0
         0    0    0    1
 	rotations z
-    ranges
-        -1.4 0.1
     mass 1.4
     inertia
         0.0    0.0    0.0
@@ -40,6 +38,10 @@ segment foreArm
         0    1    0    0
         0    0    1    0
         0    0    0    1
+        // -1    0    0    0.33
+        // 0    1    0    0
+        // 0    0    -1    0
+        // 0    0    0    1
     rotations z
     ranges
         0 2.6
@@ -54,9 +56,13 @@ segment foreArm
 endsegment
 
     // Markers
-    marker    target
+    marker    target_start
         parent    base
-        position    1 0 0  // to be changed for the real value when I find it
+        position    0.28440442 -0.02817553  0.0                   
+    endmarker
+	marker    target_end
+        parent    base
+        position    0.55190516 -0.017223  0.0                       
     endmarker
     marker    end_effector
         parent    foreArm
@@ -72,7 +78,7 @@ musclegroup upperArm_to_foreArm
     OriginParent        upperArm
     InsertionParent        foreArm
 endmusclegroup
-
+/*
    muscle    muscle_1
         Type    degroote
         statetype   degroote
@@ -384,4 +390,5 @@ endmusclegroup
             position    0.022800000000000001 -0.1754 -0.0063
         endviapoint
       /////////////////////////??????????????????????
+      */
           
