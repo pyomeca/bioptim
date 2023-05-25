@@ -896,6 +896,8 @@ class ConfigureProblem:
             The name of the new variable to add
         name_elements: list[str]
             The name of each element of the vector
+        ocp: OptimalControlProgram
+            A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
         as_states: bool
@@ -912,6 +914,8 @@ class ConfigureProblem:
             If states and controls plot should be combined. Only effective if as_states and as_controls are both True
         skip_plot: bool
             If no plot should be automatically added
+        axes_idx: BiMapping
+            The axes index to use for the plot
         """
 
         if combine_state_control_plot and combine_name is not None:
