@@ -48,6 +48,7 @@ from ..misc.enums import (
     PenaltyType,
     Node,
     ConstraintType,
+    OcpType,
 )
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList
 from ..misc.utils import check_version
@@ -175,6 +176,7 @@ class OptimalControlProgram:
         use_sx: bool = False,
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
+        problem_type: OcpType = OcpType.OCP,
     ):
         """
         Parameters
@@ -593,7 +595,10 @@ class OptimalControlProgram:
 
         # Prepare the dynamics
         for i in range(self.n_phases):
-            self._prepare_stochastic_dynamics(self.nlp[i])
+            if isinstance(problem_type, OcpType.SOCP):
+                self._prepare_stochastic_dynamics(self.nlp[i])
+            elif isinstance(problem_type, OcpType.OFCP):
+                self._prepare_feedback_dynamics(self.nlp[i])
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
@@ -780,6 +785,30 @@ class OptimalControlProgram:
         ...
         """
         # TODO: add feedback with a reference kinematics to follow + self.stochastic_variables["k"].cx_start
+
+        penalty_a = Constraint(
+                ImplicitConstraintFcn.A_EQUALS_JACOBIAN_EXPECTED_STATES,
+                node=Node.ALL_SHOOTING,
+                penalty_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+            )
+        penalty_a.add_or_replace_to_penalty_pool(self, nlp)
+
+        penalty_c = Constraint(
+                ImplicitConstraintFcn.C_EQUALS_JACOBIAN_MOTOR_NOISE,
+                node=Node.ALL_SHOOTING,
+                penalty_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+            )
+        penalty_c.add_or_replace_to_penalty_pool(self, nlp)
+
+        penalty_cov = Constraint(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
+        penalty_cov.add_or_replace_to_penalty_pool(self, nlp)
+
+    def _prepare_feedback_dynamics(self, nlp):
+        """
+        ...
+        """
 
         penalty_a = Constraint(
                 ImplicitConstraintFcn.A_EQUALS_JACOBIAN_EXPECTED_STATES,
