@@ -78,7 +78,7 @@ musclegroup upperArm_to_foreArm
     OriginParent        upperArm
     InsertionParent        foreArm
 endmusclegroup
-/*
+
    muscle    muscle_1
         Type    degroote
         statetype   degroote
@@ -91,6 +91,8 @@ endmusclegroup
         pennationAngle    0  //?
         maxVelocity    10
     endmuscle
+    
+    /*
   /////////////////////////??????????????????????
         viapoint    BIClong-P2
             parent    base
