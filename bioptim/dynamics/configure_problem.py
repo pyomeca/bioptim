@@ -1358,7 +1358,24 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def _apply_phase_mapping(ocp, nlp, name):
+    def _apply_phase_mapping(ocp, nlp, name: str) -> BiMapping | None:
+        """
+        Apply the phase mapping to the variable
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        name: str
+            The name of the variable to map
+
+        Returns
+        -------
+        The mapping or None if no mapping is defined
+
+        """
         if nlp.phase_mapping:
             if name in nlp.variable_mappings.keys():
                 double_mapping_to_first = (
