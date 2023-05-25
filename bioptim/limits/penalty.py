@@ -8,6 +8,7 @@ from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, Axis, ControlType, IntegralApproximation
+from ..misc.mapping import BiMapping
 
 
 class PenaltyFunctionAbstract:
@@ -84,6 +85,13 @@ class PenaltyFunctionAbstract:
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            if key in controller.get_nlp.variable_mappings:
+                target_mapping = controller.get_nlp.variable_mappings[key]
+            else:
+                target_mapping = BiMapping(
+                    to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+                    to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+                )
             if penalty.integration_rule == IntegralApproximation.RECTANGLE:
                 # TODO: for trapezoidal integration (This should not be done here but in _set_penalty_function)
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_controls")

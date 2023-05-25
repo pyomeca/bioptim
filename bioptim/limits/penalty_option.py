@@ -572,6 +572,11 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = self.function[node].expand()
             self.weighted_function[node] = self.weighted_function[node].expand()
 
+    @staticmethod
+    def define_target_mapping(controller: PenaltyController, key: str):
+        target_mapping = controller.get_nlp.variable_mappings[key]
+        return target_mapping
+
     def add_target_to_plot(self, controller: PenaltyController, combine_to: str):
         """
         Interface to the plot so it can be properly added to the proper plot
@@ -594,7 +599,7 @@ class PenaltyOption(OptionGeneric):
                 (self.target[0], np.nan * np.ndarray((self.target[0].shape[0], 1))), axis=1
             )
         else:
-            self.target_to_plot = self.target[0]
+            self.target_temporaty = self.target[0]
 
     def _finish_add_target_to_plot(self, controller: PenaltyController):
         """
@@ -619,14 +624,15 @@ class PenaltyOption(OptionGeneric):
             else:
                 plot_type = PlotType.POINT
 
+            target_mapping = self.define_target_mapping(controller, self.params["key"])
             controller.ocp.add_plot(
                 self.target_plot_name,
                 plot_function,
                 penalty=self if plot_type == PlotType.POINT else None,
                 color="tab:red",
                 plot_type=plot_type,
-                phase=controller.phase_idx,
-                axes_idx=Mapping(self.rows),  # TODO verify if not all elements has target
+                phase=controller.get_nlp.phase_idx,
+                axes_idx=target_mapping,  # TODO verify if not all elements has target
                 node_idx=controller.t,
             )
 
