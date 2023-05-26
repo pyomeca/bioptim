@@ -265,6 +265,58 @@ class PenaltyFunctionAbstract:
             )
 
         @staticmethod
+        def superimpose_markers_velocity(
+                penalty: PenaltyOption,
+                controller: PenaltyController,
+                first_marker: str | int,
+                second_marker: str | int,
+                axes: tuple | list = None,
+        ):
+            """
+            Minimize the distance between two markers
+            By default this function is quadratic, meaning that it minimizes distance between them.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            first_marker: str | int
+                The name or index of one of the two markers
+            second_marker: str | int
+                The name or index of one of the two markers
+            axes: tuple | list
+                The axes to project on. Default is all axes
+            """
+
+            first_marker_idx = (
+                controller.model.marker_index(first_marker) if isinstance(first_marker, str) else first_marker
+            )
+            second_marker_idx = (
+                controller.model.marker_index(second_marker) if isinstance(second_marker, str) else second_marker
+            )
+            PenaltyFunctionAbstract._check_idx(
+                "marker", [first_marker_idx, second_marker_idx], controller.model.nb_markers
+            )
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            marker_velocity = controller.model.marker_velocities(
+                controller.states["q"].mx, controller.states["qdot"].mx)
+            marker_1 = marker_velocity[first_marker_idx]
+            marker_2 = marker_velocity[second_marker_idx]
+
+            diff_markers = marker_2 - marker_1
+
+            return controller.mx_to_cx(
+                f"diff_markers",
+                diff_markers,
+                controller.states["q"],
+                controller.states["qdot"],
+            )
+
+        @staticmethod
         def proportional_states(
             penalty: PenaltyOption,
             controller: PenaltyController,
