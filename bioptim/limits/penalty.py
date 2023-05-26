@@ -266,11 +266,11 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def superimpose_markers_velocity(
-                penalty: PenaltyOption,
-                controller: PenaltyController,
-                first_marker: str | int,
-                second_marker: str | int,
-                axes: tuple | list = None,
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            first_marker: str | int,
+            second_marker: str | int,
+            axes: tuple | list = None,
         ):
             """
             Minimize the distance between two markers
@@ -303,7 +303,8 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             marker_velocity = controller.model.marker_velocities(
-                controller.states["q"].mx, controller.states["qdot"].mx)
+                controller.states["q"].mx, controller.states["qdot"].mx
+            )
             marker_1 = marker_velocity[first_marker_idx]
             marker_2 = marker_velocity[second_marker_idx]
 
