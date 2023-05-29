@@ -21,8 +21,9 @@ from variational_integrator import *
 from save_results import save_results
 
 
-def custom_configure_constrained(ocp: OptimalControlProgram, nlp: NonLinearProgram, bio_model, constraints, jac,
-                                 expand: bool = True):
+def custom_configure_constrained(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, bio_model, constraints, jac, expand: bool = True
+):
     """
     As we are here in a constrained problem, the lambdas are added as states.
 
@@ -57,11 +58,11 @@ def custom_configure_constrained(ocp: OptimalControlProgram, nlp: NonLinearProgr
 
 
 def prepare_ocp(
-        bio_model_path: str,
-        final_time: float,
-        n_shooting: int,
-        use_sx: bool = True,
-        assume_phase_dynamics: bool = True,
+    bio_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    use_sx: bool = True,
+    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -193,20 +194,20 @@ def main():
 
     fig, axs = plt.subplots(2, 3)
     axs[0, 0].set_title("q_Seg1_TransY-0")
-    axs[0, 0].plot(sol.time, sol.states['q'][0], "purple")
+    axs[0, 0].plot(sol.time, sol.states["q"][0], "purple")
     axs[0, 0].plot(data["time"], data["states"]["q"][0], "--m")
     axs[0, 1].set_title("q_Seg1_TransZ-0")
-    axs[0, 1].plot(sol.time, sol.states['q'][1], "purple")
+    axs[0, 1].plot(sol.time, sol.states["q"][1], "purple")
     axs[0, 2].set_title("q_Seg1_RotX-0")
-    axs[0, 2].plot(sol.time, sol.states['q'][2], "purple")
+    axs[0, 2].plot(sol.time, sol.states["q"][2], "purple")
     axs[0, 2].plot(data["time"], data["states"]["q"][1], "--m")
     axs[1, 0].set_title("tau_Seg1_TransY-0")
-    axs[1, 0].step(sol.time, sol.controls['tau'][0], "orange")
+    axs[1, 0].step(sol.time, sol.controls["tau"][0], "orange")
     axs[1, 0].step(data["time"], data["controls"]["tau"][0], "--y")
     axs[1, 1].set_title("tau_Seg1_TransZ-0")
-    axs[1, 1].step(sol.time, sol.controls['tau'][1], "orange")
+    axs[1, 1].step(sol.time, sol.controls["tau"][1], "orange")
     axs[1, 2].set_title("tau_Seg1_RotX-0")
-    axs[1, 2].step(sol.time, sol.controls['tau'][2], "orange")
+    axs[1, 2].step(sol.time, sol.controls["tau"][2], "orange")
     axs[1, 2].step(data["time"], data["controls"]["tau"][1], "--y")
 
     for i in range(2):
@@ -221,7 +222,7 @@ def main():
     plt.ylabel("Constraint force (N)")
     plt.title("Constraint force on q_Seg1_TransZ-0")
     dt = sol.time[1] - sol.time[0]
-    plt.plot(sol.time, sol.states['lambdas'][0] / dt, "purple")
+    plt.plot(sol.time, sol.states["lambdas"][0] / dt, "purple")
 
     plt.show()
 
