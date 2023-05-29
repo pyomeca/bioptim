@@ -109,7 +109,7 @@ def prepare_ocp(
     u_bounds[1, :] = 0  # Prevent the model from actively impose forces on z axis
     u_bounds[2, :] = 0  # Prevent the model from actively rotate
     # Initial guess
-    u_init = InitialGuess([0] * n_q)
+    u_init = InitialGuess([tau_init] * n_q)
 
     # Declare parameters for the initial and final velocities
     parameters = ParameterList()

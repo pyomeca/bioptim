@@ -315,7 +315,7 @@ def custom_dynamics_function(
         ["xdot"],
     )
 
-    time_step = nlp.tf / nlp.ns
+    ts = MX.sym("ts")
     q_prev = MX.sym("q_prev", nlp.model.nb_q, 1)
     q_cur = MX.sym("q_cur", nlp.model.nb_q, 1)
     q_next = MX.sym("q_next", nlp.model.nb_q, 1)
@@ -336,11 +336,11 @@ def custom_dynamics_function(
         lambdas = MX.sym("lambda", constraints.nnz_out(), 1)
         nlp.implicit_dynamics_func = Function(
             "ThreeNodesIntegration",
-            [q_prev, q_cur, q_next, control_prev, control_cur, control_next, lambdas],
+            [ts, q_prev, q_cur, q_next, control_prev, control_cur, control_next, lambdas],
             [
                 discrete_euler_lagrange_equations(
                     bio_model.model,
-                    time_step,
+                    ts,
                     q_prev,
                     q_cur,
                     q_next,
@@ -356,21 +356,21 @@ def custom_dynamics_function(
 
         nlp.implicit_dynamics_func_first_node = Function(
             "TwoFirstNodesIntegration",
-            [q0, q0_dot, q1, control0, control1, lambdas],
+            [ts, q0, q0_dot, q1, control0, control1, lambdas],
             [
                 compute_initial_states(
-                    bio_model.model, time_step, q0, q0_dot, q1, control0, control1, constraints, jac, lambdas
+                    bio_model.model, ts, q0, q0_dot, q1, control0, control1, constraints, jac, lambdas
                 )
             ],
         )
 
         nlp.implicit_dynamics_func_last_node = Function(
             "TwoLastNodesIntegration",
-            [qN_minus_1, qN, qN_dot, controlN_minus_1, controlN, lambdas],
+            [ts, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN, lambdas],
             [
                 compute_final_states(
                     bio_model.model,
-                    time_step,
+                    ts,
                     qN_minus_1,
                     qN,
                     qN_dot,
@@ -386,11 +386,11 @@ def custom_dynamics_function(
     else:
         nlp.implicit_dynamics_func = Function(
             "ThreeNodesIntegration",
-            [q_prev, q_cur, q_next, control_prev, control_cur, control_next],
+            [ts, q_prev, q_cur, q_next, control_prev, control_cur, control_next],
             [
                 discrete_euler_lagrange_equations(
                     bio_model.model,
-                    time_step,
+                    ts,
                     q_prev,
                     q_cur,
                     q_next,
@@ -403,14 +403,14 @@ def custom_dynamics_function(
 
         nlp.implicit_dynamics_func_first_node = Function(
             "TwoFirstNodesIntegration",
-            [q0, q0_dot, q1, control0, control1],
-            [compute_initial_states(bio_model.model, time_step, q0, q0_dot, q1, control0, control1)],
+            [ts, q0, q0_dot, q1, control0, control1],
+            [compute_initial_states(bio_model.model, ts, q0, q0_dot, q1, control0, control1)],
         )
 
         nlp.implicit_dynamics_func_last_node = Function(
             "TwoLastNodesIntegration",
-            [qN_minus_1, qN, qN_dot, controlN_minus_1, controlN],
-            [compute_final_states(bio_model.model, time_step, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN)],
+            [ts, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN],
+            [compute_final_states(bio_model.model, ts, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN)],
         )
 
     if expand:
@@ -460,6 +460,7 @@ def variational_integrator_three_nodes(
     """
     if use_constraints:
         return controllers[0].get_nlp.implicit_dynamics_func(
+            controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
             controllers[1].states["q"].cx,
             controllers[2].states["q"].cx,
@@ -470,6 +471,7 @@ def variational_integrator_three_nodes(
         )
     else:
         return controllers[0].get_nlp.implicit_dynamics_func(
+            controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
             controllers[1].states["q"].cx,
             controllers[2].states["q"].cx,
@@ -497,6 +499,7 @@ def variational_integrator_initial(
     """
     if use_constraints:
         return controllers[0].get_nlp.implicit_dynamics_func_first_node(
+            controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
             controllers[0].parameters.cx[0],
             controllers[1].states["q"].cx,
@@ -506,6 +509,7 @@ def variational_integrator_initial(
         )
     else:
         return controllers[0].get_nlp.implicit_dynamics_func_first_node(
+            controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
             controllers[0].parameters.cx[0],
             controllers[1].states["q"].cx,
@@ -532,6 +536,7 @@ def variational_integrator_final(
     """
     if use_constraints:
         return controllers[0].get_nlp.implicit_dynamics_func_last_node(
+            controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
             controllers[1].states["q"].cx,
             controllers[0].parameters.cx[1],
@@ -541,6 +546,7 @@ def variational_integrator_final(
         )
     else:
         return controllers[0].get_nlp.implicit_dynamics_func_last_node(
+            controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
             controllers[1].states["q"].cx,
             controllers[0].parameters.cx[1],
