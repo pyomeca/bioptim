@@ -41,11 +41,11 @@ def lagrangian(biorbd_model: biorbd_casadi.Model, q: MX | SX, qdot: MX | SX) -> 
 
 
 def discrete_lagrangian(
-        biorbd_model: biorbd_casadi.Model,
-        q1: MX | SX,
-        q2: MX | SX,
-        time_step: float,
-        discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL
+    biorbd_model: biorbd_casadi.Model,
+    q1: MX | SX,
+    q2: MX | SX,
+    time_step: float,
+    discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
 ) -> MX | SX:
     """
     Compute the discrete Lagrangian of a biorbd model.
@@ -83,19 +83,19 @@ def discrete_lagrangian(
         # from : M. West, “Variational integrators,” Ph.D. dissertation, California Inst.
         # Technol., Pasadena, CA, 2004. p 13
         qdot_discrete = (q2 - q1) / time_step
-        return time_step / 2 * (
-                lagrangian(biorbd_model, q1, qdot_discrete) + lagrangian(biorbd_model, q2, qdot_discrete)
+        return (
+            time_step / 2 * (lagrangian(biorbd_model, q1, qdot_discrete) + lagrangian(biorbd_model, q2, qdot_discrete))
         )
     else:
         raise NotImplementedError(f"Discrete Lagrangian {discrete_approximation} is not implemented")
 
 
 def control_approximation(
-        control_minus: MX | SX,
-        control_plus: MX | SX,
-        time_step: float,
-        control_type: ControlType = ControlType.PIECEWISE_CONSTANT,
-        discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
+    control_minus: MX | SX,
+    control_plus: MX | SX,
+    time_step: float,
+    control_type: ControlType = ControlType.PIECEWISE_CONSTANT,
+    discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
 ):
     """
     Compute the term associated to the discrete forcing. The term associated to the controls in the Lagrangian
@@ -132,23 +132,21 @@ def control_approximation(
         elif discrete_approximation == QuadratureRule.RIGHT_APPROXIMATION:
             return 1 / 2 * control_plus * time_step
         elif discrete_approximation == QuadratureRule.TRAPEZOIDAL:
-            raise NotImplementedError(
-                f"Discrete {discrete_approximation} is not implemented for {control_type}"
-            )
+            raise NotImplementedError(f"Discrete {discrete_approximation} is not implemented for {control_type}")
 
 
 def discrete_euler_lagrange_equations(
-        biorbd_model: biorbd_casadi.Model,
-        time_step: float,
-        q_prev: MX | SX,
-        q_cur: MX | SX,
-        q_next: MX | SX,
-        control_prev: MX | SX,
-        control_cur: MX | SX,
-        control_next: MX | SX,
-        constraints: Function = None,
-        jac: Function = None,
-        lambdas: MX | SX = None,
+    biorbd_model: biorbd_casadi.Model,
+    time_step: float,
+    q_prev: MX | SX,
+    q_cur: MX | SX,
+    q_next: MX | SX,
+    control_prev: MX | SX,
+    control_cur: MX | SX,
+    control_next: MX | SX,
+    constraints: Function = None,
+    jac: Function = None,
+    lambdas: MX | SX = None,
 ) -> MX | SX:
     """
     Compute the discrete Euler-Lagrange equations of a biorbd model
@@ -181,16 +179,14 @@ def discrete_euler_lagrange_equations(
     p_current = transpose(jacobian(discrete_lagrangian(biorbd_model, q_prev, q_cur, time_step), q_cur))
 
     D1_Ld_qcur_qnext = transpose(jacobian(discrete_lagrangian(biorbd_model, q_cur, q_next, time_step), q_cur))
-    constraint_term = (
-        transpose(jac(q_cur)) @ lambdas if constraints is not None else MX.zeros(p_current.shape)
-    )
+    constraint_term = transpose(jac(q_cur)) @ lambdas if constraints is not None else MX.zeros(p_current.shape)
 
     residual = (
-            p_current
-            + D1_Ld_qcur_qnext
-            - constraint_term
-            + control_approximation(control_prev, control_cur, time_step)
-            + control_approximation(control_cur, control_next, time_step)
+        p_current
+        + D1_Ld_qcur_qnext
+        - constraint_term
+        + control_approximation(control_prev, control_cur, time_step)
+        + control_approximation(control_cur, control_next, time_step)
     )
 
     if constraints is not None:
@@ -200,16 +196,16 @@ def discrete_euler_lagrange_equations(
 
 
 def compute_initial_states(
-        biorbd_model: biorbd_casadi.Model,
-        time_step: MX | SX,
-        q0: MX | SX,
-        q0_dot: MX | SX,
-        q1: MX | SX,
-        control0: MX | SX,
-        control1: MX | SX,
-        constraints: Function = None,
-        jac: Function = None,
-        lambdas0: MX | SX = None,
+    biorbd_model: biorbd_casadi.Model,
+    time_step: MX | SX,
+    q0: MX | SX,
+    q0_dot: MX | SX,
+    q1: MX | SX,
+    control0: MX | SX,
+    control1: MX | SX,
+    constraints: Function = None,
+    jac: Function = None,
+    lambdas0: MX | SX = None,
 ):
     """
     Compute the initial states of the system from the initial position and velocity.
@@ -221,9 +217,7 @@ def compute_initial_states(
     D1_Ld_q0_q1 = transpose(jacobian(discrete_lagrangian(biorbd_model, q0, q1, time_step), q0))
     f0_minus = control_approximation(control0, control1, time_step)
     constraint_term = (
-        1 / 2 * transpose(jac(q0)) @ lambdas0
-        if constraints is not None
-        else MX.zeros(biorbd_model.nbQ(), 1)
+        1 / 2 * transpose(jac(q0)) @ lambdas0 if constraints is not None else MX.zeros(biorbd_model.nbQ(), 1)
     )
     residual = D2_L_q0_q0dot + D1_Ld_q0_q1 + f0_minus - constraint_term
 
@@ -234,17 +228,17 @@ def compute_initial_states(
 
 
 def compute_final_states(
-        biorbd_model: biorbd_casadi.Model,
-        time_step: MX | SX,
-        qN_minus_1: MX | SX,
-        qN: MX | SX,
-        qN_dot: MX | SX,
-        controlN_minus_1: MX | SX,
-        controlN: MX | SX,
-        constraints: Function = None,
-        jac: Function = None,
-        lambdasN: MX | SX = None,
-        ):
+    biorbd_model: biorbd_casadi.Model,
+    time_step: MX | SX,
+    qN_minus_1: MX | SX,
+    qN: MX | SX,
+    qN_dot: MX | SX,
+    controlN_minus_1: MX | SX,
+    controlN: MX | SX,
+    constraints: Function = None,
+    jac: Function = None,
+    lambdasN: MX | SX = None,
+):
     """
     Compute the initial states of the system from the initial position and velocity.
     """
@@ -255,9 +249,7 @@ def compute_final_states(
     D2_Ld_qN_minus_1_qN = transpose(jacobian(discrete_lagrangian(biorbd_model, qN_minus_1, qN, time_step), qN))
     fd_plus = control_approximation(controlN_minus_1, controlN, time_step)
     constraint_term = (
-        1 / 2 * transpose(jac(qN)) @ lambdasN
-        if constraints is not None
-        else MX.zeros(biorbd_model.nbQ(), 1)
+        1 / 2 * transpose(jac(qN)) @ lambdasN if constraints is not None else MX.zeros(biorbd_model.nbQ(), 1)
     )
 
     residual = -D2_L_qN_qN_dot + D2_Ld_qN_minus_1_qN + fd_plus - constraint_term
@@ -280,12 +272,13 @@ def qdot_function(model, value):
 
 # --- Dynamics --- #
 def custom_dynamics_function(
-        ocp: OptimalControlProgram,
-        nlp: NonLinearProgram,
-        bio_model,
-        constraints: Function = None,
-        jac: Function = None,
-        expand: bool = True):
+    ocp: OptimalControlProgram,
+    nlp: NonLinearProgram,
+    bio_model,
+    constraints: Function = None,
+    jac: Function = None,
+    expand: bool = True,
+):
     """
     Configure the dynamics of the system
 
@@ -344,62 +337,80 @@ def custom_dynamics_function(
         nlp.implicit_dynamics_func = Function(
             "ThreeNodesIntegration",
             [q_prev, q_cur, q_next, control_prev, control_cur, control_next, lambdas],
-            [discrete_euler_lagrange_equations(
-                bio_model.model,
-                time_step,
-                q_prev,
-                q_cur,
-                q_next,
-                control_prev,
-                control_cur,
-                control_next,
-                constraints,
-                jac,
-                lambdas,
-            )]
+            [
+                discrete_euler_lagrange_equations(
+                    bio_model.model,
+                    time_step,
+                    q_prev,
+                    q_cur,
+                    q_next,
+                    control_prev,
+                    control_cur,
+                    control_next,
+                    constraints,
+                    jac,
+                    lambdas,
+                )
+            ],
         )
 
         nlp.implicit_dynamics_func_first_node = Function(
             "TwoFirstNodesIntegration",
             [q0, q0_dot, q1, control0, control1, lambdas],
-            [compute_initial_states(
-                bio_model.model, time_step, q0, q0_dot, q1, control0, control1, constraints, jac, lambdas)]
+            [
+                compute_initial_states(
+                    bio_model.model, time_step, q0, q0_dot, q1, control0, control1, constraints, jac, lambdas
+                )
+            ],
         )
 
         nlp.implicit_dynamics_func_last_node = Function(
             "TwoLastNodesIntegration",
             [qN_minus_1, qN, qN_dot, controlN_minus_1, controlN, lambdas],
-            [compute_final_states(
-                bio_model.model, time_step, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN, constraints, jac,
-                lambdas)]
+            [
+                compute_final_states(
+                    bio_model.model,
+                    time_step,
+                    qN_minus_1,
+                    qN,
+                    qN_dot,
+                    controlN_minus_1,
+                    controlN,
+                    constraints,
+                    jac,
+                    lambdas,
+                )
+            ],
         )
 
     else:
         nlp.implicit_dynamics_func = Function(
             "ThreeNodesIntegration",
             [q_prev, q_cur, q_next, control_prev, control_cur, control_next],
-            [discrete_euler_lagrange_equations(
-                bio_model.model,
-                time_step,
-                q_prev,
-                q_cur,
-                q_next,
-                control_prev,
-                control_cur,
-                control_next,
-            )]
+            [
+                discrete_euler_lagrange_equations(
+                    bio_model.model,
+                    time_step,
+                    q_prev,
+                    q_cur,
+                    q_next,
+                    control_prev,
+                    control_cur,
+                    control_next,
+                )
+            ],
         )
 
         nlp.implicit_dynamics_func_first_node = Function(
             "TwoFirstNodesIntegration",
             [q0, q0_dot, q1, control0, control1],
-            [compute_initial_states(bio_model.model, time_step, q0, q0_dot, q1, control0, control1)]
+            [compute_initial_states(bio_model.model, time_step, q0, q0_dot, q1, control0, control1)],
         )
 
         nlp.implicit_dynamics_func_last_node = Function(
             "TwoLastNodesIntegration",
             [qN_minus_1, qN, qN_dot, controlN_minus_1, controlN],
-            [compute_final_states(bio_model.model, time_step, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN)]
+            [compute_final_states(bio_model.model, time_step, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN)],
         )
 
     if expand:
@@ -432,8 +443,8 @@ def custom_configure_unconstrained(ocp: OptimalControlProgram, nlp: NonLinearPro
 
 # --- Constraints continuity --- #
 def variational_integrator_three_nodes(
-        controllers: list[PenaltyController, PenaltyController, PenaltyController],
-        use_constraints: bool = False,
+    controllers: list[PenaltyController, PenaltyController, PenaltyController],
+    use_constraints: bool = False,
 ):
     """
     The discrete Euler Lagrange equations for the main integration.
@@ -469,8 +480,8 @@ def variational_integrator_three_nodes(
 
 
 def variational_integrator_initial(
-        controllers: list[PenaltyController, PenaltyController],
-        use_constraints: bool = False,
+    controllers: list[PenaltyController, PenaltyController],
+    use_constraints: bool = False,
 ):
     """
     The initial continuity constraint for the integration.
@@ -504,8 +515,8 @@ def variational_integrator_initial(
 
 
 def variational_integrator_final(
-        controllers: list[PenaltyController, PenaltyController],
-        use_constraints: bool = False,
+    controllers: list[PenaltyController, PenaltyController],
+    use_constraints: bool = False,
 ):
     """
     The final continuity constraint for the integration.
