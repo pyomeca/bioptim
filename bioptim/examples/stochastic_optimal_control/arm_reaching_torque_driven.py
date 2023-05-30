@@ -111,7 +111,7 @@ def prepare_ocp(
 def main():
 
     # import bioviz
-    # b = bioviz.Viz("models/arm26.bioMod")
+    # b = bioviz.Viz("models/LeuvenArmModel.bioMod")
     # b.exec()
 
     # --- Prepare the ocp --- #

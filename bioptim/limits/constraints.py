@@ -562,7 +562,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             h = controller.tf / controller.ns
             piecewise_constant_controls = controller.controls.cx_start + controller.stochastic_variables["w_motor"].cx_start
             import biorbd_casadi as biorbd  # Pariterre: using controller.model.forward_dynamics gives free variables error ?
-            model = biorbd.Model("/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/arm26.bioMod") # controller.get_nlp.model.model
+            model = biorbd.Model("/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/LeuvenArmModel.bioMod") # controller.get_nlp.model.model
             k1_qdot = model.ForwardDynamics(x_mean,
                                             x_mean_dot,
                                             piecewise_constant_controls
@@ -630,7 +630,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             h = controller.tf / controller.ns
             piecewise_constant_controls = controller.controls.cx_start + w_noise
             import biorbd_casadi as biorbd
-            model = biorbd.Model("/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/arm26.bioMod") # controller.get_nlp.model.model
+            model = biorbd.Model("/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/LeuvenArmModel.bioMod") # controller.get_nlp.model.model
             k1_qdot = model.ForwardDynamics(x_mean,
                                             x_mean_dot,
                                             piecewise_constant_controls
