@@ -2,23 +2,24 @@
 A pendulum simulation copying the example from bioptim/examples/getting_started/pendulum.py but integrated by the
 variational integrator. Moreover, the model has been freed on the z-axis, it is constrained by the holonomic constraint.
 """
-import pickle
-import numpy as np
-
 from bioptim import (
     Bounds,
-    InitialGuess,
-    ObjectiveFcn,
-    Objective,
-    Solver,
-    BiorbdModel,
     DynamicsList,
-    ParameterList,
+    InitialGuess,
     InterpolationType,
+    Objective,
+    ObjectiveFcn,
+    ParameterList,
+    Solver,
 )
+import matplotlib.pyplot as plt
+import numpy as np
+import pickle
 
 from variational_integrator import *
 from save_results import save_results
+
+from biorbd_model_holonomic import BiorbdModelCustomHolonomic
 
 
 def prepare_ocp(
@@ -26,7 +27,6 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     use_sx: bool = True,
-    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -41,17 +41,13 @@ def prepare_ocp(
         The number of shooting points to define int the direct multiple shooting program.
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM).
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node.
 
     Returns
     -------
     The OptimalControlProgram ready to be solved.
     """
 
-    bio_model = BiorbdModel(bio_model_path)
+    bio_model = BiorbdModelCustomHolonomic(bio_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -116,7 +112,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         use_sx=use_sx,
-        assume_phase_dynamics=assume_phase_dynamics,
+        assume_phase_dynamics=True,
         skip_continuity=True,
         parameters=parameters,
         multinode_constraints=multinode_constraints,
@@ -147,8 +143,6 @@ def main():
 
     # with open(f"results/RK4_100_nodes", "rb") as f:
     #     data = pickle.load(f)
-
-    import matplotlib.pyplot as plt
 
     fig, axs = plt.subplots(2, 2)
     fig.suptitle("Comparison of the states and controls between an optimisation with RK4 and variational integrator")

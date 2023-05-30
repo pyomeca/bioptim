@@ -2,23 +2,27 @@
 A pendulum simulation copying the example from bioptim/examples/getting_started/pendulum.py but integrated by the
 variational integrator.
 """
-import pickle
-import numpy as np
-
 from bioptim import (
-    Bounds,
-    InitialGuess,
-    ObjectiveFcn,
-    Objective,
-    Solver,
     BiorbdModel,
+    Bounds,
     DynamicsList,
-    ParameterList,
+    InitialGuess,
     InterpolationType,
+    Objective,
+    ObjectiveFcn,
+    ParameterList,
+    Solver,
 )
+import matplotlib.pyplot as plt
+import numpy as np
+import pickle
+
+from casadi import MX, SX, vertcat, Function, jacobian
 
 from variational_integrator import *
 from save_results import save_results
+
+from biorbd_model_holonomic import BiorbdModelCustomHolonomic
 
 
 def custom_configure_constrained(
@@ -62,7 +66,6 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     use_sx: bool = True,
-    assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -77,17 +80,13 @@ def prepare_ocp(
         The number of shooting points to define int the direct multiple shooting program.
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM).
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node.
 
     Returns
     -------
     The OptimalControlProgram ready to be solved.
     """
 
-    bio_model = BiorbdModel(bio_model_path)
+    bio_model = BiorbdModelCustomHolonomic(bio_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -136,9 +135,7 @@ def prepare_ocp(
     )
 
     # Holonomic constraints: The pendulum must not move on the z axis
-    q_sym = MX.sym("q", (n_q, 1))
-    constraints = Function("constraint", [q_sym], [q_sym[1]], ["q"], ["constraint"]).expand()
-    jac = Function("jacobian", [q_sym], [jacobian(q_sym[1], q_sym)], ["q"], ["jacobian"]).expand()
+    constraints, jac = bio_model.generate_constraint_and_jacobian_functions(marker_1="marker_1", index=slice(2, 3))
 
     # Dynamics
     dynamics = DynamicsList()
@@ -158,10 +155,10 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         use_sx=use_sx,
-        assume_phase_dynamics=assume_phase_dynamics,
         skip_continuity=True,
         parameters=parameters,
         multinode_constraints=multinode_constraints,
+        assume_phase_dynamics=True,
     )
 
 
@@ -189,8 +186,6 @@ def main():
 
     # with open(f"results/varint_{n_shooting}_nodes", "rb") as f:
     #     data = pickle.load(f)
-
-    import matplotlib.pyplot as plt
 
     fig, axs = plt.subplots(2, 3)
     axs[0, 0].set_title("q_Seg1_TransY-0")
