@@ -1,3 +1,11 @@
+"""
+This example is inspired from the clear pike circle gymnastics skill. It is composed of two pendulums
+representing the trunk and legs segments (only the hip flexion is actuated). The objective is to minimize the
+maximum torque of the hip flexion while performing the clear pike circle motion. The maximum torque is included to the
+problem as a parameter, all torque interval re constrained to be smaller than this parameter, this parameter is the
+minimized.
+"""
+
 import numpy as np
 import biorbd_casadi as biorbd
 from casadi import MX
@@ -35,10 +43,6 @@ def my_parameter_function(bio_model: biorbd.Model, value: MX):
     return
 
 
-def custom_min_parameter(controller: PenaltyController) -> MX:
-    return controller.parameters["max_tau"].cx
-
-
 def prepare_ocp(
     bio_model_path: str = "models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
@@ -70,7 +74,6 @@ def prepare_ocp(
 
     # Add phase independant objective functions
     parameter_objectives = ParameterObjectiveList()
-    parameter_objectives.add(custom_min_parameter, custom_type=ObjectiveFcn.Parameter, weight=1000, quadratic=True)
     parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=1000, quadratic=True)
 
     # Add phase independant constraint functions
@@ -81,6 +84,8 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=0, min_bound=0.1, max_bound=3)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=1, min_bound=0.1, max_bound=3)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10, phase=1)
 
     # Constraints
     constraints = ConstraintList()
@@ -102,13 +107,13 @@ def prepare_ocp(
         x_bounds[i].max[1, :] = np.pi
 
     # Phase 0
-    x_bounds[0][0, 0] = 3.14
+    x_bounds[0][0, 0] = np.pi
     x_bounds[0][1, 0] = 0
     x_bounds[0].min[1, -1] = 6 * np.pi / 8 - 0.1
     x_bounds[0].max[1, -1] = 6 * np.pi / 8 + 0.1
 
     # Phase 1
-    x_bounds[1][0, -1] = 3 * 3.14
+    x_bounds[1][0, -1] = 3 * np.pi
     x_bounds[1][1, -1] = 0
 
     # Initial guess
