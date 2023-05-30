@@ -103,7 +103,7 @@ def prepare_ocp(
     expand = True
     dynamics.add(custom_configure_unconstrained, bio_model=bio_model, expand=expand)
 
-    multinode_constraints = variational_continuity(n_shooting)
+    multinode_constraints = variational_continuity(n_shooting, n_q)
 
     return OptimalControlProgram(
         bio_model,
@@ -143,26 +143,27 @@ def main():
     sol.print_cost()
     sol.animate()
 
-    save_results(sol, f"results/varint_{n_shooting}_nodes")
+    # save_results(sol, f"results/varint_{n_shooting}_nodes")
 
-    with open(f"results/RK4_100_nodes", "rb") as f:
-        data = pickle.load(f)
+    # with open(f"results/RK4_100_nodes", "rb") as f:
+    #     data = pickle.load(f)
 
     import matplotlib.pyplot as plt
 
     fig, axs = plt.subplots(2, 2)
+    fig.suptitle("Comparison of the states and controls between an optimisation with RK4 and variational integrator")
     axs[0, 0].set_title("q_Seg1_TransY-0")
-    axs[0, 0].plot(sol.time, sol.states["q"][0], "purple")
-    axs[0, 0].plot(data["time"], data["states"]["q"][0], "--m")
+    axs[0, 0].plot(sol.time, sol.states["q"][0])
+    # axs[0, 0].plot(data["time"], data["states"]["q"][0])
     axs[0, 1].set_title("q_Seg1_RotX-0")
-    axs[0, 1].plot(sol.time, sol.states["q"][1], "purple")
-    axs[0, 1].plot(data["time"], data["states"]["q"][1], "--m")
+    axs[0, 1].plot(sol.time, sol.states["q"][1])
+    # axs[0, 1].plot(data["time"], data["states"]["q"][1])
     axs[1, 0].set_title("tau_Seg1_TransY-0")
-    axs[1, 0].step(sol.time, sol.controls["tau"][0], "orange")
-    axs[1, 0].step(data["time"], data["controls"]["tau"][0], "--y")
+    axs[1, 0].step(sol.time, sol.controls["tau"][0])
+    # axs[1, 0].step(data["time"], data["controls"]["tau"][0])
     axs[1, 1].set_title("tau_Seg1_RotX-0")
-    axs[1, 1].step(sol.time, sol.controls["tau"][1], "orange")
-    axs[1, 1].step(data["time"], data["controls"]["tau"][1], "--y")
+    axs[1, 1].step(sol.time, sol.controls["tau"][1])
+    # axs[1, 1].step(data["time"], data["controls"]["tau"][1])
 
     for i in range(2):
         for j in range(2):
@@ -170,6 +171,9 @@ def main():
             axs[i, j].legend(["Variational integrator", "RK4"])
 
     plt.show()
+
+    print(sol.parameters["qdot0"])
+    print(sol.parameters["qdotN"])
 
 
 if __name__ == "__main__":

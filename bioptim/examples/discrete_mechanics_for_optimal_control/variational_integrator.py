@@ -44,7 +44,7 @@ def discrete_lagrangian(
     biorbd_model: biorbd_casadi.Model,
     q1: MX | SX,
     q2: MX | SX,
-    time_step: float,
+    time_step: MX | SX,
     discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
 ) -> MX | SX:
     """
@@ -483,6 +483,7 @@ def variational_integrator_three_nodes(
 
 def variational_integrator_initial(
     controllers: list[PenaltyController, PenaltyController],
+    n_qdot: int,
     use_constraints: bool = False,
 ):
     """
@@ -501,7 +502,7 @@ def variational_integrator_initial(
         return controllers[0].get_nlp.implicit_dynamics_func_first_node(
             controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
-            controllers[0].parameters.cx[0],
+            controllers[0].parameters.cx[:n_qdot],
             controllers[1].states["q"].cx,
             controllers[0].controls["tau"].cx,
             controllers[1].controls["tau"].cx,
@@ -511,7 +512,7 @@ def variational_integrator_initial(
         return controllers[0].get_nlp.implicit_dynamics_func_first_node(
             controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
-            controllers[0].parameters.cx[0],
+            controllers[0].parameters.cx[:n_qdot],
             controllers[1].states["q"].cx,
             controllers[0].controls["tau"].cx,
             controllers[1].controls["tau"].cx,
@@ -520,6 +521,7 @@ def variational_integrator_initial(
 
 def variational_integrator_final(
     controllers: list[PenaltyController, PenaltyController],
+    n_qdot: int,
     use_constraints: bool = False,
 ):
     """
@@ -539,7 +541,7 @@ def variational_integrator_final(
             controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
             controllers[1].states["q"].cx,
-            controllers[0].parameters.cx[1],
+            controllers[0].parameters.cx[n_qdot:2 * n_qdot],
             controllers[0].controls["tau"].cx,
             controllers[1].controls["tau"].cx,
             controllers[1].states["lambdas"].cx,
@@ -549,13 +551,13 @@ def variational_integrator_final(
             controllers[0].get_nlp.dt,
             controllers[0].states["q"].cx,
             controllers[1].states["q"].cx,
-            controllers[0].parameters.cx[1],
+            controllers[0].parameters.cx[n_qdot:2 * n_qdot],
             controllers[0].controls["tau"].cx,
             controllers[1].controls["tau"].cx,
         )
 
 
-def variational_continuity(n_shooting, use_constraints: bool = False) -> MultinodeConstraintList:
+def variational_continuity(n_shooting, n_qdot, use_constraints: bool = False) -> MultinodeConstraintList:
     """
     The continuity constraint for the integration.
 
@@ -582,6 +584,7 @@ def variational_continuity(n_shooting, use_constraints: bool = False) -> Multino
         nodes_phase=(0, 0),
         nodes=(0, 1),
         use_constraints=use_constraints,
+        n_qdot=n_qdot,
     )
 
     multinode_constraints.add(
@@ -589,5 +592,6 @@ def variational_continuity(n_shooting, use_constraints: bool = False) -> Multino
         nodes_phase=(0, 0),
         nodes=(n_shooting - 1, n_shooting),
         use_constraints=use_constraints,
+        n_qdot=n_qdot,
     )
     return multinode_constraints
