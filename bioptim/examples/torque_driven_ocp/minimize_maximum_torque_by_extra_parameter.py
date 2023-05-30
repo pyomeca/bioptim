@@ -1,6 +1,14 @@
+"""
+This example is inspired from the clear pike circle gymnastics skill. It is composed of two pendulums
+representing the trunk and legs segments (only the hip flexion is actuated). The objective is to minimize the
+maximum torque of the hip flexion while performing the clear pike circle motion. The maximum torque is included to the
+problem as a parameter, all torque interval re constrained to be smaller than this parameter, this parameter is the
+minimized.
+"""
+
 import numpy as np
 import biorbd_casadi as biorbd
-from casadi import MX, mmax
+from casadi import MX
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -16,7 +24,6 @@ from bioptim import (
     InterpolationType,
     Bounds,
     InitialGuess,
-    Objective,
     BiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
@@ -33,12 +40,6 @@ def custom_constraint_parameters(controller: PenaltyController) -> MX:
 
 def my_parameter_function(bio_model: biorbd.Model, value: MX):
     return
-
-
-def custom_min_parameter(controller: PenaltyController) -> MX:
-    idx = controller.parameters.names.index("max_tau")  # this does not work if the parameters are not of size 1
-    return controller.parameters.cx[idx]
-
 
 def prepare_ocp(
     bio_model_path: str = "models/double_pendulum.bioMod",
@@ -71,7 +72,6 @@ def prepare_ocp(
 
     # Add phase independant objective functions
     parameter_objectives = ParameterObjectiveList()
-    parameter_objectives.add(custom_min_parameter, custom_type=ObjectiveFcn.Parameter, weight=1000, quadratic=True)
     parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=1000, quadratic=True)
 
     # Add objective functions
@@ -99,13 +99,13 @@ def prepare_ocp(
         x_bounds[i].max[1, :] = np.pi
 
     # Phase 0
-    x_bounds[0][0, 0] = 3.14
+    x_bounds[0][0, 0] = np.pi
     x_bounds[0][1, 0] = 0
     x_bounds[0].min[1, -1] = 6 * np.pi / 8 - 0.1
     x_bounds[0].max[1, -1] = 6 * np.pi / 8 + 0.1
 
     # Phase 1
-    x_bounds[1][0, -1] = 3 * 3.14
+    x_bounds[1][0, -1] = 3 * np.pi
     x_bounds[1][1, -1] = 0
 
     # Initial guess

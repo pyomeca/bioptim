@@ -106,9 +106,16 @@ class Parameter(PenaltyOption):
     def shape(self):
         return self.cx.shape[0]
 
-    def add_or_replace_to_parameter_penalty_pool(self, ocp, penalty):
+    def add_or_replace_to_penalty_pool(self, ocp, penalty):
         """
-        ...
+        This allows to add a parameter penalty to the penalty function pool.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        penalty: PenaltyOption
+            The penalty to add
         """
         if not penalty.name:
             if penalty.type.name == "CUSTOM":
@@ -134,6 +141,22 @@ class Parameter(PenaltyOption):
         self._set_penalty_function(ocp, controller, penalty, penalty_function, expand)
 
     def _set_penalty_function(self, ocp, controller, penalty, penalty_function: MX | SX, expand: bool = False):
+        """
+        This method actually created the penalty function and adds it to the pool.
+        
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        controller: PenaltyController
+            A reference to the penalty controller
+        penalty: PenaltyOption
+            The penalty to add
+        penalty_function: MX | SX
+            The penalty function
+        expand: bool
+            If the penalty function should be expanded or not
+        """""
         # Do not use nlp.add_casadi_func because all functions must be registered
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
@@ -168,23 +191,6 @@ class Parameter(PenaltyOption):
 
         pool = controller.ocp.J
         pool.append(penalty)  # [self.list_index] =
-
-    def _add_penalty_to_pool(self, controller: PenaltyController):
-        if isinstance(controller, (list, tuple)):
-            controller = controller[0]  # This is a special case of Node.TRANSITION
-
-        if self.penalty_type == PenaltyType.INTERNAL:
-            pool = (
-                controller.get_nlp.J_internal
-                if controller is not None and controller.get_nlp
-                else controller.ocp.J_internal
-            )
-        elif self.penalty_type == PenaltyType.USER:
-            pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
-        else:
-            raise ValueError(f"Invalid objective type {self.penalty_type}.")
-        pool[self.list_index] = self
-
 
 class ParameterList(UniquePerProblemOptionList):
     """

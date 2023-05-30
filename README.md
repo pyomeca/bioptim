@@ -1358,7 +1358,7 @@ Therefore, one should not call the Parameter constructor directly.
 
 Here is the full signature of the `add()` method of the `ParameterList`:
 ```python
-ParameterList.add(parameter_name: str, function: Callable, initial_guess: InitialGuess, bounds: Bounds, size: int, phase: int, penalty_list: Objective, **extra_parameters)
+ParameterList.add(parameter_name: str, function: Callable, initial_guess: InitialGuess, bounds: Bounds, size: int, phase: int, **extra_parameters)
 ```
 The `parameter_name` is the name of the parameter. 
 This is how it will be referred to in the output data as well.
@@ -1374,9 +1374,6 @@ If an objective function is provided, the return of the objective function shoul
 The `phase` that the parameter applies to.
 Even though a parameter is time independent, one biorbd_model is loaded per phase. 
 Since parameters are associate to a specific bio_model, one must define a parameter per phase.
-The `penalty_list` is the index in the list the penalty is. 
-If one adds multiple parameters, the list is automatically incremented. 
-It is useful however to define this value by hand if one wants to declare the parameters out of order or to override a previously declared parameter using `update_parameters`.
 
 ## The multinode constraints
 `Bioptim` can declare multiphase optimisation programs. The goal of a multiphase ocp is usually to handle changing dynamics. 
