@@ -145,7 +145,7 @@ def prepare_ocp(
     expand = True
     dynamics.add(custom_configure_constrained, bio_model=bio_model, constraints=constraints, jac=jac, expand=expand)
 
-    multinode_constraints = variational_continuity(n_shooting, use_constraints=True)
+    multinode_constraints = variational_continuity(n_shooting, n_q, use_constraints=True)
 
     return OptimalControlProgram(
         bio_model,
@@ -185,30 +185,30 @@ def main():
     sol.print_cost()
     sol.animate()
 
-    save_results(sol, f"results/varint_{n_shooting}_nodes_holonomic")
+    # save_results(sol, f"results/varint_{n_shooting}_nodes_holonomic")
 
-    with open(f"results/varint_{n_shooting}_nodes", "rb") as f:
-        data = pickle.load(f)
+    # with open(f"results/varint_{n_shooting}_nodes", "rb") as f:
+    #     data = pickle.load(f)
 
     import matplotlib.pyplot as plt
 
     fig, axs = plt.subplots(2, 3)
     axs[0, 0].set_title("q_Seg1_TransY-0")
     axs[0, 0].plot(sol.time, sol.states["q"][0], "purple")
-    axs[0, 0].plot(data["time"], data["states"]["q"][0], "--m")
+    # axs[0, 0].plot(data["time"], data["states"]["q"][0], "--m")
     axs[0, 1].set_title("q_Seg1_TransZ-0")
     axs[0, 1].plot(sol.time, sol.states["q"][1], "purple")
     axs[0, 2].set_title("q_Seg1_RotX-0")
     axs[0, 2].plot(sol.time, sol.states["q"][2], "purple")
-    axs[0, 2].plot(data["time"], data["states"]["q"][1], "--m")
+    # axs[0, 2].plot(data["time"], data["states"]["q"][1], "--m")
     axs[1, 0].set_title("tau_Seg1_TransY-0")
     axs[1, 0].step(sol.time, sol.controls["tau"][0], "orange")
-    axs[1, 0].step(data["time"], data["controls"]["tau"][0], "--y")
+    # axs[1, 0].step(data["time"], data["controls"]["tau"][0], "--y")
     axs[1, 1].set_title("tau_Seg1_TransZ-0")
     axs[1, 1].step(sol.time, sol.controls["tau"][1], "orange")
     axs[1, 2].set_title("tau_Seg1_RotX-0")
     axs[1, 2].step(sol.time, sol.controls["tau"][2], "orange")
-    axs[1, 2].step(data["time"], data["controls"]["tau"][1], "--y")
+    # axs[1, 2].step(data["time"], data["controls"]["tau"][1], "--y")
 
     for i in range(2):
         for j in [0, 2]:
