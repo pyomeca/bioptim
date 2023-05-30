@@ -123,7 +123,7 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling) -> tuple:
         """
         The dynamics of the system
 
@@ -153,7 +153,7 @@ class Integrator:
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall"],
         )
@@ -219,7 +219,7 @@ class RK(Integrator):
 
         raise RuntimeError("RK is abstract, please select a specific RK")
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling) -> tuple:
         """
         The dynamics of the system
 
@@ -241,7 +241,7 @@ class RK(Integrator):
 
         u = controls
         x = self.cx(states.shape[0], self.n_step + 1)
-        p = params
+        p = params * param_scaling
         x[:, 0] = states
 
         for i in range(1, self.n_step + 1):
@@ -574,7 +574,7 @@ class COLLOCATION(Integrator):
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling) -> tuple:
         """
         The dynamics of the system
 
@@ -604,10 +604,10 @@ class COLLOCATION(Integrator):
                 xp_j += self._c[r, j] * states[r]
 
             if self.defects_type == DefectType.EXPLICIT:
-                f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
+                f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params * param_scaling)[:, self.idx]
                 defects.append(h * f_j - xp_j)
             elif self.defects_type == DefectType.IMPLICIT:
-                defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params, xp_j / h))
+                defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params * param_scaling, xp_j / h))
             else:
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
@@ -626,7 +626,7 @@ class COLLOCATION(Integrator):
         self.function = Function(
             "integrator",
             [horzcat(*self.x_sym), self.u_sym, self.param_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall", "defects"],
         )
@@ -656,7 +656,7 @@ class IRK(COLLOCATION):
 
         super(IRK, self).__init__(ode, ode_opt)
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling) -> tuple:
         """
         The dynamics of the system
 
@@ -677,7 +677,7 @@ class IRK(COLLOCATION):
         """
 
         nx = states[0].shape[0]
-        _, _, defect = super(IRK, self).dxdt(h, states, controls, params)
+        _, _, defect = super(IRK, self).dxdt(h, states, controls, params, param_scaling)
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         vfcn = Function("vfcn", [vertcat(*states[1:]), states[0], controls, params], [defect]).expand()
@@ -702,7 +702,7 @@ class IRK(COLLOCATION):
         self.function = Function(
             "integrator",
             [self.x_sym[0], self.u_sym, self.param_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling),
             ["x0", "p", "params"],
             ["xf", "xall"],
         )
