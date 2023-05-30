@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -561,7 +561,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # RK4 one step
             h = controller.tf / controller.ns
             piecewise_constant_controls = controller.controls.cx_start + controller.stochastic_variables["w_motor"].cx_start
-            import biorbd_casadi as biorbd
+            import biorbd_casadi as biorbd  # Pariterre: using controller.model.forward_dynamics gives free variables error ?
             model = biorbd.Model("/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/arm26.bioMod") # controller.get_nlp.model.model
             k1_qdot = model.ForwardDynamics(x_mean,
                                             x_mean_dot,
@@ -663,6 +663,23 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
+        def m_equals_inverse_of_dg_dz(_: Constraint, controller: PenaltyController, **unused_param):
+            """
+            ...
+            """
+            nx = controller.states.cx.shape[0]
+            M_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
+
+            # TODO: It should thoretically have been cx_end, but need to verify that it is right instant (not possible to_casadi_func with cx_end riht now)
+            dt = controller.tf / controller.ns
+            dx = controller.dynamics(controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx)
+            DdZ_DX = jacobian(dx, controller.states.cx_start)
+
+            DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
+
+            return M_matrix * DG_DZ - MX_eye(nx)
+
+        @staticmethod
         def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param):
             """
             Compute the difference between symbolic soft contact forces and actual force contact dynamic
@@ -737,7 +754,8 @@ class ConstraintFcn(FcnEnum):
     TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
     TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
-    COVARIANCE_MATRIX_CONINUITY = (PenaltyFunctionAbstract.Functions.covariance_matrix_continuity,)
+    COVARIANCE_MATRIX_CONINUITY_IMPLICIT = (PenaltyFunctionAbstract.Functions.covariance_matrix_continuity_implicit,)
+    COVARIANCE_MATRIX_CONINUITY_EXPLICIT = (PenaltyFunctionAbstract.Functions.covariance_matrix_continuity_explicit,)
 
     @staticmethod
     def get_type():
@@ -765,6 +783,7 @@ class ImplicitConstraintFcn(FcnEnum):
     TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
     A_EQUALS_JACOBIAN_EXPECTED_STATES = (ConstraintFunction.Functions.a_equals_jacobian_expected_states,)
     C_EQUALS_JACOBIAN_MOTOR_NOISE = (ConstraintFunction.Functions.c_equals_jacobian_motor_noise,)
+    M_EQUALS_INVERSE_OF_DG_DZ = (ConstraintFunction.Functions.m_equals_inverse_of_dg_dz,)
 
     @staticmethod
     def get_type():

@@ -1220,10 +1220,10 @@ class ConfigureProblem:
         """
         name = "k"
         name_k = []
-        for name_1 in nlp.model.name_muscles:
-            for name_2 in nlp.model.name_dof:
+        for name_1 in nlp.model.muscle_names:
+            for name_2 in [i for i in nlp.model.name_dof] + [i+"_dot" for i in nlp.model.name_dof]:
                 name_k += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_muscles*nlp.model.nb_q)), list(range(nlp.model.nb_muscles*nlp.model.nb_q)))
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_muscles*nlp.model.nb_q*2)), list(range(nlp.model.nb_muscles*nlp.model.nb_q*2)))
         ConfigureProblem.configure_new_variable(
             name,
             name_k,
@@ -1306,10 +1306,10 @@ class ConfigureProblem:
         """
         name = "cov"
         name_cov = []
-        for name_1 in nlp.model.name_dof:
-            for name_2 in nlp.model.name_dof:
+        for name_1 in [f"X_{i}" for i in range(nlp.states.cx_start.shape[0])]:
+            for name_2 in [f"X_{i}" for i in range(nlp.states.cx_start.shape[0])]:
                 name_cov += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q ** 2)), list(range(nlp.model.nb_q ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.states.cx_start.shape[0] **2)), list(range(nlp.states.cx_start.shape[0] ** 2)))
         ConfigureProblem.configure_new_variable(
             name,
             name_cov,
@@ -1333,7 +1333,7 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "ee_ref"
-        name_ee_ref = [i.to_string() for i in nlp.model.name_dof] + [i.to_string()+"_dot" for i in nlp.model.name_dof]  # quaternions ?
+        name_ee_ref = [i for i in nlp.model.name_dof] + [i+"_dot" for i in nlp.model.name_dof]  # TODO: raise soething for quaternions ?
         nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q+nlp.model.nb_qdot)), list(range(nlp.model.nb_q+nlp.model.nb_qdot)))
         ConfigureProblem.configure_new_variable(
             name,
@@ -1359,10 +1359,10 @@ class ConfigureProblem:
         """
         name = "m"
         name_m = []
-        for name_1 in nlp.model.name_dof:
-            for name_2 in nlp.model.name_dof:
+        for name_1 in [f"X_{i}" for i in range(nlp.states.cx_start.shape[0])]:
+            for name_2 in [f"X_{i}" for i in range(nlp.states.cx_start.shape[0])]:
                 name_m += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q ** 2)), list(range(nlp.model.nb_q ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(nlp.states.cx_start.shape[0] ** 2)), list(range(nlp.states.cx_start.shape[0] ** 2)))
         ConfigureProblem.configure_new_variable(
             name,
             name_m,

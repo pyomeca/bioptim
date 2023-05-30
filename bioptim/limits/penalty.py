@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
@@ -936,7 +936,7 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
-        def covariance_matrix_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
+        def covariance_matrix_continuity_implicit(penalty: PenaltyOption, controller: PenaltyController | list):
 
             P_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
             A_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
@@ -964,6 +964,42 @@ class PenaltyFunctionAbstract:
             penalty.multi_thread = True
 
             return p_implicit_deffect
+
+        @staticmethod
+        def covariance_matrix_continuity_explicit(penalty: PenaltyOption, controller: PenaltyController | list):
+
+            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import optimal_feedback_forward_dynamics
+            import numpy as np
+            wM_numerical = np.array([0.025, 0.025])
+
+            nx = controller.states.cx.shape[0]
+            P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "cov")
+            M_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
+
+            sigma_w = 10 ** (-1)  # How do we choose?
+            dt = controller.tf / controller.ns
+            wM = MX.sym("wM", controller.states['q'].cx.shape[0])
+            dx = optimal_feedback_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
+                                     controller.parameters.cx_start, controller.get_nlp, wM)
+
+
+            dg_dw = jacobian(dx.dxdt, wM)
+            ddx_dx = jacobian(dx.dxdt, controller.states.cx_start)
+            dg_dx = - (ddx_dx*dt/2 + MX_eye(ddx_dx.shape[0]))
+
+            p_constraint = M_matrix @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
+            func_eval = Function("p_constraint", [controller.states.cx_start, controller.controls.cx_start,
+                                                    controller.parameters.cx_start, controller.stochastic_variables.cx_start, wM], [p_constraint])(controller.states.cx_start,
+                                                                                                         controller.controls.cx_start,
+                                                                                                         controller.parameters.cx_start,
+                                                                                                         controller.stochastic_variables.cx_start,
+                                                                                                         wM_numerical)
+
+            penalty.expand = controller.get_nlp.dynamics_type.expand
+            penalty.explicit_derivative = True
+            penalty.multi_thread = True
+
+            return func_eval
 
         @staticmethod
         def custom(penalty: PenaltyOption, controller: PenaltyController | list, **parameters: Any):

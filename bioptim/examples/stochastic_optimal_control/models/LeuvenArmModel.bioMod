@@ -97,47 +97,11 @@ endmusclegroup
         viapoint    BIClong-P2
             parent    base
             muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
+            musclegroup    upperArm_to_foreArm
             position    -0.028944999999999999 0.01391 0.15639
         endviapoint
-        viapoint    BIClong-P3
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.021309999999999999 0.017930000000000001 0.010279999999999999
-        endviapoint
-        viapoint    BIClong-P4
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.023779999999999999 -0.00511 0.01201
-        endviapoint
-        viapoint    BIClong-P5
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01345 -0.02827 0.0013600000000000001
-        endviapoint
-        viapoint    BIClong-P6
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01068 -0.077359999999999998 -0.00165
-        endviapoint
-        viapoint    BIClong-P7
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01703 -0.12125 0.00024000000000000001
-        endviapoint
-        viapoint    BIClong-P8
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.022800000000000001 -0.1754 -0.0063
-        endviapoint
   /////////////////////////??????????????????????
-
+*/
 
     muscle    muscle_2
         Type    degroote
@@ -151,51 +115,6 @@ endmusclegroup
         pennationAngle    0  // ?
         maxVelocity    10
     endmuscle
-
-  /////////////////////////??????????????????????
-        viapoint    BIClong-P2
-            parent    base
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    -0.028944999999999999 0.01391 0.15639
-        endviapoint
-        viapoint    BIClong-P3
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.021309999999999999 0.017930000000000001 0.010279999999999999
-        endviapoint
-        viapoint    BIClong-P4
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.023779999999999999 -0.00511 0.01201
-        endviapoint
-        viapoint    BIClong-P5
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01345 -0.02827 0.0013600000000000001
-        endviapoint
-        viapoint    BIClong-P6
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01068 -0.077359999999999998 -0.00165
-        endviapoint
-        viapoint    BIClong-P7
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01703 -0.12125 0.00024000000000000001
-        endviapoint
-        viapoint    BIClong-P8
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.022800000000000001 -0.1754 -0.0063
-        endviapoint
-  /////////////////////////??????????????????????
   
     muscle    muscle_3
         Type    degroote
@@ -210,33 +129,6 @@ endmusclegroup
         maxVelocity    10
     endmuscle
 
-  /////////////////////////??????????????????????
-        viapoint    BICshort-P2
-            parent    base
-            muscle    BICshort
-            musclegroup    base_to_r_ulna_radius_hand
-            position    -0.0070749999999999997 -0.040039999999999999 0.14507
-        endviapoint
-        viapoint    BICshort-P3
-            parent    r_humerus
-            muscle    BICshort
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.011169999999999999 -0.075759999999999994 -0.011010000000000001
-        endviapoint
-        viapoint    BICshort-P4
-            parent    r_humerus
-            muscle    BICshort
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01703 -0.12125 -0.010789999999999999
-        endviapoint
-        viapoint    BICshort-P5
-            parent    r_humerus
-            muscle    BICshort
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.022800000000000001 -0.1754 -0.0063
-        endviapoint
-          /////////////////////////??????????????????????
-
    muscle    muscle_4
         Type    degroote
         statetype   degroote
@@ -249,51 +141,6 @@ endmusclegroup
         pennationAngle    0  //?
         maxVelocity    10
     endmuscle
-  /////////////////////////??????????????????????
-        viapoint    BIClong-P2
-            parent    base
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    -0.028944999999999999 0.01391 0.15639
-        endviapoint
-        viapoint    BIClong-P3
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.021309999999999999 0.017930000000000001 0.010279999999999999
-        endviapoint
-        viapoint    BIClong-P4
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.023779999999999999 -0.00511 0.01201
-        endviapoint
-        viapoint    BIClong-P5
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01345 -0.02827 0.0013600000000000001
-        endviapoint
-        viapoint    BIClong-P6
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01068 -0.077359999999999998 -0.00165
-        endviapoint
-        viapoint    BIClong-P7
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01703 -0.12125 0.00024000000000000001
-        endviapoint
-        viapoint    BIClong-P8
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.022800000000000001 -0.1754 -0.0063
-        endviapoint
-  /////////////////////////??????????????????????
-
 
     muscle    muscle_5
         Type    degroote
@@ -307,51 +154,6 @@ endmusclegroup
         pennationAngle    0  // ?
         maxVelocity    10
     endmuscle
-
-  /////////////////////////??????????????????????
-        viapoint    BIClong-P2
-            parent    base
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    -0.028944999999999999 0.01391 0.15639
-        endviapoint
-        viapoint    BIClong-P3
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.021309999999999999 0.017930000000000001 0.010279999999999999
-        endviapoint
-        viapoint    BIClong-P4
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.023779999999999999 -0.00511 0.01201
-        endviapoint
-        viapoint    BIClong-P5
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01345 -0.02827 0.0013600000000000001
-        endviapoint
-        viapoint    BIClong-P6
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01068 -0.077359999999999998 -0.00165
-        endviapoint
-        viapoint    BIClong-P7
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01703 -0.12125 0.00024000000000000001
-        endviapoint
-        viapoint    BIClong-P8
-            parent    r_humerus
-            muscle    BIClong
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.022800000000000001 -0.1754 -0.0063
-        endviapoint
-  /////////////////////////??????????????????????
   
     muscle    muscle_6
         Type    degroote
@@ -365,32 +167,4 @@ endmusclegroup
         pennationAngle    0  // ?
         maxVelocity    10
     endmuscle
-
-  /////////////////////////??????????????????????
-        viapoint    BICshort-P2
-            parent    base
-            muscle    BICshort
-            musclegroup    base_to_r_ulna_radius_hand
-            position    -0.0070749999999999997 -0.040039999999999999 0.14507
-        endviapoint
-        viapoint    BICshort-P3
-            parent    r_humerus
-            muscle    BICshort
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.011169999999999999 -0.075759999999999994 -0.011010000000000001
-        endviapoint
-        viapoint    BICshort-P4
-            parent    r_humerus
-            muscle    BICshort
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.01703 -0.12125 -0.010789999999999999
-        endviapoint
-        viapoint    BICshort-P5
-            parent    r_humerus
-            muscle    BICshort
-            musclegroup    base_to_r_ulna_radius_hand
-            position    0.022800000000000001 -0.1754 -0.0063
-        endviapoint
-      /////////////////////////??????????????????????
-      */
           

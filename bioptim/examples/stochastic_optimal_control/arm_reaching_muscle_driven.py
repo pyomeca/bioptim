@@ -47,63 +47,34 @@ def optimal_feedback_forward_dynamics(
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
     nlp: NonLinearProgram,
-    my_additional_factor=1,
+    wM,
 ) -> DynamicsEvaluation:
 
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
+    # residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+    mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
 
-    # @Ipuch: is this really implicit dynamics ?
-    # function G = G_Trapezoidal(X_i, X_i_plus, dX_i, dX_i_plus, dt)
-    # G =  X_i_plus - (X_i + (dX_i + dX_i_plus)/2*dt);
+    import biorbd_casadi as biorbd  # Pariterre: using controller.model.forward_dynamics gives free variables error ?
+    model = biorbd.Model(
+        "/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/arm26.bioMod")  # controller.get_nlp.model.model
 
-    # f_G_Trapezoidal = Function('f_G_Trapezoidal', {X_MX, X_plus_MX, dX_MX, dX_plus_MX},
-    #                            {G_Trapezoidal(X_MX, X_plus_MX, dX_MX, dX_plus_MX, auxdata.dt)})
+    muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
-    # X_i = X(:, i);
-    # X_i_plus = X(:, i + 1);
-    # e_ff_i = e_ff(:, i);
-    # e_ff_i_plus = e_ff(:, i + 1);
-    #
-    # dX_i = functions.f_forwardMusculoskeletalDynamics(X_i, e_ff_i, 0, 0, 0 * wM, 0 * wPq, 0 * wPqdot);
-    # dX_i_plus = functions.f_forwardMusculoskeletalDynamics(X_i_plus, e_ff_i_plus, 0, 0, 0 * wM, 0 * wPq, 0 * wPqdot);
-    # opti.subject_to(functions.f_G_Trapezoidal(X_i, X_i_plus, dX_i, dX_i_plus) * 1e3 == 0);
+    torques_computed = muscles_tau + wM  # + residual_tau
+    dq_computed = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+    dactivations_computed = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations)
 
-    #
-    # if (
-    #         rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-    #         or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-    # ):
-    #     # contacts forces are directly handled with this constraint
-    #     ocp.implicit_constraints.add(
-    #         ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
-    #         node=Node.ALL_SHOOTING,
-    #         constraint_type=ConstraintType.IMPLICIT,
-    #         with_contact=with_contact,
-    #         phase=nlp.phase_idx,
-    #         with_passive_torque=with_passive_torque,
-    #         with_ligament=with_ligament,
-    #     ) # G =  X_i_plus - (X_i + (dX_i + dX_i_plus)/2*dt);
+    # #TODO: add force field
 
-    # dX = forwardMusculoskeletalDynamics_motorNoise(X, u, T_EXT, wM, auxdata)
-    # a = X(1:6);
-    # q = X(7:8);
-    # qdot = X(9:10);
-    #
-    # [Fa, Fp, ~, ~, ~, ~, ~, ~, ~] = getMuscleForce(q, qdot, auxdata);
-    #
-    # Fm = a. * Fa + Fp;
-    # T = TorqueForceRelation(Fm, q, auxdata) + wM;
-    #
-    # F_forceField = auxdata.forceField * (auxdata.l1 * cos(q(1,:)) + auxdata.l2 * cos(q(1,:)+q(2,:)));
-    # T_forceField = -F_forceField * [auxdata.l2 * sin(q(1,:)+q(2,:))+auxdata.l1 * sin(q(1,:));auxdata.l2 * sin(q(1,:)+q(
-    #     2,:))];
-    #
-    #
-    # ddtheta = armForwardDynamics(T, q(2), qdot, T_EXT + T_forceField, auxdata);
-    #
-    # dX = [(u - a). / auxdata.tau;
-    # qdot;
-    # ddtheta];
-    return
+    friction = np.array([[0.05, 0.025], [0.025, 0.05]])
+    mass_matrix = model.massMatrix(q).to_mx()
+    nleffects = model.NonLinearEffect(q, qdot).to_mx()
+
+    dqdot_derivative = cas.inv(mass_matrix) @ (torques_computed - nleffects - friction @ qdot)
+
+    return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_derivative, dactivations_computed), defects=None)
 
 def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
@@ -112,6 +83,17 @@ def stochastic_forward_dynamics(
     nlp: NonLinearProgram,
     my_additional_factor=1,
 ) -> DynamicsEvaluation:
+
+    # Constants TODO: remove fom here
+    wM_std = 0.05
+    wPq_std = 3e-4
+    wPqdot_std = 0.0024
+    dt = final_time / controller.ns
+    wM_magnitude = (wM_std * np.ones((2, 1))) ** 2 / dt
+    wPq_magnitude = (wPq_std * np.ones((2, 1))) ** 2 / dt
+    wPqdot_magnitude = (wPqdot_std * np.ones((2, 1))) ** 2 / dt
+    sensory_noise = np.array([wM_magnitude, wPq_magnitude, wPqdot_magnitude]) @ np.eye(
+        controller.states["q"].cx.shape[0] * 3)
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -134,7 +116,7 @@ def stochastic_forward_dynamics(
     return DynamicsEvaluation(dxdt=cas.vertcat(dq, ddq), defects=None)
 
 
-def configure_optimal_feedback_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+def configure_optimal_feedback_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, wM):
 
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
@@ -151,6 +133,7 @@ def configure_optimal_feedback_problem(ocp: OptimalControlProgram, nlp: NonLinea
     # ?
     # ConfigureProblem.configure_c(ocp, nlp)
     # ConfigureProblem.configure_a(ocp, nlp)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, optimal_feedback_forward_dynamics, wM=wM, expand=False)
 
 def configure_stochastic_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 
@@ -175,7 +158,8 @@ def minimize_uncertainty(controller: PenaltyController, key: str) -> cas.MX:
     Minimize the uncertainty (covariance matrix) of the states.
     """
     P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, controller.states.cx.shape[0], controller.states.cx.shape[0], Node.START, "cov")
-    return cas.trace(P_matrix)[key]
+    P_partial = P_matrix[controller.states[key].index, controller.states[key].index]
+    return cas.trace(P_partial)
 
 def expected_feedback_effort(controller: PenaltyController, final_time: float) -> cas.MX:
 
@@ -185,11 +169,12 @@ def expected_feedback_effort(controller: PenaltyController, final_time: float) -
     wPq_std = 3e-4
     wPqdot_std = 0.0024
     dt = final_time / controller.ns
-    wM_magnitude = (wM_std * np.ones((2, 1))) ** 2 / dt
-    wPq_magnitude = (wPq_std * np.ones((2, 1))) ** 2 / dt
-    wPqdot_magnitude = (wPqdot_std * np.ones((2, 1))) ** 2 / dt
-    sensoryNoise = np.array([wM_magnitude, wPq_magnitude, wPqdot_magnitude]) @ np.eye(
+    wM_magnitude = cas.DM(np.array([wM_std ** 2 / dt, wM_std ** 2 / dt]))
+    wPq_magnitude = cas.DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
+    wPqdot_magnitude = cas.DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
+    sensory_noise = cas.vertcat(wM_magnitude, wPq_magnitude, wPqdot_magnitude).T @ np.eye(
         controller.states["q"].cx.shape[0] * 3)
+    sensory_noise_matrix = sensory_noise[2:].T * cas.MX_eye(4)
 
     # Get the symbolic variables
     X = controller.states.cx_start
@@ -207,20 +192,23 @@ def expected_feedback_effort(controller: PenaltyController, final_time: float) -
 
 
     # Compute the expected effort
-    hand_pos = controller.model.marker(controller.states["q"].cx_start)[2].to_mx()
-    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["dot"].cx_start)[2].to_mx()
-    e_fb = K_matrix @ ((cas.vertcat(hand_pos, hand_vel) - ee_ref) + np.diag(sensoryNoise[2:, 2:]))
-    jac_efb_x = cas.jacobian(e_fb, X)
-    expectedEffort_fb_MX = cas.trace(jac_efb_x @ P_matrix @ jac_efb_x.T) + cas.trace(K_matrix @ sensoryNoise @ K_matrix.T)
-    f_expectedEffort_fb = cas.Function('f_expectedEffort_fb', [controller.states.cx_start, controller.stochastic_variables.cx_start], [expectedEffort_fb_MX])(controller.states.cx_start, controller.stochastic_variables.cx_start)
+    hand_pos = controller.model.marker(controller.states["q"].cx_start, 2)[:2]
+    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start, 2)[:2]
+    trace_k_sensor_k = cas.trace(K_matrix @ sensory_noise_matrix @ K_matrix.T)
+    ee = cas.vertcat(hand_pos, hand_vel)
+    e_fb = K_matrix @ ((ee - ee_ref) + sensory_noise[2:].T)
+    jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
+    trace_jac_p_jack = cas.trace(jac_e_fb_x @ P_matrix @ jac_e_fb_x.T)
+    expectedEffort_fb_mx = trace_k_sensor_k + trace_jac_p_jack
+    f_expectedEffort_fb = cas.Function('f_expectedEffort_fb', [controller.states.cx_start, controller.stochastic_variables.cx_start], [expectedEffort_fb_mx])(controller.states.cx_start, controller.stochastic_variables.cx_start)
     return f_expectedEffort_fb
 
 def prepare_ofcp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     n_threads: int = 1,
+    wM_std: float = 0.05,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -247,14 +235,16 @@ def prepare_ofcp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscle", wight=1e3/2)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscle", wight=1e3/2)
-    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Lagrange, key="muscle", wight=1e3/2)
-    objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, wight=1e3)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1e3/2)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=1e3/2)
+    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Lagrange, key="muscles", weight=1e3/2)
+    objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3, final_time=final_time)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(configure_optimal_feedback_problem, dynamic_function=optimal_feedback_forward_dynamics, final_time=final_time)
+    dt = final_time / n_shooting
+    wM_magnitude = (wM_std * np.ones((2, 1))) ** 2 / dt
+    dynamics.add(configure_optimal_feedback_problem, dynamic_function=optimal_feedback_forward_dynamics, wM=wM_magnitude, expand=False)
 
     # Path constraint
     shoulder_pos_init = 0.3491
@@ -280,7 +270,7 @@ def prepare_ofcp(
     x_bounds.add(bounds=Bounds(states_min, states_max))
 
     n_muscles = bio_model.nb_muscles
-    n_tau = bio_model.nb_tau
+    # n_tau = bio_model.nb_tau
     # u_bounds = Bounds([-100] * n_tau + [0] * n_muscles, [100] * n_tau + [1] * n_muscles)
     u_bounds = Bounds([0.01] * n_muscles, [1] * n_muscles)
 
@@ -292,20 +282,25 @@ def prepare_ofcp(
     states_init[0, :] = [shoulder_pos_init, shoulder_pos_final]
     states_init[1, :] = [elbow_pos_init, elbow_pos_final]
     states_init[n_q + n_qdot:, :] = 0.01
-    x_init = InitialGuess([0] * (n_q + n_qdot), interpolation=InterpolationType.LINEAR)
+    x_init = InitialGuess(states_init, interpolation=InterpolationType.LINEAR)
 
     u_init = InitialGuess([0.01] * n_muscles)
 
     # TODO: This should probably be done automatically, not defined by the user
 
-    n_stochastic = n_muscles*n_q + n_q+n_qdot + n_states*n_states + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10) + P(10x10)
+    n_stochastic = n_muscles*(n_q + n_qdot) + n_q+n_qdot + n_states*n_states + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10) + P(10x10)
+    # 216 ou 24
     s_bounds = Bounds([-10] * n_stochastic, [10] * n_stochastic)
     stochastic_init = np.zeros((n_stochastic, 1))
-    stochastic_init[:n_muscles*n_q, 0] = 0.01  # K
-    stochastic_init[n_muscles*n_q:n_muscles*n_q + n_q+n_qdot, 0] = 0.01  # ee_ref
-    stochastic_init[n_muscles*n_q + n_q+n_qdot:n_muscles*n_q + n_q+n_qdot + n_states*n_states, 0] = 0.01  # M
+    curent_index = 0
+    stochastic_init[:n_muscles*(n_q + n_qdot), 0] = 0.01  # K
+    curent_index += n_muscles*(n_q + n_qdot)
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = 0.01  # ee_ref
+    curent_index += n_q+n_qdot
+    stochastic_init[curent_index : curent_index + n_states*n_states, 0] = 0.01  # M
+    curent_index += n_states*n_states
     mat_p_init = np.eye(10) * np.array([1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-7, 1e-7])
-    stochastic_init[n_muscles*n_q + n_q+n_qdot:n_muscles*n_q + n_q+n_qdot + n_states*n_states:, 0] = mat_p_init.flatten()  # P
+    stochastic_init[curent_index:, 0] = mat_p_init.flatten()  # P
 
     s_init = InitialGuess(stochastic_init)
 
@@ -333,10 +328,10 @@ def prepare_ofcp(
         u_bounds=u_bounds,
         s_bounds=s_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
+        ode_solver=OdeSolver.RK2(),
         n_threads=n_threads,
         assume_phase_dynamics=False,  # TODO: see if it can be done with assume_phase_dynamics=True
-        problem_type=OcpType.OFCP, # StochasticOPtim... (comme mhe)
+        problem_type=OcpType.OFCP,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
     )
 
 
@@ -344,7 +339,6 @@ def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     n_threads: int = 1,
 ) -> OptimalControlProgram:
     """
@@ -372,7 +366,7 @@ def prepare_socp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscle", wight=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STOCHASTIC_VARIABLE, key="cov", weight=1)
 
     # Dynamics
@@ -418,16 +412,7 @@ def prepare_socp(
     u_init = InitialGuess([0.01] * n_muscles)
 
     # TODO: This should probably be done automatically, not defined by the user
-
-    K = opti.variable(6 * 4, N + 1);
-    opti.set_initial(K, 0.01);
-    EE_ref = opti.variable(4, N + 1);
-    opti.set_initial(EE_ref, 0.01);
-    M = opti.variable(nStates, nStates * N);
-    opti.set_initial(M, 0.01);
-    Pmat_init = [1e-6;1e-6;1e-6;1e-6;1e-6;1e-6;1e-4;1e-4;1e-7;1e-7;].*eye(10);
-
-
+    # not right
     n_stochastic = n_muscles*n_q + n_q + n_q**2 + n_q**2 + n_q + n_q + n_q  # + K(6x4)
     s_bounds = Bounds([-10] * n_stochastic, [10] * n_stochastic)
     s_init = InitialGuess([0] * n_stochastic)  # TODO: to be changed probable really bad
@@ -457,7 +442,7 @@ def prepare_socp(
         u_bounds=u_bounds,
         s_bounds=s_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
+        ode_solver=OdeSolver.RK2(),
         n_threads=n_threads,
         assume_phase_dynamics=False,  # TODO: see if it can be done with assume_phase_dynamics=True
     )
@@ -465,14 +450,9 @@ def prepare_socp(
 
 def main():
 
-    import bioviz
-    b = bioviz.Viz("models/LeuvenArmModel.bioMod")
-    b.exec()
-
-    model = biorbd.Model
-    R = biorbd.Rotation.fromEulerAngles(np.array([-np.pi/2, np.pi, np.pi]), 'zxx').to_array()
-    R = biorbd.Rotation.fromEulerAngles(np.array([np.pi, np.pi]), 'xz').to_array()
-
+    # import bioviz
+    # b = bioviz.Viz("models/LeuvenArmModel.bioMod")
+    # b.exec()
 
     # --- Prepare the ocp --- #
     # TODO change the model to their model
@@ -481,9 +461,10 @@ def main():
     n_shooting = int(final_time/dt)
 
     # TODO: devrait-il y avoir ns ou ns+1 P ?
-    ocp = prepare_ofcp(biorbd_model_path="models/LeuvenArmModel.bioMod", final_time=final_time, n_shooting=n_shooting)
+    ofcp = prepare_ofcp(biorbd_model_path="models/LeuvenArmModel.bioMod", final_time=final_time, n_shooting=n_shooting)
+    ofcp.solve(Solver.IPOPT(show_online_optim=False))
 
-    ocp = prepare_socp(biorbd_model_path="models/LeuvenArmModel.bioMod", final_time=final_time, n_shooting=n_shooting)
+    socp = prepare_socp(biorbd_model_path="models/LeuvenArmModel.bioMod", final_time=final_time, n_shooting=n_shooting)
 
     # Custom plots
     # ocp.add_plot_penalty(CostType.ALL)

@@ -259,11 +259,11 @@ class PenaltyController:
         i = 0
         for s0 in range(shape_0):
             for s1 in range(shape_1):
-                if isinstance(node, Node.START):
+                if node == Node.START:
                     matrix[s0, s1] = variable[key].cx_start[i]
-                elif isinstance(node, Node.MID):
+                elif node == Node.MID:
                     matrix[s0, s1] = variable[key].cx_mid[i]
-                elif isinstance(node, Node.END):
+                elif node == Node.END:
                     matrix[s0, s1] = variable[key].cx_end[i]
                 else:
                     raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")

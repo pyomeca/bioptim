@@ -595,9 +595,9 @@ class OptimalControlProgram:
 
         # Prepare the dynamics
         for i in range(self.n_phases):
-            if isinstance(problem_type, OcpType.SOCP):
+            if problem_type == OcpType.SOCP:
                 self._prepare_stochastic_dynamics(self.nlp[i])
-            elif isinstance(problem_type, OcpType.OFCP):
+            elif problem_type == OcpType.OFCP:
                 self._prepare_feedback_dynamics(self.nlp[i])
 
         # Define continuity constraints
@@ -810,23 +810,15 @@ class OptimalControlProgram:
         ...
         """
 
-        penalty_a = Constraint(
-                ImplicitConstraintFcn.A_EQUALS_JACOBIAN_EXPECTED_STATES,
+        penalty_m_dg_dz = Constraint(
+                ImplicitConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
                 node=Node.ALL_SHOOTING,
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
-        penalty_a.add_or_replace_to_penalty_pool(self, nlp)
+        penalty_m_dg_dz.add_or_replace_to_penalty_pool(self, nlp)
 
-        penalty_c = Constraint(
-                ImplicitConstraintFcn.C_EQUALS_JACOBIAN_MOTOR_NOISE,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
-        penalty_c.add_or_replace_to_penalty_pool(self, nlp)
-
-        penalty_cov = Constraint(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
+        penalty_cov = Constraint(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY_EXPLICIT, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
         penalty_cov.add_or_replace_to_penalty_pool(self, nlp)
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
