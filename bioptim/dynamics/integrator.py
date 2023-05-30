@@ -607,7 +607,11 @@ class COLLOCATION(Integrator):
                 f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params * param_scaling)[:, self.idx]
                 defects.append(h * f_j - xp_j)
             elif self.defects_type == DefectType.IMPLICIT:
-                defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params * param_scaling, xp_j / h))
+                defects.append(
+                    self.implicit_fun(
+                        states[j], self.get_u(controls, self.step_time[j]), params * param_scaling, xp_j / h
+                    )
+                )
             else:
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 

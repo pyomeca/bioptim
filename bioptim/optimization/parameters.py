@@ -156,7 +156,7 @@ class Parameter(PenaltyOption):
             The penalty function
         expand: bool
             If the penalty function should be expanded or not
-        """""
+        """ ""
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         state_cx = ocp.cx(0, 0)

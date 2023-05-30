@@ -730,11 +730,11 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 40.129228696605416, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((5.30726302, 0.        )))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-9.18526969,  0.        )))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((5.30726302, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-9.18526969, 0.0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 7.09013074e-04, -9.81024280e+00]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0, 7.09013074e-04, -9.81024280e00]]).T)
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         np.testing.assert_equal(g.shape, (80, 1))
@@ -743,11 +743,11 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 47.54177750133052, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((5.84666068, 0.        )))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.11740347,   0.        )))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((5.84666068, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.11740347, 0.0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0,  5.36657350e-04, -9.81453187e+00]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0, 5.36657350e-04, -9.81453187e00]]).T)
 
     else:
         np.testing.assert_equal(g.shape, (400, 1))
@@ -756,11 +756,11 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 454.0304485356793, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((-2.28529497,  0.        )))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-45.74351336,   0.        )))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-2.28529497, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-45.74351336, 0.0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 2.07380613e-03, -9.99999939e+00]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0, 2.07380613e-03, -9.99999939e00]]).T)
 
     # detailed cost values
     sol.detailed_cost_values()
