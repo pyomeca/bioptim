@@ -23,15 +23,6 @@ class VariationalIntegratorType(Enum):
     FORCED_CONSTRAINED_DISCRETE_EULER_LAGRANGE = "forced_constrained_discrete_euler_lagrange"
 
 
-class ControlType(Enum):
-    """
-    The different control types
-    """
-
-    PIECEWISE_CONSTANT = "piecewise_constant"
-    PIECEWISE_LINEAR = "piecewise_linear"
-
-
 class InitialGuessApproximation(Enum):
     """
     The different initial guess approximations available for the Newton's method
