@@ -1605,7 +1605,7 @@ class OptimalControlProgram:
         # Copy to self.original_values so it can be save/load
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
-        self.v.parameters_in_list[0].add_or_replace_to_parameter_penalty_pool(self, new_penalty)
+        self.v.parameters_in_list[0].add_or_replace_to_penalty_pool(self, new_penalty)
 
         self.program_changed = True
 
