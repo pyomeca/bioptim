@@ -688,6 +688,7 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
         assume_phase_dynamics=assume_phase_dynamics,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -715,11 +716,11 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1947.9530924905557, decimal=6)  # 78013.68624275683
+    np.testing.assert_almost_equal(f[0, 0], 78013.68624275683, decimal=6)
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((9.1465071, 0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-8.2425197, 0)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((5.41573545, 0.        )))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-8.78666119,  0.        )))
 
     # gravity parameter
     np.testing.assert_almost_equal(gravity, np.array([[0, 0.1598677, -9.8530712]]).T)

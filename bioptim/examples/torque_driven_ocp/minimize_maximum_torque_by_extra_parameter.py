@@ -78,6 +78,8 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=0, min_bound=0.1, max_bound=3)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=1, min_bound=0.1, max_bound=3)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=1)
 
     # Constraints
     constraints = ConstraintList()
