@@ -618,6 +618,7 @@ class ConfigureProblem:
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
+            nlp.stochastic_variables.mx,
             nlp,
             **extra_params,
         )
@@ -631,9 +632,10 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
+                nlp.stochastic_variables.mx,
             ],
             [dynamics_dxdt],
-            ["x", "u", "p"],
+            ["x", "u", "p", "s"],
             ["xdot"],
         )
         if expand:
@@ -646,10 +648,11 @@ class ConfigureProblem:
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
+                    nlp.stochastic_variables.mx,
                     nlp.states_dot.scaled.mx_reduced,
                 ],
                 [dynamics_eval.defects],
-                ["x", "u", "p", "xdot"],
+                ["x", "u", "p", "s", "xdot"],
                 ["defects"],
             ).expand()
 

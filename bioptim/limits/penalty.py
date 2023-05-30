@@ -971,6 +971,8 @@ class PenaltyFunctionAbstract:
             from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import optimal_feedback_forward_dynamics
             import numpy as np
             wM_numerical = np.array([0.025, 0.025])
+            wPq_numerical = np.array([9e-6, 9e-6])
+            wPqdot_numerical = np.array([0.000576, 0.000576])
 
             nx = controller.states.cx.shape[0]
             P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "cov")
@@ -979,8 +981,10 @@ class PenaltyFunctionAbstract:
             sigma_w = 10 ** (-1)  # How do we choose?
             dt = controller.tf / controller.ns
             wM = MX.sym("wM", controller.states['q'].cx.shape[0])
+            wP = MX.sym("wP", controller.states['q'].cx.shape[0])
+            wPdot = MX.sym("wPdot", controller.states['q'].cx.shape[0])
             dx = optimal_feedback_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
-                                     controller.parameters.cx_start, controller.get_nlp, wM)
+                                     controller.parameters.cx_start, controller.stochastic_variables.cx_start, controller.get_nlp, wM, wP, wPdot)
 
 
             dg_dw = jacobian(dx.dxdt, wM)
@@ -989,11 +993,13 @@ class PenaltyFunctionAbstract:
 
             p_constraint = M_matrix @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
             func_eval = Function("p_constraint", [controller.states.cx_start, controller.controls.cx_start,
-                                                    controller.parameters.cx_start, controller.stochastic_variables.cx_start, wM], [p_constraint])(controller.states.cx_start,
+                                                    controller.parameters.cx_start, controller.stochastic_variables.cx_start, wM, wP, wPdot], [p_constraint])(controller.states.cx_start,
                                                                                                          controller.controls.cx_start,
                                                                                                          controller.parameters.cx_start,
                                                                                                          controller.stochastic_variables.cx_start,
-                                                                                                         wM_numerical)
+                                                                                                         wM_numerical,
+                                                                                                         wPq_numerical,
+                                                                                                         wPqdot_numerical)
 
             penalty.expand = controller.get_nlp.dynamics_type.expand
             penalty.explicit_derivative = True

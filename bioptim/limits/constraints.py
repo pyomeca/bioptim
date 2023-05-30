@@ -667,12 +667,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             ...
             """
+            # from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import optimal_feedback_forward_dynamics
+            # import numpy as np
+            # wM_numerical = np.array([0.025, 0.025])
+            # wM = MX.sym("wM", controller.states['q'].cx.shape[0])
+            # dx = optimal_feedback_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
+            #                          controller.parameters.cx_start, controller.get_nlp, wM)
+
             nx = controller.states.cx.shape[0]
             M_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
 
             # TODO: It should thoretically have been cx_end, but need to verify that it is right instant (not possible to_casadi_func with cx_end riht now)
             dt = controller.tf / controller.ns
-            dx = controller.dynamics(controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx)
+            dx = controller.dynamics(controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx, controller.stochastic_variables.cx)
             DdZ_DX = jacobian(dx, controller.states.cx_start)
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
