@@ -3,62 +3,18 @@ A pendulum simulation copying the example from bioptim/examples/getting_started/
 variational integrator.
 """
 from bioptim import (
-    BiorbdModel,
     Bounds,
-    DynamicsList,
     InitialGuess,
     InterpolationType,
     Objective,
     ObjectiveFcn,
-    ParameterList,
     Solver,
 )
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
-
-from casadi import MX, SX, vertcat, Function, jacobian
-
-from variational_integrator import *
-from save_results import save_results
 
 from biorbd_model_holonomic import BiorbdModelCustomHolonomic
-
-
-def custom_configure_constrained(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, bio_model, constraints, jac, expand: bool = True
-):
-    """
-    As we are here in a constrained problem, the lambdas are added as states.
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp.
-    nlp: NonLinearProgram
-        A reference to the phase.
-    bio_model: BiorbdModel
-        The biorbd model.
-    constraints: Function
-        The constraints function.
-    jac: Function
-        The jacobian of the constraints.
-    expand: bool
-        If the dynamics should be expanded with casadi.
-    """
-
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_new_variable(
-        "lambdas",
-        ["Seg1_TransZ"],  # Note: to be generalized when more constraints are added
-        ocp,
-        nlp,
-        as_states=True,
-        as_controls=False,
-        as_states_dot=False,
-    )
-    custom_dynamics_function(ocp, nlp, bio_model, constraints, jac, expand)
+from variational_optimal_control_program import VariationalOptimalControlProgram
 
 
 def prepare_ocp(
@@ -66,7 +22,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     use_sx: bool = True,
-) -> OptimalControlProgram:
+) -> VariationalOptimalControlProgram:
     """
     The initialization of an ocp
 
@@ -110,55 +66,32 @@ def prepare_ocp(
     # Initial guess
     u_init = InitialGuess([tau_init] * n_q)
 
-    # Declare parameters for the initial and final velocities
-    parameters = ParameterList()
-    # Give the parameter some min and max bounds
+    # Give the initial and final velocities some min and max bounds
     qdot0_bounds = Bounds([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], interpolation=InterpolationType.CONSTANT)
     qdotN_bounds = Bounds([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], interpolation=InterpolationType.CONSTANT)
     # And an initial guess
     qdot0_init = InitialGuess([0] * n_q)
     qdotN_init = InitialGuess([0] * n_q)
 
-    parameters.add(
-        "qdot0",  # The name of the parameter
-        function=qdot_function,  # The function that modifies the biorbd model
-        initial_guess=qdot0_init,  # The initial guess
-        bounds=qdot0_bounds,  # The bounds
-        size=n_q,  # The number of elements this particular parameter vector has
-    )
-    parameters.add(
-        "qdotN",  # The name of the parameter
-        function=qdot_function,  # The function that modifies the biorbd model
-        initial_guess=qdotN_init,  # The initial guess
-        bounds=qdotN_bounds,  # The bounds
-        size=n_q,  # The number of elements this particular parameter vector has
-    )
-
     # Holonomic constraints: The pendulum must not move on the z axis
     constraints, jac = bio_model.generate_constraint_and_jacobian_functions(marker_1="marker_1", index=slice(2, 3))
 
-    # Dynamics
-    dynamics = DynamicsList()
-    expand = True
-    dynamics.add(custom_configure_constrained, bio_model=bio_model, constraints=constraints, jac=jac, expand=expand)
-
-    multinode_constraints = variational_continuity(n_shooting, n_q, use_constraints=True)
-
-    return OptimalControlProgram(
+    return VariationalOptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
+        q_init=x_init,
         u_init=u_init,
-        x_bounds=x_bounds,
+        q_bounds=x_bounds,
         u_bounds=u_bounds,
+        qdot0_init=qdot0_init,
+        qdot0_bounds=qdot0_bounds,
+        qdotN_init=qdotN_init,
+        qdotN_bounds=qdotN_bounds,
+        holonomic_constraints=constraints,
+        holonomic_constraints_jacobian=jac,
         objective_functions=objective_functions,
         use_sx=use_sx,
-        skip_continuity=True,
-        parameters=parameters,
-        multinode_constraints=multinode_constraints,
-        assume_phase_dynamics=True,
     )
 
 

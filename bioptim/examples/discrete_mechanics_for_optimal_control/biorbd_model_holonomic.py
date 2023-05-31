@@ -1,31 +1,33 @@
-from typing import Callable, Any
+"""
+Biorbd model for holonomic constraints and variational integrator.
+"""
+from typing import Callable
 
 from bioptim import (
+    BiorbdModel,
     ControlType,
 )
 import biorbd_casadi as biorbd
 from biorbd_casadi import (
     GeneralizedCoordinates,
     GeneralizedVelocity,
-    GeneralizedTorque,
     GeneralizedAcceleration,
 )
-from casadi import SX, MX, vertcat, horzcat, norm_fro, Function, solve, jacobian, transpose
-from bioptim import Bounds, BiMapping, BiMappingList, BiorbdModel
+from casadi import SX, MX, vertcat, horzcat, Function, solve, jacobian, transpose
 
 from enums import QuadratureRule
 
 
 class BiorbdModelCustomHolonomic(BiorbdModel):
     """
-    This class allows to define a biorbd model with custom holonomic constraints,
-    very experimental and not tested
+    This class allows to define a biorbd model with custom holonomic constraints and the methods for the variational
+    integrator, very experimental and not tested.
     """
 
     def __init__(self, bio_model: str | biorbd.Model):
         super().__init__(bio_model)
         self._holonomic_constraints = []
-        self._holonomic_constraints_jacobians = []
+        self._holonomic_constraints_jacobian = []
         self._holonomic_constraints_derivatives = []
         self._holonomic_constraints_double_derivatives = []
         self.stabilization = False
@@ -51,7 +53,7 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
             The double derivative of the holonomic constraint
         """
         self._holonomic_constraints.append(constraint)
-        self._holonomic_constraints_jacobians.append(constraint_jacobian)
+        self._holonomic_constraints_jacobian.append(constraint_jacobian)
         self._holonomic_constraints_double_derivatives.append(constraint_double_derivative)
 
     @property
@@ -70,7 +72,7 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
         return vertcat(*[c(q) for c in self._holonomic_constraints])
 
     def holonomic_constraints_jacobian(self, q: MX):
-        return vertcat(*[c(q) for c in self._holonomic_constraints_jacobians])
+        return vertcat(*[c(q) for c in self._holonomic_constraints_jacobian])
 
     def holonomic_constraints_derivative(self, q: MX, qdot: MX):
         return self.holonomic_constraints_jacobian(q) @ qdot
