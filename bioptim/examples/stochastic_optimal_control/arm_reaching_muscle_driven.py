@@ -13,6 +13,7 @@ import platform
 import biorbd
 import casadi as cas
 import numpy as np
+from IPython import embed
 
 import sys
 sys.path.append("/home/charbie/Documents/Programmation/BiorbdOptim")
@@ -297,31 +298,37 @@ def ee_equals_ee_ref(controller: PenaltyController) -> cas.MX:
     # val = controller.mx_to_cx("ee_equals_ee_ref", ee - ee_ref, q, qdot, ee_ref)
     return ee - ee_ref
 
-def reach_target(controller: PenaltyController, q_final: np.ndarray) -> cas.MX:
+def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
+    """
+    Constraint the hand to reach the target consistently.
+    """
 
     import biorbd_casadi as biorbd  # Pariterre: using controller.model.forward_dynamics gives free variables error ?
     model = biorbd.Model(
         "/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/LeuvenArmModel.bioMod")  # controller.get_nlp.model.model
 
-    Q = cas.MX.sym("q_sym")
-    qdot = controller.states["qdot"].cx
+    Q = cas.MX.sym("q_sym", controller.states["q"].cx.shape[0])
+    Qdot = cas.MX.sym("qdot_sym", controller.states["qdot"].cx.shape[0])
     P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, controller.states.cx.shape[0], controller.states.cx.shape[0], Node.START, "cov")
 
     hand_pos = model.marker(Q, 2).to_mx()[:2]
-    hand_vel = model.markerVelocity(q_final, qdot, 2).to_mx()[:2]
+    hand_vel = model.markerVelocity(Qdot, Qdot, 2).to_mx()[:2]
+
     jac_marker_q = cas.jacobian(hand_pos, Q)
+    jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(Q, Qdot))
 
-    # ee = cas.MX_eye(4)
-    # ee[0, 0] = hand_pos[0]
-    # ee[1, 1] = hand_pos[1]
-    # ee[2, 2] = hand_vel[0]
-    # ee[3, 3] = hand_vel[1]
-    ee = cas.vertcat(hand_pos, hand_vel)
+    P_matrix_q = P_matrix[:2, :2]
+    P_matrix_qdot = P_matrix[:4, :4]
 
-    # jacobian(EEVel_MX,[q_MX qdot_MX])*P_qdot_MX*jacobian(EEVel_MX,[q_MX qdot_MX])'
+    pos_constraint = jac_marker_q @ P_matrix_q @ jac_marker_q.T
+    vel_constraint = jac_marker_qdot @ P_matrix_qdot @ jac_marker_qdot.T
 
-    val = cas.vercat(cas.diag(jac_marker_q @ P_matrix @ jac_marker_q) - ee[:2],
-                     cas.diag(jac_marker_q @ P_matrix @ jac_marker_q) - ee[2:])
+    out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
+
+    fun = cas.Function("reach_target_consistantly", [Q, Qdot, controller.stochastic_variables.cx], [out])
+    val = fun(controller.states["q"].cx_start, controller.states["qdot"].cx_start, controller.stochastic_variables.cx_start)
+    # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
+
     return val
 
 def expected_feedback_effort(controller: PenaltyController, final_time: float) -> cas.MX:
@@ -369,7 +376,7 @@ def prepare_ofcp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    n_threads: int = 1,
+    n_threads: int = 12,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -398,6 +405,7 @@ def prepare_ofcp(
     shoulder_pos_final = 0.9599
     elbow_pos_init = 2.2459  # Optimized in Tom's version
     elbow_pos_final = 1.1594  # Optimized in Tom's version
+    ee_final_position = np.array([0.55190516, -0.017223, 0])  # Computed from the final hand position
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -410,7 +418,8 @@ def prepare_ofcp(
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL)
     # No acceleration at the first and last nodes
-    constraints.add(reach_target, node=Node.END, q_final=np.array([shoulder_pos_final, elbow_pos_final]), min_bound=np.array([0, 0, 0, 0]), max_bound=np.array([1, 0.004**2, 0.05**2, 0.05**2]))
+    constraints.add(reach_target_consistantly, node=Node.END, min_bound=np.array([0, 0, 0, 0]), max_bound=np.array([1, 0.004**2, 0.05**2, 0.05**2]))
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, target=ee_final_position)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -518,7 +527,7 @@ def prepare_ofcp(
         constraints=constraints,
         ode_solver=OdeSolver.RK2(),
         n_threads=n_threads,
-        assume_phase_dynamics=False,  # TODO: see if it can be done with assume_phase_dynamics=True
+        assume_phase_dynamics=True,  # TODO: see if it can be done with assume_phase_dynamics=True
         problem_type=OcpType.OFCP,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
     )
 
@@ -532,7 +541,7 @@ def main():
 
     # --- Prepare the ocp --- #
     # TODO change the model to their model
-    dt = 0.1  # 0.01
+    dt = 0.01
     final_time = 0.8
     n_shooting = int(final_time/dt)
 
@@ -542,10 +551,12 @@ def main():
     solver.set_tol(1e-3)
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
-    solver.set_maximum_iterations(1)
+    solver.set_maximum_iterations(1000)
 
     ofcp = prepare_ofcp(biorbd_model_path="models/LeuvenArmModel.bioMod", final_time=final_time, n_shooting=n_shooting)
     sol_ofcp = ofcp.solve(solver)
+
+    embed()
 
     stochastic_variables = sol_ofcp["stochastic_variables"]
     # ee_ref, K
