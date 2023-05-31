@@ -69,6 +69,8 @@ class Solution:
         The data structure that holds the controls
     parameters: dict
         The data structure that holds the parameters
+    _stochastic_variables: list
+        The data structure that holds the stochastic variables
     phase_time: list
         The total time for each phases
 
@@ -381,12 +383,14 @@ class Solution:
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_states, sol_controls = _sol[0], _sol[1]
+            sol_states, sol_controls, sol_stochastic_variables = _sol[0], _sol[1], _sol[3]
+            # States
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
                 s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states.scaled.shape, ns, "states")
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
+            # Controls
             for p, s in enumerate(sol_controls):
                 control_type = self.ocp.nlp[p].control_type
                 if control_type == ControlType.CONSTANT:
@@ -398,11 +402,16 @@ class Solution:
                 s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls.scaled.shape, self.ns[p], "controls")
                 for i in range(self.ns[p] + off):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
-
+            # Parameters
             if n_param:
                 sol_params = _sol[2]
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
+            # Stochastic variables
+            for p, s in enumerate(sol_stochastic_variables):
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].stochastic_variables.shape, self.ns[p], "stochastic_variables")
+                for i in range(self.ns[p] + 1):
+                    self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
             self._states["scaled"], self._controls["scaled"], self.parameters, self._stochastic_variables = self.ocp.v.to_dictionaries(self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
@@ -524,6 +533,7 @@ class Solution:
             new._states["scaled"] = deepcopy(self._states["scaled"])
             new._controls["scaled"] = deepcopy(self._controls["scaled"])
             new.parameters = deepcopy(self.parameters)
+            new._stochastic_variables = deepcopy(self._stochastic_variables)
             new._states["unscaled"] = deepcopy(self._states["unscaled"])
             new._controls["unscaled"] = deepcopy(self._controls["unscaled"])
 
@@ -678,6 +688,18 @@ class Solution:
         """
 
         return self._controls["scaled"] if len(self._controls["scaled"]) > 1 else self._controls["scaled"][0]
+
+    @property
+    def stochastic_variables(self) -> list | dict:
+        """
+        Returns the stochastic variables in list if more than one phases, otherwise it returns the only dict
+
+        Returns
+        -------
+        The stochastic variables data
+        """
+
+        return self._stochastic_variables if len(self._stochastic_variables) > 1 else self._stochastic_variables[0]
 
     @property
     def time(self) -> list | dict | np.ndarray:
@@ -1024,6 +1046,7 @@ class Solution:
                 if nlp.control_type == ControlType.NONE
                 else self._controls["unscaled"][controls_phase_idx]["all"]
             )
+            s = self._stochastic_variables[p]
             if integrator != SolutionIntegrator.OCP:
                 out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
@@ -1032,6 +1055,7 @@ class Solution:
                     x0=x0,
                     u=u,
                     params=params,
+                    s=s,
                     method=integrator.value,
                     control_type=nlp.control_type,
                 )
@@ -1043,6 +1067,7 @@ class Solution:
                     x0=x0,
                     u=u,
                     params=params,
+                    s=s,
                     param_scaling=param_scaling,
                     shooting_type=shooting_type,
                     control_type=nlp.control_type,

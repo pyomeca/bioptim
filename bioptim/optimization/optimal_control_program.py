@@ -599,6 +599,7 @@ class OptimalControlProgram:
                 self._prepare_stochastic_dynamics(self.nlp[i])
             elif problem_type == OcpType.OFCP:
                 self._prepare_feedback_dynamics(self.nlp[i])
+                # TODO: add interphase continuity constraints
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,

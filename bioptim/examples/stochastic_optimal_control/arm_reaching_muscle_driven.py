@@ -10,7 +10,9 @@ reduce uncertainty. This covariance matrix is computed from the expected states.
 
 import platform
 
+import pickle
 import biorbd
+import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
 from IPython import embed
@@ -526,7 +528,7 @@ def prepare_ofcp(
         objective_functions=objective_functions,
         constraints=constraints,
         ode_solver=OdeSolver.RK2(),
-        n_threads=n_threads,
+        n_threads=1,  # n_threads,
         assume_phase_dynamics=True,  # TODO: see if it can be done with assume_phase_dynamics=True
         problem_type=OcpType.OFCP,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
     )
@@ -535,6 +537,7 @@ def main():
 
     # TODO: devrait-il y avoir ns ou ns+1 P ?
 
+    biorbd_model_path = "models/LeuvenArmModel.bioMod"
     # import bioviz
     # b = bioviz.Viz("models/LeuvenArmModel.bioMod")
     # b.exec()
@@ -553,15 +556,52 @@ def main():
     solver.set_constr_viol_tol(1e-7)
     solver.set_maximum_iterations(1000)
 
-    ofcp = prepare_ofcp(biorbd_model_path="models/LeuvenArmModel.bioMod", final_time=final_time, n_shooting=n_shooting)
+    ofcp = prepare_ofcp(biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting)
     sol_ofcp = ofcp.solve(solver)
+
+    q_sol = sol_ofcp.states["q"]
+    qdot_sol = sol_ofcp.states["qdot"]
+    activations_sol = sol_ofcp.states["muscles"]
+    excitations_sol = sol_ofcp.controls["muscles"]
+    k_sol = sol_ofcp.stochastic_variables["k"]
+    ee_ref_sol = sol_ofcp.stochastic_variables["ee_ref"]
+    m_sol = sol_ofcp.stochastic_variables["m"]
+    p_sol = sol_ofcp.stochastic_variables["p"]
+    data = {"q_sol": q_sol,
+            "qdot_sol": qdot_sol,
+            "activations_sol": activations_sol,
+            "excitations_sol": excitations_sol,
+            "k_sol": k_sol,
+            "ee_ref_sol": ee_ref_sol,
+            "m_sol": m_sol,
+            "p_sol": p_sol}
+
+    # --- Save the results --- #
+    with open("results/leuvenarm_muscle_driven_socp.pkl", "wb") as file:
+        pickle.dump(data, file)
 
     embed()
 
-    stochastic_variables = sol_ofcp["stochastic_variables"]
-    # ee_ref, K
-    # integrate
-    # plot
+    # --- Plot the results --- #
+    biorbd_model = biorbd.Model(biorbd_model_path)
+    Q_sym = cas.MX.sym('Q', 2, 1)
+    Qdot_sym = cas.MX.sym('Qdot', 2, 1)
+    hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [biorbd_model.markers(Q_sym, 2).to_mx()])
+    hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [biorbd_model.markers(Q_sym, Qdot_sym, 2).to_mx()])
+
+    n_simulations =30
+    for i_simulation in range(n_simulations):
+        for i_node in range(n_shooting + 1):
+
+
+    fig, axs = plt.subplots(2, 1)
+    # .... # TODO: here
+
+
+    # TODO: integrate to see the error they commit with the trapezoidal
+    plot
+
+
 
     # Custom plots
     # ocp.add_plot_penalty(CostType.ALL)
