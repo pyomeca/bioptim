@@ -730,11 +730,11 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 55.29552160879171, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((7.08951794, 0.        )))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.21533398,   0.        )))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((7.08951794, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.21533398, 0.0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 4.95762449e-03, -9.93171691e+00]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0, 4.95762449e-03, -9.93171691e00]]).T)
 
         # detailed cost values
         sol.detailed_cost_values()
@@ -750,11 +750,11 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 49.828261340026486, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((5.82740495, 0.        )))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.06649769,   0.        )))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((5.82740495, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.06649769, 0.0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 5.19787253e-03, -9.84722491e+00]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0, 5.19787253e-03, -9.84722491e00]]).T)
 
         # detailed cost values
         sol.detailed_cost_values()
@@ -770,11 +770,11 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 100.59286910162214, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((-0.23081842,  0.        )))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-26.01316438,   0.        )))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-0.23081842, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-26.01316438, 0.0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 6.82939855e-03, -1.00000000e+01]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0, 6.82939855e-03, -1.00000000e01]]).T)
 
         # detailed cost values
         sol.detailed_cost_values()
@@ -782,7 +782,6 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         # TODO: fix scaling of parameters
         cost_values_all = np.sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
         np.testing.assert_almost_equal(cost_values_all, 81442.59374299884)
-
 
     # TODO: fix save and load
     # # save and load
@@ -797,9 +796,11 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     else:
         # This is a bug (should be fixed)
         # TODO: fix warm start error message for COLLOCATION and warm_start
-        with pytest.raises(NotImplementedError, match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness"):
+        with pytest.raises(
+            NotImplementedError,
+            match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
+        ):
             TestUtils.assert_warm_start(ocp, sol)
-
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
