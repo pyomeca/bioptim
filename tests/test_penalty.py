@@ -361,7 +361,7 @@ def test_penalty_track_super_impose_marker_velocity(penalty_origin, value, assum
         penalty = Constraint(penalty_type, first_marker=0, second_marker=1)
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
-    expected = [[-0.1094838,  0.       , -0.0895171]] if value == 0.1 else [[-2.9505042,   0.       , -13.8309264]]
+    expected = [[-0.1094838, 0.0, -0.0895171]] if value == 0.1 else [[-2.9505042, 0.0, -13.8309264]]
     np.testing.assert_almost_equal(res.T, expected)
 
 
