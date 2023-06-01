@@ -346,6 +346,26 @@ def test_penalty_track_super_impose_marker(penalty_origin, value, assume_phase_d
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_track_super_impose_marker_velocity(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+    penalty_type = penalty_origin.SUPERIMPOSE_MARKERS_VELOCITY
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty = Objective(penalty_type, first_marker=0, second_marker=1)
+    else:
+        penalty = Constraint(penalty_type, first_marker=0, second_marker=1)
+    res = get_penalty_value(ocp, penalty, t, x, u, [])
+
+    expected = [[-0.1094838, 0.0, -0.0895171]] if value == 0.1 else [[-2.9505042, 0.0, -13.8309264]]
+    np.testing.assert_almost_equal(res.T, expected)
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 @pytest.mark.parametrize("value_intercept", [0.0, 1.0])

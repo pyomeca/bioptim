@@ -601,6 +601,7 @@ class ConstraintFcn(FcnEnum):
     TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
     TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
+    SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
     PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
     PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
     TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
