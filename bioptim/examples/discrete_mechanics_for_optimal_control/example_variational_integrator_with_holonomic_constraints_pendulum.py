@@ -1,6 +1,8 @@
 """
-A pendulum simulation copying the example from bioptim/examples/getting_started/pendulum.py but integrated by the
-variational integrator.
+This example presents how to implement a holonomic constraint with the variational integrator.
+The simulation is a pendulum simulation, the model has been freed in translation on the z-axis. A holonomic constraint
+constrains the z-distance between two markers to remain null.
+The behaviour of the pendulum should be the same as the one in bioptim/examples/getting_started/pendulum.py
 """
 from bioptim import (
     Bounds,
@@ -10,7 +12,6 @@ from bioptim import (
     ObjectiveFcn,
     Solver,
 )
-import matplotlib.pyplot as plt
 import numpy as np
 
 from biorbd_model_holonomic import BiorbdModelCustomHolonomic
@@ -115,44 +116,12 @@ def main():
     sol.print_cost()
     sol.animate()
 
-    # save_results(sol, f"results/varint_{n_shooting}_nodes_holonomic")
+    # --- Show the graph results --- #
+    # The states (q and lambdas) are displayed piecewise constant, but actually they are not.
+    sol.graphs()
 
-    # with open(f"results/varint_{n_shooting}_nodes", "rb") as f:
-    #     data = pickle.load(f)
-
-    fig, axs = plt.subplots(2, 3)
-    axs[0, 0].set_title("q_Seg1_TransY-0")
-    axs[0, 0].plot(sol.time, sol.states["q"][0], "purple")
-    # axs[0, 0].plot(data["time"], data["states"]["q"][0], "--m")
-    axs[0, 1].set_title("q_Seg1_TransZ-0")
-    axs[0, 1].plot(sol.time, sol.states["q"][1], "purple")
-    axs[0, 2].set_title("q_Seg1_RotX-0")
-    axs[0, 2].plot(sol.time, sol.states["q"][2], "purple")
-    # axs[0, 2].plot(data["time"], data["states"]["q"][1], "--m")
-    axs[1, 0].set_title("tau_Seg1_TransY-0")
-    axs[1, 0].step(sol.time, sol.controls["tau"][0], "orange")
-    # axs[1, 0].step(data["time"], data["controls"]["tau"][0], "--y")
-    axs[1, 1].set_title("tau_Seg1_TransZ-0")
-    axs[1, 1].step(sol.time, sol.controls["tau"][1], "orange")
-    axs[1, 2].set_title("tau_Seg1_RotX-0")
-    axs[1, 2].step(sol.time, sol.controls["tau"][2], "orange")
-    # axs[1, 2].step(data["time"], data["controls"]["tau"][1], "--y")
-
-    for i in range(2):
-        for j in [0, 2]:
-            axs[i, j].set_xlabel("Time (s)")
-            axs[i, j].legend(["With holonomic constraint", "Without holonomic constraint"])
-        axs[i, 1].set_xlabel("Time (s)")
-        axs[i, 1].legend(["With holonomic constraint"])
-
-    plt.figure()
-    plt.xlabel("Time (s)")
-    plt.ylabel("Constraint force (N)")
-    plt.title("Constraint force on q_Seg1_TransZ-0")
-    dt = sol.time[1] - sol.time[0]
-    plt.plot(sol.time, sol.states["lambdas"][0] / dt, "purple")
-
-    plt.show()
+    print(f"qdot0 :{sol.parameters['qdot0'].squeeze()}")
+    print(f"qdotN :{sol.parameters['qdotN'].squeeze()}")
 
 
 if __name__ == "__main__":
