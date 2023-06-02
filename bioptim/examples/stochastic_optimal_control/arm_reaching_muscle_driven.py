@@ -408,7 +408,10 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(configure_stochastic_optimal_control_problem, dynamic_function=stochastic_forward_dynamics, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)), expand=False)
 
-    n_states = bio_model.nb_q + bio_model.nb_qdot + bio_model.nb_muscles
+    n_muscles = 6
+    n_q = bio_model.nb_q
+    n_qdot = bio_model.nb_qdot
+    n_states = n_q + n_qdot + n_muscles
 
     q_qdot_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     states_min = np.zeros((n_states, 3))
@@ -417,27 +420,24 @@ def prepare_socp(
     states_max[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.max
     states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0.01  # Activations
     states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
-    states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    states_min[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
-    states_max[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
-    states_min[0:2, 1:3] = [0, 0]
-    states_max[0:2, 1:3] = [np.pi, np.pi]
-    states_min[2:4, 2] = [0, 0]  # Final velocities
-    states_max[2:4, 2] = [0, 0]  # Final velocities
+    # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
+    # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
+    states_min[0:4, 0] = [shoulder_pos_init-0.2, elbow_pos_init-0.2, 0, 0]  # Initial position + velocities
+    states_max[0:4, 0] = [shoulder_pos_init+0.2, elbow_pos_init+0.2, 0, 0]  # Initial position + velocities
+    states_min[0:2, 1:3] = 0
+    states_max[0:2, 1:3] = np.pi
+    states_min[2:4, 2] = 0
+    states_max[2:4, 2] = 0
+
 
     x_bounds = BoundsList()
     x_bounds.add(bounds=Bounds(states_min, states_max))
 
-    n_muscles = bio_model.nb_muscles
     # n_tau = bio_model.nb_tau
     # u_bounds = Bounds([-100] * n_tau + [0] * n_muscles, [100] * n_tau + [1] * n_muscles)
     u_bounds = Bounds([0.01] * n_muscles, [1] * n_muscles)
 
     # Initial guesses
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
-
     states_init = np.zeros((n_states, 2))
     states_init[0, :] = [shoulder_pos_init, shoulder_pos_final]
     states_init[1, :] = [elbow_pos_init, elbow_pos_final]
@@ -455,28 +455,28 @@ def prepare_socp(
     stochastic_init = np.zeros((n_stochastic, 1))
 
     curent_index = 0
-    stochastic_init[:n_muscles*(n_q + n_qdot), 0] = 0.01  # K
+    # stochastic_init[:n_muscles*(n_q + n_qdot), 0] = 0.01  # K
     stochastic_min[:n_muscles*(n_q + n_qdot), :] = -10
     stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
 
     curent_index += n_muscles*(n_q + n_qdot)
-    stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = 0.01  # ee_ref
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = 0.01  # ee_ref
     stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -10
     stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 10
 
     curent_index += n_q+n_qdot
-    stochastic_init[curent_index : curent_index + n_states*n_states, 0] = 0.01  # M
-    stochastic_min[curent_index : curent_index + n_states*n_states, :] = 10
+    # stochastic_init[curent_index : curent_index + n_states*n_states, 0] = 0.01  # M
+    stochastic_min[curent_index : curent_index + n_states*n_states, :] = 0.01
     stochastic_max[curent_index : curent_index + n_states*n_states, :] = 10
     # M at node ns+1 should not exist (my hope is that by constraining it IPOPT treats it as a constant)
-    stochastic_min[curent_index : curent_index + n_states*n_states, 2] = 0.01
-    stochastic_max[curent_index : curent_index + n_states*n_states, 2] = 0.01
+    # stochastic_min[curent_index : curent_index + n_states*n_states, 2] = 0.01
+    # stochastic_max[curent_index : curent_index + n_states*n_states, 2] = 0.01
 
     curent_index += n_states*n_states
     mat_p_init = np.eye(10) * np.array([1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-7, 1e-7])
     stochastic_init[curent_index:, 0] = mat_p_init.flatten()  # P
-    stochastic_min[curent_index:, :] = 0
-    stochastic_max[curent_index:, :] = 1
+    stochastic_min[curent_index:, :] = -cas.inf  # 0
+    stochastic_max[curent_index:, :] = cas.inf  # 1
     stochastic_min[curent_index:, 0] = mat_p_init.flatten()
     stochastic_max[curent_index:, 0] = mat_p_init.flatten()
 
@@ -485,16 +485,6 @@ def prepare_socp(
     s_bounds = BoundsList()
     # Didi not find it in the original code
     s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
-
-    # Variable scaling
-    x_scaling = VariableScalingList()
-    x_scaling.add("q", scaling=[1, 1])
-    x_scaling.add("qdot", scaling=[1, 1])
-
-    u_scaling = VariableScalingList()
-    u_scaling.add("tau", scaling=[1, 1])
-    u_scaling.add("muscles", scaling=[1, 1])
-
     # TODO: we should probably change the name stochastic_variables -> helper_variables ?
 
     return OptimalControlProgram(
@@ -510,8 +500,8 @@ def prepare_socp(
         s_bounds=s_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        # ode_solver=OdeSolver.RK2(n_integration_steps=1),
-        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
+        ode_solver=OdeSolver.RK2(n_integration_steps=1),
+        # ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
         n_threads=1,  # n_threads,
         assume_phase_dynamics=True,
         problem_type=OcpType.SOCP_EXPLICIT,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)

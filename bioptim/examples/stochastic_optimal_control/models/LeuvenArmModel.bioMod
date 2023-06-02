@@ -43,8 +43,6 @@ segment foreArm
         // 0    0    -1    0
         // 0    0    0    1
     rotations z
-    ranges
-        0 2.6
     mass 1.0
     inertia
         0.0    0.0    0.0
