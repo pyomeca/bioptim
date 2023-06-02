@@ -970,6 +970,7 @@ class PenaltyFunctionAbstract:
 
             from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import optimal_feedback_forward_dynamics
             import numpy as np
+
             wM_numerical = np.array([0.025, 0.025])
             wPq_numerical = np.array([9e-6, 9e-6])
             wPqdot_numerical = np.array([0.000576, 0.000576])

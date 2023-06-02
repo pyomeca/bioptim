@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, DM
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -667,20 +667,24 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             ...
             """
-            # from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import optimal_feedback_forward_dynamics
-            # import numpy as np
-            # wM_numerical = np.array([0.025, 0.025])
-            # wM = MX.sym("wM", controller.states['q'].cx.shape[0])
-            # dx = optimal_feedback_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
-            #                          controller.parameters.cx_start, controller.get_nlp, wM)
+            import numpy as np
+            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import optimal_feedback_forward_dynamics
+
+            dt = controller.tf / controller.ns
+            wM_std = 0.05
+            wPq_std = 3e-4
+            wPqdot_std = 0.0024
+            wM_magnitude = DM(np.array([wM_std ** 2 / dt, wM_std ** 2 / dt]))
+            wPq_magnitude = DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
+            wPqdot_magnitude = DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
 
             nx = controller.states.cx.shape[0]
             M_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
 
             # TODO: It should thoretically have been cx_end, but need to verify that it is right instant (not possible to_casadi_func with cx_end riht now)
-            dt = controller.tf / controller.ns
-            dx = controller.dynamics(controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx, controller.stochastic_variables.cx)
-            DdZ_DX = jacobian(dx, controller.states.cx_start)
+            dx = optimal_feedback_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
+                                     controller.parameters.cx_start, controller.stochastic_variables.cx_start, controller.get_nlp, wM_magnitude, wPq_magnitude, wPqdot_magnitude)
+            DdZ_DX = jacobian(dx.dxdt, controller.states.cx_start)
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
 

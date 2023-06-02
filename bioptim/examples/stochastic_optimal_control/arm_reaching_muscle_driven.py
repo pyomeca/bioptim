@@ -11,7 +11,7 @@ reduce uncertainty. This covariance matrix is computed from the expected states.
 import platform
 
 import pickle
-import biorbd
+import biorbd_casadi as biorbd
 import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
@@ -25,7 +25,6 @@ from bioptim import (
     InitialGuess,
     ObjectiveFcn,
     OdeSolver,
-    OdeSolverBase,
     Solver,
     BiorbdModel,
     ObjectiveList,
@@ -42,6 +41,7 @@ from bioptim import (
     Node,
     ConstraintList,
     ConstraintFcn,
+    DefectType,
 )
 
 
@@ -337,16 +337,14 @@ def expected_feedback_effort(controller: PenaltyController, final_time: float) -
 
     # Constants TODO: remove fom here
     # TODO: How do we choose?
-    wM_std = 0.05
-    wPq_std = 3e-4
-    wPqdot_std = 0.0024
+    global wM_std, wPq_std, wPqdot_std
+
     dt = final_time / controller.ns
     wM_magnitude = cas.DM(np.array([wM_std ** 2 / dt, wM_std ** 2 / dt]))
     wPq_magnitude = cas.DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
     wPqdot_magnitude = cas.DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
-    sensory_noise = cas.vertcat(wM_magnitude, wPq_magnitude, wPqdot_magnitude).T @ np.eye(
-        controller.states["q"].cx.shape[0] * 3)
-    sensory_noise_matrix = sensory_noise[2:].T * cas.MX_eye(4)
+    sensory_noise = cas.vertcat(wPq_magnitude, wPqdot_magnitude)
+    sensory_noise_matrix = sensory_noise * cas.MX_eye(4)
 
     # Get the symbolic variables
     ee_ref = controller.stochastic_variables["ee_ref"].cx_start
@@ -361,16 +359,15 @@ def expected_feedback_effort(controller: PenaltyController, final_time: float) -
                                                           Node.START,
                                                           "k")
 
-
     # Compute the expected effort
     hand_pos = controller.model.marker(controller.states["q"].cx_start, 2)[:2]
     hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start, 2)[:2]
     trace_k_sensor_k = cas.trace(K_matrix @ sensory_noise_matrix @ K_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
-    e_fb = K_matrix @ ((ee - ee_ref) + sensory_noise[2:].T)
+    e_fb = K_matrix @ ((ee - ee_ref) + sensory_noise)
     jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ P_matrix @ jac_e_fb_x.T)
-    expectedEffort_fb_mx = trace_k_sensor_k + trace_jac_p_jack
+    expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     f_expectedEffort_fb = cas.Function('f_expectedEffort_fb', [controller.states.cx_start, controller.stochastic_variables.cx_start], [expectedEffort_fb_mx])(controller.states.cx_start, controller.stochastic_variables.cx_start)
     return f_expectedEffort_fb
 
@@ -413,7 +410,7 @@ def prepare_ofcp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1e3/2)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=1e3/2)
-    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Lagrange, key="muscles", weight=1e3/2)
+    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Mayer, node=Node.ALL, key="muscles", weight=1e3/2)
     objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3, final_time=final_time)
 
     # Constraints
@@ -487,6 +484,9 @@ def prepare_ofcp(
     stochastic_init[curent_index : curent_index + n_states*n_states, 0] = 0.01  # M
     stochastic_min[curent_index : curent_index + n_states*n_states, :] = 10
     stochastic_max[curent_index : curent_index + n_states*n_states, :] = 10
+    # M at node ns+1 should not exist (my hope is that by constraining it IPOPT treats it as a constant)
+    stochastic_min[curent_index : curent_index + n_states*n_states, 2] = 0.01
+    stochastic_max[curent_index : curent_index + n_states*n_states, 2] = 0.01
 
     curent_index += n_states*n_states
     mat_p_init = np.eye(10) * np.array([1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-7, 1e-7])
@@ -527,15 +527,16 @@ def prepare_ofcp(
         s_bounds=s_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=OdeSolver.RK2(),
+        # ode_solver=OdeSolver.RK2(n_integration_steps=1),
+        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
         n_threads=1,  # n_threads,
-        assume_phase_dynamics=True,  # TODO: see if it can be done with assume_phase_dynamics=True
+        assume_phase_dynamics=True,
         problem_type=OcpType.OFCP,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
     )
 
 def main():
 
-    # TODO: devrait-il y avoir ns ou ns+1 P ?
+    global wM_std, wPq_std, wPqdot_std
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
     # import bioviz
@@ -551,6 +552,8 @@ def main():
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_linear_solver('mumps')
+    # solver.set_linear_solver('ma57')
+    solver.set_hessian_approximation('limited-memory')
     solver.set_tol(1e-3)
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
@@ -566,7 +569,8 @@ def main():
     k_sol = sol_ofcp.stochastic_variables["k"]
     ee_ref_sol = sol_ofcp.stochastic_variables["ee_ref"]
     m_sol = sol_ofcp.stochastic_variables["m"]
-    p_sol = sol_ofcp.stochastic_variables["p"]
+    cov_sol = sol_ofcp.stochastic_variables["cov"]
+    parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol, cov_sol))
     data = {"q_sol": q_sol,
             "qdot_sol": qdot_sol,
             "activations_sol": activations_sol,
@@ -574,34 +578,82 @@ def main():
             "k_sol": k_sol,
             "ee_ref_sol": ee_ref_sol,
             "m_sol": m_sol,
-            "p_sol": p_sol}
+            "cov_sol": cov_sol}
 
     # --- Save the results --- #
-    with open("results/leuvenarm_muscle_driven_socp.pkl", "wb") as file:
+    with open("leuvenarm_muscle_driven_socp.pkl", "wb") as file:
         pickle.dump(data, file)
-
-    embed()
 
     # --- Plot the results --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     Q_sym = cas.MX.sym('Q', 2, 1)
     Qdot_sym = cas.MX.sym('Qdot', 2, 1)
-    hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [biorbd_model.markers(Q_sym, 2).to_mx()])
-    hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [biorbd_model.markers(Q_sym, Qdot_sym, 2).to_mx()])
+    hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [biorbd_model.marker(Q_sym, 2).to_mx()])
+    hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [biorbd_model.markerVelocity(Q_sym, Qdot_sym, 2).to_mx()])
 
-    n_simulations =30
+    states = ofcp.nlp[0].states.cx_start
+    controls = ofcp.nlp[0].controls.cx_start
+    parameters = ofcp.nlp[0].parameters.cx_start
+    stochastic_variables = ofcp.nlp[0].stochastic_variables.cx_start
+    nlp = ofcp.nlp[0]
+    wM_sym = cas.MX.sym('wM', 2, 1)
+    wPq_sym = cas.MX.sym('wPq', 2, 1)
+    wPqdot_sym = cas.MX.sym('wPqdot', 2, 1)
+    out = optimal_feedback_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM_sym, wPq_sym, wPqdot_sym)
+    dyn_fun = cas.Function("dyn_fun", [states, controls, parameters, stochastic_variables, wM_sym, wPq_sym, wPqdot_sym], [out.dxdt])
+
+    fig, axs = plt.subplots(3, 2)
+    n_simulations = 30
+    q_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
+    qdot_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
+    mus_activation_simulated = np.zeros((n_simulations, 6, n_shooting + 1))
+    hand_pos_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
+    hand_vel_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
     for i_simulation in range(n_simulations):
-        for i_node in range(n_shooting + 1):
-
-
-    fig, axs = plt.subplots(2, 1)
-    # .... # TODO: here
-
+        wM = np.random.normal(0, wM_std, (2, n_shooting + 1))
+        wPq = np.random.normal(0, wPq_std, (2, n_shooting + 1))
+        wPqdot = np.random.normal(0, wPqdot_std, (2, n_shooting + 1))
+        q_simulated[i_simulation, :, 0] = q_sol[:, 0]
+        qdot_simulated[i_simulation, :, 0] = qdot_sol[:, 0]
+        mus_activation_simulated[i_simulation, :, 0] = activations_sol[:, 0]
+        for i_node in range(n_shooting):
+            x_prev = cas.vertcat(q_simulated[i_simulation, :, i_node], qdot_simulated[i_simulation, :, i_node], mus_activation_simulated[i_simulation, :, i_node])
+            hand_pos_simulated[i_simulation, :, i_node] = np.reshape(hand_pos_fcn(x_prev[:2])[:2], (2,))
+            hand_vel_simulated[i_simulation, :, i_node] = np.reshape(hand_vel_fcn(x_prev[:2], x_prev[2:4])[:2], (2,))
+            u = excitations_sol[:, i_node]
+            p = parameters_sol[:, i_node]
+            k1 = dyn_fun(x_prev, u, [], p, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
+            x_next = x_prev + dt * dyn_fun(x_prev + dt / 2 * k1, u, [], p, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
+            q_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[:2], (2, ))
+            qdot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[2:4], (2, ))
+            mus_activation_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[4:], (6, ))
+        hand_pos_simulated[i_simulation, :, i_node + 1] = np.reshape(hand_pos_fcn(x_next[:2])[:2], (2,))
+        hand_vel_simulated[i_simulation, :, i_node + 1] = np.reshape(hand_vel_fcn(x_next[:2], x_next[2:4])[:2], (2, ))
+        axs[0, 0].plot(hand_pos_simulated[i_simulation, 0, :], hand_pos_simulated[i_simulation, 1, :], color="tab:red")
+        axs[1, 0].plot(np.linspace(0, final_time, n_shooting + 1), q_simulated[i_simulation, 0, :], color="k")
+        axs[2, 0].plot(np.linspace(0, final_time, n_shooting + 1), q_simulated[i_simulation, 1, :], color="k")
+        axs[0, 1].plot(hand_vel_simulated[i_simulation, 0, :], hand_vel_simulated[i_simulation, 1, :], color="tab:red")
+        axs[1, 1].plot(np.linspace(0, final_time, n_shooting + 1), qdot_simulated[i_simulation, 0, :], color="k")
+        axs[2, 1].plot(np.linspace(0, final_time, n_shooting + 1), qdot_simulated[i_simulation, 1, :], color="k")
+    axs[0, 0].set_xlabel("Y [m]")
+    axs[0, 0].set_ylabel("X [m]")
+    axs[0, 0].set_title("Hand position simulated")
+    axs[1, 0].set_xlabel("Time [s]")
+    axs[1, 0].set_ylabel("Shoulder angle [rad]")
+    axs[2, 0].set_xlabel("Time [s]")
+    axs[2, 0].set_ylabel("Elbow angle [rad]")
+    axs[0, 1].set_xlabel("Y velocity [m/s]")
+    axs[0, 1].set_ylabel("X velocity [m/s]")
+    axs[0, 1].set_title("Hand velocity simulated")
+    axs[1, 1].set_xlabel("Time [s]")
+    axs[1, 1].set_ylabel("Shoulder velocity [rad/s]")
+    axs[2, 1].set_xlabel("Time [s]")
+    axs[2, 1].set_ylabel("Elbow velocity [rad/s]")
+    plt.tight_layout()
+    plt.savefig("simulated_results.png", dpi=300)
+    plt.show()
 
     # TODO: integrate to see the error they commit with the trapezoidal
-    plot
-
-
 
     # Custom plots
     # ocp.add_plot_penalty(CostType.ALL)
@@ -648,5 +700,11 @@ lc2 = 0.16
 I1 = 0.025
 I2 = 0.045
 
+wM_std = 0.05
+wPq_std = 3e-4
+wPqdot_std = 0.0024
+
 if __name__ == "__main__":
     main()
+
+# TODO: Check expected feedback effort
