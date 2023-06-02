@@ -529,7 +529,7 @@ def main():
     solver.set_tol(1e-3)
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
-    solver.set_maximum_iterations(1000)
+    solver.set_maximum_iterations(10000)
 
     socp = prepare_socp(biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting)
     sol_socp = socp.solve(solver)
