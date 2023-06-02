@@ -595,9 +595,10 @@ class OptimalControlProgram:
 
         # Prepare the dynamics
         for i in range(self.n_phases):
-            if problem_type == OcpType.SOCP:
+            if problem_type == OcpType.SOCP_EXPLICIT:
                 self._prepare_stochastic_dynamics(self.nlp[i])
                 # TODO: add interphase continuity constraints on the covariance matrix
+                # TODO: add SOCP_IMPLICIT(with A and C if needed)
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,

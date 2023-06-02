@@ -672,8 +672,6 @@ class ImplicitConstraintFcn(FcnEnum):
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
     CONTACT_ACCELERATION_EQUALS_ZERO = (ConstraintFunction.Functions.implicit_marker_acceleration,)
     TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
-    A_EQUALS_JACOBIAN_EXPECTED_STATES = (ConstraintFunction.Functions.a_equals_jacobian_expected_states,)
-    C_EQUALS_JACOBIAN_MOTOR_NOISE = (ConstraintFunction.Functions.c_equals_jacobian_motor_noise,)
     M_EQUALS_INVERSE_OF_DG_DZ = (ConstraintFunction.Functions.m_equals_inverse_of_dg_dz,)
 
     @staticmethod

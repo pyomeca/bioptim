@@ -194,10 +194,6 @@ def stochastic_forward_dynamics(
 
     global tau_coef, m1, m2, l1, l2, lc1, lc2, I1, I2
 
-    import biorbd_casadi as biorbd  # Pariterre: using controller.model.forward_dynamics gives free variables error ?
-    model = biorbd.Model(
-        "/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/LeuvenArmModel.bioMod")  # controller.get_nlp.model.model
-
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
@@ -213,15 +209,14 @@ def stochastic_forward_dynamics(
             K_matrix[s0, s1] = k[i]
             i += 1
 
-    hand_pos = model.marker(q, 2).to_mx()[:2]
-    hand_vel = model.markerVelocity(q, qdot, 2).to_mx()[:2]
+    hand_pos = nlp.model.markers(q)[2][:2]
+    hand_vel = nlp.model.marker_velocities(q, qdot)[:2, 2]
     ee = cas.vertcat(hand_pos, hand_vel)
     mus_excitations_fb = mus_excitations + get_excitation_with_feedback(K_matrix, ee, ee_ref, wPq, wPqdot)
 
     muscles_tau = get_muscle_torque(q, qdot, mus_activations)
 
     tau_force_field = get_force_field(q)
-
 
     torques_computed = muscles_tau + tau_force_field + wM  # + residual_tau
     dq_computed = DynamicsFunctions.compute_qdot(nlp, q, qdot)
@@ -280,24 +275,17 @@ def minimize_uncertainty(controller: PenaltyController, key: str) -> cas.MX:
     P_partial = P_matrix[controller.states[key].index, controller.states[key].index]
     return cas.trace(P_partial)
 
-def ee_equals_ee_ref(controller: PenaltyController) -> cas.MX:
-    """
-    # TODO: why?
-    """
-
-    import biorbd_casadi as biorbd  # Pariterre: using controller.model.forward_dynamics gives free variables error ?
-    model = biorbd.Model(
-        "/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/LeuvenArmModel.bioMod")  # controller.get_nlp.model.model
-
-    q = controller.states["q"].cx
-    qdot = controller.states["qdot"].cx
-    ee_ref = controller.stochastic_variables["ee_ref"].cx
-
-    hand_pos = model.marker(q, 2).to_mx()[:2]
-    hand_vel = model.markerVelocity(q, qdot, 2).to_mx()[:2]
+def get_ee(controller: PenaltyController, q, qdot) -> cas.MX:
+    hand_pos = controller.model.markers(q)[2][:2]
+    hand_vel = controller.model.marker_velocities(q, qdot)[:2, 2]
     ee = cas.vertcat(hand_pos, hand_vel)
+    return ee
 
-    # val = controller.mx_to_cx("ee_equals_ee_ref", ee - ee_ref, q, qdot, ee_ref)
+def ee_equals_ee_ref(controller: PenaltyController) -> cas.MX:
+    q = controller.states["q"].cx_start
+    qdot = controller.states["qdot"].cx_start
+    ee_ref = controller.stochastic_variables["ee_ref"].cx_start
+    ee = get_ee(controller, q, qdot)
     return ee - ee_ref
 
 def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
@@ -305,16 +293,12 @@ def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
     Constraint the hand to reach the target consistently.
     """
 
-    import biorbd_casadi as biorbd  # Pariterre: using controller.model.forward_dynamics gives free variables error ?
-    model = biorbd.Model(
-        "/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/LeuvenArmModel.bioMod")  # controller.get_nlp.model.model
+    Q = cas.MX.sym("q_sym", controller.states["q"].cx_start.shape[0])
+    Qdot = cas.MX.sym("qdot_sym", controller.states["qdot"].cx_start.shape[0])
+    P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, controller.states.cx_start.shape[0], controller.states.cx_start.shape[0], Node.START, "cov")
 
-    Q = cas.MX.sym("q_sym", controller.states["q"].cx.shape[0])
-    Qdot = cas.MX.sym("qdot_sym", controller.states["qdot"].cx.shape[0])
-    P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, controller.states.cx.shape[0], controller.states.cx.shape[0], Node.START, "cov")
-
-    hand_pos = model.marker(Q, 2).to_mx()[:2]
-    hand_vel = model.markerVelocity(Qdot, Qdot, 2).to_mx()[:2]
+    hand_pos = controller.model.markers(Q)[2][:2]
+    hand_vel = controller.model.marker_velocities(Q, Qdot)[:2, 2]
 
     jac_marker_q = cas.jacobian(hand_pos, Q)
     jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(Q, Qdot))
@@ -327,7 +311,7 @@ def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
 
     out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
 
-    fun = cas.Function("reach_target_consistantly", [Q, Qdot, controller.stochastic_variables.cx], [out])
+    fun = cas.Function("reach_target_consistantly", [Q, Qdot, controller.stochastic_variables.cx_start], [out])
     val = fun(controller.states["q"].cx_start, controller.states["qdot"].cx_start, controller.stochastic_variables.cx_start)
     # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
@@ -360,8 +344,8 @@ def expected_feedback_effort(controller: PenaltyController, final_time: float) -
                                                           "k")
 
     # Compute the expected effort
-    hand_pos = controller.model.marker(controller.states["q"].cx_start, 2)[:2]
-    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start, 2)[:2]
+    hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
+    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[:2, 2]
     trace_k_sensor_k = cas.trace(K_matrix @ sensory_noise_matrix @ K_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
     e_fb = K_matrix @ ((ee - ee_ref) + sensory_noise)
@@ -530,7 +514,7 @@ def prepare_socp(
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
         n_threads=1,  # n_threads,
         assume_phase_dynamics=True,
-        problem_type=OcpType.socp,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
+        problem_type=OcpType.SOCP_EXPLICIT,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
     )
 
 def main():
