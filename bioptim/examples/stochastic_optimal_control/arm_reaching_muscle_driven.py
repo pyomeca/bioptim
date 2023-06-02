@@ -181,7 +181,7 @@ def get_force_field(q):
 def get_excitation_with_feedback(K, EE, EE_ref, wPq, wPqdot):
     return K @ ((EE - EE_ref) + cas.vertcat(wPq, wPqdot))
 
-def optimal_feedback_forward_dynamics(
+def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -253,7 +253,7 @@ def optimal_feedback_forward_dynamics(
 
     return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_derivative, dactivations_computed), defects=None)
 
-def configure_optimal_feedback_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, wM, wPq, wPqdot):
+def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, wM, wPq, wPqdot):
 
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
@@ -270,7 +270,7 @@ def configure_optimal_feedback_problem(ocp: OptimalControlProgram, nlp: NonLinea
     # ?
     # ConfigureProblem.configure_c(ocp, nlp)
     # ConfigureProblem.configure_a(ocp, nlp)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, optimal_feedback_forward_dynamics, wM=wM, wPq=wPq, wPqdot=wPqdot, expand=False)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, stochastic_forward_dynamics, wM=wM, wPq=wPq, wPqdot=wPqdot, expand=False)
 
 def minimize_uncertainty(controller: PenaltyController, key: str) -> cas.MX:
     """
@@ -371,7 +371,7 @@ def expected_feedback_effort(controller: PenaltyController, final_time: float) -
     f_expectedEffort_fb = cas.Function('f_expectedEffort_fb', [controller.states.cx_start, controller.stochastic_variables.cx_start], [expectedEffort_fb_mx])(controller.states.cx_start, controller.stochastic_variables.cx_start)
     return f_expectedEffort_fb
 
-def prepare_ofcp(
+def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
@@ -422,7 +422,7 @@ def prepare_ofcp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(configure_optimal_feedback_problem, dynamic_function=optimal_feedback_forward_dynamics, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)), expand=False)
+    dynamics.add(configure_stochastic_optimal_control_problem, dynamic_function=stochastic_forward_dynamics, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)), expand=False)
 
     n_states = bio_model.nb_q + bio_model.nb_qdot + bio_model.nb_muscles
 
@@ -512,7 +512,6 @@ def prepare_ofcp(
     u_scaling.add("muscles", scaling=[1, 1])
 
     # TODO: we should probably change the name stochastic_variables -> helper_variables ?
-    # TODO: se mettre en implicit collocations
 
     return OptimalControlProgram(
         bio_model,
@@ -531,7 +530,7 @@ def prepare_ofcp(
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
         n_threads=1,  # n_threads,
         assume_phase_dynamics=True,
-        problem_type=OcpType.OFCP,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
+        problem_type=OcpType.socp,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
     )
 
 def main():
@@ -544,7 +543,6 @@ def main():
     # b.exec()
 
     # --- Prepare the ocp --- #
-    # TODO change the model to their model
     dt = 0.01
     final_time = 0.8
     n_shooting = int(final_time/dt)
@@ -559,17 +557,17 @@ def main():
     solver.set_constr_viol_tol(1e-7)
     solver.set_maximum_iterations(1000)
 
-    ofcp = prepare_ofcp(biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting)
-    sol_ofcp = ofcp.solve(solver)
+    socp = prepare_socp(biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting)
+    sol_socp = socp.solve(solver)
 
-    q_sol = sol_ofcp.states["q"]
-    qdot_sol = sol_ofcp.states["qdot"]
-    activations_sol = sol_ofcp.states["muscles"]
-    excitations_sol = sol_ofcp.controls["muscles"]
-    k_sol = sol_ofcp.stochastic_variables["k"]
-    ee_ref_sol = sol_ofcp.stochastic_variables["ee_ref"]
-    m_sol = sol_ofcp.stochastic_variables["m"]
-    cov_sol = sol_ofcp.stochastic_variables["cov"]
+    q_sol = sol_socp.states["q"]
+    qdot_sol = sol_socp.states["qdot"]
+    activations_sol = sol_socp.states["muscles"]
+    excitations_sol = sol_socp.controls["muscles"]
+    k_sol = sol_socp.stochastic_variables["k"]
+    ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
+    m_sol = sol_socp.stochastic_variables["m"]
+    cov_sol = sol_socp.stochastic_variables["cov"]
     parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol, cov_sol))
     data = {"q_sol": q_sol,
             "qdot_sol": qdot_sol,
@@ -591,15 +589,15 @@ def main():
     hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [biorbd_model.marker(Q_sym, 2).to_mx()])
     hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [biorbd_model.markerVelocity(Q_sym, Qdot_sym, 2).to_mx()])
 
-    states = ofcp.nlp[0].states.cx_start
-    controls = ofcp.nlp[0].controls.cx_start
-    parameters = ofcp.nlp[0].parameters.cx_start
-    stochastic_variables = ofcp.nlp[0].stochastic_variables.cx_start
-    nlp = ofcp.nlp[0]
+    states = socp.nlp[0].states.cx_start
+    controls = socp.nlp[0].controls.cx_start
+    parameters = socp.nlp[0].parameters.cx_start
+    stochastic_variables = socp.nlp[0].stochastic_variables.cx_start
+    nlp = socp.nlp[0]
     wM_sym = cas.MX.sym('wM', 2, 1)
     wPq_sym = cas.MX.sym('wPq', 2, 1)
     wPqdot_sym = cas.MX.sym('wPqdot', 2, 1)
-    out = optimal_feedback_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM_sym, wPq_sym, wPqdot_sym)
+    out = stochastic_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM_sym, wPq_sym, wPqdot_sym)
     dyn_fun = cas.Function("dyn_fun", [states, controls, parameters, stochastic_variables, wM_sym, wPq_sym, wPqdot_sym], [out.dxdt])
 
     fig, axs = plt.subplots(3, 2)
@@ -665,7 +663,7 @@ def main():
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol_ofcp.animate()
+    sol_socp.animate()
 
 
 # --- Define constants to specify the model  --- #

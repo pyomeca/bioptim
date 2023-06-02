@@ -543,132 +543,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return controller.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
 
         @staticmethod
-        def a_equals_jacobian_expected_states(_: Constraint, controller: PenaltyController, **unused_param):
-            """
-            ...
-            """
-
-            # TODO: verify that next_qdot is what we want to compute (or if it is supposed to be the velocity at the current point)
-            x_mean = MX.sym("x_mean", controller.states["q"].cx.shape[0])
-            x_mean_dot = MX.sym("x_mean_dot", controller.states["qdot"].cx.shape[0])
-            A_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
-            i = 0
-            for dof_1 in range(controller.states["q"].cx.shape[0]):
-                for dof_2 in range(controller.states["q"].cx.shape[0]):
-                    A_matrix[dof_1, dof_2] = controller.stochastic_variables["a"].cx_start[i]
-                    i += 1
-
-            # RK4 one step
-            h = controller.tf / controller.ns
-            piecewise_constant_controls = controller.controls.cx_start + controller.stochastic_variables["w_motor"].cx_start
-            import biorbd_casadi as biorbd  # Pariterre: using controller.model.forward_dynamics gives free variables error ?
-            model = biorbd.Model("/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/LeuvenArmModel.bioMod") # controller.get_nlp.model.model
-            k1_qdot = model.ForwardDynamics(x_mean,
-                                            x_mean_dot,
-                                            piecewise_constant_controls
-                                            ).to_mx()
-            k1_q = x_mean_dot
-            k2_qdot = model.ForwardDynamics(x_mean + h / 2 * k1_q,
-                                            x_mean_dot + h / 2 * k1_qdot,
-                                            piecewise_constant_controls
-                                            ).to_mx()
-            k2_q = x_mean_dot + h / 2 * k1_qdot
-            k3_qdot = model.ForwardDynamics(x_mean + h / 2 * k2_q,
-                                            x_mean_dot + h / 2 * k2_qdot,
-                                            piecewise_constant_controls
-                                            ).to_mx()
-            k3_q = x_mean_dot + h / 2 * k2_qdot
-            k4_qdot = model.ForwardDynamics(x_mean + h * k3_q,
-                                            x_mean_dot + h * k3_qdot,
-                                            piecewise_constant_controls
-                                            ).to_mx()
-            k4_q = x_mean_dot + h * k3_qdot
-            next_qdot = x_mean_dot + h / 6 * (k1_qdot + 2 * k2_qdot + 2 * k3_qdot + k4_qdot)
-
-            implicit_dynamic_defect = x_mean_dot - next_qdot
-            a_implicit_defect = jacobian(implicit_dynamic_defect, x_mean) + jacobian(
-                implicit_dynamic_defect, x_mean_dot) @ A_matrix
-
-            fun = Function("a_implicit_defect", [x_mean, x_mean_dot, controller.controls.cx_start, controller.stochastic_variables.cx_start], [a_implicit_defect]).expand()
-            out = fun(controller.states['q'].cx_start, controller.states['qdot'].cx_start, controller.controls.cx_start, controller.stochastic_variables.cx_start)
-
-            # poubelle
-            # stochastic_states_integrated = controller.get_nlp.dynamics_func(x=vertcat(x_mean, x_mean_dot),
-            #                                                  u=controller.controls.cx_start + controller.stochastic_variables[
-            #                                                      "w_motor"].cx_start, p=controller.parameters.cx_start)["xdot"][controller.states["q"].cx.shape[0]:]
-
-            # implicit_dynamic_defect = controller.states.cx_end - stochastic_states_integrated
-            # a_implicit_defect = jacobian(implicit_dynamic_defect, controller.states["q"].cx_start) + jacobian(
-            #     implicit_dynamic_defect, controller.states_dot.cx_start) * controller.stochastic_variables["a"].cx_start
-            # controller.stochastic_variables[controller.node_index]["a"].cx_start
-
-            # TODO: see what to do with non piecewice constant
-            # fun = Function("a_implicit_defect", [controller.states.cx, controller.controls.cx, controller.parameters.cx, controller.stochastic_variables.cx], [a_implicit_defect])
-            # return fun(controller.states.cx, controller.controls.cx, controller.parameters.cx, controller.stochastic_variables.cx)
-
-            # var = []
-            # var.extend([controller.states[key].cx_start for key in controller.states])
-            # var.extend([controller.controls[key] for key in controller.controls])
-            # var.extend([param for param in controller.parameters])
-            # var.extend([controller.stochastic_variables[key] for key in controller.stochastic_variables])
-            #
-            # return controller.mx_to_cx("forward_dynamics", a_implicit_defect, *var)
-            return out
-
-        @staticmethod
-        def c_equals_jacobian_motor_noise(_: Constraint, controller: PenaltyController, **unused_param):
-            """
-            ...
-            """
-
-            x_mean = MX.sym("x_mean", controller.states["q"].cx.shape[0])
-            x_mean_dot = MX.sym("x_mean_dot", controller.states["qdot"].cx.shape[0])
-            w_noise = MX.sym("w_noise", controller.stochastic_variables["w_motor"].cx.shape[0])
-            c_param = MX.sym("c_param", controller.stochastic_variables["c"].cx.shape[0])
-
-            # RK4 one step
-            h = controller.tf / controller.ns
-            piecewise_constant_controls = controller.controls.cx_start + w_noise
-            import biorbd_casadi as biorbd
-            model = biorbd.Model("/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/examples/stochastic_optimal_control/models/LeuvenArmModel.bioMod") # controller.get_nlp.model.model
-            k1_qdot = model.ForwardDynamics(x_mean,
-                                            x_mean_dot,
-                                            piecewise_constant_controls
-                                            ).to_mx()
-            k1_q = x_mean_dot
-            k2_qdot = model.ForwardDynamics(x_mean + h / 2 * k1_q,
-                                            x_mean_dot + h / 2 * k1_qdot,
-                                            piecewise_constant_controls
-                                            ).to_mx()
-            k2_q = x_mean_dot + h / 2 * k1_qdot
-            k3_qdot = model.ForwardDynamics(x_mean + h / 2 * k2_q,
-                                            x_mean_dot + h / 2 * k2_qdot,
-                                            piecewise_constant_controls
-                                            ).to_mx()
-            k3_q = x_mean_dot + h / 2 * k2_qdot
-            k4_qdot = model.ForwardDynamics(x_mean + h * k3_q,
-                                            x_mean_dot + h * k3_qdot,
-                                            piecewise_constant_controls
-                                            ).to_mx()
-            k4_q = x_mean_dot + h * k3_qdot
-            next_qdot = x_mean_dot + h / 6 * (k1_qdot + 2 * k2_qdot + 2 * k3_qdot + k4_qdot)
-
-            implicit_dynamic_defect = x_mean_dot - next_qdot
-            c_implicit_defect = jacobian(implicit_dynamic_defect, w_noise) + jacobian(
-                implicit_dynamic_defect, x_mean_dot) * c_param
-
-            fun = Function("v", [x_mean, x_mean_dot, w_noise, c_param, controller.controls.cx_start], [c_implicit_defect]).expand()
-            out = fun(controller.states['q'].cx_start, controller.states['qdot'].cx_start, controller.stochastic_variables["w_motor"].cx_start, controller.stochastic_variables["c"].cx_start, controller.controls.cx_start)
-
-            return out
-
-        @staticmethod
         def m_equals_inverse_of_dg_dz(_: Constraint, controller: PenaltyController, **unused_param):
             """
             ...
             """
             import numpy as np
-            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import optimal_feedback_forward_dynamics
+            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import stochastic_forward_dynamics
 
             dt = controller.tf / controller.ns
             wM_std = 0.05
@@ -682,7 +562,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             M_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
 
             # TODO: It should thoretically have been cx_end, but need to verify that it is right instant (not possible to_casadi_func with cx_end riht now)
-            dx = optimal_feedback_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
+            dx = stochastic_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
                                      controller.parameters.cx_start, controller.stochastic_variables.cx_start, controller.get_nlp, wM_magnitude, wPq_magnitude, wPqdot_magnitude)
             DdZ_DX = jacobian(dx.dxdt, controller.states.cx_start)
 

@@ -597,9 +597,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             if problem_type == OcpType.SOCP:
                 self._prepare_stochastic_dynamics(self.nlp[i])
-            elif problem_type == OcpType.OFCP:
-                self._prepare_feedback_dynamics(self.nlp[i])
-                # TODO: add interphase continuity constraints
+                # TODO: add interphase continuity constraints on the covariance matrix
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
@@ -782,31 +780,6 @@ class OptimalControlProgram:
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
     def _prepare_stochastic_dynamics(self, nlp):
-        """
-        ...
-        """
-        # TODO: add feedback with a reference kinematics to follow + self.stochastic_variables["k"].cx_start
-
-        penalty_a = Constraint(
-                ImplicitConstraintFcn.A_EQUALS_JACOBIAN_EXPECTED_STATES,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
-        penalty_a.add_or_replace_to_penalty_pool(self, nlp)
-
-        penalty_c = Constraint(
-                ImplicitConstraintFcn.C_EQUALS_JACOBIAN_MOTOR_NOISE,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
-        penalty_c.add_or_replace_to_penalty_pool(self, nlp)
-
-        penalty_cov = Constraint(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
-        penalty_cov.add_or_replace_to_penalty_pool(self, nlp)
-
-    def _prepare_feedback_dynamics(self, nlp):
         """
         ...
         """

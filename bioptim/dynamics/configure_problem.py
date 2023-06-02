@@ -208,12 +208,10 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue)
         # Declare stochastic variables
         if is_stochastic:
+            # TODO: change
             ConfigureProblem.configure_c(ocp, nlp)  # Noise propagation matrix (to compute the derivative of the covariance matrix)
             ConfigureProblem.configure_a(ocp, nlp)  # Noise injection matrix (to compute the derivative of the covariance matrix)
             ConfigureProblem.configure_cov(ocp, nlp)  # The actual covariance matrix
-            ConfigureProblem.configure_w_motor(ocp, nlp)  # The state noise vector (to build funtions, not an optimization variable)
-            ConfigureProblem.configure_w_position_feedback(ocp, nlp)  # The state noise vector (to build funtions, not an optimization variable)
-            ConfigureProblem.configure_w_velocity_feedback(ocp, nlp)  # The state noise vector (to build funtions, not an optimization variable)
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -1369,79 +1367,6 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(
             name,
             name_m,
-            ocp,
-            nlp,
-            as_states=False,
-            as_controls=False,
-            as_states_dot=False,
-            as_stochastic=True,
-            skip_plot=True,
-        )
-
-    @staticmethod
-    def configure_w_motor(ocp, nlp):
-        """
-        Configure the vector of motor noise. (This variable should not be optimized, it is only used to compute the jacobian)
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-        name = "w_motor"
-        name_w_motor = nlp.model.name_dof
-        ConfigureProblem.configure_new_variable(
-            name,
-            name_w_motor,
-            ocp,
-            nlp,
-            as_states=False,
-            as_controls=False,
-            as_states_dot=False,
-            as_stochastic=True,
-            skip_plot=True,
-        )
-
-    @staticmethod
-    def configure_w_position_feedback(ocp, nlp):
-        """
-        Configure the vector of position feedback noise. (This variable should not be optimized, it is only used to compute the jacobian)
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-        name = "w_position_feedback"
-        name_w_position_feedback = nlp.model.name_dof
-        ConfigureProblem.configure_new_variable(
-            name,
-            name_w_position_feedback,
-            ocp,
-            nlp,
-            as_states=False,
-            as_controls=False,
-            as_states_dot=False,
-            as_stochastic=True,
-            skip_plot=True,
-        )
-
-
-    @staticmethod
-    def configure_w_velocity_feedback(ocp, nlp):
-        """
-       Configure the vector of velocity feedback noise. (This variable should not be optimized, it is only used to compute the jacobian)
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-        name = "w_velocity_feedback"
-        name_w_velocity_feedback = nlp.model.name_dof
-        ConfigureProblem.configure_new_variable(
-            name,
-            name_w_velocity_feedback,
             ocp,
             nlp,
             as_states=False,

@@ -968,7 +968,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def covariance_matrix_continuity_explicit(penalty: PenaltyOption, controller: PenaltyController | list):
 
-            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import optimal_feedback_forward_dynamics
+            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import stochastic_forward_dynamics
             import numpy as np
 
             wM_numerical = np.array([0.025, 0.025])
@@ -984,7 +984,7 @@ class PenaltyFunctionAbstract:
             wM = MX.sym("wM", controller.states['q'].cx.shape[0])
             wP = MX.sym("wP", controller.states['q'].cx.shape[0])
             wPdot = MX.sym("wPdot", controller.states['q'].cx.shape[0])
-            dx = optimal_feedback_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
+            dx = stochastic_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
                                      controller.parameters.cx_start, controller.stochastic_variables.cx_start, controller.get_nlp, wM, wP, wPdot)
 
 

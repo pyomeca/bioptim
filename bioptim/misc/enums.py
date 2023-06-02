@@ -189,5 +189,5 @@ class OcpType(Enum):
     """
 
     OCP = "optimal_control_problem"
-    OFCP = "optimal_feedback_control_problem"
-    SOCP = "stochastic_optimal_control_problem"
+    SOCP_IMPLICIT = "stochastic_optimal_control_problem_implicit"
+    SOCP_EXPLICIT = "stochastic_optimal_control_problem_explicit"
