@@ -50,6 +50,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         n_qdot = n_q = self.bio_model.nb_q
 
         self.holonomic_constraints = holonomic_constraints
+        q_sym = MX.sym("q", (n_q, 1))
         self.holonomic_constraints_jacobian = holonomic_constraints_jacobian
         self.has_holonomic_constraints = False if self.holonomic_constraints is None else True
 
@@ -149,7 +150,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             ["xdot"],
         )
 
-        ts = MX.sym("ts")
+        dt = MX.sym("time_step")
         q_prev = MX.sym("q_prev", nlp.model.nb_q, 1)
         q_cur = MX.sym("q_cur", nlp.model.nb_q, 1)
         q_next = MX.sym("q_next", nlp.model.nb_q, 1)
@@ -167,24 +168,34 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         controlN_minus_1 = MX.sym("controlN_minus_1", nlp.model.nb_q, 1)
         controlN = MX.sym("controlN", nlp.model.nb_q, 1)
 
-        three_nodes_input = [ts, q_prev, q_cur, q_next, control_prev, control_cur, control_next]
-        two_first_nodes_input = [ts, q0, q0_dot, q1, control0, control1]
-        two_last_nodes_input = [ts, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN]
+        three_nodes_input = [dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next]
+        two_first_nodes_input = [dt, q0, q0_dot, q1, control0, control1]
+        two_last_nodes_input = [dt, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN]
 
         if self.has_holonomic_constraints:
             lambdas = MX.sym("lambda", self.holonomic_constraints.nnz_out(), 1)
             three_nodes_input.append(lambdas)
             two_first_nodes_input.append(lambdas)
             two_last_nodes_input.append(lambdas)
+            holonomic_discrete_constraints_jacobian = Function(
+                "HolonomicDiscreteConstraintsJacobian",
+                [dt, q_cur],
+                [
+                    self.bio_model.compute_holonomic_discrete_constraints_jacobian(
+                        self.holonomic_constraints_jacobian, dt, q_cur
+                    )
+                ],
+            )
         else:
             lambdas = None
+            holonomic_discrete_constraints_jacobian = None
 
         nlp.implicit_dynamics_func = Function(
             "ThreeNodesIntegration",
             three_nodes_input,
             [
                 self.bio_model.discrete_euler_lagrange_equations(
-                    ts,
+                    dt,
                     q_prev,
                     q_cur,
                     q_next,
@@ -192,7 +203,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     control_cur,
                     control_next,
                     self.holonomic_constraints,
-                    self.holonomic_constraints_jacobian,
+                    holonomic_discrete_constraints_jacobian,
                     lambdas,
                 )
             ],
@@ -203,14 +214,14 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             two_first_nodes_input,
             [
                 self.bio_model.compute_initial_states(
-                    ts,
+                    dt,
                     q0,
                     q0_dot,
                     q1,
                     control0,
                     control1,
                     self.holonomic_constraints,
-                    self.holonomic_constraints_jacobian,
+                    holonomic_discrete_constraints_jacobian,
                     lambdas,
                 )
             ],
@@ -221,14 +232,14 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             two_last_nodes_input,
             [
                 self.bio_model.compute_final_states(
-                    ts,
+                    dt,
                     qN_minus_1,
                     qN,
                     qN_dot,
                     controlN_minus_1,
                     controlN,
                     self.holonomic_constraints,
-                    self.holonomic_constraints_jacobian,
+                    holonomic_discrete_constraints_jacobian,
                     lambdas,
                 )
             ],

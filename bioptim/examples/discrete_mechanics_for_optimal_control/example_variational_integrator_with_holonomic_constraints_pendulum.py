@@ -49,7 +49,7 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Path constraint
-    x_bounds = Bounds([-1, -1, -2 * np.pi, -20], [5, 5, 2 * np.pi, 20])
+    x_bounds = Bounds([-1, -1, -2 * np.pi, -1000], [5, 5, 2 * np.pi, 1000])
     x_bounds[:3, [0, -1]] = 0
     x_bounds[2, -1] = 3.14
     # Initial guess

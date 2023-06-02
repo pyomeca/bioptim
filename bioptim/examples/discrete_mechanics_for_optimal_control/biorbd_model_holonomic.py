@@ -275,6 +275,34 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
             elif discrete_approximation == QuadratureRule.TRAPEZOIDAL:
                 raise NotImplementedError(f"Discrete {discrete_approximation} is not implemented for {control_type}")
 
+    @staticmethod
+    def compute_holonomic_discrete_constraints_jacobian(
+        jac: Function, time_step: MX | SX, q: MX | SX
+    ) -> MX | SX | None:
+        """
+        Compute the discrete Jacobian of the holonomic constraints. See Variational integrators for constrained
+        dynamical systems (https://onlinelibrary.wiley.com/doi/epdf/10.1002/zamm.200700173) eq. (21) for more
+        precisions.
+
+        Parameters
+        ----------
+        jac: Function
+            The Jacobian of the holonomic constraints.
+        time_step: MX | SX
+            The time step.
+        q:
+            The coordinates.
+
+        Returns
+        -------
+        holonomic_discrete_constraints_jacobian: MX | SX | None
+            The discrete Jacobian of the holonomic constraints if there is constraints, None otherwise.
+        """
+        if jac is None:
+            return None
+        else:
+            return time_step * jac(q)
+
     def discrete_euler_lagrange_equations(
         self,
         time_step: MX | SX,
@@ -315,9 +343,10 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
             The Lagrange multipliers.
         """
         p_current = transpose(jacobian(self.discrete_lagrangian(q_prev, q_cur, time_step), q_cur))
-
         D1_Ld_qcur_qnext = transpose(jacobian(self.discrete_lagrangian(q_cur, q_next, time_step), q_cur))
-        constraint_term = transpose(jac(q_cur)) @ lambdas if constraints is not None else MX.zeros(p_current.shape)
+        constraint_term = (
+            transpose(jac(time_step, q_cur)) @ lambdas if constraints is not None else MX.zeros(p_current.shape)
+        )
 
         residual = (
             p_current
@@ -346,14 +375,16 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
     ):
         """
         Compute the initial states of the system from the initial position and velocity.
+        The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
+        constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
+        indications given just before the equation (18) for p0 and pN.
         """
-        # The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
-        # constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
-        # indications given just before the equation (18) for p0 and pN.
         D2_L_q0_q0dot = transpose(jacobian(self.lagrangian(q0, q0_dot), q0_dot))
         D1_Ld_q0_q1 = transpose(jacobian(self.discrete_lagrangian(q0, q1, time_step), q0))
         f0_minus = self.control_approximation(control0, control1, time_step)
-        constraint_term = 1 / 2 * transpose(jac(q0)) @ lambdas0 if constraints is not None else MX.zeros(self.nb_q, 1)
+        constraint_term = (
+            1 / 2 * transpose(jac(time_step, q0)) @ lambdas0 if constraints is not None else MX.zeros(self.nb_q, 1)
+        )
         residual = D2_L_q0_q0dot + D1_Ld_q0_q1 + f0_minus - constraint_term
 
         if constraints is not None:
@@ -375,14 +406,16 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
     ):
         """
         Compute the initial states of the system from the initial position and velocity.
+        The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
+        constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
+        indications given just before the equation (18) for p0 and pN.
         """
-        # The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
-        # constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
-        # indications given just before the equation (18) for p0 and pN.
         D2_L_qN_qN_dot = transpose(jacobian(self.lagrangian(qN, qN_dot), qN_dot))
         D2_Ld_qN_minus_1_qN = transpose(jacobian(self.discrete_lagrangian(qN_minus_1, qN, time_step), qN))
         fd_plus = self.control_approximation(controlN_minus_1, controlN, time_step)
-        constraint_term = 1 / 2 * transpose(jac(qN)) @ lambdasN if constraints is not None else MX.zeros(self.nb_q, 1)
+        constraint_term = (
+            1 / 2 * transpose(jac(time_step, qN)) @ lambdasN if constraints is not None else MX.zeros(self.nb_q, 1)
+        )
 
         residual = -D2_L_qN_qN_dot + D2_Ld_qN_minus_1_qN + fd_plus - constraint_term
         # constraints(qN) has already been evaluated in the last constraint calling
