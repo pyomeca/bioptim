@@ -13,8 +13,6 @@ from bioptim import (
     MultinodeConstraintList,
     NoisedInitialGuess,
     NonLinearProgram,
-    Objective,
-    ObjectiveList,
     OptimalControlProgram,
     ParameterList,
     PenaltyController,
@@ -30,36 +28,45 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         bio_model: BiorbdModelCustomHolonomic,
         n_shooting: int,
         final_time: float,
+        # q_init and q_bounds only the positions initial guess and bounds since there are no velocities in the
+        # variational integrator.
         q_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
-        u_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
         q_bounds: Bounds | BoundsList = None,
-        u_bounds: Bounds | BoundsList = None,
         qdot0_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
         qdot0_bounds: Bounds | BoundsList = None,
         qdotN_bounds: Bounds | BoundsList = None,
         qdotN_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
         holonomic_constraints: Function = None,
         holonomic_constraints_jacobian: Function = None,
-        objective_functions: Objective | ObjectiveList = None,
-        use_sx: bool = False,
+        **kwargs,
     ):
+        if "ode_solver" in kwargs:
+            raise ValueError(
+                "ode_solver cannot be defined in VariationalOptimalControlProgram since the integration is"
+                " done by the variational integrator."
+            )
+
         self.bio_model = bio_model
         n_qdot = n_q = self.bio_model.nb_q
 
         self.holonomic_constraints = holonomic_constraints
         self.holonomic_constraints_jacobian = holonomic_constraints_jacobian
-        if self.holonomic_constraints is None:
-            self.use_constraints = False
-        else:
-            self.use_constraints = True
+        self.has_holonomic_constraints = False if self.holonomic_constraints is None else True
 
         # Dynamics
         dynamics = DynamicsList()
         expand = True
-        dynamics.add(self.custom_configure, expand=expand)
+        dynamics.add(self.configure_torque_driven, expand=expand)
 
         # Declare parameters for the initial and final velocities
-        parameters = ParameterList()
+        if "parameters" in kwargs and kwargs["parameters"] is not None:
+            if isinstance(kwargs["parameters"], ParameterList):
+                parameters = kwargs["parameters"]
+            else:
+                parameters = ParameterList()
+                parameters.add(kwargs["parameters"])
+        else:
+            parameters = ParameterList()
         parameters.add(
             "qdot0",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
@@ -75,7 +82,11 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             size=n_qdot,  # The number of elements this particular parameter vector has
         )
 
-        multinode_constraints = self.variational_continuity(n_shooting, n_q)
+        if "multinode_constraints" in kwargs and kwargs["multinode_constraints"] is not None:
+            multinode_constraints = kwargs["multinode_constraints"]
+        else:
+            multinode_constraints = MultinodeConstraintList()
+        self.variational_continuity(multinode_constraints, n_shooting, n_q)
 
         super().__init__(
             self.bio_model,
@@ -83,15 +94,12 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             n_shooting,
             final_time,
             x_init=q_init,
-            u_init=u_init,
             x_bounds=q_bounds,
-            u_bounds=u_bounds,
-            objective_functions=objective_functions,
-            use_sx=use_sx,
             assume_phase_dynamics=True,
             skip_continuity=True,
             parameters=parameters,
             multinode_constraints=multinode_constraints,
+            **kwargs,
         )
 
     @staticmethod
@@ -105,14 +113,14 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         """
         pass
 
-    def custom_dynamics_function(
+    def configure_dynamics_function(
         self,
         ocp: OptimalControlProgram,
         nlp: NonLinearProgram,
         expand: bool = True,
     ):
         """
-        Configure the dynamics of the system
+        Configure the dynamics of the system. This is where the variational integrator equations are defined.
 
         Parameters
         ----------
@@ -163,7 +171,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         two_first_nodes_input = [ts, q0, q0_dot, q1, control0, control1]
         two_last_nodes_input = [ts, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN]
 
-        if self.use_constraints:
+        if self.has_holonomic_constraints:
             lambdas = MX.sym("lambda", self.holonomic_constraints.nnz_out(), 1)
             three_nodes_input.append(lambdas)
             two_first_nodes_input.append(lambdas)
@@ -232,9 +240,11 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             nlp.implicit_dynamics_func_first_node = nlp.implicit_dynamics_func_first_node.expand()
             nlp.implicit_dynamics_func_last_node = nlp.implicit_dynamics_func_last_node.expand()
 
-    def custom_configure(self, ocp: OptimalControlProgram, nlp: NonLinearProgram, expand: bool = True):
+    def configure_torque_driven(self, ocp: OptimalControlProgram, nlp: NonLinearProgram, expand: bool = True):
         """
-        If the problem is not constrained, use this custom configuration.
+        Configure the problem to be torque driven for the variational integrator.
+        The states are the q (and the lambdas if the system has holonomic constraints).
+        The controls are the tau.
 
         Parameters
         ----------
@@ -248,7 +258,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-        if self.use_constraints:
+        if self.has_holonomic_constraints:
             lambdas = []
             for i in range(self.holonomic_constraints.nnz_out()):
                 lambdas.append(f"lambda_{i}")
@@ -262,7 +272,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 as_states_dot=False,
             )
 
-        self.custom_dynamics_function(ocp, nlp, expand)
+        self.configure_dynamics_function(ocp, nlp, expand)
 
     def variational_integrator_three_nodes(
         self,
@@ -279,7 +289,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         -------
 
         """
-        if self.use_constraints:
+        if self.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func(
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
@@ -318,7 +328,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         -------
 
         """
-        if self.use_constraints:
+        if self.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func_first_node(
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
@@ -355,7 +365,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         -------
 
         """
-        if self.use_constraints:
+        if self.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func_last_node(
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
@@ -375,20 +385,22 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[1].controls["tau"].cx,
             )
 
-    def variational_continuity(self, n_shooting, n_qdot) -> MultinodeConstraintList:
+    def variational_continuity(
+        self, multinode_constraints: MultinodeConstraintList, n_shooting: int, n_qdot: int
+    ) -> MultinodeConstraintList:
         """
         The continuity constraint for the integration.
 
         Parameters
         ----------
-        n_shooting
-        n_qdot
+        multinode_constraints: MultinodeConstraintList
+        n_shooting: int
+        n_qdot: int
 
         Returns
         -------
         The list of continuity constraints for the integration.
         """
-        multinode_constraints = MultinodeConstraintList()
         for i in range(n_shooting - 1):
             multinode_constraints.add(
                 self.variational_integrator_three_nodes,

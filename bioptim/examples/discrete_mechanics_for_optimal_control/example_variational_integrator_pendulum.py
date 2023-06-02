@@ -1,6 +1,7 @@
 """
-A pendulum simulation copying the example from bioptim/examples/getting_started/pendulum.py but integrated by the
-variational integrator. Moreover, the model has been freed on the z-axis, it is constrained by the holonomic constraint.
+This example presents how to implement an optimal control program with the variational integrator.
+The simulation is a pendulum simulation, its behaviour should be the same as the one in
+bioptim/examples/getting_started/pendulum.py
 """
 from bioptim import (
     Bounds,
@@ -10,7 +11,6 @@ from bioptim import (
     ObjectiveFcn,
     Solver,
 )
-import matplotlib.pyplot as plt
 import numpy as np
 
 from biorbd_model_holonomic import BiorbdModelCustomHolonomic
@@ -109,35 +109,12 @@ def main():
     sol.print_cost()
     sol.animate()
 
-    # save_results(sol, f"results/varint_{n_shooting}_nodes")
+    # --- Show the graph results --- #
+    # The states are displayed piecewise constant, but actually they are not.
+    sol.graphs()
 
-    # with open(f"results/RK4_100_nodes", "rb") as f:
-    #     data = pickle.load(f)
-
-    fig, axs = plt.subplots(2, 2)
-    fig.suptitle("Comparison of the states and controls between an optimisation with RK4 and variational integrator")
-    axs[0, 0].set_title("q_Seg1_TransY-0")
-    axs[0, 0].plot(sol.time, sol.states["q"][0])
-    # axs[0, 0].plot(data["time"], data["states"]["q"][0])
-    axs[0, 1].set_title("q_Seg1_RotX-0")
-    axs[0, 1].plot(sol.time, sol.states["q"][1])
-    # axs[0, 1].plot(data["time"], data["states"]["q"][1])
-    axs[1, 0].set_title("tau_Seg1_TransY-0")
-    axs[1, 0].step(sol.time, sol.controls["tau"][0])
-    # axs[1, 0].step(data["time"], data["controls"]["tau"][0])
-    axs[1, 1].set_title("tau_Seg1_RotX-0")
-    axs[1, 1].step(sol.time, sol.controls["tau"][1])
-    # axs[1, 1].step(data["time"], data["controls"]["tau"][1])
-
-    for i in range(2):
-        for j in range(2):
-            axs[i, j].set_xlabel("Time (s)")
-            axs[i, j].legend(["Variational integrator", "RK4"])
-
-    plt.show()
-
-    print(sol.parameters["qdot0"])
-    print(sol.parameters["qdotN"])
+    print(f"qdot0 :{sol.parameters['qdot0'].squeeze()}")
+    print(f"qdotN :{sol.parameters['qdotN'].squeeze()}")
 
 
 if __name__ == "__main__":
