@@ -427,6 +427,7 @@ class PenaltyOption(OptionGeneric):
             self.all_nodes_index = []
             for ctrl in controllers:
                 self.all_nodes_index.extend(ctrl.t)
+                ctrl.node_index = ctrl.t
 
             state_cx_scaled = ocp.cx()
             control_cx_scaled = ocp.cx()
