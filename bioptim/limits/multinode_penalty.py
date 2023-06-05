@@ -1,4 +1,5 @@
 from typing import Callable, Any
+from casadi import DM, horzcat, MX_eye, jacobian
 
 from .constraints import PenaltyOption
 from .objective_functions import ObjectiveFunction
@@ -302,6 +303,38 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 out += time_0 - time_i
 
             return out
+
+        @staticmethod
+        def m_equals_inverse_of_dg_dz(penalty, controllers: list[PenaltyController, PenaltyController], **unused_param):
+            """
+            ...
+            """
+            import numpy as np
+            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import stochastic_forward_dynamics
+
+            if controllers[0].phase_idx != controllers[1].phase_idx:
+                raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
+
+            dt = controllers[0].tf / controllers[0].ns
+            wM_std = 0.05
+            wPq_std = 3e-4
+            wPqdot_std = 0.0024
+            wM_magnitude = DM(np.array([wM_std ** 2 / dt, wM_std ** 2 / dt]))
+            wPq_magnitude = DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
+            wPqdot_magnitude = DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
+
+            nx = controllers[0].states.cx.shape[0]
+            M_matrix = controllers[0].restore_matrix_form_from_vector(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
+
+            dx = stochastic_forward_dynamics(controllers[1].states.cx_start, controllers[1].controls.cx_start,
+                                     controllers[1].parameters.cx_start, controllers[1].stochastic_variables.cx_start, controllers[1].get_nlp, wM_magnitude, wPq_magnitude, wPqdot_magnitude)
+            DdZ_DX = jacobian(dx.dxdt, controllers[1].states.cx_start)
+
+            DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
+
+            val = M_matrix * DG_DZ - MX_eye(nx)
+
+            return horzcat(*(val[i, :] for i in range(nx))).T
 
         @staticmethod
         def custom(penalty, controllers: list[PenaltyController, PenaltyController], **extra_params):

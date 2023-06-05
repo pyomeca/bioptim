@@ -543,36 +543,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return controller.mx_to_cx("inverse_dynamics", tau_id - muscle_tau, *var)
 
         @staticmethod
-        def m_equals_inverse_of_dg_dz(_: Constraint, controller: PenaltyController, **unused_param):
-            """
-            ...
-            """
-            import numpy as np
-            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import stochastic_forward_dynamics
-
-            dt = controller.tf / controller.ns
-            wM_std = 0.05
-            wPq_std = 3e-4
-            wPqdot_std = 0.0024
-            wM_magnitude = DM(np.array([wM_std ** 2 / dt, wM_std ** 2 / dt]))
-            wPq_magnitude = DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
-            wPqdot_magnitude = DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
-
-            nx = controller.states.cx.shape[0]
-            M_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
-
-            # TODO: It should thoretically have been cx_end, but need to verify that it is right instant (not possible to_casadi_func with cx_end riht now)
-            dx = stochastic_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
-                                     controller.parameters.cx_start, controller.stochastic_variables.cx_start, controller.get_nlp, wM_magnitude, wPq_magnitude, wPqdot_magnitude)
-            DdZ_DX = jacobian(dx.dxdt, controller.states.cx_start)
-
-            DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
-
-            val = M_matrix * DG_DZ - MX_eye(nx)
-
-            return horzcat(*(val[i, :] for i in range(nx))).T
-
-        @staticmethod
         def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param):
             """
             Compute the difference between symbolic soft contact forces and actual force contact dynamic
@@ -675,7 +645,6 @@ class ImplicitConstraintFcn(FcnEnum):
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
     CONTACT_ACCELERATION_EQUALS_ZERO = (ConstraintFunction.Functions.implicit_marker_acceleration,)
     TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
-    M_EQUALS_INVERSE_OF_DG_DZ = (ConstraintFunction.Functions.m_equals_inverse_of_dg_dz,)
 
     @staticmethod
     def get_type():

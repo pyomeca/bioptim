@@ -28,7 +28,7 @@ from ..limits.constraints import (
     ImplicitConstraintFcn,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
-from ..limits.multinode_constraint import MultinodeConstraintList
+from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraint, MultinodeConstraintFcn
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
@@ -786,14 +786,15 @@ class OptimalControlProgram:
         """
         ...
         """
-
-        penalty_m_dg_dz = Constraint(
-                ImplicitConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
-        penalty_m_dg_dz.add_or_replace_to_penalty_pool(self, nlp)
+        penalty_m_dg_dz_list = MultinodeConstraintList()
+        for i_node in range(nlp.ns):
+            penalty_m_dg_dz_list.add(  # MultinodeConstraint(
+                    MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                    nodes_phase=(0, 0),  # TODO: to be changed for each phase
+                    nodes=(i_node, i_node+1),
+                    # nodes=(Node.START, Node.START),
+                )
+        penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
         penalty_cov = Constraint(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY_EXPLICIT, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
         penalty_cov.add_or_replace_to_penalty_pool(self, nlp)

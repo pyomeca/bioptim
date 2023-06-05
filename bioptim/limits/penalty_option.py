@@ -423,6 +423,8 @@ class PenaltyOption(OptionGeneric):
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             ocp = controller.ocp
             self.node_idx[0] = controller.node_index
+            # for ctrl in controllers:
+            #     ctrl.node_index = ctrl.t
 
             self.all_nodes_index = []
             for ctrl in controllers:
@@ -434,7 +436,7 @@ class PenaltyOption(OptionGeneric):
             for ctrl in controllers:
                 state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
                 control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
-                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_scaled.cx)
+                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables.cx)
 
         else:
             ocp = controller.ocp
