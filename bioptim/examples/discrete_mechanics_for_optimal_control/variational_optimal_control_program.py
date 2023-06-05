@@ -365,7 +365,8 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         n_qdot: int,
     ):
         """
-        The final continuity constraint for the integration.
+        The final continuity constraint for the integration. Warning: When the system has holonomic constraints, there
+        are more variables than equations so the lambda and the velocity of the last node are "free" variables.
 
         Parameters
         ----------
