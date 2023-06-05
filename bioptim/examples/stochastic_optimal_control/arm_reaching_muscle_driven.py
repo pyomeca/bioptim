@@ -399,10 +399,10 @@ def prepare_socp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1e3/2)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=1e3/2)
-    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Mayer, node=Node.ALL, key="muscles", weight=1e3/2)
-    objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Mayer, node=Node.ALL, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3, quadratic=True)
 
     # Constraints
     constraints = ConstraintList()
