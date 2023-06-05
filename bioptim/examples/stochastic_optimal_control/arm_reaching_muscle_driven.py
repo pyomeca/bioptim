@@ -317,13 +317,13 @@ def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
 
     return val
 
-def expected_feedback_effort(controller: PenaltyController, final_time: float) -> cas.MX:
+def expected_feedback_effort(controller: PenaltyController) -> cas.MX:
 
     # Constants TODO: remove fom here
     # TODO: How do we choose?
     global wM_std, wPq_std, wPqdot_std
 
-    dt = final_time / controller.ns
+    dt = controller.tf / controller.ns
     wM_magnitude = cas.DM(np.array([wM_std ** 2 / dt, wM_std ** 2 / dt]))
     wPq_magnitude = cas.DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
     wPqdot_magnitude = cas.DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
@@ -354,6 +354,13 @@ def expected_feedback_effort(controller: PenaltyController, final_time: float) -
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     f_expectedEffort_fb = cas.Function('f_expectedEffort_fb', [controller.states.cx_start, controller.stochastic_variables.cx_start], [expectedEffort_fb_mx])(controller.states.cx_start, controller.stochastic_variables.cx_start)
     return f_expectedEffort_fb
+
+
+def zero_acceleration(controller: PenaltyController, wM: np.ndarray, wPq: np.ndarray, wPqdot: np.ndarray) -> cas.MX:
+    dx = stochastic_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
+                                     controller.parameters.cx_start, controller.stochastic_variables.cx_start,
+                                     controller.get_nlp, wM, wPq, wPqdot)
+    return dx.dxdt[2:4]
 
 def prepare_socp(
     biorbd_model_path: str,
@@ -395,7 +402,7 @@ def prepare_socp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1e3/2)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=1e3/2)
     objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Mayer, node=Node.ALL, key="muscles", weight=1e3/2)
-    objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3, final_time=final_time)
+    objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3)
 
     # Constraints
     constraints = ConstraintList()
@@ -403,6 +410,8 @@ def prepare_socp(
     # No acceleration at the first and last nodes
     constraints.add(reach_target_consistantly, node=Node.END, min_bound=np.array([0, 0, 0, 0]), max_bound=np.array([1, 0.004**2, 0.05**2, 0.05**2]))
     constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, target=ee_final_position)
+    constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
+    # constraints.add(zero_acceleration, node=Node.END, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the ontrol on the last node is NaN
 
     # Dynamics
     dynamics = DynamicsList()
@@ -503,7 +512,7 @@ def prepare_socp(
         ode_solver=OdeSolver.RK2(n_integration_steps=1),
         # ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
         n_threads=n_threads,
-        assume_phase_dynamics=True,
+        assume_phase_dynamics=False,
         problem_type=OcpType.SOCP_EXPLICIT,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
     )
 

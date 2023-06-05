@@ -423,8 +423,6 @@ class PenaltyOption(OptionGeneric):
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             ocp = controller.ocp
             self.node_idx[0] = controller.node_index
-            # for ctrl in controllers:
-            #     ctrl.node_index = ctrl.t
 
             self.all_nodes_index = []
             for ctrl in controllers:

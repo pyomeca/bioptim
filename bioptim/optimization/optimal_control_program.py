@@ -787,7 +787,7 @@ class OptimalControlProgram:
         ...
         """
         penalty_m_dg_dz_list = MultinodeConstraintList()
-        for i_node in range(nlp.ns):
+        for i_node in range(nlp.ns - 1):
             penalty_m_dg_dz_list.add(  # MultinodeConstraint(
                     MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
                     nodes_phase=(0, 0),  # TODO: to be changed for each phase
