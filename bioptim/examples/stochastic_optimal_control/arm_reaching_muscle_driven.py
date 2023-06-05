@@ -422,8 +422,8 @@ def prepare_socp(
     states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
     # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
     # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    states_min[0:4, 0] = [shoulder_pos_init-0.2, elbow_pos_init-0.2, 0, 0]  # Initial position + velocities
-    states_max[0:4, 0] = [shoulder_pos_init+0.2, elbow_pos_init+0.2, 0, 0]  # Initial position + velocities
+    states_min[0:4, 0] = [shoulder_pos_init-0.2, elbow_pos_init-0.01, 0, 0]  # Initial position + velocities
+    states_max[0:4, 0] = [shoulder_pos_init+0.2, elbow_pos_init+0.01, 0, 0]  # Initial position + velocities
     states_min[0:2, 1:3] = 0
     states_max[0:2, 1:3] = np.pi
     states_min[2:4, 2] = 0
@@ -502,7 +502,7 @@ def prepare_socp(
         constraints=constraints,
         ode_solver=OdeSolver.RK2(n_integration_steps=1),
         # ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
-        n_threads=1,  # n_threads,
+        n_threads=n_threads,
         assume_phase_dynamics=True,
         problem_type=OcpType.SOCP_EXPLICIT,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
     )

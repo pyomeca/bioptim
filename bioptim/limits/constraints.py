@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, DM
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, DM, horzcat
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -568,7 +568,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
 
-            return M_matrix * DG_DZ - MX_eye(nx)
+            val = M_matrix * DG_DZ - MX_eye(nx)
+
+            return horzcat(*(val[i, :] for i in range(nx))).T
 
         @staticmethod
         def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param):

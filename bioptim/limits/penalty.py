@@ -999,6 +999,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def covariance_matrix_continuity_implicit(penalty: PenaltyOption, controller: PenaltyController | list):
 
+            nx = controller.states.cx_start.shape[0]
             P_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
             A_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
             A_end_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
@@ -1024,7 +1025,7 @@ class PenaltyFunctionAbstract:
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            return p_implicit_deffect
+            return horzcat(*(p_implicit_deffect[i, :] for i in range(nx))).T
 
         @staticmethod
         def covariance_matrix_continuity_explicit(penalty: PenaltyOption, controller: PenaltyController | list):
@@ -1067,7 +1068,7 @@ class PenaltyFunctionAbstract:
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            return func_eval
+            return horzcat(*(func_eval[i, :] for i in range(nx))).T
 
         @staticmethod
         def custom(penalty: PenaltyOption, controller: PenaltyController | list, **parameters: Any):
