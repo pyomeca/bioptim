@@ -210,8 +210,10 @@ def stochastic_forward_dynamics(
             K_matrix[s0, s1] = k[i]
             i += 1
 
-    hand_pos = nlp.model.markers(q)[2][:2]
-    hand_vel = nlp.model.marker_velocities(q, qdot)[:2, 2]
+    # hand_pos = nlp.model.markers(q)[2][:2]
+    # hand_vel = nlp.model.marker_velocities(q, qdot)[:2, 2]
+    hand_pos = end_effector_position(q)
+    hand_vel = end_effector_velocity(q, qdot)
     ee = cas.vertcat(hand_pos, hand_vel)
     mus_excitations_fb = mus_excitations + get_excitation_with_feedback(K_matrix, ee, ee_ref, wPq, wPqdot)
 
@@ -277,8 +279,10 @@ def minimize_uncertainty(controller: PenaltyController, key: str) -> cas.MX:
     return cas.trace(P_partial)
 
 def get_ee(controller: PenaltyController, q, qdot) -> cas.MX:
-    hand_pos = controller.model.markers(q)[2][:2]
-    hand_vel = controller.model.marker_velocities(q, qdot)[:2, 2]
+    # hand_pos = controller.model.markers(q)[2][:2]
+    # hand_vel = controller.model.marker_velocities(q, qdot)[:2, 2]
+    hand_pos = end_effector_position(q)
+    hand_vel = end_effector_velocity(q, qdot)
     ee = cas.vertcat(hand_pos, hand_vel)
     return ee
 
@@ -298,8 +302,10 @@ def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
     Qdot = cas.MX.sym("qdot_sym", controller.states["qdot"].cx_start.shape[0])
     P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, controller.states.cx_start.shape[0], controller.states.cx_start.shape[0], Node.START, "cov")
 
-    hand_pos = controller.model.markers(Q)[2][:2]
-    hand_vel = controller.model.marker_velocities(Q, Qdot)[:2, 2]
+    # hand_pos = controller.model.markers(Q)[2][:2]
+    # hand_vel = controller.model.marker_velocities(Q, Qdot)[:2, 2]
+    hand_pos = end_effector_position(Q)
+    hand_vel = end_effector_velocity(Q, Qdot)
 
     jac_marker_q = cas.jacobian(hand_pos, Q)
     jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(Q, Qdot))
@@ -317,6 +323,29 @@ def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
     # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
     return val
+
+def end_effector_position(q):
+
+    theta_shoulder = q[0]
+    theta_elbow = q[1]
+
+    ee_pos = cas.vertcat(cas.cos(theta_shoulder)*l1 + cas.cos(theta_shoulder + theta_elbow)*l2,
+            cas.sin(theta_shoulder)*l1 + cas.sin(theta_shoulder + theta_elbow)*l2)
+    return ee_pos
+
+
+def end_effector_velocity(q, qdot):
+
+    theta_shoulder = q[0]
+    theta_elbow = q[1]
+    a = theta_shoulder + theta_elbow
+    dtheta_shoulder = qdot[0]
+    dtheta_elbow = qdot[1]
+    da = dtheta_shoulder + dtheta_elbow
+
+    ee_vel = cas.vertcat(dtheta_shoulder * cas.sin(theta_shoulder)*l1 + da*cas.sin(a)*l2,
+            -dtheta_shoulder * cas.cos(theta_shoulder)*l1 - da * cas.cos(a)*l2)
+    return ee_vel
 
 def expected_feedback_effort(controller: PenaltyController) -> cas.MX:
     """
@@ -347,8 +376,10 @@ def expected_feedback_effort(controller: PenaltyController) -> cas.MX:
                                                           "k")
 
     # Compute the expected effort
-    hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
-    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[:2, 2]
+    # hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
+    hand_pos = end_effector_position(controller.states["q"].cx_start)
+    # hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[:2, 2]
+    hand_vel = end_effector_velocity(controller.states["q"].cx_start, controller.states["qdot"].cx_start)
     trace_k_sensor_k = cas.trace(K_matrix @ sensory_noise_matrix @ K_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
     e_fb = K_matrix @ ((ee - ee_ref) + sensory_noise)
@@ -356,6 +387,8 @@ def expected_feedback_effort(controller: PenaltyController) -> cas.MX:
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ P_matrix @ jac_e_fb_x.T)
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     f_expectedEffort_fb = cas.Function('f_expectedEffort_fb', [controller.states.cx_start, controller.stochastic_variables.cx_start], [expectedEffort_fb_mx])(controller.states.cx_start, controller.stochastic_variables.cx_start)
+
+    # trace(jacobian(e_fb_MX, X_MX) * P_MX * jacobian(e_fb_MX, X_MX)') + trace(K_MX*sensoryNoise_MX*K_MX');
     return f_expectedEffort_fb
 
 
@@ -364,6 +397,11 @@ def zero_acceleration(controller: PenaltyController, wM: np.ndarray, wPq: np.nda
                                      controller.parameters.cx_start, controller.stochastic_variables.cx_start,
                                      controller.get_nlp, wM, wPq, wPqdot)
     return dx.dxdt[2:4]
+
+def track_final_marker(controller: PenaltyController) -> cas.MX:
+    q = controller.states["q"].cx_start
+    ee_pos = end_effector_position(q)
+    return ee_pos
 
 def prepare_socp(
     biorbd_model_path: str,
@@ -398,21 +436,22 @@ def prepare_socp(
     shoulder_pos_final = 0.9599
     elbow_pos_init = 2.2459  # Optimized in Tom's version
     elbow_pos_final = 1.1594  # Optimized in Tom's version
-    ee_final_position = np.array([0.55190516, -0.017223, 0])  # Computed from the final hand position
+    ee_final_position = np.array([0.0, 0.5273])  # Directly from Tom's version
 
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1e3/2, quadratic=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Lagrange, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3, quadratic=True)
+    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Lagrange, key="muscles", weight=1e3/2, quadratic=False)
+    objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3/2, quadratic=True)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL)
     # No acceleration at the first and last nodes
     constraints.add(reach_target_consistantly, node=Node.END, min_bound=np.array([0, 0, 0, 0]), max_bound=np.array([cas.inf, 0.004**2, 0.05**2, 0.05**2]))
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, target=ee_final_position)  # axes=Axis.Y
+    # constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, target=ee_final_position)  # axes=Axis.Y
+    constraints.add(track_final_marker, node=Node.END, target=ee_final_position)
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
     # constraints.add(zero_acceleration, node=Node.END, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the ontrol on the last node is NaN
 
@@ -485,7 +524,7 @@ def prepare_socp(
     # stochastic_max[curent_index : curent_index + n_states*n_states, 2] = 0.01
 
     curent_index += n_states*n_states
-    mat_p_init = np.eye(10) * np.array([1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-7, 1e-7])  # P
+    mat_p_init = np.eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
     stochastic_min[curent_index:, :] = -cas.inf  # 0
     stochastic_max[curent_index:, :] = cas.inf  # 1
     vect_p_init = np.zeros((100, ))
@@ -518,7 +557,7 @@ def prepare_socp(
         constraints=constraints,
         ode_solver=OdeSolver.RK2(n_integration_steps=1),
         # ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
-        n_threads=n_threads,
+        n_threads=1,  # n_threads,
         assume_phase_dynamics=False,
         problem_type=OcpType.SOCP_EXPLICIT,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
     )
@@ -576,8 +615,10 @@ def main():
     biorbd_model = biorbd.Model(biorbd_model_path)
     Q_sym = cas.MX.sym('Q', 2, 1)
     Qdot_sym = cas.MX.sym('Qdot', 2, 1)
-    hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [biorbd_model.marker(Q_sym, 2).to_mx()])
-    hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [biorbd_model.markerVelocity(Q_sym, Qdot_sym, 2).to_mx()])
+    # hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [biorbd_model.marker(Q_sym, 2).to_mx()])
+    # hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [biorbd_model.markerVelocity(Q_sym, Qdot_sym, 2).to_mx()])
+    hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [end_effector_position(Q_sym)])
+    hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [end_effector_velocity(Q_sym, Qdot_sym)])
 
     states = socp.nlp[0].states.cx_start
     controls = socp.nlp[0].controls.cx_start
