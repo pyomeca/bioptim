@@ -1025,7 +1025,8 @@ class PenaltyFunctionAbstract:
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            return horzcat(*(p_implicit_deffect[i, :] for i in range(nx))).T
+            out_vector = controller.restore_vector_form_matrix(p_implicit_deffect)
+            return out_vector
 
         @staticmethod
         def covariance_matrix_continuity_explicit(penalty: PenaltyOption, controller: PenaltyController | list):
@@ -1038,8 +1039,8 @@ class PenaltyFunctionAbstract:
             wPqdot_numerical = np.array([0.000576, 0.000576])
 
             nx = controller.states.cx.shape[0]
-            P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "cov")
-            M_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
+            P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "cov")
+            M_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
 
             sigma_w = 10 ** (-1)  # How do we choose?
             dt = controller.tf / controller.ns
@@ -1068,7 +1069,8 @@ class PenaltyFunctionAbstract:
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            return horzcat(*(func_eval[i, :] for i in range(nx))).T
+            out_vector = controller.restore_vector_form_matrix(func_eval)
+            return out_vector
 
         @staticmethod
         def custom(penalty: PenaltyOption, controller: PenaltyController | list, **parameters: Any):

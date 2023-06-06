@@ -324,7 +324,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             wPqdot_magnitude = DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
 
             nx = controllers[0].states.cx.shape[0]
-            M_matrix = controllers[0].restore_matrix_form_from_vector(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
+            M_matrix = controllers[0].restore_matrix_from_vector(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
 
             dx = stochastic_forward_dynamics(controllers[1].states.cx_start, controllers[1].controls.cx_start,
                                      controllers[1].parameters.cx_start, controllers[1].stochastic_variables.cx_start, controllers[1].get_nlp, wM_magnitude, wPq_magnitude, wPqdot_magnitude)
@@ -335,7 +335,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             val = M_matrix * DG_DZ - MX_eye(nx)
 
-            return horzcat(*(val[i, :] for i in range(nx))).T
+            out_vector = controllers[0].restore_vector_form_matrix(val)
+            return out_vector
 
         @staticmethod
         def custom(penalty, controllers: list[PenaltyController, PenaltyController], **extra_params):

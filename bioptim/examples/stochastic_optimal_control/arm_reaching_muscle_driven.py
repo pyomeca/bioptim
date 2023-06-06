@@ -42,6 +42,7 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     DefectType,
+    Axis,
 )
 
 
@@ -271,7 +272,7 @@ def minimize_uncertainty(controller: PenaltyController, key: str) -> cas.MX:
     """
     Minimize the uncertainty (covariance matrix) of the states.
     """
-    P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, controller.states.cx.shape[0], controller.states.cx.shape[0], Node.START, "cov")
+    P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, controller.states.cx.shape[0], controller.states.cx.shape[0], Node.START, "cov")
     P_partial = P_matrix[controller.states[key].index, controller.states[key].index]
     return cas.trace(P_partial)
 
@@ -295,7 +296,7 @@ def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
 
     Q = cas.MX.sym("q_sym", controller.states["q"].cx_start.shape[0])
     Qdot = cas.MX.sym("qdot_sym", controller.states["qdot"].cx_start.shape[0])
-    P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables, controller.states.cx_start.shape[0], controller.states.cx_start.shape[0], Node.START, "cov")
+    P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, controller.states.cx_start.shape[0], controller.states.cx_start.shape[0], Node.START, "cov")
 
     hand_pos = controller.model.markers(Q)[2][:2]
     hand_vel = controller.model.marker_velocities(Q, Qdot)[:2, 2]
@@ -318,7 +319,9 @@ def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
     return val
 
 def expected_feedback_effort(controller: PenaltyController) -> cas.MX:
-
+    """
+    # trace(jacobian(e_fb_MX, X_MX) * P_MX * jacobian(e_fb_MX, X_MX)') + trace(K_MX*sensoryNoise_MX*K_MX');
+    """
     # Constants TODO: remove fom here
     # TODO: How do we choose?
     global wM_std, wPq_std, wPqdot_std
@@ -332,12 +335,12 @@ def expected_feedback_effort(controller: PenaltyController) -> cas.MX:
 
     # Get the symbolic variables
     ee_ref = controller.stochastic_variables["ee_ref"].cx_start
-    P_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables,
+    P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables,
                                                           controller.states.cx.shape[0],
                                                           controller.states.cx.shape[0],
                                                           Node.START,
                                                           "cov")
-    K_matrix = controller.restore_matrix_form_from_vector(controller.stochastic_variables,
+    K_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables,
                                                           controller.states["muscles"].cx.shape[0],
                                                           controller.states["q"].cx.shape[0] + controller.states["qdot"].cx.shape[0],
                                                           Node.START,
@@ -401,15 +404,15 @@ def prepare_socp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1e3/2, quadratic=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Mayer, node=Node.ALL, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Lagrange, key="muscles", weight=1e3/2, quadratic=True)
     objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3, quadratic=True)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL)
     # No acceleration at the first and last nodes
-    constraints.add(reach_target_consistantly, node=Node.END, min_bound=np.array([0, 0, 0, 0]), max_bound=np.array([1, 0.004**2, 0.05**2, 0.05**2]))
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, target=ee_final_position)
+    constraints.add(reach_target_consistantly, node=Node.END, min_bound=np.array([0, 0, 0, 0]), max_bound=np.array([cas.inf, 0.004**2, 0.05**2, 0.05**2]))
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, target=ee_final_position)  # axes=Axis.Y
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
     # constraints.add(zero_acceleration, node=Node.END, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the ontrol on the last node is NaN
 
@@ -482,12 +485,16 @@ def prepare_socp(
     # stochastic_max[curent_index : curent_index + n_states*n_states, 2] = 0.01
 
     curent_index += n_states*n_states
-    mat_p_init = np.eye(10) * np.array([1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-7, 1e-7])
-    stochastic_init[curent_index:, 0] = mat_p_init.flatten()  # P
+    mat_p_init = np.eye(10) * np.array([1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-7, 1e-7])  # P
     stochastic_min[curent_index:, :] = -cas.inf  # 0
     stochastic_max[curent_index:, :] = cas.inf  # 1
-    stochastic_min[curent_index:, 0] = mat_p_init.flatten()
-    stochastic_max[curent_index:, 0] = mat_p_init.flatten()
+    vect_p_init = np.zeros((100, ))
+    for i in range(10):
+        for j in range(10):
+            vect_p_init[i*10+j] = mat_p_init[i, j]
+    stochastic_init[curent_index:, 0] = vect_p_init
+    stochastic_min[curent_index:, 0] = vect_p_init
+    stochastic_max[curent_index:, 0] = vect_p_init
 
     s_init = InitialGuess(stochastic_init)
 

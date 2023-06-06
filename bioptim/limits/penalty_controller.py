@@ -250,7 +250,7 @@ class PenaltyController:
         """
         return self._nlp.parameters.scaled
 
-    def restore_matrix_form_from_vector(self, variable, shape_0, shape_1, node: Node, key: str = "all"):
+    def restore_matrix_from_vector(self, variable, shape_0, shape_1, node: Node, key: str = "all"):
         """
         Restore the matrix form of the variables
 
@@ -269,3 +269,16 @@ class PenaltyController:
                     raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
                 i += 1
         return matrix
+
+    def restore_vector_form_matrix(self, matrix):
+        """
+        Restore the vector form of the matrix
+
+        """
+        shape_0 = matrix.shape[0]
+        shape_1 = matrix.shape[1]
+        vector = MX.zeros(shape_0 * shape_1)
+        for s0 in range(shape_0):
+            for s1 in range(shape_1):
+                vector[shape_0 * s0 + s1] = matrix[s0, s1]
+        return vector
