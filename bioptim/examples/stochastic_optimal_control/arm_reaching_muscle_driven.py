@@ -517,7 +517,7 @@ def prepare_socp(
 
     curent_index += n_q+n_qdot
     # stochastic_init[curent_index : curent_index + n_states*n_states, 0] = 0.01  # M
-    stochastic_min[curent_index : curent_index + n_states*n_states, :] = 0.01
+    stochastic_min[curent_index : curent_index + n_states*n_states, :] = -10
     stochastic_max[curent_index : curent_index + n_states*n_states, :] = 10
     # M at node ns+1 should not exist (my hope is that by constraining it IPOPT treats it as a constant)
     # stochastic_min[curent_index : curent_index + n_states*n_states, 2] = 0.01
@@ -525,7 +525,7 @@ def prepare_socp(
 
     curent_index += n_states*n_states
     mat_p_init = np.eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
-    stochastic_min[curent_index:, :] = -cas.inf  # 0
+    stochastic_min[curent_index:, :] = 0
     stochastic_max[curent_index:, :] = cas.inf  # 1
     vect_p_init = np.zeros((100, ))
     for i in range(10):
