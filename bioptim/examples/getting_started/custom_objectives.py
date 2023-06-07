@@ -18,8 +18,7 @@ from bioptim import (
     DynamicsFcn,
     ObjectiveFcn,
     ObjectiveList,
-    Bounds,
-    InitialGuess,
+    BoundsList,
     OdeSolver,
     OdeSolverBase,
     PenaltyController,
@@ -126,17 +125,17 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[1:6, [0, -1]] = 0
-    x_bounds[2, -1] = 1.57
-
-    # Initial guess
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    x_bounds = BoundsList()
+    x_bounds.add("q", bio_model.bounds_from_ranges("q"))
+    x_bounds.add("qdot", bio_model.bounds_from_ranges("qdot"))
+    x_bounds["q"][1:, [0, -1]] = 0
+    x_bounds["q"][2, -1] = 1.57
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Define control path constraint
-    u_bounds = Bounds([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
-
-    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
+    tau_min, tau_max = -100, 100
+    u_bounds = BoundsList()
+    u_bounds.add("tau", min_bound=[tau_min] * bio_model.nb_tau, max_bound=[tau_max] * bio_model.nb_tau)
 
     # ------------- #
 
@@ -145,11 +144,9 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )

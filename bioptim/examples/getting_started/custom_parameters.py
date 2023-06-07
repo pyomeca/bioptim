@@ -16,8 +16,7 @@ from bioptim import (
     OptimalControlProgram,
     Dynamics,
     DynamicsFcn,
-    Bounds,
-    InitialGuess,
+    BoundsList,
     Objective,
     ObjectiveFcn,
     InterpolationType,
@@ -154,17 +153,11 @@ def prepare_ocp(
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
-    # Initial guess
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
-    x_init = InitialGuess([0] * (n_q + n_qdot))
-
     # Define control path constraint
-    tau_min, tau_max, tau_init = -300, 300, 0
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
+    tau_min, tau_max = -300, 300
+    u_bounds = BoundsList()
+    u_bounds.add("tau", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau)
     u_bounds[1, :] = 0
-
-    u_init = InitialGuess([tau_init] * n_tau)
 
     # Define the parameter to optimize
     parameters = ParameterList()

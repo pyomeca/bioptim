@@ -79,6 +79,18 @@ def test__getting_started__custom_initial_guess(interpolation, random, assume_ph
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    if interpolation == InterpolationType.ALL_POINTS:
+        with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS must only be used with direct collocation"):
+            ocp_module.prepare_ocp(
+                bioptim_folder + "/models/cube.bioMod",
+                n_shooting=30,
+                final_time=2,
+                random_init=random,
+                initial_guess=interpolation,
+                assume_phase_dynamics=assume_phase_dynamics,
+            )
+        return
+
     ocp_module.prepare_ocp(
         bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
