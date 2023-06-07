@@ -15,7 +15,7 @@ from biorbd_casadi import (
 )
 from casadi import SX, MX, vertcat, horzcat, Function, solve, jacobian, transpose
 
-from enums import QuadratureRule
+from bioptim.examples.discrete_mechanics_for_optimal_control.enums import QuadratureRule
 
 
 class BiorbdModelCustomHolonomic(BiorbdModel):
