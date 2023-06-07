@@ -446,7 +446,9 @@ class OptimalControlProgram:
         if parameter_mappings is None:
             parameter_mappings = BiMappingList()
         if "time" not in parameter_mappings.keys():
-            parameter_mappings.add("time", to_second=[i for i in range(self.n_phases)], to_first=[i for i in range(self.n_phases)])
+            parameter_mappings.add(
+                "time", to_second=[i for i in range(self.n_phases)], to_first=[i for i in range(self.n_phases)]
+            )
         self.parameter_mappings = parameter_mappings
 
         # Declare the time to optimize
@@ -993,17 +995,21 @@ class OptimalControlProgram:
                 else []
             )
 
-            x_scaling = np.concatenate([
-                np.repeat(self.nlp[penalty.phase].x_scaling[key].scaling[:, np.newaxis], x.shape[1], axis=1)
-                for key in self.nlp[penalty.phase].states
-            ])
+            x_scaling = np.concatenate(
+                [
+                    np.repeat(self.nlp[penalty.phase].x_scaling[key].scaling[:, np.newaxis], x.shape[1], axis=1)
+                    for key in self.nlp[penalty.phase].states
+                ]
+            )
             x /= x_scaling
 
             if u.size != 0:
-                u_scaling = np.concatenate([
-                    np.repeat(self.nlp[penalty.phase].u_scaling[key].scaling[:, np.newaxis], u.shape[1], axis=1)
-                    for key in self.nlp[penalty.phase].controls
-                ])
+                u_scaling = np.concatenate(
+                    [
+                        np.repeat(self.nlp[penalty.phase].u_scaling[key].scaling[:, np.newaxis], u.shape[1], axis=1)
+                        for key in self.nlp[penalty.phase].controls
+                    ]
+                )
                 u /= u_scaling
 
             out = []

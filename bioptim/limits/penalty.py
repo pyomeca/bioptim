@@ -64,6 +64,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_states")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
+            # TODO: We should scale the target here!
             return controller.states[key].cx_start
 
         @staticmethod
@@ -89,6 +90,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
+            # TODO: We should scale the target here!
             return controller.controls[key].cx_start
 
         @staticmethod

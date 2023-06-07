@@ -223,13 +223,19 @@ class PathCondition(np.ndarray):
                 )
 
         if self.type == InterpolationType.CUSTOM:
+            parameters = {}
+            for key in self.extra_params:
+                if key == "phase" or key == "option_type":
+                    continue
+                parameters[key] = self.extra_params[key]
+
             slice_list = self.slice_list
             if slice_list is not None:
-                val_size = self.custom_function(0, **self.extra_params)[
+                val_size = self.custom_function(0, **parameters)[
                     slice_list.start : slice_list.stop : slice_list.step
                 ].shape[0]
             else:
-                val_size = self.custom_function(0, **self.extra_params).shape[0]
+                val_size = self.custom_function(0, **parameters).shape[0]
         else:
             val_size = self.shape[0]
         if val_size != n_elements:
@@ -292,7 +298,13 @@ class PathCondition(np.ndarray):
                     slice_list.start : slice_list.stop : slice_list.step
                 ]
             else:
-                return self.custom_function(shooting_point, **self.extra_params)
+                parameters = {}
+                for key in self.extra_params:
+                    if key == "phase" or key == "option_type":
+                        continue
+                    parameters[key] = self.extra_params[key]
+
+                return self.custom_function(shooting_point, **parameters)
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
@@ -556,28 +568,36 @@ class BoundsList(OptionDict):
         self,
         key,
         bounds: Bounds = None,
-        min_bound: PathCondition | np.ndarray | list | tuple = None,
-        max_bound: PathCondition | np.ndarray | list | tuple = None,
+        min_bound: PathCondition | np.ndarray | list | tuple | Callable = None,
+        max_bound: PathCondition | np.ndarray | list | tuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        **extra_arguments,
+        **extra_arguments: Any,
     ):
         """
         Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
 
         Parameters
         ----------
+        key: str
+            The name of the optimization variable
         min_bound: PathCondition | np.ndarray | list | tuple
             The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
         max_bound: [PathCondition, np.ndarray, list, tuple]
             The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
         bounds: Bounds
             Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
+        interpolation: InterpolationType
+            Type of interpolation do perform between shooting points
         extra_arguments: dict
             Any parameters to pass to the Bounds
         """
 
         if bounds and (min_bound or max_bound):
             RuntimeError("min_bound/max_bound and bounds cannot be set alongside")
+        if isinstance(bounds, (float, int)) and min_bound is None and max_bound is None:
+            min_bound = bounds
+            max_bound = bounds
+            bounds = None
         if isinstance(bounds, Bounds):
             if bounds.phase == -1 and key in self.keys():
                 bounds.phase = len(self.options) if self.options[0] else 0
@@ -585,7 +605,12 @@ class BoundsList(OptionDict):
             self.type = bounds.type
         else:
             super(BoundsList, self)._add(
-                key=key, min_bound=min_bound, max_bound=max_bound, option_type=Bounds, interpolation=interpolation, **extra_arguments
+                key=key,
+                min_bound=min_bound,
+                max_bound=max_bound,
+                option_type=Bounds,
+                interpolation=interpolation,
+                **extra_arguments,
             )
             self.type = interpolation
 

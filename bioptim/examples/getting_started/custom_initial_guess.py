@@ -172,8 +172,16 @@ def prepare_ocp(
         # The custom function refers to the one at the beginning of the file. It emulates a Linear interpolation
         x = custom_init_func
         u = custom_init_func
-        extra_params_x = {"my_values": np.random.random((nq + nqdot, 2)), "n_shooting_custom": n_shooting, "nq": bio_model.nb_q}
-        extra_params_u = {"my_values": np.random.random((ntau, 2)), "n_shooting_custom": n_shooting, "nq": bio_model.nb_q}
+        extra_params_x = {
+            "my_values": np.random.random((nq + nqdot, 2)),
+            "n_shooting_custom": n_shooting,
+            "nq": bio_model.nb_q,
+        }
+        extra_params_u = {
+            "my_values": np.random.random((ntau, 2)),
+            "n_shooting_custom": n_shooting,
+            "nq": bio_model.nb_q,
+        }
     else:
         raise RuntimeError("Initial guess not implemented yet")
 
