@@ -571,6 +571,7 @@ class BoundsList(OptionDict):
         min_bound: PathCondition | np.ndarray | list | tuple | Callable = None,
         max_bound: PathCondition | np.ndarray | list | tuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        phase: int = -1,
         **extra_arguments: Any,
     ):
         """
@@ -588,6 +589,8 @@ class BoundsList(OptionDict):
             Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
         interpolation: InterpolationType
             Type of interpolation do perform between shooting points
+        phase: int
+            The phase to add the bound to
         extra_arguments: dict
             Any parameters to pass to the Bounds
         """
@@ -599,9 +602,13 @@ class BoundsList(OptionDict):
             max_bound = bounds
             bounds = None
         if isinstance(bounds, Bounds):
-            if bounds.phase == -1 and key in self.keys():
-                bounds.phase = len(self.options) if self.options[0] else 0
+            if phase == -1 and key in self[phase].keys():
+                phase = len(self.options) if self.options[0] else 0
+
+            previous_phase = bounds.phase
+            bounds.phase = phase
             self.copy(bounds, key)
+            bounds.phase = previous_phase
             self.type = bounds.type
         else:
             super(BoundsList, self)._add(
@@ -610,6 +617,7 @@ class BoundsList(OptionDict):
                 max_bound=max_bound,
                 option_type=Bounds,
                 interpolation=interpolation,
+                phase=phase,
                 **extra_arguments,
             )
             self.type = interpolation
@@ -618,7 +626,7 @@ class BoundsList(OptionDict):
     def param_when_copying(self):
         return {}
 
-    def __getitem__(self, item: int | str) -> Bounds:
+    def __getitem__(self, item: int | str) -> Any:
         """
         Get the ith option of the list
 
@@ -1065,6 +1073,7 @@ class InitialGuessList(OptionDict):
         key,
         initial_guess: InitialGuess | np.ndarray | list | tuple = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
+        phase: int = -1,
         **extra_arguments: Any,
     ):
         """
@@ -1072,14 +1081,26 @@ class InitialGuessList(OptionDict):
 
         Parameters
         ----------
+        key: str
+            The name of the optimization variable
         initial_guess: InitialGuess | np.ndarray | list | tuple
             The initial guess to add
         extra_arguments: dict
             Any parameters to pass to the Bounds
+        interpolation: InterpolationType
+            Type of interpolation do perform between shooting points
+        phase: int
+            The phase to add the bound to
         """
 
         if isinstance(initial_guess, InitialGuess):
+            if phase == -1 and key in self[phase].keys():
+                phase = len(self.options) if self.options[0] else 0
+
+            previous_phase = initial_guess.phase
+            initial_guess.phase = phase
             self.copy(initial_guess, key)
+            initial_guess.phase = previous_phase
             self.type = initial_guess.type
         else:
             super(InitialGuessList, self)._add(
@@ -1087,6 +1108,7 @@ class InitialGuessList(OptionDict):
                 initial_guess=initial_guess,
                 option_type=InitialGuess,
                 interpolation=interpolation,
+                phase=phase,
                 **extra_arguments,
             )
             self.type = interpolation

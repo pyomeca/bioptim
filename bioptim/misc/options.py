@@ -301,6 +301,10 @@ class OptionDict(OptionList):
             out = self.__class__()
             for key in self.keys():
                 out.add(key, self.options[item][key])
+
+            if len(out.options) > 1:
+                # Make sure only one item is returned
+                out.options = [out.options[item]]
             return out
 
         if isinstance(item, (list, tuple)):

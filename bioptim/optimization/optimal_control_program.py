@@ -795,13 +795,13 @@ class OptimalControlProgram:
             if x_bounds:
                 origin_phase = 0 if len(x_bounds) == 1 else i
                 for key in x_bounds[origin_phase].keys():
-                    self.nlp[i].x_bounds[key] = x_bounds[origin_phase][key]
+                    self.nlp[i].x_bounds.add(key, x_bounds[origin_phase][key], phase=0)
                 self.isdef_x_bounds = True
 
             if u_bounds:
                 for key in u_bounds.keys():
                     origin_phase = 0 if len(u_bounds) == 1 else i
-                    self.nlp[i].u_bounds[key] = u_bounds[origin_phase][key]
+                    self.nlp[i].u_bounds.add(key, u_bounds[origin_phase][key], phase=0)
                 self.isdef_u_bounds = True
 
         if self.isdef_x_bounds and self.isdef_u_bounds:
@@ -838,13 +838,13 @@ class OptimalControlProgram:
             if x_init:
                 origin_phase = 0 if len(x_init) == 1 else i
                 for key in x_init[origin_phase].keys():
-                    self.nlp[i].x_init[key] = x_init[origin_phase][key]
+                    self.nlp[i].x_init.add(key, x_init[origin_phase][key], phase=0)
                 self.isdef_x_init = True
 
             if u_init:
                 for key in u_init.keys():
                     origin_phase = 0 if len(u_init) == 1 else i
-                    self.nlp[i].u_init[key] = u_init[origin_phase][key]
+                    self.nlp[i].u_init.add(key, u_init[origin_phase][key], phase=0)
                 self.isdef_u_init = True
 
         if param_init is None:
