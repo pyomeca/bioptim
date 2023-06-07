@@ -19,7 +19,7 @@ from bioptim import (
 )
 from casadi import MX, vertcat, Function
 
-from biorbd_model_holonomic import BiorbdModelCustomHolonomic
+from bioptim.examples.discrete_mechanics_for_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
 
 
 class VariationalOptimalControlProgram(OptimalControlProgram):

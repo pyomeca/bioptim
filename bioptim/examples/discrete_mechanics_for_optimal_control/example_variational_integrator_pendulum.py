@@ -13,8 +13,10 @@ from bioptim import (
 )
 import numpy as np
 
-from biorbd_model_holonomic import BiorbdModelCustomHolonomic
-from variational_optimal_control_program import VariationalOptimalControlProgram
+from bioptim.examples.discrete_mechanics_for_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
+from bioptim.examples.discrete_mechanics_for_optimal_control.variational_optimal_control_program import (
+    VariationalOptimalControlProgram,
+)
 
 
 def prepare_ocp(
