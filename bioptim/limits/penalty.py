@@ -1041,6 +1041,7 @@ class PenaltyFunctionAbstract:
             nx = controller.states.cx.shape[0]
             P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "cov")
             M_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
+            P_matrix_end = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.END, "cov")
 
             sigma_w = 10 ** (-1)  # How do we choose?
             dt = controller.tf / controller.ns
@@ -1055,9 +1056,9 @@ class PenaltyFunctionAbstract:
             ddx_dx = jacobian(dx.dxdt, controller.states.cx_start)
             dg_dx = - (ddx_dx*dt/2 + MX_eye(ddx_dx.shape[0]))
 
-            p_constraint = M_matrix @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
-            func_eval = Function("p_constraint", [controller.states.cx_start, controller.controls.cx_start,
-                                                    controller.parameters.cx_start, controller.stochastic_variables.cx_start, wM, wP, wPdot], [p_constraint])(controller.states.cx_start,
+            p_after = M_matrix @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
+            func_eval = Function("p_after", [controller.states.cx_start, controller.controls.cx_start,
+                                                    controller.parameters.cx_start, controller.stochastic_variables.cx_start, wM, wP, wPdot], [p_after])(controller.states.cx_start,
                                                                                                          controller.controls.cx_start,
                                                                                                          controller.parameters.cx_start,
                                                                                                          controller.stochastic_variables.cx_start,
@@ -1065,11 +1066,13 @@ class PenaltyFunctionAbstract:
                                                                                                          wPq_numerical,
                                                                                                          wPqdot_numerical)
 
+            continuity = P_matrix_end - func_eval
+
             penalty.expand = controller.get_nlp.dynamics_type.expand
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            out_vector = controller.restore_vector_form_matrix(func_eval)
+            out_vector = controller.restore_vector_form_matrix(continuity)
             return out_vector
 
         @staticmethod
