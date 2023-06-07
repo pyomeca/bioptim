@@ -436,6 +436,7 @@ def prepare_socp(
     shoulder_pos_final = 0.9599
     elbow_pos_init = 2.2459  # Optimized in Tom's version
     elbow_pos_final = 1.1594  # Optimized in Tom's version
+    ee_initial_position = np.array([0.0, 0.2742])  # Directly from Tom's version
     ee_final_position = np.array([0.0, 0.5273])  # Directly from Tom's version
 
     # Add objective functions
@@ -473,10 +474,10 @@ def prepare_socp(
     states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
     # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
     # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    states_min[0:4, 0] = [shoulder_pos_init-0.2, elbow_pos_init-0.01, 0, 0]  # Initial position + velocities
-    states_max[0:4, 0] = [shoulder_pos_init+0.2, elbow_pos_init+0.01, 0, 0]  # Initial position + velocities
+    states_min[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
+    states_max[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
     states_min[0:2, 1:3] = 0
-    states_max[0:2, 1:3] = np.pi
+    states_max[0:2, 1:3] = 180  # should be np.pi, but there is a mistake in the original code
     states_min[2:4, 2] = 0
     states_max[2:4, 2] = 0
 
@@ -500,23 +501,24 @@ def prepare_socp(
     # TODO: This should probably be done automatically, not defined by the user
 
     n_stochastic = n_muscles*(n_q + n_qdot) + n_q+n_qdot + n_states*n_states + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10) + P(10x10)
-    # 216 ou 24
     stochastic_min = np.zeros((n_stochastic, 3))
     stochastic_max = np.zeros((n_stochastic, 3))
-    stochastic_init = np.zeros((n_stochastic, 1))
+    stochastic_init = np.zeros((n_stochastic, 2))
 
     curent_index = 0
-    # stochastic_init[:n_muscles*(n_q + n_qdot), 0] = 0.01  # K
+    stochastic_init[:n_muscles*(n_q + n_qdot), :] = 0.01  # K
     stochastic_min[:n_muscles*(n_q + n_qdot), :] = -10
     stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
 
     curent_index += n_muscles*(n_q + n_qdot)
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = 0.01  # ee_ref
-    stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -10
-    stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 10
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
+    stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -1
+    stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 1
 
     curent_index += n_q+n_qdot
-    # stochastic_init[curent_index : curent_index + n_states*n_states, 0] = 0.01  # M
+    stochastic_init[curent_index : curent_index + n_states*n_states, 0] = 0.01  # M
     stochastic_min[curent_index : curent_index + n_states*n_states, :] = -10
     stochastic_max[curent_index : curent_index + n_states*n_states, :] = 10
     # M at node ns+1 should not exist (my hope is that by constraining it IPOPT treats it as a constant)
@@ -535,7 +537,7 @@ def prepare_socp(
     stochastic_min[curent_index:, 0] = vect_p_init
     stochastic_max[curent_index:, 0] = vect_p_init
 
-    s_init = InitialGuess(stochastic_init)
+    s_init = InitialGuess(stochastic_init, interpolation=InterpolationType.LINEAR)
 
     s_bounds = BoundsList()
     # Didi not find it in the original code
@@ -565,6 +567,7 @@ def prepare_socp(
 def main():
 
     global wM_std, wPq_std, wPqdot_std
+    RUN_OPTIM_FLAG = True  # False
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
     # import bioviz
@@ -585,31 +588,56 @@ def main():
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
     solver.set_maximum_iterations(10000)
+    solver.set_bound_frac(1e-8)
+    solver.set_bound_push(1e-8)
 
     socp = prepare_socp(biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting)
-    sol_socp = socp.solve(solver)
 
-    q_sol = sol_socp.states["q"]
-    qdot_sol = sol_socp.states["qdot"]
-    activations_sol = sol_socp.states["muscles"]
-    excitations_sol = sol_socp.controls["muscles"]
-    k_sol = sol_socp.stochastic_variables["k"]
-    ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
-    m_sol = sol_socp.stochastic_variables["m"]
-    cov_sol = sol_socp.stochastic_variables["cov"]
-    parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol, cov_sol))
-    data = {"q_sol": q_sol,
-            "qdot_sol": qdot_sol,
-            "activations_sol": activations_sol,
-            "excitations_sol": excitations_sol,
-            "k_sol": k_sol,
-            "ee_ref_sol": ee_ref_sol,
-            "m_sol": m_sol,
-            "cov_sol": cov_sol}
+    if RUN_OPTIM_FLAG:
+        sol_socp = socp.solve(solver)
 
-    # --- Save the results --- #
-    with open("leuvenarm_muscle_driven_socp.pkl", "wb") as file:
-        pickle.dump(data, file)
+        q_sol = sol_socp.states["q"]
+        qdot_sol = sol_socp.states["qdot"]
+        activations_sol = sol_socp.states["muscles"]
+        excitations_sol = sol_socp.controls["muscles"]
+        k_sol = sol_socp.stochastic_variables["k"]
+        ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
+        m_sol = sol_socp.stochastic_variables["m"]
+        cov_sol = sol_socp.stochastic_variables["cov"]
+        parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol, cov_sol))
+        data = {"q_sol": q_sol,
+                "qdot_sol": qdot_sol,
+                "activations_sol": activations_sol,
+                "excitations_sol": excitations_sol,
+                "k_sol": k_sol,
+                "ee_ref_sol": ee_ref_sol,
+                "m_sol": m_sol,
+                "cov_sol": cov_sol,
+                "parameters_sol": parameters_sol}
+
+        # --- Save the results --- #
+        with open("leuvenarm_muscle_driven_socp.pkl", "wb") as file:
+            pickle.dump(data, file)
+    else:
+        with open("leuvenarm_muscle_driven_socp_1.pkl", "rb") as file:
+            data = pickle.load(file)
+        q_sol = data["q_sol"]
+        qdot_sol = data["qdot_sol"]
+        activations_sol = data["activations_sol"]
+        excitations_sol = data["excitations_sol"]
+        k_sol = data["k_sol"]
+        ee_ref_sol = data["ee_ref_sol"]
+        m_sol = data["m_sol"]
+        cov_sol = data["cov_sol"]
+        # parameters_sol = data["parameters_sol"]
+        parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol, cov_sol))
+
+
+    import bioviz
+    b = bioviz.Viz(model_path=biorbd_model_path)
+    b.load_movement(q_sol)
+    b.exec()
+
 
     # --- Plot the results --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -664,15 +692,20 @@ def main():
         axs[0, 1].plot(hand_vel_simulated[i_simulation, 0, :], hand_vel_simulated[i_simulation, 1, :], color="tab:red")
         axs[1, 1].plot(np.linspace(0, final_time, n_shooting + 1), qdot_simulated[i_simulation, 0, :], color="k")
         axs[2, 1].plot(np.linspace(0, final_time, n_shooting + 1), qdot_simulated[i_simulation, 1, :], color="k")
-    axs[0, 0].set_xlabel("Y [m]")
-    axs[0, 0].set_ylabel("X [m]")
+    hand_pos_without_noise = np.zeros((2, n_shooting + 1))
+    for i_node in range(n_shooting + 1):
+        hand_pos_without_noise[:, i_node] = np.reshape(hand_pos_fcn(q_sol[:, i_node])[:2], (2,))
+    axs[0, 0].plot(hand_pos_without_noise[0, :], hand_pos_without_noise[1, :], color="k")
+    axs[0, 0].plot(hand_pos_without_noise[0, 0], hand_pos_without_noise[1, 0], color="tab:blue", marker="o")
+    axs[0, 0].set_xlabel("X [m]")
+    axs[0, 0].set_ylabel("Y [m]")
     axs[0, 0].set_title("Hand position simulated")
     axs[1, 0].set_xlabel("Time [s]")
     axs[1, 0].set_ylabel("Shoulder angle [rad]")
     axs[2, 0].set_xlabel("Time [s]")
     axs[2, 0].set_ylabel("Elbow angle [rad]")
-    axs[0, 1].set_xlabel("Y velocity [m/s]")
-    axs[0, 1].set_ylabel("X velocity [m/s]")
+    axs[0, 1].set_xlabel("X velocity [m/s]")
+    axs[0, 1].set_ylabel("Y velocity [m/s]")
     axs[0, 1].set_title("Hand velocity simulated")
     axs[1, 1].set_xlabel("Time [s]")
     axs[1, 1].set_ylabel("Shoulder velocity [rad/s]")
@@ -694,7 +727,11 @@ def main():
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol_socp.animate()
+    # sol_socp.animate()
+    import bioviz
+    b = bioviz.Viz(model_path=biorbd_model_path)
+    b.load_movement(q_simulated[0, :, :])
+    b.exec()
 
 
 # --- Define constants to specify the model  --- #
