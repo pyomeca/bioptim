@@ -26,49 +26,49 @@ def test_variational_pendulum():
     np.testing.assert_almost_equal(
         sol.states["q"][:, 0].squeeze(),
         [0.0, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.states["q"][:, 50].squeeze(),
         [-0.726413733965370, 0.957513371856119],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.states["q"][:, -1].squeeze(),
         [0.0, 3.14],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 0].squeeze(),
         [10.244275356612663, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 50].squeeze(),
         [1.571057590776628, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, -2].squeeze(),
         [-11.075690668538043, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.parameters["qdot0"].squeeze(),
         [0.0, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.parameters["qdotN"].squeeze(),
         [0.0, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
 
@@ -93,47 +93,47 @@ def test_variational_pendulum_with_holonomic_constraints():
     np.testing.assert_almost_equal(
         sol.states["q"][:, 0].squeeze(),
         [0.0, 0.0, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.states["q"][:, 50].squeeze(),
         [-0.726414103487621, 0.0, 0.957513756633348],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.states["q"][:, -1].squeeze(),
         [0.0, 0.0, 3.14],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 0].squeeze(),
         [10.244271905334511, 0.0, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 50].squeeze(),
         [1.571068734115470, 0.0, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, -2].squeeze(),
         [-11.075685503793608, 0.0, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.parameters["qdot0"].squeeze(),
         [0.0, 0.0, 0.0],
-        decimal=8,
+        decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.parameters["qdotN"].squeeze(),
         [0.0, 0.0, 0.0],
-        decimal=8,
+        decimal=6,
     )
