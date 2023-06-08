@@ -3,18 +3,19 @@ Tests of the examples of the variational integrator.
 """
 
 import numpy as np
+import os
 from bioptim import Solver
 
 
 def test_variational_pendulum():
     """Test the variational integrator pendulum example"""
-    from bioptim.examples.discrete_mechanics_for_optimal_control.example_variational_integrator_pendulum import (
-        prepare_ocp,
-    )
+    from bioptim.examples.discrete_mechanics_for_optimal_control import example_variational_integrator_pendulum
+
+    bioptim_folder = os.path.dirname(example_variational_integrator_pendulum.__file__)
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(
-        bio_model_path="../bioptim/examples/discrete_mechanics_for_optimal_control/models/pendulum.bioMod",
+    ocp = example_variational_integrator_pendulum.prepare_ocp(
+        bio_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=100,
     )
@@ -73,13 +74,15 @@ def test_variational_pendulum():
 
 def test_variational_pendulum_with_holonomic_constraints():
     """Test the variational integrator pendulum with holonomic constraints example"""
-    from bioptim.examples.discrete_mechanics_for_optimal_control.example_variational_integrator_with_holonomic_constraints_pendulum import (
-        prepare_ocp,
+    from bioptim.examples.discrete_mechanics_for_optimal_control import (
+        example_variational_integrator_with_holonomic_constraints_pendulum,
     )
 
+    bioptim_folder = os.path.dirname(example_variational_integrator_with_holonomic_constraints_pendulum.__file__)
+
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(
-        bio_model_path="../bioptim/examples/discrete_mechanics_for_optimal_control/models/pendulum_holonomic.bioMod",
+    ocp = example_variational_integrator_with_holonomic_constraints_pendulum.prepare_ocp(
+        bio_model_path=bioptim_folder + "/models/pendulum_holonomic.bioMod",
         final_time=1,
         n_shooting=100,
     )
