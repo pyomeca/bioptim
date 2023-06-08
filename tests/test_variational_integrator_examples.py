@@ -1,5 +1,5 @@
 """
-Tests of the examples of the variational integrator.
+Tests of the examples of the variational integrator
 """
 
 import numpy as np
