@@ -204,7 +204,8 @@ def prepare_ocp(
 
     if random_init:
         for key in x_init.keys():
-            x_init[key] = x_init[key].add_noise(
+            # Here we need to reference directly the 0th phase because it was already defined
+            x_init[0][key] = x_init[key].add_noise(
                 bounds=x_bounds[key],
                 magnitude=1,
                 magnitude_type=MagnitudeType.RELATIVE,
@@ -212,7 +213,7 @@ def prepare_ocp(
                 bound_push=0.1,
             )
         for key in u_init.keys():
-            u_init[key] = u_init[key].add_noise(
+            u_init[0][key] = u_init[key].add_noise(
                 bounds=u_bounds[key],
                 n_shooting=n_shooting,
                 bound_push=0.1,

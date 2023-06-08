@@ -181,6 +181,7 @@ def prepare_ocp(
 
     # Path constraints
     if interpolation_type == InterpolationType.CONSTANT:
+        # Here we need to use the .add nomenclature because interpolation is not the default
         x_bounds = BoundsList()
         x_bounds.add("q", min_bound=[-100] * nq, max_bound=[100] * nq, interpolation=InterpolationType.CONSTANT)
         x_bounds.add(
@@ -191,32 +192,20 @@ def prepare_ocp(
             "tau", min_bound=[tau_min] * ntau, max_bound=[tau_max] * ntau, interpolation=InterpolationType.CONSTANT
         )
     elif interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+        # Here we can use the direct variable assignment because no extra parameters are sent
         x_min = np.random.random((6, 3)) * (-10) - 5
         x_max = np.random.random((6, 3)) * 10 + 5
         x_bounds = BoundsList()
-        x_bounds.add(
-            "q",
-            min_bound=x_min[:nq, :],
-            max_bound=x_max[:nq, :],
-            interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        )
-        x_bounds.add(
-            "qdot",
-            min_bound=x_min[nq:, :] * nqdot,
-            max_bound=x_max[nq:, :],
-            interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        )
+        x_bounds["q"] = x_min[:nq, :], x_max[:nq, :]
+        x_bounds["qdot"] = x_min[nq:, :] * nqdot, x_max[nq:, :]
 
         u_min = np.random.random((3, 3)) * tau_min + tau_min / 2
         u_max = np.random.random((3, 3)) * tau_max + tau_max / 2
         u_bounds = BoundsList()
-        u_bounds.add(
-            "tau",
-            min_bound=u_min,
-            max_bound=u_max,
-            interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        )
+        u_bounds["tau"] = u_min, u_max,
+
     elif interpolation_type == InterpolationType.LINEAR:
+        # Here we need to use the .add nomenclature because interpolation is not the default
         x_min = np.random.random((6, 2)) * (-10) - 5
         x_max = np.random.random((6, 2)) * 10 + 5
         x_bounds = BoundsList()
@@ -230,6 +219,7 @@ def prepare_ocp(
         u_bounds = BoundsList()
         u_bounds.add("tau", min_bound=u_min, max_bound=u_max, interpolation=InterpolationType.LINEAR)
     elif interpolation_type == InterpolationType.EACH_FRAME:
+        # Here we need to use the .add nomenclature because interpolation is not the default
         x_min = np.random.random((nq + nqdot, n_shooting + 1)) * (-10) - 5
         x_max = np.random.random((nq + nqdot, n_shooting + 1)) * 10 + 5
         x_bounds = BoundsList()
@@ -243,6 +233,7 @@ def prepare_ocp(
         u_bounds = BoundsList()
         u_bounds.add("tau", min_bound=u_min, max_bound=u_max, interpolation=InterpolationType.EACH_FRAME)
     elif interpolation_type == InterpolationType.SPLINE:
+        # Here we need to use the .add nomenclature because interpolation is not the default
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
         x_min = np.random.random((nq + nqdot, 5)) * (-10) - 5
         x_max = np.random.random((nq + nqdot, 5)) * 10 + 5

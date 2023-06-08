@@ -9,8 +9,7 @@ from bioptim import (
     OptimalControlProgram,
     Dynamics,
     DynamicsFcn,
-    Bounds,
-    InitialGuess,
+    BoundsList,
     PlotType,
     Solver,
 )
@@ -64,47 +63,32 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, [0, -1]] = 0
-    x_bounds[1, -1] = 3.14
-
-    # Initial guess
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
-    x_init = InitialGuess([0] * (n_q + n_qdot))
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Define control path constraint
-    torque_min, torque_max, torque_init = -100, 100, 0
+    torque_min, torque_max = -100, 100
     n_tau = bio_model.nb_tau
-    u_bounds = Bounds([torque_min] * n_tau, [torque_max] * n_tau)
-    u_bounds[n_tau - 1, :] = 0
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [torque_min] * n_tau, [torque_max] * n_tau
 
-    u_init = InitialGuess([torque_init] * n_tau)
-
-    return OptimalControlProgram(
+    ocp = OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
-
-def main():
-    """
-    Create multiple new plot and add new stuff to them using a custom defined function
-    """
-
-    # Prepare the Optimal Control Program
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=50)
-
     # Add my lovely new plot
     ocp.add_plot("My New Extra Plot", lambda t, x, u, p: custom_plot_callback(x, [0, 1, 3]), plot_type=PlotType.PLOT)
-    ocp.add_plot(
+    ocp.add_plot(  # This one combines to the previous one as they have the same name
         "My New Extra Plot",
         lambda t, x, u, p: custom_plot_callback(x, [1, 3]),
         plot_type=PlotType.STEP,
@@ -116,6 +100,17 @@ def main():
         plot_type=PlotType.INTEGRATED,
         axes_idx=[1, 2],
     )
+
+    return ocp
+
+
+def main():
+    """
+    Create multiple new plot and add new stuff to them using a custom defined function
+    """
+
+    # Prepare the Optimal Control Program
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=50)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
