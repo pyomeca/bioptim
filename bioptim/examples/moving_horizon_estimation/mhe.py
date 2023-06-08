@@ -226,9 +226,9 @@ def main():
     print(f"New measurement every : {1 / n_shoot_per_second} s.")
     print(f"Average time per iteration of MHE : {sol.solver_time_to_optimize / (n_frames_total - 1)} s.")
     print(f"Average real time per iteration of MHE : {sol.real_time_to_optimize / (n_frames_total - 1)} s.")
-    print(f"Norm of the error on state = {np.linalg.norm(states[:, :n_frames_total] - sol.states['all'])}")
+    print(f"Norm of the error on q = {np.linalg.norm(states[:bio_model.nb_q, :n_frames_total] - sol.states['q'])}")
 
-    markers_estimated = states_to_markers(bio_model, sol.states["all"])
+    markers_estimated = states_to_markers(bio_model, sol.states["q"])
 
     plt.plot(
         markers_noised[1, :, :n_frames_total].T,
@@ -243,7 +243,8 @@ def main():
     plt.legend()
 
     plt.figure()
-    plt.plot(sol.states["all"].T, "--", label="States estimate")
+    plt.plot(sol.states["q"].T, "--", label="States estimate (q)")
+    plt.plot(sol.states["qdot"].T, "--", label="States estimate (qdot)")
     plt.plot(states[:, :n_frames_total].T, label="State truth")
     plt.legend()
     plt.show()

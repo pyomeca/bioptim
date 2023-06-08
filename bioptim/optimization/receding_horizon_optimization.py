@@ -11,7 +11,7 @@ from .solution import Solution
 from ..dynamics.configure_problem import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
-from ..limits.path_conditions import InitialGuess, Bounds
+from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
 from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions, ControlType
 from ..interfaces.solver_options import Solver
 from ..optimization.variable_scaling import VariableScaling
@@ -204,13 +204,19 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         self.frame_to_export = export_options["frame_to_export"]
 
     def _initialize_solution(self, states: list, controls: list):
-        _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        if self.original_values["control_type"] == ControlType.CONSTANT:
-            init_controls = InitialGuess(
-                np.concatenate(controls, axis=1)[:, :-1], interpolation=InterpolationType.EACH_FRAME
-            )
-        else:
-            init_controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
+        x_init = InitialGuessList()
+        for key in self.nlp[0].states.keys():
+            x_init.add(key, np.concatenate([state[key] for state in states], axis=1), interpolation=InterpolationType.EACH_FRAME)
+
+        u_init = InitialGuessList()
+        u_init_for_solution = InitialGuessList()
+        for key in self.nlp[0].controls.keys():
+            controls_tp = np.concatenate([control[key] for control in controls], axis=1)
+            u_init_for_solution.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
+            if self.original_values["control_type"] == ControlType.CONSTANT:
+                controls_tp = controls_tp[:, :-1]
+            u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
+
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
@@ -220,15 +226,14 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             n_shooting=self.total_optimization_run - 1,
             phase_time=self.total_optimization_run * self.nlp[0].dt,
             skip_continuity=True,
-            x_init=_states,
-            u_init=init_controls,
-            x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
-            xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
-            u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
+            x_bounds=self.nlp[0].x_bounds,
+            u_bounds=self.nlp[0].u_bounds,
+            x_init=x_init,
+            u_init=u_init,
             use_sx=self.original_values["use_sx"],
         )
-        _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        return Solution(solution_ocp, [_states, _controls])
+
+        return Solution(solution_ocp, [x_init, u_init_for_solution])
 
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
         state_bounds_have_changed = self.advance_window_bounds_states(sol, **advance_options)
