@@ -335,7 +335,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             val = M_matrix * DG_DZ - MX_eye(nx)
 
-            out_vector = controllers[0].restore_vector_form_matrix(val)
+            out_vector = controllers[0].restore_vector_from_matrix(val)
             return out_vector
 
         @staticmethod

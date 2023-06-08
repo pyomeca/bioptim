@@ -1006,7 +1006,7 @@ class PenaltyFunctionAbstract:
             i = 0
             for dof_1 in range(controller.states["q"].cx.shape[0]):
                 for dof_2 in range(controller.states["q"].cx.shape[0]):
-                    P_matrix[dof_1, dof_2] = controller.stochastic_variables["cov"].cx_start[i]
+                    P_matrix[dof_1, dof_2] = controller.update_values["cov"].cx_start[i]
                     A_matrix[dof_1, dof_2] = controller.stochastic_variables["a"].cx_start[i]
                     A_end_matrix[dof_1, dof_2] = controller.stochastic_variables["a"].cx_end[i]
                     i += 1
@@ -1025,7 +1025,7 @@ class PenaltyFunctionAbstract:
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            out_vector = controller.restore_vector_form_matrix(p_implicit_deffect)
+            out_vector = controller.restore_vector_from_matrix(p_implicit_deffect)
             return out_vector
 
         @staticmethod
@@ -1039,9 +1039,9 @@ class PenaltyFunctionAbstract:
             wPqdot_numerical = np.array([0.000576, 0.000576])
 
             nx = controller.states.cx.shape[0]
-            P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "cov")
+            P_matrix = controller.restore_matrix_from_vector(controller.update_values, nx, nx, Node.START, "cov")
             M_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
-            P_matrix_end = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.END, "cov")
+            P_matrix_end = controller.restore_matrix_from_vector(controller.update_values, nx, nx, Node.END, "cov")
 
             sigma_w = 10 ** (-1)  # How do we choose?
             dt = controller.tf / controller.ns
@@ -1049,7 +1049,7 @@ class PenaltyFunctionAbstract:
             wP = MX.sym("wP", controller.states['q'].cx.shape[0])
             wPdot = MX.sym("wPdot", controller.states['q'].cx.shape[0])
             dx = stochastic_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
-                                     controller.parameters.cx_start, controller.stochastic_variables.cx_start, controller.get_nlp, wM, wP, wPdot)
+                                     controller.parameters.cx_start, controller.update_values.cx_start, controller.get_nlp, wM, wP, wPdot)
 
 
             dg_dw = jacobian(dx.dxdt, wM)
@@ -1072,7 +1072,7 @@ class PenaltyFunctionAbstract:
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            out_vector = controller.restore_vector_form_matrix(continuity)
+            out_vector = controller.restore_vector_from_matrix(continuity)
             return out_vector
 
         @staticmethod
@@ -1126,6 +1126,10 @@ class PenaltyFunctionAbstract:
                 penalty.min_bound = val[0]
                 penalty.max_bound = val[2]
                 val = val[1]
+
+                # # Shouldn't it be the same for explicit derivative ?
+                # if "depends_on_all_nodes" in parameters.keys():
+                #     penalty.depends_on_all_nodes = parameters["depends_on_all_nodes"]
 
             return val
 

@@ -177,6 +177,7 @@ class OptimalControlProgram:
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         problem_type: OcpType = OcpType.OCP,
+        update_value_function: Callable = None,
     ):
         """
         Parameters
@@ -281,6 +282,7 @@ class OptimalControlProgram:
             "n_threads": n_threads,
             "use_sx": use_sx,
             "assume_phase_dynamics": assume_phase_dynamics,
+            "update_value_function": update_value_function,
         }
 
         # Check integrity of arguments
@@ -562,6 +564,8 @@ class OptimalControlProgram:
         NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
 
+        NLP.add(self, "update_value_function", update_value_function, True)
+
         # Prepare the node mappings
         if node_mappings is None:
             node_mappings = NodeMappingList()
@@ -599,6 +603,7 @@ class OptimalControlProgram:
                 self._prepare_stochastic_dynamics(self.nlp[i])
                 # TODO: add interphase continuity constraints on the covariance matrix
                 # TODO: add SOCP_IMPLICIT(with A and C if needed)
+
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
@@ -796,8 +801,8 @@ class OptimalControlProgram:
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
-        penalty_cov = Constraint(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY_EXPLICIT, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
-        penalty_cov.add_or_replace_to_penalty_pool(self, nlp)
+        # penalty_cov = Constraint(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY_EXPLICIT, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL)
+        # penalty_cov.add_or_replace_to_penalty_pool(self, nlp)
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """

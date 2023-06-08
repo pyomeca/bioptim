@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import MX, vertcat, Function
+from casadi import MX, vertcat, Function, DM_eye
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
@@ -1131,6 +1131,72 @@ class ConfigureProblem:
                 nlp.stochastic_variables.append(name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index)
 
     @staticmethod
+    def configure_new_value(
+        name: str,
+        name_elements: list,
+        ocp,
+        nlp,
+    ):
+        """
+        Add a new update value
+
+        Parameters
+        ----------
+        name: str
+            The name of the new variable to add
+        name_elements: list[str]
+            The name of each element of the vector
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
+        # TODO: to bemoved outside probably
+        def define_cx_scaled(n_col: int, n_shooting: int, initial_node) -> list:
+            _cx = [nlp.cx() for _ in range(n_shooting + 1)]
+            for node_index in range(n_shooting + 1):
+                _cx[node_index] = [nlp.cx() for _ in range(n_col)]
+            for idx in range(len(name_elements)):
+                for node_index in range(n_shooting + 1):
+                    for j in range(n_col):
+                        _cx[node_index][j] = vertcat(
+                            _cx[node_index][j],
+                            nlp.cx.sym(
+                                f"{name}_{name_elements[idx]}_phase{nlp.phase_idx}_node{node_index + initial_node}.{j}",
+                                1,
+                                1,
+                            ),
+                        )
+            return _cx
+
+        mx_value = []
+
+        for i_el, name_el in enumerate(name_elements):
+            var_name = f"{name}_{name_el}_MX"
+            mx_value.append(MX.sym(var_name, 1, 1))
+
+        mx_value = vertcat(*mx_value)
+
+        # TODO: if go down that path, we sould also be able to compute values at collocation points
+        # but for now only cx_start can be used
+        n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+        if n_cx < 3:
+            n_cx = 3
+
+        dummy_mapping = Mapping(list(range(len(name_elements))))
+        # TODO: to be removed !!!!!!!
+        mat_p_init = DM_eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
+        p_init = nlp.restore_vector_from_matrix(mat_p_init)
+        cx_scaled_next_formatted = [p_init for _ in range(n_cx)]
+        nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, mx_value, dummy_mapping, 0)
+        for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
+            cx_scaled_next = nlp.update_value_function(nlp, node_index)
+            cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
+            nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, mx_value, dummy_mapping, node_index)
+
+
+    @staticmethod
     def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
         """
         Configure the generalized coordinates
@@ -1324,16 +1390,12 @@ class ConfigureProblem:
             for name_2 in [f"X_{i}" for i in range(nlp.states.cx_start.shape[0])]:
                 name_cov += [name_1 + "_&_" + name_2]
         nlp.variable_mappings[name] = BiMapping(list(range(nlp.states.cx_start.shape[0] **2)), list(range(nlp.states.cx_start.shape[0] ** 2)))
-        ConfigureProblem.configure_new_variable(
+        # ConfigureProblem.configure_new_variable(
+        ConfigureProblem.configure_new_value(
             name,
             name_cov,
             ocp,
             nlp,
-            as_states=False,
-            as_controls=False,
-            as_states_dot=False,
-            as_stochastic=True,
-            skip_plot=True,
         )
 
     @staticmethod

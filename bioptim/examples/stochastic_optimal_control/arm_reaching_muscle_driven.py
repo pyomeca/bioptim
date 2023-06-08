@@ -43,6 +43,8 @@ from bioptim import (
     ConstraintFcn,
     DefectType,
     Axis,
+    MultinodeConstraintList,
+    MultinodeObjectiveList,
 )
 
 
@@ -270,13 +272,18 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     # ConfigureProblem.configure_a(ocp, nlp)
     ConfigureProblem.configure_dynamics_function(ocp, nlp, stochastic_forward_dynamics, wM=wM, wPq=wPq, wPqdot=wPqdot, expand=False)
 
-def minimize_uncertainty(controller: PenaltyController, key: str) -> cas.MX:
+def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.MX:
     """
     Minimize the uncertainty (covariance matrix) of the states.
     """
-    P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, controller.states.cx.shape[0], controller.states.cx.shape[0], Node.START, "cov")
-    P_partial = P_matrix[controller.states[key].index, controller.states[key].index]
-    return cas.trace(P_partial)
+    out = 0
+    for i, ctrl in enumerate(controllers[1:]):
+        P_matrix = ctrl.restore_matrix_from_vector(ctrl.update_values, ctrl.states.cx.shape[0],
+                                                         ctrl.states.cx.shape[0], Node.START, "cov")
+        P_partial = P_matrix[ctrl.states[key].index, ctrl.states[key].index]
+
+        out += cas.trace(P_partial)
+    return out
 
 def get_ee(controller: PenaltyController, q, qdot) -> cas.MX:
     # hand_pos = controller.model.markers(q)[2][:2]
@@ -293,14 +300,64 @@ def ee_equals_ee_ref(controller: PenaltyController) -> cas.MX:
     ee = get_ee(controller, q, qdot)
     return ee - ee_ref
 
-def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
+
+def get_p_mat(nlp, node_index):
+
+    nlp.states.node_index = node_index - 1
+    nlp.controls.node_index = node_index - 1
+    nlp.stochastic_variables.node_index = node_index - 1
+    nlp.update_values.node_index = node_index - 1
+
+    wM_numerical = np.array([0.025, 0.025])
+    wPq_numerical = np.array([9e-6, 9e-6])
+    wPqdot_numerical = np.array([0.000576, 0.000576])
+
+    nx = nlp.states.cx_start.shape[0]
+    M_matrix = nlp.restore_matrix_from_vector(nlp.stochastic_variables, nx, nx, Node.START, "m")
+
+    sigma_w = 10 ** (-1)  # How do we choose?
+    dt = nlp.tf / nlp.ns
+    wM = cas.MX.sym("wM", nlp.states['q'].cx_start.shape[0])
+    wP = cas.MX.sym("wP", nlp.states['q'].cx_start.shape[0])
+    wPdot = cas.MX.sym("wPdot", nlp.states['q'].cx_start.shape[0])
+    cov_sym = cas.MX.sym("cov", nlp.update_values.cx_start.shape[0])
+    cov_sym_dict = {"cov": cov_sym}
+    cov_sym_dict["cov"].cx_start = cov_sym
+    cov_matrix = nlp.restore_matrix_from_vector(cov_sym_dict, nx, nx, Node.START, "cov")
+
+    dx = stochastic_forward_dynamics(nlp.states.cx_start, nlp.controls.cx_start,
+                                     nlp.parameters, nlp.stochastic_variables.cx_start,
+                                     nlp, wM, wP, wPdot)
+
+    dg_dw = cas.jacobian(dx.dxdt, wM)
+    ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx_start)
+    dg_dx = - (ddx_dx * dt / 2 + cas.MX_eye(ddx_dx.shape[0]))
+
+    p_next = M_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
+    func_eval = cas.Function("p_next", [nlp.states.cx_start, nlp.controls.cx_start,
+                                          nlp.parameters, nlp.stochastic_variables.cx_start, cov_sym,
+                                          wM, wP, wPdot], [p_next])(nlp.states.cx_start,
+                                                                          nlp.controls.cx_start,
+                                                                          nlp.parameters,
+                                                                          nlp.stochastic_variables.cx_start,
+                                                                          nlp.update_values.cx_start,  # Should be the right shape to work
+                                                                          wM_numerical,
+                                                                          wPq_numerical,
+                                                                          wPqdot_numerical)
+    p_vector = nlp.restore_vector_from_matrix(func_eval)
+    return p_vector
+
+def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     """
     Constraint the hand to reach the target consistently.
     """
 
-    Q = cas.MX.sym("q_sym", controller.states["q"].cx_start.shape[0])
-    Qdot = cas.MX.sym("qdot_sym", controller.states["qdot"].cx_start.shape[0])
-    P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, controller.states.cx_start.shape[0], controller.states.cx_start.shape[0], Node.START, "cov")
+    Q = cas.MX.sym("q_sym", controllers[-1].states["q"].cx_start.shape[0])
+    Qdot = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx_start.shape[0])
+    cov_sym = cas.MX.sym("cov", controllers[-1].update_values.cx_start.shape[0])
+    cov_sym_dict = {"cov": cov_sym}
+    cov_sym_dict["cov"].cx_start = cov_sym
+    cov_matrix = controllers[-1].restore_matrix_from_vector(cov_sym_dict, controllers[-1].states.cx_start.shape[0], controllers[-1].states.cx_start.shape[0], Node.START, "cov")
 
     # hand_pos = controller.model.markers(Q)[2][:2]
     # hand_vel = controller.model.marker_velocities(Q, Qdot)[:2, 2]
@@ -310,16 +367,16 @@ def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
     jac_marker_q = cas.jacobian(hand_pos, Q)
     jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(Q, Qdot))
 
-    P_matrix_q = P_matrix[:2, :2]
-    P_matrix_qdot = P_matrix[:4, :4]
+    P_matrix_q = cov_matrix[:2, :2]
+    P_matrix_qdot = cov_matrix[:4, :4]
 
     pos_constraint = jac_marker_q @ P_matrix_q @ jac_marker_q.T
     vel_constraint = jac_marker_qdot @ P_matrix_qdot @ jac_marker_qdot.T
 
     out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
 
-    fun = cas.Function("reach_target_consistantly", [Q, Qdot, controller.stochastic_variables.cx_start], [out])
-    val = fun(controller.states["q"].cx_start, controller.states["qdot"].cx_start, controller.stochastic_variables.cx_start)
+    fun = cas.Function("reach_target_consistantly", [Q, Qdot, cov_sym], [out])
+    val = fun(controllers[-1].states["q"].cx_start, controllers[-1].states["qdot"].cx_start, controllers[-1].update_values.cx_start)
     # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
     return val
@@ -347,7 +404,7 @@ def end_effector_velocity(q, qdot):
             -dtheta_shoulder * cas.cos(theta_shoulder)*l1 - da * cas.cos(a)*l2)
     return ee_vel
 
-def expected_feedback_effort(controller: PenaltyController) -> cas.MX:
+def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     """
     # trace(jacobian(e_fb_MX, X_MX) * P_MX * jacobian(e_fb_MX, X_MX)') + trace(K_MX*sensoryNoise_MX*K_MX');
     """
@@ -355,40 +412,47 @@ def expected_feedback_effort(controller: PenaltyController) -> cas.MX:
     # TODO: How do we choose?
     global wM_std, wPq_std, wPqdot_std
 
-    dt = controller.tf / controller.ns
+    dt = controllers[0].tf / controllers[0].ns
     wM_magnitude = cas.DM(np.array([wM_std ** 2 / dt, wM_std ** 2 / dt]))
     wPq_magnitude = cas.DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
     wPqdot_magnitude = cas.DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
     sensory_noise = cas.vertcat(wPq_magnitude, wPqdot_magnitude)
     sensory_noise_matrix = sensory_noise * cas.MX_eye(4)
 
+    # create the casadi function to be evaluated
     # Get the symbolic variables
-    ee_ref = controller.stochastic_variables["ee_ref"].cx_start
-    P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables,
-                                                          controller.states.cx.shape[0],
-                                                          controller.states.cx.shape[0],
-                                                          Node.START,
-                                                          "cov")
-    K_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables,
-                                                          controller.states["muscles"].cx.shape[0],
-                                                          controller.states["q"].cx.shape[0] + controller.states["qdot"].cx.shape[0],
-                                                          Node.START,
-                                                          "k")
+    ee_ref = controllers[0].stochastic_variables["ee_ref"].cx_start
+    cov_sym = cas.MX.sym("cov", controllers[0].update_values.cx_start.shape[0])
+    cov_sym_dict = {"cov": cov_sym}
+    cov_sym_dict["cov"].cx_start = cov_sym
+    cov_matrix = controllers[0].restore_matrix_from_vector(cov_sym_dict, controllers[0].states.cx_start.shape[0], controllers[0].states.cx_start.shape[0], Node.START, "cov")
+    K_matrix = controllers[0].restore_matrix_from_vector(controllers[0].stochastic_variables,
+                                               controllers[0].states["muscles"].cx.shape[0],
+                                               controllers[0].states["q"].cx.shape[0] + controllers[0].states["qdot"].cx.shape[0],
+                                               Node.START,
+                                               "k")
 
     # Compute the expected effort
     # hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
-    hand_pos = end_effector_position(controller.states["q"].cx_start)
+    hand_pos = end_effector_position(controllers[0].states["q"].cx_start)
     # hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[:2, 2]
-    hand_vel = end_effector_velocity(controller.states["q"].cx_start, controller.states["qdot"].cx_start)
+    hand_vel = end_effector_velocity(controllers[0].states["q"].cx_start, controllers[0].states["qdot"].cx_start)
     trace_k_sensor_k = cas.trace(K_matrix @ sensory_noise_matrix @ K_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
     e_fb = K_matrix @ ((ee - ee_ref) + sensory_noise)
-    jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
-    trace_jac_p_jack = cas.trace(jac_e_fb_x @ P_matrix @ jac_e_fb_x.T)
+    jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)
+    trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
-    f_expectedEffort_fb = cas.Function('f_expectedEffort_fb', [controller.states.cx_start, controller.stochastic_variables.cx_start], [expectedEffort_fb_mx])(controller.states.cx_start, controller.stochastic_variables.cx_start)
+    func = cas.Function('f_expectedEffort_fb',
+                                       [controllers[0].states.cx_start, controllers[0].stochastic_variables.cx_start, cov_sym],
+                                       [expectedEffort_fb_mx])
 
-    # trace(jacobian(e_fb_MX, X_MX) * P_MX * jacobian(e_fb_MX, X_MX)') + trace(K_MX*sensoryNoise_MX*K_MX');
+    f_expectedEffort_fb = 0
+    for i, ctrl in enumerate(controllers):
+        P_vector = ctrl.update_values.cx_start
+        out = func(ctrl.states.cx_start, ctrl.stochastic_variables.cx_start, P_vector)
+        f_expectedEffort_fb += out ** 2
+
     return f_expectedEffort_fb
 
 
@@ -443,18 +507,38 @@ def prepare_socp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1e3/2, quadratic=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(minimize_uncertainty,  custom_type=ObjectiveFcn.Lagrange, key="muscles", weight=1e3/2, quadratic=False)
-    objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3/2, quadratic=True)
+    # objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3/2, quadratic=True)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL)
     # No acceleration at the first and last nodes
-    constraints.add(reach_target_consistantly, node=Node.END, min_bound=np.array([0, 0, 0, 0]), max_bound=np.array([cas.inf, 0.004**2, 0.05**2, 0.05**2]))
+    # constraints.add(reach_target_consistantly, node=Node.END, depends_on_all_nodes=True,
+    #                 min_bound=np.array([0, 0, 0, 0]), max_bound=np.array([cas.inf, 0.004**2, 0.05**2, 0.05**2]))
     # constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, target=ee_final_position)  # axes=Axis.Y
     constraints.add(track_final_marker, node=Node.END, target=ee_final_position)
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
     # constraints.add(zero_acceleration, node=Node.END, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the ontrol on the last node is NaN
+
+    multinode_constraints = MultinodeConstraintList()
+    multinode_constraints.add(reach_target_consistantly,
+                              nodes_phase=[0 for _ in range(n_shooting+1)],
+                              nodes=[i for i in range(n_shooting+1)],
+                              min_bound=np.array([0, 0, 0, 0]),
+                              max_bound=np.array([cas.inf, 0.004**2, 0.05**2, 0.05**2]))
+
+    multinode_objectives = MultinodeObjectiveList()
+    multinode_objectives.add(minimize_uncertainty,
+                                nodes_phase=[0 for _ in range(n_shooting+1)],
+                                nodes=[i for i in range(n_shooting+1)],
+                                key="muscles",
+                                weight=1e3 / 2 / n_shooting+1,
+                                quadratic=False)
+    multinode_objectives.add(expected_feedback_effort,
+                             nodes_phase=[0 for _ in range(n_shooting+1)],
+                             nodes=[i for i in range(n_shooting+1)],
+                             weight=1e3 / 2 / n_shooting+1,
+                             quadratic=False)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -500,7 +584,7 @@ def prepare_socp(
 
     # TODO: This should probably be done automatically, not defined by the user
 
-    n_stochastic = n_muscles*(n_q + n_qdot) + n_q+n_qdot + n_states*n_states + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10) + P(10x10)
+    n_stochastic = n_muscles*(n_q + n_qdot) + n_q+n_qdot + n_states*n_states #  + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10) + P(10x10)
     stochastic_min = np.zeros((n_stochastic, 3))
     stochastic_max = np.zeros((n_stochastic, 3))
     stochastic_init = np.zeros((n_stochastic, 2))
@@ -511,9 +595,9 @@ def prepare_socp(
     stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
 
     curent_index += n_muscles*(n_q + n_qdot)
-    stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
-    stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
     stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -1
     stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 1
 
@@ -525,17 +609,17 @@ def prepare_socp(
     # stochastic_min[curent_index : curent_index + n_states*n_states, 2] = 0.01
     # stochastic_max[curent_index : curent_index + n_states*n_states, 2] = 0.01
 
-    curent_index += n_states*n_states
-    mat_p_init = np.eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
-    stochastic_min[curent_index:, :] = 0
-    stochastic_max[curent_index:, :] = cas.inf  # 1
-    vect_p_init = np.zeros((100, ))
-    for i in range(10):
-        for j in range(10):
-            vect_p_init[i*10+j] = mat_p_init[i, j]
-    stochastic_init[curent_index:, 0] = vect_p_init
-    stochastic_min[curent_index:, 0] = vect_p_init
-    stochastic_max[curent_index:, 0] = vect_p_init
+    # curent_index += n_states*n_states
+    # mat_p_init = np.eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
+    # stochastic_min[curent_index:, :] = 0
+    # stochastic_max[curent_index:, :] = cas.inf  # 1
+    # vect_p_init = np.zeros((100, ))
+    # for i in range(10):
+    #     for j in range(10):
+    #         vect_p_init[i*10+j] = mat_p_init[i, j]
+    # stochastic_init[curent_index:, 0] = vect_p_init
+    # stochastic_min[curent_index:, 0] = vect_p_init
+    # stochastic_max[curent_index:, 0] = vect_p_init
 
     s_init = InitialGuess(stochastic_init, interpolation=InterpolationType.LINEAR)
 
@@ -556,12 +640,16 @@ def prepare_socp(
         u_bounds=u_bounds,
         s_bounds=s_bounds,
         objective_functions=objective_functions,
+        multinode_objectives=multinode_objectives,
         constraints=constraints,
-        ode_solver=OdeSolver.RK2(n_integration_steps=1),
+        multinode_constraints=multinode_constraints,
+        # ode_solver=OdeSolver.RK4(n_integration_steps=5),
+        # ode_solver=OdeSolver.RK2(n_integration_steps=1),
         # ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
         n_threads=1,  # n_threads,
         assume_phase_dynamics=False,
         problem_type=OcpType.SOCP_EXPLICIT,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
+        update_value_function=get_p_mat,
     )
 
 def main():
@@ -603,8 +691,8 @@ def main():
         k_sol = sol_socp.stochastic_variables["k"]
         ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
         m_sol = sol_socp.stochastic_variables["m"]
-        cov_sol = sol_socp.stochastic_variables["cov"]
-        parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol, cov_sol))
+        # cov_sol = sol_socp.update_values["cov"]
+        parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol))  # , cov_sol))
         data = {"q_sol": q_sol,
                 "qdot_sol": qdot_sol,
                 "activations_sol": activations_sol,
@@ -612,7 +700,7 @@ def main():
                 "k_sol": k_sol,
                 "ee_ref_sol": ee_ref_sol,
                 "m_sol": m_sol,
-                "cov_sol": cov_sol,
+                # "cov_sol": cov_sol,
                 "parameters_sol": parameters_sol}
 
         # --- Save the results --- #
@@ -628,9 +716,9 @@ def main():
         k_sol = data["k_sol"]
         ee_ref_sol = data["ee_ref_sol"]
         m_sol = data["m_sol"]
-        cov_sol = data["cov_sol"]
+        # cov_sol = data["cov_sol"]
         # parameters_sol = data["parameters_sol"]
-        parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol, cov_sol))
+        parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol))  #, cov_sol))
 
 
     import bioviz

@@ -152,6 +152,20 @@ class PenaltyController:
         return out
 
     @property
+    def update_values(self) -> OptimizationVariableList:
+        """
+        Return the values associated with the current node index
+
+        Returns
+        -------
+        The update_values at node node_index
+        """
+        self._nlp.update_values.node_index = self.node_index
+        out = self._nlp.update_values.unscaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
     def integrate(self):
         return self._nlp.dynamics[self.node_index]
 
@@ -270,7 +284,7 @@ class PenaltyController:
                 i += 1
         return matrix
 
-    def restore_vector_form_matrix(self, matrix):
+    def restore_vector_from_matrix(self, matrix):
         """
         Restore the vector form of the matrix
 
