@@ -18,6 +18,7 @@ from bioptim import (
     PenaltyController,
 )
 from casadi import MX, vertcat, Function
+from ...optimization.parameters import Parameter
 
 from bioptim.examples.discrete_mechanics_for_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
 
@@ -32,10 +33,10 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         # variational integrator.
         q_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
         q_bounds: Bounds | BoundsList = None,
-        qdot0_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
-        qdot0_bounds: Bounds | BoundsList = None,
-        qdotN_bounds: Bounds | BoundsList = None,
-        qdotN_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
+        qdot_start_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
+        qdot_start_bounds: Bounds | BoundsList = None,
+        qdot_end_bounds: Bounds | BoundsList = None,
+        qdot_end_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
         holonomic_constraints: Function = None,
         holonomic_constraints_jacobian: Function = None,
         **kwargs,
@@ -46,13 +47,19 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 " done by the variational integrator."
             )
 
+        if "x_init" in kwargs or "x_bounds" in kwargs :
+            raise ValueError(
+                "In VariationalOptimalControlProgram q_init and q_bounds must be used instead of x_init and x_bounds "
+                "since there are no velocities."
+            )
+
         self.bio_model = bio_model
         n_qdot = n_q = self.bio_model.nb_q
 
         self.holonomic_constraints = holonomic_constraints
         q_sym = MX.sym("q", (n_q, 1))
         self.holonomic_constraints_jacobian = holonomic_constraints_jacobian
-        self.has_holonomic_constraints = False if self.holonomic_constraints is None else True
+        self.has_holonomic_constraints = self.holonomic_constraints is not None
 
         # Dynamics
         dynamics = DynamicsList()
@@ -63,23 +70,25 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         if "parameters" in kwargs and kwargs["parameters"] is not None:
             if isinstance(kwargs["parameters"], ParameterList):
                 parameters = kwargs["parameters"]
-            else:
+            elif isinstance(kwargs["parameters"], Parameter):
                 parameters = ParameterList()
                 parameters.add(kwargs["parameters"])
+            else:
+                raise ValueError("parameters must be a ParameterList or a Parameters")
         else:
             parameters = ParameterList()
         parameters.add(
             "qdot0",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
-            initial_guess=qdot0_init,  # The initial guess
-            bounds=qdot0_bounds,  # The bounds
+            initial_guess=qdot_start_init,  # The initial guess
+            bounds=qdot_start_bounds,  # The bounds
             size=n_qdot,  # The number of elements this particular parameter vector has
         )
         parameters.add(
             "qdotN",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
-            initial_guess=qdotN_init,  # The initial guess
-            bounds=qdotN_bounds,  # The bounds
+            initial_guess=qdot_end_init,  # The initial guess
+            bounds=qdot_end_bounds,  # The bounds
             size=n_qdot,  # The number of elements this particular parameter vector has
         )
 
@@ -158,19 +167,19 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         control_cur = MX.sym("control_cur", nlp.model.nb_q, 1)
         control_next = MX.sym("control_next", nlp.model.nb_q, 1)
         q0 = MX.sym("q0", nlp.model.nb_q, 1)
-        q0_dot = MX.sym("q0_dot", nlp.model.nb_q, 1)
+        qdot0 = MX.sym("qdot0", nlp.model.nb_q, 1)
         q1 = MX.sym("q1", nlp.model.nb_q, 1)
         control0 = MX.sym("control0", nlp.model.nb_q, 1)
         control1 = MX.sym("control1", nlp.model.nb_q, 1)
-        qN = MX.sym("qN", nlp.model.nb_q, 1)
-        qN_dot = MX.sym("qN_dot", nlp.model.nb_q, 1)
-        qN_minus_1 = MX.sym("qN_minus_1", nlp.model.nb_q, 1)
+        q_ultimate = MX.sym("q_ultimate", nlp.model.nb_q, 1)
+        qdot_ultimate = MX.sym("qdot_ultimate", nlp.model.nb_q, 1)
+        q_penultimate = MX.sym("q_penultimate", nlp.model.nb_q, 1)
         controlN_minus_1 = MX.sym("controlN_minus_1", nlp.model.nb_q, 1)
         controlN = MX.sym("controlN", nlp.model.nb_q, 1)
 
         three_nodes_input = [dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next]
-        two_first_nodes_input = [dt, q0, q0_dot, q1, control0, control1]
-        two_last_nodes_input = [dt, qN_minus_1, qN, qN_dot, controlN_minus_1, controlN]
+        two_first_nodes_input = [dt, q0, qdot0, q1, control0, control1]
+        two_last_nodes_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
 
         if self.has_holonomic_constraints:
             lambdas = MX.sym("lambda", self.holonomic_constraints.nnz_out(), 1)
@@ -216,7 +225,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 self.bio_model.compute_initial_states(
                     dt,
                     q0,
-                    q0_dot,
+                    qdot0,
                     q1,
                     control0,
                     control1,
@@ -233,9 +242,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             [
                 self.bio_model.compute_final_states(
                     dt,
-                    qN_minus_1,
-                    qN,
-                    qN_dot,
+                    q_penultimate,
+                    q_ultimate,
+                    qdot_ultimate,
                     controlN_minus_1,
                     controlN,
                     self.holonomic_constraints,
