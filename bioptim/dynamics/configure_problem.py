@@ -791,7 +791,7 @@ class ConfigureProblem:
             lambda t, x, u, p: x[:n_elements, :] * np.nan,
             plot_type=PlotType.INTEGRATED,
             legend=legend,
-            bounds=Bounds(-1, 1),
+            bounds=Bounds(None, -1, 1),
         )
         control_plot_name = f"{name}_controls" if not multi_interface and split_controls else f"{name}"
         nlp.plot[control_plot_name] = CustomPlot(

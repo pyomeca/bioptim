@@ -725,29 +725,41 @@ class PlotOcp:
                         if self.plot_func[key][i].parameters["penalty"].multinode_penalty:
                             y = np.array([np.nan])
                             penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
-                            x_phase_tp = np.ndarray((data_states[0]["all"].shape[0], 0))
-                            u_phase_tp = np.ndarray((data_controls[0]["all"].shape[0], 0))
-                            for tp in range(len(penalty.nodes_phase)):
-                                phase_tp = penalty.nodes_phase[tp]
-                                node_idx_tp = penalty.all_nodes_index[tp]
-                                x_phase_tp = np.hstack(
-                                    (
-                                        x_phase_tp,
-                                        data_states[phase_tp]["all"][:, node_idx_tp * step_size][:, np.newaxis],
+
+                            x_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            for state_key in data_states[i].keys():
+                                x_phase_tp = np.ndarray((data_states[i][state_key].shape[0], 0))
+                                for tp in range(len(penalty.nodes_phase)):
+                                    phase_tp = penalty.nodes_phase[tp]
+                                    node_idx_tp = penalty.all_nodes_index[tp]
+                                    x_phase_tp = np.hstack(
+                                        (
+                                            x_phase_tp,
+                                            data_states[phase_tp][state_key][:, node_idx_tp * step_size][:, np.newaxis],
+                                        )
                                     )
-                                )
-                                u_phase_tp = np.hstack(
-                                    (
-                                        u_phase_tp,
-                                        data_controls[phase_tp]["all"][
-                                            :, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0)
-                                        ][:, np.newaxis],
+                                x_phase = np.vstack((x_phase, x_phase_tp))
+
+                            u_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            for control_key in data_controls[i].keys():
+                                u_phase_tp = np.ndarray((data_controls[i][control_key].shape[0], 0))
+                                for tp in range(len(penalty.nodes_phase)):
+                                    phase_tp = penalty.nodes_phase[tp]
+                                    node_idx_tp = penalty.all_nodes_index[tp]
+                                    u_phase_tp = np.hstack(
+                                        (
+                                            u_phase_tp,
+                                            data_controls[phase_tp][control_key][
+                                                :, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0)
+                                            ][:, np.newaxis],
+                                        )
                                     )
-                                )
+                                u_phase = np.vstack((u_phase, u_phase_tp))
+
                             y[0] = self.plot_func[key][i].function(
                                 self.plot_func[key][i].node_idx[0],
-                                x_phase_tp,
-                                u_phase_tp,
+                                x_phase,
+                                u_phase,
                                 data_params_in_dyn,
                                 **self.plot_func[key][i].parameters,
                             )[i_var]

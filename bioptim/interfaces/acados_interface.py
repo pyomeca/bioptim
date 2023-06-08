@@ -133,8 +133,8 @@ class AcadosInterface(SolverInterface):
 
         self.all_constr = None
         self.end_constr = SX()
-        self.all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        self.all_g_bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
+        self.end_g_bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].controls.shape)
@@ -256,8 +256,8 @@ class AcadosInterface(SolverInterface):
         self.all_constr = SX()
         self.end_constr = SX()
         # TODO:change for more node flexibility on bounds
-        self.all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        self.all_g_bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
+        self.end_g_bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
         for i, nlp in enumerate(ocp.nlp):
             x = nlp.states.cx_start
             u = nlp.controls.cx_start

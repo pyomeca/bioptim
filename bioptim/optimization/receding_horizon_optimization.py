@@ -260,37 +260,47 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                     "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
                 )
             self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].states.shape, 3)
-        self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, 1]
+        for key in self.nlp[0].x_bounds.keys():
+            self.nlp[0].x_bounds[key][:, 0] = sol.states[key][:, 1]
         return True
 
     def advance_window_bounds_controls(self, sol, **advance_options):
         return False
 
     def advance_window_initial_guess_states(self, sol, **advance_options):
-        if self.nlp[0].x_init.type != InterpolationType.EACH_FRAME:
-            self.nlp[0].x_init = InitialGuess(
-                np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
+        for key in self.nlp[0].x_init.keys():
+            if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
+                # Override the previous x_init
+                self.nlp[0].x_init.add(key,
+                    np.ndarray(sol.states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
+                )
+                self.nlp[0].x_init[key].check_and_adjust_dimensions(self.nlp[0].states[key].shape, self.nlp[0].ns)
+
+            self.nlp[0].x_init[key].init[:, :] = np.concatenate(
+                (sol.states[key][:, 1:], sol.states[key][:, -1][:, np.newaxis]), axis=1
             )
-            self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.shape, self.nlp[0].ns)
-        self.nlp[0].x_init.init[:, :] = np.concatenate(
-            (sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1
-        )
         return True
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
-        if self.nlp[0].u_init.type != InterpolationType.EACH_FRAME:
-            self.nlp[0].u_init = InitialGuess(
-                np.ndarray(sol.controls["all"][:, :-1].shape), interpolation=InterpolationType.EACH_FRAME
+        for key in self.nlp[0].u_init.keys():
+            if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
+                # Override the previous u_init
+                self.nlp[0].u_init.add(key,
+                    np.ndarray(sol.controls[key][:, :-1].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
+                )
+                self.nlp[0].u_init[key].check_and_adjust_dimensions(self.nlp[0].controls[key].shape, self.nlp[0].ns - 1)
+            self.nlp[0].u_init[key].init[:, :] = np.concatenate(
+                (sol.controls[key][:, 1:-1], sol.controls[key][:, -2][:, np.newaxis]), axis=1
             )
-            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns - 1)
-        self.nlp[0].u_init.init[:, :] = np.concatenate(
-            (sol.controls["all"][:, 1:-1], sol.controls["all"][:, -2][:, np.newaxis]), axis=1
-        )
         return True
 
     def export_data(self, sol) -> tuple:
-        states = sol.states["all"][:, self.frame_to_export]
-        controls = sol.controls["all"][:, self.frame_to_export]
+        states = {}
+        controls = {}
+        for key in sol.states:
+            states[key] = sol.states[key][:, self.frame_to_export]
+        for key in sol.controls:
+            controls[key] = sol.controls[key][:, self.frame_to_export]
         return states, controls
 
     def _define_time(self, phase_time: int | float | list | tuple, objective_functions, constraints):
