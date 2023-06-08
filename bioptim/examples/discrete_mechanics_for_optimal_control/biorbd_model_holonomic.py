@@ -300,8 +300,7 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
         """
         if jac is None:
             return None
-        else:
-            return time_step * jac(q)
+        return time_step * jac(q)
 
     def discrete_euler_lagrange_equations(
         self,
@@ -342,15 +341,18 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
         lambdas: MX | SX
             The Lagrange multipliers.
         """
+        # Refers to D_2 L_d(q_{k-1}, q_k) (D_2 is the partial derivative with respect to the second argument, L_d is the
+        # discrete Lagrangian)
         p_current = transpose(jacobian(self.discrete_lagrangian(q_prev, q_cur, time_step), q_cur))
-        D1_Ld_qcur_qnext = transpose(jacobian(self.discrete_lagrangian(q_cur, q_next, time_step), q_cur))
+        # Refers to D_1 L_d(q_{k}, q_{k+1}) (D_2 is the partial derivative with respect to the second argument)
+        d1_ld_qcur_qnext = transpose(jacobian(self.discrete_lagrangian(q_cur, q_next, time_step), q_cur))
         constraint_term = (
             transpose(jac(time_step, q_cur)) @ lambdas if constraints is not None else MX.zeros(p_current.shape)
         )
 
         residual = (
             p_current
-            + D1_Ld_qcur_qnext
+            + d1_ld_qcur_qnext
             - constraint_term
             + self.control_approximation(control_prev, control_cur, time_step)
             + self.control_approximation(control_cur, control_next, time_step)
@@ -365,7 +367,7 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
         self,
         time_step: MX | SX,
         q0: MX | SX,
-        q0_dot: MX | SX,
+        qdot0: MX | SX,
         q1: MX | SX,
         control0: MX | SX,
         control1: MX | SX,
@@ -379,13 +381,16 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
         indications given just before the equation (18) for p0 and pN.
         """
-        D2_L_q0_q0dot = transpose(jacobian(self.lagrangian(q0, q0_dot), q0_dot))
-        D1_Ld_q0_q1 = transpose(jacobian(self.discrete_lagrangian(q0, q1, time_step), q0))
+        # Refers to D_2 L(q_0, \dot{q_0}) (D_2 is the partial derivative with respect to the second argument)
+        d2_l_q0_qdot0 = transpose(jacobian(self.lagrangian(q0, qdot0), qdot0))
+        # Refers to D_1 L_d(q_0, q_1) (D1 is the partial derivative with respect to the first argument, Ld is the
+        # discrete Lagrangian)
+        d1_ld_q0_q1 = transpose(jacobian(self.discrete_lagrangian(q0, q1, time_step), q0))
         f0_minus = self.control_approximation(control0, control1, time_step)
         constraint_term = (
             1 / 2 * transpose(jac(time_step, q0)) @ lambdas0 if constraints is not None else MX.zeros(self.nb_q, 1)
         )
-        residual = D2_L_q0_q0dot + D1_Ld_q0_q1 + f0_minus - constraint_term
+        residual = d2_l_q0_qdot0 + d1_ld_q0_q1 + f0_minus - constraint_term
 
         if constraints is not None:
             return vertcat(residual, constraints(q0), constraints(q1))  # constraints(0) is never evaluated if not here
@@ -395,11 +400,11 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
     def compute_final_states(
         self,
         time_step: MX | SX,
-        qN_minus_1: MX | SX,
-        qN: MX | SX,
-        qN_dot: MX | SX,
-        controlN_minus_1: MX | SX,
-        controlN: MX | SX,
+        q_penultimate: MX | SX,
+        q_ultimate: MX | SX,
+        q_dot_ultimate: MX | SX,
+        control_penultimate: MX | SX,
+        control_ultimate: MX | SX,
         constraints: Function = None,
         jac: Function = None,
         lambdasN: MX | SX = None,
@@ -410,15 +415,21 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
         indications given just before the equation (18) for p0 and pN.
         """
-        D2_L_qN_qN_dot = transpose(jacobian(self.lagrangian(qN, qN_dot), qN_dot))
-        D2_Ld_qN_minus_1_qN = transpose(jacobian(self.discrete_lagrangian(qN_minus_1, qN, time_step), qN))
-        fd_plus = self.control_approximation(controlN_minus_1, controlN, time_step)
+        # Refers to D_2 L(q_N, \dot{q_N}) (D_2 is the partial derivative with respect to the second argument)
+        d2_l_q_ultimate_qdot_ultimate = transpose(jacobian(self.lagrangian(q_ultimate, q_dot_ultimate), q_dot_ultimate))
+        # Refers to D_2 L_d(q_{n-1}, q_1) (Ld is the discrete Lagrangian)
+        d2_ld_q_penultimate_q_ultimate = transpose(
+            jacobian(self.discrete_lagrangian(q_penultimate, q_ultimate, time_step), q_ultimate)
+        )
+        fd_plus = self.control_approximation(control_penultimate, control_ultimate, time_step)
         constraint_term = (
-            1 / 2 * transpose(jac(time_step, qN)) @ lambdasN if constraints is not None else MX.zeros(self.nb_q, 1)
+            1 / 2 * transpose(jac(time_step, q_ultimate)) @ lambdasN
+            if constraints is not None
+            else MX.zeros(self.nb_q, 1)
         )
 
-        residual = -D2_L_qN_qN_dot + D2_Ld_qN_minus_1_qN + fd_plus - constraint_term
-        # constraints(qN) has already been evaluated in the last constraint calling
+        residual = -d2_l_q_ultimate_qdot_ultimate + d2_ld_q_penultimate_q_ultimate + fd_plus - constraint_term
+        # constraints(q_ultimate) has already been evaluated in the last constraint calling
         # discrete_euler_lagrange_equations, thus it is not necessary to evaluate it again here.
         return residual
 

@@ -68,11 +68,11 @@ def prepare_ocp(
     u_init = InitialGuess([0] * n_q)
 
     # Give the initial and final some min and max bounds
-    qdot0_bounds = Bounds([0.0, 0.0], [0.0, 0.0], interpolation=InterpolationType.CONSTANT)
-    qdotN_bounds = Bounds([0.0, 0.0], [0.0, 0.0], interpolation=InterpolationType.CONSTANT)
+    qdot_start_bounds = Bounds([0.0, 0.0], [0.0, 0.0], interpolation=InterpolationType.CONSTANT)
+    qdot_end_bounds = Bounds([0.0, 0.0], [0.0, 0.0], interpolation=InterpolationType.CONSTANT)
     # And an initial guess
-    qdot0_init = InitialGuess([0] * n_q)
-    qdotN_init = InitialGuess([0] * n_q)
+    qdot_start_init = InitialGuess([0] * n_q)
+    qdot_end_init = InitialGuess([0] * n_q)
 
     return VariationalOptimalControlProgram(
         bio_model,
@@ -82,10 +82,10 @@ def prepare_ocp(
         u_init=u_init,
         q_bounds=x_bounds,
         u_bounds=u_bounds,
-        qdot0_init=qdot0_init,
-        qdot0_bounds=qdot0_bounds,
-        qdotN_init=qdotN_init,
-        qdotN_bounds=qdotN_bounds,
+        qdot_start_init=qdot_start_init,
+        qdot_start_bounds=qdot_start_bounds,
+        qdot_end_init=qdot_end_init,
+        qdot_end_bounds=qdot_end_bounds,
         objective_functions=objective_functions,
         use_sx=use_sx,
     )
