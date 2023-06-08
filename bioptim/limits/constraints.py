@@ -89,7 +89,7 @@ class Constraint(PenaltyOption):
                     if hasattr(self.max_bound, "__getitem__") and self.max_bound.shape[0] > 1
                     else self.max_bound
                 )
-                self.bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
+                self.bounds.concatenate(Bounds(None, min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
         elif self.bounds.shape[0] != len(self.rows):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
