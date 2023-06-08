@@ -1444,8 +1444,8 @@ class OptimalControlProgram:
         for nlp in self.nlp:
             if isinstance(nlp.tf, self.cx):
                 if nlp.phase_idx in self.parameter_mappings["time"].to_first.map_idx:
-                    time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
-                    time_init = InitialGuess(initial_time_guess[i])
+                    time_bounds = Bounds("time", time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
+                    time_init = InitialGuess("time", initial_time_guess[i])
                     time_param = Parameter(
                         cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
                     )

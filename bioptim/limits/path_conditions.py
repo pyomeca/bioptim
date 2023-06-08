@@ -442,7 +442,7 @@ class Bounds(OptionGeneric):
             The scaling factor
         """
 
-        return Bounds(self.min / scaling, self.max / scaling, interpolation=self.type)
+        return Bounds(None, self.min / scaling, self.max / scaling, interpolation=self.type)
 
     def __getitem__(self, slice_list: slice | list | tuple) -> "Bounds":
         """
