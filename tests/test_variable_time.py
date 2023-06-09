@@ -5,13 +5,11 @@ import pytest
 from bioptim import (
     BiorbdModel,
     BoundsList,
-    Bounds,
     ConstraintFcn,
     ConstraintList,
     DynamicsFcn,
     DynamicsList,
     InitialGuessList,
-    InitialGuess,
     Node,
     InterpolationType,
     ObjectiveFcn,

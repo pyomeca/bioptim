@@ -9,7 +9,7 @@ from bioptim import (
     Dynamics,
     DynamicsFcn,
     ConstraintList,
-    InitialGuess,
+    InitialGuessList,
     PenaltyController,
 )
 

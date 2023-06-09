@@ -4,7 +4,6 @@ import pytest
 import numpy as np
 from bioptim import (
     InterpolationType,
-    InitialGuess,
     Solution,
     Shooting,
     SolutionIntegrator,
@@ -12,7 +11,7 @@ from bioptim import (
     Objective,
     Dynamics,
     DynamicsFcn,
-    Bounds,
+    BoundsList,
     ObjectiveFcn,
     OptimalControlProgram,
     InitialGuessList,

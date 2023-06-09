@@ -18,8 +18,8 @@ from bioptim import (
     ObjectiveFcn,
     Dynamics,
     DynamicsFcn,
-    InitialGuess,
-    Bounds,
+    InitialGuessList,
+    BoundsList,
     Solver,
 )
 

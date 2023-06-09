@@ -14,7 +14,6 @@ from bioptim import (
     Axis,
     ObjectiveList,
     ObjectiveFcn,
-    Bounds,
     OdeSolver,
     ConstraintList,
     ConstraintFcn,

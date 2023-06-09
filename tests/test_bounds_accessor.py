@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pytest
 from bioptim import (
-    Bounds,
+    BoundsList,
     BoundsList,
     InterpolationType,
     BiorbdModel,
@@ -10,7 +10,7 @@ from bioptim import (
     ObjectiveFcn,
     Dynamics,
     DynamicsFcn,
-    InitialGuess,
+    InitialGuessList,
     OptimalControlProgram,
 )
 

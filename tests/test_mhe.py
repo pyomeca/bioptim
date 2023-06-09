@@ -11,8 +11,8 @@ from bioptim import (
     Dynamics,
     DynamicsFcn,
     InterpolationType,
-    InitialGuess,
-    Bounds,
+    InitialGuessList,
+    BoundsList,
 )
 
 from .utils import TestUtils
