@@ -9,9 +9,8 @@ from bioptim.examples.custom_model.custom_package import MyModel
 
 from bioptim import (
     OptimalControlProgram,
-    Bounds,
-    InterpolationType,
-    InitialGuess,
+    BoundsList,
+    InitialGuessList,
     ObjectiveFcn,
     Objective,
     OdeSolver,
@@ -66,33 +65,35 @@ def prepare_ocp(
     # the pendulum is constrained to point down with zero velocity at the beginning
     # the pendulum has to be in vertical position pointing up
     # at the end of the movement (3.14 rad) with zero speed (0 rad/s)
-    x_bounds = Bounds(
-        min_bound=np.array([[0, -6.28, 3.14], [0, -20, 0]]),
-        max_bound=np.array([[0, 6.28, 3.14], [0, 20, 0]]),
-        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-    )
+    x_bounds = BoundsList()
+    x_bounds["q"] = np.array([[0, -6.28, 3.14]]), np.array([[0, 6.28, 3.14]])
+    x_bounds["qdot"] = np.array([[0, -20, 0]]), np.array([[0, 20, 0]])
 
     # Initial guess
     n_q = model.nb_q
     n_qdot = model.nb_qdot
-    x_init = InitialGuess([20] * (n_q + n_qdot))
+    x_init = InitialGuessList()
+    x_init["q"] = [20] * n_q
+    x_init["qdot"] = [20] * n_qdot
 
     # Define control path constraint
     n_tau = model.nb_tau
     tau_min, tau_max, tau_init = -20, 20, 10
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
 
-    u_init = InitialGuess([tau_init] * n_tau)
+    u_init = InitialGuessList()
+    u_init["tau"] = [tau_init] * n_tau
 
     return OptimalControlProgram(
         model,
         dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         use_sx=False,

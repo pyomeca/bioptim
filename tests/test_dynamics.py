@@ -1598,7 +1598,7 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
 )
 def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
-    from bioptim import ObjectiveList, Bounds, InitialGuess, OdeSolver, OptimalControlProgram
+    from bioptim import BoundsList, ObjectiveList, OdeSolver, OptimalControlProgram
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -1611,19 +1611,15 @@ def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
     dynamics = Dynamics(dynamics_fcn, with_contact=True)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-
-    # Initial guess
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
-    x_init = InitialGuess([0] * (n_q + n_qdot))
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
-    u_bounds = Bounds([100] * n_tau, [100] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
-
-    u_init = InitialGuess([0] * n_tau)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [100] * n_tau, [100] * n_tau
+    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
     with pytest.raises(ValueError, match="No contact defined in the .bioMod, set with_contact to False"):
         OptimalControlProgram(
@@ -1631,8 +1627,6 @@ def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
             dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
-            x_init=x_init,
-            u_init=u_init,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,

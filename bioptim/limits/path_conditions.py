@@ -622,6 +622,10 @@ class BoundsList(OptionDict):
             )
             self.type = interpolation
 
+    def concatenate(self, other):
+        for key in other.keys():
+            self[key] = other[key]
+
     @property
     def param_when_copying(self):
         return {}
@@ -1114,6 +1118,10 @@ class InitialGuessList(OptionDict):
                 **extra_arguments,
             )
             self.type = interpolation
+
+    def concatenate(self, other):
+        for key in other.keys():
+            self[key] = other[key]
 
     def print(self):
         """

@@ -373,10 +373,11 @@ class OptimizationVector:
                         u_scaled[nlp.phase_idx].append(
                             nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.scaled.shape, 1)
                         )
-                        u[nlp.phase_idx].append(
-                            u_scaled[nlp.phase_idx][0]
-                            * np.concatenate([nlp.u_scaling[key].scaling for key in nlp.controls.keys()])
-                        )
+                        if nlp.controls.keys():
+                            u[nlp.phase_idx].append(
+                                u_scaled[nlp.phase_idx][0]
+                                * np.concatenate([nlp.u_scaling[key].scaling for key in nlp.controls.keys()])
+                            )
                 else:
                     u_scaled[nlp.phase_idx] = u_scaled[nlp.use_controls_from_phase_idx]
                     u[nlp.phase_idx] = u[nlp.use_controls_from_phase_idx]

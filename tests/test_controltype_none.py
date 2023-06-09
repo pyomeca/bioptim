@@ -15,8 +15,6 @@ from bioptim import (
     DynamicsEvaluation,
     DynamicsFunctions,
     DynamicsList,
-    InitialGuessList,
-    InterpolationType,
     ObjectiveFcn,
     ObjectiveList,
     OdeSolver,
@@ -225,9 +223,7 @@ def prepare_ocp(
     )
 
     # Sets the bound for all the phases
-    x_bounds = BoundsList()
     x_min_start = np.array([[0], [0], [0]])
-
     x_max_start = np.array([[0], [0], [0]])
     x_min_middle = np.array([[0], [0], [0]])
     x_min_end = x_min_middle
@@ -241,40 +237,28 @@ def prepare_ocp(
     x_after_start_min = np.concatenate((x_min_start, x_min_middle, x_min_end), axis=1)
     x_after_start_max = np.concatenate((x_max_start, x_max_middle, x_max_end), axis=1)
 
+    x_bounds = BoundsList()
     for i in range(n_phase):
-        if i == 0:
-            x_bounds.add(
-                x_start_min, x_start_max, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
-            )
-        else:
-            x_bounds.add(
-                x_after_start_min,
-                x_after_start_max,
-                interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-            )
-
-    x_init = InitialGuessList()
-    for i in range(n_phase):
-        x_init.add(np.array([[0], [0], [0]]))
-
-    u_bounds = BoundsList()
-    for i in range(n_phase):
-        u_bounds.add([], [])
-
-    u_init = InitialGuessList()
-    for i in range(n_phase):
-        u_init.add([])
+        x_bounds.add("a",
+                     min_bound=x_start_min[0, 1] if i == 0 else x_after_start_min[0, 1],
+                     max_bound=x_start_max[0, 1] if i == 0 else x_after_start_max[0, 1], phase=i,
+                     )
+        x_bounds.add("b",
+                     min_bound=x_start_min[1, 1] if i == 0 else x_after_start_min[1, 1],
+                     max_bound=x_start_max[1, 1] if i == 0 else x_after_start_max[1, 1], phase=i,
+                     )
+        x_bounds.add("c",
+                     min_bound=x_start_min[2, 1] if i == 0 else x_after_start_min[2, 1],
+                     max_bound=x_start_max[2, 1] if i == 0 else x_after_start_max[2, 1], phase=i,
+                     )
 
     return OptimalControlProgram(
         models,
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        objective_functions=objective_functions,
         constraints=constraints,
         ode_solver=ode_solver,
         control_type=ControlType.NONE,
@@ -283,7 +267,7 @@ def prepare_ocp(
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [False])
+@pytest.mark.parametrize("assume_phase_dynamics", [False, True])
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_main_control_type_none(use_sx, assume_phase_dynamics):
     """

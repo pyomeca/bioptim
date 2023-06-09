@@ -15,7 +15,7 @@ from bioptim import (
     ObjectiveFcn,
     Dynamics,
     DynamicsFcn,
-    InitialGuess,
+    InitialGuessList,
     OdeSolver,
     OdeSolverBase,
     Constraint,
@@ -23,7 +23,7 @@ from bioptim import (
     FatigueList,
     FatigueBounds,
     FatigueInitialGuess,
-    Bounds,
+    BoundsList,
     XiaFatigue,
     XiaFatigueStabilized,
     XiaTauFatigue,
@@ -164,17 +164,23 @@ def prepare_ocp(
         axes=[Axis.X, Axis.Y],
     )
 
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, 0] = (0.07, 1.4, 0, 0)
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = (0.07, 1.4)
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = 0
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
 
-    x_init = InitialGuess([1.57] * bio_model.nb_q + [0] * bio_model.nb_qdot)
+    x_init = InitialGuessList()
+    x_init["q"] = [1.57] * bio_model.nb_q
     x_init.concatenate(FatigueInitialGuess(fatigue_dynamics))
 
     # Define control path constraint
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau) if torque_level == 1 else Bounds()
+    u_bounds = BoundsList()
+    if torque_level == 1:
+        u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
     u_bounds.concatenate(FatigueBounds(fatigue_dynamics, variable_type=VariableType.CONTROLS))
-    u_init = InitialGuess([0] * n_tau) if torque_level == 1 else InitialGuess()
+    u_init = InitialGuessList()
     u_init.concatenate(FatigueInitialGuess(fatigue_dynamics, variable_type=VariableType.CONTROLS))
 
     return OptimalControlProgram(
@@ -182,12 +188,12 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraint,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        objective_functions=objective_functions,
+        constraints=constraint,
         ode_solver=ode_solver,
         use_sx=False,
         n_threads=8,
@@ -215,6 +221,7 @@ def main():
     sol.print_cost()
 
     # --- Show results --- #
+    sol.graphs()
     sol.animate(show_meshes=True)
 
 

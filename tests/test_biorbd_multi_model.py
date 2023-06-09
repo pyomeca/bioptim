@@ -60,10 +60,10 @@ def test_biorbd_model():
     muscle_names = models.muscle_names
 
     variable_mappings = BiMappingList()
-    variable_mappings.add("q", [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
-    variable_mappings.add("qdot", [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
-    variable_mappings.add("qddot", [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
-    variable_mappings.add("tau", [None, 0, 1, None, 0, 2], [1, 2, 5])
+    variable_mappings.add("q", to_second=[0, 1, 2, 3, 4, 5], to_first=[0, 1, 2, 3, 4, 5])
+    variable_mappings.add("qdot", to_second=[0, 1, 2, 3, 4, 5], to_first=[0, 1, 2, 3, 4, 5])
+    variable_mappings.add("qddot", to_second=[0, 1, 2, 3, 4, 5], to_first=[0, 1, 2, 3, 4, 5])
+    variable_mappings.add("tau", to_second=[None, 0, 1, None, 0, 2], to_first=[1, 2, 5])
 
     np.random.seed(42)
     q = MX(np.random.random((nb_q,)))

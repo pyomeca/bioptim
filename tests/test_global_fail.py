@@ -29,8 +29,11 @@ def test_custom_constraint_multiple_nodes_fail():
     constraints = ConstraintList()
     constraints.add(custom_mx_fail, node=Node.ALL)
 
-    x_init = InitialGuess([0] * 6)
-    u_init = InitialGuess([0] * 3)
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * 3
+    x_init["qdot"] = [0] * 3
+    u_init = InitialGuessList()
+    u_init["tau"] = [0] * 3
 
     with pytest.raises(
         RuntimeError,
@@ -67,8 +70,11 @@ def test_custom_constraint_mx_fail(assume_phase_dynamics):
     constraints = ConstraintList()
     constraints.add(custom_mx_fail, node=0)
 
-    x_init = InitialGuess([0] * 6)
-    u_init = InitialGuess([0] * 3)
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * 3
+    x_init["qdot"] = [0] * 3
+    u_init = InitialGuessList()
+    u_init["tau"] = [0] * 3
 
     ocp = OptimalControlProgram(
         BiorbdModel(model_path),
