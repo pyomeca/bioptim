@@ -398,24 +398,27 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, min_bound=1)
 
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+
+    u_bounds = BoundsList()
+    u_bounds["tau"] = bio_model.bounds_from_ranges("q")
+
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuessList()
-    u_init.add([0] * bio_model.nb_tau)
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'min_bound'")):
         OptimalControlProgram(
             bio_model,
             dynamics,
             10,
             2,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
             objective_functions=objective_functions,
-            x_init=x_init,
-            u_init=u_init,
         )
 
 
@@ -431,18 +434,21 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=-1, max_bound=1)
 
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+
+    u_bounds = BoundsList()
+    u_bounds["tau"] = bio_model.bounds_from_ranges("q")
+
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuessList()
-    u_init.add([0] * bio_model.nb_tau)
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'max_bound'")):
         OptimalControlProgram(
-            bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_init=x_init, u_init=u_init
+            bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_bounds=x_bounds, u_bounds=u_bounds
         )
 
 
@@ -700,37 +706,41 @@ def partial_ocp_parameters(n_phases):
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds["q"] = bio_model[0].bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model[0].bounds_from_ranges("qdot")
     if n_phases > 1:
-        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
-        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+        x_bounds.add("q", bio_model[1].bounds_from_ranges("q"), phase=1)
+        x_bounds.add("qdot", bio_model[1].bounds_from_ranges("qdot"), phase=1)
+        x_bounds.add("q", bio_model[2].bounds_from_ranges("q"), phase=2)
+        x_bounds.add("qdot", bio_model[2].bounds_from_ranges("qdot"), phase=2)
+
     for bounds in x_bounds:
-        for i in [1, 3, 4, 5]:
-            bounds.min[i, [0, -1]] = 0
-            bounds.max[i, [0, -1]] = 0
-    x_bounds[0].min[2, 0] = 0.0
-    x_bounds[0].max[2, 0] = 0.0
+        bounds["q"][1, [0, -1]] = 0
+        bounds["qdot"][:, [0, -1]] = 0
+    x_bounds[0]["q"][2, 0] = 0.0
     if n_phases > 1:
-        x_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
-        x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
+        x_bounds[2]["q"][2, [0, -1]] = [0.0, 1.57]
 
     x_init = InitialGuessList()
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init["q"] = [0] * bio_model[0].nb_q
+    x_init["qdot"] = [0] * bio_model[0].nb_qdot
     if n_phases > 1:
-        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+        x_init.add("q", [0] * bio_model[1].nb_q, phase=1)
+        x_init.add("qdot", [0] * bio_model[1].nb_qdot, phase=1)
+        x_init.add("q", [0] * bio_model[2].nb_q, phase=2)
+        x_init.add("qdot", [0] * bio_model[2].nb_qdot, phase=2)
 
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+    u_bounds["tau"] = [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     if n_phases > 1:
-        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+        u_bounds.add("tau", min_bound=[tau_min] * bio_model[1].nb_tau, max_bound=[tau_max] * bio_model[1].nb_tau, phase=1)
+        u_bounds.add("tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[2].nb_tau, phase=2)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_init["tau"] = [tau_init] * bio_model[0].nb_tau
     if n_phases > 1:
-        u_init.add([tau_init] * bio_model[0].nb_tau)
-        u_init.add([tau_init] * bio_model[0].nb_tau)
+        u_init.add("tau", [tau_init] * bio_model[1].nb_tau, phase=1)
+        u_init.add("tau", [tau_init] * bio_model[2].nb_tau, phase=2)
 
     return (
         bio_model[:n_phases],
@@ -779,12 +789,12 @@ def test_mayer_neg_monophase_time_constraint():
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
         )
 
 
@@ -819,12 +829,12 @@ def test_mayer1_neg_multiphase_time_constraint():
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
         )
 
 
@@ -859,12 +869,12 @@ def test_mayer2_neg_multiphase_time_constraint():
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
         )
 
 
@@ -899,12 +909,12 @@ def test_mayer_multiphase_time_constraint(assume_phase_dynamics):
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        objective_functions=objective_functions,
+        constraints=constraints,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -941,12 +951,12 @@ def test_lagrange_neg_monophase_time_constraint(assume_phase_dynamics):
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
             assume_phase_dynamics=assume_phase_dynamics,
         )
 
@@ -985,12 +995,12 @@ def test_lagrange1_neg_multiphase_time_constraint(assume_phase_dynamics):
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
             assume_phase_dynamics=assume_phase_dynamics,
         )
 
@@ -1029,12 +1039,12 @@ def test_lagrange2_neg_multiphase_time_constraint(assume_phase_dynamics):
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
             assume_phase_dynamics=assume_phase_dynamics,
         )
 
@@ -1070,12 +1080,12 @@ def test_lagrange_multiphase_time_constraint(assume_phase_dynamics):
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        objective_functions=objective_functions,
+        constraints=constraints,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -1108,10 +1118,10 @@ def test_mayer_neg_two_objectives(assume_phase_dynamics):
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
             assume_phase_dynamics=assume_phase_dynamics,
         )

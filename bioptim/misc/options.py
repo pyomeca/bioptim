@@ -294,6 +294,8 @@ class OptionDict(OptionList):
                     "Indexing VariableScalingList with 'str' with more than one dimension is a mistake."
                     "Call the function index first with the index of the phase you want to fetch"
                 )
+            if item not in self.options[0]:
+                raise KeyError(f"Key {item} not in {type(self).__name__}")
             return self.options[0][item]
 
         if isinstance(item, int):
