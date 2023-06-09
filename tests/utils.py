@@ -96,15 +96,19 @@ class TestUtils:
         sol_warm_start = ocp.solve(solver)
         if ocp.n_phases > 1:
             for i in range(ocp.n_phases):
-                np.testing.assert_almost_equal(
-                    sol_warm_start.states[i]["all"], sol.states[i]["all"], decimal=state_decimal
-                )
-                np.testing.assert_almost_equal(
-                    sol_warm_start.controls[i]["all"], sol.controls[i]["all"], decimal=control_decimal
-                )
+                for key in sol.states[i]:
+                    np.testing.assert_almost_equal(
+                        sol_warm_start.states[i][key], sol.states[i][key], decimal=state_decimal
+                    )
+                for key in sol.controls[i]:
+                    np.testing.assert_almost_equal(
+                        sol_warm_start.controls[i][key], sol.controls[i][key], decimal=control_decimal
+                    )
         else:
-            np.testing.assert_almost_equal(sol_warm_start.states["all"], sol.states["all"], decimal=state_decimal)
-            np.testing.assert_almost_equal(sol_warm_start.controls["all"], sol.controls["all"], decimal=control_decimal)
+            for key in sol.states:
+                np.testing.assert_almost_equal(sol_warm_start.states[key], sol.states[key], decimal=state_decimal)
+            for key in sol.controls:
+                np.testing.assert_almost_equal(sol_warm_start.controls[key], sol.controls[key], decimal=control_decimal)
         np.testing.assert_almost_equal(sol_warm_start.parameters["all"], sol.parameters["all"], decimal=param_decimal)
 
     @staticmethod

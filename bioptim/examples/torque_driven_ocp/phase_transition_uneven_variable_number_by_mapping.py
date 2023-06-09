@@ -28,12 +28,12 @@ def prepare_ocp(
 
     # Problem parameters
     final_time = (1.5, 2.5)
-    tau_min, tau_max, tau_init = -200, 200, 0
+    tau_min, tau_max = -200, 200
 
     # Mapping
     tau_mappings = BiMappingList()
-    tau_mappings.add("tau", [None, 0], [1], phase=0)
-    tau_mappings.add("tau", [None, None, None, 0], [3], phase=1)
+    tau_mappings.add("tau", to_second=[None, 0], to_first=[1], phase=0)
+    tau_mappings.add("tau", to_second=[None, None, None, 0], to_first=[3], phase=1)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -60,32 +60,31 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model[1].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add("q", bio_model[0].bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bio_model[0].bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add("q", bio_model[1].bounds_from_ranges("q"), phase=1)
+    x_bounds.add("qdot", bio_model[1].bounds_from_ranges("qdot"), phase=1)
 
     # Phase 0
-    x_bounds[0][1, 0] = 0
-    x_bounds[0][0, 0] = 3.14
-    x_bounds[0].min[0, -1] = 2 * 3.14
+    x_bounds[0]["q"][0, 0] = 3.14
+    x_bounds[0]["q"].min[0, -1] = 2 * 3.14
+    x_bounds[0]["q"][1, 0] = 0
 
     # Phase 1
-    x_bounds[1][[0, 1, 4, 5], 0] = 0
-    x_bounds[1].min[2, -1] = 3 * 3.14
+    x_bounds[1]["q"][[0, 1], 0] = 0
+    x_bounds[1]["q"].min[2, -1] = 3 * 3.14
+    x_bounds[1]["qdot"][[0, 1], 0] = 0
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-    x_init.add([1] * (bio_model[1].nb_q + bio_model[1].nb_qdot))
+    # Phase 0 is initialized at 0
+    x_init.add("q", [1] * bio_model[1].nb_q, phase=1)
+    x_init.add("qdot", [1] * bio_model[1].nb_qdot, phase=1)
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * len(tau_mappings[0]["tau"].to_first), [tau_max] * len(tau_mappings[0]["tau"].to_first))
-    u_bounds.add([tau_min] * len(tau_mappings[1]["tau"].to_first), [tau_max] * len(tau_mappings[1]["tau"].to_first))
-
-    # Control initial guess
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * len(tau_mappings[0]["tau"].to_first))
-    u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
+    u_bounds.add("tau", min_bound=[tau_min] * len(tau_mappings[0]["tau"].to_first), max_bound=[tau_max] * len(tau_mappings[0]["tau"].to_first), phase=0)
+    u_bounds.add("tau", min_bound=[tau_min] * len(tau_mappings[1]["tau"].to_first), max_bound=[tau_max] * len(tau_mappings[1]["tau"].to_first), phase=1)
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(
@@ -98,7 +97,6 @@ def prepare_ocp(
         n_shooting,
         final_time,
         x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

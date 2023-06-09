@@ -817,7 +817,7 @@ class InitialGuess(OptionGeneric):
             The seed of the random generator
         """
 
-        return NoisedInitialGuess(
+        noised_guess = NoisedInitialGuess(
             key=self.key,
             initial_guess=self.init,
             interpolation=self.type,
@@ -829,6 +829,8 @@ class InitialGuess(OptionGeneric):
             magnitude_type=magnitude_type,
             **self.params,
         )
+        self.init = noised_guess.init
+        self.type = noised_guess.type
 
 
 class NoisedInitialGuess(InitialGuess):
@@ -1273,13 +1275,15 @@ class InitialGuessList(OptionDict):
             If one value is given, applies this value to each initial guess
         """
 
-        nb_phases = self.__len__()  # number of init guesses, i.e. number of phases
+        nb_phases = len(self)  # number of init guesses, i.e. number of phases
 
         if n_shooting is None:
             raise ValueError("n_shooting must be specified to generate noised initial guess")
 
-        if n_shooting.__len__() != nb_phases:
-            raise ValueError(f"Invalid size of 'n_shooting', 'n_shooting' must be size {nb_phases}")
+        if nb_phases == 1 and isinstance(n_shooting, int):
+            n_shooting = [n_shooting]
+        if len(n_shooting) != nb_phases:
+            raise ValueError(f"Invalid size of 'n_shooting', 'n_shooting' must be len {nb_phases}")
 
         bounds = self._check_type_and_format_bounds(bounds, nb_phases)
         magnitude = self._check_type_and_format_magnitude(magnitude, nb_phases)
@@ -1287,17 +1291,15 @@ class InitialGuessList(OptionDict):
         seed = self._check_type_and_format_seed(seed, nb_phases)
 
         for i in range(nb_phases):
-            self.options[i][0] = NoisedInitialGuess(
-                self[i],
-                interpolation=self[i].type,
-                bounds=bounds[i],
-                n_shooting=n_shooting[i],
-                bound_push=bound_push[i],
-                seed=seed[i],
-                magnitude=magnitude[i],
-                magnitude_type=magnitude_type,
-                **self[i].params,
-            )
+            for key in self[i].keys():
+                self[i][key].add_noise(
+                    bounds=bounds[i][key],
+                    n_shooting=n_shooting[i],
+                    magnitude=magnitude[i],
+                    magnitude_type=magnitude_type,
+                    bound_push=bound_push[i],
+                    seed=seed[i]
+                )
 
     @property
     def param_when_copying(self):

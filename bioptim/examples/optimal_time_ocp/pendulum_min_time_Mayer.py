@@ -18,7 +18,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    InitialGuessList,
     OdeSolver,
     OdeSolverBase,
     CostType,
@@ -67,9 +66,7 @@ def prepare_ocp(
 
     # --- Options --- #
     bio_model = BiorbdModel(biorbd_model_path)
-    tau_min, tau_max, tau_init = -100, 100, 0
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
+    tau_min, tau_max = -100, 100
     n_tau = bio_model.nb_tau
 
     # Add objective functions
@@ -84,21 +81,16 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0][:, [0, -1]] = 0
-    x_bounds[0][n_q - 1, -1] = 3.14
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add([0] * (n_q + n_qdot))
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][-1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[0][n_tau - 1, :] = 0
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * n_tau)
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][-1, :] = 0
 
     # ------------- #
 
@@ -107,11 +99,9 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )

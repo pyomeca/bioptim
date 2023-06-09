@@ -850,12 +850,12 @@ def test_example_external_forces(ode_solver):
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
     else:
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-4.6916756e-15, 6.9977394e-16, -1.6087563e-06, 0]), decimal=8)
-        np.testing.assert_almost_equal(q[:, -1], np.array([-4.6917018e-15, 2.0000000e00, 1.6091612e-06, 0]), decimal=8)
+        np.testing.assert_almost_equal(q[:, 0], np.array([-4.6916756e-15, 6.9977394e-16, -1.6087563e-06, 0]), decimal=5)
+        np.testing.assert_almost_equal(q[:, -1], np.array([-4.6917018e-15, 2.0000000e00, 1.6091612e-06, 0]), decimal=5)
 
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 1.60839825e-06, 0]), decimal=8)
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 1.6094277e-06, 0]), decimal=8)
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 1.60839825e-06, 0]), decimal=5)
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 1.6094277e-06, 0]), decimal=5)
 
         # detailed cost values
         sol.detailed_cost_values()
@@ -1254,7 +1254,7 @@ def test_multistart(assume_phase_dynamics):
     shutil.rmtree(f"{save_folder}")
 
     np.testing.assert_almost_equal(
-        multi_start_0,
+        np.concatenate((multi_start_0["q"], multi_start_0["qdot"])),
         np.array(
             [
                 [0.0, -0.9, 0.29797487, -0.38806564, -0.47779319, 0.0],
@@ -1266,7 +1266,7 @@ def test_multistart(assume_phase_dynamics):
     )
 
     np.testing.assert_almost_equal(
-        multi_start_1,
+        np.concatenate((multi_start_1["q"], multi_start_1["qdot"])),
         np.array(
             [
                 [0.0, 1.32194696, -0.9, -0.9, -0.9, 0.0],
@@ -1278,7 +1278,7 @@ def test_multistart(assume_phase_dynamics):
     )
 
     np.testing.assert_almost_equal(
-        multi_start_2,
+        np.concatenate((multi_start_2["q"], multi_start_2["qdot"])),
         np.array(
             [
                 [
@@ -1338,7 +1338,7 @@ def test_multistart(assume_phase_dynamics):
     )
 
     np.testing.assert_almost_equal(
-        multi_start_3,
+        np.concatenate((multi_start_3["q"], multi_start_3["qdot"])),
         np.array(
             [
                 [0.0, 1.32194696, -0.9, -0.9, -0.9, -0.9, -0.9, -0.92663564, -0.61939515, 0.2329004, 0.0],

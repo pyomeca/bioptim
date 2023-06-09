@@ -1216,18 +1216,21 @@ class OptimalControlProgram:
         param_init_guess = InitialGuessList()
         for i in range(self.n_phases):
             if self.n_phases == 1:
-                if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                    # TODO Benjamin
-                    u_init_guess.add(ctrl["all"], interpolation=InterpolationType.EACH_FRAME)
-                else:
-                    u_init_guess.add(ctrl["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
-                x_init_guess.add(state["all"], interpolation=InterpolationType.EACH_FRAME)
+                for key in state:
+                    x_init_guess.add(key, state[key], interpolation=InterpolationType.EACH_FRAME, phase=0)
+                for key in ctrl:
+                    if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                        u_init_guess.add(key, ctrl[key], interpolation=InterpolationType.EACH_FRAME, phase=0)
+                    else:
+                        u_init_guess.add(key, ctrl[key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=0)
             else:
-                if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                    u_init_guess.add(ctrl[i]["all"], interpolation=InterpolationType.EACH_FRAME)
-                else:
-                    u_init_guess.add(ctrl[i]["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
-                x_init_guess.add(state[i]["all"], interpolation=InterpolationType.EACH_FRAME)
+                for key in state[i]:
+                    x_init_guess.add(key, state[i][key], interpolation=InterpolationType.EACH_FRAME, phase=i)
+                for key in ctrl[i]:
+                    if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                        u_init_guess.add(key, ctrl[i][key], interpolation=InterpolationType.EACH_FRAME, phase=i)
+                    else:
+                        u_init_guess.add(key, ctrl[i][key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=i)
 
         for key in param:
             if key != "all":
