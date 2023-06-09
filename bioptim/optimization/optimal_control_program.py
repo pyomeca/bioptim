@@ -850,12 +850,12 @@ class OptimalControlProgram:
         if param_init is None:
             param_init = InitialGuessList()
 
-        for param in param_init.keys():
-            if not param.key:
+        for key in param_init.keys():
+            if not key:
                 raise ValueError("update_initial_guess must specify a name for the parameters")
             try:
-                idx = self.v.parameters_in_list.index(param.name)
-                self.v.parameters_in_list[idx].initial_guess.init = param.init
+                idx = self.v.parameters_in_list.index(key)
+                self.v.parameters_in_list[idx].initial_guess.init = param_init[key].init
             except ValueError:
                 raise ValueError("update_initial_guess cannot declare new parameters")
 

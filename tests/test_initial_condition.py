@@ -11,11 +11,11 @@ from bioptim import (
     Objective,
     Dynamics,
     DynamicsFcn,
-    BoundsList,
     ObjectiveFcn,
     OptimalControlProgram,
     InitialGuessList,
 )
+from bioptim.limits.path_conditions import InitialGuess
 
 # TODO: Add negative test for sizes
 
@@ -27,7 +27,7 @@ def test_initial_guess_constant():
     init_val = np.random.random(
         n_elements,
     )
-    init = InitialGuess(init_val, interpolation=InterpolationType.CONSTANT)
+    init = InitialGuess(None, init_val, interpolation=InterpolationType.CONSTANT)
     init.check_and_adjust_dimensions(n_elements, n_shoot)
     expected_val = init_val
     for i in range(n_shoot):
@@ -40,7 +40,7 @@ def test_initial_guess_constant_with_first_and_last_different():
 
     init_val = np.random.random((n_elements, 3))
 
-    init = InitialGuess(init_val, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
+    init = InitialGuess(None, init_val, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
     init.check_and_adjust_dimensions(n_elements, n_shoot)
     for i in range(n_shoot + 1):
         if i == 0:
@@ -58,7 +58,7 @@ def test_initial_guess_linear():
 
     init_val = np.random.random((n_elements, 2))
 
-    init = InitialGuess(init_val, interpolation=InterpolationType.LINEAR)
+    init = InitialGuess(None, init_val, interpolation=InterpolationType.LINEAR)
     init.check_and_adjust_dimensions(n_elements, n_shoot)
     for i in range(n_shoot + 1):
         expected_val = init_val[:, 0] + (init_val[:, 1] - init_val[:, 0]) * i / n_shoot
@@ -71,7 +71,7 @@ def test_initial_guess_each_frame():
 
     init_val = np.random.random((n_elements, n_shoot + 1))
 
-    init = InitialGuess(init_val, interpolation=InterpolationType.EACH_FRAME)
+    init = InitialGuess(None, init_val, interpolation=InterpolationType.EACH_FRAME)
     init.check_and_adjust_dimensions(n_elements, n_shoot)
     for i in range(n_shoot + 1):
         expected_val = init_val[:, i]
@@ -95,9 +95,9 @@ def test_initial_guess_spline():
 
     # Raise if time is not sent
     with pytest.raises(RuntimeError):
-        InitialGuess(init_val, interpolation=InterpolationType.SPLINE)
+        InitialGuess(None, init_val, interpolation=InterpolationType.SPLINE)
 
-    init = InitialGuess(init_val, t=spline_time, interpolation=InterpolationType.SPLINE)
+    init = InitialGuess(None, init_val, t=spline_time, interpolation=InterpolationType.SPLINE)
     init.check_and_adjust_dimensions(n_elements, n_shoot)
 
     time_to_test = [0, n_shoot // 3, n_shoot // 2, n_shoot]
@@ -128,39 +128,29 @@ def test_initial_guess_update(assume_phase_dynamics):
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
-    np.testing.assert_almost_equal(ocp.nlp[0].x_init.init, np.zeros((4, 1)))
-    np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.zeros((2, 1)))
+    np.testing.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.zeros((2, 1)))
+    np.testing.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.zeros((2, 1)))
+    np.testing.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.zeros((2, 1)))
     idx = ocp.v.parameters_in_list.index("time")
     np.testing.assert_almost_equal(ocp.v.parameters_in_list[idx].initial_guess.init[0, 0], 2)
-    np.testing.assert_almost_equal(ocp.v.init.init, np.concatenate((np.zeros((4 * 11 + 2 * 10, 1)), [[2]])))
+    np.testing.assert_almost_equal(ocp.v.init_vector, np.concatenate((np.zeros((4 * 11 + 2 * 10, 1)), [[2]])))
 
-    wrong_new_x_init = InitialGuess([1] * 6)
-    new_x_init = InitialGuess([1] * 4)
-    wrong_new_u_init = InitialGuess([3] * 4)
-    new_u_init = InitialGuess([3] * 2)
-    new_time_init = InitialGuess([4])
-
-    # No name for the param
-    with pytest.raises(ValueError, match="update_initial_guess must specify a name for the parameters"):
-        ocp.update_initial_guess(new_x_init, new_u_init, new_time_init)
-
-    new_time_init.name = "dumb name"
-    with pytest.raises(ValueError, match="update_initial_guess cannot declare new parameters"):
-        ocp.update_initial_guess(new_x_init, new_u_init, new_time_init)
-
-    new_time_init.name = "time"
-    with pytest.raises(RuntimeError):
-        ocp.update_initial_guess(new_x_init, wrong_new_u_init, new_time_init)
-    with pytest.raises(RuntimeError):
-        ocp.update_initial_guess(wrong_new_x_init, wrong_new_u_init, new_time_init)
+    new_x_init = InitialGuessList()
+    new_x_init["q"] = [1] * 2
+    new_x_init["qdot"] = [1] * 2
+    new_u_init = InitialGuessList()
+    new_u_init["tau"] = [3] * 2
+    new_time_init = InitialGuessList()
+    new_time_init["time"] = [4]
 
     ocp.update_initial_guess(new_x_init, new_u_init, new_time_init)
 
-    np.testing.assert_almost_equal(ocp.nlp[0].x_init.init, np.ones((4, 1)))
-    np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.ones((2, 1)) * 3)
+    np.testing.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.ones((2, 1)))
+    np.testing.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.ones((2, 1)))
+    np.testing.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.ones((2, 1)) * 3)
     idx = ocp.v.parameters_in_list.index("time")
     np.testing.assert_almost_equal(ocp.v.parameters_in_list[idx].initial_guess.init[0, 0], 4)
-    np.testing.assert_almost_equal(ocp.v.init.init, np.array([[1, 1, 1, 1] * 11 + [3, 3] * 10 + [4]]).T)
+    np.testing.assert_almost_equal(ocp.v.init_vector, np.array([[1, 1, 1, 1] * 11 + [3, 3] * 10 + [4]]).T)
 
 
 def test_initial_guess_custom():
