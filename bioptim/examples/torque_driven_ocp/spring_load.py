@@ -16,8 +16,7 @@ from bioptim import (
     Objective,
     DynamicsFunctions,
     ObjectiveFcn,
-    Bounds,
-    InitialGuess,
+    BoundsList,
     NonLinearProgram,
     Solver,
     DynamicsEvaluation,
@@ -88,27 +87,21 @@ def prepare_ocp(
     dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
 
     # Path constraint
-    x_bounds = m.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, 0] = [0] * m.nb_q + [0] * m.nb_qdot
-    x_bounds.min[:, 1] = [-1] * m.nb_q + [-100] * m.nb_qdot
-    x_bounds.max[:, 1] = [1] * m.nb_q + [100] * m.nb_qdot
-    x_bounds.min[:, 2] = [-1] * m.nb_q + [-100] * m.nb_qdot
-    x_bounds.max[:, 2] = [1] * m.nb_q + [100] * m.nb_qdot
-
-    # Initial guess
-    x_init = InitialGuess([0] * (m.nb_q + m.nb_qdot))
+    x_bounds = BoundsList()
+    x_bounds["q"] = [-1] * m.nb_q, [1] * m.nb_q
+    x_bounds["q"][:, 0] = 0
+    x_bounds["qdot"] = [-100] * m.nb_qdot, [100] * m.nb_qdot
+    x_bounds["qdot"][:, 0] = 0
 
     # Define control path constraint
-    u_bounds = Bounds([-100] * m.nb_tau, [0] * m.nb_tau)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [-100] * m.nb_tau, [0] * m.nb_tau
 
-    u_init = InitialGuess([0] * m.nb_tau)
     return OptimalControlProgram(
         m,
         dynamics,
         n_shooting=30,
         phase_time=0.5,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

@@ -11,13 +11,12 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    Bounds,
-    InitialGuess,
+    BoundsList,
+    InitialGuessList,
     ObjectiveFcn,
     Objective,
     CostType,
     Solver,
-    InterpolationType,
     MultiStart,
     Solution,
     MagnitudeType,
@@ -63,31 +62,38 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, [0, -1]] = 0
-    x_bounds[1, -1] = 3.14
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Initial guess
     n_q = bio_model.nb_q
     n_qdot = bio_model.nb_qdot
-    x_init = InitialGuess([0] * (n_q + n_qdot), interpolation=InterpolationType.CONSTANT)
-    x_init = x_init.add_noise(
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * n_q
+    x_init["qdot"] = [0] * n_qdot
+    x_init.add_noise(  # Alternatively one can call add_noise to individual element as well (e.g. x_init["q"].add_noise)
         bounds=x_bounds,
         magnitude=0.5,
         magnitude_type=MagnitudeType.RELATIVE,
-        n_shooting=n_shooting + 1,
+        n_shooting=[n_shooting + 1],
         seed=seed,
     )
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
     u_bounds[1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = InitialGuess([0] * n_tau, interpolation=InterpolationType.CONSTANT)
-    u_init = u_init.add_noise(
-        bounds=u_bounds,
+    u_init = InitialGuessList()
+    u_init["tau"] = [0] * n_tau
+    u_init["tau"].add_noise(
+        bounds=u_bounds["tau"],
         magnitude=0.5,
         magnitude_type=MagnitudeType.RELATIVE,
         n_shooting=n_shooting,
@@ -139,7 +145,7 @@ def save_results(
     save_folder = extra_parameters["save_folder"]
 
     file_path = construct_filepath(save_folder, n_shooting, seed)
-    states = sol.states["all"]
+    states = sol.states
     with open(file_path, "wb") as file:
         pickle.dump(states, file)
 
