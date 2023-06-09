@@ -16,8 +16,7 @@ from bioptim import (
     ObjectiveFcn,
     ConstraintList,
     ConstraintFcn,
-    Bounds,
-    InitialGuess,
+    BoundsList,
     Solver,
     Node,
     Axis,
@@ -37,19 +36,11 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque, assume_phase
     model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_bound = model.bounds_from_ranges(["q", "qdot"])
-    u_bound = Bounds([-max_torque] * model.nb_q, [max_torque] * model.nb_q)
-
-    x_init = InitialGuess(
-        np.zeros(
-            model.nb_q * 2,
-        )
-    )
-    u_init = InitialGuess(
-        np.zeros(
-            model.nb_q,
-        )
-    )
+    x_bound = BoundsList()
+    x_bound["q"] = model.bounds_from_ranges("q")
+    x_bound["qdot"] = model.bounds_from_ranges("qdot")
+    u_bound = BoundsList()
+    u_bound["tau"] = [-max_torque] * model.nb_q, [max_torque] * model.nb_q
 
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q")
 
@@ -72,8 +63,6 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque, assume_phase
         cycle_duration,
         objective_functions=new_objectives,
         constraints=constraints,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bound,
         u_bounds=u_bound,
         assume_phase_dynamics=assume_phase_dynamics,

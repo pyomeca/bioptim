@@ -17,8 +17,9 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    InitialGuess,
+    InitialGuessList,
     Objective,
+    BoundsList,
     FatigueBounds,
     FatigueInitialGuess,
     FatigueList,
@@ -141,27 +142,38 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics, expand=True)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, [0, -1]] = 0
-    x_bounds[1, -1] = 3.14
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
+
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
     if fatigue_type != "effort":
-        x_bounds[[5, 11], 0] = 0  # The rotation dof is passive (fatigue_ma = 0)
+        if split_controls:
+            x_bounds["tau_minus_ma"][1, :] = 0  # The rotation dof is passive (fatigue_ma = 0)
+            x_bounds["tau_plus_ma"][1, :] = 0  # The rotation dof is passive (fatigue_ma = 0)
+        else:
+            x_bounds["tau_ma"][1, :] = 0  # The rotation dof is passive (fatigue_ma = 0)
         if fatigue_type == "xia":
-            x_bounds[[7, 13], 0] = 1  # The rotation dof is passive (fatigue_mr = 1)
+            if split_controls:
+                x_bounds["tau_minus_mr"][1, :] = 0  # The rotation dof is passive (fatigue_mr = 1)
+                x_bounds["tau_plus_mr"][1, :] = 0  # The rotation dof is passive (fatigue_mr = 1)
+            else:
+                x_bounds["tau_mr"][1, :] = 0  # The rotation dof is passive (fatigue_mr = 1)
 
     # Initial guess
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
-    x_init = InitialGuess([0] * (n_q + n_qdot))
+    x_init = InitialGuessList()
     x_init.concatenate(FatigueInitialGuess(fatigue_dynamics))
 
     # Define control path constraint
     u_bounds = FatigueBounds(fatigue_dynamics, variable_type=VariableType.CONTROLS)
     if split_controls:
-        u_bounds[[1, 3], :] = 0  # The rotation dof is passive
+        u_bounds["tau_minus"][1, :] = 0  # The rotation dof is passive
+        u_bounds["tau_plus"][1, :] = 0  # The rotation dof is passive
     else:
-        u_bounds[1, :] = 0  # The rotation dof is passive
+        u_bounds["tau"][1, :] = 0  # The rotation dof is passive
     u_init = FatigueInitialGuess(fatigue_dynamics, variable_type=VariableType.CONTROLS)
 
     return OptimalControlProgram(

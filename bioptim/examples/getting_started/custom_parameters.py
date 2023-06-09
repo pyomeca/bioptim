@@ -149,15 +149,18 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, [0, -1]] = 0
-    x_bounds[1, -1] = 3.14
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Define control path constraint
     tau_min, tau_max = -300, 300
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau)
-    u_bounds[1, :] = 0
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][1, :] = 0
 
     # Define the parameter to optimize
     parameters = ParameterList()

@@ -1,5 +1,4 @@
 from copy import deepcopy
-from itertools import chain
 from math import inf
 from typing import Callable
 from time import perf_counter
@@ -11,10 +10,9 @@ from .solution import Solution
 from ..dynamics.configure_problem import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
-from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
+from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds
 from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions, ControlType
 from ..interfaces.solver_options import Solver
-from ..optimization.variable_scaling import VariableScaling
 from ..interfaces.biomodel import BioModel
 
 
@@ -400,10 +398,20 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         )
 
     def _initialize_solution(self, states: list, controls: list):
-        _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        init_controls = InitialGuess(
-            np.concatenate(controls, axis=1)[:, :-1], interpolation=InterpolationType.EACH_FRAME
-        )
+        x_init = InitialGuessList()
+        for key in self.nlp[0].states.keys():
+            x_init.add(key, np.concatenate([state[key] for state in states], axis=1),
+                       interpolation=InterpolationType.EACH_FRAME)
+
+        u_init = InitialGuessList()
+        u_init_for_solution = InitialGuessList()
+        for key in self.nlp[0].controls.keys():
+            controls_tp = np.concatenate([control[key] for control in controls], axis=1)
+            u_init_for_solution.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
+            if self.original_values["control_type"] == ControlType.CONSTANT:
+                controls_tp = controls_tp[:, :-1]
+            u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
+
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
@@ -411,23 +419,21 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run * self.nlp[0].ns - 1,
             phase_time=self.total_optimization_run * self.nlp[0].ns * self.nlp[0].dt,
-            x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
-            xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
-            u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
-            x_init=_states,
-            u_init=init_controls,
+            x_bounds=self.nlp[0].x_bounds,
+            u_bounds=self.nlp[0].u_bounds,
+            x_init=x_init,
+            u_init=u_init,
             skip_continuity=True,
             use_sx=self.original_values["use_sx"],
         )
-        _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        return Solution(solution_ocp, [_states, _controls])
+        return Solution(solution_ocp, [x_init, u_init_for_solution])
 
     def _initialize_state_idx_to_cycle(self, options):
         if "states" not in options:
             options["states"] = self.nlp[0].states.keys()
 
         states = self.nlp[0].states
-        self.state_idx_to_cycle = list(chain.from_iterable([states[key].index for key in options["states"]]))
+        self.state_idx_to_cycle = {key: range(len(states[key])) for key in options["states"]}
 
     def _set_cyclic_bound(self, sol: Solution = None):
         if self.nlp[0].x_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
@@ -441,15 +447,16 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
                 "type InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
             )
 
-        s = self.state_idx_to_cycle
-        range_of_motion = self.nlp[0].x_bounds.max[s, 1] - self.nlp[0].x_bounds.min[s, 1]
-        if sol is None:
-            self.nlp[0].x_bounds.min[s, 2] = self.nlp[0].x_bounds.min[s, 0] - range_of_motion * 0.01
-            self.nlp[0].x_bounds.max[s, 2] = self.nlp[0].x_bounds.max[s, 0] + range_of_motion * 0.01
-        else:
-            t = self.time_idx_to_cycle
-            self.nlp[0].x_bounds.min[s, 2] = sol.states["all"][s, t] - range_of_motion * 0.01
-            self.nlp[0].x_bounds.max[s, 2] = sol.states["all"][s, t] + range_of_motion * 0.01
+        for key in self.nlp[0].x_bounds.keys():
+            s = self.state_idx_to_cycle[key]
+            range_of_motion = self.nlp[0].x_bounds[key].max[s, 1] - self.nlp[0].x_bounds[key].min[s, 1]
+            if sol is None:
+                self.nlp[0].x_bounds[key].min[s, 2] = self.nlp[0].x_bounds[key].min[s, 0] - range_of_motion * 0.01
+                self.nlp[0].x_bounds[key].max[s, 2] = self.nlp[0].x_bounds[key].max[s, 0] + range_of_motion * 0.01
+            else:
+                t = self.time_idx_to_cycle
+                self.nlp[0].x_bounds[key].min[s, 2] = sol.states[key][s, t] - range_of_motion * 0.01
+                self.nlp[0].x_bounds[key].max[s, 2] = sol.states[key][s, t] + range_of_motion * 0.01
 
     @staticmethod
     def _append_current_solution(sol: Solution, states: list, controls: list):
@@ -463,28 +470,28 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
     def advance_window_bounds_states(self, sol, **advance_options):
         # Update the initial frame bounds
-        self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, self.time_idx_to_cycle]
+        for key in sol.states.keys():
+            self.nlp[0].x_bounds[key][:, 0] = sol.states[key][:, self.time_idx_to_cycle]
         self._set_cyclic_bound(sol)
         return True
 
     def advance_window_initial_guess_states(self, sol, **advance_options):
-        if self.nlp[0].x_init.type != InterpolationType.EACH_FRAME:
-            self.nlp[0].x_init = InitialGuess(
-                np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
-            )
-            self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.shape, self.nlp[0].ns)
+        for key in sol.states.keys():
+            if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
+                self.nlp[0].x_init.add(key, np.ndarray(sol.states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0)
+                self.nlp[0].x_init[key].check_and_adjust_dimensions(len(self.nlp[0].states[key]), self.nlp[0].ns)
 
-        self.nlp[0].x_init.init[:, :] = sol.states["all"]
+            self.nlp[0].x_init[key].init[:, :] = sol.states[key]
         return True
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
-        if self.nlp[0].u_init.type != InterpolationType.EACH_FRAME:
-            self.nlp[0].u_init = InitialGuess(
-                np.ndarray((sol.controls["all"].shape[0], self.nlp[0].ns)),
-                interpolation=InterpolationType.EACH_FRAME,
-            )
-            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns - 1)
-        self.nlp[0].u_init.init[:, :] = sol.controls["all"][:, :-1]
+        for key in sol.controls.keys():
+            if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
+                self.nlp[0].u_init.add(key, np.ndarray((sol.controls[key].shape[0], self.nlp[0].ns)), interpolation=InterpolationType.EACH_FRAME, phase=0)
+                self.nlp[0].u_init[key].check_and_adjust_dimensions(len(self.nlp[0].controls[key]), self.nlp[0].ns - 1)
+
+            self.nlp[0].u_init[key].init[:, :] = sol.controls[key][:, :-1]
+        return True
 
 
 class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
@@ -603,14 +610,20 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         return states, controls
 
     def _initialize_solution(self, states: list, controls: list):
-        _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        self.original_values.keys()
-        if self.original_values["control_type"] == ControlType.CONSTANT:
-            init_controls = InitialGuess(
-                np.concatenate(controls, axis=1)[:, :-1], interpolation=InterpolationType.EACH_FRAME
-            )
-        else:
-            init_controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
+        x_init = InitialGuessList()
+        for key in self.nlp[0].states.keys():
+            x_init.add(key, np.concatenate([state[key] for state in states], axis=1),
+                       interpolation=InterpolationType.EACH_FRAME)
+
+        u_init = InitialGuessList()
+        u_init_for_solution = InitialGuessList()
+        for key in self.nlp[0].controls.keys():
+            controls_tp = np.concatenate([control[key] for control in controls], axis=1)
+            u_init_for_solution.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
+            if self.original_values["control_type"] == ControlType.CONSTANT:
+                controls_tp = controls_tp[:, :-1]
+            u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
+
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
@@ -621,24 +634,27 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
             phase_time=(self.cycle_len * self.total_optimization_run - 1) * self.nlp[0].dt,
             skip_continuity=True,
-            x_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
-            xdot_scaling=VariableScaling(key="all", scaling=np.ones((states[0].shape[0],))),
-            u_scaling=VariableScaling(key="all", scaling=np.ones((controls[0].shape[0],))),
-            x_init=_states,
-            u_init=init_controls,
+            x_init=x_init,
+            u_init=u_init,
             use_sx=self.original_values["use_sx"],
         )
-        _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        return Solution(solution_ocp, [_states, _controls])
+        return Solution(solution_ocp, [x_init, u_init])
 
     def _initialize_one_cycle(self, states: np.ndarray, controls: np.ndarray):
         """return a solution for a single window kept of the MHE"""
+        x_init = InitialGuessList()
+        for key in self.nlp[0].states.keys():
+            x_init.add(key, np.concatenate([state[key] for state in states], axis=1),
+                       interpolation=InterpolationType.EACH_FRAME)
 
-        _states = InitialGuess(states, interpolation=InterpolationType.EACH_FRAME)
-        if self.original_values["control_type"] == ControlType.CONSTANT:
-            init_controls = InitialGuess(controls[:, :-1], interpolation=InterpolationType.EACH_FRAME)
-        else:
-            init_controls = InitialGuess(controls, interpolation=InterpolationType.EACH_FRAME)
+        u_init = InitialGuessList()
+        u_init_for_solution = InitialGuessList()
+        for key in self.nlp[0].controls.keys():
+            controls_tp = np.concatenate([control[key] for control in controls], axis=1)
+            u_init_for_solution.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
+            if self.original_values["control_type"] == ControlType.CONSTANT:
+                controls_tp = controls_tp[:, :-1]
+            u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
 
         original_values = self.original_values
 
@@ -653,15 +669,11 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             n_shooting=self.cycle_len,
             phase_time=self.cycle_len * self.nlp[0].dt,
             skip_continuity=True,
-            x_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
-            xdot_scaling=VariableScaling(key="all", scaling=np.ones((states.shape[0],))),
-            u_scaling=VariableScaling(key="all", scaling=np.ones((controls.shape[0],))),
-            x_init=_states,
-            u_init=init_controls,
+            x_init=x_init,
+            u_init=u_init,
             use_sx=original_values["use_sx"],
         )
-        _controls = InitialGuess(controls, interpolation=InterpolationType.EACH_FRAME)
-        return Solution(solution_ocp, [_states, _controls])
+        return Solution(solution_ocp, [x_init, u_init])
 
 
 class NonlinearModelPredictiveControl(RecedingHorizonOptimization):
