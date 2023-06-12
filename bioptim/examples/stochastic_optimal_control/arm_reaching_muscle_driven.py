@@ -565,12 +565,7 @@ def prepare_socp(
                              nodes=[i for i in range(n_shooting+1)],
                              weight=1e3 / 2,
                              quadratic=False)
-    ### Ben here
-    multinode_objectives.add(minimize_states_squared,
-                                nodes_phase=[0 for _ in range(n_shooting+1)],
-                                nodes=[i for i in range(n_shooting+1)],
-                                weight=1,
-                                quadratic=False)  #### TODO: to be removed !!
+
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(configure_stochastic_optimal_control_problem, dynamic_function=stochastic_forward_dynamics, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)), expand=False)
