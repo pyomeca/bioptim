@@ -19,6 +19,7 @@ from bioptim import (
     MultinodeObjectiveList,
 )
 
+
 def multinode_min_controls(controllers: list[PenaltyController]) -> MX:
     """
     This function mimics the ObjectiveFcn.MINIMIZE_CONTROLS with a multinode objective.
@@ -27,8 +28,9 @@ def multinode_min_controls(controllers: list[PenaltyController]) -> MX:
     dt = controllers[0].tf / controllers[0].ns
     out = 0
     for i, ctrl in enumerate(controllers):
-        out += sum1(ctrl.controls["tau"].cx_start ** 2)  * dt
+        out += sum1(ctrl.controls["tau"].cx_start ** 2) * dt
     return out
+
 
 def prepare_ocp(
     biorbd_model_path: str,
@@ -64,12 +66,14 @@ def prepare_ocp(
 
     # Add objective functions
     multinode_objectives = MultinodeObjectiveList()
-    multinode_objectives.add(multinode_min_controls,
-                             nodes_phase=[0 for _ in range(n_shooting)],
-                             nodes=[i for i in range(n_shooting)],
-                             weight=10,
-                             quadratic=False,
-                             expand=False)
+    multinode_objectives.add(
+        multinode_min_controls,
+        nodes_phase=[0 for _ in range(n_shooting)],
+        nodes=[i for i in range(n_shooting)],
+        weight=10,
+        quadratic=False,
+        expand=False,
+    )
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)

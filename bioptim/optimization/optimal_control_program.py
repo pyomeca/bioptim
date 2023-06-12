@@ -426,7 +426,8 @@ class OptimalControlProgram:
         else:
             if len(multinode_constraints) > 1 and assume_phase_dynamics:
                 raise RuntimeError(
-                    "multinode_constraints cannot be used with assume_phase_dynamics=True, set it to false")
+                    "multinode_constraints cannot be used with assume_phase_dynamics=True, set it to false"
+                )
             if len(multinode_constraints) > 1 and n_threads > 1:
                 raise RuntimeError("multinode_constraints cannot be used with multi-threading, set n_threads=1")
 
@@ -436,7 +437,9 @@ class OptimalControlProgram:
             raise RuntimeError("multinode_objectives should be built from an MultinodeObjectiveList")
         else:
             if len(multinode_objectives) > 0 and assume_phase_dynamics:
-                raise RuntimeError("multinode_objectives cannot be used with assume_phase_dynamics=True, set it to false")
+                raise RuntimeError(
+                    "multinode_objectives cannot be used with assume_phase_dynamics=True, set it to false"
+                )
             if len(multinode_objectives) > 0 and n_threads > 1:
                 raise RuntimeError("multinode_objectives cannot be used with multi-threading, set n_threads=1")
 

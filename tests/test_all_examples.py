@@ -217,6 +217,7 @@ def test__getting_started__example_multinode_constraints(assume_phase_dynamics):
         n_shootings=(8, 8, 8),
     )
 
+
 def test__getting_started__example_multinode_objective():
     from bioptim.examples.getting_started import example_multinode_objective as ocp_module
 
@@ -236,13 +237,16 @@ def test__getting_started__example_multinode_objective():
             n_threads=3,
         )
 
-    with pytest.raises(RuntimeError, match="multinode_objectives cannot be used with assume_phase_dynamics=True, set it to false"):
+    with pytest.raises(
+        RuntimeError, match="multinode_objectives cannot be used with assume_phase_dynamics=True, set it to false"
+    ):
         ocp_module.prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
             final_time=1,
             n_shooting=10,
             assume_phase_dynamics=True,
         )
+
 
 def test__getting_started__example_optimal_time():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module

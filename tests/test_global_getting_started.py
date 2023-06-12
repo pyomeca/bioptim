@@ -1132,7 +1132,7 @@ def test_multinode_objective(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(states["q"][:, 0], np.array([0.0, 0.0]))
-    np.testing.assert_almost_equal(states["q"][:, -1], np.array([0., 3.14]))
+    np.testing.assert_almost_equal(states["q"][:, -1], np.array([0.0, 3.14]))
     # initial and final velocities
     np.testing.assert_almost_equal(states["qdot"][:, 0], np.array([0.0, 0.0]))
     np.testing.assert_almost_equal(states["qdot"][:, -1], np.array([0.0, 0.0]))
@@ -1149,8 +1149,8 @@ def test_multinode_objective(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([4.87390358, 0.        ]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-18.98599313,   0.        ]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([4.87390358, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-18.98599313, 0.0]))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
@@ -1164,28 +1164,29 @@ def test_multinode_objective(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([5.03388194, 0.       ]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-11.51104036,   0.        ]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([5.03388194, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-11.51104036, 0.0]))
 
     # Check that the output is what we expect
     dt = ocp.nlp[0].tf / ocp.nlp[0].ns
     weight = 10
     target = []
     fun = ocp.nlp[0].J_internal[0].weighted_function
-    x_out = sol.states['all'][:, 0]
-    u_out = sol.controls['all'][:, 0]
+    x_out = sol.states["all"][:, 0]
+    u_out = sol.controls["all"][:, 0]
     p_out = []
     for i in range(1, 10):
-        x_out = np.hstack((x_out, sol.states['all'][:, i]))
+        x_out = np.hstack((x_out, sol.states["all"][:, i]))
         if i == n_shooting:
             u_out = np.hstack((u_out, []))
         else:
-            u_out = np.hstack((u_out, sol.controls['all'][:, i]))
+            u_out = np.hstack((u_out, sol.controls["all"][:, i]))
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
     out = fun[0](x_out, u_out, p_out, weight, target, 1)
-    out_expected = sum2(sum1(sol.controls['all'][:, :-1] ** 2)) * dt * weight
+    out_expected = sum2(sum1(sol.controls["all"][:, :-1] ** 2)) * dt * weight
     np.testing.assert_almost_equal(out, out_expected)
+
 
 @pytest.mark.parametrize("node", [*Node, 0, 3])
 def test_multinode_constraints_wrong_nodes(node):
@@ -1243,7 +1244,6 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
             assume_phase_dynamics=assume_phase_dynamics,
             with_too_much_constraints=too_much_constraints,
         )
-
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
