@@ -10,7 +10,7 @@ class MultinodeObjective(MultinodePenalty):
         super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn, *args, **kwargs)
 
         self.weight = weight if weight is not None else 0
-        self.quadratic = True
+        self.quadratic = kwargs["quadratic"] if "quadratic" in kwargs else True
         self.base = ObjectiveFunction.MayerFunction
 
     def _get_pool_to_add_penalty(self, ocp, nlp):

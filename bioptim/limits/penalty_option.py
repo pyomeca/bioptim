@@ -678,10 +678,10 @@ class PenaltyOption(OptionGeneric):
             self.multinode_idx = []
             for node, phase_idx in zip(self.nodes, self.nodes_phase):
                 self.node = node
-                nlp = ocp.nlp[phase_idx % ocp.n_phases]
+                nlp = ocp.nlp[phase_idx % ocp.n_phases]  # this is to allow using -1 to refer to the last phase
 
                 controllers.append(self._get_penalty_controller(ocp, nlp))
-                if self.node == Node.END or self.node == nlp.ns:
+                if self.node == Node.END or self.node[0] == nlp.ns:
                     # Make an exception to the fact that U is not available for the last node
                     controllers[-1].u = [nlp.U[-1]]
                 penalty_type.validate_penalty_time_index(self, controllers[-1])
