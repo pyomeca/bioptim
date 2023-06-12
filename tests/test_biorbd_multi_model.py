@@ -6,6 +6,7 @@ import biorbd_casadi as biorbd
 from bioptim import (
     MultiBiorbdModel,
     BiMappingList,
+    BoundsList,
 )
 
 
@@ -184,7 +185,9 @@ def test_biorbd_model():
     qdot_mapping = models._q_mapping(variable_mappings)
     qddot_mapping = models._q_mapping(variable_mappings)
     tau_mapping = models._q_mapping(variable_mappings)
-    bounds_from_ranges = models.bounds_from_ranges(["q", "qdot"], variable_mappings)
+    bounds_from_ranges = BoundsList()
+    bounds_from_ranges["q"] = models.bounds_from_ranges("q", variable_mappings)
+    bounds_from_ranges["qdot"] = models.bounds_from_ranges("qdot", variable_mappings)
 
     np.testing.assert_equal(nb_q, 6)
     np.testing.assert_equal(nb_qdot, 6)
@@ -354,27 +357,26 @@ def test_biorbd_model():
     np.testing.assert_equal(qddot_mapping["qddot"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
     np.testing.assert_equal(tau_mapping["tau"].to_first.map_idx, [1, 2, 5])
 
-    for i in range(bounds_from_ranges.min.shape[0]):
-        for j in range(bounds_from_ranges.min.shape[1]):
-            np.testing.assert_almost_equal(
-                bounds_from_ranges.min[i, j],
-                DM(
-                    np.array(
-                        [
-                            [-31.41592654, -31.41592654, -31.41592654],
-                            [-9.42477796, -9.42477796, -9.42477796],
-                            [-9.42477796, -9.42477796, -9.42477796],
-                            [-31.41592654, -31.41592654, -31.41592654],
-                            [-9.42477796, -9.42477796, -9.42477796],
-                            [-9.42477796, -9.42477796, -9.42477796],
-                            [-31.41592654, -31.41592654, -31.41592654],
-                            [-31.41592654, -31.41592654, -31.41592654],
-                            [-31.41592654, -31.41592654, -31.41592654],
-                            [-31.41592654, -31.41592654, -31.41592654],
-                            [-31.41592654, -31.41592654, -31.41592654],
-                            [-31.41592654, -31.41592654, -31.41592654],
-                        ]
-                    )[i, j]
-                ),
-                decimal=5,
-            )
+    for key in bounds_from_ranges.keys():
+        if key == "q":
+            expected = [
+                        [-31.41592654, -31.41592654, -31.41592654],
+                        [-9.42477796, -9.42477796, -9.42477796],
+                        [-9.42477796, -9.42477796, -9.42477796],
+                        [-31.41592654, -31.41592654, -31.41592654],
+                        [-9.42477796, -9.42477796, -9.42477796],
+                        [-9.42477796, -9.42477796, -9.42477796],
+            ]
+        elif key == "qdot":
+            expected = [
+                        [-31.41592654, -31.41592654, -31.41592654],
+                        [-31.41592654, -31.41592654, -31.41592654],
+                        [-31.41592654, -31.41592654, -31.41592654],
+                        [-31.41592654, -31.41592654, -31.41592654],
+                        [-31.41592654, -31.41592654, -31.41592654],
+                        [-31.41592654, -31.41592654, -31.41592654],
+                    ]
+        else:
+            raise NotImplementedError("Wrong value")
+
+        np.testing.assert_almost_equal(bounds_from_ranges[key].min, DM(np.array(expected)), decimal=5)
