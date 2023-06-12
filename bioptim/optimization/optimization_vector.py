@@ -410,9 +410,15 @@ class OptimizationVector:
         # Sanity check
         for nlp in ocp.nlp:
             for key in nlp.states:
+                if key not in nlp.x_bounds:
+                    continue
+
                 if nlp.use_states_from_phase_idx == nlp.phase_idx:
                     nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
             for key in nlp.controls:
+                if key not in nlp.u_bounds:
+                    continue
+
                 if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                     if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                         nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns - 1)
@@ -436,12 +442,18 @@ class OptimizationVector:
                         point = k if k != 0 else 0 if p == 0 else 1
                         x_slice = slice(repeat * k + p, repeat * k + p + 1, None)
                         for key in nlp.states:
-                            collapsed_values_min[nlp.states[key].index, x_slice] = (
-                                nlp.x_bounds[key].min.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
-                            )[:, np.newaxis]
-                            collapsed_values_max[nlp.states[key].index, x_slice] = (
-                                nlp.x_bounds[key].max.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
-                            )[:, np.newaxis]
+                            if key in nlp.x_bounds:
+                                value_min = (
+                                    nlp.x_bounds[key].min.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                                )[:, np.newaxis]
+                                value_max = (
+                                    nlp.x_bounds[key].max.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                                )[:, np.newaxis]
+                            else:
+                                value_min = -np.inf
+                                value_max = np.inf
+                            collapsed_values_min[nlp.states[key].index, x_slice] = value_min
+                            collapsed_values_max[nlp.states[key].index, x_slice] = value_max
                 self.x_bounds[i_phase] = Bounds(
                     "x_bounds",
                     min_bound=collapsed_values_min,
@@ -462,12 +474,19 @@ class OptimizationVector:
                 collapsed_values_max = np.ndarray((nlp.controls.shape, ns))
                 for k in range(ns):
                     for key in nlp.controls:
-                        collapsed_values_min[nlp.controls[key].index, k] = (
-                            nlp.u_bounds[key].min.evaluate_at(shooting_point=k) / nlp.u_scaling[key].scaling
-                        )
-                        collapsed_values_max[nlp.controls[key].index, k] = (
-                            nlp.u_bounds[key].max.evaluate_at(shooting_point=k) / nlp.u_scaling[key].scaling
-                        )
+                        if key in nlp.u_bounds:
+                            value_min = (
+                                nlp.u_bounds[key].min.evaluate_at(shooting_point=k) / nlp.u_scaling[key].scaling
+                            )
+                            value_max = (
+                                nlp.u_bounds[key].max.evaluate_at(shooting_point=k) / nlp.u_scaling[key].scaling
+                            )
+                        else:
+                            value_min = -np.inf
+                            value_max = np.inf
+
+                        collapsed_values_min[nlp.controls[key].index, k] = value_min
+                        collapsed_values_max[nlp.controls[key].index, k] = value_max
 
                 self.u_bounds[i_phase] = Bounds(
                     "u_bounds",
