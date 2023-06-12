@@ -83,7 +83,7 @@ def test_interpolate(assume_phase_dynamics):
     n_frames = 100
     sol_interp = sol.interpolate(n_frames)
     sol_interp_list = sol.interpolate([n_frames])
-    shapes = (4, 2, 2)
+    shapes = (2, 2)
     for i, key in enumerate(sol.states):
         np.testing.assert_almost_equal(sol_interp.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
         np.testing.assert_almost_equal(sol_interp_list.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
@@ -126,7 +126,7 @@ def test_interpolate_multiphases(ode_solver, assume_phase_dynamics):
     n_frames = 100
     n_shooting = [20, 30, 20]
     sol_interp = sol.interpolate([n_frames, n_frames, n_frames])
-    shapes = (6, 3, 3)
+    shapes = (3, 3)
 
     decimal = 2 if ode_solver == OdeSolver.COLLOCATION else 8
     for i, key in enumerate(sol.states[0]):
@@ -172,7 +172,7 @@ def test_interpolate_multiphases_merge_phase(assume_phase_dynamics):
     n_frames = 100
     n_shooting = [20, 30, 20]
     sol_interp = sol.interpolate(n_frames)
-    shapes = (6, 3, 3)
+    shapes = (3, 3)
 
     for i, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
@@ -233,9 +233,10 @@ def test_integrate(integrator, ode_solver, assume_phase_dynamics):
         return
 
     sol_integrated = sol.integrate(**opts)
-    shapes = (4, 2, 2)
-    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time)[0]
+    for key in sol_integrated.states.keys():
+        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated.time)[0]
 
+    shapes = (2, 2)
     decimal = 5 if integrator != SolutionIntegrator.OCP else 8
     for i, key in enumerate(sol.states):
         np.testing.assert_almost_equal(
@@ -292,9 +293,10 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver, assume_pha
         return
 
     sol_integrated = sol.integrate(**opts)
-    shapes = (4, 2, 2)
-    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated._time_vector)[1]
+    for key in sol_integrated.states.keys():
+        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated._time_vector)[1]
 
+    shapes = (2, 2)
     decimal = 1
     for i, key in enumerate(sol.states):
         np.testing.assert_almost_equal(
@@ -352,11 +354,9 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
     }
 
     sol_integrated = sol.integrate(**opts)
-    shapes = (4, 2, 2)
     assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time)[0]
 
     decimal = 1
-
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(
             sol_integrated.states["q"][:, [0, -1]],
@@ -381,8 +381,8 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
             decimal=decimal,
         )
 
+    shapes = (2, 2)
     if keep_intermediate_points:
-        assert sol_integrated.states["all"].shape == (shapes[0], n_shooting * 5 + 1)
         assert sol_integrated.states["q"].shape == (shapes[1], n_shooting * 5 + 1)
         assert sol_integrated.states["qdot"].shape == (shapes[2], n_shooting * 5 + 1)
     else:
@@ -540,9 +540,10 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, assume_pha
         return
 
     sol_integrated = sol.integrate(**opts)
-    shapes = (4, 2, 2)
-    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated._time_vector)[1]
+    for key in sol_integrated.states.keys():
+        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated._time_vector)[1]
 
+    shapes = (2, 2)
     decimal = 0 if integrator != SolutionIntegrator.OCP or ode_solver == OdeSolver.COLLOCATION else 8
     np.testing.assert_almost_equal(sol_integrated.states["q"][:, [0, -1]], sol.states["q"][:, [0, -1]], decimal=decimal)
     for i, key in enumerate(sol.states):
@@ -618,13 +619,14 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
         return
 
     sol_integrated = sol.integrate(**opts)
-    shapes = (6, 3, 3)
+    shapes = (3, 3)
     states_shape_sum = 0
     time_shape_sum = 0
     for i in range(len(sol_integrated.states)):
-        states_shape_sum += np.shape(sol_integrated.states[i]["all"])[1]
+        for key in sol_integrated.states[i].keys():
+            states_shape_sum += np.shape(sol_integrated.states[i][key])[1]
     for t in sol_integrated.time:
-        time_shape_sum += t.shape[0]
+        time_shape_sum += t.shape[0] * 2  # For q and qdot
     assert states_shape_sum == time_shape_sum
 
     decimal = 1 if integrator != SolutionIntegrator.OCP else 8
@@ -708,9 +710,11 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
 
     n_shooting = [20, 30, 20]
     sol_integrated = sol.integrate(**opts)
-    shapes = (6, 3, 3)
-    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated._time_vector)[1]
 
+    for key in sol_integrated.states.keys():
+        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated._time_vector)[1]
+
+    shapes = (3, 3)
     decimal = 0 if integrator != SolutionIntegrator.OCP else 8
     for k, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
