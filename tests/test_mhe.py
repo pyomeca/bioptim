@@ -11,7 +11,6 @@ from bioptim import (
     Dynamics,
     DynamicsFcn,
     InterpolationType,
-    InitialGuessList,
     BoundsList,
 )
 
@@ -91,18 +90,17 @@ def test_mhe_redim_xbounds_and_init(assume_phase_dynamics):
     n_cycles = 3
     window_len = 5
     window_duration = 0.2
-    x_init = InitialGuess(np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
-    u_init = InitialGuess(np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
-    x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
-    u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
+    x_bounds = BoundsList()
+    x_bounds.add("q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT)
+    x_bounds.add("qdot", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = np.zeros((ntau, 1)), np.zeros((ntau, 1))
 
     mhe = MovingHorizonEstimator(
         bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,
@@ -125,22 +123,17 @@ def test_mhe_redim_xbounds_not_implemented(assume_phase_dynamics):
     n_cycles = 3
     window_len = 5
     window_duration = 0.2
-    x_init = InitialGuess(np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
-    u_init = InitialGuess(np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
-    x_bounds = Bounds(
-        np.zeros((nq * 2, window_len + 1)),
-        np.zeros((nq * 2, window_len + 1)),
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
+    x_bounds = BoundsList()
+    x_bounds.add("q", min_bound=np.zeros((nq, window_len + 1)), max_bound=np.zeros((nq, window_len + 1)), interpolation=InterpolationType.EACH_FRAME)
+    x_bounds.add("qdot", min_bound=np.zeros((nq, window_len + 1)), max_bound=np.zeros((nq, window_len + 1)), interpolation=InterpolationType.EACH_FRAME)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = np.zeros((ntau, 1)), np.zeros((ntau, 1))
 
     mhe = MovingHorizonEstimator(
         bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,

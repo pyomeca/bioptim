@@ -12,7 +12,6 @@ from bioptim import (
     DynamicsFcn,
     ObjectiveList,
     BoundsList,
-    InitialGuessList,
 )
 from .utils import TestUtils
 
@@ -54,43 +53,33 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> O
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add("q", bounds=bio_model[0].bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bounds=bio_model[0].bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add("q", bounds=bio_model[1].bounds_from_ranges("q"), phase=1)
+    x_bounds.add("qdot", bounds=bio_model[1].bounds_from_ranges("qdot"), phase=1)
+    x_bounds.add("q", bounds=bio_model[2].bounds_from_ranges("q"), phase=2)
+    x_bounds.add("qdot", bounds=bio_model[2].bounds_from_ranges("qdot"), phase=2)
 
     for bounds in x_bounds:
-        for i in [1, 3, 4, 5]:
-            bounds[i, [0, -1]] = 0
-    x_bounds[0][2, 0] = 0.0
-    x_bounds[2][2, [0, -1]] = [0.0, 1.57]
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+        bounds["q"][1, [0, -1]] = 0
+        bounds["qdot"][:, [0, -1]] = 0
+    x_bounds[0]["q"][2, 0] = 0.0
+    x_bounds[2]["q"][2, [0, -1]] = [0.0, 1.57]
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model[0].nb_tau)
-    u_init.add([tau_init] * bio_model[0].nb_tau)
-    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_bounds.add("tau", min_bound=[tau_min] * bio_model[0].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=0)
+    u_bounds.add("tau", min_bound=[tau_min] * bio_model[1].nb_tau, max_bound=[tau_max] * bio_model[1].nb_tau, phase=1)
+    u_bounds.add("tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[2].nb_tau, phase=2)
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
         multinode_constraints=multinode_constraints,
         ode_solver=OdeSolver.RK4(),
         assume_phase_dynamics=assume_phase_dynamics,

@@ -21,31 +21,39 @@ def test_noisy_multiphase(assume_phase_dynamics):
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
+    # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=1)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=1)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=2)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=2)
 
     for bounds in x_bounds:
-        for i in [1, 3, 4, 5]:
-            bounds[i, [0, -1]] = 0
-    x_bounds[0][2, 0] = 0.0
-    x_bounds[2][2, [0, -1]] = [0.0, 1.57]
+        bounds["q"][1, [0, -1]] = 0
+        bounds["qdot"][:, [0, -1]] = 0
+    x_bounds[0]["q"][2, 0] = 0.0
+    x_bounds[2]["q"][2, [0, -1]] = [0.0, 1.57]
 
     x_init = InitialGuessList()
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
+    x_init.add("q", [1, 2, 1], phase=0)
+    x_init.add("qdot", [2, 1, 2], phase=0)
+    x_init.add("q", [1, 2, 1], phase=1)
+    x_init.add("qdot", [2, 1, 2], phase=1)
+    x_init.add("q", [1, 2, 1], phase=2)
+    x_init.add("qdot", [2, 1, 2], phase=2)
 
+    # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([-100] * bio_model.nb_tau, [100] * bio_model.nb_tau)
-    u_bounds.add([-100] * bio_model.nb_tau, [100] * bio_model.nb_tau)
-    u_bounds.add([-100] * bio_model.nb_tau, [100] * bio_model.nb_tau)
+    u_bounds.add("tau", min_bound=[-100] * bio_model.nb_tau, max_bound=[100] * bio_model.nb_tau, phase=0)
+    u_bounds.add("tau", min_bound=[-100] * bio_model.nb_tau, max_bound=[100] * bio_model.nb_tau, phase=1)
+    u_bounds.add("tau", min_bound=[-100] * bio_model.nb_tau, max_bound=[100] * bio_model.nb_tau, phase=2)
 
     u_init = InitialGuessList()
-    u_init.add([1, 2, 1])
-    u_init.add([1, 2, 1])
-    u_init.add([1, 2, 1])
+    u_init.add("tau", [1, 2, 1], phase=0)
+    u_init.add("tau", [1, 2, 1], phase=1)
+    u_init.add("tau", [1, 2, 1], phase=2)
 
     x_init.add_noise(
         bounds=x_bounds,
@@ -723,7 +731,7 @@ def test_noisy_multiphase(assume_phase_dynamics):
         [-5.98678677e00],
     ]
 
-    np.testing.assert_almost_equal(ocp.v.init.init, expected)
+    np.testing.assert_almost_equal(ocp.v.init_vector, expected)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -748,17 +756,22 @@ def test_add_wrong_magnitude(magnitude, raised_str, assume_phase_dynamics):
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
-    nb_phases = ocp.n_phases
-
+    # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=1)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=1)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=2)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=2)
 
     x_init = InitialGuessList()
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
+    x_init.add("q", [1, 2, 1], phase=0)
+    x_init.add("qdot", [2, 1, 2], phase=0)
+    x_init.add("q", [1, 2, 1], phase=1)
+    x_init.add("qdot", [2, 1, 2], phase=1)
+    x_init.add("q", [1, 2, 1], phase=2)
+    x_init.add("qdot", [2, 1, 2], phase=2)
 
     with pytest.raises(ValueError, match=raised_str):
         x_init.add_noise(
@@ -792,15 +805,22 @@ def test_add_wrong_bound_push(bound_push, raised_str, assume_phase_dynamics):
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
+    # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=1)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=1)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=2)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=2)
 
     x_init = InitialGuessList()
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
+    x_init.add("q", [1, 2, 1], phase=0)
+    x_init.add("qdot", [2, 1, 2], phase=0)
+    x_init.add("q", [1, 2, 1], phase=1)
+    x_init.add("qdot", [2, 1, 2], phase=1)
+    x_init.add("q", [1, 2, 1], phase=2)
+    x_init.add("qdot", [2, 1, 2], phase=2)
 
     with pytest.raises(ValueError, match=raised_str):
         x_init.add_noise(
@@ -831,15 +851,22 @@ def test_add_wrong_seed(seed, raised_str, assume_phase_dynamics):
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
+    # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=1)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=1)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=2)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=2)
 
     x_init = InitialGuessList()
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
+    x_init.add("q", [1, 2, 1], phase=0)
+    x_init.add("qdot", [2, 1, 2], phase=0)
+    x_init.add("q", [1, 2, 1], phase=1)
+    x_init.add("qdot", [2, 1, 2], phase=1)
+    x_init.add("q", [1, 2, 1], phase=2)
+    x_init.add("qdot", [2, 1, 2], phase=2)
 
     with pytest.raises(ValueError, match=raised_str):
         x_init.add_noise(
@@ -866,14 +893,21 @@ def test_add_wrong_bounds(assume_phase_dynamics):
 
     nb_phases = ocp.n_phases
 
+    # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=1)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=1)
+    # Missing phase=2
 
     x_init = InitialGuessList()
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
+    x_init.add("q", [1, 2, 1], phase=0)
+    x_init.add("qdot", [2, 1, 2], phase=0)
+    x_init.add("q", [1, 2, 1], phase=1)
+    x_init.add("qdot", [2, 1, 2], phase=1)
+    x_init.add("q", [1, 2, 1], phase=2)
+    x_init.add("qdot", [2, 1, 2], phase=2)
 
     with pytest.raises(ValueError, match="bounds must be specified to generate noised initial guess"):
         x_init.add_noise(
@@ -907,15 +941,22 @@ def test_add_wrong_n_shooting(assume_phase_dynamics):
 
     nb_phases = ocp.n_phases
 
+    # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=1)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=1)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q"), phase=2)
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot"), phase=2)
 
     x_init = InitialGuessList()
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
-    x_init.add([1, 2, 1, 2, 1, 2])
+    x_init.add("q", [1, 2, 1], phase=0)
+    x_init.add("qdot", [2, 1, 2], phase=0)
+    x_init.add("q", [1, 2, 1], phase=1)
+    x_init.add("qdot", [2, 1, 2], phase=1)
+    x_init.add("q", [1, 2, 1], phase=2)
+    x_init.add("qdot", [2, 1, 2], phase=2)
 
     with pytest.raises(ValueError, match="n_shooting must be specified to generate noised initial guess"):
         x_init.add_noise(
@@ -925,7 +966,7 @@ def test_add_wrong_n_shooting(assume_phase_dynamics):
             seed=42,
             magnitude_type=MagnitudeType.RELATIVE,
         )
-    with pytest.raises(ValueError, match=f"Invalid size of 'n_shooting', 'n_shooting' must be size {nb_phases}"):
+    with pytest.raises(ValueError, match=f"Invalid size of 'n_shooting', 'n_shooting' must be len {nb_phases}"):
         x_init.add_noise(
             bounds=x_bounds,
             n_shooting=[20, 30],
