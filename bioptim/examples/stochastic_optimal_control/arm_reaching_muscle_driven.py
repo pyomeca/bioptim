@@ -276,13 +276,14 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     """
     Minimize the uncertainty (covariance matrix) of the states.
     """
+    dt = controllers[0].tf / controllers[0].ns
     out = 0
     for i, ctrl in enumerate(controllers[1:]):
         P_matrix = ctrl.restore_matrix_from_vector(ctrl.update_values, ctrl.states.cx.shape[0],
                                                          ctrl.states.cx.shape[0], Node.START, "cov")
         P_partial = P_matrix[ctrl.states[key].index, ctrl.states[key].index]
 
-        out += cas.trace(P_partial)
+        out += cas.trace(P_partial) * dt
     return out
 
 def get_ee(controller: PenaltyController, q, qdot) -> cas.MX:
@@ -303,23 +304,21 @@ def ee_equals_ee_ref(controller: PenaltyController) -> cas.MX:
 
 def get_p_mat(nlp, node_index):
 
+    global wM_std, wPq_std, wPqdot_std
+
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
     nlp.stochastic_variables.node_index = node_index - 1
     nlp.update_values.node_index = node_index - 1
 
-    wM_numerical = np.array([0.025, 0.025])
-    wPq_numerical = np.array([9e-6, 9e-6])
-    wPqdot_numerical = np.array([0.000576, 0.000576])
-
     nx = nlp.states.cx_start.shape[0]
     M_matrix = nlp.restore_matrix_from_vector(nlp.stochastic_variables, nx, nx, Node.START, "m")
 
-    sigma_w = 10 ** (-1)  # How do we choose?
     dt = nlp.tf / nlp.ns
     wM = cas.MX.sym("wM", nlp.states['q'].cx_start.shape[0])
     wP = cas.MX.sym("wP", nlp.states['q'].cx_start.shape[0])
     wPdot = cas.MX.sym("wPdot", nlp.states['q'].cx_start.shape[0])
+    sigma_w = cas.vertcat(wP, wPdot, wM) * cas.MX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.update_values.cx_start.shape[0])
     cov_sym_dict = {"cov": cov_sym}
     cov_sym_dict["cov"].cx_start = cov_sym
@@ -329,7 +328,8 @@ def get_p_mat(nlp, node_index):
                                      nlp.parameters, nlp.stochastic_variables.cx_start,
                                      nlp, wM, wP, wPdot)
 
-    dg_dw = cas.jacobian(dx.dxdt, wM)
+    ddx_dwM = cas.jacobian(dx.dxdt, cas.vertcat(wP, wPdot, wM))
+    dg_dw = - ddx_dwM * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx_start)
     dg_dx = - (ddx_dx * dt / 2 + cas.MX_eye(ddx_dx.shape[0]))
 
@@ -410,13 +410,10 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     """
     # Constants TODO: remove fom here
     # TODO: How do we choose?
-    global wM_std, wPq_std, wPqdot_std
+    global wM_numerical, wPq_numerical, wPqdot_numerical
 
     dt = controllers[0].tf / controllers[0].ns
-    wM_magnitude = cas.DM(np.array([wM_std ** 2 / dt, wM_std ** 2 / dt]))
-    wPq_magnitude = cas.DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
-    wPqdot_magnitude = cas.DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
-    sensory_noise = cas.vertcat(wPq_magnitude, wPqdot_magnitude)
+    sensory_noise = cas.vertcat(wPq_numerical, wPqdot_numerical)
     sensory_noise_matrix = sensory_noise * cas.MX_eye(4)
 
     # create the casadi function to be evaluated
@@ -451,7 +448,7 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     for i, ctrl in enumerate(controllers):
         P_vector = ctrl.update_values.cx_start
         out = func(ctrl.states.cx_start, ctrl.stochastic_variables.cx_start, P_vector)
-        f_expectedEffort_fb += out ** 2
+        f_expectedEffort_fb += out * dt
 
     return f_expectedEffort_fb
 
@@ -466,6 +463,24 @@ def track_final_marker(controller: PenaltyController) -> cas.MX:
     q = controller.states["q"].cx_start
     ee_pos = end_effector_position(q)
     return ee_pos
+
+def leuven_trapezoidal(controllers: list[PenaltyController]) -> cas.MX:
+
+    wM = np.zeros((2, 1))
+    wPq = np.zeros((2, 1))
+    wPqdot = np.zeros((2, 1))
+    dt = controllers[0].tf / controllers[0].ns
+
+    dX_i = stochastic_forward_dynamics(controllers[0].states.cx_start, controllers[0].controls.cx_start,
+                                        controllers[0].parameters.cx_start, controllers[0].stochastic_variables.cx_start,
+                                        controllers[0].get_nlp, wM, wPq, wPqdot).dxdt
+    dX_i_plus = stochastic_forward_dynamics(controllers[1].states.cx_start, controllers[1].controls.cx_start,
+                                        controllers[1].parameters.cx_start, controllers[1].stochastic_variables.cx_start,
+                                        controllers[1].get_nlp, wM, wPq, wPqdot).dxdt
+
+    out = controllers[1].states.cx_start - (controllers[0].states.cx_start + (dX_i + dX_i_plus) / 2 * dt)
+
+    return out
 
 def prepare_socp(
     biorbd_model_path: str,
@@ -505,8 +520,8 @@ def prepare_socp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL, key="muscles", weight=1e3/2, quadratic=True)
     # objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3/2, quadratic=True)
 
     # Constraints
@@ -526,18 +541,22 @@ def prepare_socp(
                               nodes=[i for i in range(n_shooting+1)],
                               min_bound=np.array([0, 0, 0, 0]),
                               max_bound=np.array([cas.inf, 0.004**2, 0.05**2, 0.05**2]))
+    for i in range(n_shooting-1):  # Should be n_shooting, but since the last node is NaN, it is not possible
+        multinode_constraints.add(leuven_trapezoidal,
+                                  nodes_phase=[0, 0],
+                                  nodes=[i, i+1])
 
     multinode_objectives = MultinodeObjectiveList()
     multinode_objectives.add(minimize_uncertainty,
                                 nodes_phase=[0 for _ in range(n_shooting+1)],
                                 nodes=[i for i in range(n_shooting+1)],
                                 key="muscles",
-                                weight=1e3 / 2 / n_shooting+1,
+                                weight=1e3 / 2,
                                 quadratic=False)
     multinode_objectives.add(expected_feedback_effort,
                              nodes_phase=[0 for _ in range(n_shooting+1)],
                              nodes=[i for i in range(n_shooting+1)],
-                             weight=1e3 / 2 / n_shooting+1,
+                             weight=1e3 / 2,
                              quadratic=False)
 
     # Dynamics
@@ -643,6 +662,9 @@ def prepare_socp(
         multinode_objectives=multinode_objectives,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
+        ode_solver=None,
+        skip_continuity=True,
+        # ode_solver=OdeSolver.LEUVEN_TRAPEZIODAL(),
         # ode_solver=OdeSolver.RK4(n_integration_steps=5),
         # ode_solver=OdeSolver.RK2(n_integration_steps=1),
         # ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
@@ -854,9 +876,15 @@ lc2 = 0.16
 I1 = 0.025
 I2 = 0.045
 
+# TODO: How do we choose the values?
 wM_std = 0.05
 wPq_std = 3e-4
 wPqdot_std = 0.0024
+
+dt = 0.01
+wM_numerical = np.array([wM_std ** 2 / dt, wM_std ** 2 / dt])
+wPq_numerical = np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt])
+wPqdot_numerical = np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt])
 
 if __name__ == "__main__":
     main()
