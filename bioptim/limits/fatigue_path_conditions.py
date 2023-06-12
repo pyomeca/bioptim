@@ -32,6 +32,7 @@ def FatigueBounds(fatigue: FatigueList, variable_type=VariableType.STATES, fix_f
         if fix_first_frame:
             initial = FatigueInitialGuess(fatigue, variable_type)
 
+        should_not_add_suffix = variable_type == VariableType.CONTROLS and not fatigue[key][0].models.split_controls
         for index, model in enumerate(fatigue[key][0].models.models):
             for i, _ in enumerate(suffix):
                 min_bounds = []
@@ -42,7 +43,7 @@ def FatigueBounds(fatigue: FatigueList, variable_type=VariableType.STATES, fix_f
                     max_bounds = np.concatenate((max_bounds, [max_bound[i]]))
 
                 key_name = key
-                if len(fatigue[key][0].models.models) > 1:
+                if len(fatigue[key][0].models.models) > 1 and not should_not_add_suffix:
                     key_name += f"_{model}"
                 if suffix[i]:
                     key_name += f"_{suffix[i]}"
@@ -50,7 +51,7 @@ def FatigueBounds(fatigue: FatigueList, variable_type=VariableType.STATES, fix_f
                 if fix_first_frame:
                     out[key_name][:, 0] = initial[key_name].init[:, 0]
 
-            if variable_type == VariableType.CONTROLS and not fatigue[key][0].models.split_controls:
+            if should_not_add_suffix:
                 break
 
     return out

@@ -164,6 +164,7 @@ def test_initial_guess_custom():
     init_val = np.random.random((n_elements, 2))
 
     init = InitialGuess(
+        None,
         custom_bound_func,
         interpolation=InterpolationType.CUSTOM,
         val=init_val,
@@ -189,8 +190,11 @@ def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
-    X = InitialGuess([-1, -2, 1, 0.5])
-    U = InitialGuess(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
+    X = InitialGuessList()
+    X["q"] = [-1, -2]
+    X["qdot"] = ([1, 0.5])
+    U = InitialGuessList()
+    U.add("tau", np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
     sol = Solution(ocp, [X, U])
     controls = sol.controls
@@ -230,8 +234,11 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
-    X = InitialGuess([-1, -2, 0.1, 0.2])
-    U = InitialGuess(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
+    X = InitialGuessList()
+    X["q"] = [-1, -2]
+    X["qdot"] = ([0.1, 0.2])
+    U = InitialGuessList()
+    U.add("tau", np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
     sol = Solution(ocp, [X, U])
     controls = sol.controls
@@ -272,76 +279,24 @@ def test_initial_guess_error_messages(assume_phase_dynamics):
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
-    # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, [0, -1]] = 0
-    x_bounds[1, -1] = 3.14
-
-    # Define control path constraint
-    u_bounds = Bounds([-100] * n_q, [100] * n_q)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
-
-    x_init = InitialGuess([0] * n_q * 2)
-    u_init = InitialGuess([0] * n_q)
-
     # check the error messages
-    with pytest.raises(RuntimeError, match="Please provide an x_init of type InitialGuess or InitialGuessList."):
+    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuess or InitialGuessList"):
         OptimalControlProgram(
             bio_model,
             dynamics,
             n_shooting=5,
             phase_time=1,
-            x_init=None,
-            u_init=u_init,
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
+            x_init=1,
             objective_functions=objective_functions,
             assume_phase_dynamics=assume_phase_dynamics,
         )
-    with pytest.raises(RuntimeError, match="Please provide an u_init of type InitialGuess or InitialGuessList."):
+    with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuess or InitialGuessList"):
         OptimalControlProgram(
             bio_model,
             dynamics,
             n_shooting=5,
             phase_time=1,
-            x_init=x_init,
-            u_init=None,
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
-            objective_functions=objective_functions,
-            assume_phase_dynamics=assume_phase_dynamics,
-        )
-
-    with pytest.raises(
-        RuntimeError,
-        match="You must please declare an initial guess for the states (x_init). Here, the InitialGuessList is empty.",
-    ):
-        OptimalControlProgram(
-            bio_model,
-            dynamics,
-            n_shooting=5,
-            phase_time=1,
-            x_init=InitialGuessList(),
-            u_init=u_init,
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
-            objective_functions=objective_functions,
-            assume_phase_dynamics=assume_phase_dynamics,
-        )
-
-    with pytest.raises(
-        RuntimeError,
-        match="You must please declare an initial guess for the controls u_init. Here, the InitialGuessList is empty.",
-    ):
-        OptimalControlProgram(
-            bio_model,
-            dynamics,
-            n_shooting=5,
-            phase_time=1,
-            x_init=x_init,
-            u_init=InitialGuessList(),
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
+            u_init=1,
             objective_functions=objective_functions,
             assume_phase_dynamics=assume_phase_dynamics,
         )

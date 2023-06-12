@@ -151,17 +151,11 @@ def prepare_ocp(
 
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
     if fatigue_type != "effort":
-        if split_controls:
-            x_bounds["tau_minus_ma"][1, :] = 0  # The rotation dof is passive (fatigue_ma = 0)
-            x_bounds["tau_plus_ma"][1, :] = 0  # The rotation dof is passive (fatigue_ma = 0)
-        else:
-            x_bounds["tau_ma"][1, :] = 0  # The rotation dof is passive (fatigue_ma = 0)
+        x_bounds["tau_minus_ma"][1, :] = 0  # The rotation dof is passive (fatigue_ma = 0)
+        x_bounds["tau_plus_ma"][1, :] = 0  # The rotation dof is passive (fatigue_ma = 0)
         if fatigue_type == "xia":
-            if split_controls:
-                x_bounds["tau_minus_mr"][1, :] = 0  # The rotation dof is passive (fatigue_mr = 1)
-                x_bounds["tau_plus_mr"][1, :] = 0  # The rotation dof is passive (fatigue_mr = 1)
-            else:
-                x_bounds["tau_mr"][1, :] = 0  # The rotation dof is passive (fatigue_mr = 1)
+            x_bounds["tau_minus_mr"][1, :] = 0  # The rotation dof is passive (fatigue_mr = 1)
+            x_bounds["tau_plus_mr"][1, :] = 0  # The rotation dof is passive (fatigue_mr = 1)
 
     # Initial guess
     x_init = InitialGuessList()
