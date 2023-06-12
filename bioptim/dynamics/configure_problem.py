@@ -1152,24 +1152,6 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        # TODO: to bemoved outside probably
-        def define_cx_scaled(n_col: int, n_shooting: int, initial_node) -> list:
-            _cx = [nlp.cx() for _ in range(n_shooting + 1)]
-            for node_index in range(n_shooting + 1):
-                _cx[node_index] = [nlp.cx() for _ in range(n_col)]
-            for idx in range(len(name_elements)):
-                for node_index in range(n_shooting + 1):
-                    for j in range(n_col):
-                        _cx[node_index][j] = vertcat(
-                            _cx[node_index][j],
-                            nlp.cx.sym(
-                                f"{name}_{name_elements[idx]}_phase{nlp.phase_idx}_node{node_index + initial_node}.{j}",
-                                1,
-                                1,
-                            ),
-                        )
-            return _cx
-
         mx_value = []
 
         for i_el, name_el in enumerate(name_elements):

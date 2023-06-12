@@ -738,3 +738,157 @@ class CVODES(Integrator):
         """
 
         super(CVODES, self).__init__(ode, ode_opt)
+
+
+
+
+# class LEUVEN_TRAPEZOIDAL(Integrator):
+#     """
+#     Numerical integration using implicit Runge-Kutta method.
+#
+#     Attributes
+#     ----------
+#     degree: int
+#         The interpolation order of the polynomial approximation
+#
+#     Methods
+#     -------
+#     get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
+#         Get the control at a given time
+#     dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
+#         The dynamics of the system
+#     """
+#
+#     def __init__(self, ode: dict, ode_opt: dict):
+#         """
+#         Parameters
+#         ----------
+#         ode: dict
+#             The ode description
+#         ode_opt: dict
+#             The ode options
+#         """
+#
+#         super(COLLOCATION, self).__init__(ode, ode_opt)
+#
+#         self.method = ode_opt["method"]
+#         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
+#
+#         # Coefficients of the collocation equation
+#         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
+#
+#         # Coefficients of the continuity equation
+#         self._d = self.cx.zeros(self.degree + 1)
+#
+#         # Choose collocation points
+#         self.step_time = [0] + collocation_points(self.degree, self.method)
+#
+#         # Dimensionless time inside one control interval
+#         time_control_interval = self.cx.sym("time_control_interval")
+#
+#         # For all collocation points
+#         for j in range(self.degree + 1):
+#             # Construct Lagrange polynomials to get the polynomial basis at the collocation point
+#             _l = 1
+#             for r in range(self.degree + 1):
+#                 if r != j:
+#                     _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
+#
+#             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
+#             if self.method == "radau":
+#                 self._d[j] = 1 if j == self.degree else 0
+#             else:
+#                 lfcn = Function("lfcn", [time_control_interval], [_l])
+#                 self._d[j] = lfcn(1.0)
+#
+#             # Construct Lagrange polynomials to get the polynomial basis at the collocation point
+#             _l = 1
+#             for r in range(self.degree + 1):
+#                 if r != j:
+#                     _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
+#
+#             # Evaluate the time derivative of the polynomial at all collocation points to get
+#             # the coefficients of the continuity equation
+#             tfcn = Function("tfcn", [time_control_interval], [tangent(_l, time_control_interval)])
+#             for r in range(self.degree + 1):
+#                 self._c[j, r] = tfcn(self.step_time[r])
+#
+#         self._finish_init()
+#
+#     def get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray:
+#         """
+#         Get the control at a given time
+#
+#         Parameters
+#         ----------
+#         u: np.ndarray
+#             The control matrix
+#         dt_norm: float
+#             The time a which control should be computed
+#
+#         Returns
+#         -------
+#         The control at a given time
+#         """
+#
+#         if self.control_type == ControlType.CONSTANT:
+#             return super(COLLOCATION, self).get_u(u, dt_norm)
+#         else:
+#             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
+#
+#     def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple:
+#         """
+#         The dynamics of the system
+#
+#         Parameters
+#         ----------
+#         h: float
+#             The time step
+#         states: MX | SX
+#             The states of the system
+#         controls: MX | SX
+#             The controls of the system
+#         params: MX | SX
+#             The parameters of the system
+#
+#         Returns
+#         -------
+#         The derivative of the states
+#         """
+#
+#         # Total number of variables for one finite element
+#         states_end = self._d[0] * states[0]
+#         defects = []
+#         for j in range(1, self.degree + 1):
+#             # Expression for the state derivative at the collocation point
+#             xp_j = 0
+#             for r in range(self.degree + 1):
+#                 xp_j += self._c[r, j] * states[r]
+#
+#             if self.defects_type == DefectType.EXPLICIT:
+#                 f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params, stochastic_variables)[:, self.idx]
+#                 defects.append(h * f_j - xp_j)
+#             elif self.defects_type == DefectType.IMPLICIT:
+#                 defects.append(self.implicit_fun(states[j], self.get_u(controls, self.step_time[j]), params, stochastic_variables, xp_j / h))
+#             else:
+#                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
+#
+#             # Add contribution to the end state
+#             states_end += self._d[j] * states[j]
+#
+#         # Concatenate constraints
+#         defects = vertcat(*defects)
+#         return states_end, horzcat(states[0], states_end), defects
+#
+#     def _finish_init(self):
+#         """
+#         Prepare the CasADi function from dxdt
+#         """
+#
+#         self.function = Function(
+#             "integrator",
+#             [horzcat(*self.x_sym), self.u_sym, self.param_sym, self.stochastic_variables_sym],
+#             self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling, self.stochastic_variables_sym),
+#             ["x0", "p", "params", "s"],
+#             ["xf", "xall", "defects"],
+#         )

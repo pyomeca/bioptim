@@ -2,7 +2,7 @@ from typing import Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
-from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES
+from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES # , LEUVEN_TRAPEZIODAL
 from ..misc.enums import ControlType, DefectType
 
 
@@ -486,3 +486,56 @@ class OdeSolver:
 
         def __str__(self):
             return self.rk_integrator.__name__
+
+
+    # class LEUVEN_TRAPEZIODAL(OdeSolverBase):
+    #     """
+    #     # TODO: to be removed
+    #     """
+    #
+    #     def __init__(
+    #         self,
+    #     ):
+    #         """
+    #         Parameters
+    #         ----------
+    #         polynomial_degree: int
+    #             The degree of the implicit RK
+    #         """
+    #
+    #         super(OdeSolver.LEUVEN_TRAPEZIODAL, self).__init__()
+    #         self.rk_integrator = LEUVEN_TRAPEZIODAL
+    #
+    #     def integrator(self, ocp, nlp, node_index: int) -> list:
+    #         """
+    #         ...
+    #         """
+    #
+    #         nlp.states.node_index = node_index
+    #         nlp.states_dot.node_index = node_index
+    #         nlp.controls.node_index = node_index
+    #
+    #         ode = {
+    #             "x_unscaled": [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
+    #             "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
+    #             "p_unscaled": nlp.controls.cx_start,
+    #             "p_scaled": nlp.controls.scaled.cx_start,
+    #             "stochastic_variables": nlp.stochastic_variables.cx_start,
+    #             "ode": nlp.dynamics_func,
+    #             "implicit_ode": nlp.implicit_dynamics_func,
+    #         }
+    #         ode_opt = {
+    #             "t0": 0,
+    #             "tf": nlp.dt,
+    #             "model": nlp.model,
+    #             "param": nlp.parameters,
+    #             "cx": nlp.cx,
+    #             "idx": 0,
+    #         }
+    #
+    #         if ode["ode"].size2_out("xdot") != 1:
+    #             ode_opt["idx"] = node_index
+    #         return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+    #
+    #     def __str__(self):
+    #         return f"{self.rk_integrator.__name__}"
