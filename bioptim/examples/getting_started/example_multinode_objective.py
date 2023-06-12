@@ -36,6 +36,8 @@ def prepare_ocp(
     n_shooting: int,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
+    n_threads: int = 1,
+    assume_phase_dynamics: bool = False,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -102,8 +104,8 @@ def prepare_ocp(
         multinode_objectives=multinode_objectives,
         ode_solver=ode_solver,
         use_sx=use_sx,
-        n_threads=1,
-        assume_phase_dynamics=False,
+        n_threads=n_threads,  # This has to be set to 1 by definition.
+        assume_phase_dynamics=assume_phase_dynamics,  # This has to be set to False by definition.
     )
 
 

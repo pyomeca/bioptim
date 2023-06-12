@@ -223,10 +223,26 @@ def test__getting_started__example_multinode_objective():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=10,
     )
+
+    with pytest.raises(RuntimeError, match="multinode_objectives cannot be used with multi-threading, set n_threads=1"):
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+            final_time=1,
+            n_shooting=10,
+            n_threads=3,
+        )
+
+    with pytest.raises(RuntimeError, match="multinode_objectives cannot be used with assume_phase_dynamics=True, set it to false"):
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+            final_time=1,
+            n_shooting=10,
+            assume_phase_dynamics=True,
+        )
 
 def test__getting_started__example_optimal_time():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
