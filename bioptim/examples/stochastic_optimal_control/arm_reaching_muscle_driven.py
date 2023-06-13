@@ -45,6 +45,8 @@ from bioptim import (
     Axis,
     MultinodeConstraintList,
     MultinodeObjectiveList,
+    ParameterList,
+    Constraint,
 )
 
 
@@ -482,6 +484,12 @@ def minimize_states_squared(controllers: list[PenaltyController]) -> cas.MX:
         out += cas.sumsqr(ctrl.states.cx_start) * dt
     return out
 
+# def do_nothig():
+#     return
+
+# def x_init_equals_initial_states(controller: PenaltyController) -> cas.MX:
+#     return controller.states.cx_start - controller.parameters.cx_start
+
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -527,13 +535,13 @@ def prepare_socp(
     # Constraints
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL)
-    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_final, elbow_pos_final]))
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
+    # constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_final, elbow_pos_final]))
+    # constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
     constraints.add(track_final_marker, node=Node.END, ee_final_position=ee_final_position)
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
     # constraints.add(zero_acceleration, node=Node.END, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the control on the last node is NaN
-    constraints.add(ConstraintFcn.TRACK_CONTROL, key="muscles", node=Node.ALL, min_bound=0.001, max_bound=1)
+    constraints.add(ConstraintFcn.TRACK_CONTROL, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
     constraints.add(ConstraintFcn.TRACK_STATE, key="muscles", node=Node.ALL, min_bound=0.001, max_bound=1)
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180)  # This is a bug, it should be in radians
 
@@ -541,7 +549,7 @@ def prepare_socp(
     multinode_constraints.add(reach_target_consistantly,
                               nodes_phase=[0 for _ in range(n_shooting+1)],
                               nodes=[i for i in range(n_shooting+1)],
-                              min_bound=np.array([0, 0, 0, 0]),
+                              min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
                               max_bound=np.array([cas.inf, 0.004**2, 0.05**2, 0.05**2]))
     for i in range(n_shooting-1):  # Should be n_shooting, but since the last node is NaN, it is not possible
         multinode_constraints.add(leuven_trapezoidal,
@@ -561,20 +569,16 @@ def prepare_socp(
                              weight=1e3 / 2,
                              quadratic=False)
 
-    # initial_gravity = InitialGuess((min_g + max_g) / 2)
-    # # and an objective function
-    # parameter_objective_functions = Objective(
-    #     my_target_function, weight=1000, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
-    # )
+    # parameters = ParameterList()
     # parameters.add(
-    #     "gravity_xyz",  # The name of the parameter
-    #     my_parameter_function,  # The function that modifies the biorbd model
-    #     np.array([shoulder_pos_init, elbow_pos_init, 0, 0, 0, 0, 0, 0, 0, 0]),  # The initial guess
-    #     None,  # The bounds
+    #     "x_init",  # The name of the parameter
+    #     do_nothig,  # The function that modifies the biorbd model
+    #     InitialGuess(np.array([shoulder_pos_init, elbow_pos_init, 0, 0, 0, 0, 0, 0, 0, 0])),  # The initial guess
+    #     Bounds(min_bound=np.array([shoulder_pos_init, elbow_pos_init, 0, 0, -cas.inf, -cas.inf, -cas.inf, -cas.inf, -cas.inf, -cas.inf]),
+    #            max_bound=np.array([shoulder_pos_init, elbow_pos_init, 0, 0,  cas.inf,  cas.inf,  cas.inf,  cas.inf,  cas.inf,  cas.inf])),  # The bounds
     #     size=10,  # The number of elements this particular parameter vector has
-    #     penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
-    #     scaling=np.array([1, 1, 10.0]),
-    #     extra_value=1,  # You can define as many extra arguments as you want
+    #     penalty_list=Constraint(x_init_equals_initial_states, node=Node.START),  # Constraint for this particular parameter
+    #     scaling=np.ones((10, )),
     # )
 
     # Dynamics
@@ -603,12 +607,14 @@ def prepare_socp(
     # states_max[2:4, 2] = 0
 
 
-    # x_bounds = BoundsList()
-    # x_bounds.add(bounds=Bounds(states_min, states_max))
+    x_bounds = BoundsList()
+    states_min = np.ones((n_states, 3)) * -cas.inf
+    states_max = np.ones((n_states, 3)) * cas.inf
+    x_bounds.add(bounds=Bounds(states_min, states_max))
 
-    # n_tau = bio_model.nb_tau
-    # u_bounds = Bounds([-100] * n_tau + [0] * n_muscles, [100] * n_tau + [1] * n_muscles)
+    n_tau = bio_model.nb_tau
     # u_bounds = Bounds([0.01] * n_muscles, [1] * n_muscles)
+    u_bounds = Bounds([-cas.inf] * n_muscles, [cas.inf] * n_muscles)
 
     # Initial guesses
     states_init = np.zeros((n_states, 2))
@@ -660,10 +666,11 @@ def prepare_socp(
 
     s_init = InitialGuess(stochastic_init, interpolation=InterpolationType.LINEAR)
 
-    # s_bounds = BoundsList()
-    # # Didi not find it in the original code
-    # s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
-    # # TODO: we should probably change the name stochastic_variables -> helper_variables ?
+    s_bounds = BoundsList()
+    stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
+    stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
+    s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
+    # TODO: we should probably change the name stochastic_variables -> helper_variables ?
 
     return OptimalControlProgram(
         bio_model,
@@ -673,13 +680,14 @@ def prepare_socp(
         x_init=x_init,
         u_init=u_init,
         s_init=s_init,
-        # x_bounds=x_bounds,
-        # u_bounds=u_bounds,
-        # s_bounds=s_bounds,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        s_bounds=s_bounds,
         objective_functions=objective_functions,
         multinode_objectives=multinode_objectives,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
+        # parameters=parameters,
         ode_solver=None,
         skip_continuity=True,
         # ode_solver=OdeSolver.LEUVEN_TRAPEZIODAL(),
