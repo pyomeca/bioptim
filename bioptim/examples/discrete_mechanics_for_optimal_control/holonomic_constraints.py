@@ -2,23 +2,24 @@
 This class contains different holonomic constraint function.
 """
 from casadi import MX, Function, jacobian
+from bioptim.examples.discrete_mechanics_for_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
 
 
-class HolonomicConstraint:
+class HolonomicConstraintFcn:
     """
     This class contains different holonomic constraint.
     """
 
     @staticmethod
     def superimpose_markers(
-        biorbd_model, marker_1: str, marker_2: str = None, index: slice = slice(0, 3)
+        biorbd_model: BiorbdModelCustomHolonomic, marker_1: str, marker_2: str = None, index: slice = slice(0, 3)
     ) -> tuple[Function, Function, Function]:
         """
         Generate the constraint functions to superimpose two markers.
 
         Parameters
         ----------
-        biorbd_model: biorbd.Model
+        biorbd_model: BiorbdModelCustomHolonomic
             The biorbd model.
         marker_1: str
             The name of the first marker.
