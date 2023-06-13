@@ -29,8 +29,11 @@ def test_double_update_bounds_and_init(assume_phase_dynamics):
 
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuess([0] * bio_model.nb_tau)
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * bio_model.nb_q
+    x_init["qdot"] = [0] * bio_model.nb_qdot
+    u_init = InitialGuessList()
+    u_init["tau"] = [0] * bio_model.nb_tau
     ocp = OptimalControlProgram(
         bio_model,
         dynamics,
@@ -41,41 +44,57 @@ def test_double_update_bounds_and_init(assume_phase_dynamics):
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
-    x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
-    u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
+    x_bounds = BoundsList()
+    x_bounds["q"] = -np.ones((nq, 1)), np.ones((nq, 1))
+    x_bounds["qdot"] = -np.ones((nq, 1)), np.ones((nq, 1))
+    u_bounds = BoundsList()
+    u_bounds["tau"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
     ocp.update_bounds(x_bounds, u_bounds)
 
     expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds.min, expected)
+    np.testing.assert_almost_equal(ocp.v.bounds_vectors[0], expected)
     expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds.max, expected)
+    np.testing.assert_almost_equal(ocp.v.bounds_vectors[1], expected)
 
-    x_init = InitialGuess(0.5 * np.ones((nq * 2, 1)))
-    u_init = InitialGuess(-0.5 * np.ones((nq, 1)))
+    x_init = InitialGuessList()
+    x_init["q"] = 0.5 * np.ones((nq, 1))
+    x_init["qdot"] = 0.5 * np.ones((nq, 1))
+    u_init = InitialGuessList()
+    u_init["tau"] = -0.5 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.init.init, expected)
+    np.testing.assert_almost_equal(ocp.v.init_vector, expected)
 
-    x_bounds = Bounds(-2.0 * np.ones((nq * 2, 1)), 2.0 * np.ones((nq * 2, 1)))
-    u_bounds = Bounds(-4.0 * np.ones((nq, 1)), 4.0 * np.ones((nq, 1)))
+    x_bounds = BoundsList()
+    x_bounds["q"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
+    x_bounds["qdot"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
+    u_bounds = BoundsList()
+    u_bounds["tau"] = -4.0 * np.ones((nq, 1)), 4.0 * np.ones((nq, 1))
     ocp.update_bounds(x_bounds=x_bounds)
     ocp.update_bounds(u_bounds=u_bounds)
 
     expected = np.array([[-2] * (nq * 2) * (ns + 1) + [-4] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds.min, expected)
+    np.testing.assert_almost_equal(ocp.v.bounds_vectors[0], expected)
     expected = np.array([[2] * (nq * 2) * (ns + 1) + [4] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds.max, expected)
+    np.testing.assert_almost_equal(ocp.v.bounds_vectors[1], expected)
 
-    x_init = InitialGuess(0.25 * np.ones((nq * 2, 1)))
-    u_init = InitialGuess(-0.25 * np.ones((nq, 1)))
+    x_init = InitialGuessList()
+    x_init["q"] = 0.25 * np.ones((nq, 1))
+    x_init["qdot"] = 0.25 * np.ones((nq, 1))
+    u_init = InitialGuessList()
+    u_init["tau"] = -0.25 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.array([[0.25] * (nq * 2) * (ns + 1) + [-0.25] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.init.init, expected)
+    np.testing.assert_almost_equal(ocp.v.init_vector, expected)
 
-    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuess or InitialGuessList"):
+    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):
         ocp.update_initial_guess(x_bounds, u_bounds)
-    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
+    with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
+        ocp.update_initial_guess(None, u_bounds)
+    with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsList"):
         ocp.update_bounds(x_init, u_init)
+    with pytest.raises(RuntimeError, match="u_bounds should be built from a BoundsList"):
+        ocp.update_bounds(None, u_init)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -223,8 +242,11 @@ def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuess([0] * bio_model.nb_tau)
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * bio_model.nb_q
+    x_init["qdot"] = [0] * bio_model.nb_qdot
+    u_init = InitialGuessList()
+    u_init["tau"] = [0] * bio_model.nb_tau
     ocp = OptimalControlProgram(
         bio_model,
         dynamics,
@@ -237,12 +259,16 @@ def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
     )
 
     # Path constraint and control path constraints
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[1:6, [0, -1]] = 0
-    x_bounds[2, -1] = 1.57
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][1:, [0, -1]] = 0
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:-1, [0, -1]] = 0
+    x_bounds["qdot"][2, -1] = 1.57
 
     tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * ntau, [tau_max] * ntau
 
     # Initial guesses
     t = None
@@ -278,10 +304,10 @@ def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
         raise NotImplementedError("Interpolation type not implemented")
 
     np.random.seed(0)
-    x_init = NoisedInitialGuess(
-        initial_guess=x,
-        t=t,
-        interpolation=interpolation,
+    x_init = InitialGuessList()
+    x_init["q"] = x[:nq]
+    x_init["qdot"] = x[nq:]
+    x_init.add_noise(
         bounds=x_bounds,
         magnitude=0.01,
         magnitude_type=MagnitudeType.RELATIVE,
@@ -289,10 +315,9 @@ def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
         bound_push=0.1,
         **extra_params_x,
     )
-    u_init = NoisedInitialGuess(
-        u,
-        t=t,
-        interpolation=interpolation,
+    u_init = InitialGuessList()
+    u_init["tau"] = u
+    u_init.add_noise(
         bounds=u_bounds,
         magnitude=0.01,
         magnitude_type=MagnitudeType.RELATIVE,
@@ -543,113 +568,10 @@ def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
         else:
             raise NotImplementedError("Interpolation type not implemented in the tests")
 
-        np.testing.assert_almost_equal(ocp.v.init.init, expected)
+        np.testing.assert_almost_equal(ocp.v.init_vector, expected)
 
         with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
             ocp.update_bounds(x_init, u_init)
-
-
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("interpolation", [*InterpolationType])
-def test_update_noised_init_collocation(interpolation, assume_phase_dynamics):
-    bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = bio_model.nb_q
-    nqdot = bio_model.nb_qdot
-    ntau = bio_model.nb_tau
-    ns = 3
-    phase_time = 1.0
-    solver = OdeSolver.COLLOCATION(polynomial_degree=1)
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuess([0] * bio_model.nb_tau)
-    ocp = OptimalControlProgram(
-        bio_model,
-        dynamics,
-        n_shooting=ns,
-        phase_time=phase_time,
-        ode_solver=solver,
-        x_init=x_init,
-        u_init=u_init,
-        assume_phase_dynamics=assume_phase_dynamics,
-    )
-
-    # Path constraint and control path constraints
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[1:6, [0, -1]] = 0
-    x_bounds[2, -1] = 1.57
-
-    tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
-
-    # Initial guesses
-    t = None
-    extra_params_x = {}
-    extra_params_u = {}
-    if interpolation == InterpolationType.CONSTANT:
-        x = [0] * (nq + nqdot)
-        u = [tau_init] * ntau
-    elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-        x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [1.5, 0.0, 0.785, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
-        u = np.array([[1.45, 9.81, 2.28], [0, 9.81, 0], [-1.45, 9.81, -2.28]]).T
-    elif interpolation == InterpolationType.LINEAR:
-        x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
-        u = np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T
-    elif interpolation == InterpolationType.EACH_FRAME:
-        x = np.zeros((nq + nqdot, ns + 1))
-        for i in range(nq + nqdot):
-            x[i, :] = np.linspace(i, i + 1, ns + 1)
-        u = np.zeros((ntau, ns))
-    elif interpolation == InterpolationType.ALL_POINTS:
-        x = np.zeros((nq + nqdot, ns * (solver.polynomial_degree + 1) + 1))
-        for i in range(nq + nqdot):
-            x[i, :] = np.linspace(i, i + 1, ns * (solver.polynomial_degree + 1) + 1)
-        u = np.zeros((ntau, ns))
-    elif interpolation == InterpolationType.SPLINE:
-        # Bound , assume the first and last point are 0 and final respectively
-        t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
-        x = np.random.random((nq + nqdot, 5))
-        u = np.random.random((ntau, 5))
-    elif interpolation == InterpolationType.CUSTOM:
-        x = lambda y: np.array([0] * (nq + nqdot))
-        u = lambda y: np.array([tau_init] * ntau)
-    else:
-        raise NotImplementedError("This interpolation is not implemented yet")
-
-    np.random.seed(0)
-    x_init = NoisedInitialGuess(
-        initial_guess=x,
-        t=t,
-        interpolation=interpolation,
-        bounds=x_bounds,
-        magnitude=0.01,
-        magnitude_type=MagnitudeType.RELATIVE,
-        n_shooting=ns + 1,
-        bound_push=0.1,
-        **extra_params_x,
-    )
-    u_init = NoisedInitialGuess(
-        u,
-        t=t,
-        interpolation=interpolation,
-        bounds=u_bounds,
-        magnitude=0.01,
-        magnitude_type=MagnitudeType.RELATIVE,
-        n_shooting=ns,
-        bound_push=0.1,
-        **extra_params_u,
-    )
-
-    with pytest.raises(
-        NotImplementedError,
-        match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
-    ):
-        ocp.update_initial_guess(x_init, u_init)
-
-    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
-        ocp.update_bounds(x_init, u_init)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -663,8 +585,11 @@ def test_update_noised_initial_guess_rk4(interpolation, assume_phase_dynamics):
     ns = 3
     phase_time = 1.0
 
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuess([0] * bio_model.nb_tau)
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * bio_model.nb_q
+    x_init["qdot"] = [0] * bio_model.nb_qdot
+    u_init = InitialGuessList()
+    u_init["tau"] = [0] * bio_model.nb_tau
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     ocp = OptimalControlProgram(
@@ -678,75 +603,79 @@ def test_update_noised_initial_guess_rk4(interpolation, assume_phase_dynamics):
     )
 
     # Path constraint and control path constraints
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[1:6, [0, -1]] = 0
-    x_bounds[2, -1] = 1.57
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][1:, [0, -1]] = 0
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:-1, [0, -1]] = 0
+    x_bounds["qdot"][2, -1] = 1.57
 
     tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * ntau, [tau_max] * ntau
 
     # Initial guesses
     t = None
     extra_params_x = {}
     extra_params_u = {}
+    x = InitialGuessList()
+    u = InitialGuessList()
     if interpolation == InterpolationType.CONSTANT:
-        x = InitialGuess([0] * (nq + nqdot), interpolation=interpolation)
-        u = InitialGuess([tau_init] * ntau, interpolation=interpolation)
+        x.add("q", [0] * nq, interpolation=interpolation)
+        x.add("qdot", [0] * nq, interpolation=interpolation)
+        u.add("tau", [tau_init] * ntau, interpolation=interpolation)
     elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-        x = InitialGuess(
-            np.array([[1.0, 0.0, 0.0, 0, 0, 0], [1.5, 0.0, 0.785, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T,
-            interpolation=interpolation,
-        )
-        u = InitialGuess(
-            np.array([[1.45, 9.81, 2.28], [0, 9.81, 0], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation
-        )
+        x.add("q", np.array([[1.0, 0.0, 0.0], [1.5, 0.0, 0.785], [2.0, 0.0, 1.57]]).T, interpolation=interpolation)
+        x.add("qdot", np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]).T, interpolation=interpolation)
+        u.add("tau", np.array([[1.45, 9.81, 2.28], [0, 9.81, 0], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation)
     elif interpolation == InterpolationType.LINEAR:
-        x = InitialGuess(np.array([[1.0, 0.0, 0.0, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T, interpolation=interpolation)
-        u = InitialGuess(np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation)
+        x.add("q", np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 1.57]]).T, interpolation=interpolation)
+        x.add("qdot", np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]).T, interpolation=interpolation)
+        u.add("tau", np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation)
     elif interpolation == InterpolationType.EACH_FRAME:
-        x = np.zeros((nq * 2, ns + 1))
+        x_init = np.zeros((nq * 2, ns + 1))
         for i in range(ns + 1):
-            x[i, :] = np.linspace(i, i + 1, ns + 1)
-        x = InitialGuess(x, interpolation=interpolation)
-        u = InitialGuess(np.zeros((ntau, ns)), interpolation=interpolation)
+            x_init[i, :] = np.linspace(i, i + 1, ns + 1)
+        x.add("q", x_init[:nq, :], interpolation=interpolation)
+        x.add("qdot", x_init[nq:, :], interpolation=interpolation)
+        u.add("tau", np.zeros((ntau, ns)), interpolation=interpolation)
     elif interpolation == InterpolationType.ALL_POINTS:
-        x = np.zeros((nq * 2, ns + 1))
+        x_init = np.zeros((nq * 2, ns + 1))
         for i in range(ns + 1):
-            x[i, :] = np.linspace(i, i + 1, ns + 1)
-        x = InitialGuess(x, interpolation=interpolation)
-        u = InitialGuess(np.zeros((ntau, ns)), interpolation=interpolation)
+            x_init[i, :] = np.linspace(i, i + 1, ns + 1)
+        x.add("q", x_init[:nq, :], interpolation=interpolation)
+        x.add("qdot", x_init[nq:, :], interpolation=interpolation)
+        u.add("tau", np.zeros((ntau, ns)), interpolation=interpolation)
     elif interpolation == InterpolationType.SPLINE:
         # Bound spline assume the first and last point are 0 and final respectively
         np.random.seed(42)
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
-        x = InitialGuess(np.random.random((nq + nqdot, 5)), interpolation=interpolation, t=t)
-        u = InitialGuess(np.random.random((ntau, 5)), interpolation=interpolation, t=t)
+        x.add("q", np.random.random((nq, 5)), interpolation=interpolation, t=t)
+        x.add("qdot", np.random.random((nqdot, 5)), interpolation=interpolation, t=t)
+        u.add("tau", np.random.random((ntau, 5)), interpolation=interpolation, t=t)
     elif interpolation == InterpolationType.CUSTOM:
-        x = InitialGuess(lambda y: np.array([0] * (nq + nqdot)), interpolation=interpolation)
-        u = InitialGuess(lambda y: np.array([tau_init] * ntau), interpolation=interpolation)
+        x.add("q", lambda y: np.array([0] * nq), interpolation=interpolation)
+        x.add("qdot", lambda y: np.array([0] * nqdot), interpolation=interpolation)
+        u.add("tau", lambda y: np.array([tau_init] * ntau), interpolation=interpolation)
 
     else:
         raise NotImplementedError("This interpolation is not implemented yet")
 
-    x_init = NoisedInitialGuess(
-        initial_guess=x,
+    x_init.add_noise(
         bounds=x_bounds,
         magnitude=0.01,
         magnitude_type=MagnitudeType.RELATIVE,
         n_shooting=ns + 1,
         bound_push=0.1,
         seed=42,
-        **extra_params_x,
     )
-    u_init = NoisedInitialGuess(
-        initial_guess=u,
+    u_init.add_noise(
         bounds=u_bounds,
         magnitude=0.01,
         magnitude_type=MagnitudeType.RELATIVE,
         n_shooting=ns,
         bound_push=0.1,
         seed=42,
-        **extra_params_u,
     )
     if interpolation == InterpolationType.ALL_POINTS:
         with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS must only be used with direct collocation"):
@@ -988,7 +917,7 @@ def test_update_noised_initial_guess_rk4(interpolation, assume_phase_dynamics):
         else:
             raise NotImplementedError("Interpolation type not implemented yet")
 
-        np.testing.assert_almost_equal(ocp.v.init.init, expected[:, np.newaxis])
+        np.testing.assert_almost_equal(ocp.v.init_vector, expected[:, np.newaxis])
 
         with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
             ocp.update_bounds(x_init, u_init)
@@ -1008,8 +937,11 @@ def test_update_noised_initial_guess_rk4_with_extra(n_extra, assume_phase_dynami
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuess([0] * bio_model.nb_tau)
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * bio_model.nb_q
+    x_init["qdot"] = [0] * bio_model.nb_qdot
+    u_init = InitialGuessList()
+    u_init["tau"] = [0] * bio_model.nb_tau
     ocp = OptimalControlProgram(
         bio_model,
         dynamics,
@@ -1021,61 +953,53 @@ def test_update_noised_initial_guess_rk4_with_extra(n_extra, assume_phase_dynami
     )
 
     # Path constraint and control path constraints
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[1:6, [0, -1]] = 0
-    x_bounds[2, -1] = 1.57
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][1:, [0, -1]] = 0
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:-1, [0, -1]] = 0
+    x_bounds["qdot"][2, -1] = 1.57
 
     tau_min, tau_max, tau_init = -100, 100, 0.3
-    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * ntau, [tau_max] * ntau
 
     # Initial guesses
     t = None
     extra_params_x = {}
     extra_params_u = {}
-    x = InitialGuess([1] * (nq + nqdot), interpolation=InterpolationType.CONSTANT)
-    u = InitialGuess([tau_init] * ntau, interpolation=InterpolationType.CONSTANT)
+    x = InitialGuessList()
+    x["q"] = [1] * nq
+    x["qdot"] = [1] * nqdot
+    u = InitialGuessList()
+    u["tau"] = [tau_init] * ntau
 
     state_noise = np.array([0.01] * nq + [0.2] * nqdot + [0.1] * n_extra)
     if n_extra > 0:
         with pytest.raises(
             ValueError, match="magnitude must be a float or list of float of the size of states or controls"
         ):
-            NoisedInitialGuess(
-                initial_guess=x,
+            x.add_noise(
                 bounds=x_bounds,
                 magnitude=state_noise,
                 magnitude_type=MagnitudeType.RELATIVE,
                 n_shooting=ns + 1,
                 bound_push=0.1,
                 seed=42,
-                **extra_params_x,
             )
         return
-    else:
-        x_init = NoisedInitialGuess(
-            initial_guess=x,
-            bounds=x_bounds,
-            magnitude=state_noise,
-            magnitude_type=MagnitudeType.RELATIVE,
-            n_shooting=ns + 1,
-            bound_push=0.1,
-            seed=42,
-            **extra_params_x,
-        )
 
-    u_init = NoisedInitialGuess(
-        initial_guess=u,
+    u_init.add_noise(
         bounds=u_bounds,
-        magnitude=np.array([0.03] * ntau),
+        magnitude=0.03,
         magnitude_type=MagnitudeType.RELATIVE,
         n_shooting=ns,
         bound_push=0.1,
         seed=42,
-        **extra_params_u,
     )
 
     ocp.update_initial_guess(x_init, u_init)
-    print(ocp.v.init.init)
+    print(ocp.v.init_vector)
     expected = np.array(
         [
             [0.99247241],
@@ -1114,7 +1038,7 @@ def test_update_noised_initial_guess_rk4_with_extra(n_extra, assume_phase_dynami
         ]
     )
 
-    np.testing.assert_almost_equal(ocp.v.init.init, expected)
+    np.testing.assert_almost_equal(ocp.v.init_vector, expected)
 
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
         ocp.update_bounds(x_init, u_init)
@@ -1135,8 +1059,11 @@ def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dyn
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuess([0] * bio_model.nb_tau)
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * bio_model.nb_q
+    x_init["qdot"] = [0] * bio_model.nb_qdot
+    u_init = InitialGuessList()
+    u_init["tau"] = [0] * bio_model.nb_tau
     ocp = OptimalControlProgram(
         bio_model,
         dynamics,
@@ -1149,125 +1076,64 @@ def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dyn
     )
 
     # Path constraint and control path constraints
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[1:6, [0, -1]] = 0
-    x_bounds[2, -1] = 1.57
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][1:, [0, -1]] = 0
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:-1, [0, -1]] = 0
+    x_bounds["qdot"][2, -1] = 1.57
 
     tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * ntau, [tau_max] * ntau
 
     # Initial guesses
     t = None
     extra_params_x = {}
     extra_params_u = {}
+    x = InitialGuessList()
+    u = InitialGuessList()
     if interpolation == InterpolationType.CONSTANT:
-        x = InitialGuess([0] * (nq + nqdot), interpolation=interpolation)
-        u = InitialGuess([tau_init] * ntau, interpolation=interpolation)
+        x.add("q", [0] * nq, interpolation=interpolation)
+        x.add("qdot", [0] * nq, interpolation=interpolation)
+        u.add("tau", [tau_init] * ntau, interpolation=interpolation)
     elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-        x = InitialGuess(
-            np.array([[1.0, 0.0, 0.0, 0, 0, 0], [1.5, 0.0, 0.785, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T,
-            interpolation=interpolation,
-        )
-        u = InitialGuess(
-            np.array([[1.45, 9.81, 2.28], [0, 9.81, 0], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation
-        )
+        x.add("q", np.array([[1.0, 0.0, 0.0], [1.5, 0.0, 0.785], [2.0, 0.0, 1.57]]).T, interpolation=interpolation)
+        x.add("qdot", np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]).T, interpolation=interpolation)
+        u.add("tau", np.array([[1.45, 9.81, 2.28], [0, 9.81, 0], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation)
     elif interpolation == InterpolationType.LINEAR:
-        x = InitialGuess(np.array([[1.0, 0.0, 0.0, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T, interpolation=interpolation)
-        u = InitialGuess(np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation)
+        x.add("q", np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 1.57]]).T, interpolation=interpolation)
+        x.add("qdot", np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]).T, interpolation=interpolation)
+        u.add("tau", np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation)
     elif interpolation == InterpolationType.EACH_FRAME:
-        x = np.zeros((nq * 2, ns + 1))
-        for i in range(nq * 2):
-            x[i, :] = np.linspace(0, 1, ns + 1)
-        x = InitialGuess(x, interpolation=interpolation)
-        u = InitialGuess(np.zeros((ntau, ns)), interpolation=interpolation)
+        x_init = np.zeros((nq * 2, ns + 1))
+        for i in range(ns + 1):
+            x_init[i, :] = np.linspace(i, i + 1, ns + 1)
+        x.add("q", x_init[:nq, :], interpolation=interpolation)
+        x.add("qdot", x_init[nq:, :], interpolation=interpolation)
+        u.add("tau", np.zeros((ntau, ns)), interpolation=interpolation)
     elif interpolation == InterpolationType.ALL_POINTS:
-        x = np.zeros((nq * 2, ns * (solver.polynomial_degree + 1) + 1))
+        x_init = np.zeros((nq * 2, ns * (solver.polynomial_degree + 1) + 1))
         for i in range(nq * 2):
-            x[i, :] = np.linspace(0, 1, ns * (solver.polynomial_degree + 1) + 1)
-        x = InitialGuess(x, interpolation=interpolation)
-        u = InitialGuess(np.zeros((ntau, ns)), interpolation=interpolation)
+            x_init[i, :] = np.linspace(0, 1, ns * (solver.polynomial_degree + 1) + 1)
+        x.add("q", x_init[:nq, :], interpolation=interpolation)
+        x.add("qdot", x_init[nq:, :], interpolation=interpolation)
+        u.add("tau", np.zeros((ntau, ns)), interpolation=interpolation)
     elif interpolation == InterpolationType.SPLINE:
         # Bound spline assume the first and last point are 0 and final respectively
         np.random.seed(42)
         t = np.hstack((0, np.sort(np.random.random((3,)) * phase_time), phase_time))
-        x = InitialGuess(np.random.random((nq + nqdot, 5)), interpolation=interpolation, t=t)
-        u = InitialGuess(np.random.random((ntau, 5)), interpolation=interpolation, t=t)
+        x.add("q", np.random.random((nq, 5)), interpolation=interpolation, t=t)
+        x.add("qdot", np.random.random((nqdot, 5)), interpolation=interpolation, t=t)
+        u.add("tau", np.random.random((ntau, 5)), interpolation=interpolation, t=t)
     elif interpolation == InterpolationType.CUSTOM:
-        x = InitialGuess(lambda y: np.array([0] * (nq + nqdot)), interpolation=interpolation)
-        u = InitialGuess(lambda y: np.array([tau_init] * ntau), interpolation=interpolation)
+        x.add("q", lambda y: np.array([0] * nq), interpolation=interpolation)
+        x.add("qdot", lambda y: np.array([0] * nqdot), interpolation=interpolation)
+        u.add("tau", lambda y: np.array([tau_init] * ntau), interpolation=interpolation)
     else:
         raise NotImplementedError("This interpolation is not implemented yet")
 
-    x_init = NoisedInitialGuess(
-        initial_guess=x,
-        bounds=x_bounds,
-        magnitude=0.01,
-        magnitude_type=MagnitudeType.RELATIVE,
-        n_shooting=ns + 1,
-        bound_push=0.1,
-        seed=42,
-        **extra_params_x,
-    )
-    u_init = NoisedInitialGuess(
-        initial_guess=u,
-        bounds=u_bounds,
-        magnitude=0.01,
-        magnitude_type=MagnitudeType.RELATIVE,
-        n_shooting=ns,
-        bound_push=0.1,
-        seed=42,
-        **extra_params_u,
-    )
-
-    with pytest.raises(
-        NotImplementedError,
-        match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
-    ):
-        ocp.update_initial_guess(x_init, u_init)
-
-    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
-        ocp.update_bounds(x_init, u_init)
-
-
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("interpolation", [*InterpolationType])
-def test_update_noised_initial_guess_list(interpolation, assume_phase_dynamics):
-    bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
-    nq = bio_model.nb_q
-    nqdot = bio_model.nb_qdot
-    ntau = bio_model.nb_tau
-    ns = 3
-    phase_time = 1.0
-    solver = OdeSolver.COLLOCATION(polynomial_degree=1)
-
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuess([0] * bio_model.nb_tau)
-    ocp = OptimalControlProgram(
-        bio_model,
-        dynamics,
-        n_shooting=ns,
-        phase_time=phase_time,
-        ode_solver=solver,
-        x_init=x_init,
-        u_init=u_init,
-        assume_phase_dynamics=assume_phase_dynamics,
-    )
-
-    # Path constraint and control path constraints
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[1:6, [0, -1]] = 0
-    x_bounds[2, -1] = 1.57
-
-    tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
-
-    x_init = NoisedInitialGuess(
-        initial_guess=[0] * (nq + nqdot),
-        interpolation=InterpolationType.CONSTANT,
+    x_init.add_noise(
         bounds=x_bounds,
         magnitude=0.01,
         magnitude_type=MagnitudeType.RELATIVE,
@@ -1275,9 +1141,7 @@ def test_update_noised_initial_guess_list(interpolation, assume_phase_dynamics):
         bound_push=0.1,
         seed=42,
     )
-    u_init = NoisedInitialGuess(
-        initial_guess=[tau_init] * ntau,
-        interpolation=InterpolationType.CONSTANT,
+    u_init.add_noise(
         bounds=u_bounds,
         magnitude=0.01,
         magnitude_type=MagnitudeType.RELATIVE,
@@ -1285,12 +1149,7 @@ def test_update_noised_initial_guess_list(interpolation, assume_phase_dynamics):
         bound_push=0.1,
         seed=42,
     )
-
-    with pytest.raises(
-        NotImplementedError,
-        match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
-    ):
-        ocp.update_initial_guess(x_init, u_init)
+    ocp.update_initial_guess(x_init, u_init)
 
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
         ocp.update_bounds(x_init, u_init)

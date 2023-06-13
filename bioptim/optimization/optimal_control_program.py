@@ -793,12 +793,16 @@ class OptimalControlProgram:
         """
         for i in range(self.n_phases):
             if x_bounds:
+                if not isinstance(x_bounds, BoundsList):
+                    raise RuntimeError("x_bounds should be built from a BoundsList")
                 origin_phase = 0 if len(x_bounds) == 1 else i
                 for key in x_bounds[origin_phase].keys():
                     self.nlp[i].x_bounds.add(key, x_bounds[origin_phase][key], phase=0)
                 self.isdef_x_bounds = True
 
             if u_bounds:
+                if not isinstance(u_bounds, BoundsList):
+                    raise RuntimeError("u_bounds should be built from a BoundsList")
                 for key in u_bounds.keys():
                     origin_phase = 0 if len(u_bounds) == 1 else i
                     self.nlp[i].u_bounds.add(key, u_bounds[origin_phase][key], phase=0)
@@ -836,12 +840,16 @@ class OptimalControlProgram:
 
         for i in range(self.n_phases):
             if x_init:
+                if not isinstance(x_init, InitialGuessList):
+                    raise RuntimeError("x_init should be built from a InitialGuessList")
                 origin_phase = 0 if len(x_init) == 1 else i
                 for key in x_init[origin_phase].keys():
                     self.nlp[i].x_init.add(key, x_init[origin_phase][key], phase=0)
                 self.isdef_x_init = True
 
             if u_init:
+                if not isinstance(u_init, InitialGuessList):
+                    raise RuntimeError("u_init should be built from a InitialGuessList")
                 for key in u_init.keys():
                     origin_phase = 0 if len(u_init) == 1 else i
                     self.nlp[i].u_init.add(key, u_init[origin_phase][key], phase=0)

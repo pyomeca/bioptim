@@ -1077,7 +1077,7 @@ class InitialGuessList(OptionDict):
     def add(
         self,
         key,
-        initial_guess: InitialGuess | np.ndarray | list | tuple = None,
+        initial_guess: InitialGuess | np.ndarray | list | tuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         phase: int = -1,
         **extra_arguments: Any,
