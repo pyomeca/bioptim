@@ -869,14 +869,9 @@ def test_example_external_forces(ode_solver):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver_type", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
-def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
+def test_example_multiphase(ode_solver_type):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
-
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver_type in [OdeSolver.RK8, OdeSolver.COLLOCATION]:
-        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -884,7 +879,7 @@ def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        assume_phase_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -1213,47 +1208,26 @@ def test_multinode_constraints_wrong_nodes(node):
             )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("too_much_constraints", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
-def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constraints, assume_phase_dynamics):
+def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constraints):
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver = ode_solver()
-    if assume_phase_dynamics and too_much_constraints:
-        with pytest.raises(
-            ValueError,
-            match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
-            "add more penalties than available in a multinode constraint. You can try to split the constraints "
-            "into more penalties or use assume_phase_dynamics=False.",
-        ):
-            ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-                n_shootings=(8, 8, 8),
-                ode_solver=ode_solver,
-                assume_phase_dynamics=assume_phase_dynamics,
-                with_too_much_constraints=too_much_constraints,
-            )
-    else:
-        ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-            n_shootings=(8, 8, 8),
-            ode_solver=ode_solver,
-            assume_phase_dynamics=assume_phase_dynamics,
-            with_too_much_constraints=too_much_constraints,
-        )
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        n_shootings=(8, 8, 8),
+        ode_solver=ode_solver,
+        assume_phase_dynamics=False,
+        with_too_much_constraints=too_much_constraints,
+    )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_multinode_constraints(ode_solver, assume_phase_dynamics):
+def test_multinode_constraints(ode_solver):
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
-
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
-        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 

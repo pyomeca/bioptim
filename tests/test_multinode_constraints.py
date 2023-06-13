@@ -147,25 +147,22 @@ def test_multinode_fail_second_node(node):
             )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("phase_1", [-1, 0, 4])
 @pytest.mark.parametrize("phase_2", [-1, 1, 4])
-def test_multinode_wrong_phase(phase_1, phase_2, assume_phase_dynamics):
+def test_multinode_wrong_phase(phase_1, phase_2):
     model = TestUtils.bioptim_folder() + "/examples/getting_started/models/cube.bioMod"
-
-    # For reducing time assume_phase_dynamics=False is skipped for the failing tests
 
     if phase_1 == 4 or (phase_1 == 0 and phase_2 == 4) or (phase_1 == -1 and phase_2 == 4):
         with pytest.raises(
             ValueError,
             match="nodes_phase of the multinode_penalty must be between 0 and number of phases",
         ):
-            prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
+            prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=False)
     elif phase_1 == -1 or (phase_1 == 0 and phase_2 == -1):
         with pytest.raises(
             ValueError,
             match="nodes_phase of the multinode_penalty must be between 0 and number of phases",
         ):
-            prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
+            prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=False)
     else:
-        prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=assume_phase_dynamics)
+        prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=False)

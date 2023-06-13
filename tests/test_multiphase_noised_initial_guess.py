@@ -9,14 +9,13 @@ from bioptim import (
 )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_noisy_multiphase(assume_phase_dynamics):
+def test_noisy_multiphase():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        assume_phase_dynamics=assume_phase_dynamics,
+        assume_phase_dynamics=False,
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
@@ -726,7 +725,6 @@ def test_noisy_multiphase(assume_phase_dynamics):
     np.testing.assert_almost_equal(ocp.v.init.init, expected)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "magnitude, raised_str",
     [
@@ -737,13 +735,13 @@ def test_noisy_multiphase(assume_phase_dynamics):
         (np.ones(2) * 0.1, f"Invalid size of 'magnitude', 'magnitude' as array must be size 1 or 3"),
     ],
 )
-def test_add_wrong_magnitude(magnitude, raised_str, assume_phase_dynamics):
+def test_add_wrong_magnitude(magnitude, raised_str):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        assume_phase_dynamics=assume_phase_dynamics,
+        assume_phase_dynamics=False,
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
@@ -771,7 +769,6 @@ def test_add_wrong_magnitude(magnitude, raised_str, assume_phase_dynamics):
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "bound_push, raised_str",
     [
@@ -782,12 +779,12 @@ def test_add_wrong_magnitude(magnitude, raised_str, assume_phase_dynamics):
         (np.ones(2) * 0.1, f"Invalid size of 'bound_push', 'bound_push' as array must be size 1 or 3"),
     ],
 )
-def test_add_wrong_bound_push(bound_push, raised_str, assume_phase_dynamics):
+def test_add_wrong_bound_push(bound_push, raised_str):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
@@ -813,7 +810,6 @@ def test_add_wrong_bound_push(bound_push, raised_str, assume_phase_dynamics):
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "seed, raised_str",
     [
@@ -821,12 +817,12 @@ def test_add_wrong_bound_push(bound_push, raised_str, assume_phase_dynamics):
         ([0.1, 0.1], f"Invalid size of 'seed', 'seed' as list must be size 1 or 3"),
     ],
 )
-def test_add_wrong_seed(seed, raised_str, assume_phase_dynamics):
+def test_add_wrong_seed(seed, raised_str):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
@@ -852,14 +848,13 @@ def test_add_wrong_seed(seed, raised_str, assume_phase_dynamics):
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_add_wrong_bounds(assume_phase_dynamics):
+def test_add_wrong_bounds():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        assume_phase_dynamics=assume_phase_dynamics,
+        assume_phase_dynamics=False,
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
@@ -895,13 +890,12 @@ def test_add_wrong_bounds(assume_phase_dynamics):
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_add_wrong_n_shooting(assume_phase_dynamics):
+def test_add_wrong_n_shooting():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
 

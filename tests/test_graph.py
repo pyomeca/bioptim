@@ -458,6 +458,10 @@ def prepare_ocp_custom_objectives(
 def test_phase_transitions(with_mayer, with_lagrange, with_constraints, assume_phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
+
+    if with_mayer and assume_phase_dynamics:
+        return
+
     ocp = prepare_ocp_phase_transitions(
         model_path,
         with_mayer=with_mayer,

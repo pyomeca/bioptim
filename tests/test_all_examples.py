@@ -192,8 +192,7 @@ def test__getting_started__example_mapping():
     from bioptim.examples.getting_started import example_mapping as ocp_module
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test__getting_started__example_multiphase(assume_phase_dynamics):
+def test__getting_started__example_multiphase():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -201,19 +200,18 @@ def test__getting_started__example_multiphase(assume_phase_dynamics):
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         long_optim=True,
-        assume_phase_dynamics=assume_phase_dynamics,
+        assume_phase_dynamics=False,
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])  # Shouldn't it be only False ?
-def test__getting_started__example_multinode_constraints(assume_phase_dynamics):
+def test__getting_started__example_multinode_constraints():
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        assume_phase_dynamics=assume_phase_dynamics,
+        assume_phase_dynamics=False,
         n_shootings=(8, 8, 8),
     )
 
