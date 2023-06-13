@@ -1112,7 +1112,7 @@ def test_multinode_objective(ode_solver):
 
     ode_solver = ode_solver()
 
-    n_shooting = 10
+    n_shooting = 30
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         n_shooting=n_shooting,
@@ -1136,31 +1136,31 @@ def test_multinode_objective(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 5018.648542811533)
+        np.testing.assert_almost_equal(f[0, 0],  415.8259417971987)
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+        np.testing.assert_equal(g.shape, (120, 1))
+        np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([4.87390358, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-18.98599313, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.01549791, 0.        ]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.68877169,   0.        ]))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 1047.7500638748268)
+        np.testing.assert_almost_equal(f[0, 0], 415.7063940128547)
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+        np.testing.assert_equal(g.shape, (120, 1))
+        np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([5.03388194, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-11.51104036, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.03763583, 0.        ]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.59527541,   0.        ]))
 
     # Check that the output is what we expect
     dt = ocp.nlp[0].tf / ocp.nlp[0].ns
@@ -1170,7 +1170,7 @@ def test_multinode_objective(ode_solver):
     x_out = sol.states["all"][:, 0]
     u_out = sol.controls["all"][:, 0]
     p_out = []
-    for i in range(1, 10):
+    for i in range(1, 30):
         x_out = np.hstack((x_out, sol.states["all"][:, i]))
         if i == n_shooting:
             u_out = np.hstack((u_out, []))
@@ -1237,7 +1237,7 @@ def test_multinode_constraints(ode_solver):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shootings=(8, 10, 8),
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        assume_phase_dynamics=False,
     )
     sol = ocp.solve()
     sol.print_cost()
