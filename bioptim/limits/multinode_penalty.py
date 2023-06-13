@@ -326,10 +326,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             nx = controllers[0].states.cx.shape[0]
             M_matrix = controllers[0].restore_matrix_from_vector(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
 
-            dx = stochastic_forward_dynamics(controllers[1].states.cx_start, controllers[1].controls.cx_start,
+            dx_i_plus = stochastic_forward_dynamics(controllers[1].states.cx_start, controllers[1].controls.cx_start,
                                      controllers[1].parameters.cx_start, controllers[1].stochastic_variables.cx_start, controllers[1].get_nlp, wM_magnitude, wPq_magnitude, wPqdot_magnitude)
 
-            DdZ_DX = jacobian(dx.dxdt, controllers[1].states.cx_start)
+            DdZ_DX = jacobian(dx_i_plus.dxdt, controllers[1].states.cx_start)
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
 

@@ -212,8 +212,6 @@ def stochastic_forward_dynamics(
             K_matrix[s0, s1] = k[i]
             i += 1
 
-    # hand_pos = nlp.model.markers(q)[2][:2]
-    # hand_vel = nlp.model.marker_velocities(q, qdot)[:2, 2]
     hand_pos = end_effector_position(q)
     hand_vel = end_effector_velocity(q, qdot)
     ee = cas.vertcat(hand_pos, hand_vel)
@@ -287,8 +285,6 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     return out
 
 def get_ee(controller: PenaltyController, q, qdot) -> cas.MX:
-    # hand_pos = controller.model.markers(q)[2][:2]
-    # hand_vel = controller.model.marker_velocities(q, qdot)[:2, 2]
     hand_pos = end_effector_position(q)
     hand_vel = end_effector_velocity(q, qdot)
     ee = cas.vertcat(hand_pos, hand_vel)
@@ -350,6 +346,8 @@ def get_p_mat(nlp, node_index):
 def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     """
     Constraint the hand to reach the target consistently.
+    This is a multi-node constraint because the covariance matrix depends on all the precedent nodes, but it only
+    applies at the END node.
     """
 
     Q = cas.MX.sym("q_sym", controllers[-1].states["q"].cx_start.shape[0])
@@ -359,8 +357,6 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     cov_sym_dict["cov"].cx_start = cov_sym
     cov_matrix = controllers[-1].restore_matrix_from_vector(cov_sym_dict, controllers[-1].states.cx_start.shape[0], controllers[-1].states.cx_start.shape[0], Node.START, "cov")
 
-    # hand_pos = controller.model.markers(Q)[2][:2]
-    # hand_vel = controller.model.marker_velocities(Q, Qdot)[:2, 2]
     hand_pos = end_effector_position(Q)
     hand_vel = end_effector_velocity(Q, Qdot)
 
@@ -382,7 +378,6 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     return val
 
 def end_effector_position(q):
-
     theta_shoulder = q[0]
     theta_elbow = q[1]
 
@@ -430,9 +425,7 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
                                                "k")
 
     # Compute the expected effort
-    # hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
     hand_pos = end_effector_position(controllers[0].states["q"].cx_start)
-    # hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[:2, 2]
     hand_vel = end_effector_velocity(controllers[0].states["q"].cx_start, controllers[0].states["qdot"].cx_start)
     trace_k_sensor_k = cas.trace(K_matrix @ sensory_noise_matrix @ K_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
@@ -459,10 +452,10 @@ def zero_acceleration(controller: PenaltyController, wM: np.ndarray, wPq: np.nda
                                      controller.get_nlp, wM, wPq, wPqdot)
     return dx.dxdt[2:4]
 
-def track_final_marker(controller: PenaltyController) -> cas.MX:
+def track_final_marker(controller: PenaltyController, ee_final_position) -> cas.MX:
     q = controller.states["q"].cx_start
     ee_pos = end_effector_position(q)
-    return ee_pos
+    return ee_pos - ee_final_position
 
 def leuven_trapezoidal(controllers: list[PenaltyController]) -> cas.MX:
 
@@ -480,7 +473,7 @@ def leuven_trapezoidal(controllers: list[PenaltyController]) -> cas.MX:
 
     out = controllers[1].states.cx_start - (controllers[0].states.cx_start + (dX_i + dX_i_plus) / 2 * dt)
 
-    return out
+    return out * 1e3
 
 def minimize_states_squared(controllers: list[PenaltyController]) -> cas.MX:
     dt = controllers[0].tf / controllers[0].ns
@@ -518,12 +511,12 @@ def prepare_socp(
 
     bio_model = BiorbdModel(biorbd_model_path)
 
-    shoulder_pos_init = 0.3491
-    shoulder_pos_final = 0.9599
-    elbow_pos_init = 2.2459  # Optimized in Tom's version
-    elbow_pos_final = 1.1594  # Optimized in Tom's version
+    shoulder_pos_init = 0.349065850398866
+    shoulder_pos_final = 0.959931088596881
+    elbow_pos_init = 2.245867726451909  # Optimized in Tom's version
+    elbow_pos_final = 1.159394851847144  # Optimized in Tom's version
     ee_initial_position = np.array([0.0, 0.2742])  # Directly from Tom's version
-    ee_final_position = np.array([0.0, 0.5273])  # Directly from Tom's version
+    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -534,13 +527,15 @@ def prepare_socp(
     # Constraints
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL)
-    # No acceleration at the first and last nodes
-    # constraints.add(reach_target_consistantly, node=Node.END, depends_on_all_nodes=True,
-    #                 min_bound=np.array([0, 0, 0, 0]), max_bound=np.array([cas.inf, 0.004**2, 0.05**2, 0.05**2]))
-    # constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, target=ee_final_position)  # axes=Axis.Y
-    constraints.add(track_final_marker, node=Node.END, target=ee_final_position)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_final, elbow_pos_final]))
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
-    # constraints.add(zero_acceleration, node=Node.END, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the ontrol on the last node is NaN
+    constraints.add(track_final_marker, node=Node.END, ee_final_position=ee_final_position)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
+    # constraints.add(zero_acceleration, node=Node.END, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the control on the last node is NaN
+    constraints.add(ConstraintFcn.TRACK_CONTROL, key="muscles", node=Node.ALL, min_bound=0.001, max_bound=1)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="muscles", node=Node.ALL, min_bound=0.001, max_bound=1)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180)  # This is a bug, it should be in radians
 
     multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(reach_target_consistantly,
@@ -566,6 +561,22 @@ def prepare_socp(
                              weight=1e3 / 2,
                              quadratic=False)
 
+    # initial_gravity = InitialGuess((min_g + max_g) / 2)
+    # # and an objective function
+    # parameter_objective_functions = Objective(
+    #     my_target_function, weight=1000, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
+    # )
+    # parameters.add(
+    #     "gravity_xyz",  # The name of the parameter
+    #     my_parameter_function,  # The function that modifies the biorbd model
+    #     np.array([shoulder_pos_init, elbow_pos_init, 0, 0, 0, 0, 0, 0, 0, 0]),  # The initial guess
+    #     None,  # The bounds
+    #     size=10,  # The number of elements this particular parameter vector has
+    #     penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
+    #     scaling=np.array([1, 1, 10.0]),
+    #     extra_value=1,  # You can define as many extra arguments as you want
+    # )
+
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(configure_stochastic_optimal_control_problem, dynamic_function=stochastic_forward_dynamics, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)), expand=False)
@@ -575,29 +586,29 @@ def prepare_socp(
     n_qdot = bio_model.nb_qdot
     n_states = n_q + n_qdot + n_muscles
 
-    q_qdot_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    states_min = np.zeros((n_states, 3))
-    states_max = np.zeros((n_states, 3))
-    states_min[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.min
-    states_max[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.max
-    states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0.01  # Activations
-    states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
-    # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    states_min[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
-    states_max[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
-    states_min[0:2, 1:3] = 0
-    states_max[0:2, 1:3] = 180  # should be np.pi, but there is a mistake in the original code
-    states_min[2:4, 2] = 0
-    states_max[2:4, 2] = 0
+    # q_qdot_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
+    # states_min = np.zeros((n_states, 3))
+    # states_max = np.zeros((n_states, 3))
+    # states_min[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.min
+    # states_max[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.max
+    # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0.01  # Activations
+    # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
+    # # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
+    # # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
+    # states_min[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
+    # states_max[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
+    # states_min[0:2, 1:3] = 0
+    # states_max[0:2, 1:3] = 180  # should be np.pi, but there is a mistake in the original code
+    # states_min[2:4, 2] = 0
+    # states_max[2:4, 2] = 0
 
 
-    x_bounds = BoundsList()
-    x_bounds.add(bounds=Bounds(states_min, states_max))
+    # x_bounds = BoundsList()
+    # x_bounds.add(bounds=Bounds(states_min, states_max))
 
     # n_tau = bio_model.nb_tau
     # u_bounds = Bounds([-100] * n_tau + [0] * n_muscles, [100] * n_tau + [1] * n_muscles)
-    u_bounds = Bounds([0.01] * n_muscles, [1] * n_muscles)
+    # u_bounds = Bounds([0.01] * n_muscles, [1] * n_muscles)
 
     # Initial guesses
     states_init = np.zeros((n_states, 2))
@@ -611,26 +622,26 @@ def prepare_socp(
     # TODO: This should probably be done automatically, not defined by the user
 
     n_stochastic = n_muscles*(n_q + n_qdot) + n_q+n_qdot + n_states*n_states #  + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10) + P(10x10)
-    stochastic_min = np.zeros((n_stochastic, 3))
-    stochastic_max = np.zeros((n_stochastic, 3))
+    # stochastic_min = np.zeros((n_stochastic, 3))
+    # stochastic_max = np.zeros((n_stochastic, 3))
     stochastic_init = np.zeros((n_stochastic, 2))
 
     curent_index = 0
     stochastic_init[:n_muscles*(n_q + n_qdot), :] = 0.01  # K
-    stochastic_min[:n_muscles*(n_q + n_qdot), :] = -10
-    stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
+    # stochastic_min[:n_muscles*(n_q + n_qdot), :] = -10
+    # stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
 
     curent_index += n_muscles*(n_q + n_qdot)
     # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
     # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
     stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
-    stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -1
-    stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 1
+    # stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -1
+    # stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 1
 
     curent_index += n_q+n_qdot
     stochastic_init[curent_index : curent_index + n_states*n_states, 0] = 0.01  # M
-    stochastic_min[curent_index : curent_index + n_states*n_states, :] = -10
-    stochastic_max[curent_index : curent_index + n_states*n_states, :] = 10
+    # stochastic_min[curent_index : curent_index + n_states*n_states, :] = -10
+    # stochastic_max[curent_index : curent_index + n_states*n_states, :] = 10
     # M at node ns+1 should not exist (my hope is that by constraining it IPOPT treats it as a constant)
     # stochastic_min[curent_index : curent_index + n_states*n_states, 2] = 0.01
     # stochastic_max[curent_index : curent_index + n_states*n_states, 2] = 0.01
@@ -649,10 +660,10 @@ def prepare_socp(
 
     s_init = InitialGuess(stochastic_init, interpolation=InterpolationType.LINEAR)
 
-    s_bounds = BoundsList()
-    # Didi not find it in the original code
-    s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
-    # TODO: we should probably change the name stochastic_variables -> helper_variables ?
+    # s_bounds = BoundsList()
+    # # Didi not find it in the original code
+    # s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
+    # # TODO: we should probably change the name stochastic_variables -> helper_variables ?
 
     return OptimalControlProgram(
         bio_model,
@@ -662,9 +673,9 @@ def prepare_socp(
         x_init=x_init,
         u_init=u_init,
         s_init=s_init,
-        x_bounds=x_bounds,
-        u_bounds=u_bounds,
-        s_bounds=s_bounds,
+        # x_bounds=x_bounds,
+        # u_bounds=u_bounds,
+        # s_bounds=s_bounds,
         objective_functions=objective_functions,
         multinode_objectives=multinode_objectives,
         constraints=constraints,
@@ -700,13 +711,13 @@ def main():
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_linear_solver('mumps')
     # solver.set_linear_solver('ma57')
-    solver.set_hessian_approximation('limited-memory')
     solver.set_tol(1e-3)
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
     solver.set_maximum_iterations(10000)
-    solver.set_bound_frac(1e-8)
-    solver.set_bound_push(1e-8)
+    # solver.set_bound_frac(1e-8)
+    # solver.set_bound_push(1e-8)
+    solver.set_hessian_approximation('limited-memory')
 
     socp = prepare_socp(biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting)
 
@@ -757,11 +768,8 @@ def main():
 
 
     # --- Plot the results --- #
-    biorbd_model = biorbd.Model(biorbd_model_path)
     Q_sym = cas.MX.sym('Q', 2, 1)
     Qdot_sym = cas.MX.sym('Qdot', 2, 1)
-    # hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [biorbd_model.marker(Q_sym, 2).to_mx()])
-    # hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [biorbd_model.markerVelocity(Q_sym, Qdot_sym, 2).to_mx()])
     hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [end_effector_position(Q_sym)])
     hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [end_effector_velocity(Q_sym, Qdot_sym)])
 
