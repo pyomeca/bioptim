@@ -1151,5 +1151,5 @@ def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dyn
     )
     ocp.update_initial_guess(x_init, u_init)
 
-    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
+    with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsList"):
         ocp.update_bounds(x_init, u_init)
