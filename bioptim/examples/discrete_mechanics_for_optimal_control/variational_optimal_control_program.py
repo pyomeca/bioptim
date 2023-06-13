@@ -37,8 +37,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         qdot_start_bounds: Bounds | BoundsList = None,
         qdot_end_bounds: Bounds | BoundsList = None,
         qdot_end_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
-        holonomic_constraints: Function = None,
-        holonomic_constraints_jacobian: Function = None,
         **kwargs,
     ):
         if "ode_solver" in kwargs:
@@ -56,9 +54,21 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         self.bio_model = bio_model
         n_qdot = n_q = self.bio_model.nb_q
 
-        self.holonomic_constraints = holonomic_constraints
         q_sym = MX.sym("q", (n_q, 1))
-        self.holonomic_constraints_jacobian = holonomic_constraints_jacobian
+        if bio_model.nb_holonomic_constraints:
+            self.holonomic_constraints = Function(
+                "holonomic_constraint",
+                [q_sym],
+                [bio_model.holonomic_constraints(q_sym)],
+            ).expand()
+            self.holonomic_constraints_jacobian = Function(
+                "holonomic_constraint_jacobian",
+                [q_sym],
+                [bio_model.holonomic_constraints_jacobian(q_sym)],
+            ).expand()
+        else:
+            self.holonomic_constraints = None
+            self.holonomic_constraints_jacobian = None
         self.has_holonomic_constraints = self.holonomic_constraints is not None
 
         # Dynamics
