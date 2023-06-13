@@ -92,9 +92,7 @@ def test_plot_graphs_multi_phases():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False
-    )
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False)
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -199,9 +197,7 @@ def test_console_objective_functions():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False
-    )
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False)
     sol = ocp.solve()
     ocp = sol.ocp  # We will override ocp with known and controlled values for the test
 

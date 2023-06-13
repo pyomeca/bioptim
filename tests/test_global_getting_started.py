@@ -1136,7 +1136,7 @@ def test_multinode_objective(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0],  415.8259417971987)
+        np.testing.assert_almost_equal(f[0, 0], 415.8259417971987)
 
         # Check constraints
         g = np.array(sol.constraints)
@@ -1144,8 +1144,8 @@ def test_multinode_objective(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.01549791, 0.        ]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.68877169,   0.        ]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.01549791, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.68877169, 0.0]))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
@@ -1159,8 +1159,8 @@ def test_multinode_objective(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.03763583, 0.        ]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.59527541,   0.        ]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.03763583, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.59527541, 0.0]))
 
     # Check that the output is what we expect
     dt = ocp.nlp[0].tf / ocp.nlp[0].ns

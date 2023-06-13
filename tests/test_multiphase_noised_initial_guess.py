@@ -783,9 +783,7 @@ def test_add_wrong_bound_push(bound_push, raised_str):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False
-    )
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False)
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
@@ -821,9 +819,7 @@ def test_add_wrong_seed(seed, raised_str):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False
-    )
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False)
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
@@ -894,9 +890,7 @@ def test_add_wrong_n_shooting():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False
-    )
+    ocp = ocp_module.prepare_ocp(biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=False)
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
 
     nb_phases = ocp.n_phases
