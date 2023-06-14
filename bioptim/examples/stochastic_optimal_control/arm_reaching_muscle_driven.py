@@ -172,7 +172,7 @@ def get_muscle_torque(q, qdot, mus_activations):
     return muscles_tau
 
 def get_force_field(q):
-    force_field_magnitude = 200
+    force_field_magnitude = 0  # 200
     l1 = 0.3
     l2 = 0.33
     F_forceField = force_field_magnitude * (l1 * cas.cos(q[0]) + l2 * cas.cos(q[0] + q[1]))
@@ -221,9 +221,9 @@ def stochastic_forward_dynamics(
 
     muscles_tau = get_muscle_torque(q, qdot, mus_activations)
 
-    tau_force_field = get_force_field(q)
+    # tau_force_field = get_force_field(q)
 
-    torques_computed = muscles_tau + tau_force_field + wM  # + residual_tau
+    torques_computed = muscles_tau + wM  # + tau_force_field  # + residual_tau
     dq_computed = DynamicsFunctions.compute_qdot(nlp, q, qdot)
     dactivations_computed = (mus_excitations_fb - mus_activations) / tau_coef
 
@@ -494,7 +494,8 @@ def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    n_threads: int = 12,
+    ee_final_position: np.ndarray,
+    ee_initial_position: np.ndarray,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -519,12 +520,10 @@ def prepare_socp(
 
     bio_model = BiorbdModel(biorbd_model_path)
 
-    shoulder_pos_init = 0.349065850398866
+    shoulder_pos_initial = 0.349065850398866
     shoulder_pos_final = 0.959931088596881
-    elbow_pos_init = 2.245867726451909  # Optimized in Tom's version
+    elbow_pos_initial = 2.245867726451909  # Optimized in Tom's version
     elbow_pos_final = 1.159394851847144  # Optimized in Tom's version
-    ee_initial_position = np.array([0.0, 0.2742])  # Directly from Tom's version
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -535,8 +534,8 @@ def prepare_socp(
     # Constraints
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL)
-    # constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_final, elbow_pos_final]))
-    # constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial]))
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
     constraints.add(track_final_marker, node=Node.END, ee_final_position=ee_final_position)
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
@@ -573,9 +572,9 @@ def prepare_socp(
     # parameters.add(
     #     "x_init",  # The name of the parameter
     #     do_nothig,  # The function that modifies the biorbd model
-    #     InitialGuess(np.array([shoulder_pos_init, elbow_pos_init, 0, 0, 0, 0, 0, 0, 0, 0])),  # The initial guess
-    #     Bounds(min_bound=np.array([shoulder_pos_init, elbow_pos_init, 0, 0, -cas.inf, -cas.inf, -cas.inf, -cas.inf, -cas.inf, -cas.inf]),
-    #            max_bound=np.array([shoulder_pos_init, elbow_pos_init, 0, 0,  cas.inf,  cas.inf,  cas.inf,  cas.inf,  cas.inf,  cas.inf])),  # The bounds
+    #     InitialGuess(np.array([shoulder_pos_initial, elbow_pos_initial, 0, 0, 0, 0, 0, 0, 0, 0])),  # The initial guess
+    #     Bounds(min_bound=np.array([shoulder_pos_initial, elbow_pos_initial, 0, 0, -cas.inf, -cas.inf, -cas.inf, -cas.inf, -cas.inf, -cas.inf]),
+    #            max_bound=np.array([shoulder_pos_initial, elbow_pos_initial, 0, 0,  cas.inf,  cas.inf,  cas.inf,  cas.inf,  cas.inf,  cas.inf])),  # The bounds
     #     size=10,  # The number of elements this particular parameter vector has
     #     penalty_list=Constraint(x_init_equals_initial_states, node=Node.START),  # Constraint for this particular parameter
     #     scaling=np.ones((10, )),
@@ -599,8 +598,8 @@ def prepare_socp(
     # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
     # # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
     # # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    # states_min[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
-    # states_max[0:4, 0] = [shoulder_pos_init, elbow_pos_init, 0, 0]  # Initial position + velocities
+    # states_min[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
+    # states_max[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
     # states_min[0:2, 1:3] = 0
     # states_max[0:2, 1:3] = 180  # should be np.pi, but there is a mistake in the original code
     # states_min[2:4, 2] = 0
@@ -618,8 +617,8 @@ def prepare_socp(
 
     # Initial guesses
     states_init = np.zeros((n_states, 2))
-    states_init[0, :] = [shoulder_pos_init, shoulder_pos_final]
-    states_init[1, :] = [elbow_pos_init, elbow_pos_final]
+    states_init[0, :] = [shoulder_pos_initial, shoulder_pos_final]
+    states_init[1, :] = [elbow_pos_initial, elbow_pos_final]
     states_init[n_q + n_qdot:, :] = 0.01
     x_init = InitialGuess(states_init, interpolation=InterpolationType.LINEAR)
 
@@ -638,9 +637,9 @@ def prepare_socp(
     # stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
 
     curent_index += n_muscles*(n_q + n_qdot)
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
-    stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
     # stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -1
     # stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 1
 
@@ -710,6 +709,9 @@ def main():
     # b = bioviz.Viz("models/LeuvenArmModel.bioMod")
     # b.exec()
 
+    ee_initial_position = np.array([0.0, 0.2742])  # Directly from Tom's version
+    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
+
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
@@ -727,7 +729,7 @@ def main():
     # solver.set_bound_push(1e-8)
     solver.set_hessian_approximation('limited-memory')
 
-    socp = prepare_socp(biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting)
+    socp = prepare_socp(biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting, ee_final_position=ee_final_position, ee_initial_position=ee_initial_position)
 
     if RUN_OPTIM_FLAG:
         sol_socp = socp.solve(solver)
@@ -829,7 +831,8 @@ def main():
     for i_node in range(n_shooting + 1):
         hand_pos_without_noise[:, i_node] = np.reshape(hand_pos_fcn(q_sol[:, i_node])[:2], (2,))
     axs[0, 0].plot(hand_pos_without_noise[0, :], hand_pos_without_noise[1, :], color="k")
-    axs[0, 0].plot(hand_pos_without_noise[0, 0], hand_pos_without_noise[1, 0], color="tab:blue", marker="o")
+    axs[0, 0].plot(ee_initial_position[0], ee_initial_position[1], color="tab:green", marker="o")
+    axs[0, 0].plot(ee_final_position[0], ee_final_position[1], color="tab:red", marker="o")
     axs[0, 0].set_xlabel("X [m]")
     axs[0, 0].set_ylabel("Y [m]")
     axs[0, 0].set_title("Hand position simulated")
