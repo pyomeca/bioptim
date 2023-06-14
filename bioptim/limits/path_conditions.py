@@ -563,6 +563,9 @@ class BoundsList(OptionDict):
 
         if isinstance(key, str):
             super(BoundsList, self).__setitem__(key, value)
+            return
+
+        raise KeyError("The required key in setting is invalid")
 
     def add(
         self,

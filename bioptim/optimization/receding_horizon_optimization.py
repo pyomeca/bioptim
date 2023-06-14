@@ -10,7 +10,7 @@ from .solution import Solution
 from ..dynamics.configure_problem import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
-from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds
+from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions, ControlType
 from ..interfaces.solver_options import Solver
 from ..interfaces.biomodel import BioModel
@@ -252,18 +252,16 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             )
 
     def advance_window_bounds_states(self, sol, **advance_options):
-        if self.nlp[0].x_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-            if self.nlp[0].x_bounds.type == InterpolationType.CONSTANT:
-                x_min = np.repeat(self.nlp[0].x_bounds.min[:, 0:1], 3, axis=1)
-                x_max = np.repeat(self.nlp[0].x_bounds.max[:, 0:1], 3, axis=1)
-                self.nlp[0].x_bounds = Bounds(x_min, x_max)
-            else:
+        for key in self.nlp[0].x_bounds.keys():
+            if self.nlp[0].x_bounds[key].type == InterpolationType.CONSTANT:
+                self.nlp[0].x_bounds.add(key, min_bound=np.repeat(self.nlp[0].x_bounds[key].min[:, 0:1], 3, axis=1), max_bound=np.repeat(self.nlp[0].x_bounds[key].max[:, 0:1], 3, axis=1), phase=0)
+                self.nlp[0].x_bounds[key].check_and_adjust_dimensions(len(self.nlp[0].states[key]), 3)
+            elif not self.nlp[0].x_bounds[key].type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
                 raise NotImplementedError(
                     "The MHE is not implemented yet for x_bounds not being "
                     "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
                 )
-            self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].states.shape, 3)
-        for key in self.nlp[0].x_bounds.keys():
+
             self.nlp[0].x_bounds[key][:, 0] = sol.states[key][:, 1]
         return True
 
@@ -277,7 +275,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 self.nlp[0].x_init.add(key,
                     np.ndarray(sol.states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
                 )
-                self.nlp[0].x_init[key].check_and_adjust_dimensions(self.nlp[0].states[key].shape, self.nlp[0].ns)
+                self.nlp[0].x_init[key].check_and_adjust_dimensions(len(self.nlp[0].states[key]), self.nlp[0].ns)
 
             self.nlp[0].x_init[key].init[:, :] = np.concatenate(
                 (sol.states[key][:, 1:], sol.states[key][:, -1][:, np.newaxis]), axis=1
@@ -291,7 +289,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 self.nlp[0].u_init.add(key,
                     np.ndarray(sol.controls[key][:, :-1].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
                 )
-                self.nlp[0].u_init[key].check_and_adjust_dimensions(self.nlp[0].controls[key].shape, self.nlp[0].ns - 1)
+                self.nlp[0].u_init[key].check_and_adjust_dimensions(len(self.nlp[0].controls[key]), self.nlp[0].ns - 1)
             self.nlp[0].u_init[key].init[:, :] = np.concatenate(
                 (sol.controls[key][:, 1:-1], sol.controls[key][:, -2][:, np.newaxis]), axis=1
             )
