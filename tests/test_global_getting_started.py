@@ -940,14 +940,10 @@ def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
 
     # Test warm start
     if ode_solver_type == OdeSolver.COLLOCATION:
-        with pytest.raises(
-            NotImplementedError,
-            match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
-        ):
-            TestUtils.assert_warm_start(ocp, sol, state_decimal=0)
+        # We don't have test value for this one
         return
-    else:
-        TestUtils.assert_warm_start(ocp, sol)
+
+    TestUtils.assert_warm_start(ocp, sol)
 
     # detailed cost values
     sol.detailed_cost_values()

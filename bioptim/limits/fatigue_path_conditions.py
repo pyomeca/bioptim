@@ -76,6 +76,7 @@ def FatigueInitialGuess(fatigue: FatigueList, variable_type: VariableType = Vari
                 if dof.models.models[m].suffix(variable_type) != suffix:
                     raise NotImplementedError("Fatigue models cannot be mixed")
 
+        should_not_add_suffix = variable_type == VariableType.CONTROLS and not fatigue[key][0].models.split_controls
         for index, model in enumerate(fatigue[key][0].models.models):
             for i, _ in enumerate(suffix):
                 initial_guesses = []
@@ -84,11 +85,12 @@ def FatigueInitialGuess(fatigue: FatigueList, variable_type: VariableType = Vari
                     initial_guesses = np.concatenate((initial_guesses, [initial[i]]))
 
                 key_name = key
-                if len(fatigue[key][0].models.models) > 1:
+                if len(fatigue[key][0].models.models) > 1 and not should_not_add_suffix:
                     key_name += f"_{model}"
                 if suffix[i]:
                     key_name += f"_{suffix[i]}"
                 out[key_name] = initial_guesses
-            if variable_type == VariableType.CONTROLS and not fatigue[key][0].models.split_controls:
+
+            if should_not_add_suffix:
                 break
     return out

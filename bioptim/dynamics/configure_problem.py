@@ -201,9 +201,9 @@ class ConfigureProblem:
                     )
 
         # Declared rigidbody states and controls
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-        ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
@@ -932,7 +932,7 @@ class ConfigureProblem:
             name, name_elements, ocp, nlp, as_states, as_controls, fatigue
         ):
             # If the element is fatigable, this function calls back configure_new_variable to fill everything.
-            # Therefore, we can exist now
+            # Therefore, we can exit now
             return
 
         if name not in nlp.variable_mappings:
