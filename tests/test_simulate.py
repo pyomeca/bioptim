@@ -354,7 +354,8 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
     }
 
     sol_integrated = sol.integrate(**opts)
-    assert np.shape(sol_integrated.states["all"])[1] == np.shape(sol_integrated.time)[0]
+    for key in sol_integrated.states.keys():
+        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated.time)[0]
 
     decimal = 1
     if ode_solver == OdeSolver.RK4:
@@ -387,18 +388,6 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
         assert sol_integrated.states["qdot"].shape == (shapes[2], n_shooting * 5 + 1)
     else:
         if ode_solver == OdeSolver.RK4:
-            np.testing.assert_almost_equal(
-                sol_integrated.states["all"],
-                np.array(
-                    [
-                        [0.0, 0.3, 0.6, 0.8, 0.9, 0.8, -0.4, -0.8, -1.0, -0.9, -0.4],
-                        [0.0, -0.3, -0.6, -0.7, -0.8, -0.6, 0.6, 1.2, 1.6, 2.1, 2.7],
-                        [0.0, 4.6, 2.0, 1.7, 0.7, -4.2, -9.3, -1.1, -3.7, 6.0, 4.1],
-                        [0.0, -4.5, -1.8, -1.1, 0.3, 4.8, 10.2, 4.9, 4.1, 6.8, 4.5],
-                    ]
-                ),
-                decimal=decimal,
-            )
             np.testing.assert_almost_equal(
                 sol_integrated.states["q"],
                 np.array(
@@ -468,9 +457,8 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
                 decimal=decimal,
             )
         assert (
-            sol_integrated.states["all"].shape == (shapes[0], n_shooting + 1)
-            and sol_integrated.states["q"].shape == (shapes[1], n_shooting + 1)
-            and sol_integrated.states["qdot"].shape == (shapes[2], n_shooting + 1)
+            sol_integrated.states["q"].shape == (shapes[0], n_shooting + 1)
+            and sol_integrated.states["qdot"].shape == (shapes[1], n_shooting + 1)
         )
 
     if ode_solver == OdeSolver.COLLOCATION:

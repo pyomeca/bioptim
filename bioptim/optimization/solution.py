@@ -952,35 +952,33 @@ class Solution:
         """
         # Get the first frame of the phase
         if shooting_type == Shooting.SINGLE:
-            if phase != 0:
-                x0 = np.concatenate(
-                    [self._states["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].states]
+            if phase == 0:
+                return np.hstack([self._states["unscaled"][0][key][:, 0] for key in self.ocp.nlp[phase].states])
+
+            x0 = np.concatenate(
+                [self._states["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].states]
+            )
+            u0 = np.concatenate(
+                [self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls]
+            )
+            if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
+                u0 = vertcat(u0, u0)
+            params = self.parameters["all"]
+            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params)
+            if val.shape[0] != x0.shape[0]:
+                raise RuntimeError(
+                    f"Phase transition must have the same number of states ({val.shape[0]}) "
+                    f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
+                    f"please integrate with Shooting.SINGLE"
                 )
-                u0 = np.concatenate(
-                    [self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls]
-                )
-                if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
-                    u0 = vertcat(u0, u0)
-                params = self.parameters["all"]
-                val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params)
-                if val.shape[0] != x0.shape[0]:
-                    raise RuntimeError(
-                        f"Phase transition must have the same number of states ({val.shape[0]}) "
-                        f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
-                        f"please integrate with Shooting.SINGLE"
-                    )
-                x0 += np.array(val)[:, 0]
-                return x0
-            else:
-                return np.concatenate(
-                    [self._states["unscaled"][phase][key][:, 0:1] for key in self.ocp.nlp[phase].states]
-                )
+            x0 += np.array(val)[:, 0]
+            return x0
 
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            return np.concatenate([self._states["unscaled"][phase][key][:, 0:1] for key in self.ocp.nlp[phase].states])
+            return np.vstack([self._states["unscaled"][phase][key][:, 0:1] for key in self.ocp.nlp[phase].states])
 
         elif shooting_type == Shooting.MULTIPLE:
-            return np.concatenate(
+            return np.vstack(
                 [
                     (
                         self.states_no_intermediate[phase][key][:, :-1]
@@ -1045,7 +1043,18 @@ class Solution:
                     ]
                 )
             )
-            if integrator != SolutionIntegrator.OCP:
+            if integrator == SolutionIntegrator.OCP:
+                integrated_sol = solve_ivp_bioptim_interface(
+                    dynamics_func=nlp.dynamics,
+                    keep_intermediate_points=keep_intermediate_points,
+                    x0=x0,
+                    u=u,
+                    params=params,
+                    param_scaling=param_scaling,
+                    shooting_type=shooting_type,
+                    control_type=nlp.control_type,
+                )
+            else:
                 integrated_sol = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
                     keep_intermediate_points=keep_intermediate_points,
@@ -1057,17 +1066,6 @@ class Solution:
                     control_type=nlp.control_type,
                 )
 
-            else:
-                integrated_sol = solve_ivp_bioptim_interface(
-                    dynamics_func=nlp.dynamics,
-                    keep_intermediate_points=keep_intermediate_points,
-                    x0=x0,
-                    u=u,
-                    params=params,
-                    param_scaling=param_scaling,
-                    shooting_type=shooting_type,
-                    control_type=nlp.control_type,
-                )
             for key in nlp.states:
                 out._states["unscaled"][states_phase_idx][key] = integrated_sol[nlp.states[key].index, :]
 
@@ -1130,7 +1128,7 @@ class Solution:
         for _ in range(len(data_states)):
             out._states["unscaled"].append({})
         for p in range(len(data_states)):
-            for key in nlp.states:
+            for key in self.ocp.nlp[0].states:
                 x_phase = data_states[p][key]
                 n_elements = x_phase.shape[0]
 
