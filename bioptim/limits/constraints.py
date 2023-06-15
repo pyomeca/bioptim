@@ -702,7 +702,8 @@ class ParameterConstraint(PenaltyOption):
 
         self.min_bound = min_bound
         self.max_bound = max_bound
-        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        # TODO Benjamin Check .name
+        self.bounds = Bounds(parameter_constraint.name, interpolation=InterpolationType.CONSTANT)
 
     def set_penalty(self, penalty: MX | SX, controller: PenaltyController):
         super(ParameterConstraint, self).set_penalty(penalty, controller)

@@ -81,14 +81,6 @@ class OptimalControlProgram:
         All the implicit constraints defined by the OCP at each of the node of the phase
     J: list
         Objective values that are not phase dependent (mostly parameters)
-    isdef_x_init: bool
-        If the initial condition of the states are set
-    isdef_x_bounds: bool
-        If the bounds of the states are set
-    isdef_u_init: bool
-        If the initial condition of the controls are set
-    isdef_u_bounds: bool
-        If the bounds of the controls are set
     nlp: NLP
         All the phases of the ocp
     n_phases: int | list | tuple
@@ -161,7 +153,11 @@ class OptimalControlProgram:
         u_init: InitialGuessList | None = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
-        parameters: Parameter | ParameterList = None,
+        parameters: ParameterList = None,
+        parameter_bounds: BoundsList = None,
+        parameter_init: InitialGuessList = None,
+        parameter_objectives: ParameterObjectiveList = None,
+        parameter_constraints: ParameterConstraintList = None,
         external_forces: list[list[Any], ...] | tuple[list[Any], ...] = None,
         ode_solver: list | OdeSolverBase | OdeSolver = None,
         control_type: ControlType | list = ControlType.CONSTANT,
@@ -175,8 +171,6 @@ class OptimalControlProgram:
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
-        parameter_objectives: ParameterObjectiveList | ParameterObjective = None,
-        parameter_constraints: ParameterConstraintList | ParameterConstraint = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -212,11 +206,15 @@ class OptimalControlProgram:
             All the objective function of the program
         constraints: Constraint | ConstraintList
             All the constraints of the program
-        parameters: Parameter | ParameterList
+        parameters: ParameterList
             All the parameters to optimize of the program
-        parameter_objectives: ParameterObjective | ParameterObjectiveList
+        parameter_bounds: BoundsList
+            The bounds for the parameters, default values are -inf to inf
+        parameter_init: InitialGuessList
+            The initial guess for the parameters, default value is 0
+        parameter_objectives: ParameterObjectiveList
             All the parameter objectives to optimize of the program
-        parameter_constraints: ParameterConstraint | ParameterConstraintList
+        parameter_constraints: ParameterConstraintList
             All the parameter constraints of the program
         external_forces: list[list, ...] | tuple[list, ...]
             The external forces acting on the center of mass of the segments specified in the bioMod
@@ -284,6 +282,8 @@ class OptimalControlProgram:
             "phase_transitions": phase_transitions,
             "multinode_constraints": multinode_constraints,
             "multinode_objectives": multinode_objectives,
+            "parameter_bounds": parameter_bounds,
+            "parameter_init": parameter_init,
             "parameter_objectives": parameter_objectives,
             "parameter_constraints": parameter_constraints,
             "state_continuity_weight": state_continuity_weight,
@@ -381,6 +381,16 @@ class OptimalControlProgram:
         elif not isinstance(multinode_objectives, MultinodeObjectiveList):
             raise RuntimeError("multinode_objectives should be built from an MultinodeObjectiveList")
 
+        if parameter_bounds is None:
+            parameter_bounds = BoundsList()
+        elif not isinstance(parameter_bounds, BoundsList):
+            raise ValueError("parameter_bounds must be of type BoundsList")
+
+        if parameter_init is None:
+            parameter_init = InitialGuessList()
+        elif not isinstance(parameter_init, InitialGuessList):
+            raise ValueError("parameter_init must be of type InitialGuessList")
+
         if parameter_objectives is None:
             parameter_objectives = ParameterObjectiveList()
         elif isinstance(parameter_objectives, ParameterObjective):
@@ -467,7 +477,7 @@ class OptimalControlProgram:
             )
         self.parameter_mappings = parameter_mappings
 
-        # Add the parameters
+        self.parameters = ParameterList()
         if len(parameters) > 0:
             self.update_parameters(parameters)  # TODO: I think parameters other than time are not mapped
 
@@ -510,13 +520,11 @@ class OptimalControlProgram:
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
-        self.isdef_x_init = False
-        self.isdef_u_init = False
-        self.isdef_x_bounds = False
-        self.isdef_u_bounds = False
+        self.parameter_bounds = BoundsList()
+        self.parameter_init = InitialGuessList()
 
-        self.update_bounds(x_bounds, u_bounds)
-        self.update_initial_guess(x_init, u_init)
+        self.update_bounds(x_bounds, u_bounds, parameter_bounds)
+        self.update_initial_guess(x_init, u_init, parameter_init)
         # Define the actual NLP problem
         self.v.define_ocp_shooting_points()
 
@@ -826,55 +834,59 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
 
-    def update_parameters(self, new_parameters: Parameter | ParameterList):
+    def update_parameters(self, new_parameters: ParameterList):
         """
         The main user interface to add or modify parameters in the ocp
 
         Parameters
         ----------
-        new_parameters: Parameter | ParameterList
+        new_parameters: ParameterList
             The parameters to add to the ocp
         """
 
-        if isinstance(new_parameters, Parameter):
-            self.v.add_parameter(new_parameters)
-
-        elif isinstance(new_parameters, ParameterList):
-            for parameter in new_parameters:
-                self.v.add_parameter(parameter)
-        else:
+        if not isinstance(new_parameters, ParameterList):
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-    def update_bounds(self, x_bounds: Bounds | BoundsList = BoundsList(), u_bounds: Bounds | BoundsList = BoundsList()):
+        for param in new_parameters:
+            self.parameters.add(param)
+        for parameter in new_parameters:
+            self.v.add_parameter(parameter)
+
+    def update_bounds(self, x_bounds: BoundsList = None, u_bounds: BoundsList = None, parameter_bounds: BoundsList = None):
         """
         The main user interface to add bounds in the ocp
 
         Parameters
         ----------
-        x_bounds: Bounds | BoundsList
+        x_bounds: BoundsList
             The state bounds to add
-        u_bounds: Bounds | BoundsList
+        u_bounds: BoundsList
             The control bounds to add
+        parameter_bounds: BoundsList
+            The parameters bounds to add
         """
         for i in range(self.n_phases):
-            if x_bounds:
+            if x_bounds is not None:
                 if not isinstance(x_bounds, BoundsList):
                     raise RuntimeError("x_bounds should be built from a BoundsList")
                 origin_phase = 0 if len(x_bounds) == 1 else i
                 for key in x_bounds[origin_phase].keys():
                     self.nlp[i].x_bounds.add(key, x_bounds[origin_phase][key], phase=0)
-                self.isdef_x_bounds = True
 
-            if u_bounds:
+            if u_bounds is not None:
                 if not isinstance(u_bounds, BoundsList):
                     raise RuntimeError("u_bounds should be built from a BoundsList")
                 for key in u_bounds.keys():
                     origin_phase = 0 if len(u_bounds) == 1 else i
                     self.nlp[i].u_bounds.add(key, u_bounds[origin_phase][key], phase=0)
-                self.isdef_u_bounds = True
 
-        if self.isdef_x_bounds and self.isdef_u_bounds:
-            self.v.define_ocp_bounds()
+        if parameter_bounds is not None:
+            if not isinstance(parameter_bounds, BoundsList):
+                raise RuntimeError("parameter_bounds should be built from a BoundsList")
+            for key in parameter_bounds.keys():
+                self.parameter_bounds.add(key, parameter_bounds[key], phase=0)
+
+        self.v.define_ocp_bounds()
 
         for nlp in self.nlp:
             for key in nlp.states:
@@ -888,18 +900,18 @@ class OptimalControlProgram:
         self,
         x_init: InitialGuessList = None,
         u_init: InitialGuessList = None,
-        param_init: InitialGuessList = None,
+        parameter_init: InitialGuessList = None,
     ):
         """
         The main user interface to add initial guesses in the ocp
 
         Parameters
         ----------
-        x_init: Bounds | BoundsList
+        x_init: BoundsList
             The state initial guess to add
-        u_init: Bounds | BoundsList
+        u_init: BoundsList
             The control initial guess to add
-        param_init: Bounds | BoundsList
+        parameter_init: BoundsList
             The parameters initial guess to add
         """
 
@@ -910,7 +922,6 @@ class OptimalControlProgram:
                 origin_phase = 0 if len(x_init) == 1 else i
                 for key in x_init[origin_phase].keys():
                     self.nlp[i].x_init.add(key, x_init[origin_phase][key], phase=0)
-                self.isdef_x_init = True
 
             if u_init:
                 if not isinstance(u_init, InitialGuessList):
@@ -918,22 +929,14 @@ class OptimalControlProgram:
                 for key in u_init.keys():
                     origin_phase = 0 if len(u_init) == 1 else i
                     self.nlp[i].u_init.add(key, u_init[origin_phase][key], phase=0)
-                self.isdef_u_init = True
 
-        if param_init is None:
-            param_init = InitialGuessList()
+        if parameter_init is not None:
+            if not isinstance(parameter_init, InitialGuessList):
+                raise RuntimeError("parameter_init should be built from a InitialGuessList")
+            for key in parameter_init.keys():
+                self.parameter_init.add(key, parameter_init[key], phase=0)
 
-        for key in param_init.keys():
-            if not key:
-                raise ValueError("update_initial_guess must specify a name for the parameters")
-            try:
-                idx = self.v.parameters_in_list.index(key)
-                self.v.parameters_in_list[idx].initial_guess.init = param_init[key].init
-            except ValueError:
-                raise ValueError("update_initial_guess cannot declare new parameters")
-
-        if self.isdef_x_init and self.isdef_u_init:
-            self.v.define_ocp_initial_guess()
+        self.v.define_ocp_initial_guess()
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
         """

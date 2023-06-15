@@ -174,11 +174,11 @@ from .dynamics.ode_solver import OdeSolver, OdeSolverBase
 from .interfaces.solver_options import Solver
 from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from .interfaces.biomodel import BioModel
-from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraint, ParameterConstraintList
+from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
-from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjective, ParameterObjectiveList
+from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList
 from .limits.path_conditions import BoundsList, InitialGuessList
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_controller import PenaltyController

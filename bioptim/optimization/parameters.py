@@ -3,11 +3,8 @@ from typing import Callable, Any
 from casadi import MX, SX, DM, vertcat, Function
 import numpy as np
 
-from ..limits.objective_functions import ObjectiveFcn, Objective, ObjectiveList
-from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
 from ..limits.penalty_controller import PenaltyController
 from ..limits.penalty import PenaltyOption
-from ..misc.enums import InterpolationType, Node
 from ..misc.options import UniquePerProblemOptionList
 from ..optimization.non_linear_program import NonLinearProgram
 
@@ -20,10 +17,6 @@ class Parameter(PenaltyOption):
     ----------
     function: Callable[OptimalControlProgram, MX]
             The user defined function that modify the model
-    initial_guess: InitialGuess | InitialGuessList
-        The list of initial guesses associated with this parameter
-    bounds: Bounds | BoundsList
-        The list of bounds associated with this parameter
     quadratic: bool
         If the objective is squared [True] or not [False]
     size: int
@@ -37,8 +30,6 @@ class Parameter(PenaltyOption):
     def __init__(
         self,
         function: Callable = None,
-        initial_guess: InitialGuess | InitialGuessList = None,
-        bounds: Bounds | BoundsList = None,
         quadratic: bool = True,
         size: int = None,
         cx: Callable | MX | SX = None,
@@ -50,10 +41,6 @@ class Parameter(PenaltyOption):
         ----------
         function: Callable[OptimalControlProgram, MX]
             The user defined function that modify the model
-        initial_guess: InitialGuess | InitialGuessList
-            The list of initial guesses associated with this parameter
-        bounds: Bounds | BoundsList
-            The list of bounds associated with this parameter
         quadratic: bool
             If the objective is squared [True] or not [False]
         size: int
@@ -95,8 +82,6 @@ class Parameter(PenaltyOption):
         else:
             raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
 
-        self.initial_guess = initial_guess
-        self.bounds = bounds
         self.quadratic = quadratic
         self.size = size
         self.cx = cx
@@ -204,8 +189,6 @@ class ParameterList(UniquePerProblemOptionList):
         self,
         parameter_name: str | Parameter,
         function: Callable = None,
-        initial_guess: InitialGuess | InitialGuessList = None,
-        bounds: Bounds | BoundsList = None,
         size: int = None,
         phase: int = 0,
         **extra_arguments
@@ -225,10 +208,6 @@ class ParameterList(UniquePerProblemOptionList):
         The CX vector of all parameters
     mx(self)
         The MX vector of all parameters
-    bounds(self)
-        The bounds of all parameters
-    initial_guess(self)
-        The initial guess of all parameters
     shape(self)
         The size of all parameters vector
     """
@@ -243,8 +222,6 @@ class ParameterList(UniquePerProblemOptionList):
         self,
         parameter_name: str | Parameter,
         function: Callable = None,
-        initial_guess: InitialGuess | InitialGuessList = None,
-        bounds: Bounds | BoundsList = None,
         size: int = None,
         list_index: int = -1,
         scaling: np.ndarray = np.array([1.0]),
@@ -260,10 +237,6 @@ class ParameterList(UniquePerProblemOptionList):
             If Parameter, the parameter is copied
         function: Callable[OptimalControlProgram, MX]
             The user defined function that modify the model
-        initial_guess: InitialGuess | InitialGuessList
-            The list of initial guesses associated with this parameter
-        bounds: Bounds | BoundsList
-            The list of bounds associated with this parameter
         size: int
             The number of variables this parameter has
         list_index: int
@@ -277,10 +250,6 @@ class ParameterList(UniquePerProblemOptionList):
         if isinstance(parameter_name, Parameter):
             self.copy(parameter_name)
         else:
-            if not function or not initial_guess or not bounds or not size:
-                raise RuntimeError(
-                    "function, initial_guess, bounds and size are mandatory elements to declare a parameter"
-                )
             if "phase" in extra_arguments:
                 raise ValueError(
                     "Parameters are declared for all phases at once. You must therefore not use "
@@ -291,8 +260,6 @@ class ParameterList(UniquePerProblemOptionList):
                 list_index=list_index,
                 function=function,
                 name=parameter_name,
-                initial_guess=initial_guess,
-                bounds=bounds,
                 size=size,
                 scaling=scaling,
                 **extra_arguments,
@@ -385,28 +352,6 @@ class ParameterList(UniquePerProblemOptionList):
             # Force the type if it is a DM (happens if self is empty)
             out = MX(out)
         return out
-
-    @property
-    def bounds(self):
-        """
-        The bounds of all parameters
-        """
-
-        _bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        for p in self:
-            _bounds.concatenate(p.bounds)
-        return _bounds
-
-    @property
-    def initial_guess(self):
-        """
-        The initial guess of all parameters
-        """
-
-        _init = InitialGuessList(interpolation=InterpolationType.CONSTANT)
-        for p in self:
-            _init[p.name] = p.initial_guess
-        return _init
 
     @property
     def shape(self):
