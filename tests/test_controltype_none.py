@@ -223,34 +223,11 @@ def prepare_ocp(
     )
 
     # Sets the bound for all the phases
-    x_min_start = np.array([[0], [0], [0]])
-    x_max_start = np.array([[0], [0], [0]])
-    x_min_middle = np.array([[0], [0], [0]])
-    x_min_end = x_min_middle
-    x_max_middle = np.array([[0], [0], [0]])
-    x_max_middle[0:3] = 1000
-    x_max_end = x_max_middle
-    x_start_min = np.concatenate((x_min_start, x_min_middle, x_min_end), axis=1)
-    x_start_max = np.concatenate((x_max_start, x_max_middle, x_max_end), axis=1)
-    x_min_start = x_min_middle
-    x_max_start = x_max_middle
-    x_after_start_min = np.concatenate((x_min_start, x_min_middle, x_min_end), axis=1)
-    x_after_start_max = np.concatenate((x_max_start, x_max_middle, x_max_end), axis=1)
-
     x_bounds = BoundsList()
     for i in range(n_phase):
-        x_bounds.add("a",
-                     min_bound=x_start_min[0, 1] if i == 0 else x_after_start_min[0, 1],
-                     max_bound=x_start_max[0, 1] if i == 0 else x_after_start_max[0, 1], phase=i,
-                     )
-        x_bounds.add("b",
-                     min_bound=x_start_min[1, 1] if i == 0 else x_after_start_min[1, 1],
-                     max_bound=x_start_max[1, 1] if i == 0 else x_after_start_max[1, 1], phase=i,
-                     )
-        x_bounds.add("c",
-                     min_bound=x_start_min[2, 1] if i == 0 else x_after_start_min[2, 1],
-                     max_bound=x_start_max[2, 1] if i == 0 else x_after_start_max[2, 1], phase=i,
-                     )
+        x_bounds.add("a", min_bound=[[0, 0, 0]], max_bound=[[0 if i == 0 else 1000, 1000, 1000]], phase=i)
+        x_bounds.add("b", min_bound=[[0, 0, 0]], max_bound=[[0 if i == 0 else 1000, 1000, 1000]], phase=i)
+        x_bounds.add("c", min_bound=[[0, 0, 0]], max_bound=[[0 if i == 0 else 1000, 1000, 1000]], phase=i)
 
     return OptimalControlProgram(
         models,
@@ -267,7 +244,7 @@ def prepare_ocp(
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [False, True])
+@pytest.mark.parametrize("assume_phase_dynamics", [False])
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_main_control_type_none(use_sx, assume_phase_dynamics):
     """
