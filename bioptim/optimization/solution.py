@@ -975,7 +975,7 @@ class Solution:
             return x0
 
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            return np.vstack([self._states["unscaled"][phase][key][:, 0:1] for key in self.ocp.nlp[phase].states])
+            return np.vstack([self._states["unscaled"][phase][key][:, 0:1] for key in self.ocp.nlp[phase].states])[:, 0]
 
         elif shooting_type == Shooting.MULTIPLE:
             return np.vstack(

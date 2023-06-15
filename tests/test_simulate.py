@@ -384,8 +384,8 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
 
     shapes = (2, 2)
     if keep_intermediate_points:
-        assert sol_integrated.states["q"].shape == (shapes[1], n_shooting * 5 + 1)
-        assert sol_integrated.states["qdot"].shape == (shapes[2], n_shooting * 5 + 1)
+        assert sol_integrated.states["q"].shape == (shapes[0], n_shooting * 5 + 1)
+        assert sol_integrated.states["qdot"].shape == (shapes[1], n_shooting * 5 + 1)
     else:
         if ode_solver == OdeSolver.RK4:
             np.testing.assert_almost_equal(
