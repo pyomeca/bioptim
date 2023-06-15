@@ -297,39 +297,23 @@ class OptimalControlProgram:
 
         if x_bounds is None:
             x_bounds = BoundsList()
-        elif isinstance(x_bounds, Bounds):
-            x_bounds_tp = BoundsList()
-            x_bounds_tp.add(bounds=x_bounds)
-            x_bounds = x_bounds_tp
-        elif isinstance(x_bounds, BoundsList) and len(x_bounds) == 0:
-            raise RuntimeError(
-                "If you do not want to provide an x_bounds, you should declare x_bounds=None instead of an empty BoundsList"
-            )
         elif not isinstance(x_bounds, BoundsList):
-            raise RuntimeError("x_bounds should be built from a Bounds or a BoundsList")
+            raise RuntimeError("x_bounds should be built from a BoundsList")
 
         if u_bounds is None:
             u_bounds = BoundsList()
-        elif isinstance(u_bounds, Bounds):
-            u_bounds_tp = BoundsList()
-            u_bounds_tp.add(bounds=u_bounds)
-            u_bounds = u_bounds_tp
-        elif isinstance(u_bounds, BoundsList) and len(u_bounds) == 0:
-            raise RuntimeError(
-                "If you do not want to provide a u_bounds, you should declare u_bounds=None instead of an empty BoundsList"
-            )
         elif not isinstance(u_bounds, BoundsList):
-            raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
+            raise RuntimeError("u_bounds should be built from a BoundsList")
 
         if x_init is None:
             x_init = InitialGuessList()
         if not isinstance(x_init, InitialGuessList):
-            raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
+            raise RuntimeError("x_init should be built from a InitialGuessList")
 
         if u_init is None:
             u_init = InitialGuessList()
         if not isinstance(u_init, InitialGuessList):
-            raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
+            raise RuntimeError("u_init should be built from a InitialGuessList")
 
         x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)
         u_bounds = self._prepare_option_dict_for_phase("u_bounds", u_bounds, BoundsList)

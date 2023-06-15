@@ -301,7 +301,7 @@ class OptionDict(OptionList):
         if isinstance(item, int):
             # Request a new class for a particular phase
             out = self.__class__()
-            for key in self.keys():
+            for key in self.options[item].keys():
                 out.add(key, self.options[item][key])
 
             if len(out.options) > 1:
