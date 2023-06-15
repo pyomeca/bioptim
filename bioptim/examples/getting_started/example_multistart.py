@@ -88,7 +88,7 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
+    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
     u_init = InitialGuessList()
     u_init["tau"] = [0] * n_tau

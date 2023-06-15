@@ -89,9 +89,10 @@ def prepare_ocp(
     # Path constraint
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["q"][[1, 2], -1] = [0, 1.57]
+    x_bounds["q"][1:3, [0, -1]] = 0
+    x_bounds["q"][2, -1] = 1.57
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
-    x_bounds["qdot"][:, -1] = 0
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Initial guess
     x_init = InitialGuessList()
