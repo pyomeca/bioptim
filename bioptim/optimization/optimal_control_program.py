@@ -618,7 +618,7 @@ class OptimalControlProgram:
         if len(option_dict) == 1 and self.n_phases > 1:
             scaling_phase_0 = option_dict[0]
             for i in range(1, self.n_phases):
-                option_dict.add(None, [], phase=i)  # Force the creation of the structure internally
+                option_dict.add("None", [], phase=i)  # Force the creation of the structure internally
                 for key in scaling_phase_0.keys():
                     option_dict.add(key, scaling_phase_0[key], phase=i)
         return option_dict

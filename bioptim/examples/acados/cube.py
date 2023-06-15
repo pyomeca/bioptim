@@ -13,8 +13,7 @@ from bioptim import (
     DynamicsFcn,
     ObjectiveFcn,
     ObjectiveList,
-    Bounds,
-    InitialGuessList,
+    BoundsList,
     OdeSolver,
     Solver,
 )
@@ -28,26 +27,22 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_init = InitialGuessList()
-    x_init["q"] = [0] * bio_model.nb_q
-    x_init["qdot"] = [0] * bio_model.nb_qdot
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 
     # Define control path constraint
-    tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
-    u_init = InitialGuessList()
-    u_init["tau"] = [tau_init] * bio_model.nb_tau
+    tau_min, tau_max = -100, 100
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         tf,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
         ode_solver=ode_solver,
         use_sx=use_sx,
         assume_phase_dynamics=True,
