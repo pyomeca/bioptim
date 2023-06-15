@@ -95,13 +95,13 @@ class ConfigureProblem:
             The list of str to display on figures
         """
 
-        idx = nlp.phase_mapping.map_idx if nlp.phase_mapping else range(nlp.model.nb_q)
+        idx = nlp.phase_mapping.to_first.map_idx if nlp.phase_mapping else range(nlp.model.nb_q)
 
         if nlp.model.nb_quaternions == 0:
             new_names = [nlp.model.name_dof[i] for i in idx]
         else:
             new_names = []
-            for i in nlp.phase_mapping.map_idx:
+            for i in nlp.phase_mapping.to_first.map_idx:
                 if nlp.model.name_dof[i][-4:-1] == "Rot" or nlp.model.name_dof[i][-6:-1] == "Trans":
                     new_names += [nlp.model.name_dof[i]]
                 else:
@@ -684,15 +684,22 @@ class ConfigureProblem:
             all_contact_names.extend([name for name in elt.model.contact_names if name not in all_contact_names])
 
         if "contact_forces" in nlp.plot_mapping:
-            phase_mappings = nlp.plot_mapping["contact_forces"]
+            contact_names_in_phase = [name for name in nlp.model.contact_names]
+            axes_idx = BiMapping(
+                to_first=nlp.plot_mapping["contact_forces"].map_idx,
+                to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+            )
         else:
             contact_names_in_phase = [name for name in nlp.model.contact_names]
-            phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
+            axes_idx = BiMapping(
+                to_first=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+                to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+            )
 
         nlp.plot["contact_forces"] = CustomPlot(
             lambda t, x, u, p: nlp.contact_forces_func(x, u, p),
             plot_type=PlotType.INTEGRATED,
-            axes_idx=phase_mappings,
+            axes_idx=axes_idx,
             legend=all_contact_names,
         )
 
@@ -733,15 +740,24 @@ class ConfigureProblem:
             )
 
             if "soft_contact_forces" in nlp.plot_mapping:
-                phase_mappings = nlp.plot_mapping["soft_contact_forces"]
+                soft_contact_names_in_phase = [
+                    f"{nlp.model.soft_contact_names[i_sc]}_{name}"
+                    for name in component_list
+                    if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
+                ]
+                phase_mappings = BiMapping(
+                    to_first=nlp.plot_mapping["soft_contact_forces"].map_idx,
+                    to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
+                )
             else:
                 soft_contact_names_in_phase = [
                     f"{nlp.model.soft_contact_names[i_sc]}_{name}"
                     for name in component_list
                     if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
                 ]
-                phase_mappings = Mapping(
-                    [i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase]
+                phase_mappings = BiMapping(
+                    to_first=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
+                    to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
                 lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6) : ((i_sc + 1) * 6), :],
@@ -868,7 +884,7 @@ class ConfigureProblem:
         combine_name: str = None,
         combine_state_control_plot: bool = False,
         skip_plot: bool = False,
-        axes_idx: Mapping = None,
+        axes_idx: BiMapping = None,
     ):
         """
         Add a new variable to the states/controls pool
@@ -879,6 +895,8 @@ class ConfigureProblem:
             The name of the new variable to add
         name_elements: list[str]
             The name of each element of the vector
+        ocp: OptimalControlProgram
+            A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
         as_states: bool
@@ -895,6 +913,8 @@ class ConfigureProblem:
             If states and controls plot should be combined. Only effective if as_states and as_controls are both True
         skip_plot: bool
             If no plot should be automatically added
+        axes_idx: BiMapping
+            The axes index to use for the plot
         """
 
         if combine_state_control_plot and combine_name is not None:
@@ -1002,11 +1022,11 @@ class ConfigureProblem:
         mx_controls = vertcat(*mx_controls)
 
         if not axes_idx:
-            axes_idx = Mapping(range(len(name_elements)))
+            axes_idx = BiMapping(to_first=range(len(name_elements)), to_second=range(len(name_elements)))
 
         legend = []
         for idx, name_el in enumerate(name_elements):
-            if idx is not None and idx in axes_idx.map_idx:
+            if idx is not None and idx in axes_idx.to_first.map_idx:
                 current_legend = f"{name}_{name_el}"
                 for i in range(ocp.n_phases):
                     if as_states:
@@ -1105,14 +1125,7 @@ class ConfigureProblem:
         name_q = nlp.model.name_dof
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name,
-            name_q,
-            ocp,
-            nlp,
-            as_states,
-            as_controls,
-            as_states_dot,
-            axes_idx=axes_idx,
+            name, name_q, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1349,14 +1362,40 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def _apply_phase_mapping(ocp, nlp, name):
+    def _apply_phase_mapping(ocp, nlp, name: str) -> BiMapping | None:
+        """
+        Apply the phase mapping to the variable
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        name: str
+            The name of the variable to map
+
+        Returns
+        -------
+        The mapping or None if no mapping is defined
+
+        """
         if nlp.phase_mapping:
             if name in nlp.variable_mappings.keys():
-                double_mapping = nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.map_idx).T.tolist()[0]
-                double_mapping = [int(double_mapping[i]) for i in range(len(double_mapping))]
+                double_mapping_to_first = (
+                    nlp.variable_mappings[name].to_first.map(nlp.phase_mapping.to_first.map_idx).T.tolist()[0]
+                )
+                double_mapping_to_first = [int(double_mapping_to_first[i]) for i in range(len(double_mapping_to_first))]
+                double_mapping_to_second = (
+                    nlp.variable_mappings[name].to_second.map(nlp.phase_mapping.to_second.map_idx).T.tolist()[0]
+                )
+                double_mapping_to_second = [
+                    int(double_mapping_to_second[i]) for i in range(len(double_mapping_to_second))
+                ]
             else:
-                double_mapping = nlp.phase_mapping.map_idx
-            axes_idx = Mapping(double_mapping)
+                double_mapping_to_first = nlp.phase_mapping.to_first.map_idx
+                double_mapping_to_second = nlp.phase_mapping.to_second.map_idx
+            axes_idx = BiMapping(to_first=double_mapping_to_first, to_second=double_mapping_to_second)
         else:
             axes_idx = None
         return axes_idx
