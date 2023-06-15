@@ -128,15 +128,13 @@ def prepare_ocp(
     x_init["q"] = pose_at_first_node
 
     # Define control path constraint
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
-        nu_sup = bio_model.nb_qddot
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        nu_sup = bio_model.nb_qddot + bio_model.nb_contacts
-    else:
-        nu_sup = 0
-
     u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * (len(dof_mapping["tau"].to_first) + nu_sup), [tau_max] * (len(dof_mapping["tau"].to_first) + nu_sup)
+    u_bounds["tau"] = [tau_min] * len(dof_mapping["tau"].to_first), [tau_max] * len(dof_mapping["tau"].to_first)
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+        u_bounds["qddot"] = [tau_min] * bio_model.nb_qddot, [tau_max] * bio_model.nb_qddot
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        u_bounds["qddot"] = [tau_min] * bio_model.nb_qddot, [tau_max] * bio_model.nb_qddot
+        u_bounds["fext"] = [tau_min] * bio_model.nb_contacts, [tau_max] * bio_model.nb_contacts
 
     return OptimalControlProgram(
         bio_model,
@@ -145,6 +143,7 @@ def prepare_ocp(
         phase_time,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
+        x_init=x_init,
         objective_functions=objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
