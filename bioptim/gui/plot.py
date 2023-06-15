@@ -97,7 +97,7 @@ class CustomPlot:
         if axes_idx is None:
             self.phase_mappings = None  # Will be set later
         elif isinstance(axes_idx, (tuple, list)):
-            self.phase_mappings = BiMapping(to_second=axes_idx[0], to_first=axes_idx[1])
+            self.phase_mappings = BiMapping(to_second=Mapping(axes_idx), to_first=Mapping(axes_idx))
         elif isinstance(axes_idx, BiMapping):
             self.phase_mappings = axes_idx
         else:

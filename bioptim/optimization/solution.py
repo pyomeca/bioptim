@@ -1501,18 +1501,10 @@ class Solution:
 
             # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
             # casadi function
-            if (
-                "Lagrange" in penalty.type.__str__()
-                or "Mayer" in penalty.type.__str__()
-                or "MultinodeObjectiveFcn" in penalty.type.__str__()
-                or "ConstraintFcn" in penalty.type.__str__()
-            ):
+            if idx == nlp.ns and not self.ocp.assume_phase_dynamics:
                 u = u[:, ~np.isnan(np.sum(u, axis=0))]
-                val.append(penalty.function_non_threaded[idx](x, u, p))
-                val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
-            else:
-                val.append(penalty.function[idx](x, u, p))
-                val_weighted.append(penalty.weighted_function[idx](x, u, p, penalty.weight, target, dt))
+            val.append(penalty.function[idx](x, u, p))
+            val_weighted.append(penalty.weighted_function[idx](x, u, p, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)

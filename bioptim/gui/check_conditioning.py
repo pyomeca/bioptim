@@ -106,11 +106,13 @@ def check_conditioning(ocp):
             u_init = np.zeros((len(nlp.U), nb_u_init))
             param_init = np.array([nlp.x_init[key].shape[0] for key in nlp.parameters.initial_guess.keys()])
 
-            for key in nlp.x_init.keys():
+            for key in nlp.states.keys():
+                nlp.x_init[key].check_and_adjust_dimensions(len(nlp.states[key]), nlp.ns + 1)
                 for node_index in range(nlp.ns + 1):
                     nlp.states.node_index = node_index
                     x_init[node_index, nlp.states[key].index] = np.array(nlp.x_init[key].init.evaluate_at(node_index))
-            for key in nlp.u_init.keys():
+            for key in nlp.controls.keys():
+                nlp.u_init[key].check_and_adjust_dimensions(len(nlp.controls[key]), nlp.ns)
                 for node_index in range(nlp.ns):
                     nlp.controls.node_index = node_index
                     u_init[node_index, nlp.controls[key].index] = np.array(nlp.u_init[key].init.evaluate_at(node_index))
@@ -382,11 +384,13 @@ def check_conditioning(ocp):
             u_init = np.zeros((len(nlp.U), nb_u_init))
             param_init = np.array([nlp.x_init[key].shape[0] for key in nlp.parameters.initial_guess.keys()])
 
-            for key in nlp.x_init.keys():
+            for key in nlp.states.keys():
+                nlp.x_init[key].check_and_adjust_dimensions(len(nlp.states[key]), nlp.ns + 1)
                 for node_index in range(nlp.ns + 1):
                     nlp.states.node_index = node_index
                     x_init[node_index, nlp.states[key].index] = np.array(nlp.x_init[key].init.evaluate_at(node_index))
-            for key in nlp.u_init.keys():
+            for key in nlp.controls.keys():
+                nlp.u_init[key].check_and_adjust_dimensions(len(nlp.controls[key]), nlp.ns)
                 for node_index in range(nlp.ns):
                     nlp.controls.node_index = node_index
                     u_init[node_index, nlp.controls[key].index] = np.array(nlp.u_init[key].init.evaluate_at(node_index))
