@@ -354,10 +354,6 @@ class OcpToConsole(GraphAbstract):
                 print(f"Scaling: {scaling}")
                 print(f"Min_bound: {min_bound}")
                 print(f"Max_bound: {max_bound}")
-                if parameter.penalty_list:
-                    for idx, _ in enumerate(parameter.penalty_list[0]):
-                        objective_name = self._get_parameter_function_name(parameter, idx)
-                        print(f"Objectives: {objective_name}")
                 print("")
             print("")
             print(f"**********")
@@ -596,15 +592,6 @@ class OcpToGraph(GraphAbstract):
         node_str += f"<b>Initial guess</b>: {initial_guess}<br/>"
         node_str += f"<b>Min bound</b>: {min_bound} <br/>"
         node_str += f"<b>Max bound</b>: {max_bound} <br/><br/>"
-        if parameter.penalty_list is not None:
-            for idx, _ in enumerate(parameter.penalty_list[0]):
-                node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter, idx)} <br/>"
-                node_str += (
-                    f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list[0][idx].target)} <br/>'}"
-                    if parameter.penalty_list[0][idx].target is not None
-                    else ""
-                )
-                node_str += f"<b>Quadratic</b>: {parameter.penalty_list[0][idx].quadratic} <br/>"
         g.node(f"param_{phase_idx}{param_idx}", f"""<{node_str}>""")
 
     def _draw_nlp_node(self, g, phase_idx: int):

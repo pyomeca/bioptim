@@ -295,7 +295,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = horzcat(_u, u)
         return _x, _u
 
-    param = interface.ocp.cx(interface.ocp.v.parameters_in_list.cx_start)
+    param = interface.ocp.cx(interface.ocp.v.parameters_in_list.cx)
     out = interface.ocp.cx()
     for penalty in penalties:
         if not penalty:

@@ -371,7 +371,18 @@ class UniquePerProblemOptionList(OptionList):
         super(UniquePerProblemOptionList, self).copy(option)
 
     def __getitem__(self, index) -> Any:
-        return super(UniquePerProblemOptionList, self).__getitem__(0)[index]
+        if isinstance(index, str):
+            if index == "all":
+                return self
+            if index not in self.names:
+                raise RuntimeError(f"The key {index} is not in the parameter names.")
+            else:
+                idx = self.names.index(index)
+                return self[idx]
+        elif isinstance(index, int):
+            return super(UniquePerProblemOptionList, self).__getitem__(0)[index]
+        else:
+            raise RuntimeError(f"The parameter index must be an int | str | list, here the type is {type(index)}.")
 
     def __next__(self) -> int:
         self._iter_idx += 1

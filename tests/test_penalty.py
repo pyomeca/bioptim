@@ -77,7 +77,7 @@ def get_penalty_value(ocp, penalty, t, x, u, p):
 
     states = ocp.nlp[0].states.cx_start if ocp.nlp[0].states.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     controls = ocp.nlp[0].controls.cx_start if ocp.nlp[0].controls.cx_start.shape != (0, 0) else ocp.cx(0, 0)
-    parameters = ocp.nlp[0].parameters.cx_start if ocp.nlp[0].parameters.cx_start.shape != (0, 0) else ocp.cx(0, 0)
+    parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
     return ocp.nlp[0].to_casadi_func("penalty", val, states, controls, parameters)(x[0], u[0], p)
 
 

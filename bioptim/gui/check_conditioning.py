@@ -66,21 +66,19 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function[node_index](
-                        nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start
+                        nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx
                     ).shape[0],
                 ):
                     # depends if there are parameters
                     if nlp.parameters.shape == 0:
-                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx_start)
+                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx)
                     else:
-                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx_start])
+                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx])
 
                     list_constraints.append(
                         jacobian(
                             constraints.function[constraints.node_idx[0]](
-                                nlp.states.cx_start,
-                                nlp.controls.cx_start,
-                                nlp.parameters.cx_start,
+                                nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx
                             )[axis],
                             vertcat_obj,
                         )
@@ -90,9 +88,9 @@ def check_conditioning(ocp):
 
             # depends if there are parameters
             if nlp.parameters.shape == 0:
-                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx_start)
+                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx)
             else:
-                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx_start])
+                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx])
 
             jac_func = Function(
                 "jacobian",
@@ -145,22 +143,22 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function[node_index](
-                        nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start
+                        nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx
                     ).shape[0],
                 ):
                     # find all equality constraints
                     if constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]:
                         # parameters
                         if nlp.parameters.shape == 0:
-                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx_start)
+                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx)
                         else:
-                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx_start])
+                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx])
 
                         hessian_cas = hessian(
                             constraints.function[node_index](
                                 nlp.states.cx_start,
                                 nlp.controls.cx_start,
-                                nlp.parameters.cx_start,
+                                nlp.parameters.cx,
                             )[axis],
                             vertcat_obj,
                         )[0]
@@ -343,7 +341,7 @@ def check_conditioning(ocp):
                     p = obj.weighted_function[node_index](
                         state_cx,
                         control_cx,
-                        nlp.parameters.cx_start,
+                        nlp.parameters.cx,
                         obj.weight,
                         [],
                         obj.dt,
@@ -352,7 +350,7 @@ def check_conditioning(ocp):
                     p = obj.weighted_function[node_index](
                         state_cx,
                         control_cx,
-                        nlp.parameters.cx_start,
+                        nlp.parameters.cx,
                         obj.weight,
                         obj.target,
                         obj.dt,
@@ -364,9 +362,9 @@ def check_conditioning(ocp):
             # create function to build the hessian
             # parameters
             if nlp.parameters.shape == 0:
-                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx_start)
+                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx)
             else:
-                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx_start])
+                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx])
 
             hessian_cas = hessian(objective, vertcat_obj)[0]
 

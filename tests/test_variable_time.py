@@ -14,10 +14,11 @@ from bioptim import (
     InterpolationType,
     ObjectiveFcn,
     ObjectiveList,
-    Objective,
     OdeSolver,
     OptimalControlProgram,
     ParameterList,
+    ParameterObjectiveList,
+    PenaltyController,
 )
 from bioptim.optimization.solution import Solution
 
@@ -91,10 +92,11 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
     u_bounds.add("tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[2].nb_tau, phase=2)
 
     parameters = ParameterList()
+    parameter_objectives = ParameterObjectiveList()
     if use_parameter:
 
-        def my_target_function(ocp, value, target_value):
-            return value - target_value
+        def my_target_function(controller: PenaltyController):
+            return controller.parameters.cx
 
         def my_parameter_function(bio_model, value, extra_value):
             new_gravity = MX.zeros(3, 1)
@@ -106,17 +108,16 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
         target_g = -8
         bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
         initial_gravity = InitialGuess((min_g + max_g) / 2)
-        parameter_objective_functions = Objective(
-            my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target_value=target_g
-        )
         parameters.add(
             "gravity_z",
             my_parameter_function,
             initial_gravity,
             bound_gravity,
             size=1,
-            penalty_list=parameter_objective_functions,
             extra_value=1,
+        )
+        parameter_objectives.add(
+            my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
         )
 
     # ------------- #
@@ -132,6 +133,7 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
         constraints=constraints,
         ode_solver=ode_solver,
         parameters=parameters,
+        parameter_objectives=parameter_objectives,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

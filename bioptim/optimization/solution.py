@@ -1377,7 +1377,8 @@ class Solution:
         for idx_phase, data in enumerate(states):
             if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
                 raise NotImplementedError("Animation is only implemented for biorbd models")
-            # Convert parameters to actual values
+
+            # This calls each of the function that modify the internal dynamic model based on the parameters
             nlp = self.ocp.nlp[idx_phase]
 
             # noinspection PyTypeChecker
@@ -1412,8 +1413,9 @@ class Solution:
         val = []
         val_weighted = []
         p = self.parameters["all"]
+
         dt = (
-            Function("time", [nlp.parameters.cx_start], [penalty.dt])(self.parameters["time"])
+            Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
             if "time" in self.parameters
             else penalty.dt
         )
@@ -1436,6 +1438,14 @@ class Solution:
                             # Make an exception to the fact that U is not available for the last node
                             u = np.concatenate((u, self._controls["scaled"][phase_idx][key][:, node_idx]))
 
+                elif (
+                    "Lagrange" not in penalty.type.__str__()
+                    and "Mayer" not in penalty.type.__str__()
+                    and "MultinodeObjectiveFcn" not in penalty.type.__str__()
+                    and "ConstraintFcn" not in penalty.type.__str__()
+                ):
+                    if penalty.target is not None:
+                        target = penalty.target[0]
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
@@ -1491,9 +1501,18 @@ class Solution:
 
             # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
             # casadi function
-            u = u[:, ~np.isnan(np.sum(u, axis=0))]
-            val.append(penalty.function_non_threaded[idx](x, u, p))
-            val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
+            if (
+                "Lagrange" in penalty.type.__str__()
+                or "Mayer" in penalty.type.__str__()
+                or "MultinodeObjectiveFcn" in penalty.type.__str__()
+                or "ConstraintFcn" in penalty.type.__str__()
+            ):
+                u = u[:, ~np.isnan(np.sum(u, axis=0))]
+                val.append(penalty.function_non_threaded[idx](x, u, p))
+                val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
+            else:
+                val.append(penalty.function[idx](x, u, p))
+                val_weighted.append(penalty.weighted_function[idx](x, u, p, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)
@@ -1516,6 +1535,11 @@ class Solution:
                 self.detailed_cost += [
                     {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
                 ]
+        for penalty in self.ocp.J:
+            val, val_weighted = self._get_penalty_cost(self.ocp.nlp[0], penalty)
+            self.detailed_cost += [
+                {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
+            ]
         return
 
     def print_cost(self, cost_type: CostType = CostType.ALL):

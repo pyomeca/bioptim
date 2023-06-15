@@ -118,16 +118,12 @@ def test_update_bounds_and_init_with_param(assume_phase_dynamics):
     parameters = ParameterList()
     bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
     initial_gravity = InitialGuess(g_init)
-    parameter_objective_functions = Objective(
-        my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target_value=-8
-    )
     parameters.add(
         "gravity_z",
         my_parameter_function,
         initial_gravity,
         bounds_gravity,
         size=1,
-        penalty_list=parameter_objective_functions,
         extra_value=1,
     )
 
@@ -166,15 +162,9 @@ def test_add_wrong_param():
     def my_parameter_function(bio_model, value, extra_value):
         bio_model.set_gravity(biorbd.Vector3d(0, 0, value + extra_value))
 
-    def my_target_function(ocp, value, target_value):
-        return value + target_value
-
     parameters = ParameterList()
     initial_gravity = InitialGuess(g_init)
     bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
-    parameter_objective_functions = Objective(
-        my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target_value=-8
-    )
 
     with pytest.raises(
         RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"
@@ -185,7 +175,6 @@ def test_add_wrong_param():
             initial_gravity,
             bounds_gravity,
             size=1,
-            penalty_list=parameter_objective_functions,
             extra_value=1,
         )
 
@@ -198,7 +187,6 @@ def test_add_wrong_param():
             None,
             bounds_gravity,
             size=1,
-            penalty_list=parameter_objective_functions,
             extra_value=1,
         )
 
@@ -211,7 +199,6 @@ def test_add_wrong_param():
             initial_gravity,
             None,
             size=1,
-            penalty_list=parameter_objective_functions,
             extra_value=1,
         )
 
@@ -223,7 +210,6 @@ def test_add_wrong_param():
             my_parameter_function,
             initial_gravity,
             bounds_gravity,
-            penalty_list=parameter_objective_functions,
             extra_value=1,
         )
 
