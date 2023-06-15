@@ -49,6 +49,7 @@ def prepare_ocp(
     x_bounds["q"][1, -1] = np.pi
     x_bounds["q"][2, -1] = -np.pi
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = 0
 
     # Define control path constraint
     u_bounds = BoundsList()
