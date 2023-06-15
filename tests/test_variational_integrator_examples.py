@@ -9,7 +9,7 @@ from bioptim import Solver
 
 def test_variational_pendulum():
     """Test the variational integrator pendulum example"""
-    from bioptim.examples.discrete_mechanics_for_optimal_control import example_variational_integrator_pendulum
+    from bioptim.examples.discrete_mechanics_and_optimal_control import example_variational_integrator_pendulum
 
     bioptim_folder = os.path.dirname(example_variational_integrator_pendulum.__file__)
 
@@ -17,7 +17,7 @@ def test_variational_pendulum():
     ocp = example_variational_integrator_pendulum.prepare_ocp(
         bio_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
-        n_shooting=100,
+        n_shooting=20,
     )
 
     # --- Solve the ocp --- #
@@ -30,8 +30,8 @@ def test_variational_pendulum():
     )
 
     np.testing.assert_almost_equal(
-        sol.states["q"][:, 50].squeeze(),
-        [-0.726413733965370, 0.957513371856119],
+        sol.states["q"][:, 10].squeeze(),
+        [-0.325653795765479, 0.514317755981177],
         decimal=6,
     )
 
@@ -43,19 +43,19 @@ def test_variational_pendulum():
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 0].squeeze(),
-        [10.244275356612663, 0.0],
+        [9.952650040830257, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
-        sol.controls["tau"][:, 50].squeeze(),
-        [1.571057590776628, 0.0],
+        sol.controls["tau"][:, 10].squeeze(),
+        [1.326124391015805, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, -2].squeeze(),
-        [-11.075690668538043, 0.0],
+        [-24.871395482788490, 0.0],
         decimal=6,
     )
 
@@ -74,7 +74,7 @@ def test_variational_pendulum():
 
 def test_variational_pendulum_with_holonomic_constraints():
     """Test the variational integrator pendulum with holonomic constraints example"""
-    from bioptim.examples.discrete_mechanics_for_optimal_control import (
+    from bioptim.examples.discrete_mechanics_and_optimal_control import (
         example_variational_integrator_with_holonomic_constraints_pendulum,
     )
 
@@ -84,7 +84,7 @@ def test_variational_pendulum_with_holonomic_constraints():
     ocp = example_variational_integrator_with_holonomic_constraints_pendulum.prepare_ocp(
         bio_model_path=bioptim_folder + "/models/pendulum_holonomic.bioMod",
         final_time=1,
-        n_shooting=100,
+        n_shooting=20,
     )
 
     # --- Solve the ocp --- #
@@ -97,8 +97,8 @@ def test_variational_pendulum_with_holonomic_constraints():
     )
 
     np.testing.assert_almost_equal(
-        sol.states["q"][:, 50].squeeze(),
-        [-0.726414103487621, 0.0, 0.957513756633348],
+        sol.states["q"][:, 10].squeeze(),
+        [-0.325653795765506, 0.0, 0.514317755981258],
         decimal=6,
     )
 
@@ -110,19 +110,19 @@ def test_variational_pendulum_with_holonomic_constraints():
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 0].squeeze(),
-        [10.244271905334511, 0.0, 0.0],
+        [9.952650040825121, 0.0, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
-        sol.controls["tau"][:, 50].squeeze(),
-        [1.571068734115470, 0.0, 0.0],
+        sol.controls["tau"][:, 10].squeeze(),
+        [1.326124390994498, 0.0, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, -2].squeeze(),
-        [-11.075685503793608, 0.0, 0.0],
+        [-24.871395482792202, 0.0, 0.0],
         decimal=6,
     )
 
