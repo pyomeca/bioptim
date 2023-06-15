@@ -1103,7 +1103,7 @@ def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dyn
         u.add("tau", np.array([[1.45, 9.81, 2.28], [0, 9.81, 0], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation)
     elif interpolation == InterpolationType.LINEAR:
         x.add("q", np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 1.57]]).T, interpolation=interpolation)
-        x.add("qdot", np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]).T, interpolation=interpolation)
+        x.add("qdot", np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]).T, interpolation=interpolation)
         u.add("tau", np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T, interpolation=interpolation)
     elif interpolation == InterpolationType.EACH_FRAME:
         x_init = np.zeros((nq * 2, ns + 1))
@@ -1133,7 +1133,7 @@ def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dyn
     else:
         raise NotImplementedError("This interpolation is not implemented yet")
 
-    x_init.add_noise(
+    x.add_noise(
         bounds=x_bounds,
         magnitude=0.01,
         magnitude_type=MagnitudeType.RELATIVE,
@@ -1141,7 +1141,7 @@ def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dyn
         bound_push=0.1,
         seed=42,
     )
-    u_init.add_noise(
+    u.add_noise(
         bounds=u_bounds,
         magnitude=0.01,
         magnitude_type=MagnitudeType.RELATIVE,
@@ -1149,7 +1149,7 @@ def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dyn
         bound_push=0.1,
         seed=42,
     )
-    ocp.update_initial_guess(x_init, u_init)
+    ocp.update_initial_guess(x, u)
 
     with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsList"):
-        ocp.update_bounds(x_init, u_init)
+        ocp.update_bounds(x, u)
