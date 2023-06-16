@@ -13,6 +13,7 @@ from bioptim import (
     ConstraintList,
     Solver,
     VariableScalingList,
+    ParameterList,
 )
 from .utils import TestUtils
 import os
@@ -24,6 +25,7 @@ class OptimalControlProgram:
         self.assume_phase_dynamics = True
         self.n_phases = 1
         self.nlp = [nlp]
+        self.parameters = ParameterList()
         self.implicit_constraints = ConstraintList()
 
 
