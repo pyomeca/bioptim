@@ -673,7 +673,6 @@ def test_phase_transitions(ode_solver, assume_phase_dynamics):
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.COLLOCATION])  # OdeSolver.IRK
-# TODO: Only RK4 was tested, I made the tests just for consistancy, but I think the scaling of parameters never worked for IRK and COLLOCATION -> it should be fixed
 def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import custom_parameters as ocp_module
 
@@ -698,7 +697,6 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         target_m=20,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
-        use_sx=True,
     )
     sol = ocp.solve()
 
@@ -774,10 +772,8 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
 
         # detailed cost values
         sol.detailed_cost_values()
-        # The discrepency between f[0, 0] and the sum of sol.detailed_cost comes from the scaling of the parameters
-        # TODO: fix scaling of parameters
         cost_values_all = np.sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-        np.testing.assert_almost_equal(cost_values_all, 81442.59374299884)
+        np.testing.assert_almost_equal(cost_values_all, f[0, 0])
 
     # TODO: fix save and load
     # # save and load
@@ -787,16 +783,7 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol, decimal_value=6)
 
     # Test warm starting
-    if isinstance(ode_solver, OdeSolver.RK4) or isinstance(ode_solver, OdeSolver.RK8):
-        TestUtils.assert_warm_start(ocp, sol, param_decimal=6)
-    else:
-        # This is a bug (should be fixed)
-        # TODO: fix warm start error message for COLLOCATION and warm_start
-        with pytest.raises(
-            NotImplementedError,
-            match="It is not possible to use initial guess with NoisedInitialGuess as it won't produce the expected randomness",
-        ):
-            TestUtils.assert_warm_start(ocp, sol)
+    TestUtils.assert_warm_start(ocp, sol)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])

@@ -16,8 +16,8 @@ from bioptim import (
     Dynamics,
     DynamicsEvaluation,
     ConstraintList,
+    ParameterList,
 )
-from bioptim.optimization.optimization_vector import OptimizationVector
 
 from .utils import TestUtils
 
@@ -28,7 +28,7 @@ class OptimalControlProgram:
         self.assume_phase_dynamics = True
         self.n_phases = 1
         self.nlp = [nlp]
-        self.v = OptimizationVector(self)
+        self.parameters = ParameterList()
         self.implicit_constraints = ConstraintList()
 
 

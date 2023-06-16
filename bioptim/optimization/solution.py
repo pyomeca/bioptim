@@ -413,12 +413,12 @@ class Solution:
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
-            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["scaled"], self._controls["scaled"], self.parameters = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
             self._complete_control()
-            self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+            self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
 
         def init_from_vector(_sol: np.ndarray | DM):
@@ -432,12 +432,12 @@ class Solution:
             """
 
             self.vector = _sol
-            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["scaled"], self._controls["scaled"], self.parameters = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
             self._complete_control()
-            self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+            self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
 
         if isinstance(sol, dict):
             init_from_dict(sol)

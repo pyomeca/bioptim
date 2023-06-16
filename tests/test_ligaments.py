@@ -14,7 +14,6 @@ from bioptim import (
     Solver,
     VariableScalingList,
 )
-from bioptim.optimization.optimization_vector import OptimizationVector
 from .utils import TestUtils
 import os
 
@@ -25,7 +24,6 @@ class OptimalControlProgram:
         self.assume_phase_dynamics = True
         self.n_phases = 1
         self.nlp = [nlp]
-        self.v = OptimizationVector(self)
         self.implicit_constraints = ConstraintList()
 
 

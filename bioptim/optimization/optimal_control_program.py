@@ -1296,10 +1296,12 @@ class OptimalControlProgram:
         u_init_guess = InitialGuessList()
         x_init_guess = InitialGuessList()
         param_init_guess = InitialGuessList()
+
         for i in range(self.n_phases):
+            x_interp = InterpolationType.EACH_FRAME if self.nlp[i].ode_solver.is_direct_shooting else InterpolationType.ALL_POINTS
             if self.n_phases == 1:
                 for key in state:
-                    x_init_guess.add(key, state[key], interpolation=InterpolationType.EACH_FRAME, phase=0)
+                    x_init_guess.add(key, state[key], interpolation=x_interp, phase=0)
                 for key in ctrl:
                     if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
                         u_init_guess.add(key, ctrl[key], interpolation=InterpolationType.EACH_FRAME, phase=0)
@@ -1307,7 +1309,7 @@ class OptimalControlProgram:
                         u_init_guess.add(key, ctrl[key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=0)
             else:
                 for key in state[i]:
-                    x_init_guess.add(key, state[i][key], interpolation=InterpolationType.EACH_FRAME, phase=i)
+                    x_init_guess.add(key, state[i][key], interpolation=x_interp, phase=i)
                 for key in ctrl[i]:
                     if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
                         u_init_guess.add(key, ctrl[i][key], interpolation=InterpolationType.EACH_FRAME, phase=i)
