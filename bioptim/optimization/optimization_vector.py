@@ -234,7 +234,7 @@ class OptimizationVectorHelper:
             OptimizationVectorHelper._set_node_index(nlp, 0)
             for key in nlp.states:
                 n_points = OptimizationVectorHelper._nb_points(nlp, nlp.x_init[key].type)
-                nlp.x_init[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], n_points + 1)
+                nlp.x_init[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], n_points)
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
@@ -261,11 +261,11 @@ class OptimizationVectorHelper:
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 ns = nlp.ns
                 for key in nlp.controls.keys():
-                    nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns)
+                    nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns - 1)
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 ns = nlp.ns + 1
                 for key in nlp.controls.keys():
-                    nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns - 1)
+                    nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns)
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 

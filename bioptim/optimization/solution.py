@@ -1028,7 +1028,7 @@ class Solution:
             shooting_type=shooting_type,
         )
 
-        params = self.parameters["all"]
+        params = vertcat(*[self.parameters[key] for key in self.parameters])
 
         for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
             states_phase_idx = self.ocp.nlp[p].use_states_from_phase_idx
@@ -1414,7 +1414,7 @@ class Solution:
 
         val = []
         val_weighted = []
-        p = [self.parameters[key] for key in self.parameters.keys()]
+        p = vertcat(*[self.parameters[key] / self.ocp.parameters[key].scaling for key in self.parameters.keys()])
 
         dt = (
             Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
@@ -1520,6 +1520,7 @@ class Solution:
         Parameters
         ----------
         """
+        self.detailed_cost = []
 
         for nlp in self.ocp.nlp:
             for penalty in nlp.J_internal + nlp.J:

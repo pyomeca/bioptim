@@ -738,10 +738,8 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
 
         # detailed cost values
         sol.detailed_cost_values()
-        # The discrepency between f[0, 0] and the sum of sol.detailed_cost comes from the scaling of the parameters
-        # TODO: fix scaling of parameters
-        cost_values_all = np.sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-        np.testing.assert_almost_equal(cost_values_all, 80170.48050652226)
+        cost_values_all = np.sum(cost["cost_value_weighted"] for cost in sol.detailed_cost)
+        np.testing.assert_almost_equal(cost_values_all, f[0, 0])
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         np.testing.assert_equal(g.shape, (80, 1))
@@ -758,10 +756,8 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
 
         # detailed cost values
         sol.detailed_cost_values()
-        # The discrepency between f[0, 0] and the sum of sol.detailed_cost comes from the scaling of the parameters
-        # TODO: fix scaling of parameters
         cost_values_all = np.sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-        np.testing.assert_almost_equal(cost_values_all, 78659.75853455857)
+        np.testing.assert_almost_equal(cost_values_all, f[0, 0])
 
     else:
         np.testing.assert_equal(g.shape, (400, 1))

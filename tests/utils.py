@@ -109,7 +109,8 @@ class TestUtils:
                 np.testing.assert_almost_equal(sol_warm_start.states[key], sol.states[key], decimal=state_decimal)
             for key in sol.controls:
                 np.testing.assert_almost_equal(sol_warm_start.controls[key], sol.controls[key], decimal=control_decimal)
-        np.testing.assert_almost_equal(sol_warm_start.parameters["all"], sol.parameters["all"], decimal=param_decimal)
+        for key in sol_warm_start.parameters.keys():
+            np.testing.assert_almost_equal(sol_warm_start.parameters[key], sol.parameters[key], decimal=param_decimal)
 
     @staticmethod
     def simulate(sol, decimal_value=7):

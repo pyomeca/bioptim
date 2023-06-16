@@ -1315,9 +1315,8 @@ class OptimalControlProgram:
                         u_init_guess.add(key, ctrl[i][key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=i)
 
         for key in param:
-            if key != "all":
-                param_init_guess.add(param[key], name=key)
-        self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=param_init_guess)
+            param_init_guess.add(key, param[key], name=key)
+        self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, parameter_init=param_init_guess)
 
         if self.ocp_solver:
             self.ocp_solver.set_lagrange_multiplier(sol)
