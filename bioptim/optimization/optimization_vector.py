@@ -103,7 +103,10 @@ class OptimizationVectorHelper:
         x_scaled = []
         u_scaled = []
         for nlp in ocp.nlp:
-            x_scaled += nlp.X_scaled
+            if nlp.ode_solver.is_direct_collocation:
+                x_scaled = [x.reshape((-1, 1)) for x in nlp.X_scaled]
+            else:
+                x_scaled += nlp.X_scaled
             u_scaled += nlp.U_scaled
 
         return vertcat(*x_scaled, *u_scaled, ocp.parameters.cx)
