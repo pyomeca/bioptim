@@ -422,7 +422,7 @@ class OdeSolver:
 
             if not isinstance(ocp.cx(), MX):
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
-            if ocp.v.parameters_in_list.shape != 0:
+            if ocp.parameters.shape != 0:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
             if nlp.external_forces:
                 raise RuntimeError("CVODES cannot be used with external_forces")

@@ -602,7 +602,7 @@ class ConfigureProblem:
             If the dynamics should be expanded with casadi
         """
 
-        nlp.parameters = ocp.v.parameters_in_list
+        nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         dynamics_eval = dyn_func(

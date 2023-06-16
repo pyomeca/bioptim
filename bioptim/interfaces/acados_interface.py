@@ -160,13 +160,13 @@ class AcadosInterface(SolverInterface):
         x = ocp.nlp[0].states.cx_start
         u = ocp.nlp[0].controls.cx_start
         p = ocp.nlp[0].parameters.cx
-        if ocp.v.parameters_in_list:
-            for param in ocp.v.parameters_in_list:
+        if ocp.parameter:
+            for param in ocp.parameters:
                 if str(param.cx)[:11] == f"time_phase_":
                     raise RuntimeError("Time constraint not implemented yet with Acados.")
 
         self.nparams = ocp.nlp[0].parameters.shape
-        param_list = ocp.v.parameters_in_list
+        param_list = ocp.parameters
         self.params_initial_guess = param_list.initial_guess["all"].scale(param_list.scaling)
         self.params_initial_guess.check_and_adjust_dimensions(self.nparams, 1)
         self.params_bounds = param_list.bounds.scale(param_list.scaling)

@@ -84,8 +84,9 @@ class Parameter(PenaltyOption):
 
         self.quadratic = quadratic
         self.size = size
-        self.cx = cx
-        self.mx = None
+
+        self.cx = cx.sym(self.name, self.size, 1)
+        self.mx = MX.sym(self.name, self.size, 1)
 
     @property
     def shape(self):
@@ -108,7 +109,7 @@ class Parameter(PenaltyOption):
             else:
                 penalty.name = penalty.type.name
 
-        fake_penalty_controller = PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], ocp.v.parameters_in_list.cx)
+        fake_penalty_controller = PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], ocp.parameters.cx)
         penalty_function = penalty.type(penalty, fake_penalty_controller, **penalty.params)
         self.set_penalty(ocp, fake_penalty_controller, penalty, penalty_function, penalty.expand)
 
@@ -146,7 +147,7 @@ class Parameter(PenaltyOption):
         # Do not use nlp.add_casadi_func because all functions must be registered
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
-        param_cx = ocp.v.parameters_in_list.cx
+        param_cx = ocp.parameters.cx
 
         penalty.function.append(
             NonLinearProgram.to_casadi_func(
@@ -262,6 +263,7 @@ class ParameterList(UniquePerProblemOptionList):
                 name=parameter_name,
                 size=size,
                 scaling=scaling,
+                cx=self.cx_type,
                 **extra_arguments,
             )
 
@@ -318,6 +320,9 @@ class ParameterList(UniquePerProblemOptionList):
         """
 
         return self.names.index(item)
+
+    def keys(self):
+        return [p.name for p in self.options[0]]
 
     @property
     def scaling(self):

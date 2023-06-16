@@ -94,14 +94,14 @@ class NonControlledMethod:
         Configure the dynamics of the system
         """
 
-        global dynamics_eval_horzcat
-        nlp.parameters = ocp.v.parameters_in_list
+        nlp.parameters = ocp.parameters_in_list
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         # Gets the t0 time for the current phase
         t0_phase_in_ocp = sum1(nlp.parameters.mx[0 : nlp.phase_idx])
         # Gets every time node for the current phase
 
+        dynamics_eval_horzcat = np.array()
         for i in range(nlp.ns):
             t_node_in_phase = nlp.parameters.mx[nlp.phase_idx] / (nlp.ns + 1) * i
             t_node_in_ocp = t0_phase_in_ocp + t_node_in_phase

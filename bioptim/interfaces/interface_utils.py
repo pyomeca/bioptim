@@ -44,7 +44,7 @@ def generic_solve(interface) -> dict:
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
-    interface.sqp_nlp = {"x": interface.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
+    interface.sqp_nlp = {"x": interface.ocp.variables_vector, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
 
@@ -56,8 +56,8 @@ def generic_solve(interface) -> dict:
     else:
         interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
 
-    v_bounds = interface.ocp.v.bounds_vectors
-    v_init = interface.ocp.v.init_vector
+    v_bounds = interface.ocp.bounds_vectors
+    v_init = interface.ocp.init_vector
     interface.sqp_limits = {
         "lbx": v_bounds[0],
         "ubx": v_bounds[1],
@@ -295,7 +295,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = horzcat(_u, u)
         return _x, _u
 
-    param = interface.ocp.cx(interface.ocp.v.parameters_in_list.cx)
+    param = interface.ocp.cx(interface.ocp.parameters.cx)
     out = interface.ocp.cx()
     for penalty in penalties:
         if not penalty:

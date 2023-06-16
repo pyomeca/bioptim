@@ -11,8 +11,8 @@ import casadi
 from casadi import MX, SX, Function, sum1, horzcat
 from matplotlib import pyplot as plt
 
+from .optimization_vector import OptimizationVectorHelper
 from .non_linear_program import NonLinearProgram as NLP
-from .optimization_vector import OptimizationVector
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem
@@ -431,8 +431,6 @@ class OptimalControlProgram:
         self.g_internal = []
         self.g_implicit = []
 
-        self.v = OptimizationVector(self)
-
         # nlp is the core of a phase
         self.nlp = [NLP(self.assume_phase_dynamics) for _ in range(self.n_phases)]
         NLP.add(self, "model", bio_model, False)
@@ -475,11 +473,11 @@ class OptimalControlProgram:
             parameter_mappings.add(
                 "time", to_second=[i for i in range(self.n_phases)], to_first=[i for i in range(self.n_phases)]
             )
+        # TODO: I think parameters other than time are not mapped
         self.parameter_mappings = parameter_mappings
 
         self.parameters = ParameterList()
-        if len(parameters) > 0:
-            self.update_parameters(parameters)  # TODO: I think parameters other than time are not mapped
+        self._declare_parameters(parameters)
 
         # Declare the time to optimize
         self._define_time(phase_time, objective_functions, constraints)
@@ -526,7 +524,7 @@ class OptimalControlProgram:
         self.update_bounds(x_bounds, u_bounds, parameter_bounds)
         self.update_initial_guess(x_init, u_init, parameter_init)
         # Define the actual NLP problem
-        self.v.define_ocp_shooting_points()
+        OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
@@ -547,6 +545,18 @@ class OptimalControlProgram:
         # Prepare objectives
         self.update_objectives(objective_functions)
         self.update_parameter_objectives(parameter_objectives)
+
+    @property
+    def variables_vector(self):
+        return OptimizationVectorHelper.vector(self)
+
+    @property
+    def bounds_vectors(self):
+        return OptimizationVectorHelper.bounds_vectors(self)
+
+    @property
+    def init_vector(self):
+        return OptimizationVectorHelper.init_vector(self)
 
     @classmethod
     def from_loaded_data(cls, data):
@@ -834,7 +844,7 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
 
-    def update_parameters(self, new_parameters: ParameterList):
+    def _declare_parameters(self, new_parameters: ParameterList):
         """
         The main user interface to add or modify parameters in the ocp
 
@@ -847,10 +857,10 @@ class OptimalControlProgram:
         if not isinstance(new_parameters, ParameterList):
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
+        self.parameters.cx_type = self.cx
+
         for param in new_parameters:
             self.parameters.add(param)
-        for parameter in new_parameters:
-            self.v.add_parameter(parameter)
 
     def update_bounds(self, x_bounds: BoundsList = None, u_bounds: BoundsList = None, parameter_bounds: BoundsList = None):
         """
@@ -886,10 +896,8 @@ class OptimalControlProgram:
             for key in parameter_bounds.keys():
                 self.parameter_bounds.add(key, parameter_bounds[key], phase=0)
 
-        self.v.define_ocp_bounds()
-
         for nlp in self.nlp:
-            for key in nlp.states:
+            for key in nlp.states.keys():
                 if f"{key}_states" in nlp.plot and key in nlp.x_bounds:
                     nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[key]
             for key in nlp.controls:
@@ -935,8 +943,6 @@ class OptimalControlProgram:
                 raise RuntimeError("parameter_init should be built from a InitialGuessList")
             for key in parameter_init.keys():
                 self.parameter_init.add(key, parameter_init[key], phase=0)
-
-        self.v.define_ocp_initial_guess()
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
         """
@@ -1528,7 +1534,7 @@ class OptimalControlProgram:
                     time_param = Parameter(
                         cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
                     )
-                    self.v.add_parameter(time_param)
+                    self.parameters.add(time_param)
                     time_param_phases_idx += [i]
                     i += 1
 
@@ -1573,7 +1579,7 @@ class OptimalControlProgram:
         # Copy to self.original_values so it can be save/load
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
-        self.v.parameters_in_list[0].add_or_replace_to_penalty_pool(self, new_penalty)
+        self.parameters[0].add_or_replace_to_penalty_pool(self, new_penalty)
 
         self.program_changed = True
 

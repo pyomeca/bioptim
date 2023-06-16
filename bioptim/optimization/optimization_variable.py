@@ -72,6 +72,17 @@ class OptimizationVariable:
         return len(self.index)
 
     @property
+    def shape(self):
+        """
+        The len of the MX reduced
+
+        Returns
+        -------
+        The number of element (correspond to the nrows of the MX)
+        """
+        return len(self)
+
+    @property
     def cx(self):
         if self.parent_list is not None:
             if self.parent_list.current_cx_to_get == 0:

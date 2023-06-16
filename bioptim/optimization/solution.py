@@ -21,6 +21,7 @@ from ..misc.enums import (
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
+from ..optimization.optimization_vector import OptimizationVectorHelper
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
 
@@ -206,6 +207,7 @@ class Solution:
                 A reference to the NonLinearProgram to strip
             """
 
+            self.tf = nlp.tf
             self.phase_idx = nlp.phase_idx
             self.use_states_from_phase_idx = nlp.use_states_from_phase_idx
             self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
@@ -245,7 +247,6 @@ class Solution:
             The list of transition constraint between phases
         prepare_plots: Callable
             The function to call to prepare the PlotOCP
-        v: OptimizationVector
         The variable optimization holder
         """
 
@@ -258,7 +259,8 @@ class Solution:
             """
 
             self.nlp = [Solution.SimplifiedNLP(nlp) for nlp in ocp.nlp]
-            self.v = ocp.v
+            self.parameters = ocp.parameters
+            self.n_phases = len(self.nlp)
             self.J = ocp.J
             self.J_internal = ocp.J_internal
             self.g = ocp.g
@@ -336,12 +338,12 @@ class Solution:
             self.status = _sol["status"]
 
             # Extract the data now for further use
-            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states["scaled"], self._controls["scaled"], self.parameters = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
             self._complete_control()
-            self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+            self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
 
         def init_from_initial_guess(_sol: list):
@@ -354,7 +356,7 @@ class Solution:
                 The list of initial guesses
             """
 
-            n_param = len(ocp.v.parameters_in_list)
+            n_param = len(ocp.parameters)
 
             # Sanity checks
             for i in range(len(_sol)):  # Convert to list if necessary and copy for as many phases there are
@@ -1412,7 +1414,7 @@ class Solution:
 
         val = []
         val_weighted = []
-        p = self.parameters["all"]
+        p = [self.parameters[key] for key in self.parameters.keys()]
 
         dt = (
             Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
