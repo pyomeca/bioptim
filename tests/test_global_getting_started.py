@@ -684,7 +684,6 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver = ode_solver()
-
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
@@ -697,8 +696,9 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         max_m=30,
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
-        assume_phase_dynamics=assume_phase_dynamics,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
+        use_sx=True,
     )
     sol = ocp.solve()
 
