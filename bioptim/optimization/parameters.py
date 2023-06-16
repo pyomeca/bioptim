@@ -84,7 +84,11 @@ class Parameter(PenaltyOption):
 
         self.quadratic = quadratic
         self.size = size
+        self.cx = None
+        self.mx = None
+        self.declare_symbolic(cx)
 
+    def declare_symbolic(self, cx):
         self.cx = cx.sym(self.name, self.size, 1)
         self.mx = MX.sym(self.name, self.size, 1)
 
@@ -250,6 +254,7 @@ class ParameterList(UniquePerProblemOptionList):
 
         if isinstance(parameter_name, Parameter):
             self.copy(parameter_name)
+            self[parameter_name.name].declare_symbolic(self.cx_type)
         else:
             if "phase" in extra_arguments:
                 raise ValueError(
