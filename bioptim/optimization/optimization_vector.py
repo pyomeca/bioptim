@@ -132,7 +132,7 @@ class OptimizationVectorHelper:
             OptimizationVectorHelper._set_node_index(nlp, 0)
             for key in nlp.states:
                 n_points = OptimizationVectorHelper._nb_points(nlp, nlp.x_bounds[key].type)
-                nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], n_points + 1)
+                nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], n_points)
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
