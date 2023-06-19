@@ -1305,6 +1305,7 @@ class OptimalControlProgram:
 
         for key in param:
             param_init_guess.add(key, param[key], name=key)
+
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, parameter_init=param_init_guess)
 
         if self.ocp_solver:

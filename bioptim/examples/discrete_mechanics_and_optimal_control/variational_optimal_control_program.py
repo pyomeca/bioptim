@@ -2,43 +2,46 @@
 Optimal control program with the variational integrator for the dynamics.
 """
 from bioptim import (
-    Bounds,
     BoundsList,
     ConfigureProblem,
     DynamicsEvaluation,
     DynamicsFunctions,
     DynamicsList,
-    InitialGuess,
     InitialGuessList,
     MultinodeConstraintList,
-    NoisedInitialGuess,
     NonLinearProgram,
     OptimalControlProgram,
     ParameterList,
     PenaltyController,
+    ParameterConstraintList,
+    ParameterObjectiveList,
 )
 from casadi import MX, vertcat, Function
-from ...optimization.parameters import Parameter
 
 from bioptim.examples.discrete_mechanics_and_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
 
 
 class VariationalOptimalControlProgram(OptimalControlProgram):
+    """
+    q_init and q_bounds only the positions initial guess and bounds since there are no velocities in the variational integrator.
+    """
     def __init__(
         self,
         bio_model: BiorbdModelCustomHolonomic,
         n_shooting: int,
         final_time: float,
-        # q_init and q_bounds only the positions initial guess and bounds since there are no velocities in the
-        # variational integrator.
-        q_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
-        q_bounds: Bounds | BoundsList = None,
-        qdot_start_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
-        qdot_start_bounds: Bounds | BoundsList = None,
-        qdot_end_bounds: Bounds | BoundsList = None,
-        qdot_end_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
+        q_init: InitialGuessList = None,
+        q_bounds: BoundsList = None,
+        qdot_init: InitialGuessList = None,
+        qdot_bounds: BoundsList = None,
         holonomic_constraints: Function = None,
         holonomic_constraints_jacobian: Function = None,
+        parameters: ParameterList = None,
+        parameter_bounds: BoundsList = None,
+        parameter_init: InitialGuessList = None,
+        parameter_objectives: ParameterObjectiveList = None,
+        parameter_constraints: ParameterConstraintList = None,
+        multinode_constraints: MultinodeConstraintList = None,
         **kwargs,
     ):
         if "ode_solver" in kwargs:
@@ -57,7 +60,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         n_qdot = n_q = self.bio_model.nb_q
 
         self.holonomic_constraints = holonomic_constraints
-        q_sym = MX.sym("q", (n_q, 1))
         self.holonomic_constraints_jacobian = holonomic_constraints_jacobian
         self.has_holonomic_constraints = self.holonomic_constraints is not None
 
@@ -66,36 +68,80 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         expand = True
         dynamics.add(self.configure_torque_driven, expand=expand)
 
+        if qdot_bounds is None or not isinstance(qdot_bounds, BoundsList):
+            raise ValueError("qdot_bounds must be a BoundsList, moreover they must contain 'qdot_start' and 'qdot_end' keys")
+        for key in qdot_bounds.keys():
+            # Make sure only these keys are defined
+            if key not in ("qdot_start", "qdot_end"):
+                raise ValueError(
+                    "qdot_bounds must be a BoundsList, moreover they must contain 'qdot_start' and 'qdot_end' keys")
+
+        if qdot_init is None:
+            qdot_init = InitialGuessList()
+        if not isinstance(qdot_init, InitialGuessList):
+            raise ValueError("qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' keys")
+        for key in qdot_init.keys():
+            # Make sure only these keys are defined
+            if key not in ("qdot_start", "qdot_end"):
+                raise ValueError(
+                    "qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' keys")
+        # Make sure all are declared
+        for key in ("qdot_start", "qdot_end"):
+            if key not in qdot_init.keys():
+                qdot_init.add(key, [0] * n_q)
+
         # Declare parameters for the initial and final velocities
-        if "parameters" in kwargs and kwargs["parameters"] is not None:
-            if isinstance(kwargs["parameters"], ParameterList):
-                parameters = kwargs["parameters"]
-            elif isinstance(kwargs["parameters"], Parameter):
-                parameters = ParameterList()
-                parameters.add(kwargs["parameters"])
-            else:
-                raise ValueError("parameters must be a ParameterList or a Parameters")
-        else:
+        if parameters is None:
             parameters = ParameterList()
+        if not isinstance(parameters, ParameterList):
+            raise ValueError("parameters must be a ParameterList")
+
+        if parameter_init is None:
+            parameter_init = InitialGuessList()
+        if not isinstance(parameter_init, InitialGuessList):
+            raise ValueError("parameter_init must be a InitialGuessList")
+
+        if parameter_bounds is None:
+            parameter_bounds = BoundsList()
+        if not isinstance(parameter_bounds, BoundsList):
+            raise ValueError("parameter_bounds must be a BoundsList")
+
+        if parameter_constraints is None:
+            parameter_constraints = ParameterConstraintList()
+        if not isinstance(parameter_constraints, ParameterConstraintList):
+            raise ValueError("parameter_constraints must be a ParameterConstraintList")
+
+        if parameter_objectives is None:
+            parameter_objectives = ParameterObjectiveList()
+        if not isinstance(parameter_objectives, ParameterObjectiveList):
+            raise ValueError("parameter_objectives must be a ParameterObjectiveList")
+
+        # TODO Check if already done?
         parameters.add(
-            "qdot0",  # The name of the parameter
+            "qdot_start",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
-            initial_guess=qdot_start_init,  # The initial guess
-            bounds=qdot_start_bounds,  # The bounds
             size=n_qdot,  # The number of elements this particular parameter vector has
         )
         parameters.add(
-            "qdotN",  # The name of the parameter
+            "qdot_end",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
-            initial_guess=qdot_end_init,  # The initial guess
-            bounds=qdot_end_bounds,  # The bounds
             size=n_qdot,  # The number of elements this particular parameter vector has
         )
 
-        if "multinode_constraints" in kwargs and kwargs["multinode_constraints"] is not None:
-            multinode_constraints = kwargs["multinode_constraints"]
-        else:
+        for key in qdot_bounds.keys():
+            if key in parameter_bounds.keys():
+                raise KeyError(f"{key} cannot be declared in parameters_bounds as it is a reserved word in VariationalOptimalControlProgram")
+            parameter_bounds.add(key, qdot_bounds[key], phase=0)
+
+        for init in qdot_init.keys():
+            if key in parameter_init.keys():
+                raise KeyError(f"{key} cannot be declared in parameters_init as it is a reserved word in VariationalOptimalControlProgram")
+            parameter_init.add(init, qdot_init[key], phase=0)
+
+        if multinode_constraints is None:
             multinode_constraints = MultinodeConstraintList()
+        if not isinstance(multinode_constraints, MultinodeConstraintList):
+            raise ValueError("multinode_constraints must be a MultinodeConstraintList")
         self.variational_continuity(multinode_constraints, n_shooting, n_q)
 
         super().__init__(
@@ -108,6 +154,8 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             assume_phase_dynamics=True,
             skip_continuity=True,
             parameters=parameters,
+            parameter_init=parameter_init,
+            parameter_bounds=parameter_bounds,
             multinode_constraints=multinode_constraints,
             **kwargs,
         )
@@ -142,7 +190,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             If the dynamics should be expanded with casadi
         """
 
-        nlp.parameters = ocp.v.parameters_in_list
+        nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         dynamics_eval = DynamicsEvaluation(MX(0), MX(0))
@@ -167,7 +215,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         control_cur = MX.sym("control_cur", nlp.model.nb_q, 1)
         control_next = MX.sym("control_next", nlp.model.nb_q, 1)
         q0 = MX.sym("q0", nlp.model.nb_q, 1)
-        qdot0 = MX.sym("qdot0", nlp.model.nb_q, 1)
+        qdot0 = MX.sym("qdot_start", nlp.model.nb_q, 1)
         q1 = MX.sym("q1", nlp.model.nb_q, 1)
         control0 = MX.sym("control0", nlp.model.nb_q, 1)
         control1 = MX.sym("control1", nlp.model.nb_q, 1)

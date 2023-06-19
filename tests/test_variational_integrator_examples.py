@@ -63,13 +63,13 @@ def test_variational_pendulum(use_sx):
     )
 
     np.testing.assert_almost_equal(
-        sol.parameters["qdot0"].squeeze(),
+        sol.parameters["qdot_start"].squeeze(),
         [0.0, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
-        sol.parameters["qdotN"].squeeze(),
+        sol.parameters["qdot_end"].squeeze(),
         [0.0, 0.0],
         decimal=6,
     )
@@ -132,13 +132,13 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
     )
 
     np.testing.assert_almost_equal(
-        sol.parameters["qdot0"].squeeze(),
+        sol.parameters["qdot_start"].squeeze(),
         [0.0, 0.0, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
-        sol.parameters["qdotN"].squeeze(),
+        sol.parameters["qdot_end"].squeeze(),
         [0.0, 0.0, 0.0],
         decimal=6,
     )

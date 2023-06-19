@@ -11,8 +11,7 @@ from bioptim import (
     ParameterList,
     InterpolationType,
     InitialGuessList,
-    Objective,
-    ObjectiveFcn,
+    ParameterObjectiveList,
     OdeSolver,
     MagnitudeType,
 )
@@ -104,9 +103,6 @@ def test_update_bounds_and_init_with_param(assume_phase_dynamics):
         new_gravity[2] = value + extra_value
         bio_model.set_gravity(new_gravity)
 
-    def my_target_function(ocp, value, target_value):
-        return value + target_value
-
     bio_model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod")
     nq = bio_model.nb_q
     ns = 10
@@ -116,102 +112,72 @@ def test_update_bounds_and_init_with_param(assume_phase_dynamics):
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     parameters = ParameterList()
-    bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
-    initial_gravity = InitialGuess(g_init)
+    parameter_bounds = BoundsList()
+    parameter_init = InitialGuessList()
+
     parameters.add(
         "gravity_z",
         my_parameter_function,
-        initial_gravity,
-        bounds_gravity,
         size=1,
         extra_value=1,
     )
+    parameter_bounds.add("gravity_z", min_bound=[g_min], max_bound=[g_max], interpolation=InterpolationType.CONSTANT)
+    parameter_init["gravity_z"] = [g_init]
 
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_tau))
-    u_init = InitialGuess([0] * bio_model.nb_tau)
     ocp = OptimalControlProgram(
         bio_model,
         dynamics,
         ns,
         1.0,
         parameters=parameters,
-        x_init=x_init,
-        u_init=u_init,
+        parameter_init=parameter_init,
+        parameter_bounds=parameter_bounds,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
-    x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
-    u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
+    # Before modifying
+    expected = np.array([[-np.inf] * (nq * 2) * (ns + 1) + [-np.inf] * nq * ns + [g_min]]).T
+    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
+    expected = np.array([[np.inf] * (nq * 2) * (ns + 1) + [np.inf] * nq * ns + [g_max]]).T
+    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
+
+    x_bounds = BoundsList()
+    x_bounds["q"] = -np.ones((nq, 1)), np.ones((nq, 1))
+    x_bounds["qdot"] = -np.ones((nq, 1)), np.ones((nq, 1))
+    u_bounds = BoundsList()
+    u_bounds["tau"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
     ocp.update_bounds(x_bounds, u_bounds)
 
-    expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds.min, np.append(expected, [g_min])[:, np.newaxis])
-    expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds.max, np.append(expected, [g_max])[:, np.newaxis])
+    expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns + [g_min]]).T
+    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
+    expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns + [g_max]]).T
+    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
-    x_init = InitialGuess(0.5 * np.ones((nq * 2, 1)))
-    u_init = InitialGuess(-0.5 * np.ones((nq, 1)))
+    x_init = InitialGuessList()
+    x_init["q"] = 0.5 * np.ones((nq, 1))
+    x_init["qdot"] = 0.5 * np.ones((nq, 1))
+    u_init = InitialGuessList()
+    u_init["tau"] = -0.5 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
-    expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.init.init, np.append(expected, [g_init])[:, np.newaxis])
 
+    expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns + [g_init]]).T
+    np.testing.assert_almost_equal(ocp.init_vector, expected)
 
-def test_add_wrong_param():
-    g_min, g_max, g_init = -10, -6, -8
+    # Try on parameters too
+    parameter_bounds = BoundsList()
+    parameter_bounds.add("gravity_z", min_bound=[g_min * 2], max_bound=[g_max * 2], interpolation=InterpolationType.CONSTANT)
+    parameter_init = InitialGuessList()
+    parameter_init["gravity_z"] = [g_init * 2]
+    ocp.update_bounds(parameter_bounds=parameter_bounds)
+    ocp.update_initial_guess(parameter_init=parameter_init)
 
-    def my_parameter_function(bio_model, value, extra_value):
-        bio_model.set_gravity(biorbd.Vector3d(0, 0, value + extra_value))
+    expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns + [g_min * 2]]).T
+    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
+    expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns + [g_max * 2]]).T
+    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
-    parameters = ParameterList()
-    initial_gravity = InitialGuess(g_init)
-    bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
-
-    with pytest.raises(
-        RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"
-    ):
-        parameters.add(
-            "gravity_z",
-            [],
-            initial_gravity,
-            bounds_gravity,
-            size=1,
-            extra_value=1,
-        )
-
-    with pytest.raises(
-        RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"
-    ):
-        parameters.add(
-            "gravity_z",
-            my_parameter_function,
-            None,
-            bounds_gravity,
-            size=1,
-            extra_value=1,
-        )
-
-    with pytest.raises(
-        RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"
-    ):
-        parameters.add(
-            "gravity_z",
-            my_parameter_function,
-            initial_gravity,
-            None,
-            size=1,
-            extra_value=1,
-        )
-
-    with pytest.raises(
-        RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"
-    ):
-        parameters.add(
-            "gravity_z",
-            my_parameter_function,
-            initial_gravity,
-            bounds_gravity,
-            extra_value=1,
-        )
+    expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns + [g_init * 2]]).T
+    np.testing.assert_almost_equal(ocp.init_vector, expected)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -554,7 +520,7 @@ def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
         else:
             raise NotImplementedError("Interpolation type not implemented in the tests")
 
-        np.testing.assert_almost_equal(ocp.v.init_vector, expected)
+        np.testing.assert_almost_equal(ocp.init_vector, expected)
 
         with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
             ocp.update_bounds(x_init, u_init)
@@ -903,7 +869,7 @@ def test_update_noised_initial_guess_rk4(interpolation, assume_phase_dynamics):
         else:
             raise NotImplementedError("Interpolation type not implemented yet")
 
-        np.testing.assert_almost_equal(ocp.v.init_vector, expected[:, np.newaxis])
+        np.testing.assert_almost_equal(ocp.init_vector, expected[:, np.newaxis])
 
         with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
             ocp.update_bounds(x_init, u_init)
@@ -985,7 +951,6 @@ def test_update_noised_initial_guess_rk4_with_extra(n_extra, assume_phase_dynami
     )
 
     ocp.update_initial_guess(x_init, u_init)
-    print(ocp.v.init_vector)
     expected = np.array(
         [
             [0.99247241],
@@ -1024,7 +989,7 @@ def test_update_noised_initial_guess_rk4_with_extra(n_extra, assume_phase_dynami
         ]
     )
 
-    np.testing.assert_almost_equal(ocp.v.init_vector, expected)
+    np.testing.assert_almost_equal(ocp.init_vector, expected)
 
     with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
         ocp.update_bounds(x_init, u_init)

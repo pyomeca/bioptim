@@ -92,6 +92,8 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
     u_bounds.add("tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[2].nb_tau, phase=2)
 
     parameters = ParameterList()
+    parameter_bounds = BoundsList()
+    parameter_init = InitialGuessList()
     parameter_objectives = ParameterObjectiveList()
     if use_parameter:
 
@@ -106,19 +108,17 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
         min_g = -10
         max_g = -6
         target_g = -8
-        bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
-        initial_gravity = InitialGuess((min_g + max_g) / 2)
         parameters.add(
             "gravity_z",
             my_parameter_function,
-            initial_gravity,
-            bound_gravity,
             size=1,
             extra_value=1,
         )
         parameter_objectives.add(
             my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
         )
+        parameter_bounds.add("gravity_z", min_bound=[min_g], max_bound=[max_g], interpolation=InterpolationType.CONSTANT)
+        parameter_init["gravity_z"] = (min_g + max_g) / 2
 
     # ------------- #
 
@@ -133,6 +133,8 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
         constraints=constraints,
         ode_solver=ode_solver,
         parameters=parameters,
+        parameter_init=parameter_init,
+        parameter_bounds=parameter_bounds,
         parameter_objectives=parameter_objectives,
         assume_phase_dynamics=assume_phase_dynamics,
     )
