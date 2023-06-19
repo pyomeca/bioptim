@@ -258,6 +258,22 @@ class BioModel(Protocol):
         Create the desired bounds
         """
 
+    def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
+        """
+        Compute the Lagrangian of a biorbd model.
+
+        Parameters
+        ----------
+        q: MX | SX
+            The generalized coordinates.
+        qdot: MX | SX
+            The generalized velocities.
+
+        Returns
+        -------
+        The Lagrangian.
+        """
+
     def set_dependencies(self, dependent_joint_index: list, independent_joint_index: list):
         """
         Set the dependencies between the joints of the model
@@ -271,7 +287,7 @@ class BioModel(Protocol):
         """
 
     @property
-    def nb_independent_joints(self):
+    def nb_independent_joints(self) -> int:
         """
         Get the number of independent joints
 
@@ -283,7 +299,7 @@ class BioModel(Protocol):
         return -1
 
     @property
-    def nb_dependent_joints(self):
+    def nb_dependent_joints(self) -> int:
         """
         Get the number of dependent joints
 
@@ -314,7 +330,7 @@ class BioModel(Protocol):
         """
 
     @property
-    def nb_holonomic_constraints(self):
+    def nb_holonomic_constraints(self) -> int:
         """
         Get the number of holonomic constraints
 
@@ -325,7 +341,7 @@ class BioModel(Protocol):
         """
         return -1
 
-    def holonomic_constraints(self, q: MX):
+    def holonomic_constraints(self, q: MX) -> MX:
         """
         Get the holonomic constraints
 
@@ -340,7 +356,7 @@ class BioModel(Protocol):
             The holonomic constraints
         """
 
-    def holonomic_constraints_jacobian(self, q: MX):
+    def holonomic_constraints_jacobian(self, q: MX) -> MX:
         """
         Get the jacobian of the holonomic constraints
 
@@ -355,7 +371,7 @@ class BioModel(Protocol):
             The holonomic constraints jacobian
         """
 
-    def holonomic_constraints_derivative(self, q: MX, qdot: MX):
+    def holonomic_constraints_derivative(self, q: MX, qdot: MX) -> MX:
         """
         Get the derivative of the holonomic constraints
 
@@ -372,7 +388,7 @@ class BioModel(Protocol):
             The holonomic constraints derivative
         """
 
-    def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX):
+    def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX) -> MX:
         """
         Get the double derivative of the holonomic constraints
 
@@ -391,7 +407,7 @@ class BioModel(Protocol):
             The holonomic constraints double derivative
         """
 
-    def partitioned_mass_matrix(self, q):
+    def partitioned_mass_matrix(self, q: MX) -> MX:
         """
         This function returns the partitioned mass matrix, reordered in function independent and dependent joints
 
@@ -406,7 +422,7 @@ class BioModel(Protocol):
             The partitioned mass matrix, reordered in function independent and dependent joints
         """
 
-    def partitioned_non_linear_effect(self, q, qdot, f_ext=None, f_contacts=None):
+    def partitioned_non_linear_effect(self, q: MX, qdot: MX, f_ext=None, f_contacts=None) -> MX:
         """
         This function returns the partitioned non-linear effect, reordered in function independent and dependent joints
 
@@ -422,7 +438,7 @@ class BioModel(Protocol):
             The contact forces
         """
 
-    def partitioned_q(self, q):
+    def partitioned_q(self, q: MX) -> MX:
         """
         This function returns the partitioned q, reordered in function independent and dependent joints
 
@@ -437,7 +453,7 @@ class BioModel(Protocol):
             The partitioned q, reorder in function independent and dependent joints
         """
 
-    def partitioned_qdot(self, qdot):
+    def partitioned_qdot(self, qdot: MX) -> MX:
         """
         This function returns the partitioned qdot, reordered in function independent and dependent joints
 
@@ -452,7 +468,7 @@ class BioModel(Protocol):
             The partitioned qdot, reordered in function independent and dependent joints
         """
 
-    def partitioned_tau(self, tau):
+    def partitioned_tau(self, tau: MX) -> MX:
         """
         This function returns the partitioned tau, reordered in function independent and dependent joints
 
@@ -467,7 +483,7 @@ class BioModel(Protocol):
             The partitioned tau, reordered in function independent and dependent joints
         """
 
-    def partitioned_constrained_jacobian(self, q):
+    def partitioned_constrained_jacobian(self, q: MX) -> MX:
         """
         This function returns the partitioned constrained jacobian, reordered in function independent and dependent
         joints
@@ -483,7 +499,9 @@ class BioModel(Protocol):
             The partitioned constrained jacobian, reordered in function independent and dependent joints
         """
 
-    def forward_dynamics_constrained_independent(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
+    def forward_dynamics_constrained_independent(
+        self, u: MX, udot: MX, tau: MX, external_forces=None, f_contacts=None
+    ) -> MX:
         """
         This is the forward dynamics of the model, but only for the independent joints
 
@@ -545,7 +563,7 @@ class BioModel(Protocol):
             The generalized coordinates
         """
 
-    def compute_v_from_u(self, u: MX):
+    def compute_v_from_u(self, u: MX) -> MX:
         """
         Compute the dependent joint from the independent joint,
         This is done by solving the system of equations given by the holonomic constraints
@@ -564,7 +582,7 @@ class BioModel(Protocol):
             The dependent joint
         """
 
-    def compute_v_from_u_numeric(self, u: DM, v_init=None):
+    def compute_v_from_u_numeric(self, u: DM, v_init=None) -> DM:
         """
         Compute the dependent joint from the independent joint,
         This is done by solving the system of equations given by the holonomic constraints
