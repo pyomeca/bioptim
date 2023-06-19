@@ -16,11 +16,10 @@ from bioptim import (
     OptimalControlProgram,
     ParameterList,
     PenaltyController,
+    VariationalBiorbdModel,
 )
 from casadi import MX, vertcat, Function
 from ...optimization.parameters import Parameter
-
-from bioptim.examples.discrete_mechanics_and_optimal_control.variational_biorbd_model import VariationalBiorbdModel
 
 
 class VariationalOptimalControlProgram(OptimalControlProgram):
