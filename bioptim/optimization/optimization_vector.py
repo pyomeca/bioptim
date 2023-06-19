@@ -317,7 +317,8 @@ class OptimizationVectorHelper:
         The phase time
         """
 
-        offset = data.shape[0] - ocp.parameters.shape - 1  # parameters are at the end of the vector
+        n_optimized_time = ocp.parameters["time"].shape if "time" in ocp.parameters.names else 0
+        offset = data.shape[0] - n_optimized_time  # parameters are at the end of the vector
         data_time_optimized = []
         if "time" in ocp.parameters.names:
             for param in ocp.parameters:
@@ -326,12 +327,13 @@ class OptimizationVectorHelper:
                     break
                 offset += param.shape
 
+        # Starts at zero
         phase_time = [0] + [nlp.tf for nlp in ocp.nlp]
         if data_time_optimized:
             cmp = 0
             for i in range(len(phase_time)):
-                if isinstance(phase_time[i], ocp.cx):
-                    phase_time[i] = data_time_optimized[ocp.parameter_mappings["time"].to_second.map_idx[cmp]]
+                if not isinstance(phase_time[i], (int, float)):
+                    phase_time[i] = data_time_optimized[cmp]
                     cmp += 1
         return phase_time
 

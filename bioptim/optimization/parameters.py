@@ -230,6 +230,7 @@ class ParameterList(UniquePerProblemOptionList):
         size: int = None,
         list_index: int = -1,
         scaling: np.ndarray = np.array([1.0]),
+        allow_reserved_name: bool = False,
         **extra_arguments: Any,
     ):
         """
@@ -248,13 +249,21 @@ class ParameterList(UniquePerProblemOptionList):
             The index of the parameter in the parameters list
         scaling: float
             The scaling of the parameter
+        allow_reserved_name: bool
+            Overrides the restriction to reserved key. This is for internal purposes and should not be used by users
+            as it will result in undefined behavior
         extra_arguments: dict
             Any argument that should be passed to the user defined functions
         """
 
+        if not allow_reserved_name and parameter_name == "time":
+            raise KeyError("It is not possible to declare a parameter with the key 'time' as it is a reserved name")
+
         if isinstance(parameter_name, Parameter):
+            # case it is not a parameter name but trying to copy another parameter
             self.copy(parameter_name)
-            self[parameter_name.name].declare_symbolic(self.cx_type)
+            if parameter_name.name != "time":
+                self[parameter_name.name].declare_symbolic(self.cx_type)
         else:
             if "phase" in extra_arguments:
                 raise ValueError(

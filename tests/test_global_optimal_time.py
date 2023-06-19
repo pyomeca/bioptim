@@ -783,7 +783,7 @@ def test_mayer_neg_monophase_time_constraint():
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
@@ -823,7 +823,7 @@ def test_mayer1_neg_multiphase_time_constraint():
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
@@ -863,7 +863,7 @@ def test_mayer2_neg_multiphase_time_constraint():
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1", phase=2)
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
@@ -945,7 +945,7 @@ def test_lagrange_neg_monophase_time_constraint(assume_phase_dynamics):
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
@@ -963,7 +963,7 @@ def test_lagrange_neg_monophase_time_constraint(assume_phase_dynamics):
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 def test_lagrange1_neg_multiphase_time_constraint(assume_phase_dynamics):
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         (
             bio_model,
             n_shooting,
@@ -1007,7 +1007,7 @@ def test_lagrange1_neg_multiphase_time_constraint(assume_phase_dynamics):
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 def test_lagrange2_neg_multiphase_time_constraint(assume_phase_dynamics):
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         (
             bio_model,
             n_shooting,
@@ -1112,7 +1112,7 @@ def test_mayer_neg_two_objectives(assume_phase_dynamics):
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
