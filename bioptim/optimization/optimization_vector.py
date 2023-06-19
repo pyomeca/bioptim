@@ -202,16 +202,17 @@ class OptimizationVectorHelper:
                 v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
                 v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
+        collapsed_values_min = np.ones((ocp.parameters.shape, 1)) * -np.inf
+        collapsed_values_max = np.ones((ocp.parameters.shape, 1)) * np.inf
         for key in ocp.parameters.keys():
             if key not in ocp.parameter_bounds.keys():
-                v_bounds_min = np.concatenate((v_bounds_min, np.ones((ocp.parameters[key].size, 1)) * -np.inf))
-                v_bounds_max = np.concatenate((v_bounds_max, np.ones((ocp.parameters[key].size, 1)) * np.inf))
                 continue
 
-            param_bound = ocp.parameter_bounds[key]
-            bound = param_bound.scale(ocp.parameters[key].scaling)
-            v_bounds_min = np.concatenate((v_bounds_min, bound.min))
-            v_bounds_max = np.concatenate((v_bounds_max, bound.max))
+            scaled_bounds = ocp.parameter_bounds[key].scale(ocp.parameters[key].scaling)
+            collapsed_values_min[ocp.parameters[key].index, :] = scaled_bounds.min
+            collapsed_values_max[ocp.parameters[key].index, :] = scaled_bounds.max
+        v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
+        v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
         return v_bounds_min, v_bounds_max
 
@@ -292,14 +293,15 @@ class OptimizationVectorHelper:
 
                 v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
 
+        collapsed_values = np.zeros((ocp.parameters.shape, 1))
         for key in ocp.parameters.keys():
             if key not in ocp.parameter_init.keys():
                 v_init = np.concatenate((v_init, np.zeros((ocp.parameters[key].size, 1))))
                 continue
 
-            param_init = ocp.parameter_init[key]
-            init = param_init.scale(ocp.parameters[key].scaling)
-            v_init = np.concatenate((v_init, init.init))
+            scaled_init = ocp.parameter_init[key].scale(ocp.parameters[key].scaling)
+            collapsed_values[ocp.parameters[key].index, :] = scaled_init.init
+        v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
 
         return v_init
 
@@ -318,15 +320,13 @@ class OptimizationVectorHelper:
         The phase time
         """
 
-        n_optimized_time = ocp.parameters["time"].shape if "time" in ocp.parameters.names else 0
-        offset = data.shape[0] - n_optimized_time  # parameters are at the end of the vector
         data_time_optimized = []
         if "time" in ocp.parameters.names:
+            offset = data.shape[0] - ocp.parameters.shape
             for param in ocp.parameters:
                 if param.name == "time":
-                    data_time_optimized = list(np.array(data[offset : offset + param.shape])[:, 0])
+                    data_time_optimized = list(np.array(data[[offset + i for i in param.index], :])[:, 0])
                     break
-                offset += param.shape
 
         # Starts at zero
         phase_time = [0] + [nlp.tf for nlp in ocp.nlp]
@@ -397,9 +397,9 @@ class OptimizationVectorHelper:
                     offset += nu
                 p_idx += 1
 
+        offset = v_array.shape[0] - ocp.parameters.shape
         for param in ocp.parameters:
-            data_parameters[param.name] = v_array[offset : offset + param.shape, np.newaxis] * param.scaling
-            offset += param.shape
+            data_parameters[param.name] = v_array[[offset + i for i in param.index], np.newaxis] * param.scaling
 
         return data_states, data_controls, data_parameters
 

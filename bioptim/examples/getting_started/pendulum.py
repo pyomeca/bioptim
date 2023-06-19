@@ -116,7 +116,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30, n_threads=2)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
@@ -132,7 +132,6 @@ def main():
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol.detailed_cost_values()
     sol.print_cost()
     sol.animate(n_frames=100)
 

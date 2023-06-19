@@ -720,12 +720,10 @@ class DynamicsFunctions:
             The definition of the system
         """
 
-        offset = 0
         for param in nlp.parameters:
             # Call the pre dynamics function
             if param.function[0]:
-                param.function[0](nlp.model, parameters[offset : offset + param.size], **param.params)
-                offset += param.size
+                param.function[0](nlp.model, parameters[param.index], **param.params)
 
     @staticmethod
     def compute_qdot(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX):

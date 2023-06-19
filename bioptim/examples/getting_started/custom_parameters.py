@@ -173,12 +173,6 @@ def prepare_ocp(
     parameter_init = InitialGuessList()
 
     if optim_gravity:
-        # Give the parameter some min and max bounds
-        parameter_bounds.add("gravity_xyz", min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
-
-        # and an initial condition
-        parameter_init["gravity_xyz"] = (min_g + max_g) / 2
-
         g_scaling = np.array([1, 1, 10.0])
         parameters.add(
             "gravity_xyz",  # The name of the parameter
@@ -187,6 +181,12 @@ def prepare_ocp(
             scaling=g_scaling,  # The scaling of the parameter
             extra_value=1,  # You can define as many extra arguments as you want
         )
+
+        # Give the parameter some min and max bounds
+        parameter_bounds.add("gravity_xyz", min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
+
+        # and an initial condition
+        parameter_init["gravity_xyz"] = (min_g + max_g) / 2
 
         # and an objective function
         parameter_objectives.add(
@@ -199,9 +199,6 @@ def prepare_ocp(
         )
 
     if optim_mass:
-        parameter_bounds.add("mass", min_bound=[min_m], max_bound=[max_m], interpolation=InterpolationType.CONSTANT)
-        parameter_init["mass"] = (min_m + max_m) / 2
-
         m_scaling = np.array([10.0])
         parameters.add(
             "mass",  # The name of the parameter
@@ -209,6 +206,11 @@ def prepare_ocp(
             size=1,  # The number of elements this particular parameter vector has
             scaling=m_scaling,  # The scaling of the parameter
         )
+
+        parameter_bounds.add("mass", min_bound=[min_m], max_bound=[max_m], interpolation=InterpolationType.CONSTANT)
+
+        parameter_init["mass"] = (min_m + max_m) / 2
+
         parameter_objectives.add(
             my_target_function,
             weight=10000,
@@ -226,10 +228,10 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        parameters=parameters,
         parameter_objectives=parameter_objectives,
         parameter_bounds=parameter_bounds,
         parameter_init=parameter_init,
-        parameters=parameters,
         ode_solver=ode_solver,
         use_sx=use_sx,
         assume_phase_dynamics=assume_phase_dynamics,

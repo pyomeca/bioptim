@@ -292,47 +292,54 @@ def prepare_ocp_parameters(
     # Define the parameter to optimize
     parameters = ParameterList()
     parameter_objectives = ParameterObjectiveList()
+    parameter_bounds = BoundsList()
+    parameter_init = InitialGuessList()
 
     if optim_gravity:
-        # Give the parameter some min and max bounds
-        bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
-        # and an initial condition
-        initial_gravity = InitialGuess((min_g + max_g) / 2)
+        g_scaling = np.array([1, 1, 10.0])
         parameters.add(
             "gravity_xyz",  # The name of the parameter
             my_parameter_function,  # The function that modifies the biorbd model
-            initial_gravity,  # The initial guess
-            bound_gravity,  # The bounds
             size=3,  # The number of elements this particular parameter vector has
-            scaling=np.array([1, 1, 10.0]),
+            scaling=g_scaling,  # The scaling of the parameter
             extra_value=1,  # You can define as many extra arguments as you want
         )
+
+        # Give the parameter some min and max bounds
+        parameter_bounds.add("gravity_xyz", min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
+
+        # and an initial condition
+        parameter_init["gravity_xyz"] = (min_g + max_g) / 2
+
+        # and an objective function
         parameter_objectives.add(
             my_target_function,
             weight=1000,
-            quadratic=False,
+            quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_g,
+            target=target_g / g_scaling,  # Make sure your target fits the scaling
             key="gravity_xyz",
         )
 
     if optim_mass:
-        bound_mass = Bounds(min_m, max_m, interpolation=InterpolationType.CONSTANT)
-        initial_mass = InitialGuess((min_m + max_m) / 2)
+        m_scaling = np.array([10.0])
         parameters.add(
             "mass",  # The name of the parameter
             set_mass,  # The function that modifies the biorbd model
-            initial_mass,  # The initial guess
-            bound_mass,  # The bounds
             size=1,  # The number of elements this particular parameter vector has
-            scaling=np.array([10.0]),
+            scaling=m_scaling,  # The scaling of the parameter
         )
+
+        parameter_bounds.add("mass", min_bound=[min_m], max_bound=[max_m], interpolation=InterpolationType.CONSTANT)
+
+        parameter_init["mass"] = (min_m + max_m) / 2
+
         parameter_objectives.add(
             my_target_function,
             weight=100,
-            quadratic=False,
+            quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_m,
+            target=target_m / m_scaling,  # Make sure your target fits the scaling
             key="mass",
         )
 
@@ -345,6 +352,9 @@ def prepare_ocp_parameters(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         parameters=parameters,
+        parameter_objectives=parameter_objectives,
+        parameter_bounds=parameter_bounds,
+        parameter_init=parameter_init,
         ode_solver=ode_solver,
         use_sx=use_sx,
         assume_phase_dynamics=assume_phase_dynamics,

@@ -2,8 +2,7 @@ import numpy as np
 
 from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
-from ..limits.path_conditions import PathCondition, Bounds
-from ..optimization.parameters import Parameter
+from ..limits.path_conditions import Bounds
 from ..misc.enums import Node, InterpolationType
 
 
@@ -217,62 +216,25 @@ class GraphAbstract:
                         list_mayer_objectives.append(mayer_objective)
         return list_mayer_objectives
 
-    def _structure_scaling_parameter(self, el: PathCondition, parameter: Parameter):
-        """
-        Main structure of the next method _scaling_parameter(self, parameter: Parameter)
-
-        Parameters
-        ----------
-        el: PathCondition
-            The PathCondition to be converted in a string
-        parameter: Parameter
-            The unscaled parameter
-        """
-
-        size_el = len(el[0])
-        el_list = [el[i][j] for i in range(parameter.size) for j in range(size_el)]
-        el_str = f"{self._vector_layout(el_list)}"
-        return el_str
-
-    def _scaling_parameter(self, parameter: Parameter):
+    def _scaling_parameter(self, key: str):
         """
         Take scaling into account for display task
 
         Parameters
         ----------
-        parameter: Parameter
-            The unscaled parameter
+        key: str
+            The key of the parameter containing all the information to display
         """
 
-        initial_guess_str = self._structure_scaling_parameter(parameter.initial_guess.init, parameter)
-        min_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
-        max_bound_str = self._structure_scaling_parameter(parameter.bounds.max, parameter)
+        parameter = self.ocp.parameters[key]
+        initial_guess_str = f"{self._vector_layout(self.ocp.parameter_init[key].init)}"
+        min_bound_str = f"{self._vector_layout(self.ocp.parameter_bounds[key].min)}"
+        max_bound_str = f"{self._vector_layout(self.ocp.parameter_bounds[key].max)}"
 
         scaling = [parameter.scaling[i][0] for i in range(parameter.size)]
         scaling_str = f"{self._vector_layout(scaling)}"
 
-        return initial_guess_str, min_bound_str, max_bound_str, scaling_str
-
-    @staticmethod
-    def _get_parameter_function_name(parameter: Parameter, idx: int):
-        """
-        Get parameter function name (whether or not it is a custom function)
-
-        Parameters
-        ----------
-        parameter: Parameter
-            The parameter to which the function is linked
-        idx: int
-            The penalty index
-        """
-
-        name = ""
-        if parameter.penalty_list is not None:
-            if parameter.penalty_list[0][idx].type is not None and parameter.penalty_list[0][idx].type.name == "CUSTOM":
-                name = parameter.penalty_list[0][idx].custom_function.__name__
-            else:
-                name = parameter.penalty_list[0][idx].name
-        return name
+        return parameter, initial_guess_str, min_bound_str, max_bound_str, scaling_str
 
     def _analyze_nodes(self, phase_idx: int, constraint: Constraint):
         """
@@ -347,7 +309,7 @@ class OcpToConsole(GraphAbstract):
             print(f"PARAMETERS: ")
             print("")
             for parameter in self.ocp.nlp[phase_idx].parameters:
-                initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
+                parameter, initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter.name)
                 print(f"Name: {parameter.name}")
                 print(f"Size: {parameter.size}")
                 print(f"Initial_guess: {initial_guess}")
@@ -569,7 +531,7 @@ class OcpToGraph(GraphAbstract):
                 global_objectives += f"<b>Quadratic</b>: {objective.quadratic} <br/><br/>"
         return global_objectives, global_objectives_names
 
-    def _draw_parameter_node(self, g, phase_idx: int, param_idx: int, parameter: Parameter):
+    def _draw_parameter_node(self, g, phase_idx: int, param_idx: int, key: str):
         """
         Draw the node which contains the information related to the parameters
 
@@ -581,11 +543,12 @@ class OcpToGraph(GraphAbstract):
             The index of the current phase
         param_idx: int
             The index of the parameter
-        parameter: Parameter
-            The parameter containing all the information to display
+        key: str
+            The key of the parameter containing all the information to display
         """
 
-        initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
+        parameter, initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(key)
+
         node_str = f"<u><b>{parameter.name[0].upper() + parameter.name[1:]}</b></u><br/>"
         node_str += f"<b>Size</b>: {parameter.size}<br/>"
         node_str += f"<b>Scaling</b>: {scaling}<br/>"
@@ -707,7 +670,7 @@ class OcpToGraph(GraphAbstract):
             if len(self.ocp.nlp[phase_idx].parameters) > 0:
                 param_idx = 0
                 for param in self.ocp.nlp[phase_idx].parameters:
-                    self._draw_parameter_node(g, phase_idx, param_idx, param)
+                    self._draw_parameter_node(g, phase_idx, param_idx, param.name)
                     param_idx += 1
             else:
                 node_str = "<u><b>Parameters</b></u><br/> No parameter set"

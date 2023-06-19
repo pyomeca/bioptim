@@ -844,8 +844,11 @@ class OptimalControlProgram:
 
         self.parameters.cx_type = self.cx
 
+        offset = 0
         for param in new_parameters:
+            param.index = list(range(offset, offset + param.size))
             self.parameters.add(param)
+            offset += param.size
 
     def update_bounds(self, x_bounds: BoundsList = None, u_bounds: BoundsList = None, parameter_bounds: BoundsList = None):
         """
@@ -1121,12 +1124,11 @@ class OptimalControlProgram:
                         dt = 1
                     elif isinstance(penalty.type, ObjectiveFcn.Lagrange):
                         if not isinstance(penalty.dt, (float, int)):
-                            if i_phase in self.time_param_phases_idx:
-                                dt = Function(
-                                    "time",
-                                    [nlp.parameters.cx[i_phase]],
-                                    [nlp.parameters.cx[i_phase] / nlp.ns],
-                                )
+                            dt = Function(
+                                "time",
+                                [nlp.parameters.cx[i_phase]],
+                                [nlp.parameters.cx[i_phase] / nlp.ns],
+                            )
 
                 plot_params = {
                     "fig_name": cost_type.name,
@@ -1302,7 +1304,7 @@ class OptimalControlProgram:
                         u_init_guess.add(key, ctrl[i][key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=i)
 
         for key in param:
-            param_init_guess.add(key, param[key], name=key)
+            param_init_guess.add(key, param[key], name=key, allow_reserved_name=True)
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, parameter_init=param_init_guess)
 
         if self.ocp_solver:
@@ -1513,7 +1515,7 @@ class OptimalControlProgram:
         NLP.add(self, "t0", [0] + [nlp.tf for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         NLP.add(self, "dt", [self.nlp[i].tf / max(self.nlp[i].ns, 1) for i in range(self.n_phases)], False)
 
-        if not has_penalty:
+        if True not in has_penalty:
             # If there is no variable time, we are done
             return
 

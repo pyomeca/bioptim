@@ -8,10 +8,11 @@ import numpy as np
 from .optimal_control_program import OptimalControlProgram
 from .solution import Solution
 from ..dynamics.configure_problem import Dynamics, DynamicsList
-from ..limits.constraints import ConstraintFcn
-from ..limits.objective_functions import ObjectiveFcn
-from ..limits.path_conditions import InitialGuess, InitialGuessList
+from ..limits.constraints import ConstraintFcn, ConstraintList
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
+from ..limits.path_conditions import InitialGuess, InitialGuessList, BoundsList
 from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions, ControlType
+from ..optimization.parameters import ParameterList
 from ..interfaces.solver_options import Solver
 from ..interfaces.biomodel import BioModel
 
@@ -304,7 +305,13 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             controls[key] = sol.controls[key][:, self.frame_to_export]
         return states, controls
 
-    def _define_time(self, phase_time: int | float | list | tuple, objective_functions, constraints):
+    def _define_time(self, phase_time: int | float | list | tuple,
+        objective_functions: ObjectiveList,
+        constraints: ConstraintList,
+        parameters: ParameterList,
+        parameters_init: InitialGuessList,
+        parameters_bounds: BoundsList,
+     ):
         """
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
@@ -317,6 +324,12 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             All the objective functions. It is used to scan if any time optimization was defined
         constraints: ConstraintList
             All the constraint functions. It is used to scan if any free time was defined
+        parameters: ParameterList
+            (OUTPUT) The parameters list to add the time parameters to
+        parameters_init: InitialGuessList
+            (OUTPUT) The initial guesses list to add the time initial guess to
+        parameters_bounds: BoundsList
+            (OUTPUT) The bounds list to add the time bouds to
         """
 
         def check_for_time_optimization(penalty_functions):
@@ -344,7 +357,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         check_for_time_optimization(objective_functions)
         check_for_time_optimization(constraints)
 
-        super(RecedingHorizonOptimization, self)._define_time(phase_time, objective_functions, constraints)
+        super(RecedingHorizonOptimization, self)._define_time(phase_time, objective_functions, constraints, parameters, parameters_init, parameters_bounds)
 
 
 class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):

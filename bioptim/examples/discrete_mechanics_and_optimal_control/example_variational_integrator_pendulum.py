@@ -107,8 +107,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # --- Show the results in a bioviz animation --- #
-    sol.detailed_cost_values()  # /!\ Since the last controls are nan the costs are not accurate /!\
-    sol.print_cost()
+    sol.print_cost()  # /!\ Since the last controls are nan the costs are not accurate /!\
     sol.animate()
 
     # --- Show the graph results --- #

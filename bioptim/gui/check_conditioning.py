@@ -104,7 +104,7 @@ def check_conditioning(ocp):
             # evaluate jac_func at X_init, U_init, considering the parameters
             x_init = np.zeros((len(nlp.X), nb_x_init))
             u_init = np.zeros((len(nlp.U), nb_u_init))
-            param_init = np.array([nlp.x_init[key].shape[0] for key in ocp.parameter_init.keys()])
+            param_init = np.array([ocp.parameter_init[key].shape[0] for key in ocp.parameter_init.keys()])
 
             for key in nlp.states.keys():
                 nlp.x_init[key].check_and_adjust_dimensions(len(nlp.states[key]), nlp.ns + 1)

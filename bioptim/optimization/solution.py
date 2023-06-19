@@ -269,6 +269,7 @@ class Solution:
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
             self.assume_phase_dynamics = ocp.assume_phase_dynamics
+            self.n_threads = ocp.n_threads
 
     def __init__(self, ocp, sol: dict | list | tuple | np.ndarray | DM | None):
         """
@@ -292,7 +293,7 @@ class Solution:
         self.vector = None
         self._cost = None
         self.constraints = None
-        self.detailed_cost = []
+        self._detailed_cost = None
 
         self.lam_g = None
         self.lam_p = None
@@ -1513,26 +1514,35 @@ class Solution:
 
         return val, val_weighted
 
-    def detailed_cost_values(self):
+    @property
+    def detailed_cost(self):
+        if self._detailed_cost is None:
+            self._compute_detailed_cost()
+        return self._detailed_cost
+
+    def _compute_detailed_cost(self):
         """
         Adds the detailed objective functions and/or constraints values to sol
 
         Parameters
         ----------
         """
-        self.detailed_cost = []
+        if self.ocp.n_threads > 1:
+            raise NotImplementedError("Computing detailed cost with n_thread > 1 is not implemented yet")
+
+        self._detailed_cost = []
 
         for nlp in self.ocp.nlp:
             for penalty in nlp.J_internal + nlp.J:
                 if not penalty:
                     continue
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
-                self.detailed_cost += [
+                self._detailed_cost += [
                     {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
                 ]
         for penalty in self.ocp.J:
             val, val_weighted = self._get_penalty_cost(self.ocp.nlp[0], penalty)
-            self.detailed_cost += [
+            self._detailed_cost += [
                 {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
             ]
         return
@@ -1562,22 +1572,23 @@ class Solution:
                 else:
                     node_name = f"{penalty.node[0]}" if isinstance(penalty.node[0], int) else penalty.node[0].name
 
-                self.detailed_cost += [
-                    {
-                        "name": penalty.type.__str__(),
-                        "penalty": penalty.type.__str__().split(".")[0],
-                        "function": penalty.name,
-                        "cost_value_weighted": val_weighted,
-                        "cost_value": val,
-                        "params": penalty.params,
-                        "derivative": penalty.derivative,
-                        "explicit_derivative": penalty.explicit_derivative,
-                        "integration_rule": penalty.integration_rule.name,
-                        "weight": penalty.weight,
-                        "expand": penalty.expand,
-                        "node": node_name,
-                    }
-                ]
+                if self._detailed_cost is not None:
+                    self._detailed_cost += [
+                        {
+                            "name": penalty.type.__str__(),
+                            "penalty": penalty.type.__str__().split(".")[0],
+                            "function": penalty.name,
+                            "cost_value_weighted": val_weighted,
+                            "cost_value": val,
+                            "params": penalty.params,
+                            "derivative": penalty.derivative,
+                            "explicit_derivative": penalty.explicit_derivative,
+                            "integration_rule": penalty.integration_rule.name,
+                            "weight": penalty.weight,
+                            "expand": penalty.expand,
+                            "node": node_name,
+                        }
+                    ]
                 if print_only_weighted:
                     print(f"{penalty.type}: {val_weighted}")
                 else:

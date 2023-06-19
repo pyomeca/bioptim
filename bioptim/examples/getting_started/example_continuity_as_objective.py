@@ -285,11 +285,9 @@ def main():
     # sol_second.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol_first.detailed_cost_values()
     sol_first.print_cost()
     sol_first.animate(n_frames=100)
 
-    sol_second.detailed_cost_values()
     sol_second.print_cost()
     sol_second.animate(n_frames=100)
 

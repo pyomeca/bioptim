@@ -131,7 +131,6 @@ def main():
 
     # --- Show results --- #
     sol.graphs(show_bounds=True)
-    sol.detailed_cost_values()
     sol.print_cost()
 
     # --- Animation --- #

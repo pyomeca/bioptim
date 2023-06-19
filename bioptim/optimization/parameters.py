@@ -43,6 +43,8 @@ class Parameter(PenaltyOption):
             The user defined function that modify the model
         quadratic: bool
             If the objective is squared [True] or not [False]
+        index: list
+            The indices of the parameter in the decision vector list
         size: int
             The number of variables this parameter has
         cx: MX | SX
@@ -84,6 +86,7 @@ class Parameter(PenaltyOption):
 
         self.quadratic = quadratic
         self.size = size
+        self.index = None
         self.cx = None
         self.mx = None
         self.declare_symbolic(cx)
