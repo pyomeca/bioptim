@@ -965,7 +965,7 @@ class Solution:
             )
             if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
                 u0 = vertcat(u0, u0)
-            params = self.parameters["all"]
+            params = np.vstack([self.parameters[key] for key in self.parameters])
             val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params)
             if val.shape[0] != x0.shape[0]:
                 raise RuntimeError(

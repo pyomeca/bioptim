@@ -104,7 +104,7 @@ class OptimizationVectorHelper:
         u_scaled = []
         for nlp in ocp.nlp:
             if nlp.ode_solver.is_direct_collocation:
-                x_scaled = [x.reshape((-1, 1)) for x in nlp.X_scaled]
+                x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
             else:
                 x_scaled += nlp.X_scaled
             u_scaled += nlp.U_scaled
@@ -123,6 +123,7 @@ class OptimizationVectorHelper:
         v_bounds_min = np.ndarray((0, 1))
         v_bounds_max = np.ndarray((0, 1))
 
+        # For states
         for i_phase in range(ocp.n_phases):
             current_nlp = ocp.nlp[i_phase]
 
@@ -130,11 +131,9 @@ class OptimizationVectorHelper:
             if current_nlp.ode_solver.is_direct_collocation:
                 repeat += current_nlp.ode_solver.polynomial_degree
 
-            # For states
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
             for key in nlp.states:
-                n_points = OptimizationVectorHelper._nb_points(nlp, nlp.x_bounds[key].type)
                 nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
 
             for k in range(nlp.ns + 1):
@@ -164,7 +163,9 @@ class OptimizationVectorHelper:
                     v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
                     v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
-            # For controls
+        # For controls
+        for i_phase in range(ocp.n_phases):
+            current_nlp = ocp.nlp[i_phase]
             nlp = ocp.nlp[current_nlp.use_controls_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
