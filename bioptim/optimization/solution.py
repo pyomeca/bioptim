@@ -403,6 +403,7 @@ class Solution:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
 
                 for key in s.keys():
+                    self.ocp.nlp[p].controls[key].node_index = 0
                     s[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].controls[key]), self.ns[p], "controls")
 
                 for i in range(self.ns[p] + off):
@@ -1506,7 +1507,7 @@ class Solution:
 
             # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
             # casadi function
-            if idx == nlp.ns and not self.ocp.assume_phase_dynamics:
+            if not self.ocp.assume_phase_dynamics:
                 u = u[:, ~np.isnan(np.sum(u, axis=0))]
             val.append(penalty.function[idx](x, u, p))
             val_weighted.append(penalty.weighted_function[idx](x, u, p, penalty.weight, target, dt))
