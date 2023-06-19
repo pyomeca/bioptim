@@ -258,18 +258,9 @@ def main():
     ocp = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
-
-        ocp = None
-        try:
-            ocp = prepare_ocp(
-                "models/cube.bioMod", n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess
-            )
-        except ValueError as message:
-            if str(message) == "InterpolationType.ALL_POINTS must only be used with direct collocation":
-                # This is normal as ALL_POINTS cannot be used without collocations
-                pass
-            else:
-                raise ValueError(message)
+        ocp = prepare_ocp(
+            "models/cube.bioMod", n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess
+        )
 
     sol = ocp.solve()
     print("\n")
