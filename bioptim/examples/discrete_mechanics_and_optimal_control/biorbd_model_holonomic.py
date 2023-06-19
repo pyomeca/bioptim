@@ -143,7 +143,7 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
         self, q, qdot, qddot, tau, lagrange_multipliers, external_forces=None, f_contacts=None
     ) -> MX:
         """
-        Compute the inverse dynamics of the model
+        Compute the inverse dynamics of the model. To use carefully it has never been tested.
         Ax-b = 0
         """
         q_biorbd = GeneralizedCoordinates(q)
@@ -432,41 +432,3 @@ class BiorbdModelCustomHolonomic(BiorbdModel):
         # constraints(q_ultimate) has already been evaluated in the last constraint calling
         # discrete_euler_lagrange_equations, thus it is not necessary to evaluate it again here.
         return residual
-
-    def generate_constraint_and_jacobian_functions(
-        self, marker_1: str, marker_2: str = None, index: slice = slice(0, 3)
-    ) -> tuple[Function, Function]:
-        """Generate a close loop constraint between two markers"""
-
-        # symbolic variables to create the functions
-        q_sym = MX.sym("q", self.nb_q, 1)
-
-        # symbolic markers in global frame
-        marker_1_sym = self.marker(q_sym, index=self.marker_index(marker_1))
-        if marker_2 is not None:
-            marker_2_sym = self.marker(q_sym, index=self.marker_index(marker_2))
-            # the constraint is the distance between the two markers, set to zero
-            constraint = (marker_1_sym - marker_2_sym)[index]
-        else:
-            # the constraint is the position of the marker, set to zero
-            constraint = marker_1_sym[index]
-        # the jacobian of the constraint
-        constraint_jacobian = jacobian(constraint, q_sym)
-
-        constraint_func = Function(
-            "holonomic_constraint",
-            [q_sym],
-            [constraint],
-            ["q"],
-            ["holonomic_constraint"],
-        ).expand()
-
-        constraint_jacobian_func = Function(
-            "holonomic_constraint_jacobian",
-            [q_sym],
-            [constraint_jacobian],
-            ["q"],
-            ["holonomic_constraint_jacobian"],
-        ).expand()
-
-        return constraint_func, constraint_jacobian_func
