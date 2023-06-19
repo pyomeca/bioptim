@@ -4,10 +4,12 @@ Tests of the examples of the variational integrator.
 
 import numpy as np
 import os
+import pytest
 from bioptim import Solver
 
 
-def test_variational_pendulum():
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_variational_pendulum(use_sx):
     """Test the variational integrator pendulum example"""
     from bioptim.examples.discrete_mechanics_and_optimal_control import example_variational_integrator_pendulum
 
@@ -18,6 +20,7 @@ def test_variational_pendulum():
         bio_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=20,
+        use_sx=use_sx,
     )
 
     # --- Solve the ocp --- #
@@ -72,7 +75,8 @@ def test_variational_pendulum():
     )
 
 
-def test_variational_pendulum_with_holonomic_constraints():
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_variational_pendulum_with_holonomic_constraints(use_sx):
     """Test the variational integrator pendulum with holonomic constraints example"""
     from bioptim.examples.discrete_mechanics_and_optimal_control import (
         example_variational_integrator_with_holonomic_constraints_pendulum,
@@ -85,6 +89,7 @@ def test_variational_pendulum_with_holonomic_constraints():
         bio_model_path=bioptim_folder + "/models/pendulum_holonomic.bioMod",
         final_time=1,
         n_shooting=20,
+        use_sx=use_sx,
     )
 
     # --- Solve the ocp --- #
