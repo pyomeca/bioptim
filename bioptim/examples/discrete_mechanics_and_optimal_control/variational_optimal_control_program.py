@@ -18,7 +18,7 @@ from bioptim import (
 )
 from casadi import MX, vertcat, Function
 
-from bioptim.examples.discrete_mechanics_and_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
+from bioptim.examples.discrete_mechanics_and_optimal_control.variational_biorbd_model import VariationalBiorbdModel
 
 
 class VariationalOptimalControlProgram(OptimalControlProgram):
@@ -28,7 +28,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
     def __init__(
         self,
-        bio_model: BiorbdModelCustomHolonomic,
+        bio_model: VariationalBiorbdModel,
         n_shooting: int,
         final_time: float,
         q_init: InitialGuessList = None,

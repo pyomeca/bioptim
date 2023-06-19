@@ -174,6 +174,8 @@ from .dynamics.ode_solver import OdeSolver, OdeSolverBase
 from .interfaces.solver_options import Solver
 from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from .interfaces.biomodel import BioModel
+from .interfaces.biorbd_model_holonomic import BiorbdModelHolonomic
+from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
