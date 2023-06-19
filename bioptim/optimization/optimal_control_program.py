@@ -882,7 +882,7 @@ class OptimalControlProgram:
             if not isinstance(parameter_bounds, BoundsList):
                 raise RuntimeError("parameter_bounds should be built from a BoundsList")
             for key in parameter_bounds.keys():
-                self.parameter_bounds.add(key, parameter_bounds[key], phase=0, allow_reserved_name=True)
+                self.parameter_bounds.add(key, parameter_bounds[key], phase=0)
 
         for nlp in self.nlp:
             for key in nlp.states.keys():
@@ -930,7 +930,7 @@ class OptimalControlProgram:
             if not isinstance(parameter_init, InitialGuessList):
                 raise RuntimeError("parameter_init should be built from a InitialGuessList")
             for key in parameter_init.keys():
-                self.parameter_init.add(key, parameter_init[key], phase=0, allow_reserved_name=True)
+                self.parameter_init.add(key, parameter_init[key], phase=0)
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
         """
@@ -1304,7 +1304,7 @@ class OptimalControlProgram:
                         u_init_guess.add(key, ctrl[i][key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=i)
 
         for key in param:
-            param_init_guess.add(key, param[key], name=key, allow_reserved_name=True)
+            param_init_guess.add(key, param[key], name=key)
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, parameter_init=param_init_guess)
 
         if self.ocp_solver:
@@ -1525,8 +1525,8 @@ class OptimalControlProgram:
         parameters["time"].cx = params
         parameters["time"].mx = MX.sym("time", params.shape[0], 1)
 
-        parameters_init.add("time", initial_time_guess, allow_reserved_name=True, phase=0)
-        parameters_bounds.add("time", min_bound=time_min, max_bound=time_max, allow_reserved_name=True, phase=0, interpolation=InterpolationType.CONSTANT)
+        parameters_init.add("time", initial_time_guess, phase=0)
+        parameters_bounds.add("time", min_bound=time_min, max_bound=time_max, phase=0, interpolation=InterpolationType.CONSTANT)
 
     def __modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """

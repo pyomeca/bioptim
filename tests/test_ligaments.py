@@ -13,6 +13,7 @@ from bioptim import (
     ConstraintList,
     Solver,
     VariableScalingList,
+    ParameterList,
 )
 from .utils import TestUtils
 import os

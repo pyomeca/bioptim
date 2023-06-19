@@ -575,7 +575,6 @@ class BoundsList(OptionDict):
         max_bound: PathCondition | np.ndarray | list | tuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         phase: int = -1,
-        allow_reserved_name: bool = False,
         **extra_arguments: Any,
     ):
         """
@@ -595,15 +594,9 @@ class BoundsList(OptionDict):
             Type of interpolation do perform between shooting points
         phase: int
             The phase to add the bound to
-        allow_reserved_name: bool
-            Overrides the restriction to reserved key. This is for internal purposes and should not be used by users
-            as it will result in undefined behavior
         extra_arguments: dict
             Any parameters to pass to the Bounds
         """
-
-        if not allow_reserved_name and key == "time":
-            raise KeyError("It is not possible to declare a parameter with the key 'time' as it is a reserved name")
 
         if bounds and (min_bound or max_bound):
             RuntimeError("min_bound/max_bound and bounds cannot be set alongside")
@@ -1090,7 +1083,6 @@ class InitialGuessList(OptionDict):
         initial_guess: InitialGuess | np.ndarray | list | tuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         phase: int = -1,
-        allow_reserved_name: bool = False,
         **extra_arguments: Any,
     ):
         """
@@ -1108,13 +1100,7 @@ class InitialGuessList(OptionDict):
             Type of interpolation do perform between shooting points
         phase: int
             The phase to add the bound to
-        allow_reserved_name: bool
-            Overrides the restriction to reserved key. This is for internal purposes and should not be used by users
-            as it will result in undefined behavior
         """
-
-        if not allow_reserved_name and key == "time":
-            raise KeyError("It is not possible to declare a parameter with the key 'time' as it is a reserved name")
 
         if isinstance(initial_guess, InitialGuess):
             if phase == -1 and key in self[phase].keys():

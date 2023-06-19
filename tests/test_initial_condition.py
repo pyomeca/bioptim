@@ -131,9 +131,9 @@ def test_initial_guess_update(assume_phase_dynamics):
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.zeros((2, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.zeros((2, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.zeros((2, 1)))
-    idx = ocp.v.parameters_in_list.index("time")
-    np.testing.assert_almost_equal(ocp.v.parameters_in_list[idx].initial_guess.init[0, 0], 2)
-    np.testing.assert_almost_equal(ocp.v.init_vector, np.concatenate((np.zeros((4 * 11 + 2 * 10, 1)), [[2]])))
+
+    np.testing.assert_almost_equal(ocp.parameter_init["time"].init[0, 0], 2)
+    np.testing.assert_almost_equal(ocp.init_vector, np.concatenate((np.zeros((4 * 11 + 2 * 10, 1)), [[2]])))
 
     new_x_init = InitialGuessList()
     new_x_init["q"] = [1] * 2
@@ -148,9 +148,8 @@ def test_initial_guess_update(assume_phase_dynamics):
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.ones((2, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.ones((2, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.ones((2, 1)) * 3)
-    idx = ocp.v.parameters_in_list.index("time")
-    np.testing.assert_almost_equal(ocp.v.parameters_in_list[idx].initial_guess.init[0, 0], 4)
-    np.testing.assert_almost_equal(ocp.v.init_vector, np.array([[1, 1, 1, 1] * 11 + [3, 3] * 10 + [4]]).T)
+    np.testing.assert_almost_equal(ocp.parameter_init["time"].init[0, 0], 4)
+    np.testing.assert_almost_equal(ocp.init_vector, np.array([[1, 1, 1, 1] * 11 + [3, 3] * 10 + [4]]).T)
 
 
 def test_initial_guess_custom():
@@ -280,7 +279,7 @@ def test_initial_guess_error_messages(assume_phase_dynamics):
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # check the error messages
-    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuess or InitialGuessList"):
+    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):
         OptimalControlProgram(
             bio_model,
             dynamics,
@@ -290,7 +289,7 @@ def test_initial_guess_error_messages(assume_phase_dynamics):
             objective_functions=objective_functions,
             assume_phase_dynamics=assume_phase_dynamics,
         )
-    with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuess or InitialGuessList"):
+    with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
         OptimalControlProgram(
             bio_model,
             dynamics,

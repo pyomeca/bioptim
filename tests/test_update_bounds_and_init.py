@@ -52,9 +52,9 @@ def test_double_update_bounds_and_init(assume_phase_dynamics):
     ocp.update_bounds(x_bounds, u_bounds)
 
     expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds_vectors[0], expected)
+    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
     expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds_vectors[1], expected)
+    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_init = InitialGuessList()
     x_init["q"] = 0.5 * np.ones((nq, 1))
@@ -63,7 +63,7 @@ def test_double_update_bounds_and_init(assume_phase_dynamics):
     u_init["tau"] = -0.5 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.init_vector, expected)
+    np.testing.assert_almost_equal(ocp.init_vector, expected)
 
     x_bounds = BoundsList()
     x_bounds["q"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
@@ -74,9 +74,9 @@ def test_double_update_bounds_and_init(assume_phase_dynamics):
     ocp.update_bounds(u_bounds=u_bounds)
 
     expected = np.array([[-2] * (nq * 2) * (ns + 1) + [-4] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds_vectors[0], expected)
+    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
     expected = np.array([[2] * (nq * 2) * (ns + 1) + [4] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.bounds_vectors[1], expected)
+    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_init = InitialGuessList()
     x_init["q"] = 0.25 * np.ones((nq, 1))
@@ -85,7 +85,7 @@ def test_double_update_bounds_and_init(assume_phase_dynamics):
     u_init["tau"] = -0.25 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.array([[0.25] * (nq * 2) * (ns + 1) + [-0.25] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.v.init_vector, expected)
+    np.testing.assert_almost_equal(ocp.init_vector, expected)
 
     with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):
         ocp.update_initial_guess(x_bounds, u_bounds)
