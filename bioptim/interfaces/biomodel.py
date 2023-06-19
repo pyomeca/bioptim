@@ -611,7 +611,7 @@ class BioModel(Protocol):
         self, q, qdot, qddot, tau, lagrange_multipliers, external_forces=None, f_contacts=None
     ) -> MX:
         """
-        Compute the inverse dynamics of the model
+        Compute the inverse dynamics of the model. To use carefully it has never been tested.
         Ax-b = 0
         """
 

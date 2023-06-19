@@ -15,6 +15,7 @@ from bioptim import (
 )
 import numpy as np
 
+from bioptim.examples.discrete_mechanics_and_optimal_control.holonomic_constraints import HolonomicConstraintFcn
 from bioptim.examples.discrete_mechanics_and_optimal_control.variational_optimal_control_program import (
     VariationalOptimalControlProgram,
 )
@@ -46,6 +47,13 @@ def prepare_ocp(
     """
 
     bio_model = VariationalBiorbdModel(bio_model_path)
+    # Holonomic constraints: The pendulum must not move on the z axis
+    (
+        constraint_func,
+        constraint_jacobian_func,
+        constraint_double_derivative_func,
+    ) = HolonomicConstraintFcn.superimpose_markers(bio_model, marker_1="marker_1", index=slice(2, 3))
+    bio_model.add_holonomic_constraint(constraint_func, constraint_jacobian_func, constraint_double_derivative_func)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
