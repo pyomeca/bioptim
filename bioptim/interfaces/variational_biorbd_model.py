@@ -1,14 +1,11 @@
 """
 Biorbd model for holonomic constraints and variational integrator.
 """
-from bioptim import (
-    BiorbdModelHolonomic,
-    ControlType,
-)
 import biorbd_casadi as biorbd
 from casadi import SX, MX, vertcat, Function, jacobian, transpose
 
-from bioptim.examples.discrete_mechanics_and_optimal_control.enums import QuadratureRule
+from .biorbd_model_holonomic import BiorbdModelHolonomic
+from ..misc.enums import ControlType, QuadratureRule
 
 
 class VariationalBiorbdModel(BiorbdModelHolonomic):

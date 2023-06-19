@@ -9,6 +9,7 @@ from biorbd_casadi import (
 )
 from casadi import SX, MX, DM, vertcat, horzcat, norm_fro, Function
 
+from ..misc.enums import ControlType, QuadratureRule
 from ..misc.utils import check_version
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping, BiMappingList
@@ -590,6 +591,86 @@ class BiorbdModel:
         self, q, qdot, qddot, tau, lagrange_multipliers, external_forces=None, f_contacts=None
     ) -> MX:
         raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+
+    def discrete_lagrangian(
+        self,
+        q1: MX | SX,
+        q2: MX | SX,
+        time_step: MX | SX,
+        discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
+    ) -> MX | SX:
+        raise NotImplementedError(
+            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    @staticmethod
+    def control_approximation(
+        control_minus: MX | SX,
+        control_plus: MX | SX,
+        time_step: float,
+        control_type: ControlType = ControlType.CONSTANT,
+        discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
+    ):
+        raise NotImplementedError(
+            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    @staticmethod
+    def compute_holonomic_discrete_constraints_jacobian(
+        jac: Function, time_step: MX | SX, q: MX | SX
+    ) -> MX | SX | None:
+        raise NotImplementedError(
+            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    def discrete_euler_lagrange_equations(
+        self,
+        time_step: MX | SX,
+        q_prev: MX | SX,
+        q_cur: MX | SX,
+        q_next: MX | SX,
+        control_prev: MX | SX,
+        control_cur: MX | SX,
+        control_next: MX | SX,
+        constraints: Function = None,
+        jac: Function = None,
+        lambdas: MX | SX = None,
+    ) -> MX | SX:
+        raise NotImplementedError(
+            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    def compute_initial_states(
+        self,
+        time_step: MX | SX,
+        q0: MX | SX,
+        qdot0: MX | SX,
+        q1: MX | SX,
+        control0: MX | SX,
+        control1: MX | SX,
+        constraints: Function = None,
+        jac: Function = None,
+        lambdas0: MX | SX = None,
+    ):
+        raise NotImplementedError(
+            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    def compute_final_states(
+        self,
+        time_step: MX | SX,
+        q_penultimate: MX | SX,
+        q_ultimate: MX | SX,
+        q_dot_ultimate: MX | SX,
+        control_penultimate: MX | SX,
+        control_ultimate: MX | SX,
+        constraints: Function = None,
+        jac: Function = None,
+        lambdasN: MX | SX = None,
+    ):
+        raise NotImplementedError(
+            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
+        )
 
 
 class MultiBiorbdModel:
@@ -1294,4 +1375,84 @@ class MultiBiorbdModel:
     ) -> MX:
         raise NotImplementedError(
             "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
+        )
+
+    def discrete_lagrangian(
+        self,
+        q1: MX | SX,
+        q2: MX | SX,
+        time_step: MX | SX,
+        discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
+    ) -> MX | SX:
+        raise NotImplementedError(
+            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    @staticmethod
+    def control_approximation(
+        control_minus: MX | SX,
+        control_plus: MX | SX,
+        time_step: float,
+        control_type: ControlType = ControlType.CONSTANT,
+        discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
+    ):
+        raise NotImplementedError(
+            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    @staticmethod
+    def compute_holonomic_discrete_constraints_jacobian(
+        jac: Function, time_step: MX | SX, q: MX | SX
+    ) -> MX | SX | None:
+        raise NotImplementedError(
+            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    def discrete_euler_lagrange_equations(
+        self,
+        time_step: MX | SX,
+        q_prev: MX | SX,
+        q_cur: MX | SX,
+        q_next: MX | SX,
+        control_prev: MX | SX,
+        control_cur: MX | SX,
+        control_next: MX | SX,
+        constraints: Function = None,
+        jac: Function = None,
+        lambdas: MX | SX = None,
+    ) -> MX | SX:
+        raise NotImplementedError(
+            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    def compute_initial_states(
+        self,
+        time_step: MX | SX,
+        q0: MX | SX,
+        qdot0: MX | SX,
+        q1: MX | SX,
+        control0: MX | SX,
+        control1: MX | SX,
+        constraints: Function = None,
+        jac: Function = None,
+        lambdas0: MX | SX = None,
+    ):
+        raise NotImplementedError(
+            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
+        )
+
+    def compute_final_states(
+        self,
+        time_step: MX | SX,
+        q_penultimate: MX | SX,
+        q_ultimate: MX | SX,
+        q_dot_ultimate: MX | SX,
+        control_penultimate: MX | SX,
+        control_ultimate: MX | SX,
+        constraints: Function = None,
+        jac: Function = None,
+        lambdasN: MX | SX = None,
+    ):
+        raise NotImplementedError(
+            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
         )

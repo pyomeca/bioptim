@@ -9,12 +9,12 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     Solver,
+    VariationalBiorbdModel,
     BoundsList,
     InitialGuessList,
 )
 import numpy as np
 
-from bioptim.examples.discrete_mechanics_and_optimal_control.variational_biorbd_model import VariationalBiorbdModel
 from bioptim.examples.discrete_mechanics_and_optimal_control.variational_optimal_control_program import (
     VariationalOptimalControlProgram,
 )
