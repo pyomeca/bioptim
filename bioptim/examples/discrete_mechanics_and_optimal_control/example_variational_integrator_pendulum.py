@@ -13,7 +13,7 @@ from bioptim import (
 )
 import numpy as np
 
-from bioptim.examples.discrete_mechanics_and_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
+from bioptim.examples.discrete_mechanics_and_optimal_control.variational_biorbd_model import VariationalBiorbdModel
 from bioptim.examples.discrete_mechanics_and_optimal_control.variational_optimal_control_program import (
     VariationalOptimalControlProgram,
 )
@@ -44,7 +44,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved.
     """
 
-    bio_model = BiorbdModelCustomHolonomic(bio_model_path)
+    bio_model = VariationalBiorbdModel(bio_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")

@@ -11,7 +11,7 @@ from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
 from .biorbd_model import BiorbdModel
 
 
-class BiorbdModelCustomHolonomic(BiorbdModel):
+class BiorbdModelHolonomic(BiorbdModel):
     """
     This class allows to define a biorbd model with custom holonomic constraints.
     """
