@@ -1507,7 +1507,7 @@ class Solution:
 
             # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
             # casadi function
-            if not self.ocp.assume_phase_dynamics and u != []:
+            if not self.ocp.assume_phase_dynamics and (u != [] or isinstance(u, np.ndarray)):
                 u = u[:, ~np.isnan(np.sum(u, axis=0))]
             val.append(penalty.function[idx](x, u, p))
             val_weighted.append(penalty.weighted_function[idx](x, u, p, penalty.weight, target, dt))

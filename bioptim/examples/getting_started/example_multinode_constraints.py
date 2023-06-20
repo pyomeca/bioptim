@@ -76,6 +76,8 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path to the bioMod
+    n_shootings: tuple
+        The number of shooting points
     ode_solver: OdeSolverBase
         The ode solve to use
     assume_phase_dynamics: bool
