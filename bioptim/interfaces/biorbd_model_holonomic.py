@@ -105,7 +105,6 @@ class BiorbdModelHolonomic(BiorbdModel):
         tau_augmented = vertcat(tau_augmented, biais)
 
         # solve with casadi Ax = b
-
         x = solve(mass_matrix_augmented, tau_augmented, "symbolicqr")
 
         return x[: self.nb_qddot]
@@ -156,7 +155,14 @@ class BiorbdModelHolonomic(BiorbdModel):
 
         return horzcat(constrained_jacobian_u, constrained_jacobian_v)
 
-    def forward_dynamics_constrained_independent(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
+    def partitioned_forward_dynamics(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        """
         # compute v from u
         v = self.compute_v_from_u(u)
         q = self.q_from_u_and_v(u, v)
@@ -195,6 +201,13 @@ class BiorbdModelHolonomic(BiorbdModel):
         return uddot
 
     def coupling_matrix(self, q: MX) -> MX:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        """
         J = self.partitioned_constrained_jacobian(q)
         Jv = J[:, self.nb_independent_joints :]
         Jv_inv = inv(Jv)  # inv_minor otherwise ?
@@ -204,6 +217,15 @@ class BiorbdModelHolonomic(BiorbdModel):
         return -Jv_inv @ Ju
 
     def biais_vector(self, q: MX, qdot: MX) -> MX:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+
+        The right term of the equation (15) in the paper.
+        """
         J = self.partitioned_constrained_jacobian(q)
         Jv = J[:, self.nb_independent_joints :]
         Jv_inv = inv(Jv)  # inv_minor otherwise ?
@@ -211,6 +233,13 @@ class BiorbdModelHolonomic(BiorbdModel):
         return Jv_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
 
     def q_from_u_and_v(self, u: MX, v: MX) -> MX:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        """
         q = MX() if isinstance(u, MX) else DM()
         for i in range(self.nb_q):
             if i in self._independent_joint_index:
@@ -260,40 +289,3 @@ class BiorbdModelHolonomic(BiorbdModel):
         )
 
         return v_opt
-
-    def partitioned_forward_dynamics(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
-        # compute v from u
-        v = self.compute_v_from_u(u)
-        q = self.q_from_u_and_v(u, v)
-
-        Bvu = self.coupling_matrix(q)
-        qdot = Bvu @ udot
-
-        uddot = self.forward_dynamics_constrained_independent(u, udot, tau, external_forces, f_contacts)
-        vddot = Bvu @ uddot + self.biais_vector(q, qdot)
-
-        return vertcat(uddot, vddot)
-
-    def dae_inverse_dynamics(
-        self, q, qdot, qddot, tau, lagrange_multipliers, external_forces=None, f_contacts=None
-    ) -> MX:
-        q_biorbd = GeneralizedCoordinates(q)
-        qdot_biorbd = GeneralizedVelocity(qdot)
-        qddot_biorbd = GeneralizedAcceleration(qddot)
-
-        mass_matrix = self.model.massMatrix(q_biorbd)
-        constraint_jacobian = self.holonomic_constraints_jacobian(q)
-        constraint_jacobian_transpose = constraint_jacobian.T
-
-        # compute the matrix DAE
-        mass_matrix_augmented = horzcat(mass_matrix, constraint_jacobian_transpose)
-        mass_matrix_augmented = vertcat(
-            mass_matrix_augmented, horzcat(constraint_jacobian, MX.zeros(constraint_jacobian_transpose.shape))
-        )
-
-        # compute b vector
-        tau_augmented = tau - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, f_ext=None, f_contacts=None)
-        tau_augmented = vertcat(tau_augmented, self.holonomic_constraints_jacobian(qdot) @ qdot)
-
-        # Ax-b = 0
-        return mass_matrix_augmented @ vertcat(qddot_biorbd, lagrange_multipliers) - tau_augmented

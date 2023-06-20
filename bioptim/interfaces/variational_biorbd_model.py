@@ -162,23 +162,33 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         time_step: MX | SX
             The time step.
         q_prev: MX | SX
-            The generalized coordinates at the first time step.
+            The generalized coordinates at the first node.
         q_cur: MX | SX
-            The generalized coordinates at the second time step.
+            The generalized coordinates at the second node.
         q_next: MX | SX
-            The generalized coordinates at the third time step.
+            The generalized coordinates at the third node.
         control_prev: MX | SX
-            The generalized forces at the first time step.
+            The generalized forces at the first node.
         control_cur: MX | SX
-            The generalized forces at the second time step.
+            The generalized forces at the second node.
         control_next: MX | SX
-            The generalized forces at the third time step.
+            The generalized forces at the third node.
         constraints: Function
             The constraints.
         jac: Function
             The jacobian of the constraints.
         lambdas: MX | SX
             The Lagrange multipliers.
+
+        Returns
+        -------
+        MX | SX
+            The discrete Euler-Lagrange equations.
+
+        Sources
+        -------
+        The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
+        constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (10).
         """
         # Refers to D_2 L_d(q_{k-1}, q_k) (D_2 is the partial derivative with respect to the second argument, L_d is the
         # discrete Lagrangian)
@@ -215,7 +225,34 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         lambdas0: MX | SX = None,
     ):
         """
-        Compute the initial states of the system from the initial position and velocity.
+        Parameters
+        ----------
+        time_step: MX | SX
+            The time step.
+        q0: MX | SX
+            The generalized coordinates at the first node.
+        qdot0: MX | SX
+            The initial generalized velocities at the first node.
+        q1: MX | SX
+            The generalized coordinates at the second node.
+        control0: MX | SX
+            The generalized forces at the first node.
+        control1: MX | SX
+            The generalized forces at the second node.
+        constraints: Function
+            The constraints.
+        jac: Function
+            The jacobian of the constraints.
+        lambdas0: MX | SX
+            The Lagrange multipliers at the first node.
+
+        Returns
+        -------
+        MX | SX
+            The discrete Euler-Lagrange equations adapted for the first node.
+
+        Sources
+        -------
         The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
         indications given just before the equation (18) for p0 and pN.
@@ -249,6 +286,36 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         lambdasN: MX | SX = None,
     ):
         """
+        Compute the initial states of the system from the initial position and velocity.
+
+        Parameters
+        ----------
+        time_step: MX | SX
+            The time step.
+        q_penultimate: MX | SX
+            The generalized coordinates at the penultimate node.
+        q_ultimate: MX | SX
+            The generalized coordinates at the ultimate node.
+        q_dot_ultimate: MX | SX
+            The generalized velocities at the ultimate node.
+        control_penultimate: MX | SX
+            The generalized forces at the penultimate node.
+        control_ultimate: MX | SX
+            The generalized forces at the ultimate node.
+        constraints: Function
+            The constraints.
+        jac: Function
+            The jacobian of the constraints.
+        lambdas_ultimate: MX | SX
+            The Lagrange multipliers at the ultimate node.
+
+        Returns
+        -------
+        MX | SX
+            The discrete Euler-Lagrange equations adapted for the ultimate node.
+
+        Sources
+        -------
         Compute the initial states of the system from the initial position and velocity.
         The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
