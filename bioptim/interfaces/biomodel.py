@@ -500,9 +500,7 @@ class BioModel(Protocol):
             The partitioned constrained jacobian, reordered in function independent and dependent joints
         """
 
-    def forward_dynamics_constrained_independent(
-        self, u: MX, udot: MX, tau: MX, external_forces=None, f_contacts=None
-    ) -> MX:
+    def partitioned_forward_dynamics(self, u: MX, udot: MX, tau: MX, external_forces=None, f_contacts=None) -> MX:
         """
         This is the forward dynamics of the model, but only for the independent joints
 
@@ -523,28 +521,36 @@ class BioModel(Protocol):
         -------
         MX
             The generalized accelerations
+
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
 
     def coupling_matrix(self, q: MX) -> MX:
         """
         Compute the coupling matrix, denoted Bvu in the paper :
 
+        Sources
+        -------
         Docquier, N., Poncelet, A., and Fisette, P.:
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
-
         """
 
     def biais_vector(self, q: MX, qdot: MX) -> MX:
         """
         Compute the biais vector, denoted b in the paper :
 
+        Sources
+        -------
         Docquier, N., Poncelet, A., and Fisette, P.:
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
 
         The right term of the equation (15) in the paper.
-
         """
 
     def q_from_u_and_v(self, u: MX, v: MX) -> MX:
@@ -562,6 +568,12 @@ class BioModel(Protocol):
         -------
         MX
             The generalized coordinates
+
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
 
     def compute_v_from_u(self, u: MX) -> MX:
@@ -604,17 +616,6 @@ class BioModel(Protocol):
             The numerical values of the dependent joint for a given independent joint u
         """
 
-    def partitioned_forward_dynamics(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
-        """not used"""
-
-    def dae_inverse_dynamics(
-        self, q, qdot, qddot, tau, lagrange_multipliers, external_forces=None, f_contacts=None
-    ) -> MX:
-        """
-        Compute the inverse dynamics of the model. To use carefully it has never been tested.
-        Ax-b = 0
-        """
-
     def discrete_lagrangian(
         self,
         q1: MX | SX,
@@ -628,9 +629,9 @@ class BioModel(Protocol):
         Parameters
         ----------
         q1: MX | SX
-            The generalized coordinates at the first time step.
+            The generalized coordinates at the first node.
         q2: MX | SX
-            The generalized coordinates at the second time step.
+            The generalized coordinates at the second node.
         time_step: float
             The time step.
         discrete_approximation: QuadratureRule
@@ -669,6 +670,9 @@ class BioModel(Protocol):
         Returns
         ----------
         The term associated to the controls in the Lagrangian equations.
+
+        Sources
+        -------
         Johnson, E. R., & Murphey, T. D. (2009).
         Scalable Variational Integrators for Constrained Mechanical Systems in Generalized Coordinates.
         IEEE Transactions on Robotics, 25(6), 1249–1261. doi:10.1109/tro.2009.2032955
@@ -719,23 +723,33 @@ class BioModel(Protocol):
         time_step: MX | SX
             The time step.
         q_prev: MX | SX
-            The generalized coordinates at the first time step.
+            The generalized coordinates at the first node.
         q_cur: MX | SX
-            The generalized coordinates at the second time step.
+            The generalized coordinates at the second node.
         q_next: MX | SX
-            The generalized coordinates at the third time step.
+            The generalized coordinates at the third node.
         control_prev: MX | SX
-            The generalized forces at the first time step.
+            The generalized forces at the first node.
         control_cur: MX | SX
-            The generalized forces at the second time step.
+            The generalized forces at the second node.
         control_next: MX | SX
-            The generalized forces at the third time step.
+            The generalized forces at the third node.
         constraints: Function
             The constraints.
         jac: Function
             The jacobian of the constraints.
         lambdas: MX | SX
             The Lagrange multipliers.
+
+        Returns
+        -------
+        MX | SX
+            The discrete Euler-Lagrange equations.
+
+        Sources
+        -------
+        The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
+        constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (10).
         """
 
     def compute_initial_states(
@@ -751,6 +765,34 @@ class BioModel(Protocol):
         lambdas0: MX | SX = None,
     ):
         """
+        Parameters
+        ----------
+        time_step: MX | SX
+            The time step.
+        q0: MX | SX
+            The generalized coordinates at the first node.
+        qdot0: MX | SX
+            The initial generalized velocities at the first node.
+        q1: MX | SX
+            The generalized coordinates at the second node.
+        control0: MX | SX
+            The generalized forces at the first node.
+        control1: MX | SX
+            The generalized forces at the second node.
+        constraints: Function
+            The constraints.
+        jac: Function
+            The jacobian of the constraints.
+        lambdas0: MX | SX
+            The Lagrange multipliers at the first node.
+
+        Returns
+        -------
+        MX | SX
+            The discrete Euler-Lagrange equations adapted for the first node.
+
+        Sources
+        -------
         Compute the initial states of the system from the initial position and velocity.
         The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
@@ -767,10 +809,39 @@ class BioModel(Protocol):
         control_ultimate: MX | SX,
         constraints: Function = None,
         jac: Function = None,
-        lambdasN: MX | SX = None,
+        lambdas_ultimate: MX | SX = None,
     ):
         """
         Compute the initial states of the system from the initial position and velocity.
+
+        Parameters
+        ----------
+        time_step: MX | SX
+            The time step.
+        q_penultimate: MX | SX
+            The generalized coordinates at the penultimate node.
+        q_ultimate: MX | SX
+            The generalized coordinates at the ultimate node.
+        q_dot_ultimate: MX | SX
+            The generalized velocities at the ultimate node.
+        control_penultimate: MX | SX
+            The generalized forces at the penultimate node.
+        control_ultimate: MX | SX
+            The generalized forces at the ultimate node.
+        constraints: Function
+            The constraints.
+        jac: Function
+            The jacobian of the constraints.
+        lambdas_ultimate: MX | SX
+            The Lagrange multipliers at the ultimate node.
+
+        Returns
+        -------
+        MX | SX
+            The discrete Euler-Lagrange equations adapted for the ultimate node.
+
+        Sources
+        -------
         The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
         indications given just before the equation (18) for p0 and pN.

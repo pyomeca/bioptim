@@ -53,18 +53,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         self.bio_model = bio_model
         n_qdot = n_q = self.bio_model.nb_q
 
-        q_sym = MX.sym("q", (n_q, 1))
         if bio_model.nb_holonomic_constraints:
-            self.holonomic_constraints = Function(
-                "holonomic_constraint",
-                [q_sym],
-                [bio_model.holonomic_constraints(q_sym)],
-            ).expand()
-            self.holonomic_constraints_jacobian = Function(
-                "holonomic_constraint_jacobian",
-                [q_sym],
-                [bio_model.holonomic_constraints_jacobian(q_sym)],
-            ).expand()
+            self.holonomic_constraints = bio_model.holonomic_constraints
+            self.holonomic_constraints_jacobian = bio_model.holonomic_constraints_jacobian
         else:
             self.holonomic_constraints = None
             self.holonomic_constraints_jacobian = None
@@ -191,7 +182,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         two_last_nodes_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
 
         if self.has_holonomic_constraints:
-            lambdas = MX.sym("lambda", self.holonomic_constraints.nnz_out(), 1)
+            lambdas = MX.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
             three_nodes_input.append(lambdas)
             two_first_nodes_input.append(lambdas)
             two_last_nodes_input.append(lambdas)
@@ -289,7 +280,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
         if self.has_holonomic_constraints:
             lambdas = []
-            for i in range(self.holonomic_constraints.nnz_out()):
+            for i in range(self.bio_model.nb_holonomic_constraints):
                 lambdas.append(f"lambda_{i}")
             ConfigureProblem.configure_new_variable(
                 "lambdas",

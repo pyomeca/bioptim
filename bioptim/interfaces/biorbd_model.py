@@ -523,18 +523,25 @@ class BiorbdModel:
         return bounds_from_ranges(self, variables, mapping)
 
     def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
-        return self.model.KineticEnergy(q, qdot).to_mx() - self.model.PotentialEnergy(q).to_mx()
+        return self.model.Lagrangian(q, qdot).to_mx()
+
+    @staticmethod
+    def __no_holonomic_error():
+        raise NotImplementedError(
+            "This function is not implemented for BiorbdModel. Please consider using BiorbdModelHolonomic if you model "
+            "holonomic constraints."
+        )
 
     def set_dependencies(self, dependent_joint_index: list, independent_joint_index: list):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     @property
     def nb_independent_joints(self):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     @property
     def nb_dependent_joints(self):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def add_holonomic_constraint(
         self,
@@ -542,67 +549,69 @@ class BiorbdModel:
         constraint_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
         constraint_double_derivative: Function | Callable[[GeneralizedCoordinates], MX],
     ):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     @property
     def nb_holonomic_constraints(self):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def holonomic_constraints(self, q: MX):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def holonomic_constraints_jacobian(self, q: MX):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def holonomic_constraints_derivative(self, q: MX, qdot: MX):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def partitioned_mass_matrix(self, q):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def partitioned_non_linear_effect(self, q, qdot, f_ext=None, f_contacts=None):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def partitioned_q(self, q):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def partitioned_qdot(self, qdot):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def partitioned_tau(self, tau):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def partitioned_constrained_jacobian(self, q):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
-
-    def forward_dynamics_constrained_independent(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
-
-    def coupling_matrix(self, q: MX) -> MX:
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
-
-    def biais_vector(self, q: MX, qdot: MX) -> MX:
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
-
-    def q_from_u_and_v(self, u: MX, v: MX) -> MX:
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
-
-    def compute_v_from_u(self, u: MX):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
-
-    def compute_v_from_u_numeric(self, u: DM, v_init=None):
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
     def partitioned_forward_dynamics(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+        self.__no_holonomic_error()
 
-    def dae_inverse_dynamics(
-        self, q, qdot, qddot, tau, lagrange_multipliers, external_forces=None, f_contacts=None
-    ) -> MX:
-        raise NotImplementedError("This function is not implemented for BiorbdModel use BiorbdModelHolonomic instead.")
+    def coupling_matrix(self, q: MX) -> MX:
+        self.__no_holonomic_error()
+
+    def biais_vector(self, q: MX, qdot: MX) -> MX:
+        self.__no_holonomic_error()
+
+    def q_from_u_and_v(self, u: MX, v: MX) -> MX:
+        self.__no_holonomic_error()
+
+    def compute_v_from_u(self, u: MX):
+        self.__no_holonomic_error()
+
+    def compute_v_from_u_numeric(self, u: DM, v_init=None):
+        self.__no_holonomic_error()
+
+    def partitioned_forward_dynamics(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
+        self.__no_holonomic_error()
+
+    @staticmethod
+    def __no_variational_error():
+        raise NotImplementedError(
+            "This function is not implemented for BiorbdModel. Please consider using VariationalBiorbdModel if you want"
+            " to use the variational integrator."
+        )
 
     def discrete_lagrangian(
         self,
@@ -611,9 +620,7 @@ class BiorbdModel:
         time_step: MX | SX,
         discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
     ) -> MX | SX:
-        raise NotImplementedError(
-            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
-        )
+        self.__no_variational_error()
 
     @staticmethod
     def control_approximation(
@@ -623,17 +630,13 @@ class BiorbdModel:
         control_type: ControlType = ControlType.CONSTANT,
         discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
     ):
-        raise NotImplementedError(
-            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
-        )
+        self.__no_variational_error()
 
     @staticmethod
     def compute_holonomic_discrete_constraints_jacobian(
         jac: Function, time_step: MX | SX, q: MX | SX
     ) -> MX | SX | None:
-        raise NotImplementedError(
-            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
-        )
+        self.__no_variational_error()
 
     def discrete_euler_lagrange_equations(
         self,
@@ -648,9 +651,7 @@ class BiorbdModel:
         jac: Function = None,
         lambdas: MX | SX = None,
     ) -> MX | SX:
-        raise NotImplementedError(
-            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
-        )
+        self.__no_variational_error()
 
     def compute_initial_states(
         self,
@@ -664,9 +665,7 @@ class BiorbdModel:
         jac: Function = None,
         lambdas0: MX | SX = None,
     ):
-        raise NotImplementedError(
-            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
-        )
+        self.__no_variational_error()
 
     def compute_final_states(
         self,
@@ -680,9 +679,7 @@ class BiorbdModel:
         jac: Function = None,
         lambdasN: MX | SX = None,
     ):
-        raise NotImplementedError(
-            "This function is not implemented for BiorbdModel use VariationalBiorbdModel instead."
-        )
+        self.__no_variational_error()
 
 
 class MultiBiorbdModel:
@@ -1265,21 +1262,15 @@ class MultiBiorbdModel:
         raise NotImplementedError("lagrangian is not implemented yet for MultiBiorbdModel")
 
     def set_dependencies(self, dependent_joint_index: list, independent_joint_index: list):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     @property
     def nb_independent_joints(self):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     @property
     def nb_dependent_joints(self):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def add_holonomic_constraint(
         self,
@@ -1287,107 +1278,59 @@ class MultiBiorbdModel:
         constraint_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
         constraint_double_derivative: Function | Callable[[GeneralizedCoordinates], MX],
     ):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     @property
     def nb_holonomic_constraints(self):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def holonomic_constraints(self, q: MX):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def holonomic_constraints_jacobian(self, q: MX):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def holonomic_constraints_derivative(self, q: MX, qdot: MX):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def partitioned_mass_matrix(self, q):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def partitioned_non_linear_effect(self, q, qdot, f_ext=None, f_contacts=None):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def partitioned_q(self, q):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def partitioned_qdot(self, qdot):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def partitioned_tau(self, tau):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def partitioned_constrained_jacobian(self, q):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
-
-    def forward_dynamics_constrained_independent(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
-
-    def coupling_matrix(self, q: MX) -> MX:
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
-
-    def biais_vector(self, q: MX, qdot: MX) -> MX:
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
-
-    def q_from_u_and_v(self, u: MX, v: MX) -> MX:
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
-
-    def compute_v_from_u(self, u: MX):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
-
-    def compute_v_from_u_numeric(self, u: DM, v_init=None):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def partitioned_forward_dynamics(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
-    def dae_inverse_dynamics(
-        self, q, qdot, qddot, tau, lagrange_multipliers, external_forces=None, f_contacts=None
-    ) -> MX:
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use BiorbdModelHolonomic instead."
-        )
+    def coupling_matrix(self, q: MX) -> MX:
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
+
+    def biais_vector(self, q: MX, qdot: MX) -> MX:
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
+
+    def q_from_u_and_v(self, u: MX, v: MX) -> MX:
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
+
+    def compute_v_from_u(self, u: MX):
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
+
+    def compute_v_from_u_numeric(self, u: DM, v_init=None):
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def discrete_lagrangian(
         self,
@@ -1396,9 +1339,7 @@ class MultiBiorbdModel:
         time_step: MX | SX,
         discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
     ) -> MX | SX:
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     @staticmethod
     def control_approximation(
@@ -1408,17 +1349,13 @@ class MultiBiorbdModel:
         control_type: ControlType = ControlType.CONSTANT,
         discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
     ):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     @staticmethod
     def compute_holonomic_discrete_constraints_jacobian(
         jac: Function, time_step: MX | SX, q: MX | SX
     ) -> MX | SX | None:
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def discrete_euler_lagrange_equations(
         self,
@@ -1433,9 +1370,7 @@ class MultiBiorbdModel:
         jac: Function = None,
         lambdas: MX | SX = None,
     ) -> MX | SX:
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def compute_initial_states(
         self,
@@ -1449,9 +1384,7 @@ class MultiBiorbdModel:
         jac: Function = None,
         lambdas0: MX | SX = None,
     ):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
 
     def compute_final_states(
         self,
@@ -1465,6 +1398,4 @@ class MultiBiorbdModel:
         jac: Function = None,
         lambdasN: MX | SX = None,
     ):
-        raise NotImplementedError(
-            "This function is not implemented for MultiBiorbdModel use VariationalBiorbdModel instead."
-        )
+        raise NotImplementedError("This function is not implemented for MultiBiorbdModel.")
