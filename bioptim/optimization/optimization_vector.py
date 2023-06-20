@@ -180,7 +180,7 @@ class OptimizationVectorHelper:
 
             for key in nlp.controls.keys():
                 if key in nlp.u_bounds.keys():
-                    nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns)
+                    nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns - 1)
 
             for k in range(ns):
                 OptimizationVectorHelper._set_node_index(nlp, k)
@@ -282,7 +282,7 @@ class OptimizationVectorHelper:
 
             for key in nlp.controls.keys():
                 if key in nlp.u_init.keys():
-                    nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns)
+                    nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns - 1)
 
             for k in range(ns):
                 OptimizationVectorHelper._set_node_index(nlp, k)

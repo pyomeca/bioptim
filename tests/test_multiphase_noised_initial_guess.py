@@ -731,7 +731,7 @@ def test_noisy_multiphase(assume_phase_dynamics):
         [-5.98678677e00],
     ]
 
-    np.testing.assert_almost_equal(ocp.v.init_vector, expected)
+    np.testing.assert_almost_equal(ocp.init_vector, expected)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
