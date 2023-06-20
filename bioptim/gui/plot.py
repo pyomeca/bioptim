@@ -797,12 +797,14 @@ class PlotOcp:
                                 data_params_in_dyn,
                                 **self.plot_func[key][i].parameters,
                             )
-                            y[0] = val_tempo[abs(self.plot_func[key][i].phase_mapping.to_second.map_idx[i_var])]
+                            y[0] = val_tempo[abs(self.plot_func[key][i].phase_mappings.to_second.map_idx[i_var])]
                         else:
                             y = np.empty((len(self.plot_func[key][i].node_idx),))
                             y.fill(np.nan)
                             for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                                 if self.plot_func[key][i].parameters["penalty"].transition:
+                                    # TODO "all" is broken and should be replaced by a fol loop on key
+                                    raise NotImplementedError("See todo!")
                                     val = self.plot_func[key][i].function(
                                         node_idx,
                                         np.hstack(

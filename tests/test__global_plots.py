@@ -233,6 +233,8 @@ def test_console_objective_functions(assume_phase_dynamics):
                     )
                     x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("i0").shape)
                     u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("i1").shape)
+                    if p.weighted_function[node_index].sparsity_in("i1").shape == (0, 0):
+                        u = MX.sym("u", 3, 1)
                     param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i2").shape)
                     weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i3").shape)
                     target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i4").shape)
