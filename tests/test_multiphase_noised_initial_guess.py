@@ -73,11 +73,6 @@ def test_noisy_multiphase(assume_phase_dynamics):
         magnitude_type=MagnitudeType.RELATIVE,
     )
 
-    # ocp.isdef_x_init = False
-    # ocp.isdef_u_init = False
-    # ocp.isdef_x_bounds = False
-    # ocp.isdef_u_bounds = False
-
     ocp.update_bounds(x_bounds, u_bounds)
     ocp.update_initial_guess(x_init, u_init)
     expected = [
@@ -740,9 +735,7 @@ def test_noisy_multiphase(assume_phase_dynamics):
     [
         (None, "'magnitude' must be specified to generate noised initial guess"),
         (tuple(np.ones(1) * 0.1), "'magnitude' must be an instance of int, float, list, or ndarray"),
-        ([0.1, 0.1], "Invalid size of 'magnitude', 'magnitude' as list must be size 1 or 3"),
-        (np.ones((2, 2)) * 0.1, "'magnitude' must be a 1 dimension array'"),
-        (np.ones(2) * 0.1, f"Invalid size of 'magnitude', 'magnitude' as array must be size 1 or 3"),
+        ({"q": [0.1, 0.1]}, "Magnitude of all the elements must be specified, but qdot is missing"),
     ],
 )
 def test_add_wrong_magnitude(magnitude, raised_str, assume_phase_dynamics):
@@ -825,7 +818,7 @@ def test_add_wrong_bound_push(bound_push, raised_str, assume_phase_dynamics):
     with pytest.raises(ValueError, match=raised_str):
         x_init.add_noise(
             bounds=x_bounds,
-            magnitude=0.1,  # n phase
+            magnitude=0.1,
             n_shooting=[ns + 1 for ns in n_shooting],
             bound_push=bound_push,
             seed=42,
@@ -837,7 +830,7 @@ def test_add_wrong_bound_push(bound_push, raised_str, assume_phase_dynamics):
 @pytest.mark.parametrize(
     "seed, raised_str",
     [
-        (0.1, "Seed must be an integer or a list of integer"),
+        (0.1, "Seed must be an integer, dict or a list of these"),
         ([0.1, 0.1], f"Invalid size of 'seed', 'seed' as list must be size 1 or 3"),
     ],
 )
@@ -871,7 +864,7 @@ def test_add_wrong_seed(seed, raised_str, assume_phase_dynamics):
     with pytest.raises(ValueError, match=raised_str):
         x_init.add_noise(
             bounds=x_bounds,
-            magnitude=0.1,  # n phase
+            magnitude=0.1,
             n_shooting=[ns + 1 for ns in n_shooting],
             bound_push=0.1,
             seed=seed,
@@ -912,7 +905,7 @@ def test_add_wrong_bounds(assume_phase_dynamics):
     with pytest.raises(ValueError, match="bounds must be specified to generate noised initial guess"):
         x_init.add_noise(
             bounds=None,
-            magnitude=0.1,  # n phase
+            magnitude=0.1,
             n_shooting=[ns + 1 for ns in n_shooting],
             bound_push=0.1,
             seed=42,
@@ -921,7 +914,7 @@ def test_add_wrong_bounds(assume_phase_dynamics):
     with pytest.raises(ValueError, match=f"Invalid size of 'bounds', 'bounds' must be size {nb_phases}"):
         x_init.add_noise(
             bounds=x_bounds,
-            magnitude=0.1,  # n phase
+            magnitude=0.1,
             n_shooting=[ns + 1 for ns in n_shooting],
             bound_push=0.1,
             seed=42,
@@ -961,7 +954,7 @@ def test_add_wrong_n_shooting(assume_phase_dynamics):
     with pytest.raises(ValueError, match="n_shooting must be specified to generate noised initial guess"):
         x_init.add_noise(
             bounds=x_bounds,
-            magnitude=0.1,  # n phase
+            magnitude=0.1,
             bound_push=0.1,
             seed=42,
             magnitude_type=MagnitudeType.RELATIVE,
@@ -970,7 +963,7 @@ def test_add_wrong_n_shooting(assume_phase_dynamics):
         x_init.add_noise(
             bounds=x_bounds,
             n_shooting=[20, 30],
-            magnitude=0.1,  # n phase
+            magnitude=0.1,
             bound_push=0.1,
             seed=42,
             magnitude_type=MagnitudeType.RELATIVE,

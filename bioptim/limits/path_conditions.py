@@ -1034,19 +1034,12 @@ class NoisedInitialGuess(InitialGuess):
         )
 
         self.noised_initial_guess = init_instance.init + self.noise
-        for shooting_point in range(ns):
-            too_small_index = np.where(
-                self.noised_initial_guess[:, shooting_point] < bounds_min_matrix[:, shooting_point]
-            )
-            too_big_index = np.where(
-                self.noised_initial_guess[:, shooting_point] > bounds_max_matrix[:, shooting_point]
-            )
-            self.noised_initial_guess[too_small_index, shooting_point] = (
-                bounds_min_matrix[too_small_index, shooting_point] + self.bound_push
-            )
-            self.noised_initial_guess[too_big_index, shooting_point] = (
-                bounds_max_matrix[too_big_index, shooting_point] - self.bound_push
-            )
+
+        # Make sure initial guess is inside the bounds at a distance of bound push
+        idx_min = np.where(self.noised_initial_guess < bounds_min_matrix)
+        idx_max = np.where(self.noised_initial_guess > bounds_max_matrix)
+        self.noised_initial_guess[idx_min] = bounds_min_matrix[idx_min] + self.bound_push
+        self.noised_initial_guess[idx_max] = bounds_max_matrix[idx_max] - self.bound_push
 
 
 class InitialGuessList(OptionDict):
@@ -1151,7 +1144,7 @@ class InitialGuessList(OptionDict):
         return bounds
 
     @staticmethod
-    def _check_type_and_format_magnitude(magnitude, nb_phases):
+    def _check_type_and_format_magnitude(magnitude, nb_phases, keys):
         """
         Check magnitude type and format
 
@@ -1163,29 +1156,25 @@ class InitialGuessList(OptionDict):
         if magnitude is None:
             raise ValueError("'magnitude' must be specified to generate noised initial guess")
 
-        if not isinstance(magnitude, (int, float, list, ndarray)):
+        if not isinstance(magnitude, (int, float, dict, list)):
             raise ValueError("'magnitude' must be an instance of int, float, list, or ndarray")
 
         if isinstance(magnitude, (int, float)):
-            magnitude = [magnitude for j in range(nb_phases)]
+            magnitude = {key: magnitude for key in keys}
+
+        if isinstance(magnitude, dict):
+            magnitude = [magnitude for _ in range(nb_phases)]
 
         if isinstance(magnitude, list):
             if len(magnitude) == 1:
-                magnitude = [magnitude[0] for j in range(nb_phases)]
+                magnitude = [magnitude[0] for _ in range(nb_phases)]
             elif len(magnitude) != nb_phases:
                 raise ValueError(f"Invalid size of 'magnitude', 'magnitude' as list must be size 1 or {nb_phases}")
 
-        if isinstance(magnitude, ndarray):
-            if magnitude.shape.__len__() > 1:
-                # if todo: prepare the 2dimensional absolute_noise
-                raise ValueError("'magnitude' must be a 1 dimension array'")
-            if magnitude.shape == ():
-                magnitude = magnitude[np.newaxis]
-                magnitude = [magnitude[0] for j in range(nb_phases)]
-            elif magnitude.shape[0] == 1:
-                magnitude = [magnitude[0] for j in range(nb_phases)]
-            elif magnitude.shape[0] != nb_phases:
-                raise ValueError(f"Invalid size of 'magnitude', 'magnitude' as array must be size 1 or {nb_phases}")
+        for mag in magnitude:
+            for key in keys:
+                if key not in mag.keys():
+                    raise ValueError(f"Magnitude of all the elements must be specified, but {key} is missing")
 
         return magnitude
 
@@ -1227,7 +1216,7 @@ class InitialGuessList(OptionDict):
         return bound_push
 
     @staticmethod
-    def _check_type_and_format_seed(seed, nb_phases):
+    def _check_type_and_format_seed(seed, nb_phases, keys):
         """
         Check seed type and format
 
@@ -1236,18 +1225,22 @@ class InitialGuessList(OptionDict):
         nb_phases
             The number of phases
         """
-        if seed is None:
-            seed = [None for j in range(nb_phases)]
+        if not isinstance(seed, (int, dict, list)):
+            raise ValueError("Seed must be an integer, dict or a list of these")
 
-        if not isinstance(seed, (int, list)):
-            raise ValueError("Seed must be an integer or a list of integer")
+        if seed is None:
+            seed = {key: None for key in keys}
 
         if isinstance(seed, int):
-            seed = [seed for j in range(nb_phases)]
+            seed = {key: seed if i == 0 else None for i, key in enumerate(keys)}
+
+        if isinstance(seed, dict):
+            seed = [seed]
 
         if isinstance(seed, list):
             if len(seed) == 1:
-                seed = [seed[0] for j in range(nb_phases)]
+                empty = {key: None for key in keys}
+                seed = [seed[0] if j == 0 else empty for j in range(nb_phases)]
             elif len(seed) != nb_phases:
                 raise ValueError(f"Invalid size of 'seed', 'seed' as list must be size 1 or {nb_phases}")
 
@@ -1257,31 +1250,31 @@ class InitialGuessList(OptionDict):
         self,
         bounds: BoundsList = None,
         n_shooting: int | List[int] | Tuple[int] = None,
-        magnitude: list | int | float | np.ndarray = 1,
+        magnitude: int | float | dict | list = None,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         bound_push: int | float | List[int] | List[float] | ndarray = 0.1,
-        seed: int | List[int] = 1,
+        seed: int | dict | list = None,
     ):
         """
         Add noise to each initial guesses from an InitialGuessList
 
         Parameters
         ----------
-        bounds: BoundsList
+        bounds:
             The bounds of each phase
-        n_shooting: List[int] | int | Tuple[int]
+        n_shooting:
             Number of nodes (second dim) per initial guess
-        magnitude: list | int | float | np.ndarray
+        magnitude:
             The magnitude of the noised that must be applied between 0 and 1 (0 = no noise, 1 = continuous noise with a
             range defined between the bounds or between -magnitude and +magnitude for absolute noise
             If one value is given, applies this value to each initial guess
-        magnitude_type: MagnitudeType
+        magnitude_type:
             The type of magnitude to apply : relative to the bounds or absolute
-        bound_push: int | float | List[int] | List[float] | ndarray
+        bound_push:
             The absolute minimal distance between the bound and the noised initial guess (if the originally generated
             initial guess is outside the bound-bound_push, this node is attributed the value bound-bound_push).
             If one value is given, applies this value to each initial guess
-        seed: int | List[int]
+        seed:
             The seed of the random generator
             If one value is given, applies this value to each initial guess
         """
@@ -1297,19 +1290,19 @@ class InitialGuessList(OptionDict):
             raise ValueError(f"Invalid size of 'n_shooting', 'n_shooting' must be len {nb_phases}")
 
         bounds = self._check_type_and_format_bounds(bounds, nb_phases)
-        magnitude = self._check_type_and_format_magnitude(magnitude, nb_phases)
+        magnitude = self._check_type_and_format_magnitude(magnitude, nb_phases, self.keys())
         bound_push = self._check_type_and_format_bound_push(bound_push, nb_phases)
-        seed = self._check_type_and_format_seed(seed, nb_phases)
+        seed = self._check_type_and_format_seed(seed, nb_phases, self.keys())
 
         for i in range(nb_phases):
-            for key in self[i].keys():
+            for j, key in enumerate(self[i].keys()):
                 self[i][key].add_noise(
                     bounds=bounds[i][key],
                     n_shooting=n_shooting[i],
-                    magnitude=magnitude[i],
+                    magnitude=magnitude[i][key],
                     magnitude_type=magnitude_type,
                     bound_push=bound_push[i],
-                    seed=seed[i]
+                    seed=seed[i][key]
                 )
 
     @property
