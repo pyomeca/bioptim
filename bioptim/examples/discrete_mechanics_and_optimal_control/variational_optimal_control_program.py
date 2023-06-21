@@ -53,13 +53,14 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         self.bio_model = bio_model
         n_qdot = n_q = self.bio_model.nb_q
 
-        if bio_model.nb_holonomic_constraints:
+        self.has_holonomic_constraints = bio_model.nb_holonomic_constraints > 0
+        if self.has_holonomic_constraints :
             self.holonomic_constraints = bio_model.holonomic_constraints
             self.holonomic_constraints_jacobian = bio_model.holonomic_constraints_jacobian
         else:
             self.holonomic_constraints = None
             self.holonomic_constraints_jacobian = None
-        self.has_holonomic_constraints = self.holonomic_constraints is not None
+
 
         # Dynamics
         dynamics = DynamicsList()
