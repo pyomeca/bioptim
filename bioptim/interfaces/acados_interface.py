@@ -160,7 +160,7 @@ class AcadosInterface(SolverInterface):
         x = ocp.nlp[0].states.cx_start
         u = ocp.nlp[0].controls.cx_start
         p = ocp.nlp[0].parameters.cx
-        if ocp.parameter:
+        if ocp.parameters:
             for param in ocp.parameters:
                 if str(param.cx)[:11] == f"time_phase_":
                     raise RuntimeError("Time constraint not implemented yet with Acados.")
