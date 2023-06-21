@@ -126,8 +126,12 @@ def prepare_ocp(
     u_bounds = BoundsList()
     u_bounds.add("tau", min_bound=[tau_min] * bio_model[0].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=0)
     if n_phases == 3:
-        u_bounds.add("tau", min_bound=[tau_min] * bio_model[1].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=1)
-        u_bounds.add("tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=2)
+        u_bounds.add(
+            "tau", min_bound=[tau_min] * bio_model[1].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=1
+        )
+        u_bounds.add(
+            "tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=2
+        )
 
     # ------------- #
 

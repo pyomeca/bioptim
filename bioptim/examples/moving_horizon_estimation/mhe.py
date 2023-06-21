@@ -134,8 +134,8 @@ def prepare_mhe(
     u_bounds["tau"] = [-max_torque, 0.0], [max_torque, 0.0]
 
     x_init_list = InitialGuessList()
-    x_init_list.add("q", x_init[:bio_model.nb_q, :], interpolation=InterpolationType.EACH_FRAME)
-    x_init_list.add("qdot", x_init[bio_model.nb_q:, :], interpolation=InterpolationType.EACH_FRAME)
+    x_init_list.add("q", x_init[: bio_model.nb_q, :], interpolation=InterpolationType.EACH_FRAME)
+    x_init_list.add("qdot", x_init[bio_model.nb_q :, :], interpolation=InterpolationType.EACH_FRAME)
 
     u_init_list = InitialGuessList()
     u_init_list.add("tau", u_init, interpolation=InterpolationType.EACH_FRAME)

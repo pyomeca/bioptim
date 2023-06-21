@@ -850,7 +850,9 @@ class OptimalControlProgram:
             self.parameters.add(param)
             offset += param.size
 
-    def update_bounds(self, x_bounds: BoundsList = None, u_bounds: BoundsList = None, parameter_bounds: BoundsList = None):
+    def update_bounds(
+        self, x_bounds: BoundsList = None, u_bounds: BoundsList = None, parameter_bounds: BoundsList = None
+    ):
         """
         The main user interface to add bounds in the ocp
 
@@ -917,7 +919,10 @@ class OptimalControlProgram:
                     raise RuntimeError("x_init should be built from a InitialGuessList")
                 origin_phase = 0 if len(x_init) == 1 else i
                 for key in x_init[origin_phase].keys():
-                    if not self.nlp[i].ode_solver.is_direct_collocation and x_init[origin_phase].type == InterpolationType.ALL_POINTS:
+                    if (
+                        not self.nlp[i].ode_solver.is_direct_collocation
+                        and x_init[origin_phase].type == InterpolationType.ALL_POINTS
+                    ):
                         raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
                     self.nlp[i].x_init.add(key, x_init[origin_phase][key], phase=0)
 
@@ -926,7 +931,10 @@ class OptimalControlProgram:
                     raise RuntimeError("u_init should be built from a InitialGuessList")
                 origin_phase = 0 if len(u_init) == 1 else i
                 for key in u_init.keys():
-                    if not self.nlp[i].ode_solver.is_direct_collocation and x_init[origin_phase].type == InterpolationType.ALL_POINTS:
+                    if (
+                        not self.nlp[i].ode_solver.is_direct_collocation
+                        and x_init[origin_phase].type == InterpolationType.ALL_POINTS
+                    ):
                         raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
                     self.nlp[i].u_init.add(key, u_init[origin_phase][key], phase=0)
 
@@ -1289,7 +1297,11 @@ class OptimalControlProgram:
         param_init_guess = InitialGuessList()
 
         for i in range(self.n_phases):
-            x_interp = InterpolationType.EACH_FRAME if self.nlp[i].ode_solver.is_direct_shooting else InterpolationType.ALL_POINTS
+            x_interp = (
+                InterpolationType.EACH_FRAME
+                if self.nlp[i].ode_solver.is_direct_shooting
+                else InterpolationType.ALL_POINTS
+            )
             if self.n_phases == 1:
                 for key in state:
                     x_init_guess.add(key, state[key], interpolation=x_interp, phase=0)
@@ -1485,8 +1497,10 @@ class OptimalControlProgram:
                 for pen_fun in penalty_functions_phase:
                     if not pen_fun:
                         continue
-                    if (
-                        pen_fun.type in (ObjectiveFcn.Mayer.MINIMIZE_TIME, ObjectiveFcn.Lagrange.MINIMIZE_TIME, ConstraintFcn.TIME_CONSTRAINT)
+                    if pen_fun.type in (
+                        ObjectiveFcn.Mayer.MINIMIZE_TIME,
+                        ObjectiveFcn.Lagrange.MINIMIZE_TIME,
+                        ConstraintFcn.TIME_CONSTRAINT,
                     ):
                         if _has_penalty[i]:
                             raise RuntimeError("Time constraint/objective cannot be declared more than once per phase")
@@ -1531,7 +1545,9 @@ class OptimalControlProgram:
         parameters["time"].mx = MX.sym("time", params.shape[0], 1)
 
         parameters_init.add("time", initial_time_guess, phase=0)
-        parameters_bounds.add("time", min_bound=time_min, max_bound=time_max, phase=0, interpolation=InterpolationType.CONSTANT)
+        parameters_bounds.add(
+            "time", min_bound=time_min, max_bound=time_max, phase=0, interpolation=InterpolationType.CONSTANT
+        )
 
     def __modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """

@@ -83,8 +83,18 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=[tau_min] * len(tau_mappings[0]["tau"].to_first), max_bound=[tau_max] * len(tau_mappings[0]["tau"].to_first), phase=0)
-    u_bounds.add("tau", min_bound=[tau_min] * len(tau_mappings[1]["tau"].to_first), max_bound=[tau_max] * len(tau_mappings[1]["tau"].to_first), phase=1)
+    u_bounds.add(
+        "tau",
+        min_bound=[tau_min] * len(tau_mappings[0]["tau"].to_first),
+        max_bound=[tau_max] * len(tau_mappings[0]["tau"].to_first),
+        phase=0,
+    )
+    u_bounds.add(
+        "tau",
+        min_bound=[tau_min] * len(tau_mappings[1]["tau"].to_first),
+        max_bound=[tau_max] * len(tau_mappings[1]["tau"].to_first),
+        phase=1,
+    )
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(

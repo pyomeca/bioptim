@@ -54,8 +54,8 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
         x_init["q"] = [1.57] * bio_model.nb_q
         x_init["qdot"] = [0] * bio_model.nb_qdot
     else:
-        x_init.add("q", x_warm[:bio_model.nb_q, :], interpolation=InterpolationType.EACH_FRAME)
-        x_init.add("qdot", x_warm[bio_model.nb_q:], interpolation=InterpolationType.EACH_FRAME)
+        x_init.add("q", x_warm[: bio_model.nb_q, :], interpolation=InterpolationType.EACH_FRAME)
+        x_init.add("qdot", x_warm[bio_model.nb_q :], interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     u_bounds = BoundsList()

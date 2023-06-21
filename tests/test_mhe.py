@@ -91,8 +91,12 @@ def test_mhe_redim_xbounds_and_init(assume_phase_dynamics):
     window_len = 5
     window_duration = 0.2
     x_bounds = BoundsList()
-    x_bounds.add("q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT)
-    x_bounds.add("qdot", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT)
+    x_bounds.add(
+        "q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT
+    )
+    x_bounds.add(
+        "qdot", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT
+    )
     u_bounds = BoundsList()
     u_bounds["tau"] = np.zeros((ntau, 1)), np.zeros((ntau, 1))
 
@@ -124,8 +128,18 @@ def test_mhe_redim_xbounds_not_implemented(assume_phase_dynamics):
     window_len = 5
     window_duration = 0.2
     x_bounds = BoundsList()
-    x_bounds.add("q", min_bound=np.zeros((nq, window_len + 1)), max_bound=np.zeros((nq, window_len + 1)), interpolation=InterpolationType.EACH_FRAME)
-    x_bounds.add("qdot", min_bound=np.zeros((nq, window_len + 1)), max_bound=np.zeros((nq, window_len + 1)), interpolation=InterpolationType.EACH_FRAME)
+    x_bounds.add(
+        "q",
+        min_bound=np.zeros((nq, window_len + 1)),
+        max_bound=np.zeros((nq, window_len + 1)),
+        interpolation=InterpolationType.EACH_FRAME,
+    )
+    x_bounds.add(
+        "qdot",
+        min_bound=np.zeros((nq, window_len + 1)),
+        max_bound=np.zeros((nq, window_len + 1)),
+        interpolation=InterpolationType.EACH_FRAME,
+    )
     u_bounds = BoundsList()
     u_bounds["tau"] = np.zeros((ntau, 1)), np.zeros((ntau, 1))
 

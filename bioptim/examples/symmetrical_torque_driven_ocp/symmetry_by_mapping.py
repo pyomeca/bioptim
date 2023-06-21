@@ -122,7 +122,11 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=[tau_min] * len(dof_mappings["q"].to_first), max_bound=[tau_max] * len(dof_mappings["q"].to_first))
+    u_bounds.add(
+        "tau",
+        min_bound=[tau_min] * len(dof_mappings["q"].to_first),
+        max_bound=[tau_max] * len(dof_mappings["q"].to_first),
+    )
 
     # ------------- #
 

@@ -88,7 +88,7 @@ def prepare_ocp(
         rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
         or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
     ):
-        u_bounds["qddot"] = [qddot_min] * bio_model.nb_qddot, [qddot_max] * bio_model.nb_qddot,
+        u_bounds["qddot"] = [qddot_min] * bio_model.nb_qddot, [qddot_max] * bio_model.nb_qddot
 
     return OptimalControlProgram(
         bio_model,

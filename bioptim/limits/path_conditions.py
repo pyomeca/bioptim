@@ -1315,7 +1315,7 @@ class InitialGuessList(OptionDict):
                     magnitude=magnitude[i][key],
                     magnitude_type=magnitude_type,
                     bound_push=bound_push[i],
-                    seed=seed[i][key]
+                    seed=seed[i][key],
                 )
 
     @property

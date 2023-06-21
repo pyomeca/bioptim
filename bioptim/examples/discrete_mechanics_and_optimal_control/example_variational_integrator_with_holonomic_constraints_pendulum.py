@@ -9,7 +9,8 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     Solver,
-    BoundsList, InitialGuessList,
+    BoundsList,
+    InitialGuessList,
 )
 import numpy as np
 

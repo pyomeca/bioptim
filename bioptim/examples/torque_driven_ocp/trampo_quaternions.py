@@ -108,8 +108,8 @@ def prepare_ocp(
         x[9:12, i] = np.reshape(Arm_Quat_G[1:], 3)
         x[13, i] = Arm_Quat_G[0]
     x_init = InitialGuessList()
-    x_init.add("q", x[:bio_model.nb_q, :], interpolation=InterpolationType.LINEAR)
-    x_init.add("qdot", x[bio_model.nb_q:, :], interpolation=InterpolationType.LINEAR)
+    x_init.add("q", x[: bio_model.nb_q, :], interpolation=InterpolationType.LINEAR)
+    x_init.add("qdot", x[bio_model.nb_q :, :], interpolation=InterpolationType.LINEAR)
 
     # Path constraint
     x_bounds = BoundsList()

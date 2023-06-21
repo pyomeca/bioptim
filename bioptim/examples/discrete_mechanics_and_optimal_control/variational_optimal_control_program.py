@@ -25,6 +25,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     """
     q_init and q_bounds only the positions initial guess and bounds since there are no velocities in the variational integrator.
     """
+
     def __init__(
         self,
         bio_model: BiorbdModelCustomHolonomic,
@@ -69,22 +70,28 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         dynamics.add(self.configure_torque_driven, expand=expand)
 
         if qdot_bounds is None or not isinstance(qdot_bounds, BoundsList):
-            raise ValueError("qdot_bounds must be a BoundsList, moreover they must contain 'qdot_start' and 'qdot_end' keys")
+            raise ValueError(
+                "qdot_bounds must be a BoundsList, moreover they must contain 'qdot_start' and 'qdot_end' keys"
+            )
         for key in qdot_bounds.keys():
             # Make sure only these keys are defined
             if key not in ("qdot_start", "qdot_end"):
                 raise ValueError(
-                    "qdot_bounds must be a BoundsList, moreover they must contain 'qdot_start' and 'qdot_end' keys")
+                    "qdot_bounds must be a BoundsList, moreover they must contain 'qdot_start' and 'qdot_end' keys"
+                )
 
         if qdot_init is None:
             qdot_init = InitialGuessList()
         if not isinstance(qdot_init, InitialGuessList):
-            raise ValueError("qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' keys")
+            raise ValueError(
+                "qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' keys"
+            )
         for key in qdot_init.keys():
             # Make sure only these keys are defined
             if key not in ("qdot_start", "qdot_end"):
                 raise ValueError(
-                    "qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' keys")
+                    "qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' keys"
+                )
         # Make sure all are declared
         for key in ("qdot_start", "qdot_end"):
             if key not in qdot_init.keys():
@@ -130,12 +137,16 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         for key in qdot_bounds.keys():
             if key in parameter_bounds.keys():
-                raise KeyError(f"{key} cannot be declared in parameters_bounds as it is a reserved word in VariationalOptimalControlProgram")
+                raise KeyError(
+                    f"{key} cannot be declared in parameters_bounds as it is a reserved word in VariationalOptimalControlProgram"
+                )
             parameter_bounds.add(key, qdot_bounds[key], phase=0)
 
         for init in qdot_init.keys():
             if key in parameter_init.keys():
-                raise KeyError(f"{key} cannot be declared in parameters_init as it is a reserved word in VariationalOptimalControlProgram")
+                raise KeyError(
+                    f"{key} cannot be declared in parameters_init as it is a reserved word in VariationalOptimalControlProgram"
+                )
             parameter_init.add(init, qdot_init[key], phase=0)
 
         if multinode_constraints is None:

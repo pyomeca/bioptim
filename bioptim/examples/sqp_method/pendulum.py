@@ -76,7 +76,7 @@ def prepare_ocp(
     tau_min, tau_max = -100, 100
     u_bounds = BoundsList()
     u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
-    u_bounds ["tau"][1, :] = 0
+    u_bounds["tau"][1, :] = 0
 
     return OptimalControlProgram(
         bio_model,

@@ -205,7 +205,11 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def _initialize_solution(self, states: list, controls: list):
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
-            x_init.add(key, np.concatenate([state[key] for state in states], axis=1), interpolation=InterpolationType.EACH_FRAME)
+            x_init.add(
+                key,
+                np.concatenate([state[key] for state in states], axis=1),
+                interpolation=InterpolationType.EACH_FRAME,
+            )
 
         u_init = InitialGuessList()
         u_init_for_solution = InitialGuessList()
@@ -255,7 +259,12 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def advance_window_bounds_states(self, sol, **advance_options):
         for key in self.nlp[0].x_bounds.keys():
             if self.nlp[0].x_bounds[key].type == InterpolationType.CONSTANT:
-                self.nlp[0].x_bounds.add(key, min_bound=np.repeat(self.nlp[0].x_bounds[key].min[:, 0:1], 3, axis=1), max_bound=np.repeat(self.nlp[0].x_bounds[key].max[:, 0:1], 3, axis=1), phase=0)
+                self.nlp[0].x_bounds.add(
+                    key,
+                    min_bound=np.repeat(self.nlp[0].x_bounds[key].min[:, 0:1], 3, axis=1),
+                    max_bound=np.repeat(self.nlp[0].x_bounds[key].max[:, 0:1], 3, axis=1),
+                    phase=0,
+                )
                 self.nlp[0].x_bounds[key].check_and_adjust_dimensions(len(self.nlp[0].states[key]), 3)
             elif not self.nlp[0].x_bounds[key].type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
                 raise NotImplementedError(
@@ -273,8 +282,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         for key in self.nlp[0].x_init.keys():
             if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
                 # Override the previous x_init
-                self.nlp[0].x_init.add(key,
-                    np.ndarray(sol.states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
+                self.nlp[0].x_init.add(
+                    key, np.ndarray(sol.states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
                 )
                 self.nlp[0].x_init[key].check_and_adjust_dimensions(len(self.nlp[0].states[key]), self.nlp[0].ns)
 
@@ -287,8 +296,11 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         for key in self.nlp[0].u_init.keys():
             if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
                 # Override the previous u_init
-                self.nlp[0].u_init.add(key,
-                    np.ndarray(sol.controls[key][:, :-1].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
+                self.nlp[0].u_init.add(
+                    key,
+                    np.ndarray(sol.controls[key][:, :-1].shape),
+                    interpolation=InterpolationType.EACH_FRAME,
+                    phase=0,
                 )
                 self.nlp[0].u_init[key].check_and_adjust_dimensions(len(self.nlp[0].controls[key]), self.nlp[0].ns - 1)
             self.nlp[0].u_init[key].init[:, :] = np.concatenate(
@@ -305,13 +317,15 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             controls[key] = sol.controls[key][:, self.frame_to_export]
         return states, controls
 
-    def _define_time(self, phase_time: int | float | list | tuple,
+    def _define_time(
+        self,
+        phase_time: int | float | list | tuple,
         objective_functions: ObjectiveList,
         constraints: ConstraintList,
         parameters: ParameterList,
         parameters_init: InitialGuessList,
         parameters_bounds: BoundsList,
-     ):
+    ):
         """
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
@@ -357,7 +371,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         check_for_time_optimization(objective_functions)
         check_for_time_optimization(constraints)
 
-        super(RecedingHorizonOptimization, self)._define_time(phase_time, objective_functions, constraints, parameters, parameters_init, parameters_bounds)
+        super(RecedingHorizonOptimization, self)._define_time(
+            phase_time, objective_functions, constraints, parameters, parameters_init, parameters_bounds
+        )
 
 
 class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
@@ -411,8 +427,11 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def _initialize_solution(self, states: list, controls: list):
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
-            x_init.add(key, np.concatenate([state[key] for state in states], axis=1),
-                       interpolation=InterpolationType.EACH_FRAME)
+            x_init.add(
+                key,
+                np.concatenate([state[key] for state in states], axis=1),
+                interpolation=InterpolationType.EACH_FRAME,
+            )
 
         u_init = InitialGuessList()
         u_init_for_solution = InitialGuessList()
@@ -489,7 +508,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def advance_window_initial_guess_states(self, sol, **advance_options):
         for key in sol.states.keys():
             if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
-                self.nlp[0].x_init.add(key, np.ndarray(sol.states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0)
+                self.nlp[0].x_init.add(
+                    key, np.ndarray(sol.states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
+                )
                 self.nlp[0].x_init[key].check_and_adjust_dimensions(len(self.nlp[0].states[key]), self.nlp[0].ns)
 
             self.nlp[0].x_init[key].init[:, :] = sol.states[key]
@@ -498,7 +519,12 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def advance_window_initial_guess_controls(self, sol, **advance_options):
         for key in sol.controls.keys():
             if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
-                self.nlp[0].u_init.add(key, np.ndarray((sol.controls[key].shape[0], self.nlp[0].ns)), interpolation=InterpolationType.EACH_FRAME, phase=0)
+                self.nlp[0].u_init.add(
+                    key,
+                    np.ndarray((sol.controls[key].shape[0], self.nlp[0].ns)),
+                    interpolation=InterpolationType.EACH_FRAME,
+                    phase=0,
+                )
                 self.nlp[0].u_init[key].check_and_adjust_dimensions(len(self.nlp[0].controls[key]), self.nlp[0].ns - 1)
 
             self.nlp[0].u_init[key].init[:, :] = sol.controls[key][:, :-1]
@@ -623,8 +649,11 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def _initialize_solution(self, states: list, controls: list):
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
-            x_init.add(key, np.concatenate([state[key] for state in states], axis=1),
-                       interpolation=InterpolationType.EACH_FRAME)
+            x_init.add(
+                key,
+                np.concatenate([state[key] for state in states], axis=1),
+                interpolation=InterpolationType.EACH_FRAME,
+            )
 
         u_init = InitialGuessList()
         u_init_for_solution = InitialGuessList()
@@ -655,8 +684,11 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         """return a solution for a single window kept of the MHE"""
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
-            x_init.add(key, np.concatenate([state[key] for state in states], axis=1),
-                       interpolation=InterpolationType.EACH_FRAME)
+            x_init.add(
+                key,
+                np.concatenate([state[key] for state in states], axis=1),
+                interpolation=InterpolationType.EACH_FRAME,
+            )
 
         u_init = InitialGuessList()
         u_init_for_solution = InitialGuessList()

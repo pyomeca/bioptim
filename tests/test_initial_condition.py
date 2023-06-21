@@ -191,7 +191,7 @@ def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
 
     X = InitialGuessList()
     X["q"] = [-1, -2]
-    X["qdot"] = ([1, 0.5])
+    X["qdot"] = [1, 0.5]
     U = InitialGuessList()
     U.add("tau", np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
@@ -235,7 +235,7 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
 
     X = InitialGuessList()
     X["q"] = [-1, -2]
-    X["qdot"] = ([0.1, 0.2])
+    X["qdot"] = [0.1, 0.2]
     U = InitialGuessList()
     U.add("tau", np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 

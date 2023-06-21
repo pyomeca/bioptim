@@ -339,7 +339,11 @@ class Solution:
             self.status = _sol["status"]
 
             # Extract the data now for further use
-            self._states["scaled"], self._controls["scaled"], self.parameters = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
+            (
+                self._states["scaled"],
+                self._controls["scaled"],
+                self.parameters,
+            ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
@@ -385,8 +389,11 @@ class Solution:
             sol_states, sol_controls = _sol[0], _sol[1]
             for p, s in enumerate(sol_states):
                 for key in s.keys():
-                    ns = self.ocp.nlp[p].ns + 1 if s[key].init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[
-                        p].ns
+                    ns = (
+                        self.ocp.nlp[p].ns + 1
+                        if s[key].init.type != InterpolationType.EACH_FRAME
+                        else self.ocp.nlp[p].ns
+                    )
                     s[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].states[key]), ns, "states")
 
                 for i in range(self.ns[p] + 1):
@@ -415,7 +422,11 @@ class Solution:
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
-            self._states["scaled"], self._controls["scaled"], self.parameters = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
+            (
+                self._states["scaled"],
+                self._controls["scaled"],
+                self.parameters,
+            ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
@@ -434,7 +445,11 @@ class Solution:
             """
 
             self.vector = _sol
-            self._states["scaled"], self._controls["scaled"], self.parameters = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
+            (
+                self._states["scaled"],
+                self._controls["scaled"],
+                self.parameters,
+            ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )

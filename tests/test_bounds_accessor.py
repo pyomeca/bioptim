@@ -20,7 +20,12 @@ def test_accessors_on_bounds_option_multidimensional():
     x_min = [[-100, -50, 0] for i in range(6)]
     x_max = [[100, 150, 200] for i in range(6)]
     x_bounds = BoundsList()
-    x_bounds.add("my_key", min_bound=x_min, max_bound=x_max, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
+    x_bounds.add(
+        "my_key",
+        min_bound=x_min,
+        max_bound=x_max,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    )
     x_bounds["my_key"][:3, 0] = 0
     x_bounds["my_key"].min[1:5, 1:] = -10
     x_bounds["my_key"].max[1:5, 1:] = 10

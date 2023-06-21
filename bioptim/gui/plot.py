@@ -378,7 +378,12 @@ class PlotOcp:
                 else:
                     nb = max(
                         [
-                            max(len(nlp.plot[variable].phase_mappings.to_second.map_idx), max(nlp.plot[variable].phase_mappings.to_second.map_idx) + 1) if variable in nlp.plot else 0
+                            max(
+                                len(nlp.plot[variable].phase_mappings.to_second.map_idx),
+                                max(nlp.plot[variable].phase_mappings.to_second.map_idx) + 1,
+                            )
+                            if variable in nlp.plot
+                            else 0
                             for nlp in self.ocp.nlp
                         ]
                     )

@@ -202,7 +202,7 @@ def prepare_ocp(
         u_min = np.random.random((3, 3)) * tau_min + tau_min / 2
         u_max = np.random.random((3, 3)) * tau_max + tau_max / 2
         u_bounds = BoundsList()
-        u_bounds["tau"] = u_min, u_max,
+        u_bounds["tau"] = u_min, u_max
 
     elif interpolation_type == InterpolationType.LINEAR:
         # Here we need to use the .add nomenclature because interpolation is not the default

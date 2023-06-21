@@ -456,10 +456,9 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
                 ),
                 decimal=decimal,
             )
-        assert (
-            sol_integrated.states["q"].shape == (shapes[0], n_shooting + 1)
-            and sol_integrated.states["qdot"].shape == (shapes[1], n_shooting + 1)
-        )
+        assert sol_integrated.states["q"].shape == (shapes[0], n_shooting + 1) and sol_integrated.states[
+            "qdot"
+        ].shape == (shapes[1], n_shooting + 1)
 
     if ode_solver == OdeSolver.COLLOCATION:
         b = bool(1)

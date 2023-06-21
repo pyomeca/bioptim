@@ -163,7 +163,9 @@ def test_update_bounds_and_init_with_param(assume_phase_dynamics):
 
     # Try on parameters too
     parameter_bounds = BoundsList()
-    parameter_bounds.add("gravity_z", min_bound=[g_min * 2], max_bound=[g_max * 2], interpolation=InterpolationType.CONSTANT)
+    parameter_bounds.add(
+        "gravity_z", min_bound=[g_min * 2], max_bound=[g_max * 2], interpolation=InterpolationType.CONSTANT
+    )
     parameter_init = InitialGuessList()
     parameter_init["gravity_z"] = [g_init * 2]
     ocp.update_bounds(parameter_bounds=parameter_bounds)

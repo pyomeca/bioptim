@@ -86,7 +86,9 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
     np.testing.assert_equal(f.shape, (1, 1))
 
     if n_threads > 1:
-        with pytest.raises(NotImplementedError, match="Computing detailed cost with n_thread > 1 is not implemented yet"):
+        with pytest.raises(
+            NotImplementedError, match="Computing detailed cost with n_thread > 1 is not implemented yet"
+        ):
             detailed_cost = sol.detailed_cost[0]
         detailed_cost = None
     else:
