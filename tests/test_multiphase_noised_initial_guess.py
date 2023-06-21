@@ -57,19 +57,19 @@ def test_noisy_multiphase(assume_phase_dynamics):
 
     x_init.add_noise(
         bounds=x_bounds,
-        magnitude=0.1,  # n phase
+        magnitude=[0.1, 0.1, 0.1],
         n_shooting=[ns + 1 for ns in n_shooting],
         bound_push=0.1,
-        seed=42,
+        seed=[42] * 3,
         magnitude_type=MagnitudeType.RELATIVE,
     )
 
     u_init.add_noise(
         bounds=u_bounds,
-        magnitude=0.1,  # n phase
+        magnitude=0.1,
         n_shooting=[ns for ns in n_shooting],
         bound_push=0.1,
-        seed=42,
+        seed=[42] * 3,
         magnitude_type=MagnitudeType.RELATIVE,
     )
 

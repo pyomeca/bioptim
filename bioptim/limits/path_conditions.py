@@ -1160,7 +1160,13 @@ class InitialGuessList(OptionDict):
             raise ValueError("'magnitude' must be an instance of int, float, list, or ndarray")
 
         if isinstance(magnitude, (int, float)):
-            magnitude = {key: magnitude for key in keys}
+            magnitude = [magnitude]
+
+        # Deal with the list[int|float] case
+        if isinstance(magnitude, list):
+            for i, mag in enumerate(magnitude):
+                if isinstance(mag, (int, float)):
+                    magnitude[i] = {key: mag for key in keys}
 
         if isinstance(magnitude, dict):
             magnitude = [magnitude for _ in range(nb_phases)]
@@ -1225,14 +1231,21 @@ class InitialGuessList(OptionDict):
         nb_phases
             The number of phases
         """
-        if not isinstance(seed, (int, dict, list)):
+
+        if seed is not None and not isinstance(seed, (int, dict, list)):
             raise ValueError("Seed must be an integer, dict or a list of these")
 
         if seed is None:
             seed = {key: None for key in keys}
 
         if isinstance(seed, int):
-            seed = {key: seed if i == 0 else None for i, key in enumerate(keys)}
+            seed = [seed]
+
+        # Deal with the list[int] case
+        if isinstance(seed, list):
+            for i, s in enumerate(seed):
+                if isinstance(s, int):
+                    seed[i] = {key: s if i == 0 else None for i, key in enumerate(keys)}
 
         if isinstance(seed, dict):
             seed = [seed]

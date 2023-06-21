@@ -77,7 +77,7 @@ def prepare_ocp(
     final_time: float,
     random_init: bool = False,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
