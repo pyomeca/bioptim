@@ -10,7 +10,7 @@ from .solver_interface import SolverInterface
 from ..interfaces.solver_options import Solver
 from ..misc.enums import Node, SolverType
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
-from ..limits.path_conditions import Bounds
+from ..limits.path_conditions import Bounds, BoundsList, InitialGuessList
 from ..misc.enums import InterpolationType
 
 
@@ -119,8 +119,6 @@ class AcadosInterface(SolverInterface):
         self.y_ref_end = []
         self.y_ref_start = []
         self.nparams = 0
-        self.params_initial_guess = None
-        self.params_bounds = None
         self.__acados_export_model(ocp)
         self.__prepare_acados(ocp)
         self.ocp_solver = None
@@ -166,11 +164,7 @@ class AcadosInterface(SolverInterface):
                     raise RuntimeError("Time constraint not implemented yet with Acados.")
 
         self.nparams = ocp.nlp[0].parameters.shape
-        param_list = ocp.parameters
-        self.params_initial_guess = param_list.initial_guess["all"].scale(param_list.scaling)
-        self.params_initial_guess.check_and_adjust_dimensions(self.nparams, 1)
-        self.params_bounds = param_list.bounds.scale(param_list.scaling)
-        self.params_bounds.check_and_adjust_dimensions(self.nparams, 1)
+
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
@@ -213,7 +207,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.solver_options.tf = ocp.nlp[0].tf
 
         # set dimensions
-        self.acados_ocp.dims.nx = ocp.nlp[0].states.shape + ocp.nlp[0].parameters.shape
+        self.acados_ocp.dims.nx = ocp.nlp[0].parameters.shape + ocp.nlp[0].states.shape
         self.acados_ocp.dims.nu = ocp.nlp[0].controls.shape
         self.acados_ocp.dims.N = ocp.nlp[0].ns
 
@@ -249,10 +243,32 @@ class AcadosInterface(SolverInterface):
             raise NotImplementedError(
                 "ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT " "for the u_bounds"
             )
-        u_min = np.array(ocp.nlp[0].u_bounds.min)
-        u_max = np.array(ocp.nlp[0].u_bounds.max)
-        x_min = np.array(ocp.nlp[0].x_bounds.min)
-        x_max = np.array(ocp.nlp[0].x_bounds.max)
+
+        for key in ocp.nlp[0].controls.keys():
+            if not np.all(np.all(ocp.nlp[0].u_bounds[key].min.T == ocp.nlp[0].u_bounds[key].min.T[0, :], axis=0)):
+                raise NotImplementedError("u_bounds min must be the same at each shooting point with ACADOS")
+            if not np.all(np.all(ocp.nlp[0].u_bounds[key].max.T == ocp.nlp[0].u_bounds[key].max.T[0, :], axis=0)):
+                raise NotImplementedError("u_bounds max must be the same at each shooting point with ACADOS")
+
+            if (
+                not np.isfinite(ocp.nlp[0].u_bounds[key].min).all()
+                or not np.isfinite(ocp.nlp[0].u_bounds[key].max).all()
+            ):
+                raise NotImplementedError(
+                    "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it "
+                    "to a big value instead."
+                )
+
+        for key in ocp.nlp[0].states.keys():
+            if (
+                not np.isfinite(ocp.nlp[0].x_bounds[key].min).all()
+                or not np.isfinite(ocp.nlp[0].x_bounds[key].max).all()
+            ):
+                raise NotImplementedError(
+                    "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it "
+                    "to a big value instead."
+                )
+
         self.all_constr = SX()
         self.end_constr = SX()
         # TODO:change for more node flexibility on bounds
@@ -286,22 +302,6 @@ class AcadosInterface(SolverInterface):
         self.acados_model.con_h_expr = self.all_constr
         self.acados_model.con_h_expr_e = self.end_constr
 
-        if not np.all(np.all(u_min.T == u_min.T[0, :], axis=0)):
-            raise NotImplementedError("u_bounds min must be the same at each shooting point with ACADOS")
-        if not np.all(np.all(u_max.T == u_max.T[0, :], axis=0)):
-            raise NotImplementedError("u_bounds max must be the same at each shooting point with ACADOS")
-
-        if (
-            not np.isfinite(u_min).all()
-            or not np.isfinite(x_min).all()
-            or not np.isfinite(u_max).all()
-            or not np.isfinite(x_max).all()
-        ):
-            raise NotImplementedError(
-                "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it "
-                "to a big value instead."
-            )
-
         # setup state constraints
         # TODO replace all these np.concatenate by proper bound and initial_guess classes
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
@@ -309,17 +309,33 @@ class AcadosInterface(SolverInterface):
         param_bounds_max = []
         param_bounds_min = []
 
-        if self.nparams:
-            param_bounds_max = self.params_bounds.max[:, 0]
-            param_bounds_min = self.params_bounds.min[:, 0]
+        for key in self.ocp.parameter_bounds.keys():
+            param_bounds_scale = self.ocp.parameter_bounds[key].scale(self.ocp.parameters[key].scaling)
+            param_bounds_max = np.concatenate((param_bounds_max, param_bounds_scale.max[:, 0]))
+            param_bounds_min = np.concatenate((param_bounds_min, param_bounds_scale.min[:, 0]))
 
-        for i in range(3):
-            self.x_bound_max[:, i] = np.concatenate((param_bounds_max, np.array(ocp.nlp[0].x_bounds.max[:, i])))
-            self.x_bound_min[:, i] = np.concatenate((param_bounds_min, np.array(ocp.nlp[0].x_bounds.min[:, i])))
+        if self.nparams > 0:
+            self.x_bound_max[: self.nparams, :] = np.repeat(param_bounds_max[:, np.newaxis], 3, axis=1)
+            self.x_bound_min[: self.nparams, :] = np.repeat(param_bounds_min[:, np.newaxis], 3, axis=1)
+
+        for key in ocp.nlp[0].states.keys():
+            x_tp = ocp.nlp[0].x_bounds[key]
+            index = [i + self.nparams for i in ocp.nlp[0].states[key].index]
+            for i in range(3):
+                self.x_bound_max[index, i] = x_tp.max[:, i]
+                self.x_bound_min[index, i] = x_tp.min[:, i]
 
         # setup control constraints
-        self.acados_ocp.constraints.lbu = np.array(ocp.nlp[0].u_bounds.min[:, 0])
-        self.acados_ocp.constraints.ubu = np.array(ocp.nlp[0].u_bounds.max[:, 0])
+        u_bounds_max = np.ndarray((self.acados_ocp.dims.nu, 1))
+        u_bounds_min = np.ndarray((self.acados_ocp.dims.nu, 1))
+        for key in ocp.nlp[0].controls.keys():
+            u_tp = ocp.nlp[0].u_bounds[key]
+            index = ocp.nlp[0].controls[key].index
+            u_bounds_max[index, 0] = np.array(u_tp.max[:, 0])
+            u_bounds_min[index, 0] = np.array(u_tp.min[:, 0])
+
+        self.acados_ocp.constraints.lbu = u_bounds_max
+        self.acados_ocp.constraints.ubu = u_bounds_min
         self.acados_ocp.constraints.idxbu = np.array(range(self.acados_ocp.dims.nu))
         self.acados_ocp.dims.nbu = self.acados_ocp.dims.nu
 
@@ -627,6 +643,10 @@ class AcadosInterface(SolverInterface):
         """
 
         param_init = []
+        for key in self.ocp.nlp[0].parameters.keys():
+            scale_init = self.ocp.parameter_init[key].scale(self.ocp.parameters[key].scaling)
+            param_init = np.concatenate((param_init, scale_init.init[:, 0]))
+
         for n in range(self.acados_ocp.dims.N):
             if n == 0:
                 # Initial node
@@ -646,12 +666,36 @@ class AcadosInterface(SolverInterface):
             # Intermediates
             # check following line
             # self.ocp_solver.cost_set(n, "W", self.W)
-            if self.nparams:
-                param_init = self.params_initial_guess.init.evaluate_at(n)
-            self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))
-            self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
-            self.ocp_solver.constraints_set(n, "lbu", self.ocp.nlp[0].u_bounds.min[:, 0])
-            self.ocp_solver.constraints_set(n, "ubu", self.ocp.nlp[0].u_bounds.max[:, 0])
+
+            # The x_init need to be ordered by index that's why we use a for loop
+            x_init = np.ndarray((self.ocp.nlp[0].states.shape,))
+            for key in self.ocp.nlp[0].states.keys():
+                index = self.ocp.nlp[0].states[key].index
+                self.ocp.nlp[0].x_init[key].check_and_adjust_dimensions(self.ocp.nlp[0].states[key].shape, self.ocp.nlp[0].ns + 1)
+                x_init[index] = self.ocp.nlp[0].x_init[key].init.evaluate_at(n)
+
+            self.ocp_solver.set(n, "x", np.concatenate((param_init, x_init)))
+
+            # The u_init need to be ordered by index that's why we use a for loop
+            u_init = np.ndarray((self.acados_ocp.dims.nu, 1))
+            for key in self.ocp.nlp[0].controls.keys():
+                index = self.ocp.nlp[0].controls[key].index
+                self.ocp.nlp[0].u_init[key].check_and_adjust_dimensions(self.ocp.nlp[0].controls[key].shape, self.ocp.nlp[0].ns)
+                u_init[index, 0] = self.ocp.nlp[0].u_init[key].init.evaluate_at(n)
+
+            self.ocp_solver.set(n, "u", u_init)
+
+            # The u_bounds need to be ordered by index that's why we use a for loop
+            u_bounds_max = np.ndarray(self.acados_ocp.dims.nu)
+            u_bounds_min = np.ndarray(self.acados_ocp.dims.nu)
+            for key in self.ocp.nlp[0].controls.keys():
+                u_tp = self.ocp.nlp[0].u_bounds[key]
+                index = self.ocp.nlp[0].controls[key].index
+                u_bounds_max[index] = np.array(u_tp.max[:, 0])
+                u_bounds_min[index] = np.array(u_tp.min[:, 0])
+
+            self.ocp_solver.constraints_set(n, "lbu", u_bounds_min)
+            self.ocp_solver.constraints_set(n, "ubu", u_bounds_max)
             self.ocp_solver.constraints_set(n, "uh", self.all_g_bounds.max[:, 0])
             self.ocp_solver.constraints_set(n, "lh", self.all_g_bounds.min[:, 0])
 
@@ -670,17 +714,13 @@ class AcadosInterface(SolverInterface):
             self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "uh", self.end_g_bounds.max[:, 0])
             self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lh", self.end_g_bounds.min[:, 0])
 
-        if self.ocp.nlp[0].x_init.init.shape[1] == self.acados_ocp.dims.N + 1:
-            if self.nparams:
-                self.ocp_solver.set(
-                    self.acados_ocp.dims.N,
-                    "x",
-                    np.concatenate(
-                        (self.params_initial_guess.init[:, 0], self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])
-                    ),
-                )
-            else:
-                self.ocp_solver.set(self.acados_ocp.dims.N, "x", self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])
+        # The x_init need to be ordered by index that's why we use a for loop
+        x_init = np.ndarray((self.ocp.nlp[0].states.shape,))
+        for key in self.ocp.nlp[0].states.keys():
+            index = self.ocp.nlp[0].states[key].index
+            x_init[index] = self.ocp.nlp[0].x_init[key].init.evaluate_at(self.acados_ocp.dims.N)
+
+        self.ocp_solver.set(self.acados_ocp.dims.N, "x", np.concatenate((param_init, x_init)))
 
     def online_optim(self, ocp):
         raise NotImplementedError("online_optim is not implemented yet with ACADOS backend")
