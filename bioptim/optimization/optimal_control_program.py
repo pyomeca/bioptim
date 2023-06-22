@@ -374,11 +374,25 @@ class OptimalControlProgram:
             multinode_constraints = MultinodeConstraintList()
         elif not isinstance(multinode_constraints, MultinodeConstraintList):
             raise RuntimeError("multinode_constraints should be built from an MultinodeConstraintList")
+        else:
+            if len(multinode_constraints) > 1 and assume_phase_dynamics:
+                raise RuntimeError(
+                    "multinode_constraints cannot be used with assume_phase_dynamics=True, set it to false"
+                )
+            if len(multinode_constraints) > 1 and n_threads > 1:
+                raise RuntimeError("multinode_constraints cannot be used with multi-threading, set n_threads=1")
 
         if multinode_objectives is None:
             multinode_objectives = MultinodeObjectiveList()
         elif not isinstance(multinode_objectives, MultinodeObjectiveList):
             raise RuntimeError("multinode_objectives should be built from an MultinodeObjectiveList")
+        else:
+            if len(multinode_objectives) > 0 and assume_phase_dynamics:
+                raise RuntimeError(
+                    "multinode_objectives cannot be used with assume_phase_dynamics=True, set it to false"
+                )
+            if len(multinode_objectives) > 0 and n_threads > 1:
+                raise RuntimeError("multinode_objectives cannot be used with multi-threading, set n_threads=1")
 
         if parameter_bounds is None:
             parameter_bounds = BoundsList()
@@ -530,7 +544,7 @@ class OptimalControlProgram:
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
-        # Skipping creates a valid but unsolvable OCP class
+        # Skipping creates an OCP without buit-in continuity constraints, make sure you declared constraints elsewhere
         if not skip_continuity:
             self._declare_continuity(state_continuity_weight)
 

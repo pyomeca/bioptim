@@ -10,6 +10,7 @@ import platform
 
 import pytest
 import numpy as np
+from casadi import sum1, sum2
 from bioptim import InterpolationType, OdeSolver, MultinodeConstraintList, MultinodeConstraintFcn, Node
 
 from .utils import TestUtils
@@ -1138,57 +1139,83 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.2005516965424669)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_multinode_constraints(ode_solver, assume_phase_dynamics):
-    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
-
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
-        return
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8])  # use_SX and IRK are not compatible
+def test_multinode_objective(ode_solver):
+    from bioptim.examples.getting_started import example_multinode_objective as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver = ode_solver()
 
+    n_shooting = 10
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        n_shootings=(8, 10, 8),
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_shooting=n_shooting,
+        final_time=1,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
     sol.print_cost()
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 106577.60874445777)
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (187, 1))
-    np.testing.assert_almost_equal(g, np.zeros((187, 1)))
 
     # Check some of the results
     states, controls = sol.states, sol.controls
 
     # initial and final position
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([1.0, 0.0, 0.0]))
-    np.testing.assert_almost_equal(states[-1]["q"][:, -1], np.array([2.0, 0.0, 1.57]))
+    np.testing.assert_almost_equal(states["q"][:, 0], np.array([0.0, 0.0]))
+    np.testing.assert_almost_equal(states["q"][:, -1], np.array([0.0, 3.14]))
     # initial and final velocities
-    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.0, 0.0, 0.0]))
-    np.testing.assert_almost_equal(states[-1]["qdot"][:, -1], np.array([0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(states["qdot"][:, 0], np.array([0.0, 0.0]))
+    np.testing.assert_almost_equal(states["qdot"][:, -1], np.array([0.0, 0.0]))
 
-    # equality Node.START phase 0 and 2
-    np.testing.assert_almost_equal(states[0]["q"][:, 0], states[2]["q"][:, 0])
+    if isinstance(ode_solver, OdeSolver.RK4):
+        # Check objective function value
+        f = np.array(sol.cost)
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 5018.648542811533)
 
-    # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.32977862, 9.81, 0.0]))
-    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-1.2, 9.81, -1.884]))
+        # Check constraints
+        g = np.array(sol.constraints)
+        np.testing.assert_equal(g.shape, (40, 1))
+        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+        # initial and final controls
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([4.87390358, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-18.98599313, 0.0]))
+
+    elif isinstance(ode_solver, OdeSolver.RK8):
+        # Check objective function value
+        f = np.array(sol.cost)
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 1047.7500638748268)
+
+        # Check constraints
+        g = np.array(sol.constraints)
+        np.testing.assert_equal(g.shape, (40, 1))
+        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+
+        # initial and final controls
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([5.03388194, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-11.51104036, 0.0]))
+
+    # Check that the output is what we expect
+    dt = ocp.nlp[0].tf / ocp.nlp[0].ns
+    weight = 10
+    target = []
+    fun = ocp.nlp[0].J_internal[0].weighted_function
+    x_out = sol.states["all"][:, 0]
+    u_out = sol.controls["all"][:, 0]
+    p_out = []
+    for i in range(1, 10):
+        x_out = np.hstack((x_out, sol.states["all"][:, i]))
+        if i == n_shooting:
+            u_out = np.hstack((u_out, []))
+        else:
+            u_out = np.hstack((u_out, sol.controls["all"][:, i]))
+
+    # Note that dt=1, because the multi-node objectives are treated as mayer terms
+    out = fun[0](x_out, u_out, p_out, weight, target, 1)
+    out_expected = sum2(sum1(sol.controls["all"][:, :-1] ** 2)) * dt * weight
+    np.testing.assert_almost_equal(out, out_expected)
 
 
 @pytest.mark.parametrize("node", [*Node, 0, 3])
@@ -1247,6 +1274,59 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
             assume_phase_dynamics=assume_phase_dynamics,
             with_too_much_constraints=too_much_constraints,
         )
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+def test_multinode_constraints(ode_solver, assume_phase_dynamics):
+    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+        return
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ode_solver = ode_solver()
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        n_shootings=(8, 10, 8),
+        ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
+    )
+    sol = ocp.solve()
+    sol.print_cost()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 106577.60874445777)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (187, 1))
+    np.testing.assert_almost_equal(g, np.zeros((187, 1)))
+
+    # Check some of the results
+    states, controls = sol.states, sol.controls
+
+    # initial and final position
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([1.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(states[-1]["q"][:, -1], np.array([2.0, 0.0, 1.57]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array([0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(states[-1]["qdot"][:, -1], np.array([0.0, 0.0, 0.0]))
+
+    # equality Node.START phase 0 and 2
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], states[2]["q"][:, 0])
+
+    # initial and final controls
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.32977862, 9.81, 0.0]))
+    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-1.2, 9.81, -1.884]))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
