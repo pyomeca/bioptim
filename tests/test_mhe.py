@@ -67,6 +67,7 @@ def test_mhe(solver, assume_phase_dynamics):
         x_init=x_init,
         u_init=u_init,
         assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=4 if assume_phase_dynamics else 1,
     ).solve(update_functions, **ocp_module.get_solver_options(solver))
 
     if solver.type == SolverType.ACADOS:
@@ -107,7 +108,7 @@ def test_mhe_redim_xbounds_and_init(assume_phase_dynamics):
         window_duration,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        n_threads=4,
+        n_threads=8 if assume_phase_dynamics else 1,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -150,7 +151,7 @@ def test_mhe_redim_xbounds_not_implemented(assume_phase_dynamics):
         window_duration,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        n_threads=4,
+        n_threads=8 if assume_phase_dynamics else 1,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

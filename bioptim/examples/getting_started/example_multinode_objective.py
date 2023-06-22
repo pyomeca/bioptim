@@ -9,8 +9,8 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    Bounds,
-    InitialGuess,
+    BoundsList,
+    InitialGuessList,
     OdeSolver,
     OdeSolverBase,
     Solver,
@@ -79,30 +79,25 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, [0, -1]] = 0
-    x_bounds[1, -1] = 3.14
-
-    # Initial guess
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
-    x_init = InitialGuess([0] * (n_q + n_qdot))
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
-    tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
-
-    u_init = InitialGuess([tau_init] * n_tau)
+    tau_min, tau_max = -100, 100
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         multinode_objectives=multinode_objectives,

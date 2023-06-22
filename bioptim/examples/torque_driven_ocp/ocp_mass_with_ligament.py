@@ -23,6 +23,7 @@ def prepare_ocp(
     ode_solver=OdeSolver.RK4(),
     rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     assume_phase_dynamics: bool = True,
+    n_threads: int = 8,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -93,7 +94,7 @@ def prepare_ocp(
         u_init=u_init,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
-        n_threads=8,
+        n_threads=n_threads,
         use_sx=use_sx,
         assume_phase_dynamics=assume_phase_dynamics,
     )

@@ -185,7 +185,7 @@ def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
-        n_threads=4,
+        n_threads=4 if assume_phase_dynamics else 1,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -229,7 +229,7 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
-        n_threads=4,
+        n_threads=4 if assume_phase_dynamics else 1,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

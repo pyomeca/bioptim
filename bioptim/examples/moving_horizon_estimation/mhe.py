@@ -98,6 +98,7 @@ def prepare_mhe(
     x_init: np.ndarray,
     u_init: np.ndarray,
     assume_phase_dynamics: bool = True,
+    n_threads: int = 4,
 ):
     """
 
@@ -119,6 +120,8 @@ def prepare_mhe(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    n_threads: int
+        Number of threads to use
 
     Returns
     -------
@@ -150,7 +153,7 @@ def prepare_mhe(
         u_bounds=u_bounds,
         x_init=x_init_list,
         u_init=u_init_list,
-        n_threads=4,
+        n_threads=n_threads,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

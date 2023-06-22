@@ -46,6 +46,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     torque_level: int = 0,
     assume_phase_dynamics: bool = True,
+    n_threads: int = 8,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -67,6 +68,8 @@ def prepare_ocp(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    n_threads: int
+        Number ot threads to use
 
     Returns
     -------
@@ -196,7 +199,7 @@ def prepare_ocp(
         constraints=constraint,
         ode_solver=ode_solver,
         use_sx=False,
-        n_threads=8,
+        n_threads=n_threads,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

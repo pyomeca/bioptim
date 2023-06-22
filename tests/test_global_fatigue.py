@@ -98,6 +98,7 @@ def test_xia_stabilized_fatigable_muscles(assume_phase_dynamics):
         ode_solver=OdeSolver.COLLOCATION(),
         torque_level=1,
         assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=8 if assume_phase_dynamics else 1,
     )
     sol = ocp.solve()
 
@@ -175,6 +176,7 @@ def test_michaud_fatigable_muscles(assume_phase_dynamics):
         ode_solver=OdeSolver.COLLOCATION(),
         torque_level=1,
         assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=8 if assume_phase_dynamics else 1,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
@@ -213,6 +215,7 @@ def test_effort_fatigable_muscles(assume_phase_dynamics):
         ode_solver=OdeSolver.COLLOCATION(),
         torque_level=1,
         assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=8 if assume_phase_dynamics else 1,
     )
     sol = ocp.solve()
 

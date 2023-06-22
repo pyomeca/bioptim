@@ -29,6 +29,7 @@ def prepare_ocp(
     coefficients,
     biorbd_model_path="models/double_pendulum.bioMod",
     assume_phase_dynamics: bool = True,
+    n_threads: int = 4,
 ):
     # Parameters of the problem
     biorbd_model = BiorbdModel(biorbd_model_path)
@@ -87,7 +88,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         variable_mappings=tau_mappings,
-        n_threads=4,
+        n_threads=n_threads,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

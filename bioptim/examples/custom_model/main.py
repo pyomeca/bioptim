@@ -28,6 +28,7 @@ def prepare_ocp(
     configure_dynamics: callable = None,
     ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
     assume_phase_dynamics: bool = True,
+    n_threads: int = 2,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -48,6 +49,8 @@ def prepare_ocp(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    n_threads: int
+        Number of threads to use
 
     Returns
     -------
@@ -97,7 +100,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         use_sx=False,
-        n_threads=2,
+        n_threads=n_threads,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

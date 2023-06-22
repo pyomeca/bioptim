@@ -1139,20 +1139,40 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.2005516965424669)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8])  # use_SX and IRK are not compatible
-def test_multinode_objective(ode_solver):
+def test_multinode_objective(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_objective as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver = ode_solver()
 
-    n_shooting = 10
+    n_shooting = 30
+    if assume_phase_dynamics:
+        with pytest.raises(
+            ValueError,
+            match=(
+                "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, "
+                "you probably tried to add more penalties than available in a multinode constraint. "
+                "You can try to split the constraints into more penalties or use assume_phase_dynamics=False."
+            ),
+        ):
+            ocp = ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                n_shooting=n_shooting,
+                final_time=1,
+                ode_solver=ode_solver,
+                assume_phase_dynamics=assume_phase_dynamics,
+            )
+        return
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         n_shooting=n_shooting,
         final_time=1,
         ode_solver=ode_solver,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
     sol.print_cost()
@@ -1171,50 +1191,52 @@ def test_multinode_objective(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 5018.648542811533)
+        np.testing.assert_almost_equal(f[0, 0], 415.8259417971987)
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+        np.testing.assert_equal(g.shape, (120, 1))
+        np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([4.87390358, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-18.98599313, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.01549791, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.68877169, 0.0]))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 1047.7500638748268)
+        np.testing.assert_almost_equal(f[0, 0], 415.7063940128547)
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+        np.testing.assert_equal(g.shape, (120, 1))
+        np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([5.03388194, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-11.51104036, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.03763583, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.59527541, 0.0]))
 
     # Check that the output is what we expect
     dt = ocp.nlp[0].tf / ocp.nlp[0].ns
     weight = 10
     target = []
     fun = ocp.nlp[0].J_internal[0].weighted_function
-    x_out = sol.states["all"][:, 0]
-    u_out = sol.controls["all"][:, 0]
+    x_out = np.ndarray((0, 1))
+    u_out = np.ndarray((0, 1))
     p_out = []
-    for i in range(1, 10):
-        x_out = np.hstack((x_out, sol.states["all"][:, i]))
+    for i in range(n_shooting):
+        x_out = np.vstack((x_out, np.concatenate([sol.states[key][:, i] for key in sol.states.keys()])[:, np.newaxis]))
         if i == n_shooting:
-            u_out = np.hstack((u_out, []))
+            u_out = np.vstack((u_out, []))
         else:
-            u_out = np.hstack((u_out, sol.controls["all"][:, i]))
+            u_out = np.vstack(
+                (u_out, np.concatenate([sol.controls[key][:, i] for key in sol.controls.keys()])[:, np.newaxis])
+            )
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
     out = fun[0](x_out, u_out, p_out, weight, target, 1)
-    out_expected = sum2(sum1(sol.controls["all"][:, :-1] ** 2)) * dt * weight
+    out_expected = sum2(sum1(sol.controls["tau"][:, :-1] ** 2)) * dt * weight
     np.testing.assert_almost_equal(out, out_expected)
 
 

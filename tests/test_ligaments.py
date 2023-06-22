@@ -283,6 +283,7 @@ def test_ocp_mass_ligament(rigidbody_dynamics, assume_phase_dynamics):
         biorbd_model_path,
         rigidbody_dynamics=rigidbody_dynamics,
         assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=8 if assume_phase_dynamics else 1,
     )
     solver = Solver.IPOPT()
 
