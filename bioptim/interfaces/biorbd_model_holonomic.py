@@ -30,10 +30,20 @@ class BiorbdModelHolonomic(BiorbdModel):
 
     def set_dependencies(self, dependent_joint_index: list, independent_joint_index: list):
         if len(dependent_joint_index) + len(independent_joint_index) != self.nb_q:
-            raise RuntimeError(
+            raise ValueError(
                 "The sum of the number of dependent and independent joints should be equal to the number of DoF of the"
                 " model"
             )
+
+        for joint in dependent_joint_index:
+            if joint >= self.nb_q:
+                raise ValueError(f"Joint index {joint} is not a valid joint index since the model has {self.nb_q} DoF")
+            if joint in independent_joint_index:
+                raise ValueError(f"You registered {joint} as both dependent and independent")
+
+        for joint in independent_joint_index:
+            if joint >= self.nb_q:
+                raise ValueError(f"Joint index {joint} is not a valid joint index since the model has {self.nb_q} DoF")
 
         self._dependent_joint_index = dependent_joint_index
         self._independent_joint_index = independent_joint_index

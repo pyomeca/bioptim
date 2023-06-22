@@ -86,8 +86,8 @@ def prepare_ocp(
 
     return VariationalOptimalControlProgram(
         bio_model,
-        n_shooting,
         final_time,
+        n_shooting=n_shooting,
         q_init=x_init,
         u_init=u_init,
         q_bounds=x_bounds,
