@@ -672,7 +672,7 @@ class AcadosInterface(SolverInterface):
             for key in self.ocp.nlp[0].states.keys():
                 index = self.ocp.nlp[0].states[key].index
                 self.ocp.nlp[0].x_init[key].check_and_adjust_dimensions(
-                    self.ocp.nlp[0].states[key].shape, self.ocp.nlp[0].ns + 1
+                    self.ocp.nlp[0].states[key].shape, self.ocp.nlp[0].ns
                 )
                 x_init[index] = self.ocp.nlp[0].x_init[key].init.evaluate_at(n)
 
@@ -683,7 +683,7 @@ class AcadosInterface(SolverInterface):
             for key in self.ocp.nlp[0].controls.keys():
                 index = self.ocp.nlp[0].controls[key].index
                 self.ocp.nlp[0].u_init[key].check_and_adjust_dimensions(
-                    self.ocp.nlp[0].controls[key].shape, self.ocp.nlp[0].ns
+                    self.ocp.nlp[0].controls[key].shape, self.ocp.nlp[0].ns - 1
                 )
                 u_init[index, 0] = self.ocp.nlp[0].u_init[key].init.evaluate_at(n)
 
