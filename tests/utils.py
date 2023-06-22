@@ -75,6 +75,9 @@ class TestUtils:
             first_elem, (OptimalControlProgram, BoundsList, InitialGuessList, BiMapping, Mapping, OdeSolver)
         ):
             for key in dir(first_elem):
+                if type(first_elem) in (Mapping, BiMapping) and key in ("param_when_copying", "shape", "value"):
+                    # These are designed to fail, so don't test them
+                    continue
                 TestUtils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
         else:
             if not callable(first_elem) and not isinstance(first_elem, (MX, BiorbdModel)):

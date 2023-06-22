@@ -666,8 +666,10 @@ class PlotOcp:
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
+                data_params["time"] = self.ocp.time_phase_mapping.to_second.map(data_params["time"][0])
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                     self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
+
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):

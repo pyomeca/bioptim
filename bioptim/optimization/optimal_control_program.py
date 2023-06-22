@@ -160,6 +160,7 @@ class OptimalControlProgram:
         ode_solver: list | OdeSolverBase | OdeSolver = None,
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
+        time_phase_mapping: BiMapping = None,
         node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
@@ -221,6 +222,9 @@ class OptimalControlProgram:
             The type of controls for each phase
         variable_mappings: BiMappingList
             The mapping to apply on variables
+        time_phase_mapping: BiMapping
+            The mapping of the time of the phases, so some phase share the same time variable (when optimized, that is
+            a constraint or an objective on the time is declared)
         node_mappings: NodeMappingList
             The mapping to apply between the variables associated with the nodes
         plot_mappings: Mapping
@@ -271,6 +275,7 @@ class OptimalControlProgram:
             "ode_solver": ode_solver,
             "control_type": control_type,
             "variable_mappings": variable_mappings,
+            "time_phase_mapping": time_phase_mapping,
             "node_mappings": node_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
@@ -459,6 +464,11 @@ class OptimalControlProgram:
 
         # Prepare the parameters to optimize
         self.phase_transitions = []
+
+        # Prepare the parameter mappings
+        if time_phase_mapping is None:
+            time_phase_mapping = BiMapping(to_second=[i for i in range(self.n_phases)], to_first=[i for i in range(self.n_phases)])
+        self.time_phase_mapping = time_phase_mapping
 
         # Add any time related parameters to the parameters list before declaring it
         self._define_time(phase_time, objective_functions, constraints, parameters, parameter_init, parameter_bounds)
@@ -1506,14 +1516,17 @@ class OptimalControlProgram:
                             raise RuntimeError("Time constraint/objective cannot be declared more than once per phase")
                         _has_penalty[i] = True
 
-                        _initial_time_guess.append(_phase_time[i])
-                        _phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
-                        if pen_fun.type.get_type() == ConstraintFunction:
-                            _time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
-                            _time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
+                        if i in self.time_phase_mapping.to_first.map_idx:
+                            _initial_time_guess.append(_phase_time[i])
+                            _phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
+                            if pen_fun.type.get_type() == ConstraintFunction:
+                                _time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
+                                _time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
+                            else:
+                                _time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
+                                _time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
                         else:
-                            _time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
-                            _time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
+                            _phase_time[i] = _phase_time[ocp.time_phase_mapping.to_second.map_idx[i]]
             return _has_penalty
 
         NLP.add(self, "t_initial_guess", phase_time, False)
@@ -1539,7 +1552,7 @@ class OptimalControlProgram:
             return
 
         # Otherwise, add the time to the Parameters
-        params = vertcat(*[nlp.tf for nlp in self.nlp if isinstance(nlp.tf, self.cx)])
+        params = vertcat(*[nlp.tf for nlp in self.nlp if (isinstance(nlp.tf, self.cx) and nlp.phase_idx in self.time_phase_mapping.to_first.map_idx)])
         parameters.add("time", lambda model, values: None, size=params.shape[0], allow_reserved_name=True)
         parameters["time"].cx = params
         parameters["time"].mx = MX.sym("time", params.shape[0], 1)

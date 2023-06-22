@@ -44,6 +44,7 @@ def generic_solve(interface) -> dict:
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
+    # Thread here on (f and all_g) instead of individually for each function?
     interface.sqp_nlp = {"x": interface.ocp.variables_vector, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
