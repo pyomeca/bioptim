@@ -28,7 +28,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     def __init__(
         self,
         bio_model: VariationalBiorbdModel,
-        n_shooting: int,
         final_time: float,
         q_init: InitialGuessList = None,
         q_bounds: BoundsList = None,
@@ -44,6 +43,18 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         multinode_constraints: MultinodeConstraintList = None,
         **kwargs,
     ):
+        if type(bio_model) != VariationalBiorbdModel:
+            raise RuntimeError("bio_model must be of type VariationalBiorbdModel")
+
+        if "phase_time" in kwargs or isinstance(final_time, (list, tuple)):
+            raise NotImplementedError(
+                "Phases have not been implemented in VariationalOptimalControlProgram yet. Please register only a final"
+                " time."
+            )
+
+        if "n_shooting" not in kwargs:
+            raise ValueError("n_shooting must be defined in VariationalOptimalControlProgram")
+
         if "ode_solver" in kwargs:
             raise ValueError(
                 "ode_solver cannot be defined in VariationalOptimalControlProgram since the integration is"
@@ -157,8 +168,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         super().__init__(
             self.bio_model,
             dynamics,
-            n_shooting,
-            final_time,
+            phase_time=final_time,
             x_init=q_init,
             x_bounds=q_bounds,
             assume_phase_dynamics=True,
