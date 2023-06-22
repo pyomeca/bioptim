@@ -167,7 +167,9 @@ def main():
     time_min = (0.7, 3, 0.1)
     time_max = (2, 4, 1)
     ns = (20, 30, 20)
-    ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns, with_phase_time_equality=True)
+    ocp = prepare_ocp(
+        final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns, with_phase_time_equality=True
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))

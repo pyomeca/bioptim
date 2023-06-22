@@ -467,7 +467,9 @@ class OptimalControlProgram:
 
         # Prepare the parameter mappings
         if time_phase_mapping is None:
-            time_phase_mapping = BiMapping(to_second=[i for i in range(self.n_phases)], to_first=[i for i in range(self.n_phases)])
+            time_phase_mapping = BiMapping(
+                to_second=[i for i in range(self.n_phases)], to_first=[i for i in range(self.n_phases)]
+            )
         self.time_phase_mapping = time_phase_mapping
 
         # Add any time related parameters to the parameters list before declaring it
@@ -1552,7 +1554,13 @@ class OptimalControlProgram:
             return
 
         # Otherwise, add the time to the Parameters
-        params = vertcat(*[nlp.tf for nlp in self.nlp if (isinstance(nlp.tf, self.cx) and nlp.phase_idx in self.time_phase_mapping.to_first.map_idx)])
+        params = vertcat(
+            *[
+                nlp.tf
+                for nlp in self.nlp
+                if (isinstance(nlp.tf, self.cx) and nlp.phase_idx in self.time_phase_mapping.to_first.map_idx)
+            ]
+        )
         parameters.add("time", lambda model, values: None, size=params.shape[0], allow_reserved_name=True)
         parameters["time"].cx = params
         parameters["time"].mx = MX.sym("time", params.shape[0], 1)

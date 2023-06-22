@@ -671,7 +671,9 @@ class AcadosInterface(SolverInterface):
             x_init = np.ndarray((self.ocp.nlp[0].states.shape,))
             for key in self.ocp.nlp[0].states.keys():
                 index = self.ocp.nlp[0].states[key].index
-                self.ocp.nlp[0].x_init[key].check_and_adjust_dimensions(self.ocp.nlp[0].states[key].shape, self.ocp.nlp[0].ns + 1)
+                self.ocp.nlp[0].x_init[key].check_and_adjust_dimensions(
+                    self.ocp.nlp[0].states[key].shape, self.ocp.nlp[0].ns + 1
+                )
                 x_init[index] = self.ocp.nlp[0].x_init[key].init.evaluate_at(n)
 
             self.ocp_solver.set(n, "x", np.concatenate((param_init, x_init)))
@@ -680,7 +682,9 @@ class AcadosInterface(SolverInterface):
             u_init = np.ndarray((self.acados_ocp.dims.nu, 1))
             for key in self.ocp.nlp[0].controls.keys():
                 index = self.ocp.nlp[0].controls[key].index
-                self.ocp.nlp[0].u_init[key].check_and_adjust_dimensions(self.ocp.nlp[0].controls[key].shape, self.ocp.nlp[0].ns)
+                self.ocp.nlp[0].u_init[key].check_and_adjust_dimensions(
+                    self.ocp.nlp[0].controls[key].shape, self.ocp.nlp[0].ns
+                )
                 u_init[index, 0] = self.ocp.nlp[0].u_init[key].init.evaluate_at(n)
 
             self.ocp_solver.set(n, "u", u_init)

@@ -718,11 +718,20 @@ def test_acados_bounds_not_implemented(failing):
         x_bounds.add("q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)))
         x_bounds.add("qdot", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)))
         u_bounds = BoundsList()
-        u_bounds.add("tau", min_bound=np.zeros((ntau, 1)), max_bound=np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
+        u_bounds.add(
+            "tau",
+            min_bound=np.zeros((ntau, 1)),
+            max_bound=np.zeros((ntau, 1)),
+            interpolation=InterpolationType.CONSTANT,
+        )
     elif failing == "x_bounds":
         x_bounds = BoundsList()
-        x_bounds.add("q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT)
-        x_bounds.add("qdot", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT)
+        x_bounds.add(
+            "q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT
+        )
+        x_bounds.add(
+            "qdot", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT
+        )
         u_bounds = BoundsList()
         u_bounds.add("tau", min_bound=np.zeros((ntau, 1)), max_bound=np.zeros((ntau, 1)))
     else:

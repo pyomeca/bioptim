@@ -722,12 +722,18 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, assume_
     if ode_solver == OdeSolver.COLLOCATION:
         np.testing.assert_equal(g.shape, (421 * 5 + 22, 1))
         np.testing.assert_almost_equal(
-            g, np.concatenate((np.zeros((612, 1)), [[0.95655144]], np.zeros((909, 1)), [[3]], np.zeros((603, 1)), [[0.95655144]]))
+            g,
+            np.concatenate(
+                (np.zeros((612, 1)), [[0.95655144]], np.zeros((909, 1)), [[3]], np.zeros((603, 1)), [[0.95655144]])
+            ),
         )
     else:
         np.testing.assert_equal(g.shape, (447, 1))
         np.testing.assert_almost_equal(
-            g, np.concatenate((np.zeros((132, 1)), [[0.95655144]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.95655144]]))
+            g,
+            np.concatenate(
+                (np.zeros((132, 1)), [[0.95655144]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.95655144]])
+            ),
         )
 
     # Check some results
