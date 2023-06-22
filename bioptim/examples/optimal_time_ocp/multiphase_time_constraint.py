@@ -20,6 +20,7 @@ from bioptim import (
     OdeSolver,
     Node,
     OdeSolverBase,
+    BiMapping,
 )
 
 
@@ -31,6 +32,7 @@ def prepare_ocp(
     biorbd_model_path: str = "models/cube.bioMod",
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     assume_phase_dynamics: bool = True,
+    with_phase_time_equality: bool = False,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program. This example can be called as a normal single phase (all list len equals to 1)
@@ -54,6 +56,8 @@ def prepare_ocp(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    with_phase_time_equality: bool
+        If the phase time equality should be applied, this is ignored if len(n_shooting) = 1 (instead of 3)
 
     Returns
     -------
@@ -64,6 +68,10 @@ def prepare_ocp(
     n_phases = len(n_shooting)
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("Number of phases must be 1 to 3")
+    time_phase_mapping = None
+    if n_phases and with_phase_time_equality:
+        # First and last phase should have the same time
+        time_phase_mapping = BiMapping(to_second=[0, 1, 0], to_first=[0, 1])
 
     # BioModel path
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
@@ -145,6 +153,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         ode_solver=ode_solver,
+        time_phase_mapping=time_phase_mapping,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -155,17 +164,17 @@ def main():
     """
 
     final_time = (2, 5, 4)
-    time_min = (1, 3, 0.1)
-    time_max = (2, 4, 0.8)
+    time_min = (0.7, 3, 0.1)
+    time_max = (2, 4, 1)
     ns = (20, 30, 20)
-    ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns)
+    ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns, with_phase_time_equality=True)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    param = sol.parameters
-    print(f"The optimized phase time are: {param['time'][0, 0]}s, {param['time'][1, 0]}s and {param['time'][2, 0]}s.")
+    time = [sol.parameters["time"][i, 0] for i in ocp.time_phase_mapping.to_second.map_idx]
+    print(f"The optimized phase time are: {time[0]}s, {time[1]}s and {time[2]}s.")
     sol.animate()
 
 

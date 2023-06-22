@@ -688,6 +688,78 @@ def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, assume_phase_dynamics):
+    # Load time_constraint
+    from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        final_time=(2, 5, 4),
+        time_min=(0.7, 3, 0.1),
+        time_max=(2, 4, 1),
+        n_shooting=(20, 30, 20),
+        ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
+        with_phase_time_equality=True,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 53463.26498172455)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    if ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_equal(g.shape, (421 * 5 + 22, 1))
+        np.testing.assert_almost_equal(
+            g, np.concatenate((np.zeros((612, 1)), [[0.95655144]], np.zeros((909, 1)), [[3]], np.zeros((603, 1)), [[0.95655144]]))
+        )
+    else:
+        np.testing.assert_equal(g.shape, (447, 1))
+        np.testing.assert_almost_equal(
+            g, np.concatenate((np.zeros((132, 1)), [[0.95655144]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.95655144]]))
+        )
+
+    # Check some results
+    sol_merged = sol.merge_phases()
+    states, controls = sol_merged.states, sol_merged.controls
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    tf_all = sol.parameters["time"]
+    tf = sol_merged.phase_time[1]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((6.24518474, 9.81, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-6.24518474, 9.81, -9.80494005)))
+
+    # optimized time
+    np.testing.assert_almost_equal(tf_all.T, [[0.95655144, 3]])
+    np.testing.assert_almost_equal(tf, np.sum(tf_all) + tf_all[0, 0])
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol)
+
+
 def partial_ocp_parameters(n_phases):
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("n_phases should be 1 or 3")

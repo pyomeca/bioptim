@@ -333,7 +333,7 @@ class OptimizationVectorHelper:
             cmp = 0
             for i in range(len(phase_time)):
                 if not isinstance(phase_time[i], (int, float)):
-                    phase_time[i] = data_time_optimized[cmp]
+                    phase_time[i] = data_time_optimized[ocp.time_phase_mapping.to_second.map_idx[cmp]]
                     cmp += 1
         return phase_time
 

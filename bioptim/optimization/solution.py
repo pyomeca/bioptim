@@ -268,6 +268,7 @@ class Solution:
             self.g_implicit = ocp.g_implicit
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
+            self.time_phase_mapping = ocp.time_phase_mapping
             self.assume_phase_dynamics = ocp.assume_phase_dynamics
             self.n_threads = ocp.n_threads
 
