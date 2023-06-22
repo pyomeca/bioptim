@@ -10,7 +10,7 @@ from .solver_interface import SolverInterface
 from ..interfaces.solver_options import Solver
 from ..misc.enums import Node, SolverType
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
-from ..limits.path_conditions import Bounds, BoundsList, InitialGuessList
+from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
 
 
