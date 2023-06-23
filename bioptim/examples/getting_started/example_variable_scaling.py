@@ -12,8 +12,7 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    Bounds,
-    InitialGuess,
+    BoundsList,
     ObjectiveFcn,
     Objective,
     OdeSolver,
@@ -69,40 +68,33 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = biorbd_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds.min[2:4, :] = -3.14 * 100
-    x_bounds.max[2:4, :] = 3.14 * 100
-    x_bounds[:, [0, -1]] = 0
-    x_bounds[1, -1] = 3.14
-
-    # Initial guess
-    n_q = biorbd_model.nb_q
-    n_qdot = biorbd_model.nb_q
-    x_init = InitialGuess([0] * (n_q + n_qdot))
+    x_bounds = BoundsList()
+    x_bounds["q"] = biorbd_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = [-3.14 * 100] * biorbd_model.nb_qdot, [3.14 * 100] * biorbd_model.nb_qdot
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Define control path constraint
     n_tau = biorbd_model.nb_tau
-    tau_min, tau_max, tau_init = -1000, 1000, 0
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[1, :] = 0
-
-    u_init = InitialGuess([tau_init] * n_tau)
+    tau_min, tau_max = -1000, 1000
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][1, :] = 0
 
     # Variable scaling
     x_scaling = VariableScalingList()
-    x_scaling.add("q", scaling=[1, 3])  # declare keys in order, so that they are concatenated in the right order
-    x_scaling.add("qdot", scaling=[85, 85])
+    x_scaling["q"] = [1, 3]
+    x_scaling["qdot"] = [85, 85]
 
     u_scaling = VariableScalingList()
-    u_scaling.add("tau", scaling=[900, 1])
+    u_scaling["tau"] = [900, 1]
 
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_scaling=x_scaling,
@@ -134,7 +126,6 @@ def main():
     sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol.detailed_cost_values()
     sol.print_cost()
     sol.animate(n_frames=100)
 

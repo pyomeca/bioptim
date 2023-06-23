@@ -17,10 +17,10 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    InitialGuessList,
     OdeSolver,
     Node,
     OdeSolverBase,
+    BiMapping,
 )
 
 
@@ -32,6 +32,7 @@ def prepare_ocp(
     biorbd_model_path: str = "models/cube.bioMod",
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     assume_phase_dynamics: bool = True,
+    with_phase_time_equality: bool = False,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program. This example can be called as a normal single phase (all list len equals to 1)
@@ -55,6 +56,8 @@ def prepare_ocp(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    with_phase_time_equality: bool
+        If the phase time equality should be applied, this is ignored if len(n_shooting) = 1 (instead of 3)
 
     Returns
     -------
@@ -65,12 +68,16 @@ def prepare_ocp(
     n_phases = len(n_shooting)
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("Number of phases must be 1 to 3")
+    time_phase_mapping = None
+    if n_phases and with_phase_time_equality:
+        # First and last phase should have the same time
+        time_phase_mapping = BiMapping(to_second=[0, 1, 0], to_first=[0, 1])
 
     # BioModel path
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max = -100, 100
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -108,37 +115,31 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 0
+    x_bounds.add("q", bio_model[0].bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bio_model[0].bounds_from_ranges("qdot"), phase=0)
     if n_phases == 3:
-        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 1
-        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 2
+        x_bounds.add("q", bio_model[1].bounds_from_ranges("q"), phase=1)
+        x_bounds.add("qdot", bio_model[1].bounds_from_ranges("qdot"), phase=1)
+        x_bounds.add("q", bio_model[2].bounds_from_ranges("q"), phase=2)
+        x_bounds.add("qdot", bio_model[2].bounds_from_ranges("qdot"), phase=2)
 
     for bounds in x_bounds:
-        for i in [1, 3, 4, 5]:
-            bounds[i, [0, -1]] = 0
-    x_bounds[0][2, 0] = 0.0
+        bounds["q"][1, [0, -1]] = 0
+        bounds["qdot"][:, [0, -1]] = 0
+    x_bounds[0]["q"][2, 0] = 0.0
     if n_phases == 3:
-        x_bounds[2][2, [0, -1]] = [0.0, 1.57]
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-    if n_phases == 3:
-        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+        x_bounds[2]["q"][2, [0, -1]] = [0.0, 1.57]
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+    u_bounds.add("tau", min_bound=[tau_min] * bio_model[0].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=0)
     if n_phases == 3:
-        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model[0].nb_tau)
-    if n_phases == 3:
-        u_init.add([tau_init] * bio_model[0].nb_tau)
-        u_init.add([tau_init] * bio_model[0].nb_tau)
+        u_bounds.add(
+            "tau", min_bound=[tau_min] * bio_model[1].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=1
+        )
+        u_bounds.add(
+            "tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=2
+        )
 
     # ------------- #
 
@@ -147,13 +148,12 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time[:n_phases],
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
+        constraints=constraints,
         ode_solver=ode_solver,
+        time_phase_mapping=time_phase_mapping,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -164,17 +164,19 @@ def main():
     """
 
     final_time = (2, 5, 4)
-    time_min = (1, 3, 0.1)
-    time_max = (2, 4, 0.8)
+    time_min = (0.7, 3, 0.1)
+    time_max = (2, 4, 1)
     ns = (20, 30, 20)
-    ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns)
+    ocp = prepare_ocp(
+        final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns, with_phase_time_equality=True
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    param = sol.parameters
-    print(f"The optimized phase time are: {param['time'][0, 0]}s, {param['time'][1, 0]}s and {param['time'][2, 0]}s.")
+    time = [sol.parameters["time"][i, 0] for i in ocp.time_phase_mapping.to_second.map_idx]
+    print(f"The optimized phase time are: {time[0]}s, {time[1]}s and {time[2]}s.")
     sol.animate()
 
 

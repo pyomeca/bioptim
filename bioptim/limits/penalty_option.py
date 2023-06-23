@@ -6,7 +6,6 @@ import numpy as np
 
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, IntegralApproximation
-from ..misc.mapping import Mapping
 from ..misc.options import OptionGeneric
 
 
@@ -453,7 +452,7 @@ class PenaltyOption(OptionGeneric):
 
         # Alias some variables
         node = controller.node_index
-        param_cx = controller.parameters.cx_start
+        param_cx = controller.parameters.cx
 
         # Sanity check on outputs
         if len(self.function) <= node:
@@ -527,7 +526,7 @@ class PenaltyOption(OptionGeneric):
             state_cx_end_scaled = (
                 controller.states_scaled.cx_end
                 if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx_start)["xf"]
+                else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx)["xf"]
             )
             modified_function = controller.to_casadi_func(
                 f"{name}",
@@ -663,10 +662,10 @@ class PenaltyOption(OptionGeneric):
             self.multinode_idx = []
             for node, phase_idx in zip(self.nodes, self.nodes_phase):
                 self.node = node
-                nlp = ocp.nlp[phase_idx % ocp.n_phases]
+                nlp = ocp.nlp[phase_idx % ocp.n_phases]  # this is to allow using -1 to refer to the last phase
 
                 controllers.append(self._get_penalty_controller(ocp, nlp))
-                if self.node == Node.END or self.node == nlp.ns:
+                if (self.node[0] == Node.END or self.node[0] == nlp.ns) and nlp.U != []:
                     # Make an exception to the fact that U is not available for the last node
                     controllers[-1].u = [nlp.U[-1]]
                 penalty_type.validate_penalty_time_index(self, controllers[-1])
@@ -797,6 +796,8 @@ class PenaltyOption(OptionGeneric):
 
         x = [nlp.X[idx] for idx in t]
         x_scaled = [nlp.X_scaled[idx] for idx in t]
-        u = [nlp.U[idx] for idx in t if idx != nlp.ns]
-        u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
-        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx_start)
+        u, u_scaled = [], []
+        if nlp.U is not None and (not isinstance(nlp.U, list) or nlp.U != []):
+            u = [nlp.U[idx] for idx in t if idx != nlp.ns]
+            u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
+        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx)

@@ -26,8 +26,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    Bounds,
-    InitialGuessList,
     OdeSolver,
     OdeSolverBase,
     Node,
@@ -278,34 +276,25 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    x_bounds[0].min[[0, 1], :] = -2 * np.pi
-    x_bounds[0].max[[0, 1], :] = 2 * np.pi
+    x_bounds["q"].min[:, :] = -2 * np.pi
+    x_bounds["q"].max[:, :] = 2 * np.pi
 
     # Add muscle to the bounds
     activation_min, activation_max, activation_init = 0, 1, 0.5
-    x_bounds[0].concatenate(Bounds([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles))
-    x_bounds[0][(bio_model.nb_q + bio_model.nb_qdot) :, 0] = excitations_ref[:, 0]
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot) + [0] * bio_model.nb_muscles)
+    x_bounds["muscles"] = [activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles
+    x_bounds["muscles"][:, 0] = excitations_ref[:, 0]
 
     # Define control path constraint
     excitation_min, excitation_max, excitation_init = 0, 1, 0.5
     u_bounds = BoundsList()
-    u_init = InitialGuessList()
     if use_residual_torque:
-        tau_min, tau_max, tau_init = -100.0, 100.0, 0.0
-        u_bounds.add(
-            [tau_min] * bio_model.nb_tau + [excitation_min] * bio_model.nb_muscles,
-            [tau_max] * bio_model.nb_tau + [excitation_max] * bio_model.nb_muscles,
-        )
-        u_init.add([tau_init] * bio_model.nb_tau + [excitation_init] * bio_model.nb_muscles)
-    else:
-        u_bounds.add([excitation_min] * bio_model.nb_muscles, [excitation_max] * bio_model.nb_muscles)
-        u_init.add([excitation_init] * bio_model.nb_muscles)
+        tau_min, tau_max = -100.0, 100.0
+        u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
+
+    u_bounds["muscles"] = [excitation_min] * bio_model.nb_muscles, [excitation_max] * bio_model.nb_muscles
     # ------------- #
 
     return OptimalControlProgram(
@@ -313,11 +302,9 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )

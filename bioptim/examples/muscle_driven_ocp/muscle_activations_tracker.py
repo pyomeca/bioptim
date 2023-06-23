@@ -274,15 +274,9 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
+    x_bounds["q"] = [-2 * np.pi] * bio_model.nb_q, [2 * np.pi] * bio_model.nb_q
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    nq = bio_model.nb_q
-    x_bounds[0].min[:nq, :] = -2 * np.pi
-    x_bounds[0].max[:nq, :] = 2 * np.pi
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 
     # Define control path constraint
     activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
@@ -290,17 +284,9 @@ def prepare_ocp(
     u_init = InitialGuessList()
     if use_residual_torque:
         tau_min, tau_max, tau_init = -100.0, 100.0, 0.0
-        u_bounds.add(
-            [tau_min] * bio_model.nb_tau + [activation_min] * bio_model.nb_muscles,
-            [tau_max] * bio_model.nb_tau + [activation_max] * bio_model.nb_muscles,
-        )
-        u_init.add([tau_init] * bio_model.nb_tau + [activation_init] * bio_model.nb_muscles)
-    else:
-        u_bounds.add(
-            [activation_min] * bio_model.nb_muscles,
-            [activation_max] * bio_model.nb_muscles,
-        )
-        u_init.add([activation_init] * bio_model.nb_muscles)
+        u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
+    u_bounds["muscles"] = [activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles
+    u_init["muscles"] = [activation_init] * bio_model.nb_muscles
     # ------------- #
 
     return OptimalControlProgram(
@@ -308,11 +294,10 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        u_init=u_init,
+        objective_functions=objective_functions,
         ode_solver=ode_solver,
         n_threads=n_threads,
         assume_phase_dynamics=assume_phase_dynamics,

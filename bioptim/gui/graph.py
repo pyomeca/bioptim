@@ -2,8 +2,7 @@ import numpy as np
 
 from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
-from ..limits.path_conditions import PathCondition, Bounds
-from ..optimization.parameters import Parameter
+from ..limits.path_conditions import Bounds
 from ..misc.enums import Node, InterpolationType
 
 
@@ -217,62 +216,25 @@ class GraphAbstract:
                         list_mayer_objectives.append(mayer_objective)
         return list_mayer_objectives
 
-    def _structure_scaling_parameter(self, el: PathCondition, parameter: Parameter):
-        """
-        Main structure of the next method _scaling_parameter(self, parameter: Parameter)
-
-        Parameters
-        ----------
-        el: PathCondition
-            The PathCondition to be converted in a string
-        parameter: Parameter
-            The unscaled parameter
-        """
-
-        size_el = len(el[0])
-        el_list = [el[i][j] for i in range(parameter.size) for j in range(size_el)]
-        el_str = f"{self._vector_layout(el_list)}"
-        return el_str
-
-    def _scaling_parameter(self, parameter: Parameter):
+    def _scaling_parameter(self, key: str):
         """
         Take scaling into account for display task
 
         Parameters
         ----------
-        parameter: Parameter
-            The unscaled parameter
+        key: str
+            The key of the parameter containing all the information to display
         """
 
-        initial_guess_str = self._structure_scaling_parameter(parameter.initial_guess.init, parameter)
-        min_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
-        max_bound_str = self._structure_scaling_parameter(parameter.bounds.max, parameter)
+        parameter = self.ocp.parameters[key]
+        initial_guess_str = f"{self._vector_layout(self.ocp.parameter_init[key].init)}"
+        min_bound_str = f"{self._vector_layout(self.ocp.parameter_bounds[key].min)}"
+        max_bound_str = f"{self._vector_layout(self.ocp.parameter_bounds[key].max)}"
 
         scaling = [parameter.scaling[i][0] for i in range(parameter.size)]
         scaling_str = f"{self._vector_layout(scaling)}"
 
-        return initial_guess_str, min_bound_str, max_bound_str, scaling_str
-
-    @staticmethod
-    def _get_parameter_function_name(parameter: Parameter, idx: int):
-        """
-        Get parameter function name (whether or not it is a custom function)
-
-        Parameters
-        ----------
-        parameter: Parameter
-            The parameter to which the function is linked
-        idx: int
-            The penalty index
-        """
-
-        name = ""
-        if parameter.penalty_list is not None:
-            if parameter.penalty_list[0][idx].type is not None and parameter.penalty_list[0][idx].type.name == "CUSTOM":
-                name = parameter.penalty_list[0][idx].custom_function.__name__
-            else:
-                name = parameter.penalty_list[0][idx].name
-        return name
+        return parameter, initial_guess_str, min_bound_str, max_bound_str, scaling_str
 
     def _analyze_nodes(self, phase_idx: int, constraint: Constraint):
         """
@@ -325,39 +287,35 @@ class OcpToConsole(GraphAbstract):
             print(f"**********")
             print(f"BOUNDS:")
             print(f"STATES: InterpolationType.{self.ocp.nlp[phase_idx].x_bounds.type.name}")
-            self.print_bounds(
-                phase_idx,
-                self.ocp.nlp[phase_idx].x_bounds,
-                [
-                    self.ocp.nlp[phase_idx].states.cx_start[i].name()
-                    for i in range(self.ocp.nlp[phase_idx].states.cx_start.shape[0])
-                ],
-            )
+            for key in self.ocp.nlp[phase_idx].states:
+                self.print_bounds(
+                    self.ocp.nlp[phase_idx].x_bounds[key],
+                    [
+                        self.ocp.nlp[phase_idx].states[key].cx_start[i].name()
+                        for i in range(self.ocp.nlp[phase_idx].states[key].cx_start.shape[0])
+                    ],
+                )
             print(f"**********")
             print(f"CONTROLS: InterpolationType.{self.ocp.nlp[phase_idx].u_bounds.type.name}")
-            self.print_bounds(
-                phase_idx,
-                self.ocp.nlp[phase_idx].u_bounds,
-                [
-                    self.ocp.nlp[phase_idx].controls.cx_start[i].name()
-                    for i in range(self.ocp.nlp[phase_idx].controls.cx_start.shape[0])
-                ],
-            )
+            for key in self.ocp.nlp[phase_idx].controls:
+                self.print_bounds(
+                    self.ocp.nlp[phase_idx].u_bounds[key],
+                    [
+                        self.ocp.nlp[phase_idx].controls[key].cx_start[i].name()
+                        for i in range(self.ocp.nlp[phase_idx].controls[key].cx_start.shape[0])
+                    ],
+                )
             print(f"**********")
             print(f"PARAMETERS: ")
             print("")
             for parameter in self.ocp.nlp[phase_idx].parameters:
-                initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
+                parameter, initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter.name)
                 print(f"Name: {parameter.name}")
                 print(f"Size: {parameter.size}")
                 print(f"Initial_guess: {initial_guess}")
                 print(f"Scaling: {scaling}")
                 print(f"Min_bound: {min_bound}")
                 print(f"Max_bound: {max_bound}")
-                if parameter.penalty_list:
-                    for idx, _ in enumerate(parameter.penalty_list[0]):
-                        objective_name = self._get_parameter_function_name(parameter, idx)
-                        print(f"Objectives: {objective_name}")
                 print("")
             print("")
             print(f"**********")
@@ -395,20 +353,17 @@ class OcpToConsole(GraphAbstract):
                         print(f"*** Implicit Constraint: {constraint.name}")
                 print("")
 
-    def print_bounds(self, phase_idx: int, bounds: Bounds, col_name: list[str]):
+    def print_bounds(self, bounds: Bounds, col_name: list[str]):
         """
         Print ocp bounds in the console
 
         Parameters
         ----------
-        phase_idx: int
-            The phase index
         bounds: Bounds
             The controls or states bounds
         col_name: list[str]
             The list of controls or states name
         """
-        nlp = self.ocp.nlp[phase_idx]
 
         if bounds.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             title = ["", "Beginning", "Middle", "End"]
@@ -576,7 +531,7 @@ class OcpToGraph(GraphAbstract):
                 global_objectives += f"<b>Quadratic</b>: {objective.quadratic} <br/><br/>"
         return global_objectives, global_objectives_names
 
-    def _draw_parameter_node(self, g, phase_idx: int, param_idx: int, parameter: Parameter):
+    def _draw_parameter_node(self, g, phase_idx: int, param_idx: int, key: str):
         """
         Draw the node which contains the information related to the parameters
 
@@ -588,26 +543,18 @@ class OcpToGraph(GraphAbstract):
             The index of the current phase
         param_idx: int
             The index of the parameter
-        parameter: Parameter
-            The parameter containing all the information to display
+        key: str
+            The key of the parameter containing all the information to display
         """
 
-        initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
+        parameter, initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(key)
+
         node_str = f"<u><b>{parameter.name[0].upper() + parameter.name[1:]}</b></u><br/>"
         node_str += f"<b>Size</b>: {parameter.size}<br/>"
         node_str += f"<b>Scaling</b>: {scaling}<br/>"
         node_str += f"<b>Initial guess</b>: {initial_guess}<br/>"
         node_str += f"<b>Min bound</b>: {min_bound} <br/>"
         node_str += f"<b>Max bound</b>: {max_bound} <br/><br/>"
-        if parameter.penalty_list is not None:
-            for idx, _ in enumerate(parameter.penalty_list[0]):
-                node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter, idx)} <br/>"
-                node_str += (
-                    f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list[0][idx].target)} <br/>'}"
-                    if parameter.penalty_list[0][idx].target is not None
-                    else ""
-                )
-                node_str += f"<b>Quadratic</b>: {parameter.penalty_list[0][idx].quadratic} <br/>"
         g.node(f"param_{phase_idx}{param_idx}", f"""<{node_str}>""")
 
     def _draw_nlp_node(self, g, phase_idx: int):
@@ -723,7 +670,7 @@ class OcpToGraph(GraphAbstract):
             if len(self.ocp.nlp[phase_idx].parameters) > 0:
                 param_idx = 0
                 for param in self.ocp.nlp[phase_idx].parameters:
-                    self._draw_parameter_node(g, phase_idx, param_idx, param)
+                    self._draw_parameter_node(g, phase_idx, param_idx, param.name)
                     param_idx += 1
             else:
                 node_str = "<u><b>Parameters</b></u><br/> No parameter set"

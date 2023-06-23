@@ -16,7 +16,7 @@ def test_soft_contact(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/soft_contact_sphere.bioMod",
         final_time=0.37,
         n_shooting=37,
-        n_threads=8,
+        n_threads=8 if assume_phase_dynamics else 1,
         use_sx=False,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,

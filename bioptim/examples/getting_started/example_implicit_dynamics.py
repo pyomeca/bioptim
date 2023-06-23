@@ -14,8 +14,6 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    Bounds,
-    InitialGuess,
     ObjectiveFcn,
     OdeSolver,
     OdeSolverBase,
@@ -91,44 +89,32 @@ def prepare_ocp(
     )
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0][:, [0, -1]] = 0
-    x_bounds[0][1, -1] = 3.14
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 
     # Initial guess
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
     n_qddot = bio_model.nb_qddot
     n_tau = bio_model.nb_tau
-    x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
     # There are extra controls in implicit dynamics which are joint acceleration qddot.
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
     if (
         rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
         or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
     ):
-        u_bounds = Bounds([tau_min] * n_tau + [qddot_min] * n_qddot, [tau_max] * n_tau + [qddot_max] * n_qddot)
-    else:
-        u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
+        u_bounds["qddot"] = [qddot_min] * n_tau, [qddot_max] * n_tau
 
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
-
-    if (
-        rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-        or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-    ):
-        u_init = InitialGuess([0] * (n_tau + n_qddot))
-    else:
-        u_init = InitialGuess([0] * n_tau)
+    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

@@ -87,9 +87,9 @@ def prepare_ocp(
 
     # Define control path constraint
     n_tau = bio_model.nb_tau  # bio_model.nb_tau
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max = -100, 100
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
 
     # Initial guesses
     # TODO put this in a function defined before and explain what it does, and what are the variables
@@ -108,27 +108,25 @@ def prepare_ocp(
         x[9:12, i] = np.reshape(Arm_Quat_G[1:], 3)
         x[13, i] = Arm_Quat_G[0]
     x_init = InitialGuessList()
-    x_init.add(x, interpolation=InterpolationType.LINEAR)
+    x_init.add("q", x[: bio_model.nb_q, :], interpolation=InterpolationType.LINEAR)
+    x_init.add("qdot", x[bio_model.nb_q :, :], interpolation=InterpolationType.LINEAR)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0].min[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
-    x_bounds[0].max[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * n_tau)
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"].min[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
+    x_bounds["q"].max[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        objective_functions=objective_functions,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )
@@ -139,7 +137,7 @@ def main():
     Prepares and solves an ocp that has quaternion in it. Animates the results
     """
 
-    ocp = prepare_ocp("models/TruncAnd2Arm_Quaternion.bioMod", n_shooting=5, final_time=0.25)
+    ocp = prepare_ocp("models/TruncAnd2Arm_Quaternion.bioMod", n_shooting=25, final_time=0.25)
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # Print the last solution

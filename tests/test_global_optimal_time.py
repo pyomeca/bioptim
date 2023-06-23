@@ -286,8 +286,8 @@ def test_pendulum_min_time_lagrange(ode_solver, assume_phase_dynamics):
     # Load pendulum_min_time_Lagrange
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Lagrange as ocp_module
 
-    if platform.system() == "Windows" and not assume_phase_dynamics:
-        # This tst fails on the CI
+    if platform.system() == "Windows":
+        # This test fails on the CI
         return
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
@@ -398,24 +398,27 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, min_bound=1)
 
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+
+    u_bounds = BoundsList()
+    u_bounds["tau"] = bio_model.bounds_from_ranges("q")
+
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuessList()
-    u_init.add([0] * bio_model.nb_tau)
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'min_bound'")):
         OptimalControlProgram(
             bio_model,
             dynamics,
             10,
             2,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
             objective_functions=objective_functions,
-            x_init=x_init,
-            u_init=u_init,
         )
 
 
@@ -431,18 +434,21 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=-1, max_bound=1)
 
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+
+    u_bounds = BoundsList()
+    u_bounds["tau"] = bio_model.bounds_from_ranges("q")
+
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
-    u_init = InitialGuessList()
-    u_init.add([0] * bio_model.nb_tau)
     with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'max_bound'")):
         OptimalControlProgram(
-            bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_init=x_init, u_init=u_init
+            bio_model, dynamics, 10, 2, objective_functions=objective_functions, x_bounds=x_bounds, u_bounds=u_bounds
         )
 
 
@@ -682,6 +688,84 @@ def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol)
 
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, assume_phase_dynamics):
+    # Load time_constraint
+    from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+
+    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+        return
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        final_time=(2, 5, 4),
+        time_min=(0.7, 3, 0.1),
+        time_max=(2, 4, 1),
+        n_shooting=(20, 30, 20),
+        ode_solver=ode_solver(),
+        assume_phase_dynamics=assume_phase_dynamics,
+        with_phase_time_equality=True,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 53463.26498172455)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    if ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_equal(g.shape, (421 * 5 + 22, 1))
+        np.testing.assert_almost_equal(
+            g,
+            np.concatenate(
+                (np.zeros((612, 1)), [[0.95655144]], np.zeros((909, 1)), [[3]], np.zeros((603, 1)), [[0.95655144]])
+            ),
+        )
+    else:
+        np.testing.assert_equal(g.shape, (447, 1))
+        np.testing.assert_almost_equal(
+            g,
+            np.concatenate(
+                (np.zeros((132, 1)), [[0.95655144]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.95655144]])
+            ),
+        )
+
+    # Check some results
+    sol_merged = sol.merge_phases()
+    states, controls = sol_merged.states, sol_merged.controls
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    tf_all = sol.parameters["time"]
+    tf = sol_merged.phase_time[1]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((6.24518474, 9.81, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-6.24518474, 9.81, -9.80494005)))
+
+    # optimized time
+    np.testing.assert_almost_equal(tf_all.T, [[0.95655144, 3]])
+    np.testing.assert_almost_equal(tf, np.sum(tf_all) + tf_all[0, 0])
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol)
+
+
 def partial_ocp_parameters(n_phases):
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("n_phases should be 1 or 3")
@@ -700,37 +784,45 @@ def partial_ocp_parameters(n_phases):
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds["q"] = bio_model[0].bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model[0].bounds_from_ranges("qdot")
     if n_phases > 1:
-        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
-        x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+        x_bounds.add("q", bio_model[1].bounds_from_ranges("q"), phase=1)
+        x_bounds.add("qdot", bio_model[1].bounds_from_ranges("qdot"), phase=1)
+        x_bounds.add("q", bio_model[2].bounds_from_ranges("q"), phase=2)
+        x_bounds.add("qdot", bio_model[2].bounds_from_ranges("qdot"), phase=2)
+
     for bounds in x_bounds:
-        for i in [1, 3, 4, 5]:
-            bounds.min[i, [0, -1]] = 0
-            bounds.max[i, [0, -1]] = 0
-    x_bounds[0].min[2, 0] = 0.0
-    x_bounds[0].max[2, 0] = 0.0
+        bounds["q"][1, [0, -1]] = 0
+        bounds["qdot"][:, [0, -1]] = 0
+    x_bounds[0]["q"][2, 0] = 0.0
     if n_phases > 1:
-        x_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
-        x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
+        x_bounds[2]["q"][2, [0, -1]] = [0.0, 1.57]
 
     x_init = InitialGuessList()
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+    x_init["q"] = [0] * bio_model[0].nb_q
+    x_init["qdot"] = [0] * bio_model[0].nb_qdot
     if n_phases > 1:
-        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-        x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+        x_init.add("q", [0] * bio_model[1].nb_q, phase=1)
+        x_init.add("qdot", [0] * bio_model[1].nb_qdot, phase=1)
+        x_init.add("q", [0] * bio_model[2].nb_q, phase=2)
+        x_init.add("qdot", [0] * bio_model[2].nb_qdot, phase=2)
 
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+    u_bounds["tau"] = [tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau
     if n_phases > 1:
-        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-        u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
+        u_bounds.add(
+            "tau", min_bound=[tau_min] * bio_model[1].nb_tau, max_bound=[tau_max] * bio_model[1].nb_tau, phase=1
+        )
+        u_bounds.add(
+            "tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[2].nb_tau, phase=2
+        )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_init["tau"] = [tau_init] * bio_model[0].nb_tau
     if n_phases > 1:
-        u_init.add([tau_init] * bio_model[0].nb_tau)
-        u_init.add([tau_init] * bio_model[0].nb_tau)
+        u_init.add("tau", [tau_init] * bio_model[1].nb_tau, phase=1)
+        u_init.add("tau", [tau_init] * bio_model[2].nb_tau, phase=2)
 
     return (
         bio_model[:n_phases],
@@ -773,18 +865,18 @@ def test_mayer_neg_monophase_time_constraint():
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
         )
 
 
@@ -813,18 +905,18 @@ def test_mayer1_neg_multiphase_time_constraint():
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
         )
 
 
@@ -853,18 +945,18 @@ def test_mayer2_neg_multiphase_time_constraint():
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1", phase=2)
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
         )
 
 
@@ -899,12 +991,12 @@ def test_mayer_multiphase_time_constraint(assume_phase_dynamics):
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        objective_functions=objective_functions,
+        constraints=constraints,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -935,25 +1027,25 @@ def test_lagrange_neg_monophase_time_constraint(assume_phase_dynamics):
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
             assume_phase_dynamics=assume_phase_dynamics,
         )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 def test_lagrange1_neg_multiphase_time_constraint(assume_phase_dynamics):
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         (
             bio_model,
             n_shooting,
@@ -985,19 +1077,19 @@ def test_lagrange1_neg_multiphase_time_constraint(assume_phase_dynamics):
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
             assume_phase_dynamics=assume_phase_dynamics,
         )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 def test_lagrange2_neg_multiphase_time_constraint(assume_phase_dynamics):
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         (
             bio_model,
             n_shooting,
@@ -1029,12 +1121,12 @@ def test_lagrange2_neg_multiphase_time_constraint(assume_phase_dynamics):
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
-            constraints,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
             assume_phase_dynamics=assume_phase_dynamics,
         )
 
@@ -1070,12 +1162,12 @@ def test_lagrange_multiphase_time_constraint(assume_phase_dynamics):
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        objective_functions=objective_functions,
+        constraints=constraints,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -1102,16 +1194,16 @@ def test_mayer_neg_two_objectives(assume_phase_dynamics):
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
             dynamics,
             n_shooting,
             final_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            objective_functions,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
             assume_phase_dynamics=assume_phase_dynamics,
         )

@@ -11,7 +11,6 @@ from bioptim import (
     DynamicsFcn,
     ObjectiveList,
     BoundsList,
-    InitialGuessList,
     ObjectiveFcn,
     BiMappingList,
 )
@@ -28,11 +27,11 @@ def prepare_ocp(
 
     # Problem parameters
     final_time = 1.5
-    tau_min, tau_max, tau_init = -200, 200, 0
+    tau_min, tau_max = -200, 200
 
     # Variable Mapping
     tau_mappings = BiMappingList()
-    tau_mappings.add("tau", [None, 0, 1, None, 0, 2], [1, 2, 5])
+    tau_mappings.add("tau", to_second=[None, 0, 1, None, 0, 2], to_first=[1, 2, 5])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -46,35 +45,26 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_models.bounds_from_ranges(["q", "qdot"]))
+    x_bounds["q"] = bio_models.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_models.bounds_from_ranges("qdot")
 
-    x_bounds[0][[0, 3], 0] = -np.pi
-    x_bounds[0][[1, 4], 0] = 0
-    x_bounds[0][[2, 5], 0] = 0
-    x_bounds[0].min[[0, 3], 2] = np.pi - 0.1
-    x_bounds[0].max[[0, 3], 2] = np.pi + 0.1
-    x_bounds[0][[1, 4], 2] = 0
-    x_bounds[0][[2, 5], 2] = 0
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_models.nb_q + bio_models.nb_qdot))
+    x_bounds["q"][[0, 3], 0] = -np.pi
+    x_bounds["q"][[1, 4], 0] = 0
+    x_bounds["q"][[2, 5], 0] = 0
+    x_bounds["q"].min[[0, 3], 2] = np.pi - 0.1
+    x_bounds["q"].max[[0, 3], 2] = np.pi + 0.1
+    x_bounds["q"][[1, 4], 2] = 0
+    x_bounds["q"][[2, 5], 2] = 0
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * len(tau_mappings[0]["tau"].to_first), [tau_max] * len(tau_mappings[0]["tau"].to_first))
-
-    # Control initial guess
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * len(tau_mappings[0]["tau"].to_first))
+    u_bounds["tau"] = [tau_min] * len(tau_mappings[0]["tau"].to_first), [tau_max] * len(tau_mappings[0]["tau"].to_first)
 
     return OptimalControlProgram(
         bio_models,
         dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

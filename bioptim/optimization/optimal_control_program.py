@@ -8,11 +8,11 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, horzcat
+from casadi import MX, SX, Function, sum1, horzcat, vertcat
 from matplotlib import pyplot as plt
 
+from .optimization_vector import OptimizationVectorHelper
 from .non_linear_program import NonLinearProgram as NLP
-from .optimization_vector import OptimizationVector
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem
@@ -25,13 +25,21 @@ from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
     Constraint,
+    ParameterConstraintList,
+    ParameterConstraint,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
+from ..limits.objective_functions import (
+    ObjectiveFcn,
+    ObjectiveList,
+    Objective,
+    ParameterObjectiveList,
+    ParameterObjective,
+)
 from ..limits.path_conditions import BoundsList, Bounds
-from ..limits.path_conditions import InitialGuess, InitialGuessList, NoisedInitialGuess
+from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
@@ -48,10 +56,11 @@ from ..misc.enums import (
     Node,
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
+from ..misc.options import OptionDict
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
-from ..optimization.optimization_variable import VariableScalingList, VariableScaling
+from ..optimization.variable_scaling import VariableScalingList
 from ..gui.check_conditioning import check_conditioning
 
 
@@ -72,14 +81,6 @@ class OptimalControlProgram:
         All the implicit constraints defined by the OCP at each of the node of the phase
     J: list
         Objective values that are not phase dependent (mostly parameters)
-    isdef_x_init: bool
-        If the initial condition of the states are set
-    isdef_x_bounds: bool
-        If the bounds of the states are set
-    isdef_u_init: bool
-        If the initial condition of the controls are set
-    isdef_u_bounds: bool
-        If the bounds of the controls are set
     nlp: NLP
         All the phases of the ocp
     n_phases: int | list | tuple
@@ -94,8 +95,6 @@ class OptimalControlProgram:
         The list of transition constraint between phases
     ocp_solver: SolverInterface
         A reference to the ocp solver
-    v: OptimizationVector
-        The variable optimization holder
     version: dict
         The version of all the underlying software. This is important when loading a previous ocp
 
@@ -146,26 +145,30 @@ class OptimalControlProgram:
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
-        x_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
-        u_init: InitialGuess | InitialGuessList | NoisedInitialGuess = None,
-        x_bounds: Bounds | BoundsList = None,
-        u_bounds: Bounds | BoundsList = None,
+        x_bounds: BoundsList = None,
+        u_bounds: BoundsList = None,
+        x_init: InitialGuessList | None = None,
+        u_init: InitialGuessList | None = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
-        parameters: Parameter | ParameterList = None,
+        parameters: ParameterList = None,
+        parameter_bounds: BoundsList = None,
+        parameter_init: InitialGuessList = None,
+        parameter_objectives: ParameterObjectiveList = None,
+        parameter_constraints: ParameterConstraintList = None,
         external_forces: list[list[Any], ...] | tuple[list[Any], ...] = None,
         ode_solver: list | OdeSolverBase | OdeSolver = None,
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
-        parameter_mappings: BiMappingList = None,
+        time_phase_mapping: BiMapping = None,
         node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
         multinode_objectives: MultinodeObjectiveList = None,
-        x_scaling: VariableScaling | VariableScalingList = None,
-        xdot_scaling: VariableScaling | VariableScalingList = None,
-        u_scaling: VariableScaling | VariableScalingList = None,
+        x_scaling: VariableScalingList = None,
+        xdot_scaling: VariableScalingList = None,
+        u_scaling: VariableScalingList = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -191,18 +194,26 @@ class OptimalControlProgram:
             The bounds for the states
         u_bounds: Bounds | BoundsList
             The bounds for the controls
-        x_scaling: VariableScaling | VariableScalingList
-            The scaling for the states
-        xdot_scaling: VariableScaling | VariableScalingList
-            The scaling for the states derivative
-        u_scaling: VariableScaling | VariableScalingList
-            The scaling for the controls
+        x_scaling: VariableScalingList
+            The scaling for the states at each phase, if only one is sent, then the scaling is copied over the phases
+        xdot_scaling: VariableScalingList
+            The scaling for the states derivative, if only one is sent, then the scaling is copied over the phases
+        u_scaling: VariableScalingList
+            The scaling for the controls, if only one is sent, then the scaling is copied over the phases
         objective_functions: Objective | ObjectiveList
             All the objective function of the program
         constraints: Constraint | ConstraintList
             All the constraints of the program
-        parameters: Parameter | ParameterList
+        parameters: ParameterList
             All the parameters to optimize of the program
+        parameter_bounds: BoundsList
+            The bounds for the parameters, default values are -inf to inf
+        parameter_init: InitialGuessList
+            The initial guess for the parameters, default value is 0
+        parameter_objectives: ParameterObjectiveList
+            All the parameter objectives to optimize of the program
+        parameter_constraints: ParameterConstraintList
+            All the parameter constraints of the program
         external_forces: list[list, ...] | tuple[list, ...]
             The external forces acting on the center of mass of the segments specified in the bioMod
         ode_solver: OdeSolverBase
@@ -211,8 +222,9 @@ class OptimalControlProgram:
             The type of controls for each phase
         variable_mappings: BiMappingList
             The mapping to apply on variables
-        parameter_mappings: BiMappingList
-            The mapping to apply on parameters
+        time_phase_mapping: BiMapping
+            The mapping of the time of the phases, so some phase share the same time variable (when optimized, that is
+            a constraint or an objective on the time is declared)
         node_mappings: NodeMappingList
             The mapping to apply between the variables associated with the nodes
         plot_mappings: Mapping
@@ -232,7 +244,7 @@ class OptimalControlProgram:
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
 
-        bio_model = self.check_quaternions_hasattr(bio_model)
+        bio_model = self._check_quaternions_hasattr(bio_model)
 
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(bio_model)
@@ -263,12 +275,16 @@ class OptimalControlProgram:
             "ode_solver": ode_solver,
             "control_type": control_type,
             "variable_mappings": variable_mappings,
-            "parameter_mappings": parameter_mappings,
+            "time_phase_mapping": time_phase_mapping,
             "node_mappings": node_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "multinode_constraints": multinode_constraints,
             "multinode_objectives": multinode_objectives,
+            "parameter_bounds": parameter_bounds,
+            "parameter_init": parameter_init,
+            "parameter_objectives": parameter_objectives,
+            "parameter_constraints": parameter_constraints,
             "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
@@ -296,98 +312,33 @@ class OptimalControlProgram:
 
         if x_bounds is None:
             x_bounds = BoundsList()
-        elif isinstance(x_bounds, Bounds):
-            x_bounds_tp = BoundsList()
-            x_bounds_tp.add(bounds=x_bounds)
-            x_bounds = x_bounds_tp
-        elif isinstance(x_bounds, BoundsList) and len(x_bounds) == 0:
-            raise RuntimeError(
-                "If you do not want to provide an x_bounds, you should declare x_bounds=None instead of an empty BoundsList"
-            )
         elif not isinstance(x_bounds, BoundsList):
-            raise RuntimeError("x_bounds should be built from a Bounds or a BoundsList")
+            raise RuntimeError("x_bounds should be built from a BoundsList")
 
         if u_bounds is None:
             u_bounds = BoundsList()
-        elif isinstance(u_bounds, Bounds):
-            u_bounds_tp = BoundsList()
-            u_bounds_tp.add(bounds=u_bounds)
-            u_bounds = u_bounds_tp
-        elif isinstance(u_bounds, BoundsList) and len(u_bounds) == 0:
-            raise RuntimeError(
-                "If you do not want to provide a u_bounds, you should declare u_bounds=None instead of an empty BoundsList"
-            )
         elif not isinstance(u_bounds, BoundsList):
-            raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
+            raise RuntimeError("u_bounds should be built from a BoundsList")
 
         if x_init is None:
-            raise RuntimeError("Please provide an x_init of type InitialGuess or InitialGuessList.")
-        elif isinstance(x_init, InitialGuess):
-            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
-                raise RuntimeError("x_scaling should be provided with a custom x_init")
-            x_init_tp = InitialGuessList()
-            x_init_tp.add(x_init)
-            x_init = x_init_tp
-        elif isinstance(x_init, NoisedInitialGuess):
-            if x_init.type == InterpolationType.CUSTOM and x_scaling is None:
-                raise RuntimeError("x_scaling ans xdot_scaling should be provided with a custom x_init")
-            x_init_tp = InitialGuessList()
-            x_init_tp.add(x_init.init)
-            x_init = x_init_tp
-        elif isinstance(x_init, InitialGuessList) and len(x_init) == 0:
-            raise RuntimeError(
-                "You must please declare an initial guess for the states x_init. Here, the InitialGuessList is empty."
-            )
-        elif not isinstance(x_init, InitialGuessList):
-            raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
+            x_init = InitialGuessList()
+        if not isinstance(x_init, InitialGuessList):
+            raise RuntimeError("x_init should be built from a InitialGuessList")
 
         if u_init is None:
-            raise RuntimeError("Please provide an u_init of type InitialGuess or InitialGuessList.")
-        elif isinstance(u_init, InitialGuess):
-            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
-                raise RuntimeError("u_scaling should be provided with a custom u_init")
-            u_init_tp = InitialGuessList()
-            u_init_tp.add(u_init)
-            u_init = u_init_tp
-        elif isinstance(u_init, NoisedInitialGuess):
-            if u_init.type == InterpolationType.CUSTOM and u_scaling is None:
-                raise RuntimeError("u_scaling should be provided with a custom u_init")
-            u_init_tp = InitialGuessList()
-            u_init_tp.add(u_init.init)
-            u_init = u_init_tp
-        elif isinstance(u_init, InitialGuessList) and len(u_init) == 0:
-            raise RuntimeError(
-                "You must please declare an initial guess for the controls u_init. Here, the InitialGuessList is empty."
-            )
-        elif not isinstance(u_init, InitialGuessList):
-            raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
+            u_init = InitialGuessList()
+        if not isinstance(u_init, InitialGuessList):
+            raise RuntimeError("u_init should be built from a InitialGuessList")
 
-        if x_scaling is None:
-            x_scaling = VariableScalingList()
-        elif isinstance(x_scaling, VariableScaling):
-            x_scaling_tp = VariableScalingList()
-            x_scaling_tp.add(scaling=x_scaling)
-            x_scaling = x_scaling_tp
-        elif not isinstance(x_scaling, VariableScalingList):
-            raise RuntimeError("x_scaling should be built from a VariableScaling or a VariableScalingList")
+        x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)
+        u_bounds = self._prepare_option_dict_for_phase("u_bounds", u_bounds, BoundsList)
 
-        if xdot_scaling is None:
-            xdot_scaling = VariableScalingList()
-        elif isinstance(xdot_scaling, VariableScaling):
-            xdot_scaling_tp = VariableScalingList()
-            xdot_scaling_tp.add(scaling=xdot_scaling)
-            xdot_scaling = xdot_scaling_tp
-        elif not isinstance(xdot_scaling, VariableScalingList):
-            raise RuntimeError("xdot_scaling should be built from a VariableScaling or a VariableScalingList")
+        x_init = self._prepare_option_dict_for_phase("x_init", x_init, InitialGuessList)
+        u_init = self._prepare_option_dict_for_phase("u_init", u_init, InitialGuessList)
 
-        if u_scaling is None:
-            u_scaling = VariableScalingList()
-        elif isinstance(u_scaling, VariableScaling):
-            u_scaling_tp = VariableScalingList()
-            u_scaling_tp.add(scaling=u_scaling)
-            u_scaling = u_scaling_tp
-        elif not isinstance(u_scaling, VariableScalingList):
-            raise RuntimeError("u_scaling should be built from a VariableScaling or a VariableScalingList")
+        x_scaling = self._prepare_option_dict_for_phase("x_scaling", x_scaling, VariableScalingList)
+        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
+        u_scaling = self._prepare_option_dict_for_phase("u_scaling", u_scaling, VariableScalingList)
 
         if objective_functions is None:
             objective_functions = ObjectiveList()
@@ -429,6 +380,34 @@ class OptimalControlProgram:
         elif not isinstance(multinode_objectives, MultinodeObjectiveList):
             raise RuntimeError("multinode_objectives should be built from an MultinodeObjectiveList")
 
+        if parameter_bounds is None:
+            parameter_bounds = BoundsList()
+        elif not isinstance(parameter_bounds, BoundsList):
+            raise ValueError("parameter_bounds must be of type BoundsList")
+
+        if parameter_init is None:
+            parameter_init = InitialGuessList()
+        elif not isinstance(parameter_init, InitialGuessList):
+            raise ValueError("parameter_init must be of type InitialGuessList")
+
+        if parameter_objectives is None:
+            parameter_objectives = ParameterObjectiveList()
+        elif isinstance(parameter_objectives, ParameterObjective):
+            parameter_objectives_tp = ParameterObjectiveList()
+            parameter_objectives_tp.add(parameter_objectives)
+            parameter_objectives = parameter_objectives_tp
+        elif not isinstance(parameter_objectives, ParameterObjectiveList):
+            raise RuntimeError("objective_functions should be built from an Objective or ObjectiveList")
+
+        if parameter_constraints is None:
+            parameter_constraints = ParameterConstraintList()
+        elif isinstance(constraints, ParameterConstraint):
+            parameter_constraints_tp = ParameterConstraintList()
+            parameter_constraints_tp.add(parameter_constraints)
+            parameter_constraints = parameter_constraints_tp
+        elif not isinstance(parameter_constraints, ParameterConstraintList):
+            raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
+
         if ode_solver is None:
             ode_solver = OdeSolver.RK4()
         elif not isinstance(ode_solver, OdeSolverBase):
@@ -436,6 +415,9 @@ class OptimalControlProgram:
 
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
+
+        if not assume_phase_dynamics and n_threads > 1:
+            raise RuntimeError("n_threads is greater than 1 is not compatible with assume_phase_dynamics=False")
 
         # Type of CasADi graph
         self.cx = SX if use_sx else MX
@@ -450,8 +432,6 @@ class OptimalControlProgram:
         self.g = []
         self.g_internal = []
         self.g_implicit = []
-
-        self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
         self.nlp = [NLP(self.assume_phase_dynamics) for _ in range(self.n_phases)]
@@ -487,18 +467,20 @@ class OptimalControlProgram:
 
         # Prepare the parameters to optimize
         self.phase_transitions = []
-        if len(parameters) > 0:
-            self.update_parameters(parameters)
 
         # Prepare the parameter mappings
-        if parameter_mappings is None:
-            parameter_mappings = BiMappingList()
-        if "time" not in parameter_mappings.keys():
-            parameter_mappings.add("time", [i for i in range(self.n_phases)], [i for i in range(self.n_phases)])
-        self.parameter_mappings = parameter_mappings
+        if time_phase_mapping is None:
+            time_phase_mapping = BiMapping(
+                to_second=[i for i in range(self.n_phases)], to_first=[i for i in range(self.n_phases)]
+            )
+        self.time_phase_mapping = time_phase_mapping
 
-        # Declare the time to optimize
-        self._define_time(phase_time, objective_functions, constraints)
+        # Add any time related parameters to the parameters list before declaring it
+        self._define_time(phase_time, objective_functions, constraints, parameters, parameter_init, parameter_bounds)
+
+        # Declare and fill the parameters
+        self.parameters = ParameterList()
+        self._declare_parameters(parameters)
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
@@ -512,10 +494,7 @@ class OptimalControlProgram:
         variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
-        # Add the scaling of the variables
-        x_scaling, xdot_scaling, u_scaling = x_scaling.scaling_fill_phases(
-            self, x_scaling, xdot_scaling, u_scaling, x_init, u_init
-        )
+        # Do not copy singleton since x_scaling was already dealt with before
         NLP.add(self, "x_scaling", x_scaling, True)
         NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
@@ -539,15 +518,13 @@ class OptimalControlProgram:
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
-        self.isdef_x_init = False
-        self.isdef_u_init = False
-        self.isdef_x_bounds = False
-        self.isdef_u_bounds = False
+        self.parameter_bounds = BoundsList()
+        self.parameter_init = InitialGuessList()
 
-        self.update_bounds(x_bounds, u_bounds)
-        self.update_initial_guess(x_init, u_init)
+        self.update_bounds(x_bounds, u_bounds, parameter_bounds)
+        self.update_initial_guess(x_init, u_init, parameter_init)
         # Define the actual NLP problem
-        self.v.define_ocp_shooting_points()
+        OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
@@ -556,16 +533,30 @@ class OptimalControlProgram:
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
-        # Skipping creates a valid but unsolvable OCP class
+        # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
         if not skip_continuity:
             self._declare_continuity(state_continuity_weight)
 
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
         self.update_constraints(constraints)
+        self.update_parameter_constraints(parameter_constraints)
 
         # Prepare objectives
         self.update_objectives(objective_functions)
+        self.update_parameter_objectives(parameter_objectives)
+
+    @property
+    def variables_vector(self):
+        return OptimizationVectorHelper.vector(self)
+
+    @property
+    def bounds_vectors(self):
+        return OptimizationVectorHelper.bounds_vectors(self)
+
+    @property
+    def init_vector(self):
+        return OptimizationVectorHelper.init_vector(self)
 
     @classmethod
     def from_loaded_data(cls, data):
@@ -651,7 +642,7 @@ class OptimalControlProgram:
         return phase_mappings, dof_names
 
     @staticmethod
-    def check_quaternions_hasattr(biomodels: list[BioModel]) -> list[BioModel]:
+    def _check_quaternions_hasattr(biomodels: list[BioModel]) -> list[BioModel]:
         """
         This functions checks if the biomodels have quaternions and if not we set an attribute to nb_quaternion to 0
 
@@ -673,6 +664,22 @@ class OptimalControlProgram:
                 setattr(model, "nb_quaternions", 0)
 
         return biomodels
+
+    def _prepare_option_dict_for_phase(self, name: str, option_dict: OptionDict, option_dict_type: type) -> Any:
+        if option_dict is None:
+            option_dict = option_dict_type()
+
+        if not isinstance(option_dict, option_dict_type):
+            raise RuntimeError(f"{name} should be built from a {option_dict_type.__name__} or a tuple of which")
+
+        option_dict: Any
+        if len(option_dict) == 1 and self.n_phases > 1:
+            scaling_phase_0 = option_dict[0]
+            for i in range(1, self.n_phases):
+                option_dict.add("None", [], phase=i)  # Force the creation of the structure internally
+                for key in scaling_phase_0.keys():
+                    option_dict.add(key, scaling_phase_0[key], phase=i)
+        return option_dict
 
     def _declare_continuity(self, state_continuity_weight: float = None) -> None:
         """
@@ -752,6 +759,27 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
 
+    def update_parameter_objectives(self, new_objective_function: ParameterObjective | ParameterObjectiveList):
+        """
+        The main user interface to add or modify a parameter objective functions in the ocp
+
+        Parameters
+        ----------
+        new_objective_function: ParameterObjective | ParameterObjectiveList
+            The parameter objective to add to the ocp
+        """
+
+        if isinstance(new_objective_function, ParameterObjective):
+            self.__modify_parameter_penalty(new_objective_function)
+
+        elif isinstance(new_objective_function, ParameterObjectiveList):
+            for objective_in_phase in new_objective_function:
+                for objective in objective_in_phase:
+                    self.__modify_parameter_penalty(objective)
+
+        else:
+            raise RuntimeError("new_objective_function must be a ParameterObjective or an ParameterObjectiveList")
+
     def update_objectives_target(self, target, phase=None, list_index=None):
         """
         Fast accessor to update the target of a specific objective function. To update target of global objective
@@ -796,99 +824,140 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
-    def update_parameters(self, new_parameters: Parameter | ParameterList):
+    def update_parameter_constraints(self, new_constraint: ParameterConstraint | ParameterConstraintList):
+        """
+        The main user interface to add or modify a parameter constraint in the ocp
+
+        Parameters
+        ----------
+        new_constraint: ParameterConstraint | ParameterConstraintList
+            The parameter constraint to add to the ocp
+        """
+
+        if isinstance(new_constraint, ParameterConstraint):
+            # This should work, but was not fully tested
+            self.__modify_parameter_penalty(new_constraint)
+        elif isinstance(new_constraint, ParameterConstraintList):
+            for constraint_in_phase in new_constraint:
+                for constraint in constraint_in_phase:
+                    self.__modify_parameter_penalty(constraint)
+        else:
+            raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
+
+    def _declare_parameters(self, new_parameters: ParameterList):
         """
         The main user interface to add or modify parameters in the ocp
 
         Parameters
         ----------
-        new_parameters: Parameter | ParameterList
+        new_parameters: ParameterList
             The parameters to add to the ocp
         """
 
-        if isinstance(new_parameters, Parameter):
-            self.__modify_penalty(new_parameters)
-
-        elif isinstance(new_parameters, ParameterList):
-            for parameter in new_parameters:
-                self.__modify_penalty(parameter)
-        else:
+        if not isinstance(new_parameters, ParameterList):
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-    def update_bounds(self, x_bounds: Bounds | BoundsList = BoundsList(), u_bounds: Bounds | BoundsList = BoundsList()):
+        self.parameters.cx_type = self.cx
+
+        offset = 0
+        for param in new_parameters:
+            param.index = list(range(offset, offset + param.size))
+            self.parameters.add(param)
+            offset += param.size
+
+    def update_bounds(
+        self, x_bounds: BoundsList = None, u_bounds: BoundsList = None, parameter_bounds: BoundsList = None
+    ):
         """
         The main user interface to add bounds in the ocp
 
         Parameters
         ----------
-        x_bounds: Bounds | BoundsList
+        x_bounds: BoundsList
             The state bounds to add
-        u_bounds: Bounds | BoundsList
+        u_bounds: BoundsList
             The control bounds to add
+        parameter_bounds: BoundsList
+            The parameters bounds to add
         """
+        for i in range(self.n_phases):
+            if x_bounds is not None:
+                if not isinstance(x_bounds, BoundsList):
+                    raise RuntimeError("x_bounds should be built from a BoundsList")
+                origin_phase = 0 if len(x_bounds) == 1 else i
+                for key in x_bounds[origin_phase].keys():
+                    self.nlp[i].x_bounds.add(key, x_bounds[origin_phase][key], phase=0)
 
-        if x_bounds:
-            NLP.add_path_condition(self, x_bounds, "x_bounds", Bounds, BoundsList)
-        if u_bounds:
-            NLP.add_path_condition(self, u_bounds, "u_bounds", Bounds, BoundsList)
-        if self.isdef_x_bounds and self.isdef_u_bounds:
-            self.v.define_ocp_bounds()
+            if u_bounds is not None:
+                if not isinstance(u_bounds, BoundsList):
+                    raise RuntimeError("u_bounds should be built from a BoundsList")
+                for key in u_bounds.keys():
+                    origin_phase = 0 if len(u_bounds) == 1 else i
+                    self.nlp[i].u_bounds.add(key, u_bounds[origin_phase][key], phase=0)
+
+        if parameter_bounds is not None:
+            if not isinstance(parameter_bounds, BoundsList):
+                raise RuntimeError("parameter_bounds should be built from a BoundsList")
+            for key in parameter_bounds.keys():
+                self.parameter_bounds.add(key, parameter_bounds[key], phase=0)
 
         for nlp in self.nlp:
-            for key in nlp.states:
-                if f"{key}_states" in nlp.plot:
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
+            for key in nlp.states.keys():
+                if f"{key}_states" in nlp.plot and key in nlp.x_bounds:
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[key]
             for key in nlp.controls:
-                if f"{key}_controls" in nlp.plot:
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
+                if f"{key}_controls" in nlp.plot and key in nlp.u_bounds:
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[key]
 
     def update_initial_guess(
         self,
-        x_init: InitialGuess | InitialGuessList = InitialGuessList(),
-        u_init: InitialGuess | InitialGuessList = InitialGuessList(),
-        param_init: InitialGuess | InitialGuessList = InitialGuessList(),
+        x_init: InitialGuessList = None,
+        u_init: InitialGuessList = None,
+        parameter_init: InitialGuessList = None,
     ):
         """
         The main user interface to add initial guesses in the ocp
 
         Parameters
         ----------
-        x_init: Bounds | BoundsList
+        x_init: BoundsList
             The state initial guess to add
-        u_init: Bounds | BoundsList
+        u_init: BoundsList
             The control initial guess to add
-        param_init: Bounds | BoundsList
+        parameter_init: BoundsList
             The parameters initial guess to add
         """
 
-        if self.nlp[0].ode_solver.is_direct_collocation and self.nlp[0].x_init.init.shape[0] != 0:
-            raise NotImplementedError(
-                "It is not possible to use initial guess with NoisedInitialGuess "
-                "as it won't produce the expected randomness"
-            )
+        for i in range(self.n_phases):
+            if x_init:
+                if not isinstance(x_init, InitialGuessList):
+                    raise RuntimeError("x_init should be built from a InitialGuessList")
+                origin_phase = 0 if len(x_init) == 1 else i
+                for key in x_init[origin_phase].keys():
+                    if (
+                        not self.nlp[i].ode_solver.is_direct_collocation
+                        and x_init[origin_phase].type == InterpolationType.ALL_POINTS
+                    ):
+                        raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
+                    self.nlp[i].x_init.add(key, x_init[origin_phase][key], phase=0)
 
-        if x_init:
-            NLP.add_path_condition(self, x_init, "x_init", InitialGuess, InitialGuessList)
-        if u_init:
-            NLP.add_path_condition(self, u_init, "u_init", InitialGuess, InitialGuessList)
+            if u_init:
+                if not isinstance(u_init, InitialGuessList):
+                    raise RuntimeError("u_init should be built from a InitialGuessList")
+                origin_phase = 0 if len(u_init) == 1 else i
+                for key in u_init.keys():
+                    if (
+                        not self.nlp[i].ode_solver.is_direct_collocation
+                        and x_init[origin_phase].type == InterpolationType.ALL_POINTS
+                    ):
+                        raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
+                    self.nlp[i].u_init.add(key, u_init[origin_phase][key], phase=0)
 
-        if isinstance(param_init, InitialGuess):
-            param_init_list = InitialGuessList()
-            param_init_list.add(param_init)
-        else:
-            param_init_list = param_init
-
-        for param in param_init_list:
-            if not param.name:
-                raise ValueError("update_initial_guess must specify a name for the parameters")
-            try:
-                idx = self.v.parameters_in_list.index(param.name)
-                self.v.parameters_in_list[idx].initial_guess.init = param.init
-            except ValueError:
-                raise ValueError("update_initial_guess cannot declare new parameters")
-
-        if self.isdef_x_init and self.isdef_u_init:
-            self.v.define_ocp_initial_guess()
+        if parameter_init is not None:
+            if not isinstance(parameter_init, InitialGuessList):
+                raise RuntimeError("parameter_init should be built from a InitialGuessList")
+            for key in parameter_init.keys():
+                self.parameter_init.add(key, parameter_init[key], phase=0)
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
         """
@@ -1022,25 +1091,22 @@ class OptimalControlProgram:
                 if penalty.target is not None and isinstance(t, int)
                 else []
             )
-            if x.shape[1] == 1:
-                x_shape = int(x.shape[0] / self.nlp[penalty.phase].x_scaling["all"].scaling.shape[0])
-                x_scaling = np.reshape(
-                    np.hstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T, (-1, 1)
-                )
-            else:
-                x_shape = x.shape[1]
-                x_scaling = np.vstack([self.nlp[penalty.phase].x_scaling["all"].scaling for _ in range(x_shape)]).T
 
+            x_scaling = np.concatenate(
+                [
+                    np.repeat(self.nlp[penalty.phase].x_scaling[key].scaling[:, np.newaxis], x.shape[1], axis=1)
+                    for key in self.nlp[penalty.phase].states
+                ]
+            )
             x /= x_scaling
+
             if u.size != 0:
-                if u.shape[1] == 1:
-                    u_shape = int(u.shape[0] / self.nlp[penalty.phase].u_scaling["all"].scaling.shape[0])
-                    u_scaling = np.reshape(
-                        np.hstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T, (-1, 1)
-                    )
-                else:
-                    u_shape = u.shape[1]
-                    u_scaling = np.vstack([self.nlp[penalty.phase].u_scaling["all"].scaling for _ in range(u_shape)]).T
+                u_scaling = np.concatenate(
+                    [
+                        np.repeat(self.nlp[penalty.phase].u_scaling[key].scaling[:, np.newaxis], u.shape[1], axis=1)
+                        for key in self.nlp[penalty.phase].controls
+                    ]
+                )
                 u /= u_scaling
 
             out = []
@@ -1085,12 +1151,11 @@ class OptimalControlProgram:
                         dt = 1
                     elif isinstance(penalty.type, ObjectiveFcn.Lagrange):
                         if not isinstance(penalty.dt, (float, int)):
-                            if i_phase in self.time_param_phases_idx:
-                                dt = Function(
-                                    "time",
-                                    [nlp.parameters.cx_start[i_phase]],
-                                    [nlp.parameters.cx_start[i_phase] / nlp.ns],
-                                )
+                            dt = Function(
+                                "time",
+                                [nlp.parameters.cx[i_phase]],
+                                [nlp.parameters.cx[i_phase] / nlp.ns],
+                            )
 
                 plot_params = {
                     "fig_name": cost_type.name,
@@ -1245,24 +1310,34 @@ class OptimalControlProgram:
         u_init_guess = InitialGuessList()
         x_init_guess = InitialGuessList()
         param_init_guess = InitialGuessList()
+
         for i in range(self.n_phases):
+            x_interp = (
+                InterpolationType.EACH_FRAME
+                if self.nlp[i].ode_solver.is_direct_shooting
+                else InterpolationType.ALL_POINTS
+            )
             if self.n_phases == 1:
-                if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                    u_init_guess.add(ctrl["all"], interpolation=InterpolationType.EACH_FRAME)
-                else:
-                    u_init_guess.add(ctrl["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
-                x_init_guess.add(state["all"], interpolation=InterpolationType.EACH_FRAME)
+                for key in state:
+                    x_init_guess.add(key, state[key], interpolation=x_interp, phase=0)
+                for key in ctrl:
+                    if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                        u_init_guess.add(key, ctrl[key], interpolation=InterpolationType.EACH_FRAME, phase=0)
+                    else:
+                        u_init_guess.add(key, ctrl[key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=0)
             else:
-                if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                    u_init_guess.add(ctrl[i]["all"], interpolation=InterpolationType.EACH_FRAME)
-                else:
-                    u_init_guess.add(ctrl[i]["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
-                x_init_guess.add(state[i]["all"], interpolation=InterpolationType.EACH_FRAME)
+                for key in state[i]:
+                    x_init_guess.add(key, state[i][key], interpolation=x_interp, phase=i)
+                for key in ctrl[i]:
+                    if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                        u_init_guess.add(key, ctrl[i][key], interpolation=InterpolationType.EACH_FRAME, phase=i)
+                    else:
+                        u_init_guess.add(key, ctrl[i][key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=i)
 
         for key in param:
-            if key != "all":
-                param_init_guess.add(param[key], name=key)
-        self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=param_init_guess)
+            param_init_guess.add(key, param[key], name=key)
+
+        self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, parameter_init=param_init_guess)
 
         if self.ocp_solver:
             self.ocp_solver.set_lagrange_multiplier(sol)
@@ -1371,6 +1446,9 @@ class OptimalControlProgram:
         phase_time: int | float | list | tuple,
         objective_functions: ObjectiveList,
         constraints: ConstraintList,
+        parameters: ParameterList,
+        parameters_init: InitialGuessList,
+        parameters_bounds: BoundsList,
     ):
         """
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
@@ -1384,6 +1462,12 @@ class OptimalControlProgram:
             All the objective functions. It is used to scan if any time optimization was defined
         constraints: ConstraintList
             All the constraint functions. It is used to scan if any free time was defined
+        parameters: ParameterList
+            (OUTPUT) The parameters list to add the time parameters to
+        parameters_init: InitialGuessList
+            (OUTPUT) The initial guesses list to add the time initial guess to
+        parameters_bounds: BoundsList
+            (OUTPUT) The bounds list to add the time bouds to
         """
 
         def define_parameters_phase_time(
@@ -1428,16 +1512,16 @@ class OptimalControlProgram:
                 for pen_fun in penalty_functions_phase:
                     if not pen_fun:
                         continue
-                    if (
-                        pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
-                        or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
-                        or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
+                    if pen_fun.type in (
+                        ObjectiveFcn.Mayer.MINIMIZE_TIME,
+                        ObjectiveFcn.Lagrange.MINIMIZE_TIME,
+                        ConstraintFcn.TIME_CONSTRAINT,
                     ):
                         if _has_penalty[i]:
-                            raise RuntimeError("Time constraint/objective cannot declare more than once")
+                            raise RuntimeError("Time constraint/objective cannot be declared more than once per phase")
                         _has_penalty[i] = True
 
-                        if i in ocp.parameter_mappings["time"].to_first.map_idx:
+                        if i in self.time_phase_mapping.to_first.map_idx:
                             _initial_time_guess.append(_phase_time[i])
                             _phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
                             if pen_fun.type.get_type() == ConstraintFunction:
@@ -1447,7 +1531,7 @@ class OptimalControlProgram:
                                 _time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
                                 _time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
                         else:
-                            _phase_time[i] = _phase_time[ocp.parameter_mappings["time"].to_second.map_idx[i]]
+                            _phase_time[i] = _phase_time[ocp.time_phase_mapping.to_second.map_idx[i]]
             return _has_penalty
 
         NLP.add(self, "t_initial_guess", phase_time, False)
@@ -1468,22 +1552,26 @@ class OptimalControlProgram:
         NLP.add(self, "t0", [0] + [nlp.tf for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         NLP.add(self, "dt", [self.nlp[i].tf / max(self.nlp[i].ns, 1) for i in range(self.n_phases)], False)
 
-        # Add to the v vector
-        i = 0
-        time_param_phases_idx = []
-        for nlp in self.nlp:
-            if isinstance(nlp.tf, self.cx):
-                if nlp.phase_idx in self.parameter_mappings["time"].to_first.map_idx:
-                    time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
-                    time_init = InitialGuess(initial_time_guess[i])
-                    time_param = Parameter(
-                        cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
-                    )
-                    self.v.add_parameter(time_param)
-                    time_param_phases_idx += [i]
-                    i += 1
+        if True not in has_penalty:
+            # If there is no variable time, we are done
+            return
 
-        self.time_param_phases_idx = time_param_phases_idx
+        # Otherwise, add the time to the Parameters
+        params = vertcat(
+            *[
+                nlp.tf
+                for nlp in self.nlp
+                if (isinstance(nlp.tf, self.cx) and nlp.phase_idx in self.time_phase_mapping.to_first.map_idx)
+            ]
+        )
+        parameters.add("time", lambda model, values: None, size=params.shape[0], allow_reserved_name=True)
+        parameters["time"].cx = params
+        parameters["time"].mx = MX.sym("time", params.shape[0], 1)
+
+        parameters_init.add("time", initial_time_guess, phase=0)
+        parameters_bounds.add(
+            "time", min_bound=time_min, max_bound=time_max, phase=0, interpolation=InterpolationType.CONSTANT
+        )
 
     def __modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """
@@ -1504,6 +1592,27 @@ class OptimalControlProgram:
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
+
+        self.program_changed = True
+
+    def __modify_parameter_penalty(self, new_penalty: PenaltyOption | Parameter):
+        """
+        The internal function to modify a parameter penalty. It is also stored in the original_values, meaning that if one
+        overrides an objective only the latter is preserved when saved
+
+        Parameters
+        ----------
+        new_penalty: PenaltyOption | Parameter
+            Any valid option to add to the program
+        """
+
+        if not new_penalty:
+            return
+
+        # Copy to self.original_values so it can be save/load
+        pen = new_penalty.type.get_type()
+        self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
+        self.parameters[0].add_or_replace_to_penalty_pool(self, new_penalty)
 
         self.program_changed = True
 

@@ -29,7 +29,6 @@ def test_pendulum(assume_phase_dynamics):
     solver.set_max_iter_ls(1)
     solver.set_maximum_iterations(1)
     sol = ocp.solve(solver)
-    sol.detailed_cost_values()
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -37,7 +36,6 @@ def test_pendulum(assume_phase_dynamics):
 
     np.testing.assert_almost_equal(f[0, 0], 84.61466883234333)
     # detailed cost values
-    sol.detailed_cost_values()
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 84.61466883234333)
 
     # Check some of the results

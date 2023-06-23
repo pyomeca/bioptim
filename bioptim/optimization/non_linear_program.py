@@ -5,7 +5,7 @@ from casadi import SX, MX, Function, horzcat
 
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
-from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
+from ..limits.path_conditions import InitialGuessList, BoundsList
 from ..misc.enums import ControlType
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
@@ -141,16 +141,16 @@ class NonLinearProgram:
         self.tf = None
         self.t_initial_guess = None
         self.variable_mappings = {}
-        self.u_bounds = Bounds()
-        self.u_init = InitialGuess()
+        self.u_bounds = BoundsList()
+        self.u_init = InitialGuessList()
         self.U_scaled = None
         self.u_scaling = None
         self.U = None
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
-        self.x_bounds = Bounds()
-        self.x_init = InitialGuess()
+        self.x_bounds = BoundsList()
+        self.x_init = InitialGuessList()
         self.X_scaled = None
         self.x_scaling = None
         self.X = None
@@ -256,41 +256,6 @@ class NonLinearProgram:
             setattr(nlp, param_name, param)
         else:
             getattr(nlp, name)[param_name] = param
-
-    @staticmethod
-    def add_path_condition(ocp, var: Any, path_name: str, type_option: Any, type_list: Any):
-        """
-        Interface to add for PathCondition classes
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        var: Any
-            The actual data to store
-        path_name: str
-            The name of the condition ("x_init", "u_bounds", ...)
-        type_option: AnyOption
-            The type of PathCondition
-        type_list: AnyList
-            The type of PathConditionList (must be the same type of path_type_option)
-        """
-
-        setattr(ocp, f"isdef_{path_name}", True)
-        name = type_option.__name__
-        if isinstance(var, type_option):
-            var_tp = type_list()
-            try:
-                if isinstance(var_tp, BoundsList):
-                    var_tp.add(bounds=var)
-                else:
-                    var_tp.add(var)
-            except TypeError:
-                raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
-            var = var_tp
-        elif not isinstance(var, type_list):
-            raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
-        NonLinearProgram.add(ocp, path_name, var, False)
 
     def add_casadi_func(self, name: str, function: Callable | SX | MX, *all_param: Any) -> casadi.Function:
         """

@@ -40,7 +40,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    InitialGuessList,
     OdeSolver,
     OdeSolverBase,
     Solver,
@@ -117,19 +116,17 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"], dof_mappings[0]))
-    x_bounds[0][3:6, [0, -1]] = 0
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add([0] * len(dof_mappings["q"].to_first) * 2)
+    x_bounds.add("q", bounds=bio_model.bounds_from_ranges("q", mapping=dof_mappings))
+    x_bounds.add("qdot", bounds=bio_model.bounds_from_ranges("qdot", mapping=dof_mappings))
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * len(dof_mappings["q"].to_first), [tau_max] * len(dof_mappings["q"].to_first))
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * len(dof_mappings["q"].to_first))
+    u_bounds.add(
+        "tau",
+        min_bound=[tau_min] * len(dof_mappings["q"].to_first),
+        max_bound=[tau_max] * len(dof_mappings["q"].to_first),
+    )
 
     # ------------- #
 
@@ -138,12 +135,10 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
+        constraints=constraints,
         ode_solver=ode_solver,
         variable_mappings=dof_mappings,
         assume_phase_dynamics=assume_phase_dynamics,

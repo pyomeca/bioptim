@@ -5,21 +5,20 @@ import pytest
 from bioptim import (
     BiorbdModel,
     BoundsList,
-    Bounds,
     ConstraintFcn,
     ConstraintList,
     DynamicsFcn,
     DynamicsList,
     InitialGuessList,
-    InitialGuess,
     Node,
     InterpolationType,
     ObjectiveFcn,
     ObjectiveList,
-    Objective,
     OdeSolver,
     OptimalControlProgram,
     ParameterList,
+    ParameterObjectiveList,
+    PenaltyController,
 )
 from bioptim.optimization.solution import Solution
 
@@ -42,7 +41,7 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max = -100, 100
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -73,38 +72,33 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 0
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 1
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))  # Phase 2
+    x_bounds.add("q", bio_model[0].bounds_from_ranges("q"), phase=0)
+    x_bounds.add("qdot", bio_model[0].bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add("q", bio_model[1].bounds_from_ranges("q"), phase=1)
+    x_bounds.add("qdot", bio_model[1].bounds_from_ranges("qdot"), phase=1)
+    x_bounds.add("q", bio_model[2].bounds_from_ranges("q"), phase=2)
+    x_bounds.add("qdot", bio_model[2].bounds_from_ranges("qdot"), phase=2)
 
     for bounds in x_bounds:
-        for i in [1, 3, 4, 5]:
-            bounds[i, [0, -1]] = 0
-    x_bounds[0][2, 0] = 0.0
-    x_bounds[2][2, [0, -1]] = [0.0, 1.57]
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
+        bounds["q"][1, [0, -1]] = 0
+        bounds["qdot"][:, [0, -1]] = 0
+    x_bounds[0]["q"][2, 0] = 0.0
+    x_bounds[2]["q"][2, [0, -1]] = [0.0, 1.57]
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-    u_bounds.add([tau_min] * bio_model[0].nb_tau, [tau_max] * bio_model[0].nb_tau)
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model[0].nb_tau)
-    u_init.add([tau_init] * bio_model[0].nb_tau)
-    u_init.add([tau_init] * bio_model[0].nb_tau)
+    u_bounds.add("tau", min_bound=[tau_min] * bio_model[0].nb_tau, max_bound=[tau_max] * bio_model[0].nb_tau, phase=0)
+    u_bounds.add("tau", min_bound=[tau_min] * bio_model[1].nb_tau, max_bound=[tau_max] * bio_model[1].nb_tau, phase=1)
+    u_bounds.add("tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[2].nb_tau, phase=2)
 
     parameters = ParameterList()
+    parameter_bounds = BoundsList()
+    parameter_init = InitialGuessList()
+    parameter_objectives = ParameterObjectiveList()
     if use_parameter:
 
-        def my_target_function(ocp, value, target_value):
-            return value - target_value
+        def my_target_function(controller: PenaltyController):
+            return controller.parameters.cx
 
         def my_parameter_function(bio_model, value, extra_value):
             new_gravity = MX.zeros(3, 1)
@@ -114,20 +108,19 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
         min_g = -10
         max_g = -6
         target_g = -8
-        bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
-        initial_gravity = InitialGuess((min_g + max_g) / 2)
-        parameter_objective_functions = Objective(
-            my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target_value=target_g
-        )
         parameters.add(
             "gravity_z",
             my_parameter_function,
-            initial_gravity,
-            bound_gravity,
             size=1,
-            penalty_list=parameter_objective_functions,
             extra_value=1,
         )
+        parameter_objectives.add(
+            my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
+        )
+        parameter_bounds.add(
+            "gravity_z", min_bound=[min_g], max_bound=[max_g], interpolation=InterpolationType.CONSTANT
+        )
+        parameter_init["gravity_z"] = (min_g + max_g) / 2
 
     # ------------- #
 
@@ -136,14 +129,15 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
         dynamics,
         ns,
         final_time[:n_phases],
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
+        constraints=constraints,
         ode_solver=ode_solver,
         parameters=parameters,
+        parameter_init=parameter_init,
+        parameter_bounds=parameter_bounds,
+        parameter_objectives=parameter_objectives,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

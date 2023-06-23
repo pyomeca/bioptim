@@ -15,8 +15,6 @@ from bioptim import (
     DynamicsEvaluation,
     DynamicsFunctions,
     DynamicsList,
-    InitialGuessList,
-    InterpolationType,
     ObjectiveFcn,
     ObjectiveList,
     OdeSolver,
@@ -96,14 +94,14 @@ class NonControlledMethod:
         Configure the dynamics of the system
         """
 
-        global dynamics_eval_horzcat
-        nlp.parameters = ocp.v.parameters_in_list
+        nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         # Gets the t0 time for the current phase
         t0_phase_in_ocp = sum1(nlp.parameters.mx[0 : nlp.phase_idx])
         # Gets every time node for the current phase
 
+        dynamics_eval_horzcat = np.array(())
         for i in range(nlp.ns):
             t_node_in_phase = nlp.parameters.mx[nlp.phase_idx] / (nlp.ns + 1) * i
             t_node_in_ocp = t0_phase_in_ocp + t_node_in_phase
@@ -226,55 +224,18 @@ def prepare_ocp(
 
     # Sets the bound for all the phases
     x_bounds = BoundsList()
-    x_min_start = np.array([[0], [0], [0]])
-
-    x_max_start = np.array([[0], [0], [0]])
-    x_min_middle = np.array([[0], [0], [0]])
-    x_min_end = x_min_middle
-    x_max_middle = np.array([[0], [0], [0]])
-    x_max_middle[0:3] = 1000
-    x_max_end = x_max_middle
-    x_start_min = np.concatenate((x_min_start, x_min_middle, x_min_end), axis=1)
-    x_start_max = np.concatenate((x_max_start, x_max_middle, x_max_end), axis=1)
-    x_min_start = x_min_middle
-    x_max_start = x_max_middle
-    x_after_start_min = np.concatenate((x_min_start, x_min_middle, x_min_end), axis=1)
-    x_after_start_max = np.concatenate((x_max_start, x_max_middle, x_max_end), axis=1)
-
     for i in range(n_phase):
-        if i == 0:
-            x_bounds.add(
-                x_start_min, x_start_max, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
-            )
-        else:
-            x_bounds.add(
-                x_after_start_min,
-                x_after_start_max,
-                interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-            )
-
-    x_init = InitialGuessList()
-    for i in range(n_phase):
-        x_init.add(np.array([[0], [0], [0]]))
-
-    u_bounds = BoundsList()
-    for i in range(n_phase):
-        u_bounds.add([], [])
-
-    u_init = InitialGuessList()
-    for i in range(n_phase):
-        u_init.add([])
+        x_bounds.add("a", min_bound=[[0, 0, 0]], max_bound=[[0 if i == 0 else 1000, 1000, 1000]], phase=i)
+        x_bounds.add("b", min_bound=[[0, 0, 0]], max_bound=[[0 if i == 0 else 1000, 1000, 1000]], phase=i)
+        x_bounds.add("c", min_bound=[[0, 0, 0]], max_bound=[[0 if i == 0 else 1000, 1000, 1000]], phase=i)
 
     return OptimalControlProgram(
         models,
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        objective_functions=objective_functions,
         constraints=constraints,
         ode_solver=ode_solver,
         control_type=ControlType.NONE,

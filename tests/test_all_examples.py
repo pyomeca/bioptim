@@ -205,7 +205,7 @@ def test__getting_started__example_multiphase(assume_phase_dynamics):
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])  # Shouldn't it be only False ?
 def test__getting_started__example_multinode_constraints(assume_phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
@@ -218,6 +218,31 @@ def test__getting_started__example_multinode_constraints(assume_phase_dynamics):
     )
 
 
+def test__getting_started__example_multinode_objective():
+    from bioptim.examples.getting_started import example_multinode_objective as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        final_time=1,
+        n_shooting=10,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
+        "add more penalties than available in a multinode constraint. You can try to split the constraints "
+        "into more penalties or use assume_phase_dynamics=False.",
+    ):
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+            final_time=1,
+            n_shooting=10,
+            assume_phase_dynamics=True,
+        )
+
+
 def test__getting_started__example_optimal_time():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
 
@@ -228,11 +253,31 @@ def test__getting_started__example_save_and_load(assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    if not assume_phase_dynamics:
+        with pytest.raises(
+            RuntimeError, match="n_threads is greater than 1 is not compatible with assume_phase_dynamics=False"
+        ):
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                final_time=3,
+                n_shooting=100,
+                n_threads=4,
+                assume_phase_dynamics=assume_phase_dynamics,
+            )
+    else:
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+            final_time=3,
+            n_shooting=100,
+            n_threads=4,
+            assume_phase_dynamics=assume_phase_dynamics,
+        )
+
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
-        n_threads=4,
+        n_threads=1,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

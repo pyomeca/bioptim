@@ -5,12 +5,12 @@ constrains the z-distance between two markers to remain null.
 The behaviour of the pendulum should be the same as the one in bioptim/examples/getting_started/pendulum.py
 """
 from bioptim import (
-    Bounds,
-    InitialGuess,
     InterpolationType,
     Objective,
     ObjectiveFcn,
     Solver,
+    BoundsList,
+    InitialGuessList,
 )
 import numpy as np
 
@@ -51,46 +51,44 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Path constraint
-    x_bounds = Bounds([-1, -1, -2 * np.pi, -1000], [5, 5, 2 * np.pi, 1000])
-    x_bounds[:3, [0, -1]] = 0
-    x_bounds[2, -1] = 3.14
+    x_bounds = BoundsList()
+    x_bounds["q"] = [-1, -1, -2 * np.pi], [5, 5, 2 * np.pi]
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][2, -1] = 3.14
+    x_bounds["lambdas"] = [-1000], [1000]
+
     # Initial guess
     n_q = bio_model.nb_q
     x_0_guess = np.zeros(n_shooting + 1)
     x_linear_guess = np.linspace(0, np.pi, n_shooting + 1)
-    x_init = InitialGuess([x_0_guess, x_0_guess, x_linear_guess, x_0_guess], interpolation=InterpolationType.EACH_FRAME)
+    x_init = InitialGuessList()
+    x_init.add("q", [x_0_guess, x_0_guess, x_linear_guess], interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
-    tau_min, tau_max, tau_init = -100, 100, 0
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively impose forces on z axis
-    u_bounds[2, :] = 0  # Prevent the model from actively rotate
-    # Initial guess
-    u_init = InitialGuess([tau_init] * n_q)
-
-    # Give the initial and final velocities some min and max bounds
-    qdot_start_bounds = Bounds([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], interpolation=InterpolationType.CONSTANT)
-    qdot_end_bounds = Bounds([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], interpolation=InterpolationType.CONSTANT)
-    # And an initial guess
-    qdot_start_init = InitialGuess([0] * n_q)
-    qdot_end_init = InitialGuess([0] * n_q)
+    tau_min, tau_max = -100, 100
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][1, :] = 0  # Prevent the model from actively impose forces on z axis
+    u_bounds["tau"][2, :] = 0  # Prevent the model from actively rotate
 
     # Holonomic constraints: The pendulum must not move on the z axis
     constraints, jac = bio_model.generate_constraint_and_jacobian_functions(marker_1="marker_1", index=slice(2, 3))
+
+    # Make sure all are declared
+    qdot_bounds = BoundsList()
+    # Start and finish with zero velocity
+    qdot_bounds.add("qdot_start", min_bound=[0] * n_q, max_bound=[0] * n_q, interpolation=InterpolationType.CONSTANT)
+    qdot_bounds.add("qdot_end", min_bound=[0] * n_q, max_bound=[0] * n_q, interpolation=InterpolationType.CONSTANT)
 
     return VariationalOptimalControlProgram(
         bio_model,
         n_shooting,
         final_time,
         q_init=x_init,
-        u_init=u_init,
         q_bounds=x_bounds,
         u_bounds=u_bounds,
-        qdot_start_init=qdot_start_init,
-        qdot_start_bounds=qdot_start_bounds,
-        qdot_end_init=qdot_end_init,
-        qdot_end_bounds=qdot_end_bounds,
+        qdot_bounds=qdot_bounds,
         holonomic_constraints=constraints,
         holonomic_constraints_jacobian=jac,
         objective_functions=objective_functions,
@@ -114,8 +112,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # --- Show the results in a bioviz animation --- #
-    sol.detailed_cost_values()  # /!\ Since the last controls are nan the costs are not accurate /!\
-    sol.print_cost()
+    sol.print_cost()  # /!\ Since the last controls are nan the costs are not accurate /!\
     sol.animate()
 
     # --- Show the graph results --- #
@@ -123,7 +120,7 @@ def main():
     sol.graphs()
 
     print(f"qdot0 :{sol.parameters['qdot0'].squeeze()}")
-    print(f"qdotN :{sol.parameters['qdotN'].squeeze()}")
+    print(f"qdot_end :{sol.parameters['qdot_end'].squeeze()}")
 
 
 if __name__ == "__main__":

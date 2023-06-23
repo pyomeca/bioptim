@@ -26,13 +26,12 @@ from bioptim import (
     ObjectiveFcn,
     ConstraintList,
     ConstraintFcn,
-    Bounds,
-    InitialGuess,
+    BoundsList,
     InterpolationType,
 )
 
 
-def custom_x_bounds_min(current_shooting_point: int, n_elements: int, n_shooting: int) -> np.ndarray:
+def custom_x_bounds_min(current_shooting_point: int, n_elements: int, n_shooting: int, slicer: slice) -> np.ndarray:
     """
     The custom function for the x bound (this particular one mimics linear interpolation)
 
@@ -45,6 +44,8 @@ def custom_x_bounds_min(current_shooting_point: int, n_elements: int, n_shooting
         The number of rows of the matrix
     n_shooting: int
         The number of shooting point
+    slicer: slice
+        Which rows to use
 
     Returns
     -------
@@ -53,10 +54,10 @@ def custom_x_bounds_min(current_shooting_point: int, n_elements: int, n_shooting
 
     my_values = np.array([[-10, -5]] * n_elements)
     # Linear interpolation created with custom function
-    return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / n_shooting
+    return my_values[slicer, 0] + (my_values[slicer, -1] - my_values[slicer, 0]) * current_shooting_point / n_shooting
 
 
-def custom_x_bounds_max(current_shooting_point: int, n_elements: int, n_shooting: int) -> np.ndarray:
+def custom_x_bounds_max(current_shooting_point: int, n_elements: int, n_shooting: int, slicer: slice) -> np.ndarray:
     """
     The custom function for the x bound (this particular one mimics linear interpolation)
 
@@ -69,6 +70,8 @@ def custom_x_bounds_max(current_shooting_point: int, n_elements: int, n_shooting
         The number of rows of the matrix
     n_shooting: int
         The number of shooting point
+    slicer: slice
+        Which rows to use
 
     Returns
     -------
@@ -77,7 +80,7 @@ def custom_x_bounds_max(current_shooting_point: int, n_elements: int, n_shooting
 
     my_values = np.array([[10, 5]] * n_elements)
     # Linear interpolation created with custom function
-    return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / n_shooting
+    return my_values[slicer, 0] + (my_values[slicer, -1] - my_values[slicer, 0]) * current_shooting_point / n_shooting
 
 
 def custom_u_bounds_min(current_shooting_point: int, n_elements: int, n_shooting: int) -> np.ndarray:
@@ -163,7 +166,7 @@ def prepare_ocp(
     nq = bio_model.nb_q
     nqdot = bio_model.nb_qdot
     ntau = bio_model.nb_tau
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max = -100, 100
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -178,70 +181,121 @@ def prepare_ocp(
 
     # Path constraints
     if interpolation_type == InterpolationType.CONSTANT:
-        x_min = [-100] * (nq + nqdot)
-        x_max = [100] * (nq + nqdot)
-        x_bounds = Bounds(x_min, x_max, interpolation=InterpolationType.CONSTANT)
-        u_min = [tau_min] * ntau
-        u_max = [tau_max] * ntau
-        u_bounds = Bounds(u_min, u_max, interpolation=InterpolationType.CONSTANT)
+        # Here we need to use the .add nomenclature because interpolation is not the default
+        x_bounds = BoundsList()
+        x_bounds.add("q", min_bound=[-100] * nq, max_bound=[100] * nq, interpolation=InterpolationType.CONSTANT)
+        x_bounds.add(
+            "qdot", min_bound=[-100] * nqdot, max_bound=[100] * nqdot, interpolation=InterpolationType.CONSTANT
+        )
+        u_bounds = BoundsList()
+        u_bounds.add(
+            "tau", min_bound=[tau_min] * ntau, max_bound=[tau_max] * ntau, interpolation=InterpolationType.CONSTANT
+        )
     elif interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+        # Here we can use the direct variable assignment because no extra parameters are sent
         x_min = np.random.random((6, 3)) * (-10) - 5
         x_max = np.random.random((6, 3)) * 10 + 5
-        x_bounds = Bounds(x_min, x_max, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
+        x_bounds = BoundsList()
+        x_bounds["q"] = x_min[:nq, :], x_max[:nq, :]
+        x_bounds["qdot"] = x_min[nq:, :] * nqdot, x_max[nq:, :]
+
         u_min = np.random.random((3, 3)) * tau_min + tau_min / 2
         u_max = np.random.random((3, 3)) * tau_max + tau_max / 2
-        u_bounds = Bounds(u_min, u_max, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
+        u_bounds = BoundsList()
+        u_bounds["tau"] = u_min, u_max
+
     elif interpolation_type == InterpolationType.LINEAR:
+        # Here we need to use the .add nomenclature because interpolation is not the default
         x_min = np.random.random((6, 2)) * (-10) - 5
         x_max = np.random.random((6, 2)) * 10 + 5
-        x_bounds = Bounds(x_min, x_max, interpolation=InterpolationType.LINEAR)
+        x_bounds = BoundsList()
+        x_bounds.add("q", min_bound=x_min[:nq, :], max_bound=x_max[:nq, :], interpolation=InterpolationType.LINEAR)
+        x_bounds.add(
+            "qdot", min_bound=x_min[nq:, :] * nqdot, max_bound=x_max[nq:, :], interpolation=InterpolationType.LINEAR
+        )
+
         u_min = np.random.random((3, 2)) * tau_min + tau_min / 2
         u_max = np.random.random((3, 2)) * tau_max + tau_max / 2
-        u_bounds = Bounds(u_min, u_max, interpolation=InterpolationType.LINEAR)
+        u_bounds = BoundsList()
+        u_bounds.add("tau", min_bound=u_min, max_bound=u_max, interpolation=InterpolationType.LINEAR)
     elif interpolation_type == InterpolationType.EACH_FRAME:
+        # Here we need to use the .add nomenclature because interpolation is not the default
         x_min = np.random.random((nq + nqdot, n_shooting + 1)) * (-10) - 5
         x_max = np.random.random((nq + nqdot, n_shooting + 1)) * 10 + 5
-        x_bounds = Bounds(x_min, x_max, interpolation=InterpolationType.EACH_FRAME)
+        x_bounds = BoundsList()
+        x_bounds.add("q", min_bound=x_min[:nq, :], max_bound=x_max[:nq, :], interpolation=InterpolationType.EACH_FRAME)
+        x_bounds.add(
+            "qdot", min_bound=x_min[nq:, :] * nqdot, max_bound=x_max[nq:, :], interpolation=InterpolationType.EACH_FRAME
+        )
+
         u_min = np.random.random((ntau, n_shooting)) * tau_min + tau_min / 2
         u_max = np.random.random((ntau, n_shooting)) * tau_max + tau_max / 2
-        u_bounds = Bounds(u_min, u_max, interpolation=InterpolationType.EACH_FRAME)
+        u_bounds = BoundsList()
+        u_bounds.add("tau", min_bound=u_min, max_bound=u_max, interpolation=InterpolationType.EACH_FRAME)
     elif interpolation_type == InterpolationType.SPLINE:
+        # Here we need to use the .add nomenclature because interpolation is not the default
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
         x_min = np.random.random((nq + nqdot, 5)) * (-10) - 5
         x_max = np.random.random((nq + nqdot, 5)) * 10 + 5
+        x_bounds = BoundsList()
+        x_bounds.add(
+            "q", min_bound=x_min[:nq, :], max_bound=x_max[:nq, :], interpolation=InterpolationType.SPLINE, t=spline_time
+        )
+        x_bounds.add(
+            "qdot",
+            min_bound=x_min[nq:, :] * nqdot,
+            max_bound=x_max[nq:, :],
+            interpolation=InterpolationType.SPLINE,
+            t=spline_time,
+        )
+
         u_min = np.random.random((ntau, 5)) * tau_min + tau_min / 2
         u_max = np.random.random((ntau, 5)) * tau_max + tau_max / 2
-        x_bounds = Bounds(x_min, x_max, interpolation=InterpolationType.SPLINE, t=spline_time)
-        u_bounds = Bounds(u_min, u_max, interpolation=InterpolationType.SPLINE, t=spline_time)
+        u_bounds = BoundsList()
+        u_bounds.add("tau", min_bound=u_min, max_bound=u_max, interpolation=InterpolationType.SPLINE, t=spline_time)
     elif interpolation_type == InterpolationType.CUSTOM:
         # The custom functions refer to the ones at the beginning of the file.
         # For this particular instance, they emulate a Linear interpolation
         extra_params_x = {"n_elements": nq + nqdot, "n_shooting": n_shooting}
-        extra_params_u = {"n_elements": ntau, "n_shooting": n_shooting}
-        x_bounds = Bounds(
-            custom_x_bounds_min, custom_x_bounds_max, interpolation=InterpolationType.CUSTOM, **extra_params_x
+        x_bounds = BoundsList()
+        x_bounds.add(
+            "q",
+            min_bound=custom_x_bounds_min,
+            max_bound=custom_x_bounds_max,
+            interpolation=InterpolationType.CUSTOM,
+            slicer=slice(0, nq),
+            **extra_params_x,
         )
-        u_bounds = Bounds(
-            custom_u_bounds_min, custom_u_bounds_max, interpolation=InterpolationType.CUSTOM, **extra_params_u
+        x_bounds.add(
+            "qdot",
+            min_bound=custom_x_bounds_min,
+            max_bound=custom_x_bounds_max,
+            interpolation=InterpolationType.CUSTOM,
+            slicer=slice(nq, nq + nqdot),
+            **extra_params_x,
+        )
+
+        extra_params_u = {"n_elements": ntau, "n_shooting": n_shooting}
+        u_bounds = BoundsList()
+        u_bounds.add(
+            "tau",
+            min_bound=custom_u_bounds_min,
+            max_bound=custom_u_bounds_max,
+            interpolation=InterpolationType.CUSTOM,
+            **extra_params_u,
         )
     else:
         raise NotImplementedError("Not implemented yet")
-
-    # Initial guess
-    x_init = InitialGuess([0] * (nq + nqdot))
-    u_init = InitialGuess([tau_init] * ntau)
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
         x_bounds,
         u_bounds,
-        objective_functions,
-        constraints,
+        objective_functions=objective_functions,
+        constraints=constraints,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -253,6 +307,9 @@ def main():
 
     print(f"Show the bounds")
     for interpolation_type in InterpolationType:
+        if interpolation_type == InterpolationType.ALL_POINTS:
+            continue
+
         print(f"Solving problem using {interpolation_type} bounds")
         ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type)
         sol = ocp.solve()
@@ -260,15 +317,6 @@ def main():
 
         # Print the last solution
         sol.graphs(show_bounds=True)
-
-    for interpolation_type in InterpolationType:
-        print(f"Solving problem using {interpolation_type} bounds")
-        ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type)
-        sol = ocp.solve()
-        print("\n")
-
-        # Print the last solution
-        sol.graphs(show_bounds=False)
 
 
 if __name__ == "__main__":

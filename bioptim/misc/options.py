@@ -1,5 +1,7 @@
 from typing import Any, Callable
 
+import numpy as np
+
 
 class OptionGeneric:
     """
@@ -51,6 +53,14 @@ class OptionGeneric:
         self.type = type
 
         self.params = params  # TODO: change parameters to extra-parameters (differentiate from parameters)
+
+    @property
+    def param_when_copying(self) -> dict:
+        raise NotImplementedError("param_when_copying must be implemented to index this class")
+
+    @property
+    def value(self):
+        raise NotImplementedError("value is not implemented for current class")
 
     @property
     def shape(self):
@@ -176,6 +186,10 @@ class OptionList:
         list_index = self.__prepare_option_list(phase, list_index)
         self.options[phase][list_index] = option_type(phase=phase, list_index=list_index, **extra_arguments)
 
+    @property
+    def param_when_copying(self) -> dict:
+        raise NotImplementedError("param_when_copying must be implemented to index this class")
+
     def copy(self, option: OptionGeneric):
         """
         Deepcopy of an option in the list
@@ -243,13 +257,17 @@ class OptionDict(OptionList):
     A list of OptionGeneric if more than one is required
     """
 
-    def __init__(self):
+    def __init__(self, sub_type: type = None):
         super(OptionDict, self).__init__()
         self.options = [{}]
+        self.sub_type = sub_type
 
-    def _add(self, key: str, option_type: Callable = OptionGeneric, phase: int = -1, **extra_arguments: Any):
+    def add(self, *args, **kwargs):
+        raise NotImplementedError("This is an abstract method")
+
+    def _add(self, key: str, phase: int = -1, **extra_arguments: Any):
         self.__prepare_option_list(phase, key)
-        self.options[phase][key] = option_type(key=key, phase=phase, **extra_arguments)
+        self.options[phase][key] = self.sub_type(key=key, phase=phase, **extra_arguments)
 
     def copy(self, option: OptionGeneric, key: str):
         self.__prepare_option_list(option.phase, key)
@@ -260,19 +278,52 @@ class OptionDict(OptionList):
             self.options.append({})
         return
 
-    def __getitem__(self, item: int | str | list | tuple) -> dict | OptionGeneric:
+    def __setitem__(self, key, value):
+        if isinstance(key, str):
+            if len(self.options) != 1:
+                raise ValueError(
+                    "Indexing VariableScalingList with 'str' with more than one dimension is a mistake."
+                    "Call the function index first with the index of the phase you want to fetch"
+                )
+            self.add(key, value)
+
+    def __getitem__(self, item: int | str | list | tuple) -> dict | Any:
+        if isinstance(item, str):
+            if len(self.options) != 1:
+                raise ValueError(
+                    "Indexing VariableScalingList with 'str' with more than one dimension is a mistake."
+                    "Call the function index first with the index of the phase you want to fetch"
+                )
+            if item not in self.options[0]:
+                raise KeyError(f"Key {item} not in {type(self).__name__}")
+            return self.options[0][item]
+
         if isinstance(item, int):
-            return self.options[item]
+            # Request a new class for a particular phase
+            out = self.__class__()
+            for key in self.options[item].keys():
+                out.add(key, self.options[item][key])
 
-        phase = 0
-        if len(self) > 1:
-            if isinstance(item, (list, tuple)):
-                phase = item[0]
-                item = item[1]
-            else:
-                raise ValueError("slicing an OptionDict must specify the phase if n_phase > 1")
+            if len(out.options) > 1:
+                # Make sure only one item is returned
+                out.options = [out.options[item]]
+            return out
 
-        return self.options[phase][item]
+        if isinstance(item, (list, tuple)):
+            n_dim = (0, 1)
+            if len(self.keys()) > 0:
+                keys = tuple(self.keys())
+                if len(self[keys[0]].value.shape) == 1:
+                    n_dim = (0,)
+                else:
+                    n_dim = (0, self[keys[0]].value.shape[1])
+            data = np.ndarray(n_dim)
+            for i in item:
+                data = np.concatenate((data, self.options[0][i].value))
+            # TODO Benjamin
+            return self.sub_type("all", data, **self.param_when_copying)
+
+        raise ValueError("Wrong type in getting scaling")
 
     def keys(self, phase: int = 0):
         return self.options[phase].keys()
@@ -320,7 +371,18 @@ class UniquePerProblemOptionList(OptionList):
         super(UniquePerProblemOptionList, self).copy(option)
 
     def __getitem__(self, index) -> Any:
-        return super(UniquePerProblemOptionList, self).__getitem__(0)[index]
+        if isinstance(index, str):
+            if index == "all":
+                return self
+            if index not in self.names:
+                raise RuntimeError(f"The key {index} is not in the parameter names.")
+            else:
+                idx = self.names.index(index)
+                return self[idx]
+        elif isinstance(index, int):
+            return super(UniquePerProblemOptionList, self).__getitem__(0)[index]
+        else:
+            raise RuntimeError(f"The parameter index must be an int | str | list, here the type is {type(index)}.")
 
     def __next__(self) -> int:
         self._iter_idx += 1
@@ -336,3 +398,31 @@ class UniquePerProblemOptionList(OptionList):
         Print the UniquePerProblemOptionList to the console
         """
         raise NotImplementedError("Printing of UniquePerProblemOptionList is not ready yet")
+
+
+class UniquePerPhaseOptionDict(OptionDict):
+    """
+    OptionList that does not allow for more than one element per phase
+    """
+
+    def _add(self, phase: int = -1, **extra_arguments: Any):
+        if phase == -1:
+            phase = len(self)
+        super(UniquePerPhaseOptionDict, self)._add(phase=phase, list_index=0, **extra_arguments)
+
+    def copy(self, option: OptionDict):
+        if option.phase == -1:
+            option.phase = len(self)
+        super(UniquePerPhaseOptionDict, self).copy(option)
+
+    def __getitem__(self, i_phase) -> Any:
+        return super(UniquePerPhaseOptionDict, self).__getitem__(i_phase)[0]
+
+    def __next__(self) -> int:
+        self._iter_idx += 1
+        if self._iter_idx > len(self):
+            raise StopIteration
+        return self.options[self._iter_idx - 1][0]
+
+    def print(self):
+        raise NotImplementedError("Printing of UniquePerPhaseOptionList is not ready yet")

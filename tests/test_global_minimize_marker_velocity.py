@@ -99,32 +99,28 @@ def prepare_ocp(
     # Path constraint
     nq = bio_model.nb_q
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0].min[nq:, :] = -10
-    x_bounds[0].max[nq:, :] = 10
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = [-10] * bio_model.nb_qdot, [10] * bio_model.nb_qdot
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([1.5, 1.5, 0.0, 0.0, 0.7, 0.7, 0.6, 0.6])
+    x_init["q"] = 1.5, 1.5, 0.0, 0.0
+    x_init["qdot"] = 0.7, 0.7, 0.6, 0.6
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model.nb_tau)
+    u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        objective_functions=objective_functions,
         control_type=control_type,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,

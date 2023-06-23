@@ -13,8 +13,8 @@ from bioptim import (
     BiMapping,
     Mapping,
     OdeSolver,
-    Bounds,
-    InitialGuess,
+    BoundsList,
+    InitialGuessList,
     Shooting,
     Solver,
     SolutionIntegrator,
@@ -71,8 +71,13 @@ class TestUtils:
         elif isinstance(first_elem, (list, tuple)):
             for i in range(len(first_elem)):
                 TestUtils.deep_assert(first_elem[i], second_elem[i])
-        elif isinstance(first_elem, (OptimalControlProgram, Bounds, InitialGuess, BiMapping, Mapping, OdeSolver)):
+        elif isinstance(
+            first_elem, (OptimalControlProgram, BoundsList, InitialGuessList, BiMapping, Mapping, OdeSolver)
+        ):
             for key in dir(first_elem):
+                if type(first_elem) in (Mapping, BiMapping) and key in ("param_when_copying", "shape", "value"):
+                    # These are designed to fail, so don't test them
+                    continue
                 TestUtils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
         else:
             if not callable(first_elem) and not isinstance(first_elem, (MX, BiorbdModel)):
@@ -94,16 +99,21 @@ class TestUtils:
         sol_warm_start = ocp.solve(solver)
         if ocp.n_phases > 1:
             for i in range(ocp.n_phases):
-                np.testing.assert_almost_equal(
-                    sol_warm_start.states[i]["all"], sol.states[i]["all"], decimal=state_decimal
-                )
-                np.testing.assert_almost_equal(
-                    sol_warm_start.controls[i]["all"], sol.controls[i]["all"], decimal=control_decimal
-                )
+                for key in sol.states[i]:
+                    np.testing.assert_almost_equal(
+                        sol_warm_start.states[i][key], sol.states[i][key], decimal=state_decimal
+                    )
+                for key in sol.controls[i]:
+                    np.testing.assert_almost_equal(
+                        sol_warm_start.controls[i][key], sol.controls[i][key], decimal=control_decimal
+                    )
         else:
-            np.testing.assert_almost_equal(sol_warm_start.states["all"], sol.states["all"], decimal=state_decimal)
-            np.testing.assert_almost_equal(sol_warm_start.controls["all"], sol.controls["all"], decimal=control_decimal)
-        np.testing.assert_almost_equal(sol_warm_start.parameters["all"], sol.parameters["all"], decimal=param_decimal)
+            for key in sol.states:
+                np.testing.assert_almost_equal(sol_warm_start.states[key], sol.states[key], decimal=state_decimal)
+            for key in sol.controls:
+                np.testing.assert_almost_equal(sol_warm_start.controls[key], sol.controls[key], decimal=control_decimal)
+        for key in sol_warm_start.parameters.keys():
+            np.testing.assert_almost_equal(sol_warm_start.parameters[key], sol.parameters[key], decimal=param_decimal)
 
     @staticmethod
     def simulate(sol, decimal_value=7):
@@ -132,8 +142,9 @@ class TestUtils:
         )
 
         # Evaluate the final error of the single shooting integration versus the finale node
-        np.testing.assert_almost_equal(
-            sol_merged.states["all"][:, -1],
-            sol_single.states["all"][:, -1],
-            decimal=decimal_value,
-        )
+        for key in sol_merged.states.keys():
+            np.testing.assert_almost_equal(
+                sol_merged.states[key][:, -1],
+                sol_single.states[key][:, -1],
+                decimal=decimal_value,
+            )

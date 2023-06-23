@@ -51,7 +51,7 @@ def prepare_ocp(
     # --- Options --- #
     # BioModel path
     bio_model = BiorbdModel(biorbd_model_path)
-    tau_min, tau_max, tau_init = -10, 10, 0
+    tau_min, tau_max = -10, 10
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -70,22 +70,20 @@ def prepare_ocp(
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
-    x_bounds[0][:, 2] = pose_at_final_node + [0] * n_qdot
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = pose_at_first_node
+    x_bounds["q"][:, 2] = pose_at_final_node
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, 2]] = 0
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * n_qdot)
+    x_init["q"] = pose_at_first_node
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [-1] * bio_model.nb_tau + [tau_min] * bio_model.nb_tau, [1] * bio_model.nb_tau + [tau_max] * bio_model.nb_tau
-    )
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model.nb_tau * 2)
+    u_bounds["tau"] = [-1] * bio_model.nb_tau, [1] * bio_model.nb_tau
+    u_bounds["residual_tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
 
     # ------------- #
 
@@ -94,11 +92,10 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        objective_functions=objective_functions,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
     )
@@ -110,9 +107,7 @@ def main():
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path=(
-            "/home/lim/Documents/Anais/bioptim/bioptim/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"
-        ),
+        biorbd_model_path="models/2segments_2dof_2contacts.bioMod",
         n_shooting=30,
         final_time=2,
     )

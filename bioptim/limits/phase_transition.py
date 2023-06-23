@@ -67,7 +67,7 @@ class PhaseTransition(MultinodePenalty):
         self.weight = 0 if weight is None else weight
         self.min_bound = min_bound
         self.max_bound = max_bound
-        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        self.bounds = Bounds("phase_transition", interpolation=InterpolationType.CONSTANT)
         self.node = Node.TRANSITION
         self.transition = True
         self.quadratic = True

@@ -73,14 +73,10 @@ def prepare_ocp(
     """
 
     bio_model = BiorbdModel(biorbd_model_path)
-
-    if use_actuators:
-        tau_min, tau_max, tau_init = -1, 1, 0
-    else:
-        tau_min, tau_max, tau_init = -500, 500, 0
+    tau_min, tau_max = (-1, 1) if use_actuators else (-500, 500)
 
     dof_mapping = BiMappingList()
-    dof_mapping.add("tau", [None, None, None, 0], [3])
+    dof_mapping.add("tau", to_second=[None, None, None, 0], to_first=[3])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -122,40 +118,33 @@ def prepare_ocp(
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = pose_at_first_node
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = [0] * n_qdot
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * n_qdot)
+    x_init["q"] = pose_at_first_node
 
     # Define control path constraint
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
-        nu_sup = bio_model.nb_qddot
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        nu_sup = bio_model.nb_qddot + bio_model.nb_contacts
-    else:
-        nu_sup = 0
-
     u_bounds = BoundsList()
-
-    u_bounds.add(
-        [tau_min] * (len(dof_mapping["tau"].to_first) + nu_sup), [tau_max] * (len(dof_mapping["tau"].to_first) + nu_sup)
-    )
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * (len(dof_mapping["tau"].to_first) + nu_sup))
+    u_bounds["tau"] = [tau_min] * len(dof_mapping["tau"].to_first), [tau_max] * len(dof_mapping["tau"].to_first)
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
+        u_bounds["qddot"] = [tau_min] * bio_model.nb_qddot, [tau_max] * bio_model.nb_qddot
+    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        u_bounds["qddot"] = [tau_min] * bio_model.nb_qddot, [tau_max] * bio_model.nb_qddot
+        u_bounds["fext"] = [tau_min] * bio_model.nb_contacts, [tau_max] * bio_model.nb_contacts
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         phase_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        objective_functions=objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
         ode_solver=ode_solver,

@@ -23,10 +23,9 @@ from bioptim import (
     Node,
     DynamicsFcn,
     Dynamics,
-    Bounds,
+    BoundsList,
     InterpolationType,
-    NoisedInitialGuess,
-    InitialGuess,
+    InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
     ConstraintFcn,
@@ -99,21 +98,30 @@ def prepare_ocp_first_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, 0] = 0
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = 0
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = 0
 
     # Initial guess
     n_q = bio_model.nb_q
     n_qdot = bio_model.nb_qdot
-    x_init = NoisedInitialGuess([0] * (n_q + n_qdot), bounds=x_bounds, magnitude=0.001, n_shooting=n_shooting + 1)
+    x_init = InitialGuessList()
+    x_init["q"] = [0] * n_q
+    x_init["qdot"] = [0] * n_q
+    x_init.add_noise(bounds=x_bounds, magnitude=0.001, n_shooting=n_shooting + 1)
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -300, 300, 0
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = NoisedInitialGuess([tau_init] * n_tau, bounds=u_bounds, magnitude=0.01, n_shooting=n_shooting)
+    u_init = InitialGuessList()
+    u_init["tau"] = [tau_init] * n_tau
+    u_init.add_noise(bounds=u_bounds, magnitude=0.01, n_shooting=n_shooting)
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
@@ -181,20 +189,26 @@ def prepare_ocp_second_pass(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, 0] = 0
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = 0
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = 0
 
     # Initial guess
-    x_init = np.vstack((solution.states[0]["q"], solution.states[0]["qdot"]))
-    x_init = InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME)
+    x_init = InitialGuessList()
+    x_init.add("q", solution.states[0]["q"], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("qdot", solution.states[0]["qdot"], interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -300, 300, 0
-    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
-    u_init = InitialGuess(solution.controls[0]["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+    u_init = InitialGuessList()
+    u_init.add("tau", solution.controls[0]["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
@@ -271,11 +285,9 @@ def main():
     # sol_second.graphs()
 
     # --- Show the results in a bioviz animation --- #
-    sol_first.detailed_cost_values()
     sol_first.print_cost()
     sol_first.animate(n_frames=100)
 
-    sol_second.detailed_cost_values()
     sol_second.print_cost()
     sol_second.animate(n_frames=100)
 

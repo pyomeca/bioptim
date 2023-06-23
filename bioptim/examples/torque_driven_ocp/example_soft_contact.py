@@ -23,8 +23,6 @@ from bioptim import (
     Solver,
     Shooting,
     Solution,
-    InitialGuess,
-    InterpolationType,
     SoftContactDynamics,
     RigidBodyDynamics,
     SolutionIntegrator,
@@ -56,21 +54,11 @@ def prepare_single_shooting(
         soft_contacts_dynamics=SoftContactDynamics.ODE,
     )
 
-    # Initial guess
-    x_init = InitialGuess([0] * (bio_model.nb_q + bio_model.nb_qdot))
-
-    # Problem parameters
-    tau_min, tau_max, tau_init = -100, 100, 0
-
-    u_init = InitialGuess([tau_init] * bio_model.nb_tau)
-
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
@@ -82,24 +70,29 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     ocp = prepare_single_shooting(model, ns, tf, ode_solver)
 
     # Find equilibrium
-    X = InitialGuess([0, 0.10, 0, 1e-10, 1e-10, 1e-10])
-    U = InitialGuess([0, 0, 0])
+    x = InitialGuessList()
+    x["q"] = [0, 0.10, 0]
+    x["qdot"] = [1e-10, 1e-10, 1e-10]
+    u = InitialGuessList()
+    u["tau"] = [0, 0, 0]
 
-    sol_from_initial_guess = Solution(ocp, [X, U])
+    sol_from_initial_guess = Solution(ocp, [x, u])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 
     # Rolling Sphere at equilibrium
     x0 = s.states["q"][:, -1]
-    dx0 = [0] * 3
-    X0 = np.concatenate([x0, np.array(dx0)])
-    X = InitialGuess(X0)
-    U = InitialGuess([0, 0, -10])
+    x = InitialGuessList()
+    x["q"] = x0
+    x["qdot"] = np.array([0] * 3)
+    u = InitialGuessList()
+    u["tau"] = [0, 0, -10]
 
-    sol_from_initial_guess = Solution(ocp, [X, U])
+    sol_from_initial_guess = Solution(ocp, [x, u])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
-    return X0
+
+    return x
 
 
 def prepare_ocp(
@@ -124,7 +117,7 @@ def prepare_ocp(
 
     # Problem parameters
 
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max = -100, 100
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -162,38 +155,35 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    nQ = bio_model.nb_q
-    X0 = initial_states_from_single_shooting(biorbd_model_path, 100, 1, ode_solver)
-    x_bounds[0].min[:nQ, 0] = X0[:nQ] - slack
-    x_bounds[0].max[:nQ, 0] = X0[:nQ] + slack
-    x_bounds[0].min[nQ:, 0] = -slack
-    x_bounds[0].max[nQ:, 0] = +slack
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+
+    init = initial_states_from_single_shooting(biorbd_model_path, 100, 1, ode_solver)
+    x_bounds["q"].min[:, 0] = (init["q"].init - slack)[:, 0]
+    x_bounds["q"].max[:, 0] = (init["q"].init + slack)[:, 0]
+
+    x_bounds["qdot"].min[:, 0] = -slack
+    x_bounds["qdot"].max[:, 0] = slack
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(initial_guess=X0, interpolation=InterpolationType.CONSTANT)
+    x_init["q"] = init["q"]
+    x_init["qdot"] = init["qdot"]
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
-
-    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model.nb_tau)
+    u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        objective_functions=objective_functions,
+        constraints=constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,

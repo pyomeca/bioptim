@@ -17,8 +17,8 @@ from bioptim import (
     ObjectiveFcn,
     ConstraintList,
     ConstraintFcn,
-    Bounds,
-    InitialGuess,
+    BoundsList,
+    InitialGuessList,
     Solver,
     Node,
     Axis,
@@ -30,14 +30,14 @@ class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
     def advance_window_bounds_states(self, sol, n_cycles_simultaneous=None):
         # Reimplementation of the advance_window method so the rotation of the wheel restart at -pi
         super(MyCyclicNMPC, self).advance_window_bounds_states(sol)
-        self.nlp[0].x_bounds.min[0, :] = -2 * np.pi * n_cycles_simultaneous
-        self.nlp[0].x_bounds.max[0, :] = 0
+        self.nlp[0].x_bounds["q"].min[0, :] = -2 * np.pi * n_cycles_simultaneous
+        self.nlp[0].x_bounds["q"].max[0, :] = 0
         return True
 
     def advance_window_initial_guess_states(self, sol, n_cycles_simultaneous=None):
         # Reimplementation of the advance_window method so the rotation of the wheel restart at -pi
         super(MyCyclicNMPC, self).advance_window_initial_guess_states(sol)
-        self.nlp[0].x_init.init[0, :] = sol.states["all"][0, :]  # Keep the previously found value for the wheel
+        self.nlp[0].x_init["q"].init[0, :] = sol.states["q"][0, :]  # Keep the previously found value for the wheel
         return True
 
 
@@ -53,21 +53,14 @@ def prepare_nmpc(
     model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
-    x_bound = model.bounds_from_ranges(["q", "qdot"])
-    x_bound.min[0, :] = -2 * np.pi * n_cycles_simultaneous  # Allow the wheel to spin as much as needed
-    x_bound.max[0, :] = 0
-    u_bound = Bounds([-max_torque] * model.nb_q, [max_torque] * model.nb_q)
+    x_bounds = BoundsList()
+    x_bounds["q"] = model.bounds_from_ranges("q")
+    x_bounds["q"].min[0, :] = -2 * np.pi * n_cycles_simultaneous  # Allow the wheel to spin as much as needed
+    x_bounds["q"].max[0, :] = 0
+    x_bounds["qdot"] = model.bounds_from_ranges("qdot")
 
-    x_init = InitialGuess(
-        np.zeros(
-            model.nb_q * 2,
-        )
-    )
-    u_init = InitialGuess(
-        np.zeros(
-            model.nb_q,
-        )
-    )
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [-max_torque] * model.nb_q, [max_torque] * model.nb_q
 
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q")
 
@@ -94,10 +87,8 @@ def prepare_nmpc(
         n_cycles_to_advance=n_cycles_to_advance,
         objective_functions=new_objectives,
         constraints=constraints,
-        x_init=x_init,
-        u_init=u_init,
-        x_bounds=x_bound,
-        u_bounds=u_bound,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

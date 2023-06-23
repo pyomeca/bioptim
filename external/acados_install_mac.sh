@@ -16,7 +16,7 @@ echo ""
 # Check if there are a number of CPUs for Acados multiprocessing
 ARG1=${1:NB_CPU}
 if [ -z "$ARG1" ]; then
-  $ARG1=$CPU_COUNT
+  ARG1=$CPU_COUNT
   echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($ARG1)."
   echo ""
 fi
@@ -45,6 +45,11 @@ if [ -z "$3" ]; then
   echo ""
 fi
 
+# Preparing environment
+if [ "$CONDA_PREFIX" ]; then
+  conda install git cmake -cconda-forge -y
+fi
+
 # Move to the build folder
 echo "Compiling ACADOS"
 echo ""
@@ -71,7 +76,7 @@ cd ../interfaces/acados_template
 
 # Use gnu-sed instead of osx native sed
 if [ "$CONDA_PREFIX" ]; then
-  conda install sed wget git cmake -cconda-forge -y
+  conda install sed wget -cconda-forge -y
 fi
 
 # Prepare some modification on the files so it works with biorbd

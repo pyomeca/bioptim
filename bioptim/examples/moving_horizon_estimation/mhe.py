@@ -28,8 +28,8 @@ from bioptim import (
     DynamicsFcn,
     Objective,
     ObjectiveFcn,
-    Bounds,
-    InitialGuess,
+    BoundsList,
+    InitialGuessList,
     InterpolationType,
     Solver,
     Node,
@@ -98,6 +98,7 @@ def prepare_mhe(
     x_init: np.ndarray,
     u_init: np.ndarray,
     assume_phase_dynamics: bool = True,
+    n_threads: int = 4,
 ):
     """
 
@@ -119,6 +120,8 @@ def prepare_mhe(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    n_threads: int
+        Number of threads to use
 
     Returns
     -------
@@ -126,17 +129,31 @@ def prepare_mhe(
     """
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, node=Node.ALL, weight=1000, list_index=0)
 
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [-max_torque, 0.0], [max_torque, 0.0]
+
+    x_init_list = InitialGuessList()
+    x_init_list.add("q", x_init[: bio_model.nb_q, :], interpolation=InterpolationType.EACH_FRAME)
+    x_init_list.add("qdot", x_init[bio_model.nb_q :, :], interpolation=InterpolationType.EACH_FRAME)
+
+    u_init_list = InitialGuessList()
+    u_init_list.add("tau", u_init, interpolation=InterpolationType.EACH_FRAME)
+
     return MovingHorizonEstimator(
         bio_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,
         objective_functions=new_objectives,
-        x_init=InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME),
-        u_init=InitialGuess(u_init, interpolation=InterpolationType.EACH_FRAME),
-        x_bounds=bio_model.bounds_from_ranges(["q", "qdot"]),
-        u_bounds=Bounds([-max_torque, 0.0], [max_torque, 0.0]),
-        n_threads=4,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init_list,
+        u_init=u_init_list,
+        n_threads=n_threads,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -169,7 +186,7 @@ def main():
     biorbd_model_path = "models/cart_pendulum.bioMod"
     bio_model = BiorbdModel(biorbd_model_path)
 
-    solver = Solver.ACADOS()  # or Solver.IPOPT()
+    solver = Solver.IPOPT()  # or Solver.ACADOS()  # If ACADOS is used, it must be manually installed
     final_time = 5
     n_shoot_per_second = 100
     window_len = 10
@@ -212,9 +229,9 @@ def main():
     print(f"New measurement every : {1 / n_shoot_per_second} s.")
     print(f"Average time per iteration of MHE : {sol.solver_time_to_optimize / (n_frames_total - 1)} s.")
     print(f"Average real time per iteration of MHE : {sol.real_time_to_optimize / (n_frames_total - 1)} s.")
-    print(f"Norm of the error on state = {np.linalg.norm(states[:, :n_frames_total] - sol.states['all'])}")
+    print(f"Norm of the error on q = {np.linalg.norm(states[:bio_model.nb_q, :n_frames_total] - sol.states['q'])}")
 
-    markers_estimated = states_to_markers(bio_model, sol.states["all"])
+    markers_estimated = states_to_markers(bio_model, sol.states["q"])
 
     plt.plot(
         markers_noised[1, :, :n_frames_total].T,
@@ -229,7 +246,8 @@ def main():
     plt.legend()
 
     plt.figure()
-    plt.plot(sol.states["all"].T, "--", label="States estimate")
+    plt.plot(sol.states["q"].T, "--", label="States estimate (q)")
+    plt.plot(sol.states["qdot"].T, "--", label="States estimate (qdot)")
     plt.plot(states[:, :n_frames_total].T, label="State truth")
     plt.legend()
     plt.show()

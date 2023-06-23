@@ -44,7 +44,8 @@ def generic_solve(interface) -> dict:
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
-    interface.sqp_nlp = {"x": interface.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
+    # Thread here on (f and all_g) instead of individually for each function?
+    interface.sqp_nlp = {"x": interface.ocp.variables_vector, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
 
@@ -56,14 +57,14 @@ def generic_solve(interface) -> dict:
     else:
         interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
 
-    v_bounds = interface.ocp.v.bounds
-    v_init = interface.ocp.v.init
+    v_bounds = interface.ocp.bounds_vectors
+    v_init = interface.ocp.init_vector
     interface.sqp_limits = {
-        "lbx": v_bounds.min,
-        "ubx": v_bounds.max,
+        "lbx": v_bounds[0],
+        "ubx": v_bounds[1],
         "lbg": all_g_bounds.min,
         "ubg": all_g_bounds.max,
-        "x0": v_init.init,
+        "x0": v_init,
     }
 
     if interface.lam_g is not None:
@@ -111,7 +112,7 @@ def generic_dispatch_bounds(interface):
     """
 
     all_g = interface.ocp.cx()
-    all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+    all_g_bounds = Bounds("all_g", interpolation=InterpolationType.CONSTANT)
 
     all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g_internal))
     for g in interface.ocp.g_internal:
@@ -295,7 +296,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = horzcat(_u, u)
         return _x, _u
 
-    param = interface.ocp.cx(interface.ocp.v.parameters_in_list.cx_start)
+    param = interface.ocp.cx(interface.ocp.parameters.cx)
     out = interface.ocp.cx()
     for penalty in penalties:
         if not penalty:

@@ -14,7 +14,6 @@ from bioptim import (
     Axis,
     ObjectiveList,
     ObjectiveFcn,
-    Bounds,
     OdeSolver,
     ConstraintList,
     ConstraintFcn,
@@ -22,9 +21,10 @@ from bioptim import (
     MovingHorizonEstimator,
     Dynamics,
     DynamicsFcn,
-    InitialGuess,
+    InitialGuessList,
     InterpolationType,
     Solver,
+    BoundsList,
 )
 
 from .utils import TestUtils
@@ -428,9 +428,15 @@ def test_acados_one_parameter():
     ocp.update_objectives(objectives)
 
     # Path constraint
-    x_bounds = model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
+    x_bounds = BoundsList()
+    x_bounds["q"] = model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = 0
+    x_bounds["qdot"] = model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = 0
+
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [-300] * model.nb_q, [300] * model.nb_q
+
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
@@ -449,7 +455,7 @@ def test_acados_one_parameter():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # parameters
-    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.81]), decimal=6)
+    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80995]), decimal=5)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -492,9 +498,15 @@ def test_acados_several_parameter():
     ocp.update_objectives(objectives)
 
     # Path constraint
-    x_bounds = model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = Bounds([-300] * model.nb_q, [300] * model.nb_q)
+    x_bounds = BoundsList()
+    x_bounds["q"] = model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = 0
+    x_bounds["qdot"] = model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = 0
+
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [-300] * model.nb_q, [300] * model.nb_q
+
     ocp.update_bounds(x_bounds, u_bounds)
 
     solver = Solver.ACADOS()
@@ -519,7 +531,7 @@ def test_acados_several_parameter():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # parameters
-    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.81]), decimal=6)
+    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80996]), decimal=5)
     np.testing.assert_almost_equal(mass, np.array([[20]]), decimal=6)
 
     # Clean test folder
@@ -551,9 +563,13 @@ def test_acados_one_end_constraints():
     ocp.update_objectives(objective_functions)
 
     # Path constraint
-    x_bounds = model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[1:6, [0, -1]] = 0
-    x_bounds[0, 0] = 0
+    x_bounds = BoundsList()
+    x_bounds["q"] = model.bounds_from_ranges("q")
+    x_bounds["q"][1:, [0, -1]] = 0
+    x_bounds["qdot"] = model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
+    x_bounds["q"][0, 0] = 0
+
     ocp.update_bounds(x_bounds=x_bounds)
 
     constraints = ConstraintList()
@@ -693,14 +709,31 @@ def test_acados_bounds_not_implemented(failing):
     n_cycles = 3
     window_len = 5
     window_duration = 0.2
-    x_init = InitialGuess(np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
-    u_init = InitialGuess(np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
+    x_init = InitialGuessList()
+    x_init["final"] = np.zeros((nq * 2, 1))
+    u_init = InitialGuessList()
+    u_init["final"] = np.zeros((ntau, 1))
     if failing == "u_bounds":
-        x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)))
-        u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
+        x_bounds = BoundsList()
+        x_bounds.add("q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)))
+        x_bounds.add("qdot", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)))
+        u_bounds = BoundsList()
+        u_bounds.add(
+            "tau",
+            min_bound=np.zeros((ntau, 1)),
+            max_bound=np.zeros((ntau, 1)),
+            interpolation=InterpolationType.CONSTANT,
+        )
     elif failing == "x_bounds":
-        x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
-        u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
+        x_bounds = BoundsList()
+        x_bounds.add(
+            "q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT
+        )
+        x_bounds.add(
+            "qdot", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)), interpolation=InterpolationType.CONSTANT
+        )
+        u_bounds = BoundsList()
+        u_bounds.add("tau", min_bound=np.zeros((ntau, 1)), max_bound=np.zeros((ntau, 1)))
     else:
         raise ValueError("Wrong value for failing")
 

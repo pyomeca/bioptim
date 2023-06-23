@@ -4,15 +4,21 @@ import re
 
 import numpy as np
 from casadi import MX, SX, vertcat
-from bioptim.dynamics.configure_problem import ConfigureProblem
-from bioptim.dynamics.dynamics_functions import DynamicsFunctions
-from bioptim.interfaces.biorbd_model import BiorbdModel
-from bioptim.misc.enums import ControlType, RigidBodyDynamics
-from bioptim.optimization.non_linear_program import NonLinearProgram
-from bioptim.optimization.optimization_vector import OptimizationVector
-from bioptim.dynamics.configure_problem import DynamicsFcn, Dynamics
-from bioptim.dynamics.dynamics_evaluation import DynamicsEvaluation
-from bioptim.limits.constraints import ConstraintList
+from bioptim import (
+    VariableScalingList,
+    ConfigureProblem,
+    DynamicsFunctions,
+    BiorbdModel,
+    ControlType,
+    RigidBodyDynamics,
+    NonLinearProgram,
+    DynamicsFcn,
+    Dynamics,
+    DynamicsEvaluation,
+    ConstraintList,
+    ParameterList,
+)
+
 from .utils import TestUtils
 
 
@@ -22,7 +28,7 @@ class OptimalControlProgram:
         self.assume_phase_dynamics = True
         self.n_phases = 1
         self.nlp = [nlp]
-        self.v = OptimizationVector(self)
+        self.parameters = ParameterList()
         self.implicit_constraints = ConstraintList()
 
 
@@ -46,9 +52,9 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -190,9 +196,9 @@ def test_torque_driven_implicit(with_contact, cx, assume_phase_dynamics):
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -257,9 +263,9 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -320,9 +326,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, assume_
     nlp.initialize(cx)
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -457,9 +463,9 @@ def test_torque_derivative_driven_implicit(with_contact, cx, assume_phase_dynami
     nlp.phase_idx = 0
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 4, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 2))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -556,9 +562,9 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -646,7 +652,7 @@ def test_soft_contacts_dynamics_errors(dynamics, assume_phase_dynamics):
     nlp.cx = MX
 
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
-    nlp.u_scaling = {}
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -688,7 +694,7 @@ def test_implicit_dynamics_errors(dynamics, assume_phase_dynamics):
     nlp.cx = MX
 
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
-    nlp.u_scaling = {}
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -731,9 +737,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, assume_
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -836,9 +842,9 @@ def test_torque_activation_driven_with_residual_torque(
     nlp.initialize(cx)
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -955,9 +961,9 @@ def test_muscle_driven(
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
     nlp.phase_idx = 0
 
     ocp = OptimalControlProgram(nlp)
@@ -1465,9 +1471,9 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, assume_phase_dynami
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -1537,9 +1543,9 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
     nlp.initialize(nlp.cx)
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
@@ -1592,7 +1598,7 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
 )
 def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
-    from bioptim import ObjectiveList, Bounds, InitialGuess, OdeSolver, OptimalControlProgram
+    from bioptim import BoundsList, ObjectiveList, OdeSolver, OptimalControlProgram
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -1605,19 +1611,15 @@ def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
     dynamics = Dynamics(dynamics_fcn, with_contact=True)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-
-    # Initial guess
-    n_q = bio_model.nb_q
-    n_qdot = bio_model.nb_qdot
-    x_init = InitialGuess([0] * (n_q + n_qdot))
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
-    u_bounds = Bounds([100] * n_tau, [100] * n_tau)
-    u_bounds[1, :] = 0  # Prevent the model from actively rotate
-
-    u_init = InitialGuess([0] * n_tau)
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [100] * n_tau, [100] * n_tau
+    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
     with pytest.raises(ValueError, match="No contact defined in the .bioMod, set with_contact to False"):
         OptimalControlProgram(
@@ -1625,8 +1627,6 @@ def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
             dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
-            x_init=x_init,
-            u_init=u_init,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,

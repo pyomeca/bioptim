@@ -16,7 +16,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
-    InitialGuessList,
     Solver,
     Node,
     CostType,
@@ -30,16 +29,17 @@ def prepare_ocp(
     coefficients,
     biorbd_model_path="models/double_pendulum.bioMod",
     assume_phase_dynamics: bool = True,
+    n_threads: int = 4,
 ):
     # Parameters of the problem
     biorbd_model = BiorbdModel(biorbd_model_path)
     phase_time = 1.5
     n_shooting = 30
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max = -100, 100
 
     # Mapping to remove the actuation
     tau_mappings = BiMappingList()
-    tau_mappings.add("tau", [None, 0], [1])
+    tau_mappings.add("tau", to_second=[None, 0], to_first=[1])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -67,23 +67,15 @@ def prepare_ocp(
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=biorbd_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0][0, 0] = -np.pi
-    x_bounds[0][1, 0] = 0
-    x_bounds[0][3, 0] = 5 * np.pi
-    x_bounds[0][0, 2] = np.pi
-    x_bounds[0][1, 2] = 0
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add([0] * n_q + [0] * n_qdot)
+    x_bounds["q"] = biorbd_model.bounds_from_ranges("q")
+    x_bounds["q"][0, [0, 2]] = -np.pi, np.pi
+    x_bounds["q"][1, [0, 2]] = 0
+    x_bounds["qdot"] = biorbd_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][1, 0] = 5 * np.pi
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min], [tau_max])
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init])
+    u_bounds["tau"] = [tau_min], [tau_max]
 
     # ------------- #
 
@@ -92,13 +84,11 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         phase_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
         objective_functions=objective_functions,
         variable_mappings=tau_mappings,
-        n_threads=4,
+        n_threads=n_threads,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 
@@ -156,7 +146,7 @@ def main():
     ocp_to_track = prepare_ocp(weights=weights_to_track, coefficients=[1, 1, 1])
     ocp_to_track.add_plot_penalty(CostType.ALL)
     solver = Solver.IPOPT()
-    solver.set_linear_solver("ma57")
+    # solver.set_linear_solver("ma57")  # Much faster, but necessite libhsl installed
     sol_to_track = ocp_to_track.solve(solver)
     q_to_track, qdot_to_track, tau_to_track = (
         sol_to_track.states["q"],
@@ -185,6 +175,7 @@ def main():
 
     epsilon = 1e-8
     diff = 10000
+    pop_weights = None
     while i_inverse < 100000 and diff > epsilon:
         olf_pop_f = np.min(pop.get_f())
         pop = algo.evolve(pop)

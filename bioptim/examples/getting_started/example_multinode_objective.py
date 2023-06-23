@@ -1,21 +1,35 @@
 """
-A very simple example to show how to use the SQP method.
-The example is taken from getting_started/pendulum.py.
-Note that this example is there for reference and unfortunately doest not converge.
+This example shows how to use multinode_objectives.
+It replicates the results from getting_started/pendulum.py
 """
+import platform
+from casadi import MX, sum1, sum2
 
 from bioptim import (
-    BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
     BoundsList,
-    ObjectiveFcn,
-    Objective,
+    InitialGuessList,
     OdeSolver,
     OdeSolverBase,
     Solver,
+    BiorbdModel,
+    PenaltyController,
+    MultinodeObjectiveList,
 )
+
+
+def multinode_min_controls(controllers: list[PenaltyController]) -> MX:
+    """
+    This function mimics the ObjectiveFcn.MINIMIZE_CONTROLS with a multinode objective.
+    Note that it is better to use ObjectiveFcn.MINIMIZE_CONTROLS, here is juste a toy example.
+    """
+    dt = controllers[0].tf / controllers[0].ns
+    out = 0
+    for i, ctrl in enumerate(controllers):
+        out += sum1(ctrl.controls["tau"].cx_start ** 2) * dt
+    return out
 
 
 def prepare_ocp(
@@ -25,7 +39,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
-    assume_phase_dynamics: bool = True,
+    assume_phase_dynamics: bool = False,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -42,13 +56,6 @@ def prepare_ocp(
         Which type of OdeSolver to use
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM)
-    n_threads: int
-        The number of threads to use in the paralleling (1 = no parallel computing)
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
-
 
     Returns
     -------
@@ -58,7 +65,15 @@ def prepare_ocp(
     bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    multinode_objectives = MultinodeObjectiveList()
+    multinode_objectives.add(
+        multinode_min_controls,
+        nodes_phase=[0 for _ in range(n_shooting)],
+        nodes=[i for i in range(n_shooting)],
+        weight=10,
+        quadratic=False,
+        expand=False,
+    )
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -76,7 +91,7 @@ def prepare_ocp(
     tau_min, tau_max = -100, 100
     u_bounds = BoundsList()
     u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
-    u_bounds["tau"][1, :] = 0
+    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
     return OptimalControlProgram(
         bio_model,
@@ -85,11 +100,11 @@ def prepare_ocp(
         final_time,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        objective_functions=objective_functions,
+        multinode_objectives=multinode_objectives,
         ode_solver=ode_solver,
         use_sx=use_sx,
-        n_threads=n_threads,
-        assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=n_threads,  # This has to be set to 1 by definition.
+        assume_phase_dynamics=assume_phase_dynamics,  # This has to be set to False by definition.
     )
 
 
@@ -99,17 +114,14 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    n_shooting = 30
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=n_shooting)
 
     # --- Solve the ocp --- #
-    solver = Solver.SQP_METHOD(show_online_optim=False)
-    solver.set_tol_du(1e-1)
-    solver.set_tol_pr(1e-1)
-    sol = ocp.solve(solver)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))  # show_online_optim=platform.system() == "Linux"
 
     # --- Show the results in a bioviz animation --- #
     sol.animate(n_frames=100)
-    sol.graphs()
 
 
 if __name__ == "__main__":

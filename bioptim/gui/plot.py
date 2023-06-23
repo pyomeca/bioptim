@@ -97,7 +97,7 @@ class CustomPlot:
         if axes_idx is None:
             self.phase_mappings = None  # Will be set later
         elif isinstance(axes_idx, (tuple, list)):
-            self.phase_mappings = BiMapping(axes_idx)
+            self.phase_mappings = BiMapping(to_second=Mapping(axes_idx), to_first=Mapping(axes_idx))
         elif isinstance(axes_idx, BiMapping):
             self.phase_mappings = axes_idx
         else:
@@ -378,7 +378,12 @@ class PlotOcp:
                 else:
                     nb = max(
                         [
-                            len(nlp.plot[variable].phase_mappings.to_second.map_idx) if variable in nlp.plot else 0
+                            max(
+                                len(nlp.plot[variable].phase_mappings.to_second.map_idx),
+                                max(nlp.plot[variable].phase_mappings.to_second.map_idx) + 1,
+                            )
+                            if variable in nlp.plot
+                            else 0
                             for nlp in self.ocp.nlp
                         ]
                     )
@@ -661,14 +666,10 @@ class PlotOcp:
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
-                if data_params["time"].shape[0] != len(data_states):
-                    data_params["time"] = self.ocp.parameter_mappings["time"].to_second.map(data_params["time"][0])
-                    for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                        self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
+                data_params["time"] = self.ocp.time_phase_mapping.to_second.map(data_params["time"])
+                for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
+                    self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
 
-                else:
-                    for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                        self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
@@ -765,38 +766,52 @@ class PlotOcp:
                         if self.plot_func[key][i].parameters["penalty"].multinode_penalty:
                             y = np.array([np.nan])
                             penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
-                            x_phase_tp = np.ndarray((data_states[0]["all"].shape[0], 0))
-                            u_phase_tp = np.ndarray((data_controls[0]["all"].shape[0], 0))
-                            for tp in range(len(penalty.nodes_phase)):
-                                phase_tp = penalty.nodes_phase[tp]
-                                node_idx_tp = penalty.all_nodes_index[tp]
-                                x_phase_tp = np.hstack(
-                                    (
-                                        x_phase_tp,
-                                        data_states[phase_tp]["all"][:, node_idx_tp * step_size][:, np.newaxis],
+
+                            x_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            for state_key in data_states[i].keys():
+                                x_phase_tp = np.ndarray((data_states[i][state_key].shape[0], 0))
+                                for tp in range(len(penalty.nodes_phase)):
+                                    phase_tp = penalty.nodes_phase[tp]
+                                    node_idx_tp = penalty.all_nodes_index[tp]
+                                    x_phase_tp = np.hstack(
+                                        (
+                                            x_phase_tp,
+                                            data_states[phase_tp][state_key][:, node_idx_tp * step_size][:, np.newaxis],
+                                        )
                                     )
-                                )
-                                u_phase_tp = np.hstack(
-                                    (
-                                        u_phase_tp,
-                                        data_controls[phase_tp]["all"][
-                                            :, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0)
-                                        ][:, np.newaxis],
+                                x_phase = np.vstack((x_phase, x_phase_tp))
+
+                            u_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            for control_key in data_controls[i].keys():
+                                u_phase_tp = np.ndarray((data_controls[i][control_key].shape[0], 0))
+                                for tp in range(len(penalty.nodes_phase)):
+                                    phase_tp = penalty.nodes_phase[tp]
+                                    node_idx_tp = penalty.all_nodes_index[tp]
+                                    u_phase_tp = np.hstack(
+                                        (
+                                            u_phase_tp,
+                                            data_controls[phase_tp][control_key][
+                                                :, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0)
+                                            ][:, np.newaxis],
+                                        )
                                     )
-                                )
+                                u_phase = np.vstack((u_phase, u_phase_tp))
+
                             val_tempo = self.plot_func[key][i].function(
                                 self.plot_func[key][i].node_idx[0],
-                                x_phase_tp,
-                                u_phase_tp,
+                                x_phase,
+                                u_phase,
                                 data_params_in_dyn,
                                 **self.plot_func[key][i].parameters,
                             )
-                            y[0] = val_tempo[abs(self.plot_func[key][i].phase_mapping.to_second.map_idx[i_var])]
+                            y[0] = val_tempo[abs(self.plot_func[key][i].phase_mappings.to_second.map_idx[i_var])]
                         else:
                             y = np.empty((len(self.plot_func[key][i].node_idx),))
                             y.fill(np.nan)
                             for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                                 if self.plot_func[key][i].parameters["penalty"].transition:
+                                    # TODO "all" is broken and should be replaced by a fol loop on key
+                                    raise NotImplementedError("See todo!")
                                     val = self.plot_func[key][i].function(
                                         node_idx,
                                         np.hstack(

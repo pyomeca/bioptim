@@ -12,8 +12,9 @@ from bioptim import (
     Dynamics,
     ConstraintList,
     Solver,
+    VariableScalingList,
+    ParameterList,
 )
-from bioptim.optimization.optimization_vector import OptimizationVector
 from .utils import TestUtils
 import os
 
@@ -24,7 +25,7 @@ class OptimalControlProgram:
         self.assume_phase_dynamics = True
         self.n_phases = 1
         self.nlp = [nlp]
-        self.v = OptimizationVector(self)
+        self.parameters = ParameterList()
         self.implicit_constraints = ConstraintList()
 
 
@@ -40,9 +41,9 @@ def test_torque_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     nlp.ns = 5
     nlp.cx = cx
     nlp.initialize(cx)
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -97,9 +98,9 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, assume_phase_
     nlp.ns = 5
     nlp.cx = cx
     nlp.initialize(cx)
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -156,9 +157,9 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, assume_phase_
     nlp.ns = 5
     nlp.cx = cx
     nlp.initialize(cx)
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp)
@@ -213,9 +214,9 @@ def test_muscle_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     nlp.ns = 5
     nlp.cx = cx
     nlp.initialize(cx)
-    nlp.x_scaling = {}
-    nlp.xdot_scaling = {}
-    nlp.u_scaling = {}
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
 
@@ -282,6 +283,7 @@ def test_ocp_mass_ligament(rigidbody_dynamics, assume_phase_dynamics):
         biorbd_model_path,
         rigidbody_dynamics=rigidbody_dynamics,
         assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=8 if assume_phase_dynamics else 1,
     )
     solver = Solver.IPOPT()
 

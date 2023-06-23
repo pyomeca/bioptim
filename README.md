@@ -244,15 +244,13 @@ Please note that this tutorial is designed to recreate the `examples/getting_sta
 ## The import
 We won't spend time explaining the import, since every one of them will be explained in details later, and that it is pretty straightforward anyway.
 ```python
-import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    Bounds,
-    
-    InitialGuess,
+    BoundsList,
+    InitialGuessList,
     ObjectiveFcn,
     Objective,
 )
@@ -284,27 +282,33 @@ Finally, the index 2 and 3 are respectively the velocity of translation y and ro
 bounds_from_ranges uses the ranges from a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
 How convenient!
 ```python
-x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
+x_bounds = BoundsList()
+x_bounds["q"] = bio_model.bounds_from_ranges("q")
+x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 ```
 The first dimension of x_bounds is the degrees of freedom (*q*) `and` their velocities (*qdot*) that match those `in` the bioMod `file`. The time `is` discretized `in` nodes wich `is` the second dimension declared `in` x_bounds.
 If you have more than one phase, we would have x_bound[*phase*][*q `and` qdot*, *nodes*]
 In the first place, we want the first `and` last column(which `is` equivalent to nodes 0 `and` -1) to be 0, that is the translations `and` rotations to be null `for` both the position `and` so the velocities.
 ```python
-x_bounds[:, [0, -1]] = 0
+x_bounds["q"][:, [0, -1]] = 0
+x_bounds["qdot"][:, [0, -1]] = 0
 ```
 Finally, override once again the final node for the rotation, so it is upside down.
 ```python
-x_bounds[1, -1] = 3.14
+x_bounds["q"][1, -1] = 3.14
 ```
-At that point, you may want to have a look at the `x_bounds.min` and `x_bounds.max` matrices to convince yourself that the initial and final position and velocities are prescribed and that all the intermediate points are free up to a certain minimal and maximal values. 
+At that point, you may want to have a look at the `x_bounds["q"].min` and `x_bounds["q"].max` matrices to convince yourself that the initial and final position are prescribed and that all the intermediate points are free up to a certain minimal and maximal values. 
 
 Up to that point, there is nothing preventing the solver to simply use the virtual motor of the rotation to rotate the pendulum upward (like clock hands) to get to the upside down rotation. 
 What makes this example interesting is that we can prevent this by defining minimal and maximal bounds on the control (the maximal forces that these motors have)
 ```
-u_bounds = Bounds([-100, 0], [100, 0])
+u_bounds = BoundsList()
+u_bounds["tau"] = [-100, 0], [100, 0]
 ```
 Like this, the sideways force ranges from -100 Newton to 100 Newton, but the rotation force ranges from 0 N/m to 0 N/m.
-Again, `u_bound` is defined for the first, the intermediate and the final nodes, but this time, we don't want to specify anything particular for the first and final nodes, so we can leave them as is. 
+Again, `u_bounds` is defined for the first, the intermediate and the final nodes, but this time, we don't want to specify anything particular for the first and final nodes, so we can leave them as is. 
+
+If you wondering where are defined *q*, *qdot* and *tau*, it is in the configuration of `DynamicsFcn.TORQUE_DRIVEN`. If you define a custom dynamics, then the name of the variable should match those you define yourself.
 
 Who says optimization, says cost function.
 Even though, it is possible to define an OCP without objective, it is not so much recommended, and let's face it... much less fun!
@@ -319,12 +323,14 @@ Still, helping the solver is usually a good idea, so let's give ̀`Ipopt` a star
 The initial guess that we can provide are those for the states (`x_init`, here *q* and *qdot*) and for the controls (`u_init`, here *tau*). 
 So let's define both of them quickly
 ```python
-x_init = InitialGuess([0, 0, 0, 0])
-u_init = InitialGuess([0, 0])
+x_init = InitialGuessList()
+x_init["q"] = [0, 0]
+x_init["qdot"] = [0, 0]
 
+u_init = InitialGuessList()
+u_init["tau"] = [0, 0]
 ```
-Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*).
-In this case, we have both the positions `and` their velocities to be 0.
+Please note that initial guess are optional. The default value if a value is not provided is zero.
 
 On the same train of thoughts, if we want to help the solver even more, we can also define a variable scaling for the states (`x_scaling`, here *q* and *qdot*) and for the controls (`u_scaling`, here *tau*). *Note that the scaling should be declared in order that the variables appear. 
 We encourage you to choose a variable scaling the same order of magnitude to the expected optimal values.
@@ -347,10 +353,10 @@ ocp = OptimalControlProgram(
         dynamics,
         n_shooting=25,
         phase_time=3,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
         objective_functions=objective_functions,
         assume_phase_dynamics=True,
     )
@@ -415,9 +421,10 @@ sol.graphs()
 
 If you are interested in the results of individual objective functions and constraints, you can print them using the 
 `print_cost()` or access them using the `detailed_cost_values()`:
+
 ```python
+# sol.detailed_cost  # Invoke this for adding the objectives details to sol for later manipulations
 sol.print_cost()  # For printing their values in the console
-sol.detailed_cost_values()  # For adding the objectives details to sol for later manipulations
 ```
 
 And that is all! 
@@ -444,32 +451,44 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    Bounds,
-    
-    InitialGuess,
+    BoundsList,    
+    InitialGuessList,
     ObjectiveFcn,
     Objective,
 )
 
 bio_model = BiorbdModel("pendulum.bioMod")
 dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
-x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-x_bounds[:, [0, -1]] = 0
-x_bounds[1, -1] = 3.14
-u_bounds = Bounds([-100, 0], [100, 0])
+
+# Bounds are optional (default -inf -> inf)
+x_bounds = BoundsList()
+x_bounds["q"] = bio_model.bounds_from_ranges("q")
+x_bounds["q"][:, [0, -1]] = 0
+x_bounds["q"][1, -1] = 3.14
+x_bounds["dot"] = bio_model.bounds_from_ranges("qdot")
+x_bounds["qdot"][:, [0, -1]] = 0
+
+u_bounds = BoundsList()
+u_bounds["tau"] = [-100, 0], [100, 0]
+
 objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
-x_init = InitialGuess([0, 0, 0, 0])
-u_init = InitialGuess([0, 0])
+
+# Initial guess is optional (default = 0)
+x_init = InitialGuessList()
+x_init["q"] = [0, 0]
+x_init["qdot"] = [0, 0]
+u_init = InitialGuessList()
+u_init = [0, 0]
 
 ocp = OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting=25,
         phase_time=3,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
         objective_functions=objective_functions,
         assume_phase_dynamics=True,
     )
@@ -564,11 +583,11 @@ OptimalControlProgram(
     bio_model: [list, BioModel],
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
-    phase_time: [float, list],
-    x_init: [InitialGuess, InitialGuess]
-    u_init: [InitialGuess, InitialGuessList], 
-    x_bounds: [Bounds, BoundsList],
-    u_bounds: [Bounds, BoundsList],
+    phase_time: [float, list], 
+    x_bounds: BoundsList,
+    u_bounds: BoundsList,
+    x_init: InitialGuessList
+    u_init: InitialGuessList,
     objective_functions: [Objective, ObjectiveList],
     constraints: [Constraint, ConstraintList],
     parameters: ParameterList,
@@ -592,10 +611,10 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `dynamics` is the dynamics of the system during each phase (see The dynamics section).
 `n_shooting` is the number of shooting point of the direct multiple shooting (method) for each phase.
 `phase_time` is the final time of each phase. If the time is free, this is the initial guess.
-`x_init` is the initial guess for the states variables (see The initial conditions section)
-`u_init` is the initial guess for the controls variables (see The initial conditions section)
 `x_bounds` is the minimal and maximal value the states can have (see The bounds section)
 `u_bounds` is the minimal and maximal value the controls can have (see The bounds section)
+`x_init` is the initial guess for the states variables (see The initial conditions section)
+`u_init` is the initial guess for the controls variables (see The initial conditions section)
 `x_scaling` is the scaling applied to the states variables (see The variable scaling section)
 `xdot_scaling` is the scaling applied to the states derivative variables (see The variable scaling section)
 `u_scaling` is the scaling applied to the controls variables (see The variable scaling section)
@@ -624,10 +643,10 @@ ocp = OptimalControlProgram(
     dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
-    x_init: [InitialGuess, InitialGuess]
-    u_init: [InitialGuess, InitialGuessList], 
-    x_bounds: [Bounds, BoundsList],
-    u_bounds: [Bounds, BoundsList],
+    x_init: InitialGuessList
+    u_init: InitialGuessList, 
+    x_bounds: BoundsList,
+    u_bounds: BoundsList,
     objective_functions: [Objective, ObjectiveList],
     constraints: [Constraint, ConstraintList],
     n_threads: int,
@@ -901,20 +920,23 @@ The bounds provide a class that has minimal and maximal values for a variable.
 It is, for instance, useful for the inequality constraints that limit the maximal and minimal values of the states (x) and the controls (u) .
 In that sense, it is what is expected by the `OptimalControlProgram` for its `u_bounds` and `x_bounds` parameters. 
 It can however be used for much more.
+If not provided for one variable, then it is -infinity to +infinity for that particular variable.
 
-### Class: Bounds
-The Bounds class is the main class to define bounds.
-The constructor can be called by sending two boundary matrices (min, max) as such: `bounds = Bounds(min_bounds, max_bounds)`. 
-Or by providing a previously declared bounds: `bounds = Bounds(bounds=another_bounds)`.
+### Class: BoundsList
+The BoundsList class is the main class to define bounds.
+The constructor can be called by sending two boundary matrices (min, max) as such: `bounds["name"] = min_bounds, max_bounds`. 
+Or by providing a previously declared bounds: `bounds.add("name", another_bounds)`.
+The add nomenclature can also be used with the min and max, but must be specified as such: `bounds.add("name", min_bound=min_bounds, max_bound=max_bounds)`.
 The `min_bounds` and `max_bounds` matrices must have dimensions that fit the chosen `InterpolationType`, the default type being `InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, which is 3 columns.
 
-The full signature of Bounds is as follows:
+Please note that to change any option, you must use the `.add` nomenclature
+
+The full signature of BoundsList.add is as follows:
 ```python
-Bounds(min_bounds, max_bound, interpolation: InterpolationType, phase: int)
+BoundsList.add("name", bounds, min_bounds, max_bound, interpolation_type, phase)
 ```
 The first parameters are presented before.
-The `phase` is the index of the phase the bounds apply to.
-This is usually taken care by the `add()` method of `BoundsList`, but it can be useful when declaring the bounds out of order.
+The `phase` is the index of the phase the bounds apply to. If you add twice the same element on the same phase, the first is then overrided.
 
 If the interpolation type is CUSTOM, then the bounds are function handlers of signature: 
 ```python
@@ -924,98 +946,52 @@ where current_shooting_point is the current point to return, n_elements is the n
 
 The main methods the user will be interested in is the `min` property that returns the minimal bounds and the `max` property that returns the maximal bounds. 
 Unless it is a custom function, `min` and `max` are numpy.ndarray and can be directly modified to change the boundaries. 
-It is also possible to change `min` and `max` simultaneously by directly slicing the bounds as if it was a numpy.array, effectively defining an equality constraint: for instance `bounds[:, 0] = 0`. 
-Finally, the `concatenate(another_bounds: Bounds)` method can be called to vertically concatenate multiple bounds.
-
-
-### Class: BoundsList
-A BoundsList is simply a list of Bounds. 
-The `add()` method can be called exactly as if one was calling the `Bounds` constructor. 
-If the `add()` method is used more than once, the `phase` parameter is automatically incremented. 
-
-So a minimal use is as follows:
-```python
-bounds_list = BoundsList()
-bounds_list.add(min_bounds, max_bounds)
-```
+It is also possible to change `min` and `max` simultaneously by directly slicing the bounds as if it was a numpy.array, effectively defining an equality constraint: for instance `bounds["name"][:, 0] = 0`.
+Please note that if more than one phase is present in the bounds, then you must specify on which phase it should apply like so: `bounds[phase_index]["name"]...`
 
 ## The initial conditions
 The initial conditions the solver should start from, i.e., initial values of the states (x) and the controls (u).
 In that sense, it is what is expected by the `OptimalControlProgram` for its `u_init` and `x_init` parameters. 
+If not specified for one variable, then it is set to zero for that particular variable. 
 
-### Class InitialGuess
+### Class InitialGuessList
 
-The InitialGuess class is the main class to define initial guesses.
-The constructor can be called by sending one initial guess matrix (init) as such: `bounds = InitialGuess(init)`. 
+The InitialGuessList class is the main class to define initial guesses.
+The `.add` can be called by sending one initial guess matrix (init) as such: `init["name"] = init`. 
 The `init` matrix must have the dimensions that fits the chosen `InterpolationType`, the default type being `InterpolationType.CONSTANT`, which is 1 column.
 
-The full signature of Bounds is as follows:
+The full signature of `InitialGuessList.add` is as follows:
 ```python
-Bounds(initial_guess, interpolation: InterpolationType, phase: int)
+InitialGuessList.add("name", initial_guess, interpolation_type, phase)
 ```
 The first parameters are presented before.
 The `phase` is the index of the phase the initial guess applies to.
-This is usually taken care by the `add()` method of `InitialGuessList`, but it can be useful when declaring the initial guess out of order.
 
 If the interpolation type is CUSTOM, then the InitialGuess is a function handler of signature: 
 ```python
-custom_bound(current_shooting_point: int, n_elements: int, n_shooting: int)
+custom_init(current_shooting_point: int, n_elements: int, n_shooting: int)
 ```
 where current_shooting_point is the current point to return, n_elements is the number of expected lines and n_shooting is the number of total shooting point (that is if current_shooting_point == n_shooting, this is the end of the phase)
 
 The main methods the user will be interested in is the `init` property that returns the initial guess. 
 Unless it is a custom function, `init` is a numpy.ndarray and can be directly modified to change the initial guess. 
-Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be called to vertically concatenate multiple initial guesses.
 
 If someone wants to add noise to the initial guess, you can provide the following:
 ```python
 init = init.add_noise(
-    bounds: Bounds | BoundsList, 
+    bounds: BoundsList, 
     magnitude: list | int | float | np.ndarray,
     magnitude_type: MagnitudeType, n_shooting: int, 
     bound_push: list | int | float, 
     seed: int
     )
 ```
-
-### Class NoisedInitialGuess
-The NoisedInitialGuess class is an alternative class to define initial guesses randomly noised (good for multi-start).
-The constructor can be called similarly to InitialGuess: `bounds = NoisedInitialGuess(init)`. 
-
-### Class InitialGuessList
-A InitialGuessList is a list of InitialGuess. 
-The `add()` method can be called exactly as if one was calling the `InitialGuess` constructor. 
-If the `add()` method is used more than one, the `phase` parameter is automatically incremented. 
-
-So a minimal use is as follows:
-```python
-init_list = InitialGuessList()
-init_list.add(init)
-```
-
-If someone wants to add noise to the initial guess list, you can provide the following:
-```python
-init_list.add_noise(
-  bounds: BoundList,
-  n_shooting: int | List[int] | Tuple[int],
-  magnitude: list | int | float | np.ndarray,
-  magnitude_type: magnitudeType,
-  bound_push: int | float | List[int] | List[float] | ndarray,
-  seed: int | List[int],
-)
-```
+The bounds must contain all the keys defined in the init list.
 The parameters, except `MagnitudeType` must be specified for each phase unless you want the same value for every phases.
+
 
 ## The variable scaling
 The scaling applied to the optimization variables, it is what is expected by the `OptimalControlProgram` for its `x_scaling`, `xdot_scaling` and `u_init` parameters. 
-
-### Class VariableScaling
-
-The VariableScaling class is the main class to define variables scaling.
-The constructor can be called by sending the variable name and the scaling to be applied such as
-```python
-scaling = VariableScaling('q', scaling=[1, 1])
-```
 
 ### Class VariableScalingList
 A VariableScalingList is a list of VariableScaling. 
@@ -1358,7 +1334,7 @@ Therefore, one should not call the Parameter constructor directly.
 
 Here is the full signature of the `add()` method of the `ParameterList`:
 ```python
-ParameterList.add(parameter_name: str, function: Callable, initial_guess: InitialGuess, bounds: Bounds, size: int, phase: int, penalty_list: Objective, **extra_parameters)
+ParameterList.add(parameter_name: str, function: Callable, initial_guess: InitialGuess, bounds: Bounds, size: int, phase: int, **extra_parameters)
 ```
 The `parameter_name` is the name of the parameter. 
 This is how it will be referred to in the output data as well.
@@ -1374,9 +1350,6 @@ If an objective function is provided, the return of the objective function shoul
 The `phase` that the parameter applies to.
 Even though a parameter is time independent, one biorbd_model is loaded per phase. 
 Since parameters are associate to a specific bio_model, one must define a parameter per phase.
-The `penalty_list` is the index in the list the penalty is. 
-If one adds multiple parameters, the list is automatically incremented. 
-It is useful however to define this value by hand if one wants to declare the parameters out of order or to override a previously declared parameter using `update_parameters`.
 
 ## The multinode constraints
 `Bioptim` can declare multiphase optimisation programs. The goal of a multiphase ocp is usually to handle changing dynamics. 

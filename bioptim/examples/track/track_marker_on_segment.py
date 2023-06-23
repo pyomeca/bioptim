@@ -88,31 +88,25 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-
-    for i in range(1, 8):
-        if i != 3:
-            x_bounds[0][i, [0, -1]] = 0
-    x_bounds[0][2, -1] = 1.57
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][1:3, [0, -1]] = 0
+    x_bounds["q"][2, -1] = 1.57
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (bio_model.nb_q + bio_model.nb_qdot))
+    x_init["q"] = [0] * bio_model.nb_q
+    x_init["qdot"] = [0] * bio_model.nb_qdot
     if initialize_near_solution:
-        for i in range(2):
-            x_init[0].init[i] = 1.5
-        for i in range(4, 6):
-            x_init[0].init[i] = 0.7
-        for i in range(6, 8):
-            x_init[0].init[i] = 0.6
+        x_init["q"].init[0:2, :] = 1.5
+        x_init["qdot"].init[0:2, :] = 0.7
+        x_init["qdot"].init[2:, :] = 0.6
 
     # Define control path constraint
-    tau_min, tau_max, tau_init = -100, 100, 0
+    tau_min, tau_max = -100, 100
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
-
-    u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model.nb_tau)
+    u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
 
     # ------------- #
 
@@ -121,12 +115,11 @@ def prepare_ocp(
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
-        constraints,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        objective_functions=objective_functions,
+        constraints=constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
         assume_phase_dynamics=assume_phase_dynamics,

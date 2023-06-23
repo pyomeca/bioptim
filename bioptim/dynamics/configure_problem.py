@@ -21,7 +21,6 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
-from ..optimization.optimization_variable import VariableScaling
 
 
 class ConfigureProblem:
@@ -202,9 +201,9 @@ class ConfigureProblem:
                     )
 
         # Declared rigidbody states and controls
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-        ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
@@ -603,7 +602,7 @@ class ConfigureProblem:
             If the dynamics should be expanded with casadi
         """
 
-        nlp.parameters = ocp.v.parameters_in_list
+        nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         dynamics_eval = dyn_func(
@@ -808,7 +807,7 @@ class ConfigureProblem:
             lambda t, x, u, p: x[:n_elements, :] * np.nan,
             plot_type=PlotType.INTEGRATED,
             legend=legend,
-            bounds=Bounds(-1, 1),
+            bounds=Bounds(None, -1, 1),
         )
         control_plot_name = f"{name}_controls" if not multi_interface and split_controls else f"{name}"
         nlp.plot[control_plot_name] = CustomPlot(
@@ -953,7 +952,7 @@ class ConfigureProblem:
             name, name_elements, ocp, nlp, as_states, as_controls, fatigue
         ):
             # If the element is fatigable, this function calls back configure_new_variable to fill everything.
-            # Therefore, we can exist now
+            # Therefore, we can exit now
             return
 
         if name not in nlp.variable_mappings:
@@ -984,18 +983,19 @@ class ConfigureProblem:
             and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0]
         )
 
+        # Declare the x_init for that variable
+        if as_states and name not in nlp.x_init:
+            nlp.x_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
+        if as_controls and name not in nlp.u_init:
+            nlp.u_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
+
+        # Declare the scaling for that variable
         if as_states and name not in nlp.x_scaling:
-            nlp.x_scaling[name] = VariableScaling(
-                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
-            )
+            nlp.x_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_states_dot and name not in nlp.xdot_scaling:
-            nlp.xdot_scaling[name] = VariableScaling(
-                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
-            )
+            nlp.xdot_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls and name not in nlp.u_scaling:
-            nlp.u_scaling[name] = VariableScaling(
-                key=name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx))
-            )
+            nlp.u_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
         mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[0][name].mx]

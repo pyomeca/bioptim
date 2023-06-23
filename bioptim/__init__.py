@@ -174,18 +174,12 @@ from .dynamics.ode_solver import OdeSolver, OdeSolverBase
 from .interfaces.solver_options import Solver
 from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from .interfaces.biomodel import BioModel
-from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
+from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
-from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
-from .limits.path_conditions import (
-    BoundsList,
-    Bounds,
-    InitialGuessList,
-    InitialGuess,
-    NoisedInitialGuess,
-)
+from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList
+from .limits.path_conditions import BoundsList, InitialGuessList
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_controller import PenaltyController
 from .misc.enums import (
@@ -217,6 +211,7 @@ from .optimization.receding_horizon_optimization import (
 )
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
-from .optimization.optimization_variable import OptimizationVariableList, VariableScalingList, VariableScaling
+from .optimization.optimization_variable import OptimizationVariableList
+from .optimization.variable_scaling import VariableScalingList, VariableScaling
 
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero

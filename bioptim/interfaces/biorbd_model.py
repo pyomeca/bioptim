@@ -16,6 +16,17 @@ from ..misc.mapping import BiMapping, BiMappingList
 check_version(biorbd, "1.9.9", "1.10.0")
 
 
+def _dof_mapping(key, model, mapping: BiMapping = None) -> dict:
+    if key == "q":
+        return _q_mapping(model, mapping)
+    elif key == "qdot":
+        return _qdot_mapping(model, mapping)
+    elif key == "qddot":
+        return _qddot_mapping(model, mapping)
+    else:
+        raise NotImplementedError("Wrong dof mapping")
+
+
 def _q_mapping(model, mapping: BiMapping = None) -> dict:
     """
     This function returns a standard mapping for the q states if None
@@ -63,7 +74,7 @@ def _qddot_mapping(model, mapping: BiMapping = None) -> dict:
     return mapping
 
 
-def bounds_from_ranges(model, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
+def bounds_from_ranges(model, key: str, mapping: BiMapping | BiMappingList = None) -> Bounds:
     """
     Generate bounds from the ranges of the model
 
@@ -71,7 +82,7 @@ def bounds_from_ranges(model, variables: str | list[str, ...], mapping: BiMappin
     ----------
     model: bio_model
         such as BiorbdModel or MultiBiorbdModel
-    variables: str | list[str, ...]
+    key: str | list[str, ...]
         The variables to generate the bounds from, such as "q", "qdot", "qddot", or ["q", "qdot"],
     mapping: BiMapping | BiMappingList
         The mapping to use to generate the bounds. If None, the default mapping is built
@@ -81,36 +92,13 @@ def bounds_from_ranges(model, variables: str | list[str, ...], mapping: BiMappin
     Bounds
         The bounds generated from the ranges of the model
     """
-    out = Bounds()
 
-    q_ranges = model.ranges_from_model("q") if "q" in variables else None
-    qdot_ranges = model.ranges_from_model("qdot") if "qdot" in variables else None
-    qddot_ranges = model.ranges_from_model("qddot") if "qddot" in variables else None
+    mapping_tp = _dof_mapping(key, model, mapping)[key]
+    ranges = model.ranges_from_model(key)
 
-    for var in variables:
-        if var == "q":
-            q_mapping = _q_mapping(model, mapping)
-            mapping = q_mapping
-            x_min = [q_ranges[i].min() for i in q_mapping["q"].to_first.map_idx]
-            x_max = [q_ranges[i].max() for i in q_mapping["q"].to_first.map_idx]
-            out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
-        elif var == "qdot":
-            qdot_mapping = _qdot_mapping(model, mapping)
-            mapping = qdot_mapping
-            x_min = [qdot_ranges[i].min() for i in qdot_mapping["qdot"].to_first.map_idx]
-            x_max = [qdot_ranges[i].max() for i in qdot_mapping["qdot"].to_first.map_idx]
-            out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
-        elif var == "qddot":
-            qddot_mapping = _qddot_mapping(model, mapping)
-            mapping = qddot_mapping
-            x_min = [qddot_ranges[i].min() for i in qddot_mapping["qddot"].to_first.map_idx]
-            x_max = [qddot_ranges[i].max() for i in qddot_mapping["qddot"].to_first.map_idx]
-            out.concatenate(Bounds(min_bound=x_min, max_bound=x_max))
-
-    if out.shape[0] == 0:
-        raise ValueError(f"Unrecognized variable ({variables}), only 'q', 'qdot' and 'qddot' are allowed")
-
-    return out
+    x_min = [ranges[i].min() for i in mapping_tp.to_first.map_idx]
+    x_max = [ranges[i].max() for i in mapping_tp.to_first.map_idx]
+    return Bounds(key, min_bound=x_min, max_bound=x_max)
 
 
 class BiorbdModel:

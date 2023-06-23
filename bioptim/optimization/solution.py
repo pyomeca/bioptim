@@ -21,6 +21,7 @@ from ..misc.enums import (
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
+from ..optimization.optimization_vector import OptimizationVectorHelper
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
 
@@ -206,6 +207,7 @@ class Solution:
                 A reference to the NonLinearProgram to strip
             """
 
+            self.tf = nlp.tf
             self.phase_idx = nlp.phase_idx
             self.use_states_from_phase_idx = nlp.use_states_from_phase_idx
             self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
@@ -245,7 +247,6 @@ class Solution:
             The list of transition constraint between phases
         prepare_plots: Callable
             The function to call to prepare the PlotOCP
-        v: OptimizationVector
         The variable optimization holder
         """
 
@@ -258,7 +259,8 @@ class Solution:
             """
 
             self.nlp = [Solution.SimplifiedNLP(nlp) for nlp in ocp.nlp]
-            self.v = ocp.v
+            self.parameters = ocp.parameters
+            self.n_phases = len(self.nlp)
             self.J = ocp.J
             self.J_internal = ocp.J_internal
             self.g = ocp.g
@@ -266,7 +268,9 @@ class Solution:
             self.g_implicit = ocp.g_implicit
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
+            self.time_phase_mapping = ocp.time_phase_mapping
             self.assume_phase_dynamics = ocp.assume_phase_dynamics
+            self.n_threads = ocp.n_threads
 
     def __init__(self, ocp, sol: dict | list | tuple | np.ndarray | DM | None):
         """
@@ -290,7 +294,7 @@ class Solution:
         self.vector = None
         self._cost = None
         self.constraints = None
-        self.detailed_cost = []
+        self._detailed_cost = None
 
         self.lam_g = None
         self.lam_p = None
@@ -336,12 +340,16 @@ class Solution:
             self.status = _sol["status"]
 
             # Extract the data now for further use
-            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            (
+                self._states["scaled"],
+                self._controls["scaled"],
+                self.parameters,
+            ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
             self._complete_control()
-            self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+            self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
 
         def init_from_initial_guess(_sol: list):
@@ -354,7 +362,7 @@ class Solution:
                 The list of initial guesses
             """
 
-            n_param = len(ocp.v.parameters_in_list)
+            n_param = len(ocp.parameters)
 
             # Sanity checks
             for i in range(len(_sol)):  # Convert to list if necessary and copy for as many phases there are
@@ -381,10 +389,18 @@ class Solution:
             self.vector = np.ndarray((0, 1))
             sol_states, sol_controls = _sol[0], _sol[1]
             for p, s in enumerate(sol_states):
-                ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states.scaled.shape, ns, "states")
+                for key in s.keys():
+                    ns = (
+                        self.ocp.nlp[p].ns + 1
+                        if s[key].init.type != InterpolationType.EACH_FRAME
+                        else self.ocp.nlp[p].ns
+                    )
+                    s[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].states[key]), ns, "states")
+
                 for i in range(self.ns[p] + 1):
-                    self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
+                    for key in s.keys():
+                        self.vector = np.concatenate((self.vector, s[key].init.evaluate_at(i)[:, np.newaxis]))
+
             for p, s in enumerate(sol_controls):
                 control_type = self.ocp.nlp[p].control_type
                 if control_type == ControlType.CONSTANT:
@@ -393,21 +409,30 @@ class Solution:
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls.scaled.shape, self.ns[p], "controls")
+
+                for key in s.keys():
+                    self.ocp.nlp[p].controls[key].node_index = 0
+                    s[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].controls[key]), self.ns[p], "controls")
+
                 for i in range(self.ns[p] + off):
-                    self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
+                    for key in s.keys():
+                        self.vector = np.concatenate((self.vector, s[key].init.evaluate_at(i)[:, np.newaxis]))
 
             if n_param:
                 sol_params = _sol[2]
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
-            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            (
+                self._states["scaled"],
+                self._controls["scaled"],
+                self.parameters,
+            ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
             self._complete_control()
-            self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+            self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
 
         def init_from_vector(_sol: np.ndarray | DM):
@@ -421,12 +446,16 @@ class Solution:
             """
 
             self.vector = _sol
-            self._states["scaled"], self._controls["scaled"], self.parameters = self.ocp.v.to_dictionaries(self.vector)
+            (
+                self._states["scaled"],
+                self._controls["scaled"],
+                self.parameters,
+            ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
             self._complete_control()
-            self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+            self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
 
         if isinstance(sol, dict):
             init_from_dict(sol)
@@ -452,12 +481,10 @@ class Solution:
             states[phase] = {}
             controls[phase] = {}
             for key, value in states_scaled[phase].items():
-                states[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(
-                    states_scaled[phase][key].shape[0], states_scaled[phase][key].shape[1]
-                )
+                states[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(states_scaled[phase][key].shape[1])
             for key, value in controls_scaled[phase].items():
                 controls[phase][key] = value * ocp.nlp[phase].u_scaling[key].to_array(
-                    controls_scaled[phase][key].shape[0], controls_scaled[phase][key].shape[1]
+                    controls_scaled[phase][key].shape[1]
                 )
 
         return states, controls
@@ -945,32 +972,43 @@ class Solution:
         """
         # Get the first frame of the phase
         if shooting_type == Shooting.SINGLE:
-            if phase != 0:
-                x0 = sol._states["unscaled"][phase - 1]["all"][:, -1]  # the last node of the previous phase
-                u0 = self._controls["unscaled"][phase - 1]["all"][:, -1]
-                if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
-                    u0 = vertcat(u0, u0)
-                params = self.parameters["all"]
-                val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params)
-                if val.shape[0] != x0.shape[0]:
-                    raise RuntimeError(
-                        f"Phase transition must have the same number of states ({val.shape[0]}) "
-                        f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
-                        f"please integrate with Shooting.SINGLE"
-                    )
-                x0 += np.array(val)[:, 0]
-                return x0
-            else:
-                return self._states["unscaled"][phase]["all"][:, 0]
+            if phase == 0:
+                return np.hstack([self._states["unscaled"][0][key][:, 0] for key in self.ocp.nlp[phase].states])
+
+            x0 = np.concatenate(
+                [self._states["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].states]
+            )
+            u0 = np.concatenate(
+                [self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls]
+            )
+            if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
+                u0 = vertcat(u0, u0)
+            params = []
+            if self.parameters.keys():
+                params = np.vstack([self.parameters[key] for key in self.parameters])
+            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params)
+            if val.shape[0] != x0.shape[0]:
+                raise RuntimeError(
+                    f"Phase transition must have the same number of states ({val.shape[0]}) "
+                    f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
+                    f"please integrate with Shooting.SINGLE"
+                )
+            x0 += np.array(val)[:, 0]
+            return x0
 
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            return self._states["unscaled"][phase]["all"][:, 0]
+            return np.vstack([self._states["unscaled"][phase][key][:, 0:1] for key in self.ocp.nlp[phase].states])[:, 0]
 
         elif shooting_type == Shooting.MULTIPLE:
-            return (
-                self.states_no_intermediate[phase]["all"][:, :-1]
-                if len(self.ocp.nlp) > 1
-                else self.states_no_intermediate["all"][:, :-1]
+            return np.vstack(
+                [
+                    (
+                        self.states_no_intermediate[phase][key][:, :-1]
+                        if len(self.ocp.nlp) > 1
+                        else self.states_no_intermediate[key][:, :-1]
+                    )
+                    for key in self.ocp.nlp[phase].states
+                ]
             )
         else:
             raise NotImplementedError(f"Shooting type {shooting_type} is not implemented")
@@ -1010,7 +1048,7 @@ class Solution:
             shooting_type=shooting_type,
         )
 
-        params = self.parameters["all"]
+        params = vertcat(*[self.parameters[key] for key in self.parameters])
 
         for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
             states_phase_idx = self.ocp.nlp[p].use_states_from_phase_idx
@@ -1020,10 +1058,26 @@ class Solution:
             u = (
                 np.array([])
                 if nlp.control_type == ControlType.NONE
-                else self._controls["unscaled"][controls_phase_idx]["all"]
+                else np.concatenate(
+                    [
+                        self._controls["unscaled"][controls_phase_idx][key]
+                        for key in self.ocp.nlp[controls_phase_idx].controls
+                    ]
+                )
             )
-            if integrator != SolutionIntegrator.OCP:
-                out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_interface(
+            if integrator == SolutionIntegrator.OCP:
+                integrated_sol = solve_ivp_bioptim_interface(
+                    dynamics_func=nlp.dynamics,
+                    keep_intermediate_points=keep_intermediate_points,
+                    x0=x0,
+                    u=u,
+                    params=params,
+                    param_scaling=param_scaling,
+                    shooting_type=shooting_type,
+                    control_type=nlp.control_type,
+                )
+            else:
+                integrated_sol = solve_ivp_interface(
                     dynamics_func=nlp.dynamics_func,
                     keep_intermediate_points=keep_intermediate_points,
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
@@ -1034,33 +1088,18 @@ class Solution:
                     control_type=nlp.control_type,
                 )
 
-            else:
-                out._states["unscaled"][states_phase_idx]["all"] = solve_ivp_bioptim_interface(
-                    dynamics_func=nlp.dynamics,
-                    keep_intermediate_points=keep_intermediate_points,
-                    x0=x0,
-                    u=u,
-                    params=params,
-                    param_scaling=param_scaling,
-                    shooting_type=shooting_type,
-                    control_type=nlp.control_type,
-                )
-
-            if shooting_type == Shooting.MULTIPLE:
-                # last node of the phase is not integrated but do exist as an independent node
-                out._states["unscaled"][states_phase_idx]["all"] = np.concatenate(
-                    (
-                        out._states["unscaled"][states_phase_idx]["all"],
-                        self._states["unscaled"][states_phase_idx]["all"][:, -1:],
-                    ),
-                    axis=1,
-                )
-
-            # Dispatch the integrated values to all the keys
             for key in nlp.states:
-                out._states["unscaled"][states_phase_idx][key] = out._states["unscaled"][states_phase_idx]["all"][
-                    nlp.states[key].index, :
-                ]
+                out._states["unscaled"][states_phase_idx][key] = integrated_sol[nlp.states[key].index, :]
+
+                if shooting_type == Shooting.MULTIPLE:
+                    # last node of the phase is not integrated but do exist as an independent node
+                    out._states["unscaled"][states_phase_idx][key] = np.concatenate(
+                        (
+                            out._states["unscaled"][states_phase_idx][key],
+                            self._states["unscaled"][states_phase_idx][key][:, -1:],
+                        ),
+                        axis=1,
+                    )
 
         return out
 
@@ -1111,25 +1150,18 @@ class Solution:
         for _ in range(len(data_states)):
             out._states["unscaled"].append({})
         for p in range(len(data_states)):
-            x_phase = data_states[p]["all"]
-            n_elements = x_phase.shape[0]
+            for key in self.ocp.nlp[0].states:
+                x_phase = data_states[p][key]
+                n_elements = x_phase.shape[0]
 
-            t_phase = t_all[p]
-            t_phase, time_index = np.unique(t_phase, return_index=True)
-            t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
-            x_interpolate = np.ndarray((n_elements, n_frames[p]))
-            for j in range(n_elements):
-                s = sci_interp.splrep(t_phase, x_phase[j, time_index], k=1)
-                x_interpolate[j, :] = sci_interp.splev(t_int, s)
-            out._states["unscaled"][p]["all"] = x_interpolate
-
-            offset = 0
-            for key in data_states[p]:
-                if key == "all":
-                    continue
-                n_elements = data_states[p][key].shape[0]
-                out._states["unscaled"][p][key] = out._states["unscaled"][p]["all"][offset : offset + n_elements]
-                offset += n_elements
+                t_phase = t_all[p]
+                t_phase, time_index = np.unique(t_phase, return_index=True)
+                t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
+                x_interpolate = np.ndarray((n_elements, n_frames[p]))
+                for j in range(n_elements):
+                    s = sci_interp.splrep(t_phase, x_phase[j, time_index], k=1)
+                    x_interpolate[j, :] = sci_interp.splev(t_int, s)
+                out._states["unscaled"][p][key] = x_interpolate
 
         out.is_interpolated = True
         return out
@@ -1367,7 +1399,8 @@ class Solution:
         for idx_phase, data in enumerate(states):
             if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
                 raise NotImplementedError("Animation is only implemented for biorbd models")
-            # Convert parameters to actual values
+
+            # This calls each of the function that modify the internal dynamic model based on the parameters
             nlp = self.ocp.nlp[idx_phase]
 
             # noinspection PyTypeChecker
@@ -1401,9 +1434,10 @@ class Solution:
 
         val = []
         val_weighted = []
-        p = self.parameters["all"]
+        p = vertcat(*[self.parameters[key] / self.ocp.parameters[key].scaling for key in self.parameters.keys()])
+
         dt = (
-            Function("time", [nlp.parameters.cx_start], [penalty.dt])(self.parameters["time"])
+            Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
             if "time" in self.parameters
             else penalty.dt
         )
@@ -1420,10 +1454,20 @@ class Solution:
                         node_idx = penalty.multinode_idx[i]
                         phase_idx = penalty.nodes_phase[i]
 
-                        x = np.concatenate((x, self._states["scaled"][phase_idx]["all"][:, node_idx]))
-                        # Make an exception to the fact that U is not available for the last node
-                        u = np.concatenate((u, self._controls["scaled"][phase_idx]["all"][:, node_idx]))
+                        for key in nlp.states:
+                            x = np.concatenate((x, self._states["scaled"][phase_idx][key][:, node_idx]))
+                        for key in nlp.controls:
+                            # Make an exception to the fact that U is not available for the last node
+                            u = np.concatenate((u, self._controls["scaled"][phase_idx][key][:, node_idx]))
 
+                elif (
+                    "Lagrange" not in penalty.type.__str__()
+                    and "Mayer" not in penalty.type.__str__()
+                    and "MultinodeObjectiveFcn" not in penalty.type.__str__()
+                    and "ConstraintFcn" not in penalty.type.__str__()
+                ):
+                    if penalty.target is not None:
+                        target = penalty.target[0]
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
@@ -1441,22 +1485,27 @@ class Solution:
                     elif penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
                         if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                             col_u_idx.append((idx + 1))
-                    if nlp.ode_solver.is_direct_collocation and (
-                        "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
-                    ):
-                        x = (
-                            self.states_no_intermediate["all"][:, col_x_idx]
-                            if len(self.phase_time) - 1 == 1
-                            else self.states_no_intermediate[phase_idx]["all"][:, col_x_idx]
-                        )
-                    else:
-                        x = self._states["scaled"][phase_idx]["all"][:, col_x_idx]
 
-                    u = (
-                        []
-                        if nlp.control_type == ControlType.NONE
-                        else self._controls["scaled"][phase_idx]["all"][:, col_u_idx]
-                    )
+                    x = np.ndarray((nlp.states.shape, len(col_x_idx)))
+                    for key in nlp.states:
+                        if nlp.ode_solver.is_direct_collocation and (
+                            "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
+                        ):
+                            x[nlp.states[key].index, :] = (
+                                self.states_no_intermediate[key][:, col_x_idx]
+                                if len(self.phase_time) - 1 == 1
+                                else self.states_no_intermediate[phase_idx][key][:, col_x_idx]
+                            )
+                        else:
+                            x[nlp.states[key].index, :] = self._states["scaled"][phase_idx][key][:, col_x_idx]
+
+                    u = np.ndarray((nlp.controls.shape, len(col_u_idx)))
+                    for key in nlp.controls:
+                        u[nlp.controls[key].index, :] = (
+                            []
+                            if nlp.control_type == ControlType.NONE
+                            else self._controls["scaled"][phase_idx][key][:, col_u_idx]
+                        )
                     if penalty.target is None:
                         target = []
                     elif (
@@ -1474,31 +1523,47 @@ class Solution:
 
             # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
             # casadi function
-            u = u[:, ~np.isnan(np.sum(u, axis=0))]
-            val.append(penalty.function_non_threaded[idx](x, u, p))
-            val_weighted.append(penalty.weighted_function_non_threaded[idx](x, u, p, penalty.weight, target, dt))
+            if not self.ocp.assume_phase_dynamics and ((isinstance(u, list) and u != []) or isinstance(u, np.ndarray)):
+                u = u[:, ~np.isnan(np.sum(u, axis=0))]
+            val.append(penalty.function[idx](x, u, p))
+            val_weighted.append(penalty.weighted_function[idx](x, u, p, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)
 
         return val, val_weighted
 
-    def detailed_cost_values(self):
+    @property
+    def detailed_cost(self):
+        if self._detailed_cost is None:
+            self._compute_detailed_cost()
+        return self._detailed_cost
+
+    def _compute_detailed_cost(self):
         """
         Adds the detailed objective functions and/or constraints values to sol
 
         Parameters
         ----------
         """
+        if self.ocp.n_threads > 1:
+            raise NotImplementedError("Computing detailed cost with n_thread > 1 is not implemented yet")
+
+        self._detailed_cost = []
 
         for nlp in self.ocp.nlp:
             for penalty in nlp.J_internal + nlp.J:
                 if not penalty:
                     continue
                 val, val_weighted = self._get_penalty_cost(nlp, penalty)
-                self.detailed_cost += [
+                self._detailed_cost += [
                     {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
                 ]
+        for penalty in self.ocp.J:
+            val, val_weighted = self._get_penalty_cost(self.ocp.nlp[0], penalty)
+            self._detailed_cost += [
+                {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
+            ]
         return
 
     def print_cost(self, cost_type: CostType = CostType.ALL):
@@ -1526,22 +1591,23 @@ class Solution:
                 else:
                     node_name = f"{penalty.node[0]}" if isinstance(penalty.node[0], int) else penalty.node[0].name
 
-                self.detailed_cost += [
-                    {
-                        "name": penalty.type.__str__(),
-                        "penalty": penalty.type.__str__().split(".")[0],
-                        "function": penalty.name,
-                        "cost_value_weighted": val_weighted,
-                        "cost_value": val,
-                        "params": penalty.params,
-                        "derivative": penalty.derivative,
-                        "explicit_derivative": penalty.explicit_derivative,
-                        "integration_rule": penalty.integration_rule.name,
-                        "weight": penalty.weight,
-                        "expand": penalty.expand,
-                        "node": node_name,
-                    }
-                ]
+                if self._detailed_cost is not None:
+                    self._detailed_cost += [
+                        {
+                            "name": penalty.type.__str__(),
+                            "penalty": penalty.type.__str__().split(".")[0],
+                            "function": penalty.name,
+                            "cost_value_weighted": val_weighted,
+                            "cost_value": val,
+                            "params": penalty.params,
+                            "derivative": penalty.derivative,
+                            "explicit_derivative": penalty.explicit_derivative,
+                            "integration_rule": penalty.integration_rule.name,
+                            "weight": penalty.weight,
+                            "expand": penalty.expand,
+                            "node": node_name,
+                        }
+                    ]
                 if print_only_weighted:
                     print(f"{penalty.type}: {val_weighted}")
                 else:

@@ -263,7 +263,7 @@ class ObjectiveFunction:
 
         @staticmethod
         def penalty_nature() -> str:
-            return "parameters"
+            return "parameter_objectives"
 
     @staticmethod
     def update_target(ocp_or_nlp: Any, list_index: int, new_target: Any):
@@ -414,6 +414,7 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
+        MINIMIZE_PARAMETER = (PenaltyFunctionAbstract.Functions.minimize_parameter,)
         CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
@@ -422,3 +423,131 @@ class ObjectiveFcn:
             Returns the type of the penalty
             """
             return ObjectiveFunction.ParameterFunction
+
+
+class ParameterObjective(PenaltyOption):
+    """
+    A placeholder for an objective function
+    """
+
+    def __init__(self, parameter_objective: Any, custom_type: Any = None, **params: Any):
+        """
+        Parameters
+        ----------
+        parameter_objective: ObjectiveFcn.Lagrange | ObjectiveFcn.Mayer | Callable[OptimalControlProgram, MX]
+            The chosen objective function
+        custom_type: ObjectiveFcn.Parameter | Callable
+            The custom parameter objective function
+        params: dict
+            Generic parameters for options
+        """
+        custom_function = None
+        if not isinstance(parameter_objective, ObjectiveFcn.Parameter):
+            custom_function = parameter_objective
+
+            if custom_type is None:
+                raise RuntimeError(
+                    "Custom parameter objective function detected, but custom_function is missing. "
+                    "It should ObjectiveFcn.Parameter"
+                )
+            parameter_objective = custom_type(custom_type.CUSTOM)
+            if isinstance(parameter_objective, ObjectiveFcn.Parameter):
+                pass
+            else:
+                raise RuntimeError(
+                    "Custom parameter objective function detected, but custom_function is invalid. "
+                    "It should either be ObjectiveFcn.Parameter"
+                )
+
+        super(ParameterObjective, self).__init__(penalty=parameter_objective, custom_function=custom_function, **params)
+
+    def _add_penalty_to_pool(self, controller: PenaltyController):
+        if isinstance(controller, (list, tuple)):
+            controller = controller[0]  # This is a special case of Node.TRANSITION
+
+        if self.penalty_type == PenaltyType.INTERNAL:
+            pool = (
+                controller.get_nlp.J_internal
+                if controller is not None and controller.get_nlp
+                else controller.ocp.J_internal
+            )
+        elif self.penalty_type == PenaltyType.USER:
+            pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
+        else:
+            raise ValueError(f"Invalid objective type {self.penalty_type}.")
+        pool[self.list_index] = self
+
+    def ensure_penalty_sanity(self, ocp, nlp):
+        """
+        Resets a objective function. A negative penalty index creates a new empty objective function.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        """
+
+        if self.penalty_type == PenaltyType.INTERNAL:
+            J_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+        elif self.penalty_type == PenaltyType.USER:
+            J_to_add_to = nlp.J if nlp else ocp.J
+        else:
+            raise ValueError(f"Invalid Type of objective {self.penalty_type}")
+
+        if self.list_index < 0:
+            # Add a new one
+            for i, j in enumerate(J_to_add_to):
+                if not j:
+                    self.list_index = i
+                    return
+            else:
+                J_to_add_to.append([])
+                self.list_index = len(J_to_add_to) - 1
+        else:
+            while self.list_index >= len(J_to_add_to):
+                J_to_add_to.append([])
+            J_to_add_to[self.list_index] = []
+
+    def add_or_replace_to_penalty_pool(self, ocp, nlp):
+        super(ParameterObjective, self).add_or_replace_to_penalty_pool(ocp, nlp)
+
+    @staticmethod
+    def get_type():
+        return "parameter_objective"
+
+
+class ParameterObjectiveList(OptionList):
+    """
+    A list of objectives which apply for all phases at once if more than one is required
+
+    Methods
+    -------
+    add(self, parameter_objective: Callable | "ParameterObjectiveFcn", **extra_arguments)
+        Add a new ParameterObjective to the list
+    print(self):
+        Print the ParameterObjectiveList to the console
+    """
+
+    def add(self, parameter_objective: Callable | ParameterObjective | Any, **extra_arguments: Any):
+        """
+        Add a new parameter objective function to the list
+
+        Parameters
+        ----------
+        parameter_objective: Callable | ParameterObjective
+            The chosen parameter objective function
+        extra_arguments: dict
+            Any parameters to pass to ParameterObjectiveFcn
+        """
+
+        if isinstance(parameter_objective, ParameterObjective):
+            self.copy(parameter_objective)
+        else:
+            super(ParameterObjectiveList, self)._add(
+                option_type=ParameterObjective, parameter_objective=parameter_objective, **extra_arguments
+            )
+
+    def print(self):
+        raise NotImplementedError("Printing of ParameterObjectiveList is not ready yet")
