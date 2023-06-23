@@ -532,19 +532,19 @@ def prepare_socp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL_SHOOTING, key="muscles", weight=1e3/2, quadratic=True)
     # objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3/2, quadratic=True)
 
     multinode_objectives = MultinodeObjectiveList()
     multinode_objectives.add(minimize_uncertainty,
-                                nodes_phase=[0 for _ in range(n_shooting+1)],
-                                nodes=[i for i in range(n_shooting+1)],
+                                nodes_phase=[0 for _ in range(n_shooting)],
+                                nodes=[i for i in range(n_shooting)],
                                 key="muscles",
                                 weight=1e3 / 2,
                                 quadratic=False)
     multinode_objectives.add(expected_feedback_effort,
-                             nodes_phase=[0 for _ in range(n_shooting+1)],
-                             nodes=[i for i in range(n_shooting+1)],
+                             nodes_phase=[0 for _ in range(n_shooting)],
+                             nodes=[i for i in range(n_shooting)],
                              weight=1e3 / 2,
                              quadratic=False)
 
@@ -554,12 +554,12 @@ def prepare_socp(
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial]))
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
-    constraints.add(track_final_marker, node=Node.END, ee_final_position=ee_final_position)
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
-    # constraints.add(zero_acceleration, node=Node.END, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the control on the last node is NaN
+    constraints.add(track_final_marker, node=Node.PENULTIMATE, ee_final_position=ee_final_position)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
+    constraints.add(zero_acceleration, node=Node.PENULTIMATE, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the control on the last node is NaN
     constraints.add(ConstraintFcn.TRACK_CONTROL, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
-    constraints.add(ConstraintFcn.TRACK_STATE, key="muscles", node=Node.ALL, min_bound=0.001, max_bound=1)
-    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180)  # This is a bug, it should be in radians
+    constraints.add(ConstraintFcn.TRACK_STATE, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL_SHOOTING, min_bound=0, max_bound=180)  # This is a bug, it should be in radians
 
     problem_type = "CIRCLE"
     if problem_type == "BAR":
@@ -571,8 +571,8 @@ def prepare_socp(
 
     multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(reach_target_consistantly,
-                              nodes_phase=[0 for _ in range(n_shooting+1)],
-                              nodes=[i for i in range(n_shooting+1)],
+                              nodes_phase=[0 for _ in range(n_shooting)],
+                              nodes=[i for i in range(n_shooting)],
                               min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
                               max_bound=np.array([max_bounds_lateral_variation, 0.004**2, 0.05**2, 0.05**2]))
     for i in range(n_shooting-1):  # Should be n_shooting, but since the last node is NaN, it is not possible
@@ -621,6 +621,8 @@ def prepare_socp(
     x_bounds = BoundsList()
     states_min = np.ones((n_states, 3)) * -cas.inf
     states_max = np.ones((n_states, 3)) * cas.inf
+    states_min[:, 2] = 0  # To remove the last state that should not be a real variable (this is a hack)
+    states_max[:, 2] = 0
     x_bounds.add(bounds=Bounds(states_min, states_max))
 
     n_tau = bio_model.nb_tau
@@ -680,6 +682,8 @@ def prepare_socp(
     s_bounds = BoundsList()
     stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
     stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
+    stochastic_min[:, 2] = 0  # To remove the last stochastic variables that should not be real variable (this is a hack)
+    stochastic_max[:, 2] = 0
     s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
     # TODO: we should probably change the name stochastic_variables -> helper_variables ?
 
@@ -727,7 +731,7 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    n_shooting = int(final_time/dt)
+    n_shooting = int(final_time/dt) + 1
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False)
@@ -785,7 +789,7 @@ def main():
 
     import bioviz
     b = bioviz.Viz(model_path=biorbd_model_path)
-    b.load_movement(q_sol)
+    b.load_movement(q_sol[:, :-1])
     b.exec()
 
 
@@ -879,7 +883,7 @@ def main():
     # sol_socp.animate()
     import bioviz
     b = bioviz.Viz(model_path=biorbd_model_path)
-    b.load_movement(q_simulated[0, :, :])
+    b.load_movement(q_simulated[0, :, :-1])
     b.exec()
 
 
