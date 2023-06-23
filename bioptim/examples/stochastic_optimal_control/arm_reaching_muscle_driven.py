@@ -195,6 +195,7 @@ def stochastic_forward_dynamics(
     wM,
     wPq,
     wPqdot,
+    with_gains=True,
 ) -> DynamicsEvaluation:
 
     global tau_coef, m1, m2, l1, l2, lc1, lc2, I1, I2
@@ -205,25 +206,28 @@ def stochastic_forward_dynamics(
     # residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
     mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
 
-    ee_ref = DynamicsFunctions.get(nlp.stochastic_variables["ee_ref"], stochastic_variables)
-    k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-    K_matrix = cas.MX(6, 4)
-    i = 0
-    for s0 in range(6):
-        for s1 in range(4):
-            K_matrix[s0, s1] = k[i]
-            i += 1
+    mus_excitations_fb = mus_excitations
+    if with_gains:
+        ee_ref = DynamicsFunctions.get(nlp.stochastic_variables["ee_ref"], stochastic_variables)
+        k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
+        K_matrix = cas.MX(6, 4)
+        i = 0
+        for s0 in range(6):
+            for s1 in range(4):
+                K_matrix[s0, s1] = k[i]
+                i += 1
 
-    hand_pos = end_effector_position(q)
-    hand_vel = end_effector_velocity(q, qdot)
-    ee = cas.vertcat(hand_pos, hand_vel)
-    mus_excitations_fb = mus_excitations + get_excitation_with_feedback(K_matrix, ee, ee_ref, wPq, wPqdot)
+        hand_pos = end_effector_position(q)
+        hand_vel = end_effector_velocity(q, qdot)
+        ee = cas.vertcat(hand_pos, hand_vel)
+
+        mus_excitations_fb += get_excitation_with_feedback(K_matrix, ee, ee_ref, wPq, wPqdot)
 
     muscles_tau = get_muscle_torque(q, qdot, mus_activations)
 
-    # tau_force_field = get_force_field(q)
+    tau_force_field = get_force_field(q)
 
-    torques_computed = muscles_tau + wM  # + tau_force_field  # + residual_tau
+    torques_computed = muscles_tau + wM + tau_force_field  # + residual_tau
     dq_computed = DynamicsFunctions.compute_qdot(nlp, q, qdot)
     dactivations_computed = (mus_excitations_fb - mus_activations) / tau_coef
 
@@ -249,9 +253,9 @@ def stochastic_forward_dynamics(
     nleffects[0] = a2 * cas.sin(theta_elbow) * (-dtheta_elbow * (2 * dtheta_shoulder + dtheta_elbow))
     nleffects[1] = a2 * cas.sin(theta_elbow) * dtheta_shoulder ** 2
 
-    dqdot_derivative = cas.inv(mass_matrix) @ (torques_computed - nleffects - friction @ qdot)
+    dqdot_computed = cas.inv(mass_matrix) @ (torques_computed - nleffects - friction @ qdot)
 
-    return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_derivative, dactivations_computed), defects=None)
+    return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dactivations_computed), defects=None)
 
 def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, wM, wPq, wPqdot):
 
@@ -468,10 +472,10 @@ def leuven_trapezoidal(controllers: list[PenaltyController]) -> cas.MX:
 
     dX_i = stochastic_forward_dynamics(controllers[0].states.cx_start, controllers[0].controls.cx_start,
                                         controllers[0].parameters.cx_start, controllers[0].stochastic_variables.cx_start,
-                                        controllers[0].get_nlp, wM, wPq, wPqdot).dxdt
+                                        controllers[0].get_nlp, wM, wPq, wPqdot, with_gains=False).dxdt
     dX_i_plus = stochastic_forward_dynamics(controllers[1].states.cx_start, controllers[1].controls.cx_start,
                                         controllers[1].parameters.cx_start, controllers[1].stochastic_variables.cx_start,
-                                        controllers[1].get_nlp, wM, wPq, wPqdot).dxdt
+                                        controllers[1].get_nlp, wM, wPq, wPqdot, with_gains=False).dxdt
 
     out = controllers[1].states.cx_start - (controllers[0].states.cx_start + (dX_i + dX_i_plus) / 2 * dt)
 
@@ -531,6 +535,19 @@ def prepare_socp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL, key="muscles", weight=1e3/2, quadratic=True)
     # objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3/2, quadratic=True)
 
+    multinode_objectives = MultinodeObjectiveList()
+    multinode_objectives.add(minimize_uncertainty,
+                                nodes_phase=[0 for _ in range(n_shooting+1)],
+                                nodes=[i for i in range(n_shooting+1)],
+                                key="muscles",
+                                weight=1e3 / 2,
+                                quadratic=False)
+    multinode_objectives.add(expected_feedback_effort,
+                             nodes_phase=[0 for _ in range(n_shooting+1)],
+                             nodes=[i for i in range(n_shooting+1)],
+                             weight=1e3 / 2,
+                             quadratic=False)
+
     # Constraints
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL)
@@ -544,29 +561,21 @@ def prepare_socp(
     constraints.add(ConstraintFcn.TRACK_STATE, key="muscles", node=Node.ALL, min_bound=0.001, max_bound=1)
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180)  # This is a bug, it should be in radians
 
+    problem_type = "CIRCLE"
+    if problem_type == "BAR":
+        max_bounds_lateral_variation = cas.inf
+    elif problem_type == "CIRCLE":
+        max_bounds_lateral_variation = 0.004
     multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(reach_target_consistantly,
                               nodes_phase=[0 for _ in range(n_shooting+1)],
                               nodes=[i for i in range(n_shooting+1)],
                               min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
-                              max_bound=np.array([cas.inf, 0.004**2, 0.05**2, 0.05**2]))
+                              max_bound=np.array([max_bounds_lateral_variation, 0.004**2, 0.05**2, 0.05**2]))
     for i in range(n_shooting-1):  # Should be n_shooting, but since the last node is NaN, it is not possible
         multinode_constraints.add(leuven_trapezoidal,
                                   nodes_phase=[0, 0],
                                   nodes=[i, i+1])
-
-    multinode_objectives = MultinodeObjectiveList()
-    multinode_objectives.add(minimize_uncertainty,
-                                nodes_phase=[0 for _ in range(n_shooting+1)],
-                                nodes=[i for i in range(n_shooting+1)],
-                                key="muscles",
-                                weight=1e3 / 2,
-                                quadratic=False)
-    multinode_objectives.add(expected_feedback_effort,
-                             nodes_phase=[0 for _ in range(n_shooting+1)],
-                             nodes=[i for i in range(n_shooting+1)],
-                             weight=1e3 / 2,
-                             quadratic=False)
 
     # parameters = ParameterList()
     # parameters.add(
@@ -637,9 +646,9 @@ def prepare_socp(
     # stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
 
     curent_index += n_muscles*(n_q + n_qdot)
-    stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
-    stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
     # stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -1
     # stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 1
 
@@ -847,6 +856,7 @@ def main():
     axs[1, 1].set_ylabel("Shoulder velocity [rad/s]")
     axs[2, 1].set_xlabel("Time [s]")
     axs[2, 1].set_ylabel("Elbow velocity [rad/s]")
+    axs[0, 0].axis("equal")
     plt.tight_layout()
     plt.savefig("simulated_results.png", dpi=300)
     plt.show()
@@ -879,17 +889,17 @@ dM_coefficients = np.array([[0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
                             [0.0300, -0.0110, 1.9000, 0.0320, -0.0100, 1.9000],
                             [-0.0390, 0, 0.0100, -0.0220, 0, 0.0100]])
 
-LMT_coefficients = np.array([[1.1000, -5.2063],
-                             [0.8000, -7.5389],
-                             [1.2000, -3.9381],
-                             [0.7000, -3.0315],
-                             [1.1000, -2.5228],
-                             [0.8500, -1.8264]])
+LMT_coefficients = np.array([[1.1000, -5.206336195535022],
+                             [0.8000, -7.538918356984516],
+                             [1.2000, -3.938098437958920],
+                             [0.7000, -3.031522725559912],
+                             [1.1000, -2.522778221157014],
+                             [0.8500, -1.826368199415192]])
 vMtilde_max = np.ones((6, 1)) * 10
 Fiso = np.array([572.4000, 445.2000, 699.6000, 381.6000, 159.0000, 318.0000])
-Faparam = np.array([0.8145, 1.0550, 0.1624, 0.0633, 0.4330, 0.7168, -0.0299, 0.2004])
-Fvparam = np.array([-0.3183, -8.1492, -0.3741, 0.8856])
-Fpparam = np.array([-0.9952, 53.5982])
+Faparam = np.array([0.814483478343008, 1.055033428970575, 0.162384573599574, 0.063303448465465, 0.433004984392647, 0.716775413397760, -0.029947116970696, 0.200356847296188])
+Fvparam = np.array([-0.318323436899127, -8.149156043475250, -0.374121508647863, 0.885644059915004])
+Fpparam = np.array([-0.995172050006169, 53.598150033144236])
 muscleDampingCoefficient = np.ones((6, 1)) * 0.1
 tau_coef = 0.1500
 
