@@ -797,7 +797,7 @@ class PenaltyOption(OptionGeneric):
         x = [nlp.X[idx] for idx in t]
         x_scaled = [nlp.X_scaled[idx] for idx in t]
         u, u_scaled = [], []
-        if nlp.U is not None or not isinstance(nlp.U, list) or nlp.U != []:
+        if nlp.U is not None and not isinstance(nlp.U, list) and nlp.U != []:
             u = [nlp.U[idx] for idx in t if idx != nlp.ns]
             u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
         return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx)
