@@ -581,7 +581,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def advance_window_initial_guess_states(self, sol, **advance_options):
         for key in sol.states.keys():
             if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
-                self.nlp[0].x_init.add(key,
+                self.nlp[0].x_init.add(
+                    key,
                     np.ndarray((sol.states[key].shape[0], self.nlp[0].ns + 1)),
                     interpolation=InterpolationType.EACH_FRAME,
                     phase=0,
@@ -592,7 +593,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def advance_window_initial_guess_controls(self, sol, **advance_options):
         for key in sol.controls.keys():
             if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
-                self.nlp[0].u_init.add(key,
+                self.nlp[0].u_init.add(
+                    key,
                     np.ndarray((sol.controls[key].shape[0], self.nlp[0].ns)),
                     interpolation=InterpolationType.EACH_FRAME,
                     phase=0,
