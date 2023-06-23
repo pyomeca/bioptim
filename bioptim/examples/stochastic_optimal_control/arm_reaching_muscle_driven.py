@@ -566,6 +566,9 @@ def prepare_socp(
         max_bounds_lateral_variation = cas.inf
     elif problem_type == "CIRCLE":
         max_bounds_lateral_variation = 0.004
+    else:
+        raise NotImplementedError("Wrong problem type")
+
     multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(reach_target_consistantly,
                               nodes_phase=[0 for _ in range(n_shooting+1)],
@@ -646,9 +649,9 @@ def prepare_socp(
     # stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
 
     curent_index += n_muscles*(n_q + n_qdot)
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
-    stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
     # stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -1
     # stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 1
 
