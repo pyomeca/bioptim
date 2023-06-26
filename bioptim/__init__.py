@@ -202,6 +202,7 @@ from .misc.enums import (
     DefectType,
     MagnitudeType,
     MultiCyclicCycleSolutions,
+    QuadratureRule,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart
