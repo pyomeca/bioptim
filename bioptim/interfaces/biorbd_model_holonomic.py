@@ -164,7 +164,7 @@ class BiorbdModelHolonomic(BiorbdModel):
 
         return horzcat(constrained_jacobian_u, constrained_jacobian_v)
 
-    def partitioned_forward_dynamics(self, u, udot, tau, external_forces=None, f_contacts=None) -> MX:
+    def partitioned_forward_dynamics(self, u, udot, tau, external_forces=None, f_contacts=None, v_init=None) -> MX:
         """
         Sources
         -------
@@ -173,7 +173,7 @@ class BiorbdModelHolonomic(BiorbdModel):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
         # compute v from u
-        v = self.compute_v_from_u(u)
+        v = self.compute_v_from_u(u, v_init=v_init)
         q = self.q_from_u_and_v(u, v)
 
         Bvu = self.coupling_matrix(q)
@@ -258,7 +258,9 @@ class BiorbdModelHolonomic(BiorbdModel):
 
         return q
 
-    def compute_v_from_u(self, u: MX):
+    def compute_v_from_u(self, u: MX, v_init: MX = None) -> MX:
+        if v_init is None:
+            v_init = MX.zeros(self.nb_dependent_joints)
         decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
         q = self.q_from_u_and_v(u, decision_variables)
         mx_residuals = self.holonomic_constraints(q)
@@ -273,13 +275,15 @@ class BiorbdModelHolonomic(BiorbdModel):
         opts = {"abstol": 1e-10}
         ifcn = rootfinder("ifcn", "newton", residuals, opts)
         v_opt = ifcn(
-            MX(),
+            v_init,
             u,
         )
 
         return v_opt
 
     def compute_v_from_u_numeric(self, u: DM, v_init=None):
+        if v_init is None:
+            v_init = DM.zeros(self.nb_dependent_joints)
         decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
         q = self.q_from_u_and_v(u, decision_variables)
         mx_residuals = self.holonomic_constraints(q)
