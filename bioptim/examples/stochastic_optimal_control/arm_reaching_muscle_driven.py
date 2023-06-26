@@ -532,7 +532,9 @@ def prepare_socp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL_SHOOTING, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.END, key="all", weight=1, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STOCHASTIC_VARIABLE, node=Node.END, key="all", weight=1, quadratic=True)
     # objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3/2, quadratic=True)
 
     multinode_objectives = MultinodeObjectiveList()
@@ -550,7 +552,7 @@ def prepare_socp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ee_equals_ee_ref, node=Node.ALL)
+    constraints.add(ee_equals_ee_ref, node=Node.ALL_SHOOTING)
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial]))
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
@@ -621,8 +623,8 @@ def prepare_socp(
     x_bounds = BoundsList()
     states_min = np.ones((n_states, 3)) * -cas.inf
     states_max = np.ones((n_states, 3)) * cas.inf
-    states_min[:, 2] = 0  # To remove the last state that should not be a real variable (this is a hack)
-    states_max[:, 2] = 0
+    # states_min[:, 2] = 0  # To remove the last state that should not be a real variable (this is a hack)
+    # states_max[:, 2] = 0
     x_bounds.add(bounds=Bounds(states_min, states_max))
 
     n_tau = bio_model.nb_tau
@@ -651,9 +653,9 @@ def prepare_socp(
     # stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
 
     curent_index += n_muscles*(n_q + n_qdot)
-    stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
-    stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+    stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
     # stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -1
     # stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 1
 
@@ -682,8 +684,8 @@ def prepare_socp(
     s_bounds = BoundsList()
     stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
     stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
-    stochastic_min[:, 2] = 0  # To remove the last stochastic variables that should not be real variable (this is a hack)
-    stochastic_max[:, 2] = 0
+    # stochastic_min[:, 2] = 0  # To remove the last stochastic variables that should not be real variable (this is a hack)
+    # stochastic_max[:, 2] = 0
     s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
     # TODO: we should probably change the name stochastic_variables -> helper_variables ?
 
