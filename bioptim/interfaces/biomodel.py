@@ -256,3 +256,19 @@ class BioModel(Protocol):
         -------
         Create the desired bounds
         """
+
+    def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
+        """
+        Compute the Lagrangian of a biorbd model.
+
+        Parameters
+        ----------
+        q: MX | SX
+            The generalized coordinates.
+        qdot: MX | SX
+            The generalized velocities.
+
+        Returns
+        -------
+        The Lagrangian.
+        """
