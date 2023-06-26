@@ -215,7 +215,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # --- Show results --- #
-    sol.animate(n_frames=100)
+    sol.animate()
 
 
 if __name__ == "__main__":

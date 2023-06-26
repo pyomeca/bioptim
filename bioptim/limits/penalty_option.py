@@ -141,6 +141,7 @@ class PenaltyOption(OptionGeneric):
         self.node: Node | list | tuple = node
         self.quadratic = quadratic
         self.integration_rule = integration_rule
+        self.extra_arguments = params
 
         if index is not None and rows is not None:
             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")

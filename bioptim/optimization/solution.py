@@ -17,6 +17,7 @@ from ..misc.enums import (
     SolutionIntegrator,
     Node,
     IntegralApproximation,
+    Axis,
 )
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
@@ -1382,6 +1383,17 @@ class Solution:
         check_version(bioviz, "2.3.0", "2.4.0")
 
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
+
+        for idx_phase in range(len(data_to_animate.ocp.nlp)):
+            for objective in self.ocp.nlp[idx_phase].J:
+                if objective.target is not None:
+                    if objective.type in (
+                            ObjectiveFcn.Mayer.TRACK_MARKERS,
+                            ObjectiveFcn.Lagrange.TRACK_MARKERS,
+                    ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
+                        n_frames += objective.target[0].shape[2]
+                        break
+
         if n_frames == 0:
             try:
                 data_to_animate = data_to_animate.interpolate(sum(self.ns))
@@ -1414,7 +1426,15 @@ class Solution:
                         ObjectiveFcn.Mayer.TRACK_MARKERS,
                         ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        all_bioviz[-1].load_experimental_markers(objective.target[0])
+                        if "axes" in objective.extra_arguments:
+                            target_3D = np.zeros((3, objective.target[0].shape[1], objective.target[0].shape[2]))
+                            for i_ax, ax in enumerate(Axis):
+                                if ax in objective.extra_arguments["axes"]:
+                                    target_3D[i_ax, :, :] = objective.target[0][objective.extra_arguments["axes"].index(ax), :, :]
+                        else:
+                            target_3D = objective.target[0]
+                        all_bioviz[-1].load_experimental_markers(target_3D)
+                        n_frames = target_3D.shape[2]
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)
