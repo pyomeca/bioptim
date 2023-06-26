@@ -6,6 +6,7 @@ from casadi import MX, Function, jacobian
 
 from bioptim import (
     BiorbdModelHolonomic,
+    Solver,
 )
 from biorbd import marker_index
 
@@ -129,10 +130,36 @@ def test_model_holonomic():
         model.partitioned_constrained_jacobian(q),
         [[-0.5104801, 0.02982221, -0.96017029], [-0.70317549, 0.13829549, 0.2794155]],
     )
-    # TODO: partitioned_forward_dynamics, coupling matrix, biais_vector
+    # TODO: partitioned_forward_dynamics, coupling matrix, biais_vector => expand=False
 
     u = MX(TestUtils.to_array(q[model._independent_joint_index]))
     v = MX(TestUtils.to_array(q[model._dependent_joint_index]))
     TestUtils.assert_equal(model.q_from_u_and_v(u, v), q)
 
     # TODO: compute_v_from_u, compute_v_from_u_numeric
+
+
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_example_two_pendulums(use_sx):
+    """Test the holonomic_constraints/two_pendulums example"""
+    from bioptim.examples.holonomic_constraints import two_pendulums
+
+    bioptim_folder = os.path.dirname(two_pendulums.__file__)
+
+    # --- Prepare the ocp --- #
+    ocp, model = two_pendulums.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/two_pendulums.bioMod", n_shooting=10, final_time=1, use_sx=use_sx)
+
+    # --- Solve the ocp --- #
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+
+    q = np.zeros((4, 10))
+    u_end = sol.states["u"][-1, :]
+    v_end = model.compute_v_from_u_numeric(u_end, v_init=np.zeros(2)).toarray()
+    q_end = model.q_from_u_and_v(u_end[:, np.newaxis], v_end).toarray().squeeze()
+
+    np.testing.assert_almost_equal(
+        q_end,
+        [-1.54, - 0.999525830605479, - 0.030791459082466, 0.],
+        decimal=6,
+    )
