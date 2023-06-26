@@ -6,7 +6,7 @@ import pickle
 
 import numpy as np
 import pytest
-from casadi import MX
+from casadi import MX, Function
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -148,3 +148,52 @@ class TestUtils:
                 sol_single.states[key][:, -1],
                 decimal=decimal_value,
             )
+
+    @staticmethod
+    def mx_to_array(mx: MX, squeeze: bool = True, expand: bool = True) -> np.ndarray:
+        """
+        Convert a casadi MX to a numpy array if it is only numeric values
+        """
+        val = Function(
+            "f",
+            [],
+            [mx],
+            [],
+            ["f"],
+        )
+        if expand:
+            val = val.expand()
+        val = val()["f"].toarray()
+
+        return val.squeeze() if squeeze else val
+
+    @staticmethod
+    def to_array(value: MX | np.ndarray):
+        if isinstance(value, MX):
+            return TestUtils.mx_to_array(value)
+        else:
+            return value
+
+    @staticmethod
+    def mx_assert_equal(mx: MX, expected: Any, decimal: int = 6, squeeze: bool = True, expand: bool = True):
+        """
+        Assert that a casadi MX is equal to a numpy array if it is only numeric values
+        """
+        if isinstance(expected, MX):
+            expected = TestUtils.mx_to_array(mx, squeeze=squeeze, expand=expand)
+
+        np.testing.assert_almost_equal(
+            TestUtils.mx_to_array(mx, squeeze=squeeze, expand=expand), expected, decimal=decimal
+        )
+
+    @staticmethod
+    def assert_equal(
+        value: MX | np.ndarray, expected: Any, decimal: int = 6, squeeze: bool = True, expand: bool = True
+    ):
+        """
+        Assert that a casadi MX or numpy array is equal to a numpy array if it is only numeric values
+        """
+        if isinstance(value, MX):
+            TestUtils.mx_assert_equal(value, expected, decimal=decimal, squeeze=squeeze, expand=expand)
+        else:
+            np.testing.assert_almost_equal(value, expected, decimal=decimal)
