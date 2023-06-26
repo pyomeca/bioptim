@@ -203,7 +203,6 @@ def stochastic_forward_dynamics(
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
-    # residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
     mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
 
     mus_excitations_fb = mus_excitations
@@ -228,7 +227,7 @@ def stochastic_forward_dynamics(
     tau_force_field = get_force_field(q)
 
     torques_computed = muscles_tau + wM + tau_force_field  # + residual_tau
-    dq_computed = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+    dq_computed = qdot
     dactivations_computed = (mus_excitations_fb - mus_activations) / tau_coef
 
     friction = np.array([[0.05, 0.025], [0.025, 0.05]])
@@ -274,7 +273,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     # ?
     # ConfigureProblem.configure_c(ocp, nlp)
     # ConfigureProblem.configure_a(ocp, nlp)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, stochastic_forward_dynamics, wM=wM, wPq=wPq, wPqdot=wPqdot, expand=False)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, stochastic_forward_dynamics, wM=wM, wPq=wPq, wPqdot=wPqdot, with_gains=False, expand=False)
 
 def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.MX:
     """
@@ -328,7 +327,7 @@ def get_p_mat(nlp, node_index):
 
     dx = stochastic_forward_dynamics(nlp.states.cx_start, nlp.controls.cx_start,
                                      nlp.parameters, nlp.stochastic_variables.cx_start,
-                                     nlp, wM, wP, wPdot)
+                                     nlp, wM, wP, wPdot, with_gains=True)
 
     ddx_dwM = cas.jacobian(dx.dxdt, cas.vertcat(wP, wPdot, wM))
     dg_dw = - ddx_dwM * dt
@@ -458,10 +457,10 @@ def zero_acceleration(controller: PenaltyController, wM: np.ndarray, wPq: np.nda
                                      controller.get_nlp, wM, wPq, wPqdot)
     return dx.dxdt[2:4]
 
-def track_final_marker(controller: PenaltyController, ee_final_position) -> cas.MX:
+def track_final_marker(controller: PenaltyController) -> cas.MX:
     q = controller.states["q"].cx_start
     ee_pos = end_effector_position(q)
-    return ee_pos - ee_final_position
+    return ee_pos
 
 def leuven_trapezoidal(controllers: list[PenaltyController]) -> cas.MX:
 
@@ -532,9 +531,9 @@ def prepare_socp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.END, key="all", weight=1, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STOCHASTIC_VARIABLE, node=Node.END, key="all", weight=1, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL_SHOOTING, key="muscles", weight=1e3/2, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.PENULTIMATE, key="all", weight=1, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STOCHASTIC_VARIABLE, node=Node.PENULTIMATE, key="all", weight=1, quadratic=True)
     # objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3/2, quadratic=True)
 
     multinode_objectives = MultinodeObjectiveList()
@@ -542,26 +541,26 @@ def prepare_socp(
                                 nodes_phase=[0 for _ in range(n_shooting)],
                                 nodes=[i for i in range(n_shooting)],
                                 key="muscles",
-                                weight=1e3 / 2,
+                                weight=1e3 / 2 * dt,
                                 quadratic=False)
     multinode_objectives.add(expected_feedback_effort,
                              nodes_phase=[0 for _ in range(n_shooting)],
                              nodes=[i for i in range(n_shooting)],
-                             weight=1e3 / 2,
+                             weight=1e3 / 2 * dt,
                              quadratic=False)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL_SHOOTING)
-    # constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial]))
-    # constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial]))
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
-    constraints.add(track_final_marker, node=Node.PENULTIMATE, ee_final_position=ee_final_position)
-    # constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
+    constraints.add(track_final_marker, node=Node.PENULTIMATE, target=ee_final_position)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
     constraints.add(zero_acceleration, node=Node.PENULTIMATE, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the control on the last node is NaN
-    # constraints.add(ConstraintFcn.TRACK_CONTROL, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
-    # constraints.add(ConstraintFcn.TRACK_STATE, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
-    # constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL_SHOOTING, min_bound=0, max_bound=180)  # This is a bug, it should be in radians
+    constraints.add(ConstraintFcn.TRACK_CONTROL, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL_SHOOTING, min_bound=0, max_bound=180)  # This is a bug, it should be in radians
 
     problem_type = "CIRCLE"
     if problem_type == "BAR":
@@ -603,23 +602,22 @@ def prepare_socp(
     n_qdot = bio_model.nb_qdot
     n_states = n_q + n_qdot + n_muscles
 
-    # q_qdot_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
     states_min = np.ones((n_states, n_shooting+1)) * -cas.inf
     states_max = np.ones((n_states, n_shooting+1)) * cas.inf
     # states_min = np.zeros((n_states, 3))
     # states_max = np.zeros((n_states, 3))
     # states_min[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.min
     # states_max[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.max
-    states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0.001  # Activations
-    states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
+    # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0.001  # Activations
+    # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
     # # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
     # # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    states_min[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
-    states_max[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
-    states_min[0:2, 1:] = 0
-    states_max[0:2, 1:] = 180  # should be np.pi, but there is a mistake in the original code
-    states_min[2:4, n_shooting-1] = 0
-    states_max[2:4, n_shooting-1] = 0
+    # states_min[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
+    # states_max[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
+    # states_min[0:2, 1:] = 0
+    # states_max[0:2, 1:] = 180  # should be np.pi, but there is a mistake in the original code
+    # states_min[2:4, n_shooting-1] = 0
+    # states_max[2:4, n_shooting-1] = 0
 
 
     x_bounds = BoundsList()
@@ -630,18 +628,20 @@ def prepare_socp(
     x_bounds.add(bounds=Bounds(states_min, states_max, interpolation=InterpolationType.EACH_FRAME))
 
     u_bounds = BoundsList()
-    # u_bounds = Bounds([0.01] * n_muscles, [1] * n_muscles)
-    # u_bounds.add(bounds=Bounds([-cas.inf] * n_muscles, [cas.inf] * n_muscles))
-    controls_min = np.ones((n_muscles, 3)) * 0.001
-    controls_max = np.ones((n_muscles, 3)) * 1
+    controls_min = np.ones((n_muscles, 3)) * -cas.inf
+    controls_max = np.ones((n_muscles, 3)) * cas.inf
+    # controls_min = np.ones((n_muscles, 3)) * 0.001
+    # controls_max = np.ones((n_muscles, 3)) * 1
     u_bounds.add(bounds=Bounds(controls_min, controls_max))
 
     # Initial guesses
-    states_init = np.zeros((n_states, 2))
-    states_init[0, :] = [shoulder_pos_initial, shoulder_pos_final]
-    states_init[1, :] = [elbow_pos_initial, elbow_pos_final]
+    states_init = np.zeros((n_states, n_shooting+1))
+    states_init[0, :-1] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting)
+    states_init[0, -1] = shoulder_pos_final
+    states_init[1, :-1] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting)
+    states_init[1, -1] = elbow_pos_final
     states_init[n_q + n_qdot:, :] = 0.01
-    x_init = InitialGuess(states_init, interpolation=InterpolationType.LINEAR)
+    x_init = InitialGuess(states_init, interpolation=InterpolationType.EACH_FRAME)
 
     u_init = InitialGuess([0.01] * n_muscles)
 
@@ -739,6 +739,7 @@ def main():
     dt = 0.01
     final_time = 0.8
     n_shooting = int(final_time/dt) + 1
+    final_time += dt
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False)
