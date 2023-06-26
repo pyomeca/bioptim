@@ -1,29 +1,34 @@
+"""
+This example presents how to implement a holonomic constraint in bioptim.
+The simulation is three bars that are forced to be coherent with a holonomic constraint. It is then a triple
+pendulum simulation.
+"""
+import numpy as np
+
 from bioptim import (
-    BiorbdModel,
-    Node,
-    OptimalControlProgram,
-    DynamicsFcn,
+    BiMappingList,
+    BiorbdModelHolonomic,
+    BoundsList,
+    CostType,
     DynamicsList,
+    InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
-    ConstraintList,
-    ConstraintFcn,
-    BoundsList,
-    InitialGuessList,
-    OdeSolver,
+    OptimalControlProgram,
     Solver,
-    CostType,
-    BiMappingList,
 )
-import numpy as np
-from ocp_example_2 import generate_close_loop_constraint, custom_configure, custom_dynamic
-from biorbd_model_holonomic import BiorbdModelCustomHolonomic
-from graphs import constraints_graphs
+
+from bioptim.examples.discrete_mechanics_and_optimal_control.holonomic_constraints import HolonomicConstraintFcn
+
+from bioptim.examples.holonomic_constraints.two_pendulums import custom_configure, custom_dynamic
 
 
 def prepare_ocp(
-    biorbd_model_path: str, phase_time, n_shooting, ode_solver: OdeSolver = OdeSolver.RK4()
-) -> OptimalControlProgram:
+    biorbd_model_path: str,
+    final_time,
+    n_shooting,
+    use_sx: bool = False,
+) -> (OptimalControlProgram, BiorbdModelHolonomic):
     """
     Prepare the program
 
@@ -31,35 +36,32 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path of the biorbd model
-    ode_solver: OdeSolver
-        The type of ode solver used
+    final_time: float
+        The time at the final node
+    n_shooting: int
+        The number of shooting points
+    use_sx: bool
+        If SX should be used instead of MX
 
     Returns
     -------
     The ocp ready to be solved
     """
-
-    # --- Options --- #
-    bio_model = BiorbdModelCustomHolonomic(biorbd_model_path[0])
-    # made up constraints
-    constraint, constraint_jacobian, constraint_double_derivative = generate_close_loop_constraint(
+    bio_model = BiorbdModelHolonomic(biorbd_model_path)
+    # Holonomic constraints
+    constraint, constraint_jacobian, constraint_double_derivative = HolonomicConstraintFcn.superimpose_markers(
         bio_model,
         "m1",  # marker names
         "m2",
         index=slice(0, 2),  # only constraint on x and y
         local_frame_index=1,  # seems better in one local frame than in global frame, the constraint deviates less
     )
-    #
     bio_model.add_holonomic_constraint(
         constraint=constraint,
         constraint_jacobian=constraint_jacobian,
         constraint_double_derivative=constraint_double_derivative,
     )
-
     bio_model.set_dependencies(independent_joint_index=[0, 1, 4], dependent_joint_index=[2, 3])
-
-    # Problem parameters
-    tau_min, tau_max, tau_init = -1000, 1000, 0
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -68,34 +70,34 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    # made up dynamics
     dynamics.add(custom_configure, dynamic_function=custom_dynamic, expand=False)
-
-    # Constraints
-    constraints = ConstraintList()
 
     # Path constraint
     pose_at_first_node = [np.pi / 2, 0, 0]
 
+    # Boundaries
     mapping = BiMappingList()
-    mapping.add("q", [0, 1, None, None, 2], [0, 1, 4])
-    mapping.add("qdot", [0, 1, None, None, 2], [0, 1, 4])
-
+    mapping.add("q", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
+    mapping.add("qdot", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"], mapping=mapping))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * 3
-    x_bounds[0][:, -1] = [-np.pi / 2, 0, -np.pi / 2] + [0] * 3
+    x_bounds["u"] = bio_model.bounds_from_ranges("q", mapping=mapping)
+    x_bounds["udot"] = bio_model.bounds_from_ranges("qdot", mapping=mapping)
+    x_bounds["u"][:, 0] = pose_at_first_node
+    x_bounds["udot"][:, 0] = [0] * 3
+    x_bounds["u"][:, -1] = [-np.pi / 2, 0, -np.pi / 2]
+    x_bounds["udot"][:, -1] = [0] * 3
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * 3)
+    x_init.add("u", pose_at_first_node)
+    x_init.add("udot", [0] * 3)
 
     # Define control path constraint
+    tau_min, tau_max, tau_init = -1000, 1000, 0
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
-
+    u_bounds.add("tau", min_bound=[tau_min] * bio_model.nb_tau, max_bound=[tau_max] * bio_model.nb_tau)
     u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model.nb_tau)
+    u_init.add("tau", [tau_init] * bio_model.nb_tau)
 
     # ------------- #
 
@@ -104,17 +106,14 @@ def prepare_ocp(
             bio_model=bio_model,
             dynamics=dynamics,
             n_shooting=n_shooting,
-            phase_time=phase_time,
+            phase_time=final_time,
             x_init=x_init,
             u_init=u_init,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
-            constraints=constraints,
-            ode_solver=ode_solver,
-            n_threads=8,
             assume_phase_dynamics=True,
-            use_sx=False,
+            use_sx=use_sx,
         ),
         bio_model,
     )
@@ -125,10 +124,10 @@ def main():
     Solve and animate the solution
     """
 
-    ocp, biomodel = prepare_ocp(
-        biorbd_model_path=("models/three_bar.bioMod",),
-        phase_time=1,
-        n_shooting=100,
+    ocp, bio_model = prepare_ocp(
+        biorbd_model_path="models/three_bars.bioMod",
+        final_time=1,
+        n_shooting=10,
     )
 
     ocp.add_plot_penalty(cost_type=CostType.ALL)
@@ -142,8 +141,8 @@ def main():
     # sol.graphs(show_bounds=True)
     q = np.zeros((5, 101))
     for i, ui in enumerate(sol.states["u"].T):
-        vi = biomodel.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
-        qi = biomodel.q_from_u_and_v(ui[:, np.newaxis], vi).toarray().squeeze()
+        vi = bio_model.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
+        qi = bio_model.q_from_u_and_v(ui[:, np.newaxis], vi).toarray().squeeze()
         q[:, i] = qi
 
     import bioviz

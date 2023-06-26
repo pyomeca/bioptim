@@ -510,7 +510,9 @@ class BiorbdModel:
         return bounds_from_ranges(self, variables, mapping)
 
     def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
-        return self.model.Lagrangian(q, qdot).to_mx()
+        q_biorbd = GeneralizedCoordinates(q)
+        qdot_biorbd = GeneralizedVelocity(qdot)
+        return self.model.Lagrangian(q_biorbd, qdot_biorbd).to_mx()
 
 
 class MultiBiorbdModel:
