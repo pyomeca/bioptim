@@ -19,6 +19,8 @@ from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biomodel import BioModel
+from ..interfaces.biomodel_holonomic import BioModelHolonomic
+from ..interfaces.variational_biomodel import VariationalBioModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -141,7 +143,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: list | tuple | BioModel,
+        bio_model: list | tuple | BioModel | BioModelHolonomic | VariationalBioModel,
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,

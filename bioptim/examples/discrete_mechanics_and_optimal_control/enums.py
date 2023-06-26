@@ -1,17 +1,6 @@
 from enum import Enum
 
 
-class QuadratureRule(Enum):
-    """
-    The different discrete methods
-    """
-
-    MIDPOINT = "midpoint"
-    LEFT_APPROXIMATION = "left_approximation"
-    RIGHT_APPROXIMATION = "right_approximation"
-    TRAPEZOIDAL = "trapezoidal"
-
-
 class VariationalIntegratorType(Enum):
     """
     The different variational integrator types
