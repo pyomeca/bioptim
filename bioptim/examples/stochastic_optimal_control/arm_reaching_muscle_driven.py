@@ -742,8 +742,8 @@ def main():
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False)
-    solver.set_linear_solver('mumps')
-    # solver.set_linear_solver('ma57')
+    # solver.set_linear_solver('mumps')
+    solver.set_linear_solver('ma57')
     solver.set_tol(1e-3)
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
