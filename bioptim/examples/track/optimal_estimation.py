@@ -1,9 +1,9 @@
 """
-This example uses the data from the balanced pendulum example to generate the data to track.
-When it optimizes the program, contrary to the vanilla pendulum, it tracks the values instead of 'knowing' that
-it is supposed to balance the pendulum. It is designed to show how to track marker and kinematic data.
-
-Note that the final node is not tracked.
+This is an example of how to state an optimal estimation problem.
+The only objective of the OCP is to track the experimental data.
+It allows to get a reconstruction that is dynamically consistent in opposition to the Kalman filter for example
+(however, it is slower to compute).
+See https://www.tandfonline.com/doi/full/10.1080/14763141.2022.2066015 for comparison.
 """
 
 from typing import Callable
@@ -67,7 +67,6 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
-    tau_ref: np.ndarray,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     assume_phase_dynamics: bool = True,
 ) -> OptimalControlProgram:
@@ -84,8 +83,6 @@ def prepare_ocp(
         The number of shooting points
     markers_ref: np.ndarray
         The markers to track
-    tau_ref: np.ndarray
-        The generalized forces to track
     ode_solver: OdeSolverBase
         The ode solver to use
     assume_phase_dynamics: bool
@@ -107,7 +104,7 @@ def prepare_ocp(
         weight=100,
         target=markers_ref[1:, :, :],
     )
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", target=tau_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", weight=1e-6, quadratic=True)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -174,7 +171,6 @@ def main():
         final_time=final_time,
         n_shooting=n_shooting,
         markers_ref=markers_ref,
-        tau_ref=tau_ref,
     )
 
     # --- plot markers position --- #
