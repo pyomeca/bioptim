@@ -553,15 +553,15 @@ def prepare_socp(
     # Constraints
     constraints = ConstraintList()
     constraints.add(ee_equals_ee_ref, node=Node.ALL_SHOOTING)
-    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial]))
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
+    # constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial]))
+    # constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(zero_acceleration, node=Node.START, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
     constraints.add(track_final_marker, node=Node.PENULTIMATE, ee_final_position=ee_final_position)
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
+    # constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
     constraints.add(zero_acceleration, node=Node.PENULTIMATE, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))  # Not possible sice the control on the last node is NaN
-    constraints.add(ConstraintFcn.TRACK_CONTROL, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
-    constraints.add(ConstraintFcn.TRACK_STATE, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
-    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL_SHOOTING, min_bound=0, max_bound=180)  # This is a bug, it should be in radians
+    # constraints.add(ConstraintFcn.TRACK_CONTROL, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
+    # constraints.add(ConstraintFcn.TRACK_STATE, key="muscles", node=Node.ALL_SHOOTING, min_bound=0.001, max_bound=1)
+    # constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL_SHOOTING, min_bound=0, max_bound=180)  # This is a bug, it should be in radians
 
     problem_type = "CIRCLE"
     if problem_type == "BAR":
@@ -604,32 +604,37 @@ def prepare_socp(
     n_states = n_q + n_qdot + n_muscles
 
     # q_qdot_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
+    states_min = np.ones((n_states, n_shooting+1)) * -cas.inf
+    states_max = np.ones((n_states, n_shooting+1)) * cas.inf
     # states_min = np.zeros((n_states, 3))
     # states_max = np.zeros((n_states, 3))
     # states_min[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.min
     # states_max[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.max
-    # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0.01  # Activations
-    # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
+    states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0.001  # Activations
+    states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
     # # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
     # # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    # states_min[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
-    # states_max[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
-    # states_min[0:2, 1:3] = 0
-    # states_max[0:2, 1:3] = 180  # should be np.pi, but there is a mistake in the original code
-    # states_min[2:4, 2] = 0
-    # states_max[2:4, 2] = 0
+    states_min[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
+    states_max[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
+    states_min[0:2, 1:] = 0
+    states_max[0:2, 1:] = 180  # should be np.pi, but there is a mistake in the original code
+    states_min[2:4, n_shooting-1] = 0
+    states_max[2:4, n_shooting-1] = 0
 
 
     x_bounds = BoundsList()
-    states_min = np.ones((n_states, 3)) * -cas.inf
-    states_max = np.ones((n_states, 3)) * cas.inf
+    # states_min = np.ones((n_states, 3)) * -cas.inf
+    # states_max = np.ones((n_states, 3)) * cas.inf
     # states_min[:, 2] = 0  # To remove the last state that should not be a real variable (this is a hack)
     # states_max[:, 2] = 0
-    x_bounds.add(bounds=Bounds(states_min, states_max))
+    x_bounds.add(bounds=Bounds(states_min, states_max, interpolation=InterpolationType.EACH_FRAME))
 
-    n_tau = bio_model.nb_tau
+    u_bounds = BoundsList()
     # u_bounds = Bounds([0.01] * n_muscles, [1] * n_muscles)
-    u_bounds = Bounds([-cas.inf] * n_muscles, [cas.inf] * n_muscles)
+    # u_bounds.add(bounds=Bounds([-cas.inf] * n_muscles, [cas.inf] * n_muscles))
+    controls_min = np.ones((n_muscles, 3)) * 0.001
+    controls_max = np.ones((n_muscles, 3)) * 1
+    u_bounds.add(bounds=Bounds(controls_min, controls_max))
 
     # Initial guesses
     states_init = np.zeros((n_states, 2))
