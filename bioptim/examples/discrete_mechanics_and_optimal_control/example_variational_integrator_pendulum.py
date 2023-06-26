@@ -10,10 +10,10 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     Solver,
+    VariationalBiorbdModel,
 )
 import numpy as np
 
-from bioptim.examples.discrete_mechanics_and_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
 from bioptim.examples.discrete_mechanics_and_optimal_control.variational_optimal_control_program import (
     VariationalOptimalControlProgram,
 )
@@ -44,7 +44,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved.
     """
 
-    bio_model = BiorbdModelCustomHolonomic(bio_model_path)
+    bio_model = VariationalBiorbdModel(bio_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -77,8 +77,8 @@ def prepare_ocp(
 
     return VariationalOptimalControlProgram(
         bio_model,
-        n_shooting,
         final_time,
+        n_shooting=n_shooting,
         q_bounds=x_bounds,
         u_bounds=u_bounds,
         qdot_bounds=qdot_bounds,
@@ -111,7 +111,7 @@ def main():
     # The states are displayed piecewise constant, but actually they are not.
     sol.graphs()
 
-    print(f"qdot0 :{sol.parameters['qdot0'].squeeze()}")
+    print(f"qdot0 :{sol.parameters['qdot_start'].squeeze()}")
     print(f"qdot_end :{sol.parameters['qdot_end'].squeeze()}")
 
 
