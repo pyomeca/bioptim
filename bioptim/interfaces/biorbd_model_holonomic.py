@@ -2,7 +2,6 @@ from typing import Callable
 
 import biorbd_casadi as biorbd
 from biorbd_casadi import (
-    GeneralizedAcceleration,
     GeneralizedCoordinates,
     GeneralizedVelocity,
 )

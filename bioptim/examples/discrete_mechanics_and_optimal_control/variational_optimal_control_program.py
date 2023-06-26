@@ -15,6 +15,7 @@ from bioptim import (
     PenaltyController,
     ParameterConstraintList,
     ParameterObjectiveList,
+    VariationalBioModel,
     VariationalBiorbdModel,
 )
 from casadi import MX, vertcat, Function
@@ -27,7 +28,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
     def __init__(
         self,
-        bio_model: VariationalBiorbdModel,
+        bio_model: VariationalBioModel,
         final_time: float,
         q_init: InitialGuessList = None,
         q_bounds: BoundsList = None,
