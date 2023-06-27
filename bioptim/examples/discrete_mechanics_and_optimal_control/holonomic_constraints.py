@@ -13,8 +13,11 @@ class HolonomicConstraintFcn:
 
     @staticmethod
     def superimpose_markers(
-            biorbd_model: BiorbdModelHolonomic, marker_1: str, marker_2: str = None, index: slice = slice(0, 3),
-            local_frame_index: int = None
+        biorbd_model: BiorbdModelHolonomic,
+        marker_1: str,
+        marker_2: str = None,
+        index: slice = slice(0, 3),
+        local_frame_index: int = None,
     ) -> tuple[Function, Function, Function]:
         """
         Generate the constraint functions to superimpose two markers.
@@ -48,7 +51,7 @@ class HolonomicConstraintFcn:
             marker_2_sym = biorbd_model.marker(q_sym, index=biorbd_model.marker_index(marker_2))
 
         else:
-            marker_2_sym =MX([0, 0, 0])
+            marker_2_sym = MX([0, 0, 0])
 
             # if local frame is provided, the markers are expressed in the same local frame
         if local_frame_index is not None:
@@ -79,7 +82,7 @@ class HolonomicConstraintFcn:
 
         # the double derivative of the constraint
         constraint_double_derivative = (
-                constraint_jacobian_func(q_sym) @ q_ddot_sym + constraint_jacobian_func(q_dot_sym) @ q_dot_sym
+            constraint_jacobian_func(q_sym) @ q_ddot_sym + constraint_jacobian_func(q_dot_sym) @ q_dot_sym
         )
 
         constraint_double_derivative_func = Function(
