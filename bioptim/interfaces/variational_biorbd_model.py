@@ -14,7 +14,13 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
     integrator, very experimental and not tested.
     """
 
-    def __init__(self, bio_model: str | biorbd.Model):
+    def __init__(
+        self,
+        bio_model: str | biorbd.Model,
+        discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
+        control_type : ControlType = ControlType.CONSTANT,
+        control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
+    ):
         super().__init__(bio_model)
         self._holonomic_constraints = []
         self._holonomic_constraints_jacobian = []
@@ -23,13 +29,15 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         self.stabilization = False
         self.alpha = 0.01
         self.beta = 0.01
+        self.discrete_approximation = discrete_approximation
+        self.control_type = control_type
+        self.control_discrete_approximation = control_discrete_approximation
 
     def discrete_lagrangian(
         self,
         q1: MX | SX,
         q2: MX | SX,
         time_step: MX | SX,
-        discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
     ) -> MX | SX:
         """
         Compute the discrete Lagrangian of a biorbd model.
@@ -42,40 +50,36 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
             The generalized coordinates at the second time step.
         time_step: float
             The time step.
-        discrete_approximation: QuadratureRule
-            The quadrature rule to use for the discrete Lagrangian.
 
         Returns
         -------
         The discrete Lagrangian.
         """
-        if discrete_approximation == QuadratureRule.MIDPOINT:
+        if self.discrete_approximation == QuadratureRule.MIDPOINT:
             q_discrete = (q1 + q2) / 2
             qdot_discrete = (q2 - q1) / time_step
             return time_step * self.lagrangian(q_discrete, qdot_discrete)
-        elif discrete_approximation == QuadratureRule.LEFT_APPROXIMATION:
+        elif self.discrete_approximation == QuadratureRule.LEFT_APPROXIMATION:
             q_discrete = q1
             qdot_discrete = (q2 - q1) / time_step
             return time_step * self.lagrangian(q_discrete, qdot_discrete)
-        elif discrete_approximation == QuadratureRule.RIGHT_APPROXIMATION:
+        elif self.discrete_approximation == QuadratureRule.RIGHT_APPROXIMATION:
             q_discrete = q2
             qdot_discrete = (q2 - q1) / time_step
             return time_step * self.lagrangian(q_discrete, qdot_discrete)
-        elif discrete_approximation == QuadratureRule.TRAPEZOIDAL:
+        elif self.discrete_approximation == QuadratureRule.TRAPEZOIDAL:
             # from : M. West, “Variational integrators,” Ph.D. dissertation, California Inst.
             # Technol., Pasadena, CA, 2004. p 13
             qdot_discrete = (q2 - q1) / time_step
             return time_step / 2 * (self.lagrangian(q1, qdot_discrete) + self.lagrangian(q2, qdot_discrete))
         else:
-            raise NotImplementedError(f"Discrete Lagrangian {discrete_approximation} is not implemented")
+            raise NotImplementedError(f"Discrete Lagrangian {self.discrete_approximation} is not implemented")
 
-    @staticmethod
     def control_approximation(
+        self,
         control_minus: MX | SX,
         control_plus: MX | SX,
         time_step: float,
-        control_type: ControlType = ControlType.CONSTANT,
-        discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
     ):
         """
         Compute the term associated to the discrete forcing. The term associated to the controls in the Lagrangian
@@ -89,10 +93,6 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
             Control at t_{k+1} (or tk)
         time_step: float
             The time step.
-        control_type: ControlType
-            The type of control.
-        discrete_approximation: QuadratureRule
-            The quadrature rule to use for the discrete Lagrangian.
 
         Returns
         ----------
@@ -101,18 +101,18 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         Scalable Variational Integrators for Constrained Mechanical Systems in Generalized Coordinates.
         IEEE Transactions on Robotics, 25(6), 1249–1261. doi:10.1109/tro.2009.2032955
         """
-        if control_type == ControlType.CONSTANT:
+        if self.control_type == ControlType.CONSTANT:
             return 1 / 2 * control_minus * time_step
 
-        elif control_type == ControlType.LINEAR_CONTINUOUS:
-            if discrete_approximation == QuadratureRule.MIDPOINT:
+        elif self.control_type == ControlType.LINEAR_CONTINUOUS:
+            if self.control_discrete_approximation == QuadratureRule.MIDPOINT:
                 return 1 / 2 * (control_minus + control_plus) / 2 * time_step
-            elif discrete_approximation == QuadratureRule.LEFT_APPROXIMATION:
+            elif self.control_discrete_approximation == QuadratureRule.LEFT_APPROXIMATION:
                 return 1 / 2 * control_minus * time_step
-            elif discrete_approximation == QuadratureRule.RIGHT_APPROXIMATION:
+            elif self.control_discrete_approximation == QuadratureRule.RIGHT_APPROXIMATION:
                 return 1 / 2 * control_plus * time_step
-            elif discrete_approximation == QuadratureRule.TRAPEZOIDAL:
-                raise NotImplementedError(f"Discrete {discrete_approximation} is not implemented for {control_type}")
+            elif self.control_discrete_approximation == QuadratureRule.TRAPEZOIDAL:
+                raise NotImplementedError(f"Discrete {self.control_discrete_approximation} is not implemented for {self.control_type}")
 
     @staticmethod
     def compute_holonomic_discrete_constraints_jacobian(
@@ -283,7 +283,7 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         control_ultimate: MX | SX,
         constraints: Function = None,
         jac: Function = None,
-        lambdasN: MX | SX = None,
+        lambdas_ultimate: MX | SX = None,
     ):
         """
         Compute the initial states of the system from the initial position and velocity.
@@ -329,7 +329,7 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         )
         fd_plus = self.control_approximation(control_penultimate, control_ultimate, time_step)
         constraint_term = (
-            1 / 2 * transpose(jac(time_step, q_ultimate)) @ lambdasN
+            1 / 2 * transpose(jac(time_step, q_ultimate)) @ lambdas_ultimate
             if constraints is not None
             else MX.zeros(self.nb_q, 1)
         )
