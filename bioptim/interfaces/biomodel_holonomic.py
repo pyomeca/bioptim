@@ -1,14 +1,11 @@
 from typing import Protocol, Callable
 
 from biorbd_casadi import GeneralizedCoordinates
-from casadi import MX, SX, DM, Function
-from ..misc.enums import ControlType, QuadratureRule
-from ..misc.mapping import BiMapping, BiMappingList
-from ..interfaces.biorbd_model import Bounds
+from casadi import MX, DM, Function
 from ..interfaces.biomodel import BioModel
 
 
-class BioModelHolonomic(BioModel):
+class BioModelHolonomic(BioModel, Protocol):
     def set_dependencies(self, dependent_joint_index: list, independent_joint_index: list):
         """
         Set the dependencies between the joints of the model
