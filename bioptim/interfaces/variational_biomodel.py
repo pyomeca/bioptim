@@ -1,14 +1,11 @@
-from typing import Protocol, Callable
+from typing import Protocol
 
-from biorbd_casadi import GeneralizedCoordinates
-from casadi import MX, SX, DM, Function
+from casadi import MX, SX, Function
 from ..misc.enums import ControlType, QuadratureRule
-from ..misc.mapping import BiMapping, BiMappingList
-from ..interfaces.biorbd_model import Bounds
 from ..interfaces.biomodel_holonomic import BioModelHolonomic
 
 
-class VariationalBioModel(BioModelHolonomic):
+class VariationalBioModel(BioModelHolonomic, Protocol):
     def discrete_lagrangian(
         self,
         q1: MX | SX,

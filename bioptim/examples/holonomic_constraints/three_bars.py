@@ -138,7 +138,6 @@ def main():
     solver.set_constraint_tolerance(1e-15)  # the more it is, the less the constraint is derived
     sol = ocp.solve()
 
-    # sol.graphs(show_bounds=True)
     q = np.zeros((5, 101))
     for i, ui in enumerate(sol.states["u"].T):
         vi = bio_model.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
