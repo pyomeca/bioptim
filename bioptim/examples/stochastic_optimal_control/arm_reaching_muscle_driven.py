@@ -80,15 +80,15 @@ def get_muscle_force(q, qdot):
     dtheta_elbow = qdot[1]
 
     # Normalized muscle fiber length (without tendon)
-    l_full = a_shoulder * theta_shoulder + b_shoulder * cas.sin(
-        c_shoulder * theta_shoulder) / c_shoulder + a_elbow * theta_elbow + b_elbow * cas.sin(
-        c_elbow * theta_elbow) / c_elbow
+    l_full = a_shoulder @ theta_shoulder + b_shoulder * cas.sin(
+        c_shoulder @ theta_shoulder) / c_shoulder + a_elbow @ theta_elbow + b_elbow * cas.sin(
+        c_elbow @ theta_elbow) / c_elbow
     lMtilde = l_full * l_multiplier + l_base
 
     # fiber velocity normalized by the optimal fiber length
     nCoeff = a_shoulder.shape[0]
-    v_full = a_shoulder * dtheta_shoulder + b_shoulder * cas.cos(c_shoulder * theta_shoulder) * cas.repmat(
-        dtheta_shoulder, nCoeff, 1) + a_elbow * dtheta_elbow + b_elbow * cas.cos(c_elbow * theta_elbow) * cas.repmat(
+    v_full = a_shoulder @ dtheta_shoulder + b_shoulder * cas.cos(c_shoulder @ theta_shoulder) * cas.repmat(
+        dtheta_shoulder, nCoeff, 1) + a_elbow @ dtheta_elbow + b_elbow * cas.cos(c_elbow @ theta_elbow) * cas.repmat(
         dtheta_elbow, nCoeff, 1)
     vMtilde = l_multiplier * v_full
 
@@ -114,7 +114,7 @@ def get_muscle_force(q, qdot):
 
     num1 = lMtilde - b21
     den1 = b31 + b41 * lMtilde
-    FMtilde1 = b11 * cas.exp(-0.5 * num1 ** 2. / den1 ** 2)
+    FMtilde1 = b11 * cas.exp(-0.5 * num1 ** 2 / den1 ** 2)
 
     num2 = lMtilde - b22
     den2 = b32 + b42 * lMtilde
@@ -128,8 +128,8 @@ def get_muscle_force(q, qdot):
     e4 = Fvparam[3]
 
     FMvtilde = e1 * cas.log(
-        (e2 * vMtilde_normalizedToMaxVelocity + e3) + cas.sqrt(
-            (e2 * vMtilde_normalizedToMaxVelocity + e3) ** 2 + 1)) + e4
+        (e2 @ vMtilde_normalizedToMaxVelocity + e3) + cas.sqrt(
+            (e2 @ vMtilde_normalizedToMaxVelocity + e3) ** 2 + 1)) + e4
 
     # Active muscle force
     Fce = FMltilde * FMvtilde
@@ -160,8 +160,8 @@ def torque_force_relationship(Fm, q):
     theta_shoulder = q[0]
     theta_elbow = q[1]
 
-    dM_matrix = cas.horzcat(a_shoulder + b_shoulder * cas.cos(c_shoulder * theta_shoulder),
-                            a_elbow + b_elbow * cas.cos(c_elbow * theta_elbow)).T
+    dM_matrix = cas.horzcat(a_shoulder + b_shoulder * cas.cos(c_shoulder @ theta_shoulder),
+                            a_elbow + b_elbow * cas.cos(c_elbow @ theta_elbow)).T
     tau = dM_matrix @ Fm
     return tau
 
@@ -172,7 +172,7 @@ def get_muscle_torque(q, qdot, mus_activations):
     return muscles_tau
 
 def get_force_field(q):
-    force_field_magnitude = 0  # 200
+    force_field_magnitude = 0
     l1 = 0.3
     l2 = 0.33
     F_forceField = force_field_magnitude * (l1 * cas.cos(q[0]) + l2 * cas.cos(q[0] + q[1]))
@@ -227,7 +227,7 @@ def stochastic_forward_dynamics(
     tau_force_field = get_force_field(q)
 
     torques_computed = muscles_tau + wM + tau_force_field  # + residual_tau
-    dq_computed = qdot
+    dq_computed = qdot ### Do not use "DynamicsFunctions.compute_qdot(nlp, q, qdot)" it introduces errors!!
     dactivations_computed = (mus_excitations_fb - mus_activations) / tau_coef
 
     friction = np.array([[0.05, 0.025], [0.025, 0.05]])
@@ -281,7 +281,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     """
     dt = controllers[0].tf / controllers[0].ns
     out = 0
-    for i, ctrl in enumerate(controllers[1:]):
+    for i, ctrl in enumerate(controllers):
         P_matrix = ctrl.restore_matrix_from_vector(ctrl.update_values, ctrl.states.cx.shape[0],
                                                          ctrl.states.cx.shape[0], Node.START, "cov")
         P_partial = P_matrix[ctrl.states[key].index, ctrl.states[key].index]
@@ -532,8 +532,8 @@ def prepare_socp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="muscles", weight=1e3/2, quadratic=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, node=Node.ALL_SHOOTING, key="muscles", weight=1e3/2, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.PENULTIMATE, key="all", weight=1, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STOCHASTIC_VARIABLE, node=Node.PENULTIMATE, key="all", weight=1, quadratic=True)
+    # objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.END, key="all", weight=1, quadratic=True)
+    # objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STOCHASTIC_VARIABLE, node=Node.END, key="all", weight=1, quadratic=True)
     # objective_functions.add(expected_feedback_effort, custom_type=ObjectiveFcn.Lagrange, weight=1e3/2, quadratic=True)
 
     multinode_objectives = MultinodeObjectiveList()
@@ -541,12 +541,12 @@ def prepare_socp(
                                 nodes_phase=[0 for _ in range(n_shooting)],
                                 nodes=[i for i in range(n_shooting)],
                                 key="muscles",
-                                weight=1e3 / 2 * dt,
+                                weight=1e3 / 2,
                                 quadratic=False)
     multinode_objectives.add(expected_feedback_effort,
                              nodes_phase=[0 for _ in range(n_shooting)],
                              nodes=[i for i in range(n_shooting)],
-                             weight=1e3 / 2 * dt,
+                             weight=1e3 / 2,
                              quadratic=False)
 
     # Constraints
@@ -576,7 +576,7 @@ def prepare_socp(
                               nodes=[i for i in range(n_shooting)],
                               min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
                               max_bound=np.array([max_bounds_lateral_variation, 0.004**2, 0.05**2, 0.05**2]))
-    for i in range(n_shooting-1):  # Should be n_shooting, but since the last node is NaN, it is not possible
+    for i in range(n_shooting-1):
         multinode_constraints.add(leuven_trapezoidal,
                                   nodes_phase=[0, 0],
                                   nodes=[i, i+1])
@@ -915,7 +915,7 @@ Fiso = np.array([572.4000, 445.2000, 699.6000, 381.6000, 159.0000, 318.0000])
 Faparam = np.array([0.814483478343008, 1.055033428970575, 0.162384573599574, 0.063303448465465, 0.433004984392647, 0.716775413397760, -0.029947116970696, 0.200356847296188])
 Fvparam = np.array([-0.318323436899127, -8.149156043475250, -0.374121508647863, 0.885644059915004])
 Fpparam = np.array([-0.995172050006169, 53.598150033144236])
-muscleDampingCoefficient = np.ones((6, 1)) * 0.1
+muscleDampingCoefficient = np.ones((6, 1)) * 0.01
 tau_coef = 0.1500
 
 m1 = 1.4
