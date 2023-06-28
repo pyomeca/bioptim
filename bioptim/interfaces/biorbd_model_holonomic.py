@@ -302,3 +302,33 @@ class BiorbdModelHolonomic(BiorbdModel):
         )
 
         return v_opt
+
+    def compute_the_Lagrangian_multiplier(
+        self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
+    ) -> MX:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        Equation (17) in the paper.
+        """
+        J = self.partitioned_constrained_jacobian(q)
+        Jv = J[:, self.nb_independent_joints :]
+        Jvt_inv = inv(Jv.T)
+
+        partitioned_mass_matrix = self.partitioned_mass_matrix(q)
+        m_vu = partitioned_mass_matrix[self.nb_independent_joints :, : self.nb_independent_joints]
+        m_vv = partitioned_mass_matrix[self.nb_independent_joints :, self.nb_independent_joints :]
+
+        qddot_u = qddot[self._independent_joint_index]
+        qddot_v = qddot[self._dependent_joint_index]
+
+        non_linear_effect = self.partitioned_non_linear_effect(q, qdot, external_forces, f_contacts)
+        non_linear_effect_v = non_linear_effect[self.nb_independent_joints :]
+
+        Q = self.partitioned_tau(tau)
+        Qv = Q[self.nb_independent_joints :]
+
+        return Jvt_inv @ (m_vu @ qddot_u - m_vv @ qddot_v + non_linear_effect_v - Qv)
