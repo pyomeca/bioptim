@@ -1152,14 +1152,6 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        mx_value = []
-
-        for i_el, name_el in enumerate(name_elements):
-            var_name = f"{name}_{name_el}_MX"
-            mx_value.append(MX.sym(var_name, 1, 1))
-
-        mx_value = vertcat(*mx_value)
-
         # TODO: if go down that path, we sould also be able to compute values at collocation points
         # but for now only cx_start can be used
         n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
@@ -1171,11 +1163,11 @@ class ConfigureProblem:
         mat_p_init = DM_eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
         p_init = nlp.restore_vector_from_matrix(mat_p_init)
         cx_scaled_next_formatted = [p_init for _ in range(n_cx)]
-        nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, mx_value, dummy_mapping, 0)
+        nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, mat_p_init, dummy_mapping, 0)
         for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
             cx_scaled_next = nlp.update_value_function(nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
-            nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, mx_value, dummy_mapping, node_index)
+            nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next, dummy_mapping, node_index)
 
 
     @staticmethod
