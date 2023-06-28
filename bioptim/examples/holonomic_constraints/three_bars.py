@@ -124,21 +124,23 @@ def main():
     Solve and animate the solution
     """
 
+    n_shooting = 100
     ocp, bio_model = prepare_ocp(
         biorbd_model_path="models/three_bars.bioMod",
         final_time=1,
-        n_shooting=10,
+        n_shooting=n_shooting,
     )
 
     ocp.add_plot_penalty(cost_type=CostType.ALL)
 
     # --- Solve the program --- #
+    # show_online_optim not working yet
     solver = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
     solver.set_constraint_tolerance(1e-15)  # the more it is, the less the constraint is derived
     sol = ocp.solve()
 
-    q = np.zeros((5, 101))
+    q = np.zeros((5, n_shooting + 1))
     for i, ui in enumerate(sol.states["u"].T):
         vi = bio_model.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
         qi = bio_model.q_from_u_and_v(ui[:, np.newaxis], vi).toarray().squeeze()
