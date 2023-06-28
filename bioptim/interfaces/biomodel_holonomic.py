@@ -346,3 +346,36 @@ class BioModelHolonomic(BioModel, Protocol):
         DM
             The numerical values of the dependent joint for a given independent joint u
         """
+
+    def compute_the_Lagrangian_multiplier(
+            self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
+    ) -> MX:
+        """
+        Compute the Lagrangian multiplier, denoted lambda in the paper:
+        Parameters
+        ----------
+        q: MX
+            The generalized coordinates
+        qdot: MX
+            The generalized velocities
+        qddot: MX
+            The generalized accelerations
+        tau: MX
+            The generalized torques
+        external_forces: MX
+            The external forces
+        f_contacts: MX
+            The contact forces
+
+        Returns
+        -------
+        MX
+            The Lagrangian multipliers
+
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        Equation (17) in the paper.
+        """
