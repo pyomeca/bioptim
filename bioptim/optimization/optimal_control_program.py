@@ -178,6 +178,7 @@ class OptimalControlProgram:
         assume_phase_dynamics: bool = False,
         problem_type: OcpType = OcpType.OCP,
         update_value_function: Callable = None,
+        force_field_magnitude: float = None,
     ):
         """
         Parameters
@@ -614,7 +615,7 @@ class OptimalControlProgram:
         # Prepare the dynamics
         for i in range(self.n_phases):
             if problem_type == OcpType.SOCP_EXPLICIT:
-                self._prepare_stochastic_dynamics(self.nlp[i])
+                self._prepare_stochastic_dynamics(self.nlp[i], force_field_magnitude)
                 # TODO: add interphase continuity constraints on the covariance matrix
                 # TODO: add SOCP_IMPLICIT(with A and C if needed)
 
@@ -801,7 +802,7 @@ class OptimalControlProgram:
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
-    def _prepare_stochastic_dynamics(self, nlp):
+    def _prepare_stochastic_dynamics(self, nlp, force_field_magnitude):
         """
         ...
         """
@@ -811,6 +812,7 @@ class OptimalControlProgram:
                     MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
                     nodes_phase=(0, 0),  # TODO: to be changed for each phase
                     nodes=(i_node, i_node+1),
+                    force_field_magnitude=force_field_magnitude,
                     # nodes=(Node.START, Node.START),
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
