@@ -89,7 +89,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 
 def prepare_ocp(
     biorbd_model_path: str,
-    n_shooting: int = 10,
+    n_shooting: int = 100,
     final_time: float = 1,
     use_sx: bool = False,
 ) -> (BiorbdModelHolonomic, OptimalControlProgram):
@@ -191,13 +191,14 @@ def main():
     """
 
     model_path = "models/two_pendulums.bioMod"
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
+    n_shooting = 100
+    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=n_shooting)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False, _max_iter=500))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False, _max_iter=500))  # show_online_optim not working yet
 
     # --- Show results --- #
-    q = np.zeros((4, 101))
+    q = np.zeros((4, n_shooting + 1))
     for i, ui in enumerate(sol.states["u"].T):
         vi = bio_model.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
         qi = bio_model.q_from_u_and_v(ui[:, np.newaxis], vi).toarray().squeeze()

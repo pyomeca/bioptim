@@ -1094,7 +1094,7 @@ class OnlineCallback(Callback):
 
         Callback.__init__(self)
         self.ocp = ocp
-        self.nx = self.ocp.v.vector.shape[0]
+        self.nx = self.ocp.variables_vector.shape[0]
         self.ng = 0
         self.construct("AnimateCallback", opts)
 
