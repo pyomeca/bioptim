@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
 from IPython import embed
+import scipy
 
 import sys
 sys.path.append("/home/charbie/Documents/Programmation/BiorbdOptim")
@@ -24,7 +25,6 @@ from bioptim import (
     Bounds,
     InitialGuess,
     ObjectiveFcn,
-    OdeSolver,
     Solver,
     BiorbdModel,
     ObjectiveList,
@@ -33,7 +33,6 @@ from bioptim import (
     DynamicsFunctions,
     ConfigureProblem,
     DynamicsList,
-    VariableScalingList,
     BoundsList,
     InterpolationType,
     OcpType,
@@ -41,12 +40,8 @@ from bioptim import (
     Node,
     ConstraintList,
     ConstraintFcn,
-    DefectType,
-    Axis,
     MultinodeConstraintList,
     MultinodeObjectiveList,
-    ParameterList,
-    Constraint,
 )
 
 
@@ -175,7 +170,6 @@ def get_force_field(q, force_field_magnitude):
     l1 = 0.3
     l2 = 0.33
     F_forceField = force_field_magnitude * (l1 * cas.cos(q[0]) + l2 * cas.cos(q[0] + q[1]))
-    # Position of the hand marker ?
     hand_pos = cas.MX(2, 1)
     hand_pos[0] = l2 * cas.sin(q[0] + q[1]) + l1 * cas.sin(q[0])
     hand_pos[1] = l2 * cas.sin(q[0] + q[1])
@@ -210,11 +204,9 @@ def stochastic_forward_dynamics(
         ee_ref = DynamicsFunctions.get(nlp.stochastic_variables["ee_ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
         K_matrix = cas.MX(6, 4)
-        i = 0
         for s0 in range(6):
             for s1 in range(4):
-                K_matrix[s0, s1] = k[i]
-                i += 1
+                K_matrix[s0, s1] = k[s0*4 + s1]
 
         hand_pos = end_effector_position(q)
         hand_vel = end_effector_velocity(q, qdot)
@@ -227,12 +219,10 @@ def stochastic_forward_dynamics(
     tau_force_field = get_force_field(q, force_field_magnitude)
 
     torques_computed = muscles_tau + wM + tau_force_field  # + residual_tau
-    dq_computed = qdot ### Do not use "DynamicsFunctions.compute_qdot(nlp, q, qdot)" it introduces errors!!
+    dq_computed = qdot  ### Do not use "DynamicsFunctions.compute_qdot(nlp, q, qdot)" it introduces errors!!
     dactivations_computed = (mus_excitations_fb - mus_activations) / tau_coef
 
     friction = np.array([[0.05, 0.025], [0.025, 0.05]])
-    # mass_matrix = model.massMatrix(q).to_mx()
-    # nleffects = model.NonLinearEffect(q, qdot).to_mx()
 
     a1 = I1 + I2 + m2 * l1 ** 2
     a2 = m2 * l1 * lc2
@@ -261,18 +251,13 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
-    # ConfigureProblem.configure_tau(ocp, nlp, False, True)  # Residual tau
-    # TODO: eux ils n'utilsent pas de torques résiduels, si les muscles sont plannaire, ce devrit être good
-    ConfigureProblem.configure_muscles(ocp, nlp, True, True)  # Muscles activation (states) + excitation (control)
+    ConfigureProblem.configure_muscles(ocp, nlp, True, True)  # Muscles activations as states + muscles excitations as controls
 
     # Stochastic variables
     ConfigureProblem.configure_k(ocp, nlp)
     ConfigureProblem.configure_ee_ref(ocp, nlp)
     ConfigureProblem.configure_m(ocp, nlp)
     ConfigureProblem.configure_cov(ocp, nlp)
-    # ?
-    # ConfigureProblem.configure_c(ocp, nlp)
-    # ConfigureProblem.configure_a(ocp, nlp)
     ConfigureProblem.configure_dynamics_function(ocp, nlp, stochastic_forward_dynamics, wM=wM, wPq=wPq, wPqdot=wPqdot, force_field_magnitude=force_field_magnitude, with_gains=False, expand=False)
 
 def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.MX:
@@ -286,7 +271,6 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
                                                          ctrl.states.cx.shape[0], Node.START, "cov")
         P_partial = P_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(P_partial) * dt
-
     return out
 
 def get_ee(controller: PenaltyController, q, qdot) -> cas.MX:
@@ -304,8 +288,6 @@ def ee_equals_ee_ref(controller: PenaltyController) -> cas.MX:
 
 
 def get_p_mat(nlp, node_index, force_field_magnitude):
-
-    global wM_std, wPq_std, wPqdot_std
 
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
@@ -385,14 +367,12 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
 def end_effector_position(q):
     theta_shoulder = q[0]
     theta_elbow = q[1]
-
     ee_pos = cas.vertcat(cas.cos(theta_shoulder)*l1 + cas.cos(theta_shoulder + theta_elbow)*l2,
             cas.sin(theta_shoulder)*l1 + cas.sin(theta_shoulder + theta_elbow)*l2)
     return ee_pos
 
 
 def end_effector_velocity(q, qdot):
-
     theta_shoulder = q[0]
     theta_elbow = q[1]
     a = theta_shoulder + theta_elbow
@@ -406,7 +386,7 @@ def end_effector_velocity(q, qdot):
 
 def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     """
-    # trace(jacobian(e_fb_MX, X_MX) * P_MX * jacobian(e_fb_MX, X_MX)') + trace(K_MX*sensoryNoise_MX*K_MX');
+    ...
     """
     # Constants TODO: remove fom here
     # TODO: How do we choose?
@@ -480,19 +460,6 @@ def leuven_trapezoidal(controllers: list[PenaltyController], force_field_magnitu
 
     return out * 1e3
 
-def minimize_states_squared(controllers: list[PenaltyController]) -> cas.MX:
-    dt = controllers[0].tf / controllers[0].ns
-    out = 0
-    for ctrl in controllers:
-        out += cas.sumsqr(ctrl.states.cx_start) * dt
-    return out
-
-# def do_nothig():
-#     return
-
-# def x_init_equals_initial_states(controller: PenaltyController) -> cas.MX:
-#     return controller.states.cx_start - controller.parameters.cx_start
-
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -513,10 +480,14 @@ def prepare_socp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
-    ode_solver: OdeSolverBase = OdeSolver.RK4()
-        Which type of OdeSolver to use
-    n_threads: int
-        The number of threads to use in the paralleling (1 = no parallel computing)
+    ee_final_position: np.ndarray
+        The final position of the end effector
+    ee_initial_position: np.ndarray
+        The initial position of the end effector
+    force_field_magnitude: float
+        The magnitude of the force field
+    problem_type: str
+        The type of problem to solve (CIRCLE or BAR)
 
     Returns
     -------
@@ -591,14 +562,8 @@ def prepare_socp(
 
     states_min = np.ones((n_states, n_shooting+1)) * -cas.inf
     states_max = np.ones((n_states, n_shooting+1)) * cas.inf
-    # states_min = np.zeros((n_states, 3))
-    # states_max = np.zeros((n_states, 3))
-    # states_min[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.min
-    # states_max[:bio_model.nb_q + bio_model.nb_qdot, :] = q_qdot_bounds.max
     # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0.001  # Activations
     # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
-    # # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
-    # # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 0  # Initial activations
     # states_min[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
     # states_max[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
     # states_min[0:2, 1:] = 0
@@ -608,10 +573,6 @@ def prepare_socp(
 
 
     x_bounds = BoundsList()
-    # states_min = np.ones((n_states, 3)) * -cas.inf
-    # states_max = np.ones((n_states, 3)) * cas.inf
-    # states_min[:, 2] = 0  # To remove the last state that should not be a real variable (this is a hack)
-    # states_max[:, 2] = 0
     x_bounds.add(bounds=Bounds(states_min, states_max, interpolation=InterpolationType.EACH_FRAME))
 
     u_bounds = BoundsList()
@@ -634,55 +595,23 @@ def prepare_socp(
     u_init = InitialGuess(controls_init, interpolation=InterpolationType.EACH_FRAME)
 
     # TODO: This should probably be done automatically, not defined by the user
-
-    n_stochastic = n_muscles*(n_q + n_qdot) + n_q+n_qdot + n_states*n_states #  + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10) + P(10x10)
+    n_stochastic = n_muscles*(n_q + n_qdot) + n_q+n_qdot + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10)
     stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
 
     curent_index = 0
     stochastic_init[:n_muscles * (n_q + n_qdot), :] = 0.01  # K
     curent_index += n_muscles * (n_q + n_qdot)
     stochastic_init[curent_index: curent_index + n_q + n_qdot, :] = 0.01  # ee_ref
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
+    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
     curent_index += n_q + n_qdot
     stochastic_init[curent_index: curent_index + n_states * n_states, :] = 0.01  # M
-
-    # stochastic_init[:n_muscles*(n_q + n_qdot), :] = 0.01  # K
-    # # stochastic_min[:n_muscles*(n_q + n_qdot), :] = -10
-    # # stochastic_max[:n_muscles*(n_q + n_qdot), :] = 10
-    #
-    # curent_index += n_muscles*(n_q + n_qdot)
-    # # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
-    # # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, :] = 0.01  # ee_ref
-    # # stochastic_min[curent_index : curent_index + n_q+n_qdot, :] = -1
-    # # stochastic_max[curent_index : curent_index + n_q+n_qdot, :] = 1
-    #
-    # curent_index += n_q+n_qdot
-    # stochastic_init[curent_index : curent_index + n_states*n_states, 0] = 0.01  # M
-    # # stochastic_min[curent_index : curent_index + n_states*n_states, :] = -10
-    # # stochastic_max[curent_index : curent_index + n_states*n_states, :] = 10
-    # # M at node ns+1 should not exist (my hope is that by constraining it IPOPT treats it as a constant)
-    # # stochastic_min[curent_index : curent_index + n_states*n_states, 2] = 0.01
-    # # stochastic_max[curent_index : curent_index + n_states*n_states, 2] = 0.01
-    #
-    # # curent_index += n_states*n_states
-    # # mat_p_init = np.eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
-    # # stochastic_min[curent_index:, :] = 0
-    # # stochastic_max[curent_index:, :] = cas.inf  # 1
-    # # vect_p_init = np.zeros((100, ))
-    # # for i in range(10):
-    # #     for j in range(10):
-    # #         vect_p_init[i*10+j] = mat_p_init[i, j]
-    # # stochastic_init[curent_index:, 0] = vect_p_init
-    # # stochastic_min[curent_index:, 0] = vect_p_init
-    # # stochastic_max[curent_index:, 0] = vect_p_init
 
     s_init = InitialGuess(stochastic_init, interpolation=InterpolationType.EACH_FRAME)
 
     s_bounds = BoundsList()
     stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
     stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
-    # stochastic_min[:, 2] = 0  # To remove the last stochastic variables that should not be real variable (this is a hack)
-    # stochastic_max[:, 2] = 0
     s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
     # TODO: we should probably change the name stochastic_variables -> helper_variables ?
 
@@ -703,21 +632,17 @@ def prepare_socp(
         multinode_constraints=multinode_constraints,
         ode_solver=None,
         skip_continuity=True,
-        # ode_solver=OdeSolver.LEUVEN_TRAPEZIODAL(),
-        # ode_solver=OdeSolver.RK4(n_integration_steps=5),
-        # ode_solver=OdeSolver.RK2(n_integration_steps=1),
-        # ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=DefectType.EXPLICIT),
-        n_threads=1,  # n_threads,
+        n_threads=1,
         assume_phase_dynamics=False,
         problem_type=OcpType.SOCP_EXPLICIT,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
         update_value_function=lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude),
-        force_field_magnitude=force_field_magnitude, # TODO: remove
+        force_field_magnitude=force_field_magnitude,  # TODO: remove
     )
 
 def main():
 
     global wM_std, wPq_std, wPqdot_std
-    RUN_OPTIM_FLAG = True  # False
+    RUN_OPTIM_FLAG = True # False
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
     # import bioviz
@@ -741,12 +666,10 @@ def main():
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
     solver.set_maximum_iterations(10000)
-    # solver.set_bound_frac(1e-8)
-    # solver.set_bound_push(1e-8)
     solver.set_hessian_approximation('limited-memory')
 
     problem_type = "CIRCLE"
-    force_field_magnitude = 200
+    force_field_magnitude = 0
     socp = prepare_socp(biorbd_model_path=biorbd_model_path,
                         final_time=final_time,
                         n_shooting=n_shooting,
@@ -766,7 +689,7 @@ def main():
         ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
         m_sol = sol_socp.stochastic_variables["m"]
         # cov_sol = sol_socp.update_values["cov"]
-        parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol))  # , cov_sol))
+        stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))  # , cov_sol))
         data = {"q_sol": q_sol,
                 "qdot_sol": qdot_sol,
                 "activations_sol": activations_sol,
@@ -775,13 +698,13 @@ def main():
                 "ee_ref_sol": ee_ref_sol,
                 "m_sol": m_sol,
                 # "cov_sol": cov_sol,
-                "parameters_sol": parameters_sol}
+                "stochastic_variables_sol": stochastic_variables_sol}
 
         # --- Save the results --- #
-        with open("leuvenarm_muscle_driven_socp.pkl", "wb") as file:
+        with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "wb") as file:
             pickle.dump(data, file)
     else:
-        with open("leuvenarm_muscle_driven_socp_1.pkl", "rb") as file:
+        with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "rb") as file:
             data = pickle.load(file)
         q_sol = data["q_sol"]
         qdot_sol = data["qdot_sol"]
@@ -791,10 +714,20 @@ def main():
         ee_ref_sol = data["ee_ref_sol"]
         m_sol = data["m_sol"]
         # cov_sol = data["cov_sol"]
-        # parameters_sol = data["parameters_sol"]
-        parameters_sol = np.vstack((k_sol, ee_ref_sol, m_sol))  #, cov_sol))
+        stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))
+        # # Save .mat files
+        # scipy.io.savemat(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.mat",
+        #                     {"q_sol": q_sol,
+        #                         "qdot_sol": qdot_sol,
+        #                         "activations_sol": activations_sol,
+        #                         "excitations_sol": excitations_sol,
+        #                         "k_sol": k_sol,
+        #                         "ee_ref_sol": ee_ref_sol,
+        #                         "m_sol": m_sol,
+        #                         "stochastic_variables_sol": stochastic_variables_sol})
 
 
+    embed()
     import bioviz
     b = bioviz.Viz(model_path=biorbd_model_path)
     b.load_movement(q_sol[:, :-1])
@@ -815,7 +748,7 @@ def main():
     wM_sym = cas.MX.sym('wM', 2, 1)
     wPq_sym = cas.MX.sym('wPq', 2, 1)
     wPqdot_sym = cas.MX.sym('wPqdot', 2, 1)
-    out = stochastic_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM_sym, wPq_sym, wPqdot_sym)
+    out = stochastic_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM_sym, wPq_sym, wPqdot_sym, force_field_magnitude=force_field_magnitude, with_gains=True)
     dyn_fun = cas.Function("dyn_fun", [states, controls, parameters, stochastic_variables, wM_sym, wPq_sym, wPqdot_sym], [out.dxdt])
 
     fig, axs = plt.subplots(3, 2)
@@ -837,9 +770,9 @@ def main():
             hand_pos_simulated[i_simulation, :, i_node] = np.reshape(hand_pos_fcn(x_prev[:2])[:2], (2,))
             hand_vel_simulated[i_simulation, :, i_node] = np.reshape(hand_vel_fcn(x_prev[:2], x_prev[2:4])[:2], (2,))
             u = excitations_sol[:, i_node]
-            p = parameters_sol[:, i_node]
-            k1 = dyn_fun(x_prev, u, [], p, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
-            x_next = x_prev + dt * dyn_fun(x_prev + dt / 2 * k1, u, [], p, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
+            s = stochastic_variables_sol[:, i_node]
+            k1 = dyn_fun(x_prev, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
+            x_next = x_prev + dt * dyn_fun(x_prev + dt / 2 * k1, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
             q_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[:2], (2, ))
             qdot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[2:4], (2, ))
             mus_activation_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[4:], (6, ))
@@ -877,22 +810,6 @@ def main():
     plt.show()
 
     # TODO: integrate to see the error they commit with the trapezoidal
-
-    # Custom plots
-    # ocp.add_plot_penalty(CostType.ALL)
-
-    # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
-    # ocp.check_conditioning()
-
-    # --- Solve the ocp --- #
-    # sol.graphs()
-
-    # --- Show the results in a bioviz animation --- #
-    # sol_socp.animate()
-    import bioviz
-    b = bioviz.Viz(model_path=biorbd_model_path)
-    b.load_movement(q_simulated[0, :, :-1])
-    b.exec()
 
 
 # --- Define constants to specify the model  --- #
