@@ -5,6 +5,8 @@ pendulum simulation.
 """
 import numpy as np
 
+import bioviz
+
 from bioptim import (
     BiMappingList,
     HolonomicBiorbdModel,
@@ -27,7 +29,6 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time,
     n_shooting,
-    use_sx: bool = False,
 ) -> (OptimalControlProgram, HolonomicBiorbdModel):
     """
     Prepare the program
@@ -40,8 +41,6 @@ def prepare_ocp(
         The time at the final node
     n_shooting: int
         The number of shooting points
-    use_sx: bool
-        If SX should be used instead of MX
 
     Returns
     -------
@@ -113,7 +112,6 @@ def prepare_ocp(
             u_bounds=u_bounds,
             objective_functions=objective_functions,
             assume_phase_dynamics=True,
-            use_sx=use_sx,
         ),
         bio_model,
     )
@@ -135,18 +133,13 @@ def main():
 
     # --- Solve the program --- #
     # show_online_optim not working yet
-    solver = Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True))
-    solver.set_linear_solver("ma57")
-    solver.set_constraint_tolerance(1e-15)  # the more it is, the less the constraint is derived
-    sol = ocp.solve()
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True)))
 
     q = np.zeros((5, n_shooting + 1))
     for i, ui in enumerate(sol.states["q_u"].T):
         vi = bio_model.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
         qi = bio_model.q_from_u_and_v(ui[:, np.newaxis], vi).toarray().squeeze()
         q[:, i] = qi
-
-    import bioviz
 
     viz = bioviz.Viz("models/three_bar.bioMod", show_contacts=False)
     viz.load_movement(q)

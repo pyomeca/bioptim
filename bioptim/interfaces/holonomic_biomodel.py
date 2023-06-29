@@ -42,6 +42,31 @@ class HolonomicBioModel(BioModel, Protocol):
         """
         return -1
 
+    @property
+    def dependent_joint_index(self) -> list:
+        """
+        Get the index of the dependent joints
+
+        Returns
+        -------
+        list
+            The index of the dependent joints
+        """
+        return []
+
+    @property
+    def independent_joint_index(self) -> list:
+        """
+        Get the index of the independent joints
+
+        Returns
+        -------
+        list
+            The index of the independent joints
+        """
+        return []
+
+
     def add_holonomic_constraint(
         self,
         constraint: Function | Callable[[GeneralizedCoordinates], MX],
