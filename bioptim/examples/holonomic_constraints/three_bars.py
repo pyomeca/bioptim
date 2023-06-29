@@ -45,7 +45,7 @@ def prepare_ocp(
     The ocp ready to be solved
     """
     bio_model = HolonomicBiorbdModel(biorbd_model_path)
-    # Holonomic constraints
+    # Create a holonomic constraint to create a triple pendulum from a double pendulum and a simple pendulum
     constraint, constraint_jacobian, constraint_double_derivative = HolonomicConstraintFcn.superimpose_markers(
         bio_model,
         "m1",  # marker names
@@ -58,6 +58,8 @@ def prepare_ocp(
         constraint_jacobian=constraint_jacobian,
         constraint_double_derivative=constraint_double_derivative,
     )
+    # The rotations (joint 0, 1 and 4) are independent. The translations (joint 2 and 3) are constrained by the
+    # holonomic constraint
     bio_model.set_dependencies(independent_joint_index=[0, 1, 4], dependent_joint_index=[2, 3])
 
     # Add objective functions
@@ -74,9 +76,14 @@ def prepare_ocp(
 
     # Boundaries
     mapping = BiMappingList()
+    # The rotations (joint 0, 1 and 4) are independent. The translations (joint 2 and 3) are constrained by the
+    # holonomic constraint, so we need to map the states and controls to only compute the dynamics of the independent
+    # joints
+    # The dynamics of the dependent joints will be computed from the holonomic constraint
     mapping.add("q", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
     mapping.add("qdot", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
     x_bounds = BoundsList()
+    # q_u and qdot_u are the states of the independent joints
     x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=mapping)
     x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=mapping)
     x_bounds["q_u"][:, 0] = pose_at_first_node
@@ -90,11 +97,14 @@ def prepare_ocp(
     x_init.add("qdot_u", [0] * 3)
 
     # Define control path constraint
+    variable_bimapping = BiMappingList()
     tau_min, tau_max, tau_init = -1000, 1000, 0
+    # Only the rotations are controlled
+    variable_bimapping.add("tau", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=[tau_min] * bio_model.nb_tau, max_bound=[tau_max] * bio_model.nb_tau)
+    u_bounds.add("tau", min_bound=[tau_min] * 3, max_bound=[tau_max] * 3)
     u_init = InitialGuessList()
-    u_init.add("tau", [tau_init] * bio_model.nb_tau)
+    u_init.add("tau", [tau_init] * 3)
 
     # ------------- #
 
@@ -110,6 +120,7 @@ def prepare_ocp(
             u_bounds=u_bounds,
             objective_functions=objective_functions,
             assume_phase_dynamics=True,
+            variable_mappings=variable_bimapping,
         ),
         bio_model,
     )
@@ -127,11 +138,8 @@ def main():
         n_shooting=n_shooting,
     )
 
-    ocp.add_plot_penalty(cost_type=CostType.ALL)
-
     # --- Solve the program --- #
-    # show_online_optim not working yet
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True, show_options=dict(show_bounds=True)))
+    sol = ocp.solve(Solver.IPOPT())
 
     q = np.zeros((5, n_shooting + 1))
     for i, ui in enumerate(sol.states["q_u"].T):
