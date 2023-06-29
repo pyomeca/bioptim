@@ -66,7 +66,6 @@ class HolonomicBioModel(BioModel, Protocol):
         """
         return []
 
-
     def add_holonomic_constraint(
         self,
         constraint: Function | Callable[[GeneralizedCoordinates], MX],

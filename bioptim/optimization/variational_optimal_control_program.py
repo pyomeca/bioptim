@@ -1,6 +1,8 @@
 """
 Optimal control program with the variational integrator for the dynamics.
 """
+import numpy as np
+
 from bioptim import (
     BoundsList,
     ConfigureProblem,
@@ -44,13 +46,26 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         **kwargs,
     ):
         if type(bio_model) != VariationalBiorbdModel:
-            raise RuntimeError("bio_model must be of type VariationalBiorbdModel")
+            raise TypeError("bio_model must be of type VariationalBiorbdModel")
 
-        if "phase_time" in kwargs or isinstance(final_time, (list, tuple)):
+        if "phase_time" in kwargs:
             raise NotImplementedError(
-                "Phases have not been implemented in VariationalOptimalControlProgram yet. Please register only a final"
-                " time."
+                "Multiphase problems have not been implemented yet with VariationalOptimalControlProgram. Please use "
+                "final_time argument instead of phase_time."
             )
+
+        if not isinstance(final_time, (float, int)):
+            if (
+                isinstance(final_time, (tuple, list))
+                and len(final_time) != 1
+                or isinstance(final_time, np.ndarray)
+                and final_time.size != 1
+            ):
+                raise ValueError(
+                    "Multiphase problems have not been implemented yet with "
+                    "VariationalOptimalControlProgram. Please use final_time argument and use one float to"
+                    " define it."
+                )
 
         if "n_shooting" not in kwargs:
             raise ValueError("n_shooting must be defined in VariationalOptimalControlProgram")
