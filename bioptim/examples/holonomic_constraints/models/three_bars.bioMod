@@ -26,7 +26,6 @@ segment Bar2
     0   0   0.001
   mesh 0 0 0
   mesh 0 -1 0
-  externalforceindex 0
 endsegment
 
 
@@ -46,26 +45,7 @@ segment Bar3
     0   0   0.001
     mesh 0 0 0
     mesh 0 -1 0
-    externalforceindex 1
 endsegment
-
-loopconstraint
-    predecessor Bar2
-    successor Bar3
-    RTpredecessor 0 0 0 xyz 0 -1 0
-    RTsuccessor 0 0 0 xyz 0 0 0
-    axis 0 0 0 0 1 0 // in predecessor frame
-    stabilizationParameter 0.5
-endloopconstraint
-
-loopconstraint
-    predecessor Bar2
-    successor Bar3
-    RTpredecessor 0 0 0 xyz 0 -1 0
-    RTsuccessor 0 0 0 xyz 0 0 0
-    axis 0 0 0 1 0 0 // in predecessor frame
-    stabilizationParameter 0.5
-endloopconstraint
 
 marker	m1
     parent	Bar2
