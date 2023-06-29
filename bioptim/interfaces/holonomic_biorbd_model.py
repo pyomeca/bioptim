@@ -58,6 +58,14 @@ class HolonomicBiorbdModel(BiorbdModel):
     def nb_dependent_joints(self):
         return len(self._dependent_joint_index)
 
+    @property
+    def dependent_joint_index(self) -> list:
+        return self._dependent_joint_index
+
+    @property
+    def independent_joint_index(self) -> list:
+        return self._independent_joint_index
+
     def add_holonomic_constraint(
         self,
         constraint: Function | Callable[[GeneralizedCoordinates], MX],
@@ -164,7 +172,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return vertcat(tau_u, tau_v)
 
-    def partitioned_constrained_jacobian(self, q):
+    def partitioned_constraints_jacobian(self, q):
         constrained_jacobian = self.holonomic_constraints_jacobian(q)
         constrained_jacobian_u = constrained_jacobian[:, self._independent_joint_index]
         constrained_jacobian_v = constrained_jacobian[:, self._dependent_joint_index]
@@ -228,7 +236,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
-        partitioned_constrained_jacobian = self.partitioned_constrained_jacobian(q)
+        partitioned_constrained_jacobian = self.partitioned_constraints_jacobian(q)
         partitioned_constrained_jacobian_v = partitioned_constrained_jacobian[:, self.nb_independent_joints :]
         partitioned_constrained_jacobian_v_inv = inv(partitioned_constrained_jacobian_v)  # inv_minor otherwise ?
 
@@ -246,7 +254,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         The right term of the equation (15) in the paper.
         """
-        partitioned_constrained_jacobian = self.partitioned_constrained_jacobian(q)
+        partitioned_constrained_jacobian = self.partitioned_constraints_jacobian(q)
         partitioned_constrained_jacobian_v = partitioned_constrained_jacobian[:, self.nb_independent_joints :]
         partitioned_constrained_jacobian_v_inv = inv(partitioned_constrained_jacobian_v)  # inv_minor otherwise ?
 
@@ -335,7 +343,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         Equation (17) in the paper.
         """
-        J = self.partitioned_constrained_jacobian(q)
+        J = self.partitioned_constraints_jacobian(q)
         Jv = J[:, self.nb_independent_joints :]
         Jvt_inv = inv(Jv.T)
 

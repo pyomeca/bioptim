@@ -86,7 +86,7 @@ def test_model_holonomic():
     TestUtils.assert_equal(model.partitioned_qdot(q_dot), [4.0, 5.0, 6.0])
     TestUtils.assert_equal(model.partitioned_tau(tau), [10.0, 11.0, 12.0])
     TestUtils.assert_equal(
-        model.partitioned_constrained_jacobian(q),
+        model.partitioned_constraints_jacobian(q),
         [[-0.5104801, 0.02982221, -0.96017029], [-0.70317549, 0.13829549, 0.2794155]],
     )
 
