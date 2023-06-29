@@ -5,8 +5,6 @@ pendulum simulation.
 """
 import numpy as np
 
-import bioviz
-
 from bioptim import (
     BiMappingList,
     BoundsList,
@@ -146,6 +144,8 @@ def main():
         vi = bio_model.compute_q_v_numeric(ui, q_v_init=np.zeros(2)).toarray()
         qi = bio_model.state_from_partition(ui[:, np.newaxis], vi).toarray().squeeze()
         q[:, i] = qi
+
+    import bioviz
 
     viz = bioviz.Viz("models/three_bar.bioMod", show_contacts=False)
     viz.load_movement(q)
