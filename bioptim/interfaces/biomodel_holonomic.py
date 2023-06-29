@@ -62,6 +62,18 @@ class BioModelHolonomic(BioModel, Protocol):
         """
 
     @property
+    def has_holonomic_constraints(self):
+        """
+        Check if the model has holonomic constraints
+
+        Returns
+        -------
+        bool
+            If the model has holonomic constraints
+        """
+        return False
+
+    @property
     def nb_holonomic_constraints(self) -> int:
         """
         Get the number of holonomic constraints
@@ -348,7 +360,7 @@ class BioModelHolonomic(BioModel, Protocol):
         """
 
     def compute_the_Lagrangian_multiplier(
-            self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
+        self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
     ) -> MX:
         """
         Compute the Lagrangian multiplier, denoted lambda in the paper:

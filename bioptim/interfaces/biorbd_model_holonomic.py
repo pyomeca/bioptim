@@ -69,6 +69,10 @@ class BiorbdModelHolonomic(BiorbdModel):
     def nb_holonomic_constraints(self):
         return sum([c.nnz_out() for c in self._holonomic_constraints])
 
+    @property
+    def has_holonomic_constraints(self):
+        return self.nb_holonomic_constraints > 0
+
     def holonomic_constraints(self, q: MX):
         return vertcat(*[c(q) for c in self._holonomic_constraints])
 
