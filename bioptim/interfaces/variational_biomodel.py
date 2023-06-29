@@ -69,9 +69,7 @@ class VariationalBioModel(BioModelHolonomic, Protocol):
         """
 
     @staticmethod
-    def compute_holonomic_discrete_constraints_jacobian(
-        jac: Function, time_step: MX | SX, q: MX | SX
-    ) -> MX | SX | None:
+    def discrete_holonomic_constraints_jacobian(jac: Function, time_step: MX | SX, q: MX | SX) -> MX | SX | None:
         """
         Compute the discrete Jacobian of the holonomic constraints. See Variational integrators for constrained
         dynamical systems (https://onlinelibrary.wiley.com/doi/epdf/10.1002/zamm.200700173) eq. (21) for more
@@ -101,8 +99,6 @@ class VariationalBioModel(BioModelHolonomic, Protocol):
         control_prev: MX | SX,
         control_cur: MX | SX,
         control_next: MX | SX,
-        constraints: Function = None,
-        jac: Function = None,
         lambdas: MX | SX = None,
     ) -> MX | SX:
         """
@@ -124,10 +120,6 @@ class VariationalBioModel(BioModelHolonomic, Protocol):
             The generalized forces at the second node.
         control_next: MX | SX
             The generalized forces at the third node.
-        constraints: Function
-            The constraints.
-        jac: Function
-            The jacobian of the constraints.
         lambdas: MX | SX
             The Lagrange multipliers.
 
@@ -150,8 +142,6 @@ class VariationalBioModel(BioModelHolonomic, Protocol):
         q1: MX | SX,
         control0: MX | SX,
         control1: MX | SX,
-        constraints: Function = None,
-        jac: Function = None,
         lambdas0: MX | SX = None,
     ):
         """
@@ -169,10 +159,6 @@ class VariationalBioModel(BioModelHolonomic, Protocol):
             The generalized forces at the first node.
         control1: MX | SX
             The generalized forces at the second node.
-        constraints: Function
-            The constraints.
-        jac: Function
-            The jacobian of the constraints.
         lambdas0: MX | SX
             The Lagrange multipliers at the first node.
 
@@ -197,8 +183,6 @@ class VariationalBioModel(BioModelHolonomic, Protocol):
         q_dot_ultimate: MX | SX,
         control_penultimate: MX | SX,
         control_ultimate: MX | SX,
-        constraints: Function = None,
-        jac: Function = None,
         lambdas_ultimate: MX | SX = None,
     ):
         """
@@ -218,10 +202,6 @@ class VariationalBioModel(BioModelHolonomic, Protocol):
             The generalized forces at the penultimate node.
         control_ultimate: MX | SX
             The generalized forces at the ultimate node.
-        constraints: Function
-            The constraints.
-        jac: Function
-            The jacobian of the constraints.
         lambdas_ultimate: MX | SX
             The Lagrange multipliers at the ultimate node.
 

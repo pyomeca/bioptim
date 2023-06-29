@@ -2,7 +2,7 @@
 Biorbd model for holonomic constraints and variational integrator.
 """
 import biorbd_casadi as biorbd
-from casadi import SX, MX, vertcat, Function, jacobian, transpose
+from casadi import SX, MX, vertcat, jacobian, transpose
 
 from .biorbd_model_holonomic import BiorbdModelHolonomic
 from ..misc.enums import ControlType, QuadratureRule
@@ -22,13 +22,6 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
     ):
         super().__init__(bio_model)
-        self._holonomic_constraints = []
-        self._holonomic_constraints_jacobian = []
-        self._holonomic_constraints_derivatives = []
-        self._holonomic_constraints_double_derivatives = []
-        self.stabilization = False
-        self.alpha = 0.01
-        self.beta = 0.01
         self.discrete_approximation = discrete_approximation
         self.control_type = control_type
         self.control_discrete_approximation = control_discrete_approximation
@@ -116,10 +109,7 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
                     f"Discrete {self.control_discrete_approximation} is not implemented for {self.control_type}"
                 )
 
-    @staticmethod
-    def compute_holonomic_discrete_constraints_jacobian(
-        jac: Function, time_step: MX | SX, q: MX | SX
-    ) -> MX | SX | None:
+    def discrete_holonomic_constraints_jacobian(self, time_step: MX | SX, q: MX | SX) -> MX | SX | None:
         """
         Compute the discrete Jacobian of the holonomic constraints. See Variational integrators for constrained
         dynamical systems (https://onlinelibrary.wiley.com/doi/epdf/10.1002/zamm.200700173) eq. (21) for more
@@ -127,8 +117,6 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
 
         Parameters
         ----------
-        jac: Function
-            The Jacobian of the holonomic constraints.
         time_step: MX | SX
             The time step.
         q:
@@ -139,9 +127,9 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         holonomic_discrete_constraints_jacobian: MX | SX | None
             The discrete Jacobian of the holonomic constraints if there is constraints, None otherwise.
         """
-        if jac is None:
+        if self.holonomic_constraints_jacobian is None:
             return None
-        return time_step * jac(q)
+        return time_step * self.holonomic_constraints_jacobian(q)
 
     def discrete_euler_lagrange_equations(
         self,
@@ -152,8 +140,6 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         control_prev: MX | SX,
         control_cur: MX | SX,
         control_next: MX | SX,
-        constraints: Function = None,
-        jac: Function = None,
         lambdas: MX | SX = None,
     ) -> MX | SX:
         """
@@ -175,10 +161,6 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
             The generalized forces at the second node.
         control_next: MX | SX
             The generalized forces at the third node.
-        constraints: Function
-            The constraints.
-        jac: Function
-            The jacobian of the constraints.
         lambdas: MX | SX
             The Lagrange multipliers.
 
@@ -197,8 +179,12 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         p_current = transpose(jacobian(self.discrete_lagrangian(q_prev, q_cur, time_step), q_cur))
         # Refers to D_1 L_d(q_{k}, q_{k+1}) (D_2 is the partial derivative with respect to the second argument)
         d1_ld_qcur_qnext = transpose(jacobian(self.discrete_lagrangian(q_cur, q_next, time_step), q_cur))
+        if self.has_holonomic_constraints and lambdas is None:
+            raise ValueError("As your model is constrained, you must specify the lambdas.")
         constraint_term = (
-            transpose(jac(time_step, q_cur)) @ lambdas if constraints is not None else MX.zeros(p_current.shape)
+            transpose(self.discrete_holonomic_constraints_jacobian(time_step, q_cur)) @ lambdas
+            if self.has_holonomic_constraints
+            else MX.zeros(p_current.shape)
         )
 
         residual = (
@@ -209,8 +195,8 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
             + self.control_approximation(control_cur, control_next, time_step)
         )
 
-        if constraints is not None:
-            return vertcat(residual, constraints(q_next))
+        if self.has_holonomic_constraints:
+            return vertcat(residual, self.holonomic_constraints(q_next))
         else:
             return residual
 
@@ -222,8 +208,6 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         q1: MX | SX,
         control0: MX | SX,
         control1: MX | SX,
-        constraints: Function = None,
-        jac: Function = None,
         lambdas0: MX | SX = None,
     ):
         """
@@ -241,10 +225,6 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
             The generalized forces at the first node.
         control1: MX | SX
             The generalized forces at the second node.
-        constraints: Function
-            The constraints.
-        jac: Function
-            The jacobian of the constraints.
         lambdas0: MX | SX
             The Lagrange multipliers at the first node.
 
@@ -265,13 +245,19 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         # discrete Lagrangian)
         d1_ld_q0_q1 = transpose(jacobian(self.discrete_lagrangian(q0, q1, time_step), q0))
         f0_minus = self.control_approximation(control0, control1, time_step)
+        if self.has_holonomic_constraints and lambdas0 is None:
+            raise ValueError("As your model is constrained, you must specify the lambdas.")
         constraint_term = (
-            1 / 2 * transpose(jac(time_step, q0)) @ lambdas0 if constraints is not None else MX.zeros(self.nb_q, 1)
+            1 / 2 * transpose(self.discrete_holonomic_constraints_jacobian(time_step, q0)) @ lambdas0
+            if self.has_holonomic_constraints
+            else MX.zeros(self.nb_q, 1)
         )
         residual = d2_l_q0_qdot0 + d1_ld_q0_q1 + f0_minus - constraint_term
 
-        if constraints is not None:
-            return vertcat(residual, constraints(q0), constraints(q1))  # constraints(0) is never evaluated if not here
+        if self.has_holonomic_constraints:
+            return vertcat(
+                residual, self.holonomic_constraints(q0), self.holonomic_constraints(q1)
+            )  # constraints(0) is never evaluated if not here
         else:
             return residual
 
@@ -283,8 +269,6 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
         q_dot_ultimate: MX | SX,
         control_penultimate: MX | SX,
         control_ultimate: MX | SX,
-        constraints: Function = None,
-        jac: Function = None,
         lambdas_ultimate: MX | SX = None,
     ):
         """
@@ -304,10 +288,6 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
             The generalized forces at the penultimate node.
         control_ultimate: MX | SX
             The generalized forces at the ultimate node.
-        constraints: Function
-            The constraints.
-        jac: Function
-            The jacobian of the constraints.
         lambdas_ultimate: MX | SX
             The Lagrange multipliers at the ultimate node.
 
@@ -330,9 +310,11 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
             jacobian(self.discrete_lagrangian(q_penultimate, q_ultimate, time_step), q_ultimate)
         )
         fd_plus = self.control_approximation(control_penultimate, control_ultimate, time_step)
+        if self.has_holonomic_constraints and lambdas_ultimate is None:
+            raise ValueError("As your model is constrained, you must specify the lambdas.")
         constraint_term = (
-            1 / 2 * transpose(jac(time_step, q_ultimate)) @ lambdas_ultimate
-            if constraints is not None
+            1 / 2 * transpose(self.discrete_holonomic_constraints_jacobian(time_step, q_ultimate)) @ lambdas_ultimate
+            if self.has_holonomic_constraints
             else MX.zeros(self.nb_q, 1)
         )
 
