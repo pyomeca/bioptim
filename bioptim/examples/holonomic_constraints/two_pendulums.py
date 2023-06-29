@@ -9,7 +9,7 @@ from casadi import MX, SX, vertcat
 
 from bioptim import (
     BiMappingList,
-    BiorbdModelHolonomic,
+    HolonomicBiorbdModel,
     BoundsList,
     ConfigureProblem,
     ConstraintList,
@@ -92,7 +92,7 @@ def prepare_ocp(
     n_shooting: int = 100,
     final_time: float = 1,
     use_sx: bool = False,
-) -> (BiorbdModelHolonomic, OptimalControlProgram):
+) -> (HolonomicBiorbdModel, OptimalControlProgram):
     """
     Prepare the program
 
@@ -111,7 +111,7 @@ def prepare_ocp(
     -------
     The ocp ready to be solved
     """
-    bio_model = BiorbdModelHolonomic(biorbd_model_path)
+    bio_model = HolonomicBiorbdModel(biorbd_model_path)
     constraint, constraint_jacobian, constraint_double_derivative = HolonomicConstraintFcn.superimpose_markers(
         bio_model, "marker_1", "marker_3", index=slice(1, 3), local_frame_index=0
     )

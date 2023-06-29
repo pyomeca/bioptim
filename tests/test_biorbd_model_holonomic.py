@@ -5,7 +5,7 @@ import pytest
 from casadi import DM, MX, Function
 
 from bioptim import (
-    BiorbdModelHolonomic,
+    HolonomicBiorbdModel,
     Solver,
 )
 from bioptim.examples.discrete_mechanics_and_optimal_control.holonomic_constraints import HolonomicConstraintFcn
@@ -18,7 +18,7 @@ def test_model_holonomic():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     biorbd_model_path = bioptim_folder + "/models/triple_pendulum.bioMod"
-    model = BiorbdModelHolonomic(biorbd_model_path)
+    model = HolonomicBiorbdModel(biorbd_model_path)
 
     with pytest.raises(
         ValueError,
