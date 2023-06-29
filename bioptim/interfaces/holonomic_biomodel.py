@@ -5,7 +5,7 @@ from casadi import MX, DM, Function
 from ..interfaces.biomodel import BioModel
 
 
-class BioModelHolonomic(BioModel, Protocol):
+class HolonomicBioModel(BioModel, Protocol):
     def set_dependencies(self, dependent_joint_index: list, independent_joint_index: list):
         """
         Set the dependencies between the joints of the model

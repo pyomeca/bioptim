@@ -7,7 +7,7 @@ import numpy as np
 
 from bioptim import (
     BiMappingList,
-    BiorbdModelHolonomic,
+    HolonomicBiorbdModel,
     BoundsList,
     CostType,
     DynamicsList,
@@ -28,7 +28,7 @@ def prepare_ocp(
     final_time,
     n_shooting,
     use_sx: bool = False,
-) -> (OptimalControlProgram, BiorbdModelHolonomic):
+) -> (OptimalControlProgram, HolonomicBiorbdModel):
     """
     Prepare the program
 
@@ -47,7 +47,7 @@ def prepare_ocp(
     -------
     The ocp ready to be solved
     """
-    bio_model = BiorbdModelHolonomic(biorbd_model_path)
+    bio_model = HolonomicBiorbdModel(biorbd_model_path)
     # Holonomic constraints
     constraint, constraint_jacobian, constraint_double_derivative = HolonomicConstraintFcn.superimpose_markers(
         bio_model,

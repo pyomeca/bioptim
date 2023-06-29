@@ -3,7 +3,7 @@ This class contains different holonomic constraint function.
 """
 from casadi import MX, Function, jacobian, vertcat
 
-from bioptim import BiorbdModelHolonomic
+from bioptim import HolonomicBiorbdModel
 
 
 class HolonomicConstraintFcn:
@@ -13,7 +13,7 @@ class HolonomicConstraintFcn:
 
     @staticmethod
     def superimpose_markers(
-        biorbd_model: BiorbdModelHolonomic,
+        biorbd_model: HolonomicBiorbdModel,
         marker_1: str,
         marker_2: str = None,
         index: slice = slice(0, 3),
