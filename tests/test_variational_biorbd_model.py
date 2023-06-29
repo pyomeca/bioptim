@@ -146,6 +146,7 @@ def test_variational_model():
     control_cur = MX([9.0, 10.0, 11.0])
     control_next = MX([11.0, 12.0, 13.0])
     qdot = MX([1.0, 2.0, 3.0])
+    lambdas = MX([1.0])
 
     q_prev_sym = MX.sym("q_prev", holonomic_model.nb_q, 1)
     q_cur_sym = MX.sym("q_cur", holonomic_model.nb_q, 1)
@@ -154,53 +155,66 @@ def test_variational_model():
     control_cur_sym = MX.sym("control_cur", holonomic_model.nb_tau, 1)
     control_next_sym = MX.sym("control_next", holonomic_model.nb_tau, 1)
     qdot_sym = MX.sym("qdot", holonomic_model.nb_qdot, 1)
+    lambdas_sym = MX.sym("lambda", holonomic_model.nb_holonomic_constraints, 1)
 
     holonomic_discrete_constraints_jacobian = Function(
         "holonomic_discrete_constraints_jacobian",
         [time_step_sym, q_cur_sym],
-        [
-            holonomic_model.compute_holonomic_discrete_constraints_jacobian(
-                holonomic_model.holonomic_constraints_jacobian, time_step, q_cur_sym
-            )
-        ],
+        [holonomic_model.discrete_holonomic_constraints_jacobian(time_step, q_cur_sym)],
     )
     TestUtils.assert_equal(holonomic_discrete_constraints_jacobian(time_step, q_cur), [0.0, 0.5, 0.0])
     discrete_ele = Function(
         "discrete_euler_lagrange_equations",
-        [time_step_sym, q_prev_sym, q_cur_sym, q_next_sym, control_prev_sym, control_cur_sym, control_next_sym],
+        [
+            time_step_sym,
+            q_prev_sym,
+            q_cur_sym,
+            q_next_sym,
+            control_prev_sym,
+            control_cur_sym,
+            control_next_sym,
+            lambdas_sym,
+        ],
         [
             holonomic_model.discrete_euler_lagrange_equations(
-                time_step_sym, q_prev_sym, q_cur_sym, q_next_sym, control_prev_sym, control_cur_sym, control_next_sym
+                time_step_sym,
+                q_prev_sym,
+                q_cur_sym,
+                q_next_sym,
+                control_prev_sym,
+                control_cur_sym,
+                control_next_sym,
+                lambdas_sym,
             )
         ],
     )
     TestUtils.assert_equal(
-        discrete_ele(time_step, q_prev, q_cur, q_next, control_prev, control_cur, control_next),
-        [0.7429345, -1.62943972, 14.76794345],
+        discrete_ele(time_step, q_prev, q_cur, q_next, control_prev, control_cur, control_next, lambdas),
+        [0.7429345, -2.12943972, 14.76794345, 6.0],
     )
     compute_initial_states = Function(
         "compute_initial_states",
-        [time_step_sym, q_cur_sym, qdot_sym, q_next_sym, control_cur_sym, control_next_sym],
+        [time_step_sym, q_cur_sym, qdot_sym, q_next_sym, control_cur_sym, control_next_sym, lambdas_sym],
         [
             holonomic_model.compute_initial_states(
-                time_step_sym, q_cur_sym, qdot_sym, q_next_sym, control_cur_sym, control_next_sym
+                time_step_sym, q_cur_sym, qdot_sym, q_next_sym, control_cur_sym, control_next_sym, lambdas_sym
             )
         ],
     )
     TestUtils.assert_equal(
-        compute_initial_states(time_step, q_cur, qdot, q_next, control_cur, control_next),
-        [-1.76170126, -4.20551976, 5.87787293],
+        compute_initial_states(time_step, q_cur, qdot, q_next, control_cur, control_next, lambdas),
+        [-1.76170126, -4.45551976, 5.87787293, 4.0, 6.0],
     )
     compute_final_states = Function(
         "compute_final_states",
-        [time_step_sym, q_prev_sym, q_cur_sym, qdot_sym, control_prev_sym, control_cur_sym],
+        [time_step_sym, q_prev_sym, q_cur_sym, qdot_sym, control_prev_sym, control_cur_sym, lambdas_sym],
         [
             holonomic_model.compute_final_states(
-                time_step_sym, q_prev_sym, q_cur_sym, qdot_sym, control_prev_sym, control_cur_sym
+                time_step_sym, q_prev_sym, q_cur_sym, qdot_sym, control_prev_sym, control_cur_sym, lambdas_sym
             )
         ],
     )
     TestUtils.assert_equal(
-        compute_final_states(time_step, q_prev, q_cur, qdot, control_prev, control_cur),
-        [2.50463576, 2.57608004, 8.89007052],
+        compute_final_states(time_step, q_prev, q_cur, qdot, control_prev, control_cur, lambdas),
+        [2.50463576, 2.32608004, 8.89007052],
     )

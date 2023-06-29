@@ -70,14 +70,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         self.bio_model = bio_model
         n_qdot = n_q = self.bio_model.nb_q
 
-        self.has_holonomic_constraints = self.bio_model.nb_holonomic_constraints > 0
-        if self.has_holonomic_constraints:
-            self.holonomic_constraints = self.bio_model.holonomic_constraints
-            self.holonomic_constraints_jacobian = self.bio_model.holonomic_constraints_jacobian
-        else:
-            self.holonomic_constraints = None
-            self.holonomic_constraints_jacobian = None
-
         # Dynamics
         dynamics = DynamicsList()
         expand = True
@@ -104,7 +96,8 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             # Make sure only these keys are defined
             if key not in ("qdot_start", "qdot_end"):
                 raise ValueError(
-                    "qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' keys"
+                    "qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' "
+                    "keys"
                 )
         # Make sure all are declared
         for key in ("qdot_start", "qdot_end"):
@@ -152,14 +145,16 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         for key in qdot_bounds.keys():
             if key in parameter_bounds.keys():
                 raise KeyError(
-                    f"{key} cannot be declared in parameters_bounds as it is a reserved word in VariationalOptimalControlProgram"
+                    f"{key} cannot be declared in parameters_bounds as it is a reserved word in "
+                    f"VariationalOptimalControlProgram"
                 )
             parameter_bounds.add(key, qdot_bounds[key], phase=0)
 
         for init in qdot_init.keys():
             if key in parameter_init.keys():
                 raise KeyError(
-                    f"{key} cannot be declared in parameters_init as it is a reserved word in VariationalOptimalControlProgram"
+                    f"{key} cannot be declared in parameters_init as it is a reserved word in "
+                    f"VariationalOptimalControlProgram"
                 )
             parameter_init.add(init, qdot_init[key], phase=0)
 
@@ -253,23 +248,13 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         two_first_nodes_input = [dt, q0, qdot0, q1, control0, control1]
         two_last_nodes_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
 
-        if self.has_holonomic_constraints:
+        if self.bio_model.has_holonomic_constraints:
             lambdas = MX.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
             three_nodes_input.append(lambdas)
             two_first_nodes_input.append(lambdas)
             two_last_nodes_input.append(lambdas)
-            holonomic_discrete_constraints_jacobian = Function(
-                "HolonomicDiscreteConstraintsJacobian",
-                [dt, q_cur],
-                [
-                    self.bio_model.compute_holonomic_discrete_constraints_jacobian(
-                        self.holonomic_constraints_jacobian, dt, q_cur
-                    )
-                ],
-            )
         else:
             lambdas = None
-            holonomic_discrete_constraints_jacobian = None
 
         nlp.implicit_dynamics_func = Function(
             "ThreeNodesIntegration",
@@ -283,8 +268,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     control_prev,
                     control_cur,
                     control_next,
-                    self.holonomic_constraints,
-                    holonomic_discrete_constraints_jacobian,
                     lambdas,
                 )
             ],
@@ -301,8 +284,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     q1,
                     control0,
                     control1,
-                    self.holonomic_constraints,
-                    holonomic_discrete_constraints_jacobian,
                     lambdas,
                 )
             ],
@@ -319,8 +300,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     qdot_ultimate,
                     controlN_minus_1,
                     controlN,
-                    self.holonomic_constraints,
-                    holonomic_discrete_constraints_jacobian,
                     lambdas,
                 )
             ],
@@ -350,7 +329,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-        if self.has_holonomic_constraints:
+        if self.bio_model.has_holonomic_constraints:
             lambdas = []
             for i in range(self.bio_model.nb_holonomic_constraints):
                 lambdas.append(f"lambda_{i}")
@@ -381,7 +360,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         -------
 
         """
-        if self.has_holonomic_constraints:
+        if self.bio_model.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func(
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
@@ -420,7 +399,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         -------
 
         """
-        if self.has_holonomic_constraints:
+        if self.bio_model.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func_first_node(
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
@@ -458,7 +437,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         -------
 
         """
-        if self.has_holonomic_constraints:
+        if self.bio_model.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func_last_node(
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
