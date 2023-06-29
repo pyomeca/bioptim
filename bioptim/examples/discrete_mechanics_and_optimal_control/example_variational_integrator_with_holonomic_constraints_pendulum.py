@@ -6,19 +6,16 @@ The behaviour of the pendulum should be the same as the one in bioptim/examples/
 """
 from bioptim import (
     BoundsList,
+    HolonomicConstraintFcn,
     InitialGuessList,
     InterpolationType,
     Objective,
     ObjectiveFcn,
     Solver,
     VariationalBiorbdModel,
-)
-import numpy as np
-
-from bioptim.examples.discrete_mechanics_and_optimal_control.holonomic_constraints import HolonomicConstraintFcn
-from bioptim.examples.discrete_mechanics_and_optimal_control.variational_optimal_control_program import (
     VariationalOptimalControlProgram,
 )
+import numpy as np
 
 
 def prepare_ocp(

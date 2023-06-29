@@ -586,6 +586,35 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
+    def holonomic_torque_driven(ocp, nlp):
+        """
+        Tell the program which variables are states and controls.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
+        name = "q_u"
+        names_u = [
+            nlp.model.name_dof[nlp.model.independent_joint_index[i]] for i in range(nlp.model.nb_independent_joints)
+        ]
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
+        ConfigureProblem.configure_new_variable(name, names_u, ocp, nlp, True, False, False, axes_idx=axes_idx)
+
+        name = "qdot_u"
+        names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
+        names_udot = [names_qdot[nlp.model.independent_joint_index[i]] for i in range(nlp.model.nb_independent_joints)]
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
+        ConfigureProblem.configure_new_variable(name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx)
+
+        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven, expand=False)
+
+    @staticmethod
     def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra_params):
         """
         Configure the dynamics of the system
@@ -1411,6 +1440,7 @@ class DynamicsFcn(FcnEnum):
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
     JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)
     MUSCLE_DRIVEN = (ConfigureProblem.muscle_driven,)
+    HOLONOMIC_TORQUE_DRIVEN = (ConfigureProblem.holonomic_torque_driven,)
     CUSTOM = (ConfigureProblem.custom,)
 
 
