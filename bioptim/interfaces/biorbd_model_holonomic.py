@@ -38,7 +38,10 @@ class BiorbdModelHolonomic(BiorbdModel):
             if joint >= self.nb_q:
                 raise ValueError(f"Joint index {joint} is not a valid joint index since the model has {self.nb_q} DoF")
             if joint in independent_joint_index:
-                raise ValueError(f"You registered {joint} as both dependent and independent")
+                raise ValueError(
+                    f"Joint {joint} is both dependant and independent. You need to specify this index in "
+                    f"only one of these arguments: dependent_joint_index: independent_joint_index."
+                )
 
         for joint in independent_joint_index:
             if joint >= self.nb_q:
@@ -123,8 +126,8 @@ class BiorbdModelHolonomic(BiorbdModel):
         return x[: self.nb_qddot]
 
     def partitioned_mass_matrix(self, q):
-        # u: independent
-        # v: dependent
+        # q_u: independent
+        # q_v: dependent
         mass_matrix = self.model.massMatrix(q).to_mx()
         mass_matrix_uu = mass_matrix[self._independent_joint_index, self._independent_joint_index]
         mass_matrix_uv = mass_matrix[self._independent_joint_index, self._dependent_joint_index]
@@ -168,7 +171,9 @@ class BiorbdModelHolonomic(BiorbdModel):
 
         return horzcat(constrained_jacobian_u, constrained_jacobian_v)
 
-    def partitioned_forward_dynamics(self, u, udot, tau, external_forces=None, f_contacts=None, v_init=None) -> MX:
+    def partitioned_forward_dynamics(
+        self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None
+    ) -> MX:
         """
         Sources
         -------
@@ -176,13 +181,9 @@ class BiorbdModelHolonomic(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
-        # compute v from u
-        v = self.compute_v_from_u(u, v_init=v_init)
-        q = self.q_from_u_and_v(u, v)
-
-        Bvu = self.coupling_matrix(q)
-        vdot = Bvu @ udot
-        qdot = self.q_from_u_and_v(udot, vdot)
+        # compute q and qdot
+        q = self.compute_q(q_u, q_v_init=q_v_init)
+        qdot = self.compute_qdot(q, qdot_u)
 
         partitioned_mass_matrix = self.partitioned_mass_matrix(q)
         m_uu = partitioned_mass_matrix[: self.nb_independent_joints, : self.nb_independent_joints]
@@ -190,28 +191,34 @@ class BiorbdModelHolonomic(BiorbdModel):
         m_vu = partitioned_mass_matrix[self.nb_independent_joints :, : self.nb_independent_joints]
         m_vv = partitioned_mass_matrix[self.nb_independent_joints :, self.nb_independent_joints :]
 
-        modified_mass_matrix = m_uu + m_uv @ Bvu + Bvu.T @ m_vu + Bvu.T @ m_vv @ Bvu
-        second_term = m_uv + Bvu.T @ m_vv
+        coupling_matrix_vu = self.coupling_matrix(q)
+        modified_mass_matrix = (
+            m_uu
+            + m_uv @ coupling_matrix_vu
+            + coupling_matrix_vu.T @ m_vu
+            + coupling_matrix_vu.T @ m_vv @ coupling_matrix_vu
+        )
+        second_term = m_uv + coupling_matrix_vu.T @ m_vv
 
-        # compute the non linear effect
+        # compute the non-linear effect
         non_linear_effect = self.partitioned_non_linear_effect(q, qdot, external_forces, f_contacts)
         non_linear_effect_u = non_linear_effect[: self.nb_independent_joints]
         non_linear_effect_v = non_linear_effect[self.nb_independent_joints :]
 
-        modified_non_linear_effect = non_linear_effect_u + Bvu.T @ non_linear_effect_v
+        modified_non_linear_effect = non_linear_effect_u + coupling_matrix_vu.T @ non_linear_effect_v
 
         # compute the tau
         partitioned_tau = self.partitioned_tau(tau)
         tau_u = partitioned_tau[: self.nb_independent_joints]
         tau_v = partitioned_tau[self.nb_independent_joints :]
 
-        modified_generalized_forces = tau_u + Bvu.T @ tau_v
+        modified_generalized_forces = tau_u + coupling_matrix_vu.T @ tau_v
 
-        uddot = inv(modified_mass_matrix) @ (
+        qddot_u = inv(modified_mass_matrix) @ (
             modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
         )
 
-        return uddot
+        return qddot_u
 
     def coupling_matrix(self, q: MX) -> MX:
         """
@@ -221,13 +228,13 @@ class BiorbdModelHolonomic(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
-        J = self.partitioned_constrained_jacobian(q)
-        Jv = J[:, self.nb_independent_joints :]
-        Jv_inv = inv(Jv)  # inv_minor otherwise ?
+        partitioned_constrained_jacobian = self.partitioned_constrained_jacobian(q)
+        partitioned_constrained_jacobian_v = partitioned_constrained_jacobian[:, self.nb_independent_joints :]
+        partitioned_constrained_jacobian_v_inv = inv(partitioned_constrained_jacobian_v)  # inv_minor otherwise ?
 
-        Ju = J[:, : self.nb_independent_joints]
+        partitioned_constrained_jacobian_u = partitioned_constrained_jacobian[:, : self.nb_independent_joints]
 
-        return -Jv_inv @ Ju
+        return -partitioned_constrained_jacobian_v_inv @ partitioned_constrained_jacobian_u
 
     def biais_vector(self, q: MX, qdot: MX) -> MX:
         """
@@ -239,13 +246,13 @@ class BiorbdModelHolonomic(BiorbdModel):
 
         The right term of the equation (15) in the paper.
         """
-        J = self.partitioned_constrained_jacobian(q)
-        Jv = J[:, self.nb_independent_joints :]
-        Jv_inv = inv(Jv)  # inv_minor otherwise ?
+        partitioned_constrained_jacobian = self.partitioned_constrained_jacobian(q)
+        partitioned_constrained_jacobian_v = partitioned_constrained_jacobian[:, self.nb_independent_joints :]
+        partitioned_constrained_jacobian_v_inv = inv(partitioned_constrained_jacobian_v)  # inv_minor otherwise ?
 
-        return Jv_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
+        return partitioned_constrained_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
 
-    def q_from_u_and_v(self, u: MX, v: MX) -> MX:
+    def state_from_partition(self, state_u: MX, state_v: MX) -> MX:
         """
         Sources
         -------
@@ -253,25 +260,24 @@ class BiorbdModelHolonomic(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
-        q = MX() if isinstance(u, MX) else DM()
+        q = MX() if isinstance(state_u, MX) else DM()
         for i in range(self.nb_q):
             if i in self._independent_joint_index:
-                q = vertcat(q, u[self._independent_joint_index.index(i)])
+                q = vertcat(q, state_u[self._independent_joint_index.index(i)])
             else:
-                q = vertcat(q, v[self._dependent_joint_index.index(i)])
+                q = vertcat(q, state_v[self._dependent_joint_index.index(i)])
 
         return q
 
-    def compute_v_from_u(self, u: MX, v_init: MX = None) -> MX:
-        if v_init is None:
-            v_init = MX.zeros(self.nb_dependent_joints)
+    def compute_q_v(self, q_u: MX, q_v_init: MX = None) -> MX:
+        q_v_init = MX.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
         decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
-        q = self.q_from_u_and_v(u, decision_variables)
+        q = self.state_from_partition(q_u, decision_variables)
         mx_residuals = self.holonomic_constraints(q)
 
         residuals = Function(
             "final_states_residuals",
-            [decision_variables, u],
+            [decision_variables, q_u],
             [mx_residuals],
         ).expand()
 
@@ -279,17 +285,28 @@ class BiorbdModelHolonomic(BiorbdModel):
         opts = {"abstol": 1e-10}
         ifcn = rootfinder("ifcn", "newton", residuals, opts)
         v_opt = ifcn(
-            v_init,
-            u,
+            q_v_init,
+            q_u,
         )
 
         return v_opt
 
-    def compute_v_from_u_numeric(self, u: DM, v_init=None):
-        if v_init is None:
-            v_init = DM.zeros(self.nb_dependent_joints)
+    def compute_q(self, q_u, q_v_init: MX = None) -> MX:
+        q_v = self.compute_q_v(q_u, q_v_init)
+        return self.state_from_partition(q_u, q_v)
+
+    def compute_qdot_v(self, q: MX, qdot_u: MX) -> MX:
+        coupling_matrix_vu = self.coupling_matrix(q)
+        return coupling_matrix_vu @ qdot_u
+
+    def compute_qdot(self, q: MX, qdot_u: MX) -> MX:
+        qdot_v = self.compute_qdot_v(q, qdot_u)
+        return self.state_from_partition(qdot_u, qdot_v)
+
+    def compute_q_v_numeric(self, q_u: DM, q_v_init=None):
+        q_v_init = DM.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
         decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
-        q = self.q_from_u_and_v(u, decision_variables)
+        q = self.state_from_partition(q_u, decision_variables)
         mx_residuals = self.holonomic_constraints(q)
 
         residuals = Function(
@@ -302,7 +319,7 @@ class BiorbdModelHolonomic(BiorbdModel):
         opts = {"abstol": 1e-10}
         ifcn = rootfinder("ifcn", "newton", residuals, opts)
         v_opt = ifcn(
-            v_init,
+            q_v_init,
         )
 
         return v_opt
