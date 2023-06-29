@@ -29,7 +29,8 @@ def test_model_holonomic():
 
     with pytest.raises(
         ValueError,
-        match="You registered 1 as both dependent and independent",
+        match="Joint 1 is both dependant and independent. You need to specify this index in "
+        "only one of these arguments: dependent_joint_index: independent_joint_index.",
     ):
         model.set_dependencies([1, 2], [1])
 
@@ -89,28 +90,32 @@ def test_model_holonomic():
         [[-0.5104801, 0.02982221, -0.96017029], [-0.70317549, 0.13829549, 0.2794155]],
     )
 
-    u = MX(TestUtils.to_array(q[model._independent_joint_index]))
-    udot = MX(TestUtils.to_array(q_dot[model._independent_joint_index]))
-    v = MX(TestUtils.to_array(q[model._dependent_joint_index]))
-    u_sym = MX.sym("u_sym", model.nb_independent_joints, 1)
-    udot_sym = MX.sym("u_sym", model.nb_independent_joints, 1)
-    tau_sym = MX.sym("u_sym", model.nb_tau, 1)
+    q_u = MX(TestUtils.to_array(q[model._independent_joint_index]))
+    qdot_u = MX(TestUtils.to_array(q_dot[model._independent_joint_index]))
+    q_v = MX(TestUtils.to_array(q[model._dependent_joint_index]))
+    q_u_sym = MX.sym("q_u_sym", model.nb_independent_joints, 1)
+    qdot_u_sym = MX.sym("q_u_sym", model.nb_independent_joints, 1)
+    tau_sym = MX.sym("q_u_sym", model.nb_tau, 1)
 
     partitioned_forward_dynamics_func = Function(
         "partitioned_forward_dynamics",
-        [u_sym, udot_sym, tau_sym],
-        [model.partitioned_forward_dynamics(u_sym, udot_sym, tau_sym, v_init=v)],
+        [q_u_sym, qdot_u_sym, tau_sym],
+        [model.partitioned_forward_dynamics(q_u_sym, qdot_u_sym, tau_sym, q_v_init=q_v)],
     )
-    TestUtils.assert_equal(partitioned_forward_dynamics_func(u, udot, tau), -6.3109, expand=False)
+    TestUtils.assert_equal(partitioned_forward_dynamics_func(q_u, qdot_u, tau), -6.3109, expand=False)
     TestUtils.assert_equal(model.coupling_matrix(q), [5.79509793, -0.35166415], expand=False)
     TestUtils.assert_equal(model.biais_vector(q, q_dot), [-27.03137348, -23.97095718], expand=False)
-    TestUtils.assert_equal(model.q_from_u_and_v(u, v), q)
+    TestUtils.assert_equal(model.state_from_partition(q_u, q_v), q)
 
-    compute_v_from_u_func = Function("compute_v_from_u", [u_sym], [model.compute_v_from_u(u_sym, v_init=v)])
-    TestUtils.assert_equal(compute_v_from_u_func(u), [2 * np.pi / 3, 2 * np.pi / 3], expand=False)
+    compute_v_from_u_func = Function("compute_q_v", [q_u_sym], [model.compute_q_v(q_u_sym, q_v_init=q_v)])
+    TestUtils.assert_equal(compute_v_from_u_func(q_u), [2 * np.pi / 3, 2 * np.pi / 3], expand=False)
+    compute_q_func = Function("compute_q", [q_u_sym], [model.compute_q_v(q_u_sym, q_v_init=q_v)])
+    TestUtils.assert_equal(compute_q_func(q_u), [2.0943951, 2.0943951], expand=False)
+    TestUtils.assert_equal(model.compute_qdot_v(q, qdot_u), [23.18039172, -1.4066566], expand=False)
+    TestUtils.assert_equal(model.compute_qdot(q, qdot_u), [4.0, 23.18039172, -1.4066566], expand=False)
 
     np.testing.assert_almost_equal(
-        model.compute_v_from_u_numeric(DM([0.0]), v_init=[1, 1]).toarray().squeeze(),
+        model.compute_q_v_numeric(DM([0.0]), q_v_init=[1, 1]).toarray().squeeze(),
         np.array([2 * np.pi / 3, 2 * np.pi / 3]),
         decimal=6,
     )
@@ -131,7 +136,7 @@ def test_example_two_pendulums():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     np.testing.assert_almost_equal(
-        sol.states["u"],
+        sol.states["q_u"],
         [
             [
                 1.54,
@@ -179,7 +184,7 @@ def test_example_three_bars():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     np.testing.assert_almost_equal(
-        sol.states["u"],
+        sol.states["q_u"],
         [
             [
                 1.57079633,

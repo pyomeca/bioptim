@@ -243,15 +243,17 @@ class BioModelHolonomic(BioModel, Protocol):
             The partitioned constrained jacobian, reordered in function independent and dependent joints
         """
 
-    def partitioned_forward_dynamics(self, u: MX, udot: MX, tau: MX, external_forces=None, f_contacts=None) -> MX:
+    def partitioned_forward_dynamics(
+        self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None
+    ) -> MX:
         """
         This is the forward dynamics of the model, but only for the independent joints
 
         Parameters
         ----------
-        u: MX
+        q_u: MX
             The independent generalized coordinates
-        udot: MX
+        qdot_u: MX
             The independent generalized velocities
         tau: MX
             The generalized torques
@@ -296,15 +298,18 @@ class BioModelHolonomic(BioModel, Protocol):
         The right term of the equation (15) in the paper.
         """
 
-    def q_from_u_and_v(self, u: MX, v: MX) -> MX:
+    def state_from_partition(self, state_u: MX, state_v: MX) -> MX:
         """
         Compute the generalized coordinates from the independent and dependent joint coordinates
+        qddot_u, qddot_v -> qddot
+        qdot_u, qdot_v -> qdot
+        q_u, q_v -> q
 
         Parameters
         ----------
-        u: MX
+        state_u: MX
             The independent joint coordinates
-        v: MX
+        state_v: MX
             The dependent joint coordinates
 
         Returns
@@ -319,7 +324,7 @@ class BioModelHolonomic(BioModel, Protocol):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
 
-    def compute_v_from_u(self, u: MX) -> MX:
+    def compute_q_v(self, u: MX) -> MX:
         """
         Compute the dependent joint from the independent joint,
         This is done by solving the system of equations given by the holonomic constraints
@@ -338,7 +343,58 @@ class BioModelHolonomic(BioModel, Protocol):
             The dependent joint
         """
 
-    def compute_v_from_u_numeric(self, u: DM, v_init=None) -> DM:
+    def compute_q(self, q_u, q_v_init: MX = None) -> MX:
+        """
+        Compute the generalized coordinates from the independent joint coordinates
+
+        Parameters
+        ----------
+        q_u: MX
+            The independent joint coordinates
+        q_v_init: MX
+            The initial guess for the dependent joint coordinates
+
+        Returns
+        -------
+        MX
+            The generalized coordinates
+        """
+
+    def compute_qdot_v(self, q: MX, qdot_u: MX) -> MX:
+        """
+        Compute the dependent joint velocities from the independent joint velocities and the positions.
+
+        Parameters
+        ----------
+        q: MX
+            The generalized coordinates
+        qdot_u: MX
+            The independent joint velocities
+
+        Returns
+        -------
+        MX
+            The dependent joint velocities
+        """
+
+    def compute_qdot(self, q: MX, qdot_u: MX) -> MX:
+        """
+        Compute the velocities from the independent joint velocities and the positions.
+
+        Parameters
+        ----------
+        q: MX
+            The generalized coordinates
+        qdot_u: MX
+            The independent joint velocities
+
+        Returns
+        -------
+        MX
+            The dependent joint velocities
+        """
+
+    def compute_q_v_numeric(self, u: DM, v_init=None) -> DM:
         """
         Compute the dependent joint from the independent joint,
         This is done by solving the system of equations given by the holonomic constraints
@@ -356,7 +412,7 @@ class BioModelHolonomic(BioModel, Protocol):
         Returns
         -------
         DM
-            The numerical values of the dependent joint for a given independent joint u
+            The numerical values of the dependent joint for a given independent joint state_u
         """
 
     def compute_the_Lagrangian_multiplier(
