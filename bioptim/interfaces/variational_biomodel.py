@@ -2,10 +2,10 @@ from typing import Protocol
 
 from casadi import MX, SX, Function
 from ..misc.enums import ControlType, QuadratureRule
-from ..interfaces.biomodel_holonomic import BioModelHolonomic
+from ..interfaces.holonomic_biomodel import HolonomicBioModel
 
 
-class VariationalBioModel(BioModelHolonomic, Protocol):
+class VariationalBioModel(HolonomicBioModel, Protocol):
     def discrete_lagrangian(
         self,
         q1: MX | SX,

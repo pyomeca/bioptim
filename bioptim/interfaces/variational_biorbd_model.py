@@ -4,11 +4,11 @@ Biorbd model for holonomic constraints and variational integrator.
 import biorbd_casadi as biorbd
 from casadi import SX, MX, vertcat, jacobian, transpose
 
-from .biorbd_model_holonomic import BiorbdModelHolonomic
+from .holonomic_biorbd_model import HolonomicBiorbdModel
 from ..misc.enums import ControlType, QuadratureRule
 
 
-class VariationalBiorbdModel(BiorbdModelHolonomic):
+class VariationalBiorbdModel(HolonomicBiorbdModel):
     """
     This class allows to define a biorbd model with custom holonomic constraints and the methods for the variational
     integrator, very experimental and not tested.
