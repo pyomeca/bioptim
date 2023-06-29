@@ -52,11 +52,11 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
             q_discrete = (q1 + q2) / 2
             qdot_discrete = (q2 - q1) / time_step
             return time_step * self.lagrangian(q_discrete, qdot_discrete)
-        elif self.discrete_approximation == QuadratureRule.LEFT_APPROXIMATION:
+        elif self.discrete_approximation == QuadratureRule.RECTANGLE_LEFT:
             q_discrete = q1
             qdot_discrete = (q2 - q1) / time_step
             return time_step * self.lagrangian(q_discrete, qdot_discrete)
-        elif self.discrete_approximation == QuadratureRule.RIGHT_APPROXIMATION:
+        elif self.discrete_approximation == QuadratureRule.RECTANGLE_RIGHT:
             q_discrete = q2
             qdot_discrete = (q2 - q1) / time_step
             return time_step * self.lagrangian(q_discrete, qdot_discrete)
@@ -100,9 +100,9 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             if self.control_discrete_approximation == QuadratureRule.MIDPOINT:
                 return 1 / 2 * (control_minus + control_plus) / 2 * time_step
-            elif self.control_discrete_approximation == QuadratureRule.LEFT_APPROXIMATION:
+            elif self.control_discrete_approximation == QuadratureRule.RECTANGLE_LEFT:
                 return 1 / 2 * control_minus * time_step
-            elif self.control_discrete_approximation == QuadratureRule.RIGHT_APPROXIMATION:
+            elif self.control_discrete_approximation == QuadratureRule.RECTANGLE_RIGHT:
                 return 1 / 2 * control_plus * time_step
             elif self.control_discrete_approximation == QuadratureRule.TRAPEZOIDAL:
                 raise NotImplementedError(
