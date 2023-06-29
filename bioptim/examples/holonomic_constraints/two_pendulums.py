@@ -5,6 +5,8 @@ pendulum simulation.
 """
 import numpy as np
 
+import bioviz
+
 from casadi import MX, SX, vertcat
 
 from bioptim import (
@@ -73,13 +75,13 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     """
 
     name = "q_u"
-    names_u = [nlp.model.name_dof[i] for i in range(nlp.model.nb_independent_joints)]
+    names_u = [nlp.model.name_dof[nlp.model.independent_joint_index[i]] for i in range(nlp.model.nb_independent_joints)]
     axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
     ConfigureProblem.configure_new_variable(name, names_u, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
     name = "qdot_u"
     names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
-    names_udot = [names_qdot[i] for i in range(nlp.model.nb_independent_joints)]
+    names_udot = [names_qdot[nlp.model.independent_joint_index[i]] for i in range(nlp.model.nb_independent_joints)]
     axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
     ConfigureProblem.configure_new_variable(name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
@@ -91,7 +93,6 @@ def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int = 100,
     final_time: float = 1,
-    use_sx: bool = False,
 ) -> (HolonomicBiorbdModel, OptimalControlProgram):
     """
     Prepare the program
@@ -104,8 +105,6 @@ def prepare_ocp(
         The number of shooting points
     final_time: float
         The time at the final node
-    use_sx: bool
-        If the user wants to use SX instead of MX
 
     Returns
     -------
@@ -143,14 +142,11 @@ def prepare_ocp(
     x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=mapping)
 
     # Initial guess
-    q_t0 = np.array([1.54, 1.54])
-    qdot_t0 = np.array([0, 0])
-
     x_init = InitialGuessList()
-    x_init.add("q_u", q_t0)
-    x_init.add("qdot_u", qdot_t0)
-    x_bounds["q_u"][:, 0] = q_t0
-    x_bounds["qdot_u"][:, 0] = qdot_t0
+    x_init.add("q_u", [1.54, 1.54])
+    x_init.add("qdot_u", [0, 0])
+    x_bounds["q_u"][:, 0] = [1.54, 1.54]
+    x_bounds["qdot_u"][:, 0] = [0, 0]
     x_bounds["q_u"][0, -1] = -1.54
     x_bounds["q_u"][1, -1] = 0
 
@@ -176,7 +172,6 @@ def prepare_ocp(
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
-            use_sx=use_sx,
             assume_phase_dynamics=True,
             variable_mappings=variable_bimapping,
             constraints=constraints,
@@ -203,8 +198,6 @@ def main():
         vi = bio_model.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
         qi = bio_model.q_from_u_and_v(ui[:, np.newaxis], vi).toarray().squeeze()
         q[:, i] = qi
-
-    import bioviz
 
     viz = bioviz.Viz(model_path)
     viz.load_movement(q)
