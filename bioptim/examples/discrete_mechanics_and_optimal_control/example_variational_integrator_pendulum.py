@@ -11,12 +11,9 @@ from bioptim import (
     ObjectiveFcn,
     Solver,
     VariationalBiorbdModel,
-)
-import numpy as np
-
-from bioptim.examples.discrete_mechanics_and_optimal_control.variational_optimal_control_program import (
     VariationalOptimalControlProgram,
 )
+import numpy as np
 
 
 def prepare_ocp(

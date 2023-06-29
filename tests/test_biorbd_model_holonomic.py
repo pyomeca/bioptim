@@ -6,9 +6,9 @@ from casadi import DM, MX, Function
 
 from bioptim import (
     HolonomicBiorbdModel,
+    HolonomicConstraintFcn,
     Solver,
 )
-from bioptim.examples.discrete_mechanics_and_optimal_control.holonomic_constraints import HolonomicConstraintFcn
 
 from .utils import TestUtils
 

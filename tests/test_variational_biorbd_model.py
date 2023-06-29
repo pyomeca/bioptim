@@ -1,22 +1,12 @@
-import numpy as np
 import os
-import pytest
-
-from biorbd_casadi import (
-    GeneralizedCoordinates,
-    GeneralizedVelocity,
-)
-from casadi import DM, MX, Function, jacobian
+from casadi import MX, Function
 
 from bioptim import (
     ControlType,
+    HolonomicConstraintFcn,
     QuadratureRule,
-    Solver,
     VariationalBiorbdModel,
 )
-from bioptim.examples.discrete_mechanics_and_optimal_control.holonomic_constraints import HolonomicConstraintFcn
-
-from biorbd import marker_index
 
 from .utils import TestUtils
 

@@ -7,86 +7,20 @@ import numpy as np
 
 import bioviz
 
-from casadi import MX, SX, vertcat
-
 from bioptim import (
     BiMappingList,
-    HolonomicBiorbdModel,
     BoundsList,
-    ConfigureProblem,
     ConstraintList,
-    DynamicsEvaluation,
-    DynamicsFunctions,
+    DynamicsFcn,
     DynamicsList,
+    HolonomicBiorbdModel,
+    HolonomicConstraintFcn,
     InitialGuessList,
-    NonLinearProgram,
     ObjectiveFcn,
     ObjectiveList,
     OptimalControlProgram,
     Solver,
 )
-
-from bioptim.examples.discrete_mechanics_and_optimal_control.holonomic_constraints import HolonomicConstraintFcn
-
-
-def custom_dynamic(
-    states: MX | SX,
-    controls: MX | SX,
-    parameters: MX | SX,
-    nlp: NonLinearProgram,
-) -> DynamicsEvaluation:
-    """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
-
-    Parameters
-    ----------
-    states: MX | SX
-        The state of the system
-    controls: MX | SX
-        The controls of the system
-    parameters: MX | SX
-        The parameters acting on the system
-    nlp: NonLinearProgram
-        A reference to the phase
-
-    Returns
-    -------
-    The derivative of the states in the tuple[MX | SX] format
-    """
-
-    q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
-    qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-    qddot_u = nlp.model.partitioned_forward_dynamics(q_u, qdot_u, tau)
-
-    return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)
-
-
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
-    """
-    Tell the program which variables are states and controls.
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    """
-
-    name = "q_u"
-    names_u = [nlp.model.name_dof[nlp.model.independent_joint_index[i]] for i in range(nlp.model.nb_independent_joints)]
-    axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-    ConfigureProblem.configure_new_variable(name, names_u, ocp, nlp, True, False, False, axes_idx=axes_idx)
-
-    name = "qdot_u"
-    names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
-    names_udot = [names_qdot[nlp.model.independent_joint_index[i]] for i in range(nlp.model.nb_independent_joints)]
-    axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-    ConfigureProblem.configure_new_variable(name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx)
-
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, expand=False)
 
 
 def prepare_ocp(
@@ -128,7 +62,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(custom_configure, dynamic_function=custom_dynamic, expand=False)
+    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand=False)
 
     # Path Constraints
     constraints = ConstraintList()
@@ -186,7 +120,7 @@ def main():
     """
 
     model_path = "models/two_pendulums.bioMod"
-    n_shooting = 100
+    n_shooting = 10
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=n_shooting)
 
     # --- Solve the program --- #
@@ -195,8 +129,8 @@ def main():
     # --- Show results --- #
     q = np.zeros((4, n_shooting + 1))
     for i, ui in enumerate(sol.states["q_u"].T):
-        vi = bio_model.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
-        qi = bio_model.q_from_u_and_v(ui[:, np.newaxis], vi).toarray().squeeze()
+        vi = bio_model.compute_q_v_numeric(ui, q_v_init=np.zeros(2)).toarray()
+        qi = bio_model.state_from_partition(ui[:, np.newaxis], vi).toarray().squeeze()
         q[:, i] = qi
 
     viz = bioviz.Viz(model_path)
