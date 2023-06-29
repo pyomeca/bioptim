@@ -30,9 +30,9 @@ def test_variational_model():
     TestUtils.assert_equal(model.discrete_lagrangian(q, qdot, time_step), 1.1629533)
     model_mid_point = VariationalBiorbdModel(biorbd_model_path, discrete_approximation=QuadratureRule.MIDPOINT)
     TestUtils.assert_equal(model_mid_point.discrete_lagrangian(q, qdot, time_step), -4.49869015)
-    model_right = VariationalBiorbdModel(biorbd_model_path, discrete_approximation=QuadratureRule.RIGHT_APPROXIMATION)
+    model_right = VariationalBiorbdModel(biorbd_model_path, discrete_approximation=QuadratureRule.RECTANGLE_RIGHT)
     TestUtils.assert_equal(model_right.discrete_lagrangian(q, qdot, time_step), 1.88558012)
-    model_left = VariationalBiorbdModel(biorbd_model_path, discrete_approximation=QuadratureRule.LEFT_APPROXIMATION)
+    model_left = VariationalBiorbdModel(biorbd_model_path, discrete_approximation=QuadratureRule.RECTANGLE_LEFT)
     TestUtils.assert_equal(model_left.discrete_lagrangian(q, qdot, time_step), 0.44032649)
 
     control0 = MX([10.0, 5.0])
@@ -44,7 +44,7 @@ def test_variational_model():
     model_linear_left = VariationalBiorbdModel(
         biorbd_model_path,
         control_type=ControlType.LINEAR_CONTINUOUS,
-        control_discrete_approximation=QuadratureRule.LEFT_APPROXIMATION,
+        control_discrete_approximation=QuadratureRule.RECTANGLE_LEFT,
     )
     TestUtils.assert_equal(
         model_linear_left.control_approximation(
@@ -57,7 +57,7 @@ def test_variational_model():
     model_linear_right = VariationalBiorbdModel(
         biorbd_model_path,
         control_type=ControlType.LINEAR_CONTINUOUS,
-        control_discrete_approximation=QuadratureRule.RIGHT_APPROXIMATION,
+        control_discrete_approximation=QuadratureRule.RECTANGLE_RIGHT,
     )
     TestUtils.assert_equal(
         model_linear_right.control_approximation(
