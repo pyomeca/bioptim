@@ -151,17 +151,6 @@ class QuadratureRule(Enum):
     TRAPEZOIDAL = "trapezoidal"
 
 
-class QuadratureRule(Enum):
-    """
-    The different discrete methods
-    """
-
-    MIDPOINT = "midpoint"
-    LEFT_APPROXIMATION = "left_approximation"
-    RIGHT_APPROXIMATION = "right_approximation"
-    TRAPEZOIDAL = "trapezoidal"
-
-
 class SoftContactDynamics(Enum):
     ODE = "ode"
     CONSTRAINT = "constraint"
