@@ -52,12 +52,12 @@ def custom_dynamic(
     The derivative of the states in the tuple[MX | SX] format
     """
 
-    u = DynamicsFunctions.get(nlp.states["u"], states)
-    udot = DynamicsFunctions.get(nlp.states["udot"], states)
+    q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
+    qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-    uddot = nlp.model.partitioned_forward_dynamics(u, udot, tau)
+    qddot_u = nlp.model.partitioned_forward_dynamics(q_u, qdot_u, tau)
 
-    return DynamicsEvaluation(dxdt=vertcat(udot, uddot), defects=None)
+    return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
@@ -72,12 +72,12 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
         A reference to the phase
     """
 
-    name = "u"
+    name = "q_u"
     names_u = [nlp.model.name_dof[i] for i in range(nlp.model.nb_independent_joints)]
     axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
     ConfigureProblem.configure_new_variable(name, names_u, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
-    name = "udot"
+    name = "qdot_u"
     names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
     names_udot = [names_qdot[i] for i in range(nlp.model.nb_independent_joints)]
     axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
@@ -139,20 +139,20 @@ def prepare_ocp(
     mapping.add("q", to_second=[0, None, None, 1], to_first=[0, 3])
     mapping.add("qdot", to_second=[0, None, None, 1], to_first=[0, 3])
     x_bounds = BoundsList()
-    x_bounds["u"] = bio_model.bounds_from_ranges("q", mapping=mapping)
-    x_bounds["udot"] = bio_model.bounds_from_ranges("qdot", mapping=mapping)
+    x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=mapping)
+    x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=mapping)
 
     # Initial guess
     q_t0 = np.array([1.54, 1.54])
     qdot_t0 = np.array([0, 0])
 
     x_init = InitialGuessList()
-    x_init.add("u", q_t0)
-    x_init.add("udot", qdot_t0)
-    x_bounds["u"][:, 0] = q_t0
-    x_bounds["udot"][:, 0] = qdot_t0
-    x_bounds["u"][0, -1] = -1.54
-    x_bounds["u"][1, -1] = 0
+    x_init.add("q_u", q_t0)
+    x_init.add("qdot_u", qdot_t0)
+    x_bounds["q_u"][:, 0] = q_t0
+    x_bounds["qdot_u"][:, 0] = qdot_t0
+    x_bounds["q_u"][0, -1] = -1.54
+    x_bounds["q_u"][1, -1] = 0
 
     # Define control path constraint
     variable_bimapping = BiMappingList()
@@ -199,7 +199,7 @@ def main():
 
     # --- Show results --- #
     q = np.zeros((4, n_shooting + 1))
-    for i, ui in enumerate(sol.states["u"].T):
+    for i, ui in enumerate(sol.states["q_u"].T):
         vi = bio_model.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
         qi = bio_model.q_from_u_and_v(ui[:, np.newaxis], vi).toarray().squeeze()
         q[:, i] = qi

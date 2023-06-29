@@ -106,7 +106,8 @@ class VariationalBiorbdModel(BiorbdModelHolonomic):
                 return 1 / 2 * control_plus * time_step
             elif self.control_discrete_approximation == QuadratureRule.TRAPEZOIDAL:
                 raise NotImplementedError(
-                    f"Discrete {self.control_discrete_approximation} is not implemented for {self.control_type}"
+                    f"Discrete {self.control_discrete_approximation} is not implemented for {self.control_type} for "
+                    f"VariationalBiorbdModel"
                 )
 
     def discrete_holonomic_constraints_jacobian(self, time_step: MX | SX, q: MX | SX) -> MX | SX | None:
