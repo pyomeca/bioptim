@@ -544,7 +544,7 @@ def prepare_socp(
                               nodes_phase=[0 for _ in range(n_shooting)],
                               nodes=[i for i in range(n_shooting)],
                               min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
-                              max_bound=np.array([max_bounds_lateral_variation, 0.004**2, 0.05**2, 0.05**2]))
+                              max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]))
     for i in range(n_shooting-1):
         multinode_constraints.add(leuven_trapezoidal,
                                   nodes_phase=[0, 0],
