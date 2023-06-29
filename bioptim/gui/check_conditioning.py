@@ -6,7 +6,7 @@ import matplotlib.cm as mcm
 from ..misc.enums import (
     ControlType,
 )
-from ..misc.enums import IntegralApproximation
+from ..misc.enums import QuadratureRule
 
 
 def check_conditioning(ocp):
@@ -322,14 +322,14 @@ def check_conditioning(ocp):
 
                 dt_cx = nlp.cx.sym("dt", 1, 1)
                 is_trapezoidal = (
-                    obj.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                    or obj.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    obj.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    or obj.integration_rule == QuadratureRule.TRAPEZOIDAL
                 )
 
                 if is_trapezoidal:
                     state_cx = (
                         horzcat(nlp.states.cx_start, nlp.states.cx_end)
-                        if obj.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        if obj.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                         else nlp.states.cx_start
                     )
                     control_cx = (

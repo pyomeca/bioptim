@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
-from ..misc.enums import Node, Axis, ControlType, IntegralApproximation
+from ..misc.enums import Node, Axis, ControlType, QuadratureRule
 from ..misc.mapping import BiMapping
 
 
@@ -58,8 +58,8 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             if (
-                penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
-                and penalty.integration_rule != IntegralApproximation.TRUE_TRAPEZOIDAL
+                penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                and penalty.integration_rule != QuadratureRule.TRAPEZOIDAL
             ):
                 # todo: for trapezoidal integration
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_states")
@@ -93,7 +93,7 @@ class PenaltyFunctionAbstract:
                     to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
                     to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
                 )
-            if penalty.integration_rule == IntegralApproximation.RECTANGLE:
+            if penalty.integration_rule == QuadratureRule.RECTANGLE_LEFT:
                 # TODO: for trapezoidal integration (This should not be done here but in _set_penalty_function)
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread

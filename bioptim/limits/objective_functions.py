@@ -2,7 +2,7 @@ from typing import Callable, Any
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_controller import PenaltyController
-from ..misc.enums import Node, IntegralApproximation, PenaltyType
+from ..misc.enums import Node, QuadratureRule, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
@@ -50,10 +50,10 @@ class Objective(PenaltyOption):
 
         # sanity check on the integration method
         if isinstance(objective, ObjectiveFcn.Lagrange):
-            if "integration_rule" not in params.keys() or params["integration_rule"] == IntegralApproximation.DEFAULT:
-                params["integration_rule"] = IntegralApproximation.RECTANGLE
+            if "integration_rule" not in params.keys() or params["integration_rule"] == QuadratureRule.DEFAULT:
+                params["integration_rule"] = QuadratureRule.RECTANGLE_LEFT
         elif isinstance(objective, ObjectiveFcn.Mayer):
-            if "integration_rule" in params.keys() and params["integration_rule"] != IntegralApproximation.DEFAULT:
+            if "integration_rule" in params.keys() and params["integration_rule"] != QuadratureRule.DEFAULT:
                 raise ValueError(
                     "Mayer objective functions cannot be integrated, "
                     "remove the argument "

@@ -16,7 +16,7 @@ from ..misc.enums import (
     SolverType,
     SolutionIntegrator,
     Node,
-    IntegralApproximation,
+    QuadratureRule,
 )
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
@@ -1474,15 +1474,15 @@ class Solution:
                     if (
                         penalty.derivative
                         or penalty.explicit_derivative
-                        or penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                        or penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                     ):
                         col_x_idx.append((idx + 1) * (steps if nlp.ode_solver.is_direct_shooting else 1))
 
                         if (
-                            penalty.integration_rule != IntegralApproximation.TRAPEZOIDAL
+                            penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                         ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                             col_u_idx.append((idx + 1))
-                    elif penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
+                    elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
                         if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                             col_u_idx.append((idx + 1))
 
@@ -1509,8 +1509,8 @@ class Solution:
                     if penalty.target is None:
                         target = []
                     elif (
-                        penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                        or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                        penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                        or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
                     ):
                         target = np.vstack(
                             (
