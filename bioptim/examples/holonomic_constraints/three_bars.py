@@ -80,17 +80,17 @@ def prepare_ocp(
     mapping.add("q", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
     mapping.add("qdot", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
     x_bounds = BoundsList()
-    x_bounds["u"] = bio_model.bounds_from_ranges("q", mapping=mapping)
-    x_bounds["udot"] = bio_model.bounds_from_ranges("qdot", mapping=mapping)
-    x_bounds["u"][:, 0] = pose_at_first_node
-    x_bounds["udot"][:, 0] = [0] * 3
-    x_bounds["u"][:, -1] = [-np.pi / 2, 0, -np.pi / 2]
-    x_bounds["udot"][:, -1] = [0] * 3
+    x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=mapping)
+    x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=mapping)
+    x_bounds["q_u"][:, 0] = pose_at_first_node
+    x_bounds["qdot_u"][:, 0] = [0] * 3
+    x_bounds["q_u"][:, -1] = [-np.pi / 2, 0, -np.pi / 2]
+    x_bounds["qdot_u"][:, -1] = [0] * 3
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add("u", pose_at_first_node)
-    x_init.add("udot", [0] * 3)
+    x_init.add("q_u", pose_at_first_node)
+    x_init.add("qdot_u", [0] * 3)
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -1000, 1000, 0
@@ -141,7 +141,7 @@ def main():
     sol = ocp.solve()
 
     q = np.zeros((5, n_shooting + 1))
-    for i, ui in enumerate(sol.states["u"].T):
+    for i, ui in enumerate(sol.states["q_u"].T):
         vi = bio_model.compute_v_from_u_numeric(ui, v_init=np.zeros(2)).toarray()
         qi = bio_model.q_from_u_and_v(ui[:, np.newaxis], vi).toarray().squeeze()
         q[:, i] = qi
