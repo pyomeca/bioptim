@@ -59,7 +59,27 @@ def get_muscle_force(q, qdot):
     Fm: Passive viscous force [N]
     """
 
-    global dM_coefficients, LMT_coefficients, vMtilde_max, Fiso, Faparam, Fvparam, Fpparam, muscleDampingCoefficient, tau_coef
+    dM_coefficients = np.array([[0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
+                                [0, 0, 0.0100, -0.0190, 0, 0.0100],
+                                [0.0400, -0.0080, 1.9000, 0, 0, 0.0100],
+                                [-0.0420, 0, 0.0100, 0, 0, 0.0100],
+                                [0.0300, -0.0110, 1.9000, 0.0320, -0.0100, 1.9000],
+                                [-0.0390, 0, 0.0100, -0.0220, 0, 0.0100]])
+
+    LMT_coefficients = np.array([[1.1000, -5.206336195535022],
+                                 [0.8000, -7.538918356984516],
+                                 [1.2000, -3.938098437958920],
+                                 [0.7000, -3.031522725559912],
+                                 [1.1000, -2.522778221157014],
+                                 [0.8500, -1.826368199415192]])
+
+    vMtilde_max = np.ones((6, 1)) * 10
+    Fiso = np.array([572.4000, 445.2000, 699.6000, 381.6000, 159.0000, 318.0000])
+    Faparam = np.array([0.814483478343008, 1.055033428970575, 0.162384573599574, 0.063303448465465, 0.433004984392647,
+                        0.716775413397760, -0.029947116970696, 0.200356847296188])
+    Fvparam = np.array([-0.318323436899127, -8.149156043475250, -0.374121508647863, 0.885644059915004])
+    Fpparam = np.array([-0.995172050006169, 53.598150033144236])
+    muscleDampingCoefficient = np.ones((6, 1)) * 0.01
 
     a_shoulder = dM_coefficients[:, 0]
     b_shoulder = dM_coefficients[:, 1]
@@ -144,7 +164,13 @@ def get_muscle_force(q, qdot):
 
 
 def torque_force_relationship(Fm, q):
-    global dM_coefficients, LMT_coefficients, vMtilde_max, Fiso, Faparam, Fvparam, Fpparam, muscleDampingCoefficient, tau_coef
+
+    dM_coefficients = np.array([[0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
+                                [0, 0, 0.0100, -0.0190, 0, 0.0100],
+                                [0.0400, -0.0080, 1.9000, 0, 0, 0.0100],
+                                [-0.0420, 0, 0.0100, 0, 0, 0.0100],
+                                [0.0300, -0.0110, 1.9000, 0.0320, -0.0100, 1.9000],
+                                [-0.0390, 0, 0.0100, -0.0220, 0, 0.0100]])
 
     a_shoulder = dM_coefficients[:, 0]
     b_shoulder = dM_coefficients[:, 1]
@@ -192,7 +218,13 @@ def stochastic_forward_dynamics(
     with_gains=True,
 ) -> DynamicsEvaluation:
 
-    global tau_coef, m1, m2, l1, l2, lc1, lc2, I1, I2
+    tau_coef = 0.1500
+
+    m2 = 1
+    l1 = 0.3
+    lc2 = 0.16
+    I1 = 0.025
+    I2 = 0.045
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -255,8 +287,8 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_muscles(ocp, nlp, True, True)  # Muscles activations as states + muscles excitations as controls
 
     # Stochastic variables
-    ConfigureProblem.configure_k(ocp, nlp)
-    ConfigureProblem.configure_ee_ref(ocp, nlp)
+    ConfigureProblem.configure_k(ocp, nlp, n_controls=6, n_feedbacks=4)
+    ConfigureProblem.configure_ee_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_m(ocp, nlp)
     ConfigureProblem.configure_cov(ocp, nlp)
     ConfigureProblem.configure_dynamics_function(ocp, nlp, stochastic_forward_dynamics, wM=wM, wPq=wPq, wPqdot=wPqdot, force_field_magnitude=force_field_magnitude, with_gains=False, expand=False)
@@ -289,6 +321,13 @@ def ee_equals_ee_ref(controller: PenaltyController) -> cas.MX:
 
 
 def get_p_mat(nlp, node_index, force_field_magnitude):
+    wM_std = 0.05
+    wPq_std = 3e-4
+    wPqdot_std = 0.0024
+    dt = nlp.tf / nlp.ns
+    wM_numerical = np.array([wM_std ** 2 / dt, wM_std ** 2 / dt])
+    wPq_numerical = np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt])
+    wPqdot_numerical = np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt])
 
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
@@ -298,7 +337,6 @@ def get_p_mat(nlp, node_index, force_field_magnitude):
     nx = nlp.states.cx_start.shape[0]
     M_matrix = nlp.restore_matrix_from_vector(nlp.stochastic_variables, nx, nx, Node.START, "m")
 
-    dt = nlp.tf / nlp.ns
     wM = cas.MX.sym("wM", nlp.states['q'].cx_start.shape[0])
     wP = cas.MX.sym("wP", nlp.states['q'].cx_start.shape[0])
     wPdot = cas.MX.sym("wPdot", nlp.states['q'].cx_start.shape[0])
@@ -366,6 +404,9 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     return val
 
 def end_effector_position(q):
+    l1 = 0.3
+    l2 = 0.33
+
     theta_shoulder = q[0]
     theta_elbow = q[1]
     ee_pos = cas.vertcat(cas.cos(theta_shoulder)*l1 + cas.cos(theta_shoulder + theta_elbow)*l2,
@@ -374,6 +415,9 @@ def end_effector_position(q):
 
 
 def end_effector_velocity(q, qdot):
+    l1 = 0.3
+    l2 = 0.33
+
     theta_shoulder = q[0]
     theta_elbow = q[1]
     a = theta_shoulder + theta_elbow
@@ -391,9 +435,14 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     """
     # Constants TODO: remove fom here
     # TODO: How do we choose?
-    global wM_numerical, wPq_numerical, wPqdot_numerical
-
+    wM_std = 0.05
+    wPq_std = 3e-4
+    wPqdot_std = 0.0024
     dt = controllers[0].tf / controllers[0].ns
+    wM_numerical = np.array([wM_std ** 2 / dt, wM_std ** 2 / dt])
+    wPq_numerical = np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt])
+    wPqdot_numerical = np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt])
+
     sensory_noise = cas.vertcat(wPq_numerical, wPqdot_numerical)
     sensory_noise_matrix = sensory_noise * cas.MX_eye(4)
 
@@ -585,7 +634,7 @@ def prepare_socp(
     # controls_max = np.ones((n_muscles, 3)) * 1
     u_bounds.add(bounds=Bounds(controls_min, controls_max))
 
-    input_sol_FLAG = False  #True
+    input_sol_FLAG = False  # True
     if input_sol_FLAG:
         #load pickle
         with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", 'rb') as f:
@@ -625,9 +674,9 @@ def prepare_socp(
         curent_index = 0
         stochastic_init[:n_muscles * (n_q + n_qdot), :] = 0.01  # K
         curent_index += n_muscles * (n_q + n_qdot)
-        # stochastic_init[curent_index: curent_index + n_q + n_qdot, :] = 0.01  # ee_ref
-        stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
-        stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+        stochastic_init[curent_index: curent_index + n_q + n_qdot, :] = 0.01  # ee_ref
+        # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
+        # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
         curent_index += n_q + n_qdot
         stochastic_init[curent_index: curent_index + n_states * n_states, :] = 0.01  # M
     else:
@@ -666,22 +715,26 @@ def prepare_socp(
 
 def main():
 
-    global wM_std, wPq_std, wPqdot_std
-    RUN_OPTIM_FLAG = True # False
+    wM_std = 0.05
+    wPq_std = 3e-4
+    wPqdot_std = 0.0024
+
+    RUN_OPTIM_FLAG = True  # False
+    PLOT_SOL_FLAG = False  # True
+    VIZUALIZE_SOL_FLAG = False  # True
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
-    # import bioviz
-    # b = bioviz.Viz("models/LeuvenArmModel.bioMod")
-    # b.exec()
 
     ee_initial_position = np.array([0.0, 0.2742])  # Directly from Tom's version
     ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 
     # --- Prepare the ocp --- #
-    dt = 0.01
+    # dt = 0.01
+    # final_time = 0.8
+    # n_shooting = int(final_time/dt) + 1
+    # final_time += dt
+    n_shooting = 4
     final_time = 0.8
-    n_shooting = int(final_time/dt) + 1
-    final_time += dt
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False)
@@ -690,7 +743,8 @@ def main():
     solver.set_tol(1e-3)
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
-    solver.set_maximum_iterations(10000)
+    # solver.set_maximum_iterations(10000)
+    solver.set_maximum_iterations(4)
     solver.set_hessian_approximation('limited-memory')
     solver.set_bound_frac(1e-8)
     solver.set_bound_push(1e-8)
@@ -708,29 +762,36 @@ def main():
 
     if RUN_OPTIM_FLAG:
         sol_socp = socp.solve(solver)
+        print('ici')
+        # iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+        #    0  5.2443422e-01 2.05e+03 1.19e+00   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+        #    1  5.2686175e-01 1.85e+03 1.41e+02  -4.9 3.77e+01    -  4.34e-03 9.73e-02h  1
+        #    2  2.1143195e+02 2.64e+03 1.07e+05  -0.7 2.45e+00    -  6.04e-02 1.00e+00h  1
+        #    3  7.4999941e+01 1.38e+03 2.24e+04  -0.3 1.14e+00    -  9.93e-01 4.78e-01f  1
+        #    4  4.4754216e+01 9.68e+02 5.42e+04   0.0 7.98e-01    -  1.00e+00 2.97e-01f  1
 
-        q_sol = sol_socp.states["q"]
-        qdot_sol = sol_socp.states["qdot"]
-        activations_sol = sol_socp.states["muscles"]
-        excitations_sol = sol_socp.controls["muscles"]
-        k_sol = sol_socp.stochastic_variables["k"]
-        ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
-        m_sol = sol_socp.stochastic_variables["m"]
-        # cov_sol = sol_socp.update_values["cov"]
-        stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))  # , cov_sol))
-        data = {"q_sol": q_sol,
-                "qdot_sol": qdot_sol,
-                "activations_sol": activations_sol,
-                "excitations_sol": excitations_sol,
-                "k_sol": k_sol,
-                "ee_ref_sol": ee_ref_sol,
-                "m_sol": m_sol,
-                # "cov_sol": cov_sol,
-                "stochastic_variables_sol": stochastic_variables_sol}
-
-        # --- Save the results --- #
-        with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "wb") as file:
-            pickle.dump(data, file)
+        # q_sol = sol_socp.states["q"]
+        # qdot_sol = sol_socp.states["qdot"]
+        # activations_sol = sol_socp.states["muscles"]
+        # excitations_sol = sol_socp.controls["muscles"]
+        # k_sol = sol_socp.stochastic_variables["k"]
+        # ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
+        # m_sol = sol_socp.stochastic_variables["m"]
+        # # cov_sol = sol_socp.update_values["cov"]
+        # stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))  # , cov_sol))
+        # data = {"q_sol": q_sol,
+        #         "qdot_sol": qdot_sol,
+        #         "activations_sol": activations_sol,
+        #         "excitations_sol": excitations_sol,
+        #         "k_sol": k_sol,
+        #         "ee_ref_sol": ee_ref_sol,
+        #         "m_sol": m_sol,
+        #         # "cov_sol": cov_sol,
+        #         "stochastic_variables_sol": stochastic_variables_sol}
+        #
+        # # --- Save the results --- #
+        # with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "wb") as file:
+        #     pickle.dump(data, file)
     else:
         with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "rb") as file:
             data = pickle.load(file)
@@ -755,134 +816,134 @@ def main():
                             "m_sol": m_sol,
                             "stochastic_variables_sol": stochastic_variables_sol})
 
-
-    import bioviz
-    b = bioviz.Viz(model_path=biorbd_model_path)
-    b.load_movement(q_sol[:, :-1])
-    b.exec()
+    if VIZUALIZE_SOL_FLAG:
+        import bioviz
+        b = bioviz.Viz(model_path=biorbd_model_path)
+        b.load_movement(q_sol[:, :-1])
+        b.exec()
 
 
     # --- Plot the results --- #
-    Q_sym = cas.MX.sym('Q', 2, 1)
-    Qdot_sym = cas.MX.sym('Qdot', 2, 1)
-    hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [end_effector_position(Q_sym)])
-    hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [end_effector_velocity(Q_sym, Qdot_sym)])
+    if PLOT_SOL_FLAG:
+        Q_sym = cas.MX.sym('Q', 2, 1)
+        Qdot_sym = cas.MX.sym('Qdot', 2, 1)
+        hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [end_effector_position(Q_sym)])
+        hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [end_effector_velocity(Q_sym, Qdot_sym)])
 
-    states = socp.nlp[0].states.cx_start
-    controls = socp.nlp[0].controls.cx_start
-    parameters = socp.nlp[0].parameters.cx_start
-    stochastic_variables = socp.nlp[0].stochastic_variables.cx_start
-    nlp = socp.nlp[0]
-    wM_sym = cas.MX.sym('wM', 2, 1)
-    wPq_sym = cas.MX.sym('wPq', 2, 1)
-    wPqdot_sym = cas.MX.sym('wPqdot', 2, 1)
-    out = stochastic_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM_sym, wPq_sym, wPqdot_sym, force_field_magnitude=force_field_magnitude, with_gains=True)
-    dyn_fun = cas.Function("dyn_fun", [states, controls, parameters, stochastic_variables, wM_sym, wPq_sym, wPqdot_sym], [out.dxdt])
+        states = socp.nlp[0].states.cx_start
+        controls = socp.nlp[0].controls.cx_start
+        parameters = socp.nlp[0].parameters.cx_start
+        stochastic_variables = socp.nlp[0].stochastic_variables.cx_start
+        nlp = socp.nlp[0]
+        wM_sym = cas.MX.sym('wM', 2, 1)
+        wPq_sym = cas.MX.sym('wPq', 2, 1)
+        wPqdot_sym = cas.MX.sym('wPqdot', 2, 1)
+        out = stochastic_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM_sym, wPq_sym, wPqdot_sym, force_field_magnitude=force_field_magnitude, with_gains=True)
+        dyn_fun = cas.Function("dyn_fun", [states, controls, parameters, stochastic_variables, wM_sym, wPq_sym, wPqdot_sym], [out.dxdt])
 
-    fig, axs = plt.subplots(3, 2)
-    n_simulations = 30
-    q_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
-    qdot_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
-    mus_activation_simulated = np.zeros((n_simulations, 6, n_shooting + 1))
-    hand_pos_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
-    hand_vel_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
-    for i_simulation in range(n_simulations):
-        wM = np.random.normal(0, wM_std, (2, n_shooting + 1))
-        wPq = np.random.normal(0, wPq_std, (2, n_shooting + 1))
-        wPqdot = np.random.normal(0, wPqdot_std, (2, n_shooting + 1))
-        q_simulated[i_simulation, :, 0] = q_sol[:, 0]
-        qdot_simulated[i_simulation, :, 0] = qdot_sol[:, 0]
-        mus_activation_simulated[i_simulation, :, 0] = activations_sol[:, 0]
-        for i_node in range(n_shooting):
-            x_prev = cas.vertcat(q_simulated[i_simulation, :, i_node], qdot_simulated[i_simulation, :, i_node], mus_activation_simulated[i_simulation, :, i_node])
-            hand_pos_simulated[i_simulation, :, i_node] = np.reshape(hand_pos_fcn(x_prev[:2])[:2], (2,))
-            hand_vel_simulated[i_simulation, :, i_node] = np.reshape(hand_vel_fcn(x_prev[:2], x_prev[2:4])[:2], (2,))
-            u = excitations_sol[:, i_node]
-            s = stochastic_variables_sol[:, i_node]
-            k1 = dyn_fun(x_prev, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
-            x_next = x_prev + dt * dyn_fun(x_prev + dt / 2 * k1, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
-            q_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[:2], (2, ))
-            qdot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[2:4], (2, ))
-            mus_activation_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[4:], (6, ))
-        hand_pos_simulated[i_simulation, :, i_node + 1] = np.reshape(hand_pos_fcn(x_next[:2])[:2], (2,))
-        hand_vel_simulated[i_simulation, :, i_node + 1] = np.reshape(hand_vel_fcn(x_next[:2], x_next[2:4])[:2], (2, ))
-        axs[0, 0].plot(hand_pos_simulated[i_simulation, 0, :], hand_pos_simulated[i_simulation, 1, :], color="tab:red")
-        axs[1, 0].plot(np.linspace(0, final_time, n_shooting + 1), q_simulated[i_simulation, 0, :], color="k")
-        axs[2, 0].plot(np.linspace(0, final_time, n_shooting + 1), q_simulated[i_simulation, 1, :], color="k")
-        axs[0, 1].plot(hand_vel_simulated[i_simulation, 0, :], hand_vel_simulated[i_simulation, 1, :], color="tab:red")
-        axs[1, 1].plot(np.linspace(0, final_time, n_shooting + 1), qdot_simulated[i_simulation, 0, :], color="k")
-        axs[2, 1].plot(np.linspace(0, final_time, n_shooting + 1), qdot_simulated[i_simulation, 1, :], color="k")
-    hand_pos_without_noise = np.zeros((2, n_shooting + 1))
-    for i_node in range(n_shooting + 1):
-        hand_pos_without_noise[:, i_node] = np.reshape(hand_pos_fcn(q_sol[:, i_node])[:2], (2,))
-    axs[0, 0].plot(hand_pos_without_noise[0, :], hand_pos_without_noise[1, :], color="k")
-    axs[0, 0].plot(ee_initial_position[0], ee_initial_position[1], color="tab:green", marker="o")
-    axs[0, 0].plot(ee_final_position[0], ee_final_position[1], color="tab:red", marker="o")
-    axs[0, 0].set_xlabel("X [m]")
-    axs[0, 0].set_ylabel("Y [m]")
-    axs[0, 0].set_title("Hand position simulated")
-    axs[1, 0].set_xlabel("Time [s]")
-    axs[1, 0].set_ylabel("Shoulder angle [rad]")
-    axs[2, 0].set_xlabel("Time [s]")
-    axs[2, 0].set_ylabel("Elbow angle [rad]")
-    axs[0, 1].set_xlabel("X velocity [m/s]")
-    axs[0, 1].set_ylabel("Y velocity [m/s]")
-    axs[0, 1].set_title("Hand velocity simulated")
-    axs[1, 1].set_xlabel("Time [s]")
-    axs[1, 1].set_ylabel("Shoulder velocity [rad/s]")
-    axs[2, 1].set_xlabel("Time [s]")
-    axs[2, 1].set_ylabel("Elbow velocity [rad/s]")
-    axs[0, 0].axis("equal")
-    plt.tight_layout()
-    plt.savefig("simulated_results.png", dpi=300)
-    plt.show()
+        fig, axs = plt.subplots(3, 2)
+        n_simulations = 30
+        q_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
+        qdot_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
+        mus_activation_simulated = np.zeros((n_simulations, 6, n_shooting + 1))
+        hand_pos_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
+        hand_vel_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
+        for i_simulation in range(n_simulations):
+            wM = np.random.normal(0, wM_std, (2, n_shooting + 1))
+            wPq = np.random.normal(0, wPq_std, (2, n_shooting + 1))
+            wPqdot = np.random.normal(0, wPqdot_std, (2, n_shooting + 1))
+            q_simulated[i_simulation, :, 0] = q_sol[:, 0]
+            qdot_simulated[i_simulation, :, 0] = qdot_sol[:, 0]
+            mus_activation_simulated[i_simulation, :, 0] = activations_sol[:, 0]
+            for i_node in range(n_shooting):
+                x_prev = cas.vertcat(q_simulated[i_simulation, :, i_node], qdot_simulated[i_simulation, :, i_node], mus_activation_simulated[i_simulation, :, i_node])
+                hand_pos_simulated[i_simulation, :, i_node] = np.reshape(hand_pos_fcn(x_prev[:2])[:2], (2,))
+                hand_vel_simulated[i_simulation, :, i_node] = np.reshape(hand_vel_fcn(x_prev[:2], x_prev[2:4])[:2], (2,))
+                u = excitations_sol[:, i_node]
+                s = stochastic_variables_sol[:, i_node]
+                k1 = dyn_fun(x_prev, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
+                x_next = x_prev + dt * dyn_fun(x_prev + dt / 2 * k1, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
+                q_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[:2], (2, ))
+                qdot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[2:4], (2, ))
+                mus_activation_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[4:], (6, ))
+            hand_pos_simulated[i_simulation, :, i_node + 1] = np.reshape(hand_pos_fcn(x_next[:2])[:2], (2,))
+            hand_vel_simulated[i_simulation, :, i_node + 1] = np.reshape(hand_vel_fcn(x_next[:2], x_next[2:4])[:2], (2, ))
+            axs[0, 0].plot(hand_pos_simulated[i_simulation, 0, :], hand_pos_simulated[i_simulation, 1, :], color="tab:red")
+            axs[1, 0].plot(np.linspace(0, final_time, n_shooting + 1), q_simulated[i_simulation, 0, :], color="k")
+            axs[2, 0].plot(np.linspace(0, final_time, n_shooting + 1), q_simulated[i_simulation, 1, :], color="k")
+            axs[0, 1].plot(hand_vel_simulated[i_simulation, 0, :], hand_vel_simulated[i_simulation, 1, :], color="tab:red")
+            axs[1, 1].plot(np.linspace(0, final_time, n_shooting + 1), qdot_simulated[i_simulation, 0, :], color="k")
+            axs[2, 1].plot(np.linspace(0, final_time, n_shooting + 1), qdot_simulated[i_simulation, 1, :], color="k")
+        hand_pos_without_noise = np.zeros((2, n_shooting + 1))
+        for i_node in range(n_shooting + 1):
+            hand_pos_without_noise[:, i_node] = np.reshape(hand_pos_fcn(q_sol[:, i_node])[:2], (2,))
+        axs[0, 0].plot(hand_pos_without_noise[0, :], hand_pos_without_noise[1, :], color="k")
+        axs[0, 0].plot(ee_initial_position[0], ee_initial_position[1], color="tab:green", marker="o")
+        axs[0, 0].plot(ee_final_position[0], ee_final_position[1], color="tab:red", marker="o")
+        axs[0, 0].set_xlabel("X [m]")
+        axs[0, 0].set_ylabel("Y [m]")
+        axs[0, 0].set_title("Hand position simulated")
+        axs[1, 0].set_xlabel("Time [s]")
+        axs[1, 0].set_ylabel("Shoulder angle [rad]")
+        axs[2, 0].set_xlabel("Time [s]")
+        axs[2, 0].set_ylabel("Elbow angle [rad]")
+        axs[0, 1].set_xlabel("X velocity [m/s]")
+        axs[0, 1].set_ylabel("Y velocity [m/s]")
+        axs[0, 1].set_title("Hand velocity simulated")
+        axs[1, 1].set_xlabel("Time [s]")
+        axs[1, 1].set_ylabel("Shoulder velocity [rad/s]")
+        axs[2, 1].set_xlabel("Time [s]")
+        axs[2, 1].set_ylabel("Elbow velocity [rad/s]")
+        axs[0, 0].axis("equal")
+        plt.tight_layout()
+        plt.savefig("simulated_results.png", dpi=300)
+        plt.show()
 
     # TODO: integrate to see the error they commit with the trapezoidal
 
 
 # --- Define constants to specify the model  --- #
 # (To simplify the problem, relationships are used instead of "real" muscles)
-dM_coefficients = np.array([[0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
-                            [0, 0, 0.0100, -0.0190, 0, 0.0100],
-                            [0.0400, -0.0080, 1.9000, 0, 0, 0.0100],
-                            [-0.0420, 0, 0.0100, 0, 0, 0.0100],
-                            [0.0300, -0.0110, 1.9000, 0.0320, -0.0100, 1.9000],
-                            [-0.0390, 0, 0.0100, -0.0220, 0, 0.0100]])
+# dM_coefficients = np.array([[0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
+#                             [0, 0, 0.0100, -0.0190, 0, 0.0100],
+#                             [0.0400, -0.0080, 1.9000, 0, 0, 0.0100],
+#                             [-0.0420, 0, 0.0100, 0, 0, 0.0100],
+#                             [0.0300, -0.0110, 1.9000, 0.0320, -0.0100, 1.9000],
+#                             [-0.0390, 0, 0.0100, -0.0220, 0, 0.0100]])
 
-LMT_coefficients = np.array([[1.1000, -5.206336195535022],
-                             [0.8000, -7.538918356984516],
-                             [1.2000, -3.938098437958920],
-                             [0.7000, -3.031522725559912],
-                             [1.1000, -2.522778221157014],
-                             [0.8500, -1.826368199415192]])
-vMtilde_max = np.ones((6, 1)) * 10
-Fiso = np.array([572.4000, 445.2000, 699.6000, 381.6000, 159.0000, 318.0000])
-Faparam = np.array([0.814483478343008, 1.055033428970575, 0.162384573599574, 0.063303448465465, 0.433004984392647, 0.716775413397760, -0.029947116970696, 0.200356847296188])
-Fvparam = np.array([-0.318323436899127, -8.149156043475250, -0.374121508647863, 0.885644059915004])
-Fpparam = np.array([-0.995172050006169, 53.598150033144236])
-muscleDampingCoefficient = np.ones((6, 1)) * 0.01
-tau_coef = 0.1500
+# LMT_coefficients = np.array([[1.1000, -5.206336195535022],
+#                              [0.8000, -7.538918356984516],
+#                              [1.2000, -3.938098437958920],
+#                              [0.7000, -3.031522725559912],
+#                              [1.1000, -2.522778221157014],
+#                              [0.8500, -1.826368199415192]])
+# vMtilde_max = np.ones((6, 1)) * 10
+# Fiso = np.array([572.4000, 445.2000, 699.6000, 381.6000, 159.0000, 318.0000])
+# Faparam = np.array([0.814483478343008, 1.055033428970575, 0.162384573599574, 0.063303448465465, 0.433004984392647, 0.716775413397760, -0.029947116970696, 0.200356847296188])
+# Fvparam = np.array([-0.318323436899127, -8.149156043475250, -0.374121508647863, 0.885644059915004])
+# Fpparam = np.array([-0.995172050006169, 53.598150033144236])
+# muscleDampingCoefficient = np.ones((6, 1)) * 0.01
+# tau_coef = 0.1500
 
-m1 = 1.4
-m2 = 1
-l1 = 0.3
-l2 = 0.33
-lc1 = 0.11
-lc2 = 0.16
-I1 = 0.025
-I2 = 0.045
+# m1 = 1.4
+# m2 = 1
+# l1 = 0.3
+# l2 = 0.33
+# lc1 = 0.11
+# lc2 = 0.16
+# I1 = 0.025
+# I2 = 0.045
 
 # TODO: How do we choose the values?
-wM_std = 0.05
-wPq_std = 3e-4
-wPqdot_std = 0.0024
+# wM_std = 0.05
+# wPq_std = 3e-4
+# wPqdot_std = 0.0024
 
-dt = 0.01
-wM_numerical = np.array([wM_std ** 2 / dt, wM_std ** 2 / dt])
-wPq_numerical = np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt])
-wPqdot_numerical = np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt])
+# dt = 0.01
+# wM_numerical = np.array([wM_std ** 2 / dt, wM_std ** 2 / dt])
+# wPq_numerical = np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt])
+# wPqdot_numerical = np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt])
 
 if __name__ == "__main__":
     main()
 
-# TODO: Check expected feedback effort

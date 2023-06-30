@@ -1263,7 +1263,7 @@ class ConfigureProblem:
 
 
     @staticmethod
-    def configure_k(ocp, nlp):
+    def configure_k(ocp, nlp, n_controls: int, n_feedbacks: int):
         """
         Configure the optimal feedback gain matrix K.
 
@@ -1274,10 +1274,12 @@ class ConfigureProblem:
         """
         name = "k"
         name_k = []
-        for name_1 in nlp.model.muscle_names:
-            for name_2 in [i for i in nlp.model.name_dof] + [i+"_dot" for i in nlp.model.name_dof]:
+        control_names = [f"control_{i}" for i in range(n_controls)]
+        feedback_names = [f"feedback_{i}" for i in range(n_feedbacks)]
+        for name_1 in control_names:
+            for name_2 in feedback_names:
                 name_k += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_muscles*nlp.model.nb_q*2)), list(range(nlp.model.nb_muscles*nlp.model.nb_q*2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(len(control_names)*len(feedback_names))), list(range(len(control_names)*len(feedback_names))))
         ConfigureProblem.configure_new_variable(
             name,
             name_k,
@@ -1373,7 +1375,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_ee_ref(ocp, nlp):
+    def configure_ee_ref(ocp, nlp, n_references: int):
         """
         Configure the reference kinematics.
 
@@ -1383,8 +1385,8 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "ee_ref"
-        name_ee_ref = [i for i in nlp.model.name_dof] + [i+"_dot" for i in nlp.model.name_dof]  # TODO: raise soething for quaternions ?
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q+nlp.model.nb_qdot)), list(range(nlp.model.nb_q+nlp.model.nb_qdot)))
+        name_ee_ref = [f"reference_{i}" for i in range(n_references)]
+        nlp.variable_mappings[name] = BiMapping(list(range(n_references)), list(range(n_references)))
         ConfigureProblem.configure_new_variable(
             name,
             name_ee_ref,

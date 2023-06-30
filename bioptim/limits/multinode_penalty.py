@@ -1,5 +1,5 @@
 from typing import Callable, Any
-from casadi import DM, horzcat, MX_eye, jacobian, Function
+from casadi import DM, horzcat, MX_eye, jacobian, Function, MX
 
 from .constraints import PenaltyOption
 from .objective_functions import ObjectiveFunction
@@ -323,7 +323,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             wPq_magnitude = DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
             wPqdot_magnitude = DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
 
-            from casadi import MX
             wM = MX.sym("wM", 2, 1)
             wPq = MX.sym("wPq", 2, 1)
             wPqdot = MX.sym("wPqdot", 2, 1)
