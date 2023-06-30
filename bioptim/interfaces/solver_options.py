@@ -157,6 +157,7 @@ class Solver:
         _warm_start_bound_frac: float = 0.001
         _bound_push: float = 0.01
         _bound_frac: float = 0.01
+        _nlp_scaling_method: str = "gradient-based"
         _print_level: int = 5
         _c_compile: bool = False
 
@@ -166,11 +167,11 @@ class Solver:
 
         @property
         def dual_inf_tol(self):
-            return self._constr_viol_tol
+            return self._dual_inf_tol
 
         @property
         def constr_viol_tol(self):
-            return self._tol
+            return self._constr_viol_tol
 
         @property
         def compl_inf_tol(self):
@@ -245,6 +246,10 @@ class Solver:
             return self._bound_frac
 
         @property
+        def nlp_scaling_method(self):
+            return self._nlp_scaling_method
+
+        @property
         def print_level(self):
             return self._print_level
 
@@ -256,10 +261,10 @@ class Solver:
             self._tol = val
 
         def set_dual_inf_tol(self, val: float):
-            self._constr_viol_tol = val
+            self._dual_inf_tol = val
 
         def set_constr_viol_tol(self, val: float):
-            self._tol = val
+            self._constr_viol_tol = val
 
         def set_compl_inf_tol(self, val: float):
             self._compl_inf_tol = val
@@ -314,6 +319,9 @@ class Solver:
 
         def set_bound_frac(self, val: float):
             self._bound_frac = val
+
+        def set_nlp_scaling_method(self, val: str):
+            self._nlp_scaling_method = val
 
         def set_print_level(self, num: int):
             self._print_level = num
