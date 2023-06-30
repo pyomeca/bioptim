@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
 from IPython import embed
-import scipy
+import scipy.io as sio
 
 import sys
 sys.path.append("/home/charbie/Documents/Programmation/BiorbdOptim")
@@ -203,10 +203,11 @@ def stochastic_forward_dynamics(
     if with_gains:
         ee_ref = DynamicsFunctions.get(nlp.stochastic_variables["ee_ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        K_matrix = cas.MX(6, 4)
-        for s0 in range(6):
-            for s1 in range(4):
-                K_matrix[s0, s1] = k[s0*4 + s1]
+        K_matrix = cas.MX(4, 6)
+        for s0 in range(4):
+            for s1 in range(6):
+                K_matrix[s0, s1] = k[s0*6 + s1]
+        K_matrix = K_matrix.T
 
         hand_pos = end_effector_position(q)
         hand_vel = end_effector_velocity(q, qdot)
@@ -368,7 +369,7 @@ def end_effector_position(q):
     theta_shoulder = q[0]
     theta_elbow = q[1]
     ee_pos = cas.vertcat(cas.cos(theta_shoulder)*l1 + cas.cos(theta_shoulder + theta_elbow)*l2,
-            cas.sin(theta_shoulder)*l1 + cas.sin(theta_shoulder + theta_elbow)*l2)
+                        cas.sin(theta_shoulder)*l1 + cas.sin(theta_shoulder + theta_elbow)*l2)
     return ee_pos
 
 
@@ -403,11 +404,13 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     cov_sym_dict = {"cov": cov_sym}
     cov_sym_dict["cov"].cx_start = cov_sym
     cov_matrix = controllers[0].restore_matrix_from_vector(cov_sym_dict, controllers[0].states.cx_start.shape[0], controllers[0].states.cx_start.shape[0], Node.START, "cov")
-    K_matrix = controllers[0].restore_matrix_from_vector(controllers[0].stochastic_variables,
-                                               controllers[0].states["muscles"].cx.shape[0],
-                                               controllers[0].states["q"].cx.shape[0] + controllers[0].states["qdot"].cx.shape[0],
-                                               Node.START,
-                                               "k")
+
+    k = controllers[0].stochastic_variables["k"].cx_start
+    K_matrix = cas.MX(4, 6)
+    for s0 in range(4):
+        for s1 in range(6):
+            K_matrix[s0, s1] = k[s0 * 6 + s1]
+    K_matrix = K_matrix.T
 
     # Compute the expected effort
     hand_pos = end_effector_position(controllers[0].states["q"].cx_start)
@@ -582,31 +585,53 @@ def prepare_socp(
     # controls_max = np.ones((n_muscles, 3)) * 1
     u_bounds.add(bounds=Bounds(controls_min, controls_max))
 
+    input_sol_FLAG = False  #True
+    if input_sol_FLAG:
+        #load pickle
+        with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", 'rb') as f:
+            data = pickle.load(f)
+            q_sol = data["q_sol"]
+            qdot_sol = data["qdot_sol"]
+            activations_sol = data["activations_sol"]
+            excitations_sol = data["excitations_sol"]
+            k_sol = data["k_sol"]
+            ee_ref_sol = data["ee_ref_sol"]
+            m_sol = data["m_sol"]
+            # cov_sol = data["cov_sol"]
+            stochastic_variables_sol = data["stochastic_variables_sol"]
+
     # Initial guesses
-    states_init = np.zeros((n_states, n_shooting + 1))
-    states_init[0, :-1] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting)
-    states_init[0, -1] = shoulder_pos_final
-    states_init[1, :-1] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting)
-    states_init[1, -1] = elbow_pos_final
-    states_init[n_q + n_qdot:, :] = 0.01
+    if not input_sol_FLAG:
+        states_init = np.zeros((n_states, n_shooting + 1))
+        states_init[0, :-1] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting)
+        states_init[0, -1] = shoulder_pos_final
+        states_init[1, :-1] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting)
+        states_init[1, -1] = elbow_pos_final
+        states_init[n_q + n_qdot:, :] = 0.01
+    else:
+        states_init = cas.vertcat(q_sol, qdot_sol, activations_sol)
     x_init = InitialGuess(states_init, interpolation=InterpolationType.EACH_FRAME)
 
-    controls_init = np.ones((n_muscles, n_shooting)) * 0.01
+    if not input_sol_FLAG:
+        controls_init = np.ones((n_muscles, n_shooting)) * 0.01
+    else:
+        controls_init = excitations_sol[:, :-1]
     u_init = InitialGuess(controls_init, interpolation=InterpolationType.EACH_FRAME)
 
     # TODO: This should probably be done automatically, not defined by the user
     n_stochastic = n_muscles*(n_q + n_qdot) + n_q+n_qdot + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10)
-    stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
-
-    curent_index = 0
-    stochastic_init[:n_muscles * (n_q + n_qdot), :] = 0.01  # K
-    curent_index += n_muscles * (n_q + n_qdot)
-    stochastic_init[curent_index: curent_index + n_q + n_qdot, :] = 0.01  # ee_ref
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
-    # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
-    curent_index += n_q + n_qdot
-    stochastic_init[curent_index: curent_index + n_states * n_states, :] = 0.01  # M
-
+    if not input_sol_FLAG:
+        stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
+        curent_index = 0
+        stochastic_init[:n_muscles * (n_q + n_qdot), :] = 0.01  # K
+        curent_index += n_muscles * (n_q + n_qdot)
+        # stochastic_init[curent_index: curent_index + n_q + n_qdot, :] = 0.01  # ee_ref
+        stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
+        stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+        curent_index += n_q + n_qdot
+        stochastic_init[curent_index: curent_index + n_states * n_states, :] = 0.01  # M
+    else:
+        stochastic_init = stochastic_variables_sol
     s_init = InitialGuess(stochastic_init, interpolation=InterpolationType.EACH_FRAME)
 
     s_bounds = BoundsList()
@@ -667,6 +692,9 @@ def main():
     solver.set_constr_viol_tol(1e-7)
     solver.set_maximum_iterations(10000)
     solver.set_hessian_approximation('limited-memory')
+    solver.set_bound_frac(1e-8)
+    solver.set_bound_push(1e-8)
+    solver.set_nlp_scaling_method('none')
 
     problem_type = "CIRCLE"
     force_field_magnitude = 0
@@ -715,19 +743,19 @@ def main():
         m_sol = data["m_sol"]
         # cov_sol = data["cov_sol"]
         stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))
-        # # Save .mat files
-        # scipy.io.savemat(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.mat",
-        #                     {"q_sol": q_sol,
-        #                         "qdot_sol": qdot_sol,
-        #                         "activations_sol": activations_sol,
-        #                         "excitations_sol": excitations_sol,
-        #                         "k_sol": k_sol,
-        #                         "ee_ref_sol": ee_ref_sol,
-        #                         "m_sol": m_sol,
-        #                         "stochastic_variables_sol": stochastic_variables_sol})
+
+    # Save .mat files
+    sio.savemat(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.mat",
+                        {"q_sol": q_sol,
+                            "qdot_sol": qdot_sol,
+                            "activations_sol": activations_sol,
+                            "excitations_sol": excitations_sol,
+                            "k_sol": k_sol,
+                            "ee_ref_sol": ee_ref_sol,
+                            "m_sol": m_sol,
+                            "stochastic_variables_sol": stochastic_variables_sol})
 
 
-    embed()
     import bioviz
     b = bioviz.Viz(model_path=biorbd_model_path)
     b.load_movement(q_sol[:, :-1])

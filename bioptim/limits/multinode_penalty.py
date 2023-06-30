@@ -1,5 +1,5 @@
 from typing import Callable, Any
-from casadi import DM, horzcat, MX_eye, jacobian
+from casadi import DM, horzcat, MX_eye, jacobian, Function
 
 from .constraints import PenaltyOption
 from .objective_functions import ObjectiveFunction
@@ -323,15 +323,31 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             wPq_magnitude = DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
             wPqdot_magnitude = DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
 
+            from casadi import MX
+            wM = MX.sym("wM", 2, 1)
+            wPq = MX.sym("wPq", 2, 1)
+            wPqdot = MX.sym("wPqdot", 2, 1)
+
             nx = controllers[0].states.cx.shape[0]
             M_matrix = controllers[0].restore_matrix_from_vector(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
 
-            dx_i_plus = stochastic_forward_dynamics(controllers[1].states.cx_start, controllers[1].controls.cx_start,
-                                    controllers[1].parameters.cx_start, controllers[1].stochastic_variables.cx_start,
-                                    controllers[1].get_nlp, wM_magnitude, wPq_magnitude, wPqdot_magnitude,
+            dx = stochastic_forward_dynamics(controllers[0].states.cx_start, controllers[0].controls.cx_start,
+                                    controllers[0].parameters.cx_start, controllers[0].stochastic_variables.cx_start,
+                                    controllers[0].get_nlp, wM, wPq, wPqdot,
                                     force_field_magnitude=unused_param["force_field_magnitude"], with_gains=True)
 
-            DdZ_DX = jacobian(dx_i_plus.dxdt, controllers[1].states.cx_start)
+            DdZ_DX_fun = Function("DdZ_DX_fun", [controllers[0].states.cx_start,
+                                                 controllers[0].controls.cx_start,
+                                                 controllers[0].parameters.cx_start,
+                                                 controllers[0].stochastic_variables.cx_start,
+                                                 wM, wPq, wPqdot],
+                                    [jacobian(dx.dxdt, controllers[0].states.cx_start)])
+
+            DdZ_DX = DdZ_DX_fun(controllers[1].states.cx_start,
+                                controllers[1].controls.cx_start,
+                                controllers[1].parameters.cx_start,
+                                controllers[1].stochastic_variables.cx_start,
+                                wM_magnitude, wPq_magnitude, wPqdot_magnitude)
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
 
