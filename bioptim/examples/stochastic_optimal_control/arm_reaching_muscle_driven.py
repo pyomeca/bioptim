@@ -517,7 +517,6 @@ def prepare_socp(
     final_time: float,
     n_shooting: int,
     ee_final_position: np.ndarray,
-    ee_initial_position: np.ndarray,
     force_field_magnitude: float = 0,
     problem_type: str = "CIRCLE",
 ) -> OptimalControlProgram:
@@ -614,15 +613,6 @@ def prepare_socp(
 
     states_min = np.ones((n_states, n_shooting+1)) * -cas.inf
     states_max = np.ones((n_states, n_shooting+1)) * cas.inf
-    # states_min[bio_model.nb_q + bio_model.nb_qdot:, :] = 0.001  # Activations
-    # states_max[bio_model.nb_q + bio_model.nb_qdot:, :] = 1  # Activations
-    # states_min[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
-    # states_max[0:4, 0] = [shoulder_pos_initial, elbow_pos_initial, 0, 0]  # Initial position + velocities
-    # states_min[0:2, 1:] = 0
-    # states_max[0:2, 1:] = 180  # should be np.pi, but there is a mistake in the original code
-    # states_min[2:4, n_shooting-1] = 0
-    # states_max[2:4, n_shooting-1] = 0
-
 
     x_bounds = BoundsList()
     x_bounds.add(bounds=Bounds(states_min, states_max, interpolation=InterpolationType.EACH_FRAME))
@@ -630,8 +620,6 @@ def prepare_socp(
     u_bounds = BoundsList()
     controls_min = np.ones((n_muscles, 3)) * -cas.inf
     controls_max = np.ones((n_muscles, 3)) * cas.inf
-    # controls_min = np.ones((n_muscles, 3)) * 0.001
-    # controls_max = np.ones((n_muscles, 3)) * 1
     u_bounds.add(bounds=Bounds(controls_min, controls_max))
 
     input_sol_FLAG = False  # True
@@ -756,7 +744,6 @@ def main():
                         final_time=final_time,
                         n_shooting=n_shooting,
                         ee_final_position=ee_final_position,
-                        ee_initial_position=ee_initial_position,
                         problem_type=problem_type,
                         force_field_magnitude=force_field_magnitude)
 
