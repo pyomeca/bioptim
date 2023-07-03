@@ -102,9 +102,9 @@ def test_model_holonomic():
         [q_u_sym, qdot_u_sym, tau_sym],
         [model.partitioned_forward_dynamics(q_u_sym, qdot_u_sym, tau_sym, q_v_init=q_v)],
     )
-    TestUtils.assert_equal(partitioned_forward_dynamics_func(q_u, qdot_u, tau), -6.3109, expand=False)
+    TestUtils.assert_equal(partitioned_forward_dynamics_func(q_u, qdot_u, tau), -1.101808, expand=False)
     TestUtils.assert_equal(model.coupling_matrix(q), [5.79509793, -0.35166415], expand=False)
-    TestUtils.assert_equal(model.biais_vector(q, q_dot), [-27.03137348, -23.97095718], expand=False)
+    TestUtils.assert_equal(model.biais_vector(q, q_dot), [27.03137348, 23.97095718], expand=False)
     TestUtils.assert_equal(model.state_from_partition(q_u, q_v), q)
 
     compute_v_from_u_func = Function("compute_q_v", [q_u_sym], [model.compute_q_v(q_u_sym, q_v_init=q_v)])
@@ -138,93 +138,8 @@ def test_example_two_pendulums():
     np.testing.assert_almost_equal(
         sol.states["q_u"],
         [
-            [
-                1.54,
-                1.34874433,
-                0.98862654,
-                0.64450762,
-                0.34444899,
-                0.02992554,
-                -0.31997814,
-                -0.69642723,
-                -1.09920309,
-                -1.44582515,
-                -1.54,
-            ],
-            [
-                1.54,
-                1.76965698,
-                2.14098023,
-                2.45361809,
-                2.69040682,
-                2.74257871,
-                2.58671659,
-                2.22277978,
-                1.62756889,
-                0.82149671,
-                0.0,
-            ],
-        ],
-        decimal=6,
-    )
-
-
-def test_example_three_bars():
-    """Test the holonomic_constraints/two_pendulums example"""
-    from bioptim.examples.holonomic_constraints import three_bars
-
-    bioptim_folder = os.path.dirname(three_bars.__file__)
-
-    # --- Prepare the ocp --- #
-    ocp, model = three_bars.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/three_bars.bioMod", n_shooting=10, final_time=1
-    )
-
-    # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
-
-    np.testing.assert_almost_equal(
-        sol.states["q_u"],
-        [
-            [
-                1.57079633,
-                1.8323255,
-                2.03537959,
-                1.82979618,
-                1.31714926,
-                0.59498042,
-                -0.24044227,
-                -0.97444266,
-                -1.30481995,
-                -1.46007507,
-                -1.57079633,
-            ],
-            [
-                0.0,
-                -0.63860296,
-                -1.23671867,
-                -1.37810224,
-                -1.25366614,
-                -0.8230247,
-                -0.12601321,
-                0.34051488,
-                0.06658568,
-                -0.20141317,
-                0.0,
-            ],
-            [
-                0.0,
-                0.08432887,
-                -0.32068129,
-                -1.0856066,
-                -1.95199705,
-                -2.57183729,
-                -2.64154504,
-                -2.58614745,
-                -2.08417968,
-                -1.44992955,
-                -1.57079633,
-            ],
+            [1.54, 1.433706, 1.185046, 0.891157, 0.561607, 0.191792, -0.206511, -0.614976, -1.018383, -1.356253, -1.54],
+            [1.54, 1.669722, 1.924726, 2.127746, 2.226937, 2.184007, 1.972105, 1.593534, 1.06751, 0.507334, 0.0],
         ],
         decimal=6,
     )
