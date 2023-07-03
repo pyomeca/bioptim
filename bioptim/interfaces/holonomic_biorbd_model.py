@@ -256,9 +256,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         """
         partitioned_constrained_jacobian = self.partitioned_constraints_jacobian(q)
         partitioned_constrained_jacobian_v = partitioned_constrained_jacobian[:, self.nb_independent_joints :]
-        partitioned_constrained_jacobian_v_inv = inv(partitioned_constrained_jacobian_v)  # inv_minor otherwise ?
+        partitioned_constrained_jacobian_v_inv = inv(partitioned_constrained_jacobian_v)
 
-        return partitioned_constrained_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
+        return -partitioned_constrained_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
 
     def state_from_partition(self, state_u: MX, state_v: MX) -> MX:
         """

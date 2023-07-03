@@ -1,7 +1,5 @@
 from typing import Protocol
-
-from casadi import MX, SX, Function
-from ..misc.enums import ControlType, QuadratureRule
+from casadi import MX, SX
 from ..interfaces.holonomic_biomodel import HolonomicBioModel
 
 
@@ -11,7 +9,6 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
         q1: MX | SX,
         q2: MX | SX,
         time_step: MX | SX,
-        discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
     ) -> MX | SX:
         """
         Compute the discrete Lagrangian of a biorbd model.
@@ -24,21 +21,17 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
             The generalized coordinates at the second node.
         time_step: float
             The time step.
-        discrete_approximation: QuadratureRule
-            The quadrature rule to use for the discrete Lagrangian.
 
         Returns
         -------
         The discrete Lagrangian.
         """
 
-    @staticmethod
     def control_approximation(
+        self,
         control_minus: MX | SX,
         control_plus: MX | SX,
         time_step: float,
-        control_type: ControlType = ControlType.CONSTANT,
-        discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
     ):
         """
         Compute the term associated to the discrete forcing. The term associated to the controls in the Lagrangian
@@ -52,10 +45,6 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
             Control at t_{k+1} (or tk)
         time_step: float
             The time step.
-        control_type: ControlType
-            The type of control.
-        discrete_approximation: QuadratureRule
-            The quadrature rule to use for the discrete Lagrangian.
 
         Returns
         ----------
@@ -68,8 +57,7 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
         IEEE Transactions on Robotics, 25(6), 1249–1261. doi:10.1109/tro.2009.2032955
         """
 
-    @staticmethod
-    def discrete_holonomic_constraints_jacobian(jac: Function, time_step: MX | SX, q: MX | SX) -> MX | SX | None:
+    def discrete_holonomic_constraints_jacobian(self, time_step: MX | SX, q: MX | SX) -> MX | SX | None:
         """
         Compute the discrete Jacobian of the holonomic constraints. See Variational integrators for constrained
         dynamical systems (https://onlinelibrary.wiley.com/doi/epdf/10.1002/zamm.200700173) eq. (21) for more
@@ -77,8 +65,6 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
 
         Parameters
         ----------
-        jac: Function
-            The Jacobian of the holonomic constraints.
         time_step: MX | SX
             The time step.
         q:
