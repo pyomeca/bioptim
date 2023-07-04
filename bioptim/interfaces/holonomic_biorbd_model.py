@@ -322,6 +322,30 @@ class HolonomicBiorbdModel(BiorbdModel):
         qdot_v = self.compute_qdot_v(q, qdot_u)
         return self.state_from_partition(qdot_u, qdot_v)
 
+    def compute_qddot_v(self, q: MX, qdot: MX, qddot_u: MX) -> MX:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        Equation (17) in the paper.
+        """
+        coupling_matrix_vu = self.coupling_matrix(q)
+        return coupling_matrix_vu @ qddot_u + self.biais_vector(q, qdot)
+
+    def compute_qddot(self, q: MX, qdot: MX, qddot_u: MX) -> MX:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        Equation (17) in the paper.
+        """
+        qddot_v = self.compute_qddot_v(q, qdot, qddot_u)
+        return self.state_from_partition(qddot_u, qddot_v)
+
     def compute_q_v_numeric(self, q_u: DM, q_v_init=None):
         q_v_init = DM.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
         decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
