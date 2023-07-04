@@ -140,6 +140,8 @@ class PenaltyOption(OptionGeneric):
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
         self.node: Node | list | tuple = node
         self.quadratic = quadratic
+        if integration_rule == QuadratureRule.MIDPOINT or integration_rule == QuadratureRule.RECTANGLE_RIGHT:
+            raise NotImplementedError(f"{integration_rule} has not been implemented yet.")
         self.integration_rule = integration_rule
 
         if index is not None and rows is not None:

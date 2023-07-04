@@ -111,6 +111,8 @@ class CustomPlot:
         self.node_idx = node_idx
         self.label = label
         self.compute_derivative = compute_derivative
+        if integration_rule == QuadratureRule.MIDPOINT or integration_rule == QuadratureRule.RECTANGLE_RIGHT:
+            raise NotImplementedError(f"{integration_rule} has not been implemented yet.")
         self.integration_rule = integration_rule
         self.parameters = parameters
 
