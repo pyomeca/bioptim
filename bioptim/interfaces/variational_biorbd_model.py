@@ -299,7 +299,6 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
 
         Sources
         -------
-        Compute the initial states of the system from the initial position and velocity.
         The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
         indications given just before the equation (18) for p0 and pN.

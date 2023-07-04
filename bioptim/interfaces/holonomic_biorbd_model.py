@@ -120,7 +120,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         )
 
         # compute b vector
-        tau_augmented = tau - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, f_ext=external_forces, f_contacts=f_contacts).to_mx()
+        tau_augmented = (
+            tau
+            - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, f_ext=external_forces, f_contacts=f_contacts).to_mx()
+        )
 
         biais = -self.holonomic_constraints_jacobian(qdot) @ qdot
         if self.stabilization:
@@ -269,7 +272,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         partitioned_constrained_jacobian_v = partitioned_constrained_jacobian[:, self.nb_independent_joints :]
         partitioned_constrained_jacobian_v_inv = inv(partitioned_constrained_jacobian_v)
 
-        return -partitioned_constrained_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
+        return partitioned_constrained_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
 
     def state_from_partition(self, state_u: MX, state_v: MX) -> MX:
         """
@@ -367,7 +370,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return v_opt
 
-    def compute_the_Lagrangian_multiplier(
+    def compute_the_lagrangian_multiplier(
         self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
     ) -> MX:
         """
