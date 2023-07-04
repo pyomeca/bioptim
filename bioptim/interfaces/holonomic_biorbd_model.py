@@ -98,7 +98,9 @@ class HolonomicBiorbdModel(BiorbdModel):
 
     def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
         if external_forces is not None:
-            external_forces = biorbd.to_spatial_vector(external_forces)
+            raise NotImplementedError("External forces are not implemented yet.")
+        if f_contacts is not None:
+            raise NotImplementedError("Contact forces are not implemented yet.")
 
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
@@ -118,7 +120,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         )
 
         # compute b vector
-        tau_augmented = tau - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, f_ext=None, f_contacts=None).to_mx()
+        tau_augmented = tau - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, f_ext=external_forces, f_contacts=f_contacts).to_mx()
 
         biais = -self.holonomic_constraints_jacobian(qdot) @ qdot
         if self.stabilization:
@@ -148,6 +150,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         return vertcat(first_line, second_line)
 
     def partitioned_non_linear_effect(self, q, qdot, f_ext=None, f_contacts=None):
+        if f_ext is not None:
+            raise NotImplementedError("External forces are not implemented yet.")
+        if f_contacts is not None:
+            raise NotImplementedError("Contact forces are not implemented yet.")
         non_linear_effect = self.model.NonLinearEffect(q, qdot, f_ext=f_ext, f_contacts=f_contacts).to_mx()
         non_linear_effect_u = non_linear_effect[self._independent_joint_index]
         non_linear_effect_v = non_linear_effect[self._dependent_joint_index]
@@ -189,6 +195,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
+        if external_forces is not None:
+            raise NotImplementedError("External forces are not implemented yet.")
+        if f_contacts is not None:
+            raise NotImplementedError("Contact forces are not implemented yet.")
+
         # compute q and qdot
         q = self.compute_q(q_u, q_v_init=q_v_init)
         qdot = self.compute_qdot(q, qdot_u)
@@ -343,6 +354,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         Equation (17) in the paper.
         """
+        if external_forces is not None:
+            raise NotImplementedError("External forces are not implemented yet.")
+        if f_contacts is not None:
+            raise NotImplementedError("Contact forces are not implemented yet.")
         J = self.partitioned_constraints_jacobian(q)
         Jv = J[:, self.nb_independent_joints :]
         Jvt_inv = inv(Jv.T)
