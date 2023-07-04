@@ -305,12 +305,11 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def m_equals_inverse_of_dg_dz(penalty, controllers: list[PenaltyController, PenaltyController], **unused_param):
+        def m_equals_inverse_of_dg_dz(penalty, controllers: list[PenaltyController, PenaltyController], dynamics: Callable, **unused_param):
             """
             ...
             """
             import numpy as np
-            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import stochastic_forward_dynamics
 
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
@@ -330,10 +329,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             nx = controllers[0].states.cx.shape[0]
             M_matrix = controllers[0].restore_matrix_from_vector(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
 
-            dx = stochastic_forward_dynamics(controllers[0].states.cx_start, controllers[0].controls.cx_start,
+            dx = dynamics(controllers[0].states.cx_start, controllers[0].controls.cx_start,
                                     controllers[0].parameters.cx_start, controllers[0].stochastic_variables.cx_start,
                                     controllers[0].get_nlp, wM, wPq, wPqdot,
-                                    force_field_magnitude=unused_param["force_field_magnitude"], with_gains=True)
+                                    with_gains=True)
 
             DdZ_DX_fun = Function("DdZ_DX_fun", [controllers[0].states.cx_start,
                                                  controllers[0].controls.cx_start,

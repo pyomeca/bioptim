@@ -1689,8 +1689,8 @@ class Dynamics(OptionGeneric):
 
         dynamic_function = None
         if "dynamic_function" in params:
-            dynamic_function = params["dynamic_function"]
-            del params["dynamic_function"]
+            dynamic_function = params["dynamic_function"]  # TODO: do a proper PR for this if Pariterre accepts this change
+            # del params["dynamic_function"]
 
         super(Dynamics, self).__init__(type=dynamics_type, **params)
         self.dynamic_function = dynamic_function

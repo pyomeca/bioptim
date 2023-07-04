@@ -279,7 +279,7 @@ def stochastic_forward_dynamics(
 
     return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dactivations_computed), defects=None)
 
-def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, wM, wPq, wPqdot, force_field_magnitude):
+def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamic_function: callable, wM, wPq, wPqdot):
 
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
@@ -291,7 +291,18 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_ee_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_m(ocp, nlp)
     ConfigureProblem.configure_cov(ocp, nlp)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, stochastic_forward_dynamics, wM=wM, wPq=wPq, wPqdot=wPqdot, force_field_magnitude=force_field_magnitude, with_gains=False, expand=False)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp,
+                                                 dyn_func=lambda states, controls, parameters,
+                                                                stochastic_variables, nlp, wM, wPq, wPqdot: dynamic_function(states,
+                                                                                            controls,
+                                                                                            parameters,
+                                                                                            stochastic_variables,
+                                                                                            nlp,
+                                                                                            wM,
+                                                                                            wPq,
+                                                                                            wPqdot,
+                                                                                            with_gains=False),
+                                                 wM=wM, wPq=wPq, wPqdot=wPqdot, expand=False)
 
 def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.MX:
     """
@@ -604,7 +615,15 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(configure_stochastic_optimal_control_problem, dynamic_function=stochastic_forward_dynamics, wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)), force_field_magnitude=force_field_magnitude, expand=False)
+    # dynamics.add(configure_stochastic_optimal_control_problem, dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, wM, wPq, wPqdot: stochastic_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM, wPq, wPqdot, force_field_magnitude=force_field_magnitude, with_gains=False), wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
+    # dynamic_function = stochastic_forward_dynamics,
+    dynamics.add(configure_stochastic_optimal_control_problem,
+                 dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, wM, wPq,
+                                         wPqdot, with_gains: stochastic_forward_dynamics(states, controls, parameters,
+                                                                             stochastic_variables, nlp, wM, wPq, wPqdot,
+                                                                             force_field_magnitude=force_field_magnitude,
+                                                                             with_gains=with_gains),
+                 wM=np.zeros((2, 1)), wPq=np.zeros((2, 1)), wPqdot=np.zeros((2, 1)))
 
     n_muscles = 6
     n_q = bio_model.nb_q
@@ -698,7 +717,6 @@ def prepare_socp(
         assume_phase_dynamics=False,
         problem_type=OcpType.SOCP_EXPLICIT,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
         update_value_function=lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude),
-        force_field_magnitude=force_field_magnitude,  # TODO: remove
     )
 
 def main():
