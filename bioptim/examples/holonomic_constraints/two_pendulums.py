@@ -3,7 +3,10 @@ This example presents how to implement a holonomic constraint in bioptim.
 The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
 pendulum simulation.
 """
+import matplotlib.pyplot as plt
 import numpy as np
+
+from casadi import MX, Function
 
 from bioptim import (
     BiMappingList,
@@ -19,6 +22,81 @@ from bioptim import (
     OptimalControlProgram,
     Solver,
 )
+
+
+def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
+    """
+    Compute all the states from the solution of the optimal control program
+
+    Parameters
+    ----------
+    bio_model: HolonomicBiorbdModel
+        The biorbd model
+    sol:
+        The solution of the optimal control program
+
+    Returns
+    -------
+
+    """
+    n = sol.states["q_u"].shape[1]
+
+    q = np.zeros((bio_model.nb_q, n))
+    qdot = np.zeros((bio_model.nb_q, n))
+    qddot = np.zeros((bio_model.nb_q, n))
+    lambdas = np.zeros((bio_model.nb_dependent_joints, n))
+    tau = np.zeros((bio_model.nb_tau, n))
+
+    for i, independent_joint_index in enumerate(bio_model.independent_joint_index):
+        tau[independent_joint_index] = sol.controls["tau"][i, :]
+    for i, dependent_joint_index in enumerate(bio_model.dependent_joint_index):
+        tau[dependent_joint_index] = sol.controls["tau"][i, :]
+
+    # Partitioned forward dynamics
+    q_u_sym = MX.sym("q_u_sym", bio_model.nb_independent_joints, 1)
+    qdot_u_sym = MX.sym("qdot_u_sym", bio_model.nb_independent_joints, 1)
+    tau_sym = MX.sym("tau_sym", bio_model.nb_tau, 1)
+    partitioned_forward_dynamics_func = Function(
+        "partitioned_forward_dynamics",
+        [q_u_sym, qdot_u_sym, tau_sym],
+        [bio_model.partitioned_forward_dynamics(q_u_sym, qdot_u_sym, tau_sym)],
+    )
+    # Lagrangian multipliers
+    q_sym = MX.sym("q_sym", bio_model.nb_q, 1)
+    qdot_sym = MX.sym("qdot_sym", bio_model.nb_q, 1)
+    qddot_sym = MX.sym("qddot_sym", bio_model.nb_q, 1)
+    compute_lambdas_func = Function(
+        "compute_the_lagrangian_multipliers",
+        [q_sym, qdot_sym, qddot_sym, tau_sym],
+        [bio_model.compute_the_lagrangian_multipliers(q_sym, qdot_sym, qddot_sym, tau_sym)],
+    )
+
+    for i in range(n):
+        q_v_i = bio_model.compute_q_v_numeric(sol.states["q_u"][:, i]).toarray()
+        q[:, i] = bio_model.state_from_partition(sol.states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
+        qdot[:, i] = bio_model.compute_qdot(q[:, i], sol.states["qdot_u"][:, i]).toarray().squeeze()
+        qddot_u_i = (
+            partitioned_forward_dynamics_func(
+                sol.states["q_u"][:, i],
+                sol.states["qdot_u"][:, i],
+                tau[:, i],
+            )
+            .toarray()
+            .squeeze()
+        )
+        qddot[:, i] = bio_model.compute_qddot(q[:, i], qdot[:, i], qddot_u_i).toarray().squeeze()
+        lambdas[:, i] = (
+            compute_lambdas_func(
+                q[:, i],
+                qdot[:, i],
+                qddot[:, i],
+                tau[:, i],
+            )
+            .toarray()
+            .squeeze()
+        )
+
+    return q, qdot, qddot, lambdas
 
 
 def prepare_ocp(
@@ -133,17 +211,21 @@ def main():
     sol = ocp.solve(Solver.IPOPT())
 
     # --- Show results --- #
-    q = np.zeros((4, n_shooting + 1))
-    for i, ui in enumerate(sol.states["q_u"].T):
-        vi = bio_model.compute_q_v_numeric(ui, q_v_init=np.zeros(2)).toarray()
-        qi = bio_model.state_from_partition(ui[:, np.newaxis], vi).toarray().squeeze()
-        q[:, i] = qi
+    q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
 
     import bioviz
 
     viz = bioviz.Viz(model_path)
     viz.load_movement(q)
     viz.exec()
+
+    plt.title("Lagrange multipliers of the holonomic constraint")
+    plt.plot(sol.time, lambdas[0, :], label="y")
+    plt.plot(sol.time, lambdas[1, :], label="z")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Lagrange multipliers (N)")
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":
