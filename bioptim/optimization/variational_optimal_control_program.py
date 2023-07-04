@@ -3,24 +3,21 @@ Optimal control program with the variational integrator for the dynamics.
 """
 import numpy as np
 
-from bioptim import (
-    BoundsList,
-    ConfigureProblem,
-    DynamicsEvaluation,
-    DynamicsFunctions,
-    DynamicsList,
-    InitialGuessList,
-    MultinodeConstraintList,
-    NonLinearProgram,
-    OptimalControlProgram,
-    ParameterList,
-    PenaltyController,
-    ParameterConstraintList,
-    ParameterObjectiveList,
-    VariationalBioModel,
-    VariationalBiorbdModel,
-)
-from casadi import MX, vertcat, Function
+from casadi import MX, Function, vertcat
+
+from .optimal_control_program import OptimalControlProgram
+from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
+from ..dynamics.dynamics_evaluation import DynamicsEvaluation
+from ..dynamics.dynamics_functions import DynamicsFunctions
+from ..interfaces.variational_biomodel import VariationalBioModel
+from ..interfaces.variational_biorbd_model import VariationalBiorbdModel
+from ..limits.constraints import ParameterConstraintList
+from ..limits.multinode_constraint import MultinodeConstraintList
+from ..limits.objective_functions import ParameterObjectiveList
+from ..limits.path_conditions import BoundsList, InitialGuessList
+from ..limits.penalty_controller import PenaltyController
+from ..optimization.non_linear_program import NonLinearProgram
+from ..optimization.parameters import ParameterList
 
 
 class VariationalOptimalControlProgram(OptimalControlProgram):
