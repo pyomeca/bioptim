@@ -102,9 +102,9 @@ def test_model_holonomic():
         [q_u_sym, qdot_u_sym, tau_sym],
         [model.partitioned_forward_dynamics(q_u_sym, qdot_u_sym, tau_sym, q_v_init=q_v)],
     )
-    TestUtils.assert_equal(partitioned_forward_dynamics_func(q_u, qdot_u, tau), -6.310899, expand=False)
+    TestUtils.assert_equal(partitioned_forward_dynamics_func(q_u, qdot_u, tau), -1.101808, expand=False)
     TestUtils.assert_equal(model.coupling_matrix(q), [5.79509793, -0.35166415], expand=False)
-    TestUtils.assert_equal(model.biais_vector(q, q_dot), [-27.03137348, -23.97095718], expand=False)
+    TestUtils.assert_equal(model.biais_vector(q, q_dot), [27.03137348, 23.97095718], expand=False)
     TestUtils.assert_equal(model.state_from_partition(q_u, q_v), q)
 
     compute_v_from_u_func = Function("compute_q_v", [q_u_sym], [model.compute_q_v(q_u_sym, q_v_init=q_v)])
@@ -121,7 +121,7 @@ def test_model_holonomic():
     )
 
     TestUtils.assert_equal(
-        model.compute_the_lagrangian_multiplier(q, q_dot, q_ddot, tau), [5.50486387, -85.3638488], expand=False
+        model.compute_the_lagrangian_multipliers(q, q_dot, q_ddot, tau), [20.34808 , 27.119224], expand=False
     )
 
 
