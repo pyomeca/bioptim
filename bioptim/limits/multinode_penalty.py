@@ -305,47 +305,38 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def m_equals_inverse_of_dg_dz(penalty, controllers: list[PenaltyController, PenaltyController], dynamics: Callable, **unused_param):
+        def m_equals_inverse_of_dg_dz(penalty, controllers: list[PenaltyController, PenaltyController], dynamics: Callable, wM_magnitude: DM, wS_magnitude: DM, **unused_param):
             """
             ...
             """
-            import numpy as np
-
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
 
             dt = controllers[0].tf / controllers[0].ns
-            wM_std = 0.05
-            wPq_std = 3e-4
-            wPqdot_std = 0.0024
-            wM_magnitude = DM(np.array([wM_std ** 2 / dt, wM_std ** 2 / dt]))
-            wPq_magnitude = DM(np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt]))
-            wPqdot_magnitude = DM(np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt]))
 
             wM = MX.sym("wM", 2, 1)
-            wPq = MX.sym("wPq", 2, 1)
-            wPqdot = MX.sym("wPqdot", 2, 1)
+            wS = MX.sym("wS", 4, 1)
 
             nx = controllers[0].states.cx.shape[0]
             M_matrix = controllers[0].restore_matrix_from_vector(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
 
             dx = dynamics(controllers[0].states.cx_start, controllers[0].controls.cx_start,
                                     controllers[0].parameters.cx_start, controllers[0].stochastic_variables.cx_start,
-                                    controllers[0].get_nlp, wM, wPq, wPqdot,
+                                    controllers[0].get_nlp, wM, wS,
                                     with_gains=True)
 
             DdZ_DX_fun = Function("DdZ_DX_fun", [controllers[0].states.cx_start,
                                                  controllers[0].controls.cx_start,
                                                  controllers[0].parameters.cx_start,
                                                  controllers[0].stochastic_variables.cx_start,
-                                                 wM, wPq, wPqdot],
+                                                 wM, wS],
                                     [jacobian(dx.dxdt, controllers[0].states.cx_start)])
 
             DdZ_DX = DdZ_DX_fun(controllers[1].states.cx_start,
                                 controllers[1].controls.cx_start,
                                 controllers[1].parameters.cx_start,
                                 controllers[1].stochastic_variables.cx_start,
-                                wM_magnitude, wPq_magnitude, wPqdot_magnitude)
+                                wM_magnitude, wS_magnitude)
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
 

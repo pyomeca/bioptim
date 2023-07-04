@@ -214,7 +214,7 @@ def stochastic_forward_dynamics(
     wM,
     wS,
     force_field_magnitude,
-    with_gains=True,
+    with_gains,
 ) -> DynamicsEvaluation:
 
     tau_coef = 0.1500
@@ -329,14 +329,9 @@ def ee_equals_ee_ref(controller: PenaltyController) -> cas.MX:
     return ee - ee_ref
 
 
-def get_p_mat(nlp, node_index, force_field_magnitude):
-    wM_std = 0.05
-    wPq_std = 3e-4
-    wPqdot_std = 0.0024
+def get_p_mat(nlp, node_index, force_field_magnitude, wM_magnitude, wS_magnitude):
+
     dt = nlp.tf / nlp.ns
-    wM_numerical = np.array([wM_std ** 2 / dt, wM_std ** 2 / dt])
-    wPq_numerical = np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt])
-    wPqdot_numerical = np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt])
 
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
@@ -436,22 +431,12 @@ def end_effector_velocity(q, qdot):
             -dtheta_shoulder * cas.cos(theta_shoulder)*l1 - da * cas.cos(a)*l2)
     return ee_vel
 
-def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
+def expected_feedback_effort(controllers: list[PenaltyController], wS_magnitude: cas.DM) -> cas.MX:
     """
     ...
     """
-    # Constants TODO: remove fom here
-    # TODO: How do we choose?
-    wM_std = 0.05
-    wPq_std = 3e-4
-    wPqdot_std = 0.0024
     dt = controllers[0].tf / controllers[0].ns
-    wM_numerical = np.array([wM_std ** 2 / dt, wM_std ** 2 / dt])
-    wPq_numerical = np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt])
-    wPqdot_numerical = np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt])
-
-    sensory_noise = cas.vertcat(wPq_numerical, wPqdot_numerical)
-    sensory_noise_matrix = sensory_noise * cas.MX_eye(4)
+    sensory_noise_matrix = wS_magnitude * cas.MX_eye(4)
 
     # create the casadi function to be evaluated
     # Get the symbolic variables
@@ -473,7 +458,7 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     hand_vel = end_effector_velocity(controllers[0].states["q"].cx_start, controllers[0].states["qdot"].cx_start)
     trace_k_sensor_k = cas.trace(K_matrix @ sensory_noise_matrix @ K_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
-    e_fb = K_matrix @ ((ee - ee_ref) + sensory_noise)
+    e_fb = K_matrix @ ((ee - ee_ref) + wS_magnitude)
     jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
@@ -493,7 +478,7 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
 def zero_acceleration(controller: PenaltyController, wM: np.ndarray, wS: np.ndarray, force_field_magnitude:float) -> cas.MX:
     dx = stochastic_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
                                      controller.parameters.cx_start, controller.stochastic_variables.cx_start,
-                                     controller.get_nlp, wM, wS, force_field_magnitude=force_field_magnitude)
+                                     controller.get_nlp, wM, wS, force_field_magnitude=force_field_magnitude, with_gains=False)
     return dx.dxdt[2:4]
 
 def track_final_marker(controller: PenaltyController) -> cas.MX:
@@ -712,14 +697,10 @@ def prepare_socp(
         n_threads=1,
         assume_phase_dynamics=False,
         problem_type=OcpType.SOCP_EXPLICIT(wM_magnitude, wS_magnitude),  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
-        update_value_function=lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude),
+        update_value_function=lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude),
     )
 
 def main():
-
-    wM_std = 0.05
-    wPq_std = 3e-4
-    wPqdot_std = 0.0024
 
     RUN_OPTIM_FLAG = True  # False
     PLOT_SOL_FLAG = False  # True
@@ -769,6 +750,8 @@ def main():
                         final_time=final_time,
                         n_shooting=n_shooting,
                         ee_final_position=ee_final_position,
+                        wM_magnitude=wM_magnitude,
+                        wS_magnitude=wS_magnitude,
                         problem_type=problem_type,
                         force_field_magnitude=force_field_magnitude)
 
@@ -776,11 +759,11 @@ def main():
         sol_socp = socp.solve(solver)
         print('ici')
         # iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-        #    0  5.2443422e-01 2.05e+03 1.19e+00   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
-        #    1  5.2686175e-01 1.85e+03 1.41e+02  -4.9 3.77e+01    -  4.34e-03 9.73e-02h  1
-        #    2  2.1143195e+02 2.64e+03 1.07e+05  -0.7 2.45e+00    -  6.04e-02 1.00e+00h  1
-        #    3  7.4999941e+01 1.38e+03 2.24e+04  -0.3 1.14e+00    -  9.93e-01 4.78e-01f  1
-        #    4  4.4754216e+01 9.68e+02 5.42e+04   0.0 7.98e-01    -  1.00e+00 2.97e-01f  1
+        #    0  1.3548521e+00 2.05e+03 1.19e+00   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+        #    1  2.2407650e+00 2.04e+03 6.94e+04  -0.9 1.03e+02    -  3.22e-03 9.61e-03f  1
+        #    2  9.7836212e+02 1.71e+03 2.55e+04   0.6 9.97e+00    -  1.00e+00 9.72e-02h  1
+        #    3  1.4109853e+03 1.30e+03 4.27e+04   0.8 3.47e+00    -  1.00e+00 1.00e+00h  1
+        #    4  1.3315841e+03 2.54e+02 7.28e+04   1.5 5.41e+00    -  1.00e+00 8.05e-01h  1
 
         # q_sol = sol_socp.states["q"]
         # qdot_sol = sol_socp.states["qdot"]
@@ -848,10 +831,9 @@ def main():
         stochastic_variables = socp.nlp[0].stochastic_variables.cx_start
         nlp = socp.nlp[0]
         wM_sym = cas.MX.sym('wM', 2, 1)
-        wPq_sym = cas.MX.sym('wPq', 2, 1)
-        wPqdot_sym = cas.MX.sym('wPqdot', 2, 1)
-        out = stochastic_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM_sym, wPq_sym, wPqdot_sym, force_field_magnitude=force_field_magnitude, with_gains=True)
-        dyn_fun = cas.Function("dyn_fun", [states, controls, parameters, stochastic_variables, wM_sym, wPq_sym, wPqdot_sym], [out.dxdt])
+        wS_sym = cas.MX.sym('wS', 4, 1)
+        out = stochastic_forward_dynamics(states, controls, parameters, stochastic_variables, nlp, wM_sym, wS_sym, force_field_magnitude=force_field_magnitude, with_gains=True)
+        dyn_fun = cas.Function("dyn_fun", [states, controls, parameters, stochastic_variables, wM_sym, wS_sym], [out.dxdt])
 
         fig, axs = plt.subplots(3, 2)
         n_simulations = 30
