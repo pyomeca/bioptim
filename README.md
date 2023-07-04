@@ -708,6 +708,20 @@ Another important value stored in nlp is the shape of the states and controls: `
 It would be tedious, and probably not much useful, to list all the elements of nlp here.   
 The interested user is invited to have a look at the docstrings for this particular class to get a detailed overview of it.
 
+### Class: VariationalOptimalControlProgram
+The `VariationalOptimalControlProgram` class inherits from `OptimalControlProgram` and is used to solve optimal control
+problems using the variational approach. The integration is done by a variational integration, the formulation being
+completely different from the other approaches it needed its own class. The parameters are the same as in
+`OptimalControlProgram` apart from the following changes:
+- `bio_model` must be a `VariationalBiorbdModel`
+- The phases have not been implemented yet, hence, only `final_time` must be specified, and it must be a float.
+- There are no velocities in the variational approach, so you must only specify the `q_init` and not the `q_bounds`
+instead of `x_init` and `x_bounds`.
+- You can specify an initial guess for the velocities at the first node and the last node using `qdot_init` and
+`qdot_bounds` and the keys must be `"qdot_start"` and `"qdot_end"`. These velocities are implemented as parameters of
+the OCP, you can access to them with `sol.parameters["qdot_start"]` and `sol.parameters["qdot_end"]` at the end of the
+optimization.
+
 ## The model
 
 Bioptim is designed to work with any model, as long as it inherits from the class `bioptim.Model`. Models built with `biorbd` are already compatible with `bioptim`.
@@ -728,6 +742,34 @@ bio_model.model.markerNames()
 The `MultiBiorbdModel` class is implementing BioModel of multiple models of biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
 ```python
 bio_model = MultiBiorbdModel(("path/to/model.bioMod", "path/to/other/model.bioMod"))
+```
+
+### Class: HolonomicBiorbdModel
+The `HolonomicBiorbdModel` class is implementing a BioModel of the biorbd dynamics library. Since the class inherits
+from `BiorbdModel`, all the methods of `BiorbdModel` are available.You can define the
+degrees of freedom (DoF) that are independents (that define the movement) and the ones that are dependant (that are
+defined by the independents DoF and the holonomic constraint(s)). You can add some holonomic constraints to the model.
+For this, you can use one of the functions of `HolonomicConstraintFcn` or add a custom one. You can refer to the
+examples in `bioptim/examples/holonomic_constraints` to see how to use it.
+Some methods may not be interfaced yet, it is accessible through:
+```python
+bio_model = HolonomicBiorbdModel("path/to/model.bioMod")
+bio_model.set_dependencies(independent_joint_index, dependent_joint_index)
+bio_model.add_holonomic_constraint(constraint, constraint_jacobian, constraint_double_derivative)
+```
+
+### Class VariationalBiorbdModel
+The `VariationalBiorbdModel` class is implementing a BioModel of the biorbd dynamics library. It is used in Discrete
+Mechanic and Optimal Control (DMOC) and in Discrete Mechanics and Optimal Control in Constrained Systems (DMOCC).
+Since the class inherits from `HolonomicBiorbdModel`, all the methods of `HolonomicBiorbdModel` and `BiorbdModel` are
+available. This class is used in `VariationalOptimalControlProgram`. You can refer to the examples in
+`bioptim/examples/discrete_mechanics_and_optimal_control` to see how to use it.
+Some methods may not be interfaced yet, it is accessible through:
+```python
+bio_model = VariationalBiorbdModel("path/to/model.bioMod")
+bio_model.set_dependencies(independent_joint_index, dependent_joint_index)
+bio_model.add_holonomic_constraint(constraint, constraint_jacobian, constraint_double_derivative)
+VariationalOptimalControlProgram(bio_model, ...)
 ```
 
 ### Class: CustomModel
