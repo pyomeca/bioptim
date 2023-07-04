@@ -17,6 +17,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
     def __init__(self, bio_model: str | biorbd.Model):
         super().__init__(bio_model)
+        self._newton_tol = 1e-10
         self._holonomic_constraints = []
         self._holonomic_constraints_jacobians = []
         self._holonomic_constraints_derivatives = []
@@ -26,6 +27,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         self.beta = 0.01
         self._dependent_joint_index = []
         self._independent_joint_index = [i for i in range(self.nb_q)]
+
+    def set_newton_tol(self, newton_tol: float):
+        self._newton_tol = newton_tol
 
     def set_dependencies(self, dependent_joint_index: list, independent_joint_index: list):
         if len(dependent_joint_index) + len(independent_joint_index) != self.nb_q:
@@ -304,7 +308,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         ).expand()
 
         # Create an implicit function instance to solve the system of equations
-        opts = {"abstol": 1e-10}
+        opts = {"abstol": self._newton_tol}
         ifcn = rootfinder("ifcn", "newton", residuals, opts)
         v_opt = ifcn(
             q_v_init,
@@ -362,7 +366,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         ).expand()
 
         # Create an implicit function instance to solve the system of equations
-        opts = {"abstol": 1e-10}
+        opts = {"abstol": self._newton_tol}
         ifcn = rootfinder("ifcn", "newton", residuals, opts)
         v_opt = ifcn(
             q_v_init,
@@ -370,7 +374,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return v_opt
 
-    def compute_the_lagrangian_multiplier(
+    def compute_the_lagrangian_multipliers(
         self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
     ) -> MX:
         """
