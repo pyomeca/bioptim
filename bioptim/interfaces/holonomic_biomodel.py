@@ -418,6 +418,59 @@ class HolonomicBioModel(BioModel, Protocol):
             The dependent joint velocities
         """
 
+    def compute_qddot_v(self, q: MX, qdot: MX, qddot_u: MX) -> MX:
+        """
+        Compute the dependent joint accelerations from the independent joint accelerations and the velocities and
+        positions.
+
+        Parameters
+        ----------
+        q: MX
+            The generalized coordinates
+        qdot:
+            The generalized velocities
+        qddot_u:
+            The independent joint accelerations
+
+        Returns
+        -------
+        MX
+            The dependent joint accelerations
+
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        Equation (17) in the paper.
+        """
+
+    def compute_qddot(self, q: MX, qdot: MX, qddot_u: MX) -> MX:
+        """
+        Compute the accelerations from the independent joint accelerations and the velocities and positions.
+
+        Parameters
+        ----------
+        q: MX
+            The generalized coordinates
+        qdot:
+            The generalized velocities
+        qddot_u:
+            The independent joint accelerations
+
+        Returns
+        -------
+        MX
+            The generalized accelerations
+
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        Equation (17) in the paper.
+        """
+
     def compute_q_v_numeric(self, u: DM, v_init=None) -> DM:
         """
         Compute the dependent joint from the independent joint,
