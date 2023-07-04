@@ -696,7 +696,7 @@ def prepare_socp(
         skip_continuity=True,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=OcpType.SOCP_EXPLICIT(wM_magnitude, wS_magnitude),  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
+        problem_type=OcpType.SOCP_EXPLICIT(wM_magnitude, wS_magnitude),
         update_value_function=lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude),
     )
 

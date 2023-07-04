@@ -176,7 +176,7 @@ class OptimalControlProgram:
         use_sx: bool = False,
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
-        problem_type: OcpType = OcpType.OCP,
+        problem_type=OcpType.OCP,
         update_value_function: Callable = None,
     ):
         """
