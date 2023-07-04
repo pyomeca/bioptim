@@ -121,7 +121,7 @@ def test_model_holonomic():
     )
 
     TestUtils.assert_equal(
-        model.compute_the_lagrangian_multipliers(q, q_dot, q_ddot, tau), [20.34808 , 27.119224], expand=False
+        model.compute_the_lagrangian_multipliers(q, q_dot, q_ddot, tau), [20.34808, 27.119224], expand=False
     )
 
 
