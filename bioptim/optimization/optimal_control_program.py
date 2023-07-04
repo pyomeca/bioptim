@@ -48,13 +48,13 @@ from ..misc.enums import (
     PenaltyType,
     Node,
     ConstraintType,
-    OcpType,
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 from ..optimization.optimization_variable import VariableScalingList, VariableScaling
+from ..optimization.problem_type import OcpType
 from ..gui.check_conditioning import check_conditioning
 
 
@@ -613,7 +613,7 @@ class OptimalControlProgram:
 
         # Prepare the dynamics
         for i in range(self.n_phases):
-            if problem_type == OcpType.SOCP_EXPLICIT:
+            if isinstance(problem_type, OcpType.SOCP_EXPLICIT):
                 self._prepare_stochastic_dynamics(dynamics=dynamics)
                 # TODO: add interphase continuity constraints on the covariance matrix
                 # TODO: add SOCP_IMPLICIT(with A and C if needed)

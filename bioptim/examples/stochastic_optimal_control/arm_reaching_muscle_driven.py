@@ -715,7 +715,7 @@ def prepare_socp(
         skip_continuity=True,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=OcpType.SOCP_EXPLICIT,  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
+        problem_type=OcpType.SOCP_EXPLICIT(wM_magnitude, wS_magnitude),  # TODO: seems weird for me to do StochasticOPtim... (comme mhe)
         update_value_function=lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude),
     )
 
@@ -905,49 +905,6 @@ def main():
         plt.show()
 
     # TODO: integrate to see the error they commit with the trapezoidal
-
-
-# --- Define constants to specify the model  --- #
-# (To simplify the problem, relationships are used instead of "real" muscles)
-# dM_coefficients = np.array([[0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
-#                             [0, 0, 0.0100, -0.0190, 0, 0.0100],
-#                             [0.0400, -0.0080, 1.9000, 0, 0, 0.0100],
-#                             [-0.0420, 0, 0.0100, 0, 0, 0.0100],
-#                             [0.0300, -0.0110, 1.9000, 0.0320, -0.0100, 1.9000],
-#                             [-0.0390, 0, 0.0100, -0.0220, 0, 0.0100]])
-
-# LMT_coefficients = np.array([[1.1000, -5.206336195535022],
-#                              [0.8000, -7.538918356984516],
-#                              [1.2000, -3.938098437958920],
-#                              [0.7000, -3.031522725559912],
-#                              [1.1000, -2.522778221157014],
-#                              [0.8500, -1.826368199415192]])
-# vMtilde_max = np.ones((6, 1)) * 10
-# Fiso = np.array([572.4000, 445.2000, 699.6000, 381.6000, 159.0000, 318.0000])
-# Faparam = np.array([0.814483478343008, 1.055033428970575, 0.162384573599574, 0.063303448465465, 0.433004984392647, 0.716775413397760, -0.029947116970696, 0.200356847296188])
-# Fvparam = np.array([-0.318323436899127, -8.149156043475250, -0.374121508647863, 0.885644059915004])
-# Fpparam = np.array([-0.995172050006169, 53.598150033144236])
-# muscleDampingCoefficient = np.ones((6, 1)) * 0.01
-# tau_coef = 0.1500
-
-# m1 = 1.4
-# m2 = 1
-# l1 = 0.3
-# l2 = 0.33
-# lc1 = 0.11
-# lc2 = 0.16
-# I1 = 0.025
-# I2 = 0.045
-
-# TODO: How do we choose the values?
-# wM_std = 0.05
-# wPq_std = 3e-4
-# wPqdot_std = 0.0024
-
-# dt = 0.01
-# wM_numerical = np.array([wM_std ** 2 / dt, wM_std ** 2 / dt])
-# wPq_numerical = np.array([wPq_std ** 2 / dt, wPq_std ** 2 / dt])
-# wPqdot_numerical = np.array([wPqdot_std ** 2 / dt, wPqdot_std ** 2 / dt])
 
 if __name__ == "__main__":
     main()

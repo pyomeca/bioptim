@@ -204,7 +204,6 @@ from .misc.enums import (
     DefectType,
     MagnitudeType,
     MultiCyclicCycleSolutions,
-    OcpType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart
@@ -219,5 +218,6 @@ from .optimization.receding_horizon_optimization import (
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
 from .optimization.optimization_variable import OptimizationVariableList, VariableScalingList, VariableScaling
+from .optimization.problem_type import OcpType
 
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero
