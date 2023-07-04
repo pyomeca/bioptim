@@ -614,7 +614,7 @@ class OptimalControlProgram:
         # Prepare the dynamics
         for i in range(self.n_phases):
             if isinstance(problem_type, OcpType.SOCP_EXPLICIT):
-                self._prepare_stochastic_dynamics(dynamics=dynamics)
+                self._prepare_stochastic_dynamics(dynamics=dynamics, wM_magnitude=problem_type.wM_magnitude, wS_magnitude=problem_type.wS_magnitude)
                 # TODO: add interphase continuity constraints on the covariance matrix
                 # TODO: add SOCP_IMPLICIT(with A and C if needed)
 
@@ -801,7 +801,7 @@ class OptimalControlProgram:
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
-    def _prepare_stochastic_dynamics(self, dynamics):
+    def _prepare_stochastic_dynamics(self, dynamics, wM_magnitude, wS_magnitude):
         """
         ...
         """
@@ -813,6 +813,8 @@ class OptimalControlProgram:
                         nodes_phase=(i_phase, i_phase),
                         nodes=(i_node, i_node+1),
                         dynamics=dynamics[i_phase].dynamic_function,
+                        wM_magnitude=wM_magnitude,
+                        wS_magnitude=wS_magnitude,
                     )
             if i_phase > 0:  # TODO: verify with Friedl, but should be OK
                 penalty_m_dg_dz_list.add(
@@ -820,6 +822,8 @@ class OptimalControlProgram:
                         nodes_phase=(i_phase-1, i_phase),
                         nodes=(-1, 0),
                         dynamics=dynamics[i_phase].dynamic_function,
+                        wM_magnitude=wM_magnitude,
+                        wS_magnitude=wS_magnitude,
                     )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
