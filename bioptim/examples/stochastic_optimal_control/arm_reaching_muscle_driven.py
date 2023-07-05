@@ -286,7 +286,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_muscles(ocp, nlp, True, True)  # Muscles activations as states + muscles excitations as controls
 
     # Stochastic variables
-    ConfigureProblem.configure_k(ocp, nlp, n_controls=6, n_feedbacks=4)
+    ConfigureProblem.configure_k(ocp, nlp, n_noised_controls=6, n_feedbacks=4)
     ConfigureProblem.configure_ee_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_m(ocp, nlp, n_noised_states=10)
     mat_p_init = cas.DM_eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P

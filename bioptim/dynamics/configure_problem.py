@@ -647,7 +647,9 @@ class ConfigureProblem:
                 [dynamics_eval.defects],
                 ["x", "u", "p", "s", "xdot"],
                 ["defects"],
-            ).expand()
+            )
+            if expand:
+                nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -1257,7 +1259,7 @@ class ConfigureProblem:
 
 
     @staticmethod
-    def configure_k(ocp, nlp, n_controls: int, n_feedbacks: int):
+    def configure_k(ocp, nlp, n_noised_controls: int, n_feedbacks: int):
         """
         Configure the optimal feedback gain matrix K.
 
@@ -1268,7 +1270,7 @@ class ConfigureProblem:
         """
         name = "k"
         name_k = []
-        control_names = [f"control_{i}" for i in range(n_controls)]
+        control_names = [f"control_{i}" for i in range(n_noised_controls)]
         feedback_names = [f"feedback_{i}" for i in range(n_feedbacks)]
         for name_1 in control_names:
             for name_2 in feedback_names:
