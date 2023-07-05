@@ -174,7 +174,7 @@ from .dynamics.ode_solver import OdeSolver, OdeSolverBase
 from .interfaces.solver_options import Solver
 from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
 from .interfaces.biomodel import BioModel
-from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
+from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ImplicitConstraintFcn
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
@@ -204,6 +204,7 @@ from .misc.enums import (
     DefectType,
     MagnitudeType,
     MultiCyclicCycleSolutions,
+    ConstraintType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart
