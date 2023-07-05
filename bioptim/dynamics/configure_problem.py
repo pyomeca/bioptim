@@ -1399,7 +1399,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_m(ocp, nlp):
+    def configure_m(ocp, nlp, n_noised_states: int):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -1410,10 +1410,10 @@ class ConfigureProblem:
         """
         name = "m"
         name_m = []
-        for name_1 in [f"X_{i}" for i in range(nlp.states.cx_start.shape[0])]:
-            for name_2 in [f"X_{i}" for i in range(nlp.states.cx_start.shape[0])]:
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_m += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.states.cx_start.shape[0] ** 2)), list(range(nlp.states.cx_start.shape[0] ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
         ConfigureProblem.configure_new_variable(
             name,
             name_m,
