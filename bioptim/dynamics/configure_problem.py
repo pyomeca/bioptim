@@ -207,11 +207,6 @@ class ConfigureProblem:
         ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
         ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue)
         # Declare stochastic variables
-        if is_stochastic:
-            # TODO: change
-            ConfigureProblem.configure_c(ocp, nlp)  # Noise propagation matrix (to compute the derivative of the covariance matrix)
-            ConfigureProblem.configure_a(ocp, nlp)  # Noise injection matrix (to compute the derivative of the covariance matrix)
-            ConfigureProblem.configure_cov(ocp, nlp)  # The actual covariance matrix
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
