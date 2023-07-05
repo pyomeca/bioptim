@@ -254,13 +254,13 @@ class HolonomicBiorbdModel(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
-        partitioned_constrained_jacobian = self.partitioned_constraints_jacobian(q)
-        partitioned_constrained_jacobian_v = partitioned_constrained_jacobian[:, self.nb_independent_joints :]
-        partitioned_constrained_jacobian_v_inv = inv(partitioned_constrained_jacobian_v)  # inv_minor otherwise ?
+        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
+        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
+        partitioned_constraints_jacobian_v_inv = inv(partitioned_constraints_jacobian_v)  # inv_minor otherwise ?
 
-        partitioned_constrained_jacobian_u = partitioned_constrained_jacobian[:, : self.nb_independent_joints]
+        partitioned_constraints_jacobian_u = partitioned_constraints_jacobian[:, : self.nb_independent_joints]
 
-        return -partitioned_constrained_jacobian_v_inv @ partitioned_constrained_jacobian_u
+        return -partitioned_constraints_jacobian_v_inv @ partitioned_constraints_jacobian_u
 
     def biais_vector(self, q: MX, qdot: MX) -> MX:
         """
@@ -272,11 +272,11 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         The right term of the equation (15) in the paper.
         """
-        partitioned_constrained_jacobian = self.partitioned_constraints_jacobian(q)
-        partitioned_constrained_jacobian_v = partitioned_constrained_jacobian[:, self.nb_independent_joints :]
-        partitioned_constrained_jacobian_v_inv = inv(partitioned_constrained_jacobian_v)
+        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
+        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
+        partitioned_constraints_jacobian_v_inv = inv(partitioned_constraints_jacobian_v)
 
-        return -partitioned_constrained_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
+        return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
 
     def state_from_partition(self, state_u: MX, state_v: MX) -> MX:
         """
@@ -389,9 +389,9 @@ class HolonomicBiorbdModel(BiorbdModel):
             raise NotImplementedError("External forces are not implemented yet.")
         if f_contacts is not None:
             raise NotImplementedError("Contact forces are not implemented yet.")
-        J = self.partitioned_constraints_jacobian(q)
-        Jv = J[:, self.nb_independent_joints :]
-        Jvt_inv = inv(Jv.T)
+        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
+        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
+        partitioned_constraints_jacobian_v_t_inv = inv(partitioned_constraints_jacobian_v.T)
 
         partitioned_mass_matrix = self.partitioned_mass_matrix(q)
         m_vu = partitioned_mass_matrix[self.nb_independent_joints :, : self.nb_independent_joints]
@@ -403,7 +403,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         non_linear_effect = self.partitioned_non_linear_effect(q, qdot, external_forces, f_contacts)
         non_linear_effect_v = non_linear_effect[self.nb_independent_joints :]
 
-        Q = self.partitioned_tau(tau)
-        Qv = Q[self.nb_independent_joints :]
+        partitioned_tau = self.partitioned_tau(tau)
+        partitioned_tau_v = partitioned_tau[self.nb_independent_joints :]
 
-        return Jvt_inv @ (m_vu @ qddot_u + m_vv @ qddot_v + non_linear_effect_v - Qv)
+        return partitioned_constraints_jacobian_v_t_inv @ (
+            m_vu @ qddot_u + m_vv @ qddot_v + non_linear_effect_v - partitioned_tau_v
+        )

@@ -348,7 +348,7 @@ class HolonomicBioModel(BioModel, Protocol):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
 
-    def compute_q_v(self, u: MX) -> MX:
+    def compute_q_v(self, q_u: MX) -> MX:
         """
         Compute the dependent joint from the independent joint,
         This is done by solving the system of equations given by the holonomic constraints
@@ -358,7 +358,7 @@ class HolonomicBioModel(BioModel, Protocol):
 
         Parameters
         ----------
-        u: MX
+        q_u: MX
             The generalized coordinates
 
         Returns
@@ -471,7 +471,7 @@ class HolonomicBioModel(BioModel, Protocol):
         Equation (17) in the paper.
         """
 
-    def compute_q_v_numeric(self, u: DM, v_init=None) -> DM:
+    def compute_q_v_numeric(self, q_u: DM, v_init=None) -> DM:
         """
         Compute the dependent joint from the independent joint,
         This is done by solving the system of equations given by the holonomic constraints
@@ -481,7 +481,7 @@ class HolonomicBioModel(BioModel, Protocol):
 
         Parameters
         ----------
-        u: DM
+        q_u: DM
             The generalized coordinates
         v_init: DM
             The initial guess for the dependent joint
@@ -489,10 +489,10 @@ class HolonomicBioModel(BioModel, Protocol):
         Returns
         -------
         DM
-            The numerical values of the dependent joint for a given independent joint state_u
+            The numerical values of the dependent q_v for a given independent q_u
         """
 
-    def compute_the_Lagrangian_multiplier(
+    def compute_the_lagrangian_multipliers(
         self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
     ) -> MX:
         """
