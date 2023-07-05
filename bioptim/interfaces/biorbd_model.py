@@ -380,10 +380,9 @@ class BiorbdModel:
         """
         return self.model.rigidContactAxisIdx(contact_index)
 
-    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
+    def marker_velocities(self, q, qdot, reference_index=None) -> list[MX]:
         if reference_index is None:
-            return horzcat(
-                *[
+            return [
                     m.to_mx()
                     for m in self.model.markersVelocity(
                         GeneralizedCoordinates(q),
@@ -391,10 +390,8 @@ class BiorbdModel:
                         True,
                     )
                 ]
-            )
-
         else:
-            out = MX()
+            out = []
             homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
                 GeneralizedCoordinates(q),
                 reference_index,
@@ -402,9 +399,12 @@ class BiorbdModel:
             )
             for m in self.model.markersVelocity(GeneralizedCoordinates(q), GeneralizedVelocity(qdot)):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
-                    out = horzcat(out, m.to_mx())
+                    out += [m.to_mx()]
 
             return out
+
+    def markers_jacobian(self, q) -> list[MX]:
+        return [m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(q))]
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         self.model.closeActuator()

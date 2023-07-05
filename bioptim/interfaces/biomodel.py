@@ -146,7 +146,7 @@ class BioModel(Protocol):
     def mass_matrix(self, q) -> MX:
         """returns the mass matrix"""
 
-    def non_linear_effects(self, q) -> MX:
+    def non_linear_effects(self, q, qdot) -> MX:
         """returns the non-linear effects"""
 
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
@@ -191,6 +191,9 @@ class BioModel(Protocol):
 
     def marker_velocities(self, q, qdot, reference_index=None) -> MX:
         """Get the marker velocities of the model"""
+
+    def markers_jacobian(self, q) -> MX:
+        """Get the jacobian of the marker constraint"""
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         """Get the maximum torque"""
