@@ -49,6 +49,9 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
         Returns
         ----------
         The term associated to the controls in the Lagrangian equations.
+
+        Sources
+        -------
         Johnson, E. R., & Murphey, T. D. (2009).
         Scalable Variational Integrators for Constrained Mechanical Systems in Generalized Coordinates.
         IEEE Transactions on Robotics, 25(6), 1249–1261. doi:10.1109/tro.2009.2032955

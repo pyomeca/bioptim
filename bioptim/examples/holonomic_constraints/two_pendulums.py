@@ -101,7 +101,7 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
 
 def prepare_ocp(
     biorbd_model_path: str,
-    n_shooting: int = 100,
+    n_shooting: int = 30,
     final_time: float = 1,
 ) -> (HolonomicBiorbdModel, OptimalControlProgram):
     """
@@ -204,8 +204,7 @@ def main():
     """
 
     model_path = "models/two_pendulums.bioMod"
-    n_shooting = 10
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=n_shooting)
+    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT())
