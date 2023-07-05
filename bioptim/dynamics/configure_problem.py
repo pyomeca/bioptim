@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import MX, vertcat, Function, DM_eye
+from casadi import MX, vertcat, Function, DM
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
@@ -1136,6 +1136,7 @@ class ConfigureProblem:
         name_elements: list,
         ocp,
         nlp,
+        initial_matrix: DM,
     ):
         """
         Add a new update value
@@ -1159,11 +1160,9 @@ class ConfigureProblem:
             n_cx = 3
 
         dummy_mapping = Mapping(list(range(len(name_elements))))
-        # TODO: to be removed !!!!!!!
-        mat_p_init = DM_eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
-        p_init = nlp.restore_vector_from_matrix(mat_p_init)
-        cx_scaled_next_formatted = [p_init for _ in range(n_cx)]
-        nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, mat_p_init, dummy_mapping, 0)
+        initial_vector = nlp.restore_vector_from_matrix(initial_matrix)
+        cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
+        nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0)
         for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
             cx_scaled_next = nlp.update_value_function(nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
@@ -1351,7 +1350,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_cov(ocp, nlp):
+    def configure_cov(ocp, nlp, n_noised_states: int, initial_matrix: DM):
         """
         Configure the covariance matrix P representing the motor noise.
 
@@ -1362,16 +1361,16 @@ class ConfigureProblem:
         """
         name = "cov"
         name_cov = []
-        for name_1 in [f"X_{i}" for i in range(nlp.states.cx_start.shape[0])]:
-            for name_2 in [f"X_{i}" for i in range(nlp.states.cx_start.shape[0])]:
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_cov += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.states.cx_start.shape[0] **2)), list(range(nlp.states.cx_start.shape[0] ** 2)))
-        # ConfigureProblem.configure_new_variable(
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
         ConfigureProblem.configure_new_value(
             name,
             name_cov,
             ocp,
             nlp,
+            initial_matrix=initial_matrix,
         )
 
     @staticmethod

@@ -289,7 +289,8 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_k(ocp, nlp, n_controls=6, n_feedbacks=4)
     ConfigureProblem.configure_ee_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_m(ocp, nlp)
-    ConfigureProblem.configure_cov(ocp, nlp)
+    mat_p_init = cas.DM_eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
+    ConfigureProblem.configure_cov(ocp, nlp, n_noised_states=10, initial_matrix=mat_p_init)
     ConfigureProblem.configure_dynamics_function(ocp, nlp,
                                                  dyn_func=lambda states, controls, parameters,
                                                                 stochastic_variables, nlp, wM, wS: dynamic_function(states,
