@@ -336,28 +336,28 @@ class PlotOcp:
                     if isinstance(nlp.plot[key], tuple):
                         nlp.plot[key] = nlp.plot[key][0]
 
-                    if nlp.plot[key].phase_mappings is None:
-                        node_index = 0  # TODO deal with assume_phase_dynamics=False
-                        if nlp.plot[key].node_idx is not None:
-                            node_index = nlp.plot[key].node_idx[0]
-                        nlp.states.node_index = node_index
-                        nlp.states_dot.node_index = node_index
-                        nlp.controls.node_index = node_index
+                    # if nlp.plot[key].phase_mappings is None:
+                    node_index = 0  # TODO deal with assume_phase_dynamics=False
+                    if nlp.plot[key].node_idx is not None:
+                        node_index = nlp.plot[key].node_idx[0]
+                    nlp.states.node_index = node_index
+                    nlp.states_dot.node_index = node_index
+                    nlp.controls.node_index = node_index
 
-                        size = (
-                            nlp.plot[key]
-                            .function(
-                                node_index,
-                                np.zeros((nlp.states.shape, 2)),
-                                np.zeros((nlp.controls.shape, 2)),
-                                np.zeros((nlp.parameters.shape, 2)),
-                                **nlp.plot[key].parameters,
-                            )
-                            .shape[0]
+                    size = (
+                        nlp.plot[key]
+                        .function(
+                            node_index,
+                            np.zeros((nlp.states.shape, 2)),
+                            np.zeros((nlp.controls.shape, 2)),
+                            np.zeros((nlp.parameters.shape, 2)),
+                            **nlp.plot[key].parameters,
                         )
-                        nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
-                    else:
-                        size = len(nlp.plot[key].phase_mappings.to_second.map_idx)
+                        .shape[0]
+                    )
+                    nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
+                    # else:
+                    #     size = len(nlp.plot[key].phase_mappings.to_second.map_idx)
                     if key not in variable_sizes[i]:
                         variable_sizes[i][key] = size
                     else:
