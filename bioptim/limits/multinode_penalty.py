@@ -314,8 +314,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             dt = controllers[0].tf / controllers[0].ns
 
-            wM = MX.sym("wM", 2, 1)
-            wS = MX.sym("wS", 4, 1)
+            wM = MX.sym("wM", wM_magnitude.shape[0], 1)
+            wS = MX.sym("wS", wS_magnitude.shape[0], 1)
 
             nx = controllers[0].states.cx.shape[0]
             M_matrix = controllers[0].restore_matrix_from_vector(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
