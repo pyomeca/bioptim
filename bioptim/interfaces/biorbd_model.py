@@ -206,6 +206,15 @@ class BiorbdModel:
         qddot_biorbd = GeneralizedAcceleration(qddot)
         return self.model.CoMddot(q_biorbd, qdot_biorbd, qddot_biorbd, True).to_mx()
 
+    def mass_matrix(self, q) -> MX:
+        q_biorbd = GeneralizedCoordinates(q)
+        return self.model.massMatrix(q_biorbd).to_mx()
+
+    def non_linear_effects(self, q, qdot) -> MX:
+        q_biorbd = GeneralizedCoordinates(q)
+        qdot_biorbd = GeneralizedVelocity(qdot)
+        return self.model.NonLinearEffect(q_biorbd, qdot_biorbd).to_mx()
+
     def angular_momentum(self, q, qdot) -> MX:
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
@@ -697,6 +706,21 @@ class MultiBiorbdModel:
                 out,
                 model.center_of_mass_acceleration(q_model, qdot_model, qddot_model),
             )
+        return out
+
+    def mass_matrix(self, q) -> list[MX]:
+        out = []
+        for i, model in enumerate(self.models):
+            q_model = q[self.variable_index("q", i)]
+            out += [model.mass_matrix(q_model)]
+        return out
+
+    def non_linear_effects(self, q, qdot) -> list[MX]:
+        out = []
+        for i, model in enumerate(self.models):
+            q_model = q[self.variable_index("q", i)]
+            qdot_model = qdot[self.variable_index("qdot", i)]
+            out += [model.non_linear_effects(q_model, qdot_model)]
         return out
 
     def angular_momentum(self, q, qdot) -> MX:

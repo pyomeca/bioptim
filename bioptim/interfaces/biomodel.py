@@ -143,6 +143,12 @@ class BioModel(Protocol):
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
         """reorder the qddot, from the root dof and the joints dof"""
 
+    def mass_matrix(self, q) -> MX:
+        """returns the mass matrix"""
+
+    def non_linear_effects(self, q) -> MX:
+        """returns the non-linear effects"""
+
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
         """compute the forward dynamics"""
 
