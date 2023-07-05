@@ -228,6 +228,8 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
         QuadratureRule.RECTANGLE_LEFT,
         QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
         QuadratureRule.TRAPEZOIDAL,
+        QuadratureRule.RECTANGLE_RIGHT,
+        QuadratureRule.MIDPOINT,
     ],
 )
 def test_pendulum_collocation(control_type, integration_rule, objective, assume_phase_dynamics):
@@ -235,47 +237,67 @@ def test_pendulum_collocation(control_type, integration_rule, objective, assume_
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        n_shooting=10,
-        integration_rule=integration_rule,
-        objective=objective,
-        control_type=control_type,
-        ode_solver=OdeSolver.COLLOCATION(),
-        assume_phase_dynamics=assume_phase_dynamics,
-    )
-    solver = Solver.IPOPT()
-    solver.set_maximum_iterations(5)
-    sol = ocp.solve(solver)
-    j_printed = sum_cost_function_output(sol)
+    if integration_rule not in (
+        QuadratureRule.RECTANGLE_LEFT,
+        QuadratureRule.TRAPEZOIDAL,
+        QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
+    ):
+        with pytest.raises(
+            NotImplementedError,
+            match=f"{integration_rule} has not been implemented yet for objective functions.",
+        ):
+            ocp = prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                n_shooting=10,
+                integration_rule=integration_rule,
+                objective=objective,
+                control_type=control_type,
+                ode_solver=OdeSolver.COLLOCATION(),
+                assume_phase_dynamics=assume_phase_dynamics,
+            )
 
-    # Check objective function value
-    f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    if integration_rule == QuadratureRule.RECTANGLE_LEFT:
-        if control_type == ControlType.CONSTANT:
-            if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
-                np.testing.assert_almost_equal(j_printed, 11.795040652982767)
-            else:
-                np.testing.assert_almost_equal(f[0, 0], 12.336208562756555)
-                np.testing.assert_almost_equal(j_printed, 12.336208562756553)
-    elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-        if control_type == ControlType.CONSTANT:
-            if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
-                np.testing.assert_almost_equal(j_printed, 11.795040652982767)
-            else:
-                np.testing.assert_almost_equal(f[0, 0], 12.336208562756559)
-                np.testing.assert_almost_equal(j_printed, 12.336208562756559)
-    elif integration_rule == QuadratureRule.TRAPEZOIDAL:
-        if control_type == ControlType.CONSTANT:
-            if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
-                np.testing.assert_almost_equal(j_printed, 11.795040652982767)
-            else:
-                np.testing.assert_almost_equal(f[0, 0], 12.336208562756564)
-                np.testing.assert_almost_equal(j_printed, 12.336208562756564)
+    else:
+        ocp = prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+            n_shooting=10,
+            integration_rule=integration_rule,
+            objective=objective,
+            control_type=control_type,
+            ode_solver=OdeSolver.COLLOCATION(),
+            assume_phase_dynamics=assume_phase_dynamics,
+        )
+        solver = Solver.IPOPT()
+        solver.set_maximum_iterations(5)
+        sol = ocp.solve(solver)
+        j_printed = sum_cost_function_output(sol)
+
+        # Check objective function value
+        f = np.array(sol.cost)
+        np.testing.assert_equal(f.shape, (1, 1))
+        if integration_rule == QuadratureRule.RECTANGLE_LEFT:
+            if control_type == ControlType.CONSTANT:
+                if objective == "torque":
+                    np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
+                    np.testing.assert_almost_equal(j_printed, 11.795040652982767)
+                else:
+                    np.testing.assert_almost_equal(f[0, 0], 12.336208562756555)
+                    np.testing.assert_almost_equal(j_printed, 12.336208562756553)
+        elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+            if control_type == ControlType.CONSTANT:
+                if objective == "torque":
+                    np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
+                    np.testing.assert_almost_equal(j_printed, 11.795040652982767)
+                else:
+                    np.testing.assert_almost_equal(f[0, 0], 12.336208562756559)
+                    np.testing.assert_almost_equal(j_printed, 12.336208562756559)
+        elif integration_rule == QuadratureRule.TRAPEZOIDAL:
+            if control_type == ControlType.CONSTANT:
+                if objective == "torque":
+                    np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
+                    np.testing.assert_almost_equal(j_printed, 11.795040652982767)
+                else:
+                    np.testing.assert_almost_equal(f[0, 0], 12.336208562756564)
+                    np.testing.assert_almost_equal(j_printed, 12.336208562756564)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])

@@ -52,12 +52,14 @@ class Objective(PenaltyOption):
         if isinstance(objective, ObjectiveFcn.Lagrange):
             if "integration_rule" not in params.keys() or params["integration_rule"] == QuadratureRule.DEFAULT:
                 params["integration_rule"] = QuadratureRule.RECTANGLE_LEFT
-            else:
-                if (
-                    params["integration_rule"] == QuadratureRule.MIDPOINT
-                    or params["integration_rule"] == QuadratureRule.RECTANGLE_RIGHT
-                ):
-                    raise NotImplementedError(f"{params['integration_rule']} has not been implemented yet.")
+            if params["integration_rule"] not in (
+                QuadratureRule.RECTANGLE_LEFT,
+                QuadratureRule.TRAPEZOIDAL,
+                QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
+            ):
+                raise NotImplementedError(
+                    f"{params['integration_rule']} has not been implemented yet for objective functions."
+                )
         elif isinstance(objective, ObjectiveFcn.Mayer):
             if "integration_rule" in params.keys() and params["integration_rule"] != QuadratureRule.DEFAULT:
                 raise ValueError(

@@ -140,7 +140,7 @@ class ConstraintType(Enum):
 
 class QuadratureRule(Enum):
     """
-    Selection of quadrature rule
+    Selection of quadrature rule to approximate integrals.
     """
 
     DEFAULT = "default"
