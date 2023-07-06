@@ -147,16 +147,16 @@ def prepare_ocp(
     constraints = ConstraintList()
 
     # Boundaries
-    mapping = BiMappingList()
+    variable_bimapping = BiMappingList()
     # The rotations (joint 0 and 3) are independent. The translations (joint 1 and 2) are constrained by the holonomic
     # constraint, so we need to map the states and controls to only compute the dynamics of the independent joints
     # The dynamics of the dependent joints will be computed from the holonomic constraint
-    mapping.add("q", to_second=[0, None, None, 1], to_first=[0, 3])
-    mapping.add("qdot", to_second=[0, None, None, 1], to_first=[0, 3])
+    variable_bimapping.add("q", to_second=[0, None, None, 1], to_first=[0, 3])
+    variable_bimapping.add("qdot", to_second=[0, None, None, 1], to_first=[0, 3])
     x_bounds = BoundsList()
     # q_u and qdot_u are the states of the independent joints
-    x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=mapping)
-    x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=mapping)
+    x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=variable_bimapping)
+    x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=variable_bimapping)
 
     # Initial guess
     x_init = InitialGuessList()
@@ -168,7 +168,6 @@ def prepare_ocp(
     x_bounds["q_u"][1, -1] = 0
 
     # Define control path constraint
-    variable_bimapping = BiMappingList()
     tau_min, tau_max, tau_init = -100, 100, 0
     # Only the rotations are controlled
     variable_bimapping.add("tau", to_second=[0, None, None, 1], to_first=[0, 3])

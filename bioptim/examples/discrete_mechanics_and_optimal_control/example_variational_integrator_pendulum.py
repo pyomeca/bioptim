@@ -108,7 +108,7 @@ def main():
     # The states are displayed piecewise constant, but actually they are not.
     sol.graphs()
 
-    print(f"qdot0 :{sol.parameters['qdot_start'].squeeze()}")
+    print(f"qdot_start :{sol.parameters['qdot_start'].squeeze()}")
     print(f"qdot_end :{sol.parameters['qdot_end'].squeeze()}")
 
 

@@ -267,37 +267,6 @@ class HolonomicBioModel(BioModel, Protocol):
             The partitioned constrained jacobian, reordered in function independent and dependent joints
         """
 
-    def partitioned_forward_dynamics(
-        self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None
-    ) -> MX:
-        """
-        This is the forward dynamics of the model, but only for the independent joints
-
-        Parameters
-        ----------
-        q_u: MX
-            The independent generalized coordinates
-        qdot_u: MX
-            The independent generalized velocities
-        tau: MX
-            The generalized torques
-        external_forces: MX
-            The external forces
-        f_contacts: MX
-            The contact forces
-
-        Returns
-        -------
-        MX
-            The generalized accelerations
-
-        Sources
-        -------
-        Docquier, N., Poncelet, A., and Fisette, P.:
-        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
-        https://doi.org/10.5194/ms-4-199-2013, 2013.
-        """
-
     def coupling_matrix(self, q: MX) -> MX:
         """
         Compute the coupling matrix, denoted Bvu in the paper :

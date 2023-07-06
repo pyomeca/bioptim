@@ -143,7 +143,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: list | tuple | BioModel | HolonomicBioModel | VariationalBioModel,
+        bio_model: list | tuple | BioModel,
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
