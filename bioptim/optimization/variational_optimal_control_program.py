@@ -161,8 +161,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             if key in parameter_bounds.keys():
                 raise KeyError(
                     f"{key} cannot be declared in parameters_bounds as it is a reserved word in "
-                    f"VariationalOptimalControlProgram. To define the initial and final velocities, please use "
-                    f"`qdot_bounds` instead."
+                    f"VariationalOptimalControlProgram"
                 )
             parameter_bounds.add(key, qdot_bounds[key], phase=0)
 
@@ -170,8 +169,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             if key in parameter_init.keys():
                 raise KeyError(
                     f"{key} cannot be declared in parameters_init as it is a reserved word in "
-                    f"VariationalOptimalControlProgram. To define the initial and final velocities, please use "
-                    f"`qdot_init` instead."
+                    f"VariationalOptimalControlProgram"
                 )
             parameter_init.add(init, qdot_init[key], phase=0)
 
@@ -190,6 +188,10 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             x_bounds=q_bounds,
             assume_phase_dynamics=True,
             skip_continuity=True,
+            parameters=parameters,
+            parameter_init=parameter_init,
+            parameter_bounds=parameter_bounds,
+            multinode_constraints=multinode_constraints,
             **kwargs,
         )
 
