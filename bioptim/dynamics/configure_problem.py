@@ -206,7 +206,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
         ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue)
-        # Declare stochastic variables
+
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
             or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -1269,6 +1269,10 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "k"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
         name_k = []
         control_names = [f"control_{i}" for i in range(n_noised_controls)]
         feedback_names = [f"feedback_{i}" for i in range(n_feedbacks)]
@@ -1289,9 +1293,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_c(ocp, nlp):
+    def configure_c(ocp, nlp, n_noised_states: int):
         """
-        Configure the stochastic variable matrix C representing the injection of motor noise.
+        Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
 
         Parameters
         ----------
@@ -1299,12 +1303,15 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "c"
-        name_c = nlp.model.name_dof
-        # TODO: put a NaN on the last node (like controls in piecewise constant)
 
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q)), list(range(nlp.model.nb_q)))
+
+        name_c = []
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
+                name_c += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
 
         ConfigureProblem.configure_new_variable(
             name,
@@ -1319,9 +1326,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_a(ocp, nlp):
+    def configure_a(ocp, nlp, n_noised_states: int):
         """
-        Configure the stochastic variable matrix A representing the propagation of motor noise.
+        Configure the stochastic variable matrix A representing the propagation of motor noise (df/dx).
 
         Parameters
         ----------
@@ -1329,11 +1336,16 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "a"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
         name_a = []
-        for name_1 in nlp.model.name_dof:
-            for name_2 in nlp.model.name_dof:
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_a += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(nlp.model.nb_q**2)), list(range(nlp.model.nb_q**2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+
         ConfigureProblem.configure_new_variable(
             name,
             name_a,
@@ -1357,6 +1369,10 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "cov"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
         name_cov = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1381,6 +1397,10 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "ee_ref"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
         name_ee_ref = [f"reference_{i}" for i in range(n_references)]
         nlp.variable_mappings[name] = BiMapping(list(range(n_references)), list(range(n_references)))
         ConfigureProblem.configure_new_variable(
@@ -1406,6 +1426,10 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "m"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
         name_m = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
