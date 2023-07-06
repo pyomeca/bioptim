@@ -146,7 +146,9 @@ def test_biorbd_model():
     with pytest.raises(NotImplementedError, match="marker_index is not implemented yet for MultiBiorbdModel"):
         models.marker_index("marker_3")
 
-    marker_velocities = Function("Markerdot", [], [models.marker_velocities(q, qdot)[0, :]])()["o0"]
+    list_markers_velocities = models.marker_velocities(q, qdot)
+    assert isinstance(list_markers_velocities, list)
+    marker_velocities = Function("Markerdot", [], [list_markers_velocities[i] for i in range(len(list_markers_velocities))])()["o0"]
 
     with pytest.raises(RuntimeError, match="All dof must have their actuators set"):
         Function("TauMax", [], [models.tau_max(q, qdot)])()[
