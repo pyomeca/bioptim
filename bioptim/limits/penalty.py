@@ -306,8 +306,8 @@ class PenaltyFunctionAbstract:
             marker_velocity = controller.model.marker_velocities(
                 controller.states["q"].mx, controller.states["qdot"].mx
             )
-            marker_1 = marker_velocity[:, first_marker_idx]
-            marker_2 = marker_velocity[:, second_marker_idx]
+            marker_1 = marker_velocity[first_marker_idx][:]
+            marker_2 = marker_velocity[second_marker_idx][:]
 
             diff_markers = marker_2 - marker_1
 
