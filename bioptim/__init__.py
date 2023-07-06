@@ -192,7 +192,7 @@ from .misc.enums import (
     Shooting,
     VariableType,
     SolutionIntegrator,
-    IntegralApproximation,
+    QuadratureRule,
     RigidBodyDynamics,
     SoftContactDynamics,
     DefectType,

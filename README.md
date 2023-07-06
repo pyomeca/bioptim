@@ -95,7 +95,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - [Shooting](#enum-shooting)
   - [CostType](#enum-costtype)
   - [SolutionIntegrator](#enum-solutionintegrator)
-  - [IntegralApproximation](#enum-integralapproximation)
+  - [QuadratureRule](#enum-quadraturerule)
   - [RigidBodyDynamics](#enum-rigidbodydynamics)
   - [SoftContactDynamics](#enum-softcontactdynamics)
   - [DefectType](#enum-defecttype)
@@ -1712,12 +1712,14 @@ The type of integrator used to integrate the solution of the optimal control pro
 - SCIPY_BDF: The scipy integrator BDF
 - SCIPY_LSODA: The scipy integrator LSODA
 
-### Enum: IntegralApproximation
+### Enum: QuadratureRule
 The type of integration used to integrate the cost function terms of Lagrange:
-- RECTANGLE: The integral is approximated by a rectangle rule (Left Riemann sum)
-- TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the begin of the next interval
-- TRUE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval
-- 
+- RECTANGLE_LEFT: The integral is approximated by a left rectangle rule (Left Riemann sum)
+- RECTANGLE_RIGHT: The integral is approximated by a right rectangle rule (Right Riemann sum)
+- MIDPOINT: The integral is approximated by a midpoint rectangle rule (Midpoint Riemann sum)
+- APPROXIMATE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the beginning of the next interval
+- TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval
+
 ### Enum: RigidBodyDynamics
 The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
 - ODE: dynamics is handled explicitly in the continuity constraint of the ordinary differential equation of the Direct Multiple Shooting approach

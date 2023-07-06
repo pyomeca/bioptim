@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType, Node, IntegralApproximation
+from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 
@@ -274,7 +274,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _x = horzcat(_x, x)
                 _u = horzcat(_u, u)
 
-        if _penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL:
+        if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
             if is_unscaled:
                 x = nlp.X[_idx + 1][:, 0]
             else:
@@ -287,7 +287,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
                 _u = horzcat(_u, u)
 
-        if _penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL:
+        if _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
                     u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
@@ -327,8 +327,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 if penalty.target is None:
                     target = []
                 elif (
-                    penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                    or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
                 ):
                     target0 = format_target(penalty.target[0])
                     target1 = format_target(penalty.target[1])
