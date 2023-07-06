@@ -230,7 +230,7 @@ class Solver:
 
         @property
         def warm_start_slack_bound_frac(self):
-            return self._warm_start_init_point
+            return self._warm_start_slack_bound_frac
 
         @property
         def warm_start_bound_frac(self):
@@ -899,3 +899,6 @@ class Solver:
                 "_nlp_solver_tol_ineq",
                 "_nlp_solver_tol_stat",
             ]
+
+
+
