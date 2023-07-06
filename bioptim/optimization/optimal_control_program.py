@@ -600,9 +600,9 @@ class OptimalControlProgram:
         # Prepare the dynamics
         for i in range(self.n_phases):
             if isinstance(problem_type, OcpType.SOCP_EXPLICIT):
-                self._prepare_stochastic_dynamics(dynamics=dynamics, wM_magnitude=problem_type.wM_magnitude, wS_magnitude=problem_type.wS_magnitude)
-                # TODO: add interphase continuity constraints on the covariance matrix
-                # TODO: add SOCP_IMPLICIT(with A and C if needed)
+                self._prepare_stochastic_dynamics_explicit(dynamics=dynamics, wM_magnitude=problem_type.wM_magnitude, wS_magnitude=problem_type.wS_magnitude)
+            elif isinstance(problem_type, OcpType.SOCP_IMPLICIT):
+                self._prepare_stochastic_dynamics_implicit(dynamics=dynamics, wM_magnitude=problem_type.wM_magnitude, wS_magnitude=problem_type.wS_magnitude)
 
 
         # Define continuity constraints
@@ -787,7 +787,7 @@ class OptimalControlProgram:
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
-    def _prepare_stochastic_dynamics(self, dynamics, wM_magnitude, wS_magnitude):
+    def _prepare_stochastic_dynamics_explicit(self, dynamics, wM_magnitude, wS_magnitude):
         """
         ...
         """
@@ -812,6 +812,68 @@ class OptimalControlProgram:
                         wS_magnitude=wS_magnitude,
                     )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
+
+
+    def _prepare_stochastic_dynamics_implicit(self, dynamics, wM_magnitude, wS_magnitude):
+        """
+        ...
+        """
+        # constrain A, C, P, M TODO: some are missing
+        multi_node_penalties = MultinodeConstraintList()
+        single_node_penalties = ConstraintList()
+        # constrain M
+        for i_phase, nlp in enumerate(self.nlp):
+            for i_node in range(nlp.ns - 1):
+                multi_node_penalties.add(
+                        MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                        nodes_phase=(i_phase, i_phase),
+                        nodes=(i_node, i_node+1),
+                        dynamics=dynamics[i_phase].dynamic_function,
+                        wM_magnitude=wM_magnitude,
+                        wS_magnitude=wS_magnitude,
+                    )
+            if i_phase > 0:  # TODO: verify with Friedl, but should be OK
+                multi_node_penalties.add(
+                        MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                        nodes_phase=(i_phase-1, i_phase),
+                        nodes=(-1, 0),
+                        dynamics=dynamics[i_phase].dynamic_function,
+                        wM_magnitude=wM_magnitude,
+                        wS_magnitude=wS_magnitude,
+                    )
+
+        # Constrain P
+        for i_phase, nlp in enumerate(self.nlp):
+            single_node_penalties.add(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT, node=Node.ALL, phase=i_phase,
+                        wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude)
+            if i_phase > 0:
+                multi_node_penalties.add( # TODO: check
+                        MultinodeConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT,  # TODO: to be continued in penalty
+                        nodes_phase=(i_phase-1, i_phase),
+                        nodes=(-1, 0),
+                        wM_magnitude=wM_magnitude,
+                        wS_magnitude=wS_magnitude,
+                    )
+        # Constrain A
+        for i_phase, nlp in enumerate(self.nlp):
+            single_node_penalties.add(ConstraintFcn.A_EQUALS_DF_DX,
+                        node=Node.ALL, phase=i_phase,
+                        wM_magnitude=wM_magnitude,
+                        wS_magnitude=wS_magnitude,
+                    )
+
+        # Constrain C
+        for i_phase, nlp in enumerate(self.nlp):
+            single_node_penalties.add(ConstraintFcn.C_EQUALS_DF_DW,
+                                      node=Node.ALL, phase=i_phase,
+                                      wM_magnitude=wM_magnitude,
+                                      wS_magnitude=wS_magnitude,
+                                      )
+
+        multi_node_penalties.add_or_replace_to_penalty_pool(self)
+        single_node_penalties.add_or_replace_to_penalty_pool(self)
+
+
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """

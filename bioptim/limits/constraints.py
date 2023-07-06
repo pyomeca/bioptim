@@ -619,7 +619,6 @@ class ConstraintFcn(FcnEnum):
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
     TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
     COVARIANCE_MATRIX_CONINUITY_IMPLICIT = (PenaltyFunctionAbstract.Functions.covariance_matrix_continuity_implicit,)
-    COVARIANCE_MATRIX_CONINUITY_EXPLICIT = (PenaltyFunctionAbstract.Functions.covariance_matrix_continuity_explicit,)
 
     @staticmethod
     def get_type():

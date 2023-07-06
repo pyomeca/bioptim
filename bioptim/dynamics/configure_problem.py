@@ -1709,7 +1709,7 @@ class Dynamics(OptionGeneric):
 
         dynamic_function = None
         if "dynamic_function" in params:
-            dynamic_function = params["dynamic_function"]  # TODO: do a proper PR for this if Pariterre accepts this change
+            dynamic_function = params["dynamic_function"]  # TODO: Pariterre, is this OK ?
             # del params["dynamic_function"]
 
         super(Dynamics, self).__init__(type=dynamics_type, **params)

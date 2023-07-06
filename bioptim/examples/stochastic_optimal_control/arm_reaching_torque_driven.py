@@ -204,7 +204,7 @@ def get_p_mat(nlp, node_index, force_field_magnitude, wM_magnitude, wS_magnitude
                                                                           nlp.controls.cx_start,
                                                                           nlp.parameters,
                                                                           nlp.stochastic_variables.cx_start,
-                                                                          nlp.update_values.cx_start,  # Should be the right shape to work
+                                                                          nlp.update_values["cov"].cx_start,  # Should be the right shape to work
                                                                           wM_magnitude,
                                                                           wS_magnitude)
     p_vector = nlp.restore_vector_from_matrix(func_eval)
@@ -521,11 +521,11 @@ def main():
 
     # --- Prepare the ocp --- #
     dt = 0.01
-    final_time = 0.8
-    n_shooting = int(final_time/dt) + 1
-    final_time += dt
-    # n_shooting = 4
     # final_time = 0.8
+    # n_shooting = int(final_time/dt) + 1
+    # final_time += dt
+    n_shooting = 4
+    final_time = 0.8
 
     # --- Noise constants --- #
     wM_std = 0.05
@@ -576,11 +576,11 @@ def main():
         ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
         m_sol = sol_socp.stochastic_variables["m"]
         cov_sol_vect = sol_socp.update_values["cov"]
-        cov_sol = np.zeros((10, 10, n_shooting))
+        cov_sol = np.zeros((6, 6, n_shooting))
         for i in range(n_shooting):
-            for j in range(10):
-                for k in range(10):
-                    cov_sol[j, k, i] = cov_sol_vect[j*10, k, i]
+            for j in range(6):
+                for k in range(6):
+                    cov_sol[j, k, i] = cov_sol_vect[j*6 + k, i]
         stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))
         data = {"q_sol": q_sol,
                 "qdot_sol": qdot_sol,
@@ -646,6 +646,7 @@ def main():
             wM = np.random.normal(0, wM_std, (2, n_shooting + 1))
             wPq = np.random.normal(0, wPq_std, (2, n_shooting + 1))
             wPqdot = np.random.normal(0, wPqdot_std, (2, n_shooting + 1))
+            wS = cas.vertcat(wPq, wPqdot)
             q_simulated[i_simulation, :, 0] = q_sol[:, 0]
             qdot_simulated[i_simulation, :, 0] = qdot_sol[:, 0]
             qddot_simulated[i_simulation, :, 0] = qddot_sol[:, 0]
@@ -655,8 +656,8 @@ def main():
                 hand_vel_simulated[i_simulation, :, i_node] = np.reshape(hand_vel_fcn(x_prev[:2], x_prev[2:4])[:2], (2,))
                 u = cas.vertcat(qdddot_sol[:, i_node], tau_sol[:, i_node])
                 s = stochastic_variables_sol[:, i_node]
-                k1 = dyn_fun(x_prev, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
-                x_next = x_prev + dt * dyn_fun(x_prev + dt / 2 * k1, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
+                k1 = dyn_fun(x_prev, u, [], s, wM[:, i_node], wS[:, i_node])
+                x_next = x_prev + dt * dyn_fun(x_prev + dt / 2 * k1, u, [], s, wM[:, i_node], wS[:, i_node])
                 q_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[:2], (2, ))
                 qdot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[2:4], (2, ))
                 qddot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[4:], (2, ))
