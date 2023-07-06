@@ -112,6 +112,7 @@ class LeuvenArmModel:
         self.I1 = 0.025
         self.I2 = 0.045
 
+        self.friction = np.array([[0.05, 0.025], [0.025, 0.05]])
 
     def serialize(self) -> tuple[Callable, dict]:
         return LeuvenArmModel, dict(dM_coefficients=self.dM_coefficients,
@@ -121,7 +122,8 @@ class LeuvenArmModel:
                                     Faparam=self.Faparam,
                                     Fvparam=self.Fvparam,
                                     Fpparam=self.Fpparam,
-                                    muscleDampingCoefficient=self.muscleDampingCoefficient)
+                                    muscleDampingCoefficient=self.muscleDampingCoefficient,
+                                    friction=self.friction)
 
     @property
     def nb_muscles(self):
@@ -291,8 +293,6 @@ def stochastic_forward_dynamics(
     dq_computed = qdot  ### Do not use "DynamicsFunctions.compute_qdot(nlp, q, qdot)" it introduces errors!!
     dactivations_computed = (mus_excitations_fb - mus_activations) / nlp.model.tau_coef
 
-    friction = np.array([[0.05, 0.025], [0.025, 0.05]])
-
     a1 = nlp.model.I1 + nlp.model.I2 + nlp.model.m2 * nlp.model.l1 ** 2
     a2 = nlp.model.m2 * nlp.model.l1 * nlp.model.lc2
     a3 = nlp.model.I2
@@ -311,7 +311,7 @@ def stochastic_forward_dynamics(
     nleffects[0] = a2 * cas.sin(theta_elbow) * (-dtheta_elbow * (2 * dtheta_shoulder + dtheta_elbow))
     nleffects[1] = a2 * cas.sin(theta_elbow) * dtheta_shoulder ** 2
 
-    dqdot_computed = cas.inv(mass_matrix) @ (torques_computed - nleffects - friction @ qdot)
+    dqdot_computed = cas.inv(mass_matrix) @ (torques_computed - nleffects - nlp.model.friction @ qdot)
 
     return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dactivations_computed), defects=None)
 
@@ -688,6 +688,8 @@ def prepare_socp(
     s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
     # TODO: we should probably change the name stochastic_variables -> helper_variables ?
 
+    update_value_functions = {"cov": lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude)}
+
     return OptimalControlProgram(
         bio_model,
         dynamics,
@@ -708,7 +710,7 @@ def prepare_socp(
         n_threads=1,
         assume_phase_dynamics=False,
         problem_type=OcpType.SOCP_EXPLICIT(wM_magnitude, wS_magnitude),
-        update_value_function=lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude),
+        update_value_functions=update_value_functions
     )
 
 def main():
@@ -775,25 +777,30 @@ def main():
         #    3  1.4109853e+03 1.30e+03 4.27e+04   0.8 3.47e+00    -  1.00e+00 1.00e+00h  1
         #    4  1.3315841e+03 2.54e+02 7.28e+04   1.5 5.41e+00    -  1.00e+00 8.05e-01h  1
 
-        # q_sol = sol_socp.states["q"]
-        # qdot_sol = sol_socp.states["qdot"]
-        # activations_sol = sol_socp.states["muscles"]
-        # excitations_sol = sol_socp.controls["muscles"]
-        # k_sol = sol_socp.stochastic_variables["k"]
-        # ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
-        # m_sol = sol_socp.stochastic_variables["m"]
-        # # cov_sol = sol_socp.update_values["cov"]
-        # stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))  # , cov_sol))
-        # data = {"q_sol": q_sol,
-        #         "qdot_sol": qdot_sol,
-        #         "activations_sol": activations_sol,
-        #         "excitations_sol": excitations_sol,
-        #         "k_sol": k_sol,
-        #         "ee_ref_sol": ee_ref_sol,
-        #         "m_sol": m_sol,
-        #         # "cov_sol": cov_sol,
-        #         "stochastic_variables_sol": stochastic_variables_sol}
-        #
+        q_sol = sol_socp.states["q"]
+        qdot_sol = sol_socp.states["qdot"]
+        activations_sol = sol_socp.states["muscles"]
+        excitations_sol = sol_socp.controls["muscles"]
+        k_sol = sol_socp.stochastic_variables["k"]
+        ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
+        m_sol = sol_socp.stochastic_variables["m"]
+        cov_sol_vect = sol_socp.update_values["cov"]
+        cov_sol = np.zeros((10, 10, n_shooting))
+        for i in range(n_shooting):
+            for j in range(10):
+                for k in range(10):
+                    cov_sol[j, k, i] = cov_sol_vect[j * 10, k, i]
+        stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))
+        data = {"q_sol": q_sol,
+                "qdot_sol": qdot_sol,
+                "activations_sol": activations_sol,
+                "excitations_sol": excitations_sol,
+                "k_sol": k_sol,
+                "ee_ref_sol": ee_ref_sol,
+                "m_sol": m_sol,
+                "cov_sol": cov_sol,
+                "stochastic_variables_sol": stochastic_variables_sol}
+
         # # --- Save the results --- #
         # with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "wb") as file:
         #     pickle.dump(data, file)
@@ -807,7 +814,7 @@ def main():
         k_sol = data["k_sol"]
         ee_ref_sol = data["ee_ref_sol"]
         m_sol = data["m_sol"]
-        # cov_sol = data["cov_sol"]
+        cov_sol = data["cov_sol"]
         stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))
 
     # Save .mat files
