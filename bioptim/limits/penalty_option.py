@@ -5,7 +5,7 @@ from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_controller import PenaltyController
-from ..misc.enums import Node, PlotType, ControlType, PenaltyType, IntegralApproximation
+from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule
 from ..misc.options import OptionGeneric
 
 
@@ -47,7 +47,7 @@ class PenaltyOption(OptionGeneric):
         If the minimization is applied on the numerical derivative of the state [f(t+1) - f(t)]
     explicit_derivative: bool
         If the minimization is applied to derivative of the penalty [f(t, t+1)]
-    integration_rule: IntegralApproximation
+    integration_rule: QuadratureRule
         The integration rule to use for the penalty
     transition: bool
         If the penalty is a transition
@@ -94,7 +94,7 @@ class PenaltyOption(OptionGeneric):
         derivative: bool = False,
         explicit_derivative: bool = False,
         integrate: bool = False,
-        integration_rule: IntegralApproximation = IntegralApproximation.DEFAULT,
+        integration_rule: QuadratureRule = QuadratureRule.DEFAULT,
         index: list = None,
         rows: list | tuple | range | np.ndarray = None,
         cols: list | tuple | range | np.ndarray = None,
@@ -125,7 +125,7 @@ class PenaltyOption(OptionGeneric):
             If the function should be evaluated at [X, X+1]
         integrate: bool
             If the function should be integrated
-        integration_rule: IntegralApproximation
+        integration_rule: QuadratureRule
             The rule to use for the integration
         index: int
             The component index the penalty is acting on
@@ -140,6 +140,15 @@ class PenaltyOption(OptionGeneric):
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
         self.node: Node | list | tuple = node
         self.quadratic = quadratic
+        if integration_rule not in (
+            QuadratureRule.DEFAULT,
+            QuadratureRule.RECTANGLE_LEFT,
+            QuadratureRule.TRAPEZOIDAL,
+            QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
+        ):
+            raise NotImplementedError(
+                f"{params['integration_rule']} has not been implemented yet for objective functions."
+            )
         self.integration_rule = integration_rule
 
         if index is not None and rows is not None:
@@ -163,8 +172,8 @@ class PenaltyOption(OptionGeneric):
                 if len(self.target[-1].shape) == 1:
                     self.target[-1] = self.target[-1][:, np.newaxis]
             if len(self.target) == 1 and (
-                self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                or self.integration_rule == QuadratureRule.TRAPEZOIDAL
             ):
                 if self.node == Node.ALL or self.node == Node.DEFAULT:
                     self.target = [self.target[0][:, :-1], self.target[0][:, 1:]]
@@ -181,8 +190,8 @@ class PenaltyOption(OptionGeneric):
         self.plot_target = (
             False
             if (
-                self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                or self.integration_rule == QuadratureRule.TRAPEZOIDAL
             )
             else True
         )
@@ -275,7 +284,7 @@ class PenaltyOption(OptionGeneric):
             The expected number of columns (n_rows, n_cols) of the data to track
         """
 
-        if self.integration_rule == IntegralApproximation.RECTANGLE:
+        if self.integration_rule == QuadratureRule.RECTANGLE_LEFT:
             n_dim = len(self.target[0].shape)
             if n_dim != 2 and n_dim != 3:
                 raise RuntimeError(
@@ -312,8 +321,8 @@ class PenaltyOption(OptionGeneric):
                         (self.target[0], np.nan * np.zeros((self.target[0].shape[0], 1))), axis=1
                     )
         elif (
-            self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-            or self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+            self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+            or self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
         ):
             target_dim = len(self.target)
             if target_dim != 2:
@@ -483,8 +492,8 @@ class PenaltyOption(OptionGeneric):
 
         dt_cx = controller.cx.sym("dt", 1, 1)
         is_trapezoidal = (
-            self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-            or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+            self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+            or self.integration_rule == QuadratureRule.TRAPEZOIDAL
         )
         target_shape = tuple(
             [
@@ -501,12 +510,12 @@ class PenaltyOption(OptionGeneric):
             # it neglects the discontinuities at the beginning of the optimization
             state_cx_scaled = (
                 horzcat(controller.states_scaled.cx_start, controller.states_scaled.cx_end)
-                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 else controller.states_scaled.cx_start
             )
             state_cx = (
                 horzcat(controller.states.cx_start, controller.states.cx_end)
-                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 else controller.states.cx_start
             )
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
@@ -525,7 +534,7 @@ class PenaltyOption(OptionGeneric):
             control_cx_end = get_u(control_cx, dt_cx)
             state_cx_end_scaled = (
                 controller.states_scaled.cx_end
-                if self.integration_rule == IntegralApproximation.TRAPEZOIDAL
+                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx)["xf"]
             )
             modified_function = controller.to_casadi_func(
@@ -685,8 +694,8 @@ class PenaltyOption(OptionGeneric):
             self.node_idx = (
                 controllers[0].t[:-1]
                 if (
-                    self.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                    or self.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    or self.integration_rule == QuadratureRule.TRAPEZOIDAL
                 )
                 and self.target is not None
                 else controllers[0].t

@@ -11,7 +11,7 @@ from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
 from ..limits.multinode_constraint import MultinodeConstraint
-from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, IntegralApproximation
+from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, QuadratureRule
 from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution import Solution
 
@@ -60,7 +60,7 @@ class CustomPlot:
         node_idx: list = None,
         label: list = None,
         compute_derivative: bool = False,
-        integration_rule: IntegralApproximation = IntegralApproximation.RECTANGLE,
+        integration_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
         **parameters: Any,
     ):
         """
@@ -111,6 +111,8 @@ class CustomPlot:
         self.node_idx = node_idx
         self.label = label
         self.compute_derivative = compute_derivative
+        if integration_rule == QuadratureRule.MIDPOINT or integration_rule == QuadratureRule.RECTANGLE_RIGHT:
+            raise NotImplementedError(f"{integration_rule} has not been implemented yet.")
         self.integration_rule = integration_rule
         self.parameters = parameters
 
@@ -705,8 +707,8 @@ class PlotOcp:
                 x_mod = (
                     1
                     if self.plot_func[key][i].compute_derivative
-                    or self.plot_func[key][i].integration_rule == IntegralApproximation.TRAPEZOIDAL
-                    or self.plot_func[key][i].integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    or self.plot_func[key][i].integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    or self.plot_func[key][i].integration_rule == QuadratureRule.TRAPEZOIDAL
                     else 0
                 )
                 u_mod = (
@@ -715,8 +717,8 @@ class PlotOcp:
                     and not ("OBJECTIVES" in key or "CONSTRAINTS" in key or "PHASE_TRANSITION" in key)
                     or (
                         (
-                            self.plot_func[key][i].integration_rule == IntegralApproximation.TRAPEZOIDAL
-                            or self.plot_func[key][i].integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                            self.plot_func[key][i].integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                            or self.plot_func[key][i].integration_rule == QuadratureRule.TRAPEZOIDAL
                         )
                         and nlp.control_type == ControlType.LINEAR_CONTINUOUS
                     )
@@ -1094,7 +1096,7 @@ class OnlineCallback(Callback):
 
         Callback.__init__(self)
         self.ocp = ocp
-        self.nx = self.ocp.v.vector.shape[0]
+        self.nx = self.ocp.variables_vector.shape[0]
         self.ng = 0
         self.construct("AnimateCallback", opts)
 

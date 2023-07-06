@@ -281,18 +281,22 @@ class OptionDict(OptionList):
     def __setitem__(self, key, value):
         if isinstance(key, str):
             if len(self.options) != 1:
-                raise ValueError(
-                    "Indexing VariableScalingList with 'str' with more than one dimension is a mistake."
-                    "Call the function index first with the index of the phase you want to fetch"
+                raise TypeError(
+                    f"{type(self).__name__}['{item}'] is ambiguous because there are multiple phases. "
+                    f"To access the boundaries in this case, you should write {type(self).__name__}[phase]['{item}'] "
+                    f"instead of {type(self).__name__}['{item}']. If you didn't mean to use multiple phases, you may "
+                    f"have specified {type(self).__name__}['{item}'] or {type(self).__name__}.add('{item}', ...) twice."
                 )
             self.add(key, value)
 
     def __getitem__(self, item: int | str | list | tuple) -> dict | Any:
         if isinstance(item, str):
             if len(self.options) != 1:
-                raise ValueError(
-                    "Indexing VariableScalingList with 'str' with more than one dimension is a mistake."
-                    "Call the function index first with the index of the phase you want to fetch"
+                raise TypeError(
+                    f"{type(self).__name__}['{item}'] is ambiguous because there are multiple phases. "
+                    f"To access the boundaries in this case, you should write {type(self).__name__}[phase]['{item}'] "
+                    f"instead of {type(self).__name__}['{item}']. If you didn't mean to use multiple phases, you may "
+                    f"have specified {type(self).__name__}['{item}'] or {type(self).__name__}.add('{item}', ...) twice."
                 )
             if item not in self.options[0]:
                 raise KeyError(f"Key {item} not in {type(self).__name__}")

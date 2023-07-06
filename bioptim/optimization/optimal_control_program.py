@@ -50,7 +50,7 @@ from ..misc.enums import (
     PlotType,
     CostType,
     SolutionIntegrator,
-    IntegralApproximation,
+    QuadratureRule,
     InterpolationType,
     PenaltyType,
     Node,
@@ -1129,8 +1129,8 @@ class OptimalControlProgram:
 
                 out.append(penalty.weighted_function_non_threaded[t](state_value, u, p, penalty.weight, _target, dt))
             elif (
-                penalty.integration_rule == IntegralApproximation.TRAPEZOIDAL
-                or penalty.integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
             ):
                 out = [
                     penalty.weighted_function_non_threaded[t](x[:, [i, i + 1]], u[:, i], p, penalty.weight, _target, dt)

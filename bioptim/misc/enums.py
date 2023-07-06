@@ -138,15 +138,17 @@ class ConstraintType(Enum):
     IMPLICIT = "implicit"
 
 
-class IntegralApproximation(Enum):
+class QuadratureRule(Enum):
     """
-    Selection of integral approximation
+    Selection of quadrature rule to approximate integrals.
     """
 
     DEFAULT = "default"
-    RECTANGLE = "rectangle"
+    RECTANGLE_LEFT = "rectangle_left"
+    RECTANGLE_RIGHT = "rectangle_right"
+    MIDPOINT = "midpoint"
+    APPROXIMATE_TRAPEZOIDAL = "approximate_trapezoidal"
     TRAPEZOIDAL = "trapezoidal"
-    TRUE_TRAPEZOIDAL = "true_trapezoidal"
 
 
 class SoftContactDynamics(Enum):
