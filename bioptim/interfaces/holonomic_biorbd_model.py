@@ -317,7 +317,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return v_opt
 
-    def compute_q(self, q_u, q_v_init: MX = None) -> MX:
+    def compute_q(self, q_u: MX, q_v_init: MX = None) -> MX:
         q_v = self.compute_q_v(q_u, q_v_init)
         return self.state_from_partition(q_u, q_v)
 
