@@ -647,13 +647,6 @@ class BoundsList(OptionDict):
         The ith option of the list
         """
 
-        if isinstance(item, str) and len(self.options) > 1:
-            raise TypeError(
-                f"bounds['{item}'] is ambiguous because there are multiple phases. "
-                f"To access the boundaries in this case, you should write bounds[phase]['{item}'] instead of "
-                f"bounds['{item}']. If you didn't mean to use multiple phases, you may have specified bounds['{item}'] "
-                f"or bounds.add('{item}', ...) twice."
-            )
         return super(BoundsList, self).__getitem__(item)
 
     def print(self):
