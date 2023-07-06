@@ -1161,7 +1161,7 @@ class ConfigureProblem:
         cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
         nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0)
         for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
-            cx_scaled_next = nlp.update_value_function(nlp, node_index)
+            cx_scaled_next = nlp.update_value_functions[name](nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
             nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next, dummy_mapping, node_index)
 

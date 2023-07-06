@@ -483,6 +483,8 @@ def prepare_socp(
     stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
     s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
 
+    update_value_functions = {"cov": lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude)}
+
     return OptimalControlProgram(
         bio_model,
         dynamics,
@@ -503,14 +505,14 @@ def prepare_socp(
         n_threads=1,
         assume_phase_dynamics=False,
         problem_type=OcpType.SOCP_EXPLICIT(wM_magnitude, wS_magnitude),
-        update_value_function=lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude),
+        update_value_functions=update_value_functions,
     )
 
 def main():
 
     RUN_OPTIM_FLAG = True  # False
-    PLOT_SOL_FLAG = False  # True
-    VIZUALIZE_SOL_FLAG = False  # True
+    PLOT_SOL_FLAG = True
+    VIZUALIZE_SOL_FLAG = True
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
@@ -519,11 +521,11 @@ def main():
 
     # --- Prepare the ocp --- #
     dt = 0.01
-    # final_time = 0.8
-    # n_shooting = int(final_time/dt) + 1
-    # final_time += dt
-    n_shooting = 4
     final_time = 0.8
+    n_shooting = int(final_time/dt) + 1
+    final_time += dt
+    # n_shooting = 4
+    # final_time = 0.8
 
     # --- Noise constants --- #
     wM_std = 0.05
@@ -563,53 +565,50 @@ def main():
 
     if RUN_OPTIM_FLAG:
         sol_socp = socp.solve(solver)
-        print('ici')
+        # print('ici')
 
-        # q_sol = sol_socp.states["q"]
-        # qdot_sol = sol_socp.states["qdot"]
-        # activations_sol = sol_socp.states["muscles"]
-        # excitations_sol = sol_socp.controls["muscles"]
-        # k_sol = sol_socp.stochastic_variables["k"]
-        # ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
-        # m_sol = sol_socp.stochastic_variables["m"]
-        # # cov_sol = sol_socp.update_values["cov"]
-        # stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))  # , cov_sol))
-        # data = {"q_sol": q_sol,
-        #         "qdot_sol": qdot_sol,
-        #         "activations_sol": activations_sol,
-        #         "excitations_sol": excitations_sol,
-        #         "k_sol": k_sol,
-        #         "ee_ref_sol": ee_ref_sol,
-        #         "m_sol": m_sol,
-        #         # "cov_sol": cov_sol,
-        #         "stochastic_variables_sol": stochastic_variables_sol}
-        #
-        # # --- Save the results --- #
-        # with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "wb") as file:
-        #     pickle.dump(data, file)
+        q_sol = sol_socp.states["q"]
+        qdot_sol = sol_socp.states["qdot"]
+        qddot_sol = sol_socp.states["qddot"]
+        qdddot_sol = sol_socp.controls["qdddot"]
+        tau_sol = sol_socp.controls["tau"]
+        k_sol = sol_socp.stochastic_variables["k"]
+        ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
+        m_sol = sol_socp.stochastic_variables["m"]
+        cov_sol_vect = sol_socp.update_values["cov"]
+        cov_sol = np.zeros((10, 10, n_shooting))
+        for i in range(n_shooting):
+            for j in range(10):
+                for k in range(10):
+                    cov_sol[j, k, i] = cov_sol_vect[j*10, k, i]
+        stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))
+        data = {"q_sol": q_sol,
+                "qdot_sol": qdot_sol,
+                "qddot_sol": qddot_sol,
+                "qdddot_sol": qdddot_sol,
+                "tau_sol": tau_sol,
+                "k_sol": k_sol,
+                "ee_ref_sol": ee_ref_sol,
+                "m_sol": m_sol,
+                "cov_sol": cov_sol,
+                "stochastic_variables_sol": stochastic_variables_sol}
+
+        # --- Save the results --- #
+        with open(f"leuvenarm_torque_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "wb") as file:
+            pickle.dump(data, file)
     else:
-        with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "rb") as file:
+        with open(f"leuvenarm_torque_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "rb") as file:
             data = pickle.load(file)
         q_sol = data["q_sol"]
         qdot_sol = data["qdot_sol"]
-        activations_sol = data["activations_sol"]
-        excitations_sol = data["excitations_sol"]
+        qddot_sol = data["qddot_sol"]
+        qdddot_sol = data["qdddot_sol"]
+        tau_sol = data["tau_sol"]
         k_sol = data["k_sol"]
         ee_ref_sol = data["ee_ref_sol"]
         m_sol = data["m_sol"]
         # cov_sol = data["cov_sol"]
         stochastic_variables_sol = np.vstack((k_sol, ee_ref_sol, m_sol))
-
-    # Save .mat files
-    sio.savemat(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.mat",
-                        {"q_sol": q_sol,
-                            "qdot_sol": qdot_sol,
-                            "activations_sol": activations_sol,
-                            "excitations_sol": excitations_sol,
-                            "k_sol": k_sol,
-                            "ee_ref_sol": ee_ref_sol,
-                            "m_sol": m_sol,
-                            "stochastic_variables_sol": stochastic_variables_sol})
 
     if VIZUALIZE_SOL_FLAG:
         import bioviz
@@ -620,10 +619,11 @@ def main():
 
     # --- Plot the results --- #
     if PLOT_SOL_FLAG:
+        model = biorbd.Model(biorbd_model_path)
         Q_sym = cas.MX.sym('Q', 2, 1)
         Qdot_sym = cas.MX.sym('Qdot', 2, 1)
-        hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [end_effector_position(Q_sym)])
-        hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [end_effector_velocity(Q_sym, Qdot_sym)])
+        hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [model.markers(Q_sym)[2].to_mx()])
+        hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [model.markersVelocity(Q_sym, Qdot_sym)[2].to_mx()])
 
         states = socp.nlp[0].states.cx_start
         controls = socp.nlp[0].controls.cx_start
@@ -639,7 +639,7 @@ def main():
         n_simulations = 30
         q_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
         qdot_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
-        mus_activation_simulated = np.zeros((n_simulations, 6, n_shooting + 1))
+        qddot_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
         hand_pos_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
         hand_vel_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
         for i_simulation in range(n_simulations):
@@ -648,18 +648,18 @@ def main():
             wPqdot = np.random.normal(0, wPqdot_std, (2, n_shooting + 1))
             q_simulated[i_simulation, :, 0] = q_sol[:, 0]
             qdot_simulated[i_simulation, :, 0] = qdot_sol[:, 0]
-            mus_activation_simulated[i_simulation, :, 0] = activations_sol[:, 0]
+            qddot_simulated[i_simulation, :, 0] = qddot_sol[:, 0]
             for i_node in range(n_shooting):
-                x_prev = cas.vertcat(q_simulated[i_simulation, :, i_node], qdot_simulated[i_simulation, :, i_node], mus_activation_simulated[i_simulation, :, i_node])
+                x_prev = cas.vertcat(q_simulated[i_simulation, :, i_node], qdot_simulated[i_simulation, :, i_node], qddot_simulated[i_simulation, :, i_node])
                 hand_pos_simulated[i_simulation, :, i_node] = np.reshape(hand_pos_fcn(x_prev[:2])[:2], (2,))
                 hand_vel_simulated[i_simulation, :, i_node] = np.reshape(hand_vel_fcn(x_prev[:2], x_prev[2:4])[:2], (2,))
-                u = excitations_sol[:, i_node]
+                u = cas.vertcat(qdddot_sol[:, i_node], tau_sol[:, i_node])
                 s = stochastic_variables_sol[:, i_node]
                 k1 = dyn_fun(x_prev, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
                 x_next = x_prev + dt * dyn_fun(x_prev + dt / 2 * k1, u, [], s, wM[:, i_node], wPq[:, i_node], wPqdot[:, i_node])
                 q_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[:2], (2, ))
                 qdot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[2:4], (2, ))
-                mus_activation_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[4:], (6, ))
+                qddot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[4:], (2, ))
             hand_pos_simulated[i_simulation, :, i_node + 1] = np.reshape(hand_pos_fcn(x_next[:2])[:2], (2,))
             hand_vel_simulated[i_simulation, :, i_node + 1] = np.reshape(hand_vel_fcn(x_next[:2], x_next[2:4])[:2], (2, ))
             axs[0, 0].plot(hand_pos_simulated[i_simulation, 0, :], hand_pos_simulated[i_simulation, 1, :], color="tab:red")

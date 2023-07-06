@@ -177,7 +177,7 @@ class OptimalControlProgram:
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         problem_type=OcpType.OCP,
-        update_value_function: Callable = None,
+        update_value_functions: dict[Callable] = None,
     ):
         """
         Parameters
@@ -282,7 +282,7 @@ class OptimalControlProgram:
             "n_threads": n_threads,
             "use_sx": use_sx,
             "assume_phase_dynamics": assume_phase_dynamics,
-            "update_value_function": update_value_function,
+            "update_value_functions": update_value_functions,
         }
 
         # Check integrity of arguments
@@ -564,7 +564,7 @@ class OptimalControlProgram:
         NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
 
-        NLP.add(self, "update_value_function", update_value_function, True)
+        NLP.add(self, "update_value_functions", update_value_functions, True)
 
         # Prepare the node mappings
         if node_mappings is None:

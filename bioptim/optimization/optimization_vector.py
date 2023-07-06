@@ -35,11 +35,11 @@ class OptimizationVector:
     Methods
     -------
     vector(self)
-        Format the x, u and p so they are in one nice (and useful) vector
+        Format the x, u, s and p so they are in one nice (and useful) vector
     bounds(self)
-        Format the x, u and p bounds so they are in one nice (and useful) vector
+        Format the x, u, s and p bounds so they are in one nice (and useful) vector
     init(self)
-        Format the x, u and p init so they are in one nice (and useful) vector
+        Format the x, u, s and p init so they are in one nice (and useful) vector
     extract_phase_time(self, data: np.ndarray | DM) -> list
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
     to_dictionaries(self, data: np.ndarray | DM) -> tuple
@@ -305,7 +305,7 @@ class OptimizationVector:
 
         data_states = []
         data_controls = []
-        data_stochastic_variables= []
+        data_stochastic_variables = []
         for _ in range(self.ocp.n_phases):
             data_states.append({})
             data_controls.append({})
@@ -354,7 +354,8 @@ class OptimizationVector:
 
         offset = self.n_all_x + self.n_all_u
         scaling_offset = 0
-        data_parameters["all"] = v_array[offset:, np.newaxis] * ocp.nlp[0].parameters.scaling
+        n_all_p = self.parameters_in_list.cx_start.shape[0]
+        data_parameters["all"] = v_array[offset:offset+n_all_p, np.newaxis] * ocp.nlp[0].parameters.scaling
         if len(data_parameters["all"].shape) == 1:
             data_parameters["all"] = data_parameters["all"][:, np.newaxis]
         for param in self.parameters_in_list:
