@@ -10,6 +10,7 @@ reduce uncertainty. This covariance matrix is computed from the expected states.
 
 import platform
 
+from typing import Callable
 import pickle
 import biorbd_casadi as biorbd
 import matplotlib.pyplot as plt
@@ -45,165 +46,209 @@ from bioptim import (
 )
 
 
-
-def get_muscle_force(q, qdot):
+class LeuvenArmModel:
     """
-    Fa: active muscle force [N]
-    Fp: passive muscle force [N]
-    lMtilde: normalized fiber lenght [-]
-    vMtilde: optimal fiber lenghts per second at which muscle is lengthening or shortening [-]
-    FMltilde: force-length multiplier [-]
-    FMvtilde: force-velocity multiplier [-]
-    Fce: Active muscle force [N]
-    Fpe: Passive elastic force [N]
-    Fm: Passive viscous force [N]
+    This allows to generate the same model as in the paper.
     """
 
-    dM_coefficients = np.array([[0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
-                                [0, 0, 0.0100, -0.0190, 0, 0.0100],
-                                [0.0400, -0.0080, 1.9000, 0, 0, 0.0100],
-                                [-0.0420, 0, 0.0100, 0, 0, 0.0100],
-                                [0.0300, -0.0110, 1.9000, 0.0320, -0.0100, 1.9000],
-                                [-0.0390, 0, 0.0100, -0.0220, 0, 0.0100]])
+    def __init__(self):
+        self.dM_coefficients = np.array([[0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
+                                    [0, 0, 0.0100, -0.0190, 0, 0.0100],
+                                    [0.0400, -0.0080, 1.9000, 0, 0, 0.0100],
+                                    [-0.0420, 0, 0.0100, 0, 0, 0.0100],
+                                    [0.0300, -0.0110, 1.9000, 0.0320, -0.0100, 1.9000],
+                                    [-0.0390, 0, 0.0100, -0.0220, 0, 0.0100]])
+        self.LMT_coefficients = np.array([[1.1000, -5.206336195535022],
+                                     [0.8000, -7.538918356984516],
+                                     [1.2000, -3.938098437958920],
+                                     [0.7000, -3.031522725559912],
+                                     [1.1000, -2.522778221157014],
+                                     [0.8500, -1.826368199415192]])
+        self.vMtilde_max = np.ones((6, 1)) * 10
+        self.Fiso = np.array([572.4000, 445.2000, 699.6000, 381.6000, 159.0000, 318.0000])
+        self.Faparam = np.array(
+            [0.814483478343008, 1.055033428970575, 0.162384573599574, 0.063303448465465, 0.433004984392647,
+             0.716775413397760, -0.029947116970696, 0.200356847296188])
+        self.Fvparam = np.array([-0.318323436899127, -8.149156043475250, -0.374121508647863, 0.885644059915004])
+        self.Fpparam = np.array([-0.995172050006169, 53.598150033144236])
+        self.muscleDampingCoefficient = np.ones((6, 1)) * 0.01
 
-    LMT_coefficients = np.array([[1.1000, -5.206336195535022],
-                                 [0.8000, -7.538918356984516],
-                                 [1.2000, -3.938098437958920],
-                                 [0.7000, -3.031522725559912],
-                                 [1.1000, -2.522778221157014],
-                                 [0.8500, -1.826368199415192]])
+        self.a_shoulder = self.dM_coefficients[:, 0]
+        self.b_shoulder = self.dM_coefficients[:, 1]
+        self.c_shoulder = self.dM_coefficients[:, 2]
+        self.a_elbow = self.dM_coefficients[:, 3]
+        self.b_elbow = self.dM_coefficients[:, 4]
+        self.c_elbow = self.dM_coefficients[:, 5]
+        self.l_base = self.LMT_coefficients[:, 0]
+        self.l_multiplier = self.LMT_coefficients[:, 1]
 
-    vMtilde_max = np.ones((6, 1)) * 10
-    Fiso = np.array([572.4000, 445.2000, 699.6000, 381.6000, 159.0000, 318.0000])
-    Faparam = np.array([0.814483478343008, 1.055033428970575, 0.162384573599574, 0.063303448465465, 0.433004984392647,
-                        0.716775413397760, -0.029947116970696, 0.200356847296188])
-    Fvparam = np.array([-0.318323436899127, -8.149156043475250, -0.374121508647863, 0.885644059915004])
-    Fpparam = np.array([-0.995172050006169, 53.598150033144236])
-    muscleDampingCoefficient = np.ones((6, 1)) * 0.01
+        # Active muscle force-length characteristic
+        self.b11 = self.Faparam[0]
+        self.b21 = self.Faparam[1]
+        self.b31 = self.Faparam[2]
+        self.b41 = self.Faparam[3]
+        self.b12 = self.Faparam[4]
+        self.b22 = self.Faparam[5]
+        self.b32 = self.Faparam[6]
+        self.b42 = self.Faparam[7]
+        self.b13 = 0.1
+        self.b23 = 1
+        self.b33 = 0.5 * cas.sqrt(0.5)
+        self.b43 = 0
 
-    a_shoulder = dM_coefficients[:, 0]
-    b_shoulder = dM_coefficients[:, 1]
-    c_shoulder = dM_coefficients[:, 2]
-    a_elbow = dM_coefficients[:, 3]
-    b_elbow = dM_coefficients[:, 4]
-    c_elbow = dM_coefficients[:, 5]
-    l_base = LMT_coefficients[:, 0]
-    l_multiplier = LMT_coefficients[:, 1]
-    theta_shoulder = q[0]
-    theta_elbow = q[1]
-    dtheta_shoulder = qdot[0]
-    dtheta_elbow = qdot[1]
+        self.e0 = 0.6
+        self.e1 = self.Fvparam[0]
+        self.e2 = self.Fvparam[1]
+        self.e3 = self.Fvparam[2]
+        self.e4 = self.Fvparam[3]
 
-    # Normalized muscle fiber length (without tendon)
-    l_full = a_shoulder * theta_shoulder + b_shoulder * cas.sin(
-        c_shoulder * theta_shoulder) / c_shoulder + a_elbow * theta_elbow + b_elbow * cas.sin(
-        c_elbow * theta_elbow) / c_elbow
-    lMtilde = l_full * l_multiplier + l_base
+        self.kpe = 4
+        self.tau_coef = 0.1500
 
-    # fiber velocity normalized by the optimal fiber length
-    nCoeff = a_shoulder.shape[0]
-    v_full = a_shoulder * dtheta_shoulder + b_shoulder * cas.cos(c_shoulder * theta_shoulder) * cas.repmat(
-        dtheta_shoulder, nCoeff, 1) + a_elbow * dtheta_elbow + b_elbow * cas.cos(c_elbow * theta_elbow) * cas.repmat(
-        dtheta_elbow, nCoeff, 1)
-    vMtilde = l_multiplier * v_full
-
-    vMtilde_normalizedToMaxVelocity = vMtilde / vMtilde_max
-
-    # Active muscle force-length characteristic
-    b11 = Faparam[0]
-    b21 = Faparam[1]
-    b31 = Faparam[2]
-    b41 = Faparam[3]
-    b12 = Faparam[4]
-    b22 = Faparam[5]
-    b32 = Faparam[6]
-    b42 = Faparam[7]
-
-    b13 = 0.1
-    b23 = 1
-    b33 = 0.5 * cas.sqrt(0.5)
-    b43 = 0
-    num3 = lMtilde - b23
-    den3 = b33 + b43 * lMtilde
-    FMtilde3 = b13 * cas.exp(-0.5 * num3 ** 2 / den3 ** 2)
-
-    num1 = lMtilde - b21
-    den1 = b31 + b41 * lMtilde
-    FMtilde1 = b11 * cas.exp(-0.5 * num1 ** 2 / den1 ** 2)
-
-    num2 = lMtilde - b22
-    den2 = b32 + b42 * lMtilde
-    FMtilde2 = b12 * cas.exp(-0.5 * num2 ** 2 / den2 ** 2)
-
-    FMltilde = FMtilde1 + FMtilde2 + FMtilde3
-
-    e1 = Fvparam[0]
-    e2 = Fvparam[1]
-    e3 = Fvparam[2]
-    e4 = Fvparam[3]
-
-    FMvtilde = e1 * cas.log(
-        (e2 @ vMtilde_normalizedToMaxVelocity + e3) + cas.sqrt(
-            (e2 @ vMtilde_normalizedToMaxVelocity + e3) ** 2 + 1)) + e4
-
-    # Active muscle force
-    Fce = FMltilde * FMvtilde
-
-    # Passive muscle force - length characteristic
-    e0 = 0.6
-    kpe = 4
-    t5 = cas.exp(kpe * (lMtilde - 0.10e1) / e0)
-    Fpe = ((t5 - 0.10e1) - Fpparam[0]) / Fpparam[1]
-
-    # Muscle force + damping
-    Fpv = muscleDampingCoefficient * vMtilde_normalizedToMaxVelocity
-    Fa = Fiso * Fce
-    Fp = Fiso * (Fpe + Fpv)
-
-    return Fa, Fp
+        self.l1 = 0.3
+        self.l2 = 0.33
+        self.m2 = 1
+        self.lc2 = 0.16
+        self.I1 = 0.025
+        self.I2 = 0.045
 
 
-def torque_force_relationship(Fm, q):
+    def serialize(self) -> tuple[Callable, dict]:
+        return LeuvenArmModel, dict(dM_coefficients=self.dM_coefficients,
+                                    LMT_coefficients=self.LMT_coefficients,
+                                    vMtilde_max=self.vMtilde_max,
+                                    Fiso=self.Fiso,
+                                    Faparam=self.Faparam,
+                                    Fvparam=self.Fvparam,
+                                    Fpparam=self.Fpparam,
+                                    muscleDampingCoefficient=self.muscleDampingCoefficient)
 
-    dM_coefficients = np.array([[0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
-                                [0, 0, 0.0100, -0.0190, 0, 0.0100],
-                                [0.0400, -0.0080, 1.9000, 0, 0, 0.0100],
-                                [-0.0420, 0, 0.0100, 0, 0, 0.0100],
-                                [0.0300, -0.0110, 1.9000, 0.0320, -0.0100, 1.9000],
-                                [-0.0390, 0, 0.0100, -0.0220, 0, 0.0100]])
+    @property
+    def nb_muscles(self):
+        return 6
 
-    a_shoulder = dM_coefficients[:, 0]
-    b_shoulder = dM_coefficients[:, 1]
-    c_shoulder = dM_coefficients[:, 2]
-    a_elbow = dM_coefficients[:, 3]
-    b_elbow = dM_coefficients[:, 4]
-    c_elbow = dM_coefficients[:, 5]
-    theta_shoulder = q[0]
-    theta_elbow = q[1]
+    @property
+    def nb_q(self):
+        return 2
 
-    dM_matrix = cas.horzcat(a_shoulder + b_shoulder * cas.cos(c_shoulder @ theta_shoulder),
-                            a_elbow + b_elbow * cas.cos(c_elbow @ theta_elbow)).T
-    tau = dM_matrix @ Fm
-    return tau
+    @property
+    def nb_qdot(self):
+        return 2
+    @property
+    def name_dof(self):
+        return ['shoulder', 'elbow']
 
-def get_muscle_torque(q, qdot, mus_activations):
-    Fa, Fp = get_muscle_force(q, qdot)
-    Fm = mus_activations * Fa + Fp
-    muscles_tau = torque_force_relationship(Fm, q)
-    return muscles_tau
+    @property
+    def muscle_names(self):
+        return [f'muscle_{i}' for i in range(self.nb_muscles)]
 
-def get_force_field(q, force_field_magnitude):
-    l1 = 0.3
-    l2 = 0.33
-    F_forceField = force_field_magnitude * (l1 * cas.cos(q[0]) + l2 * cas.cos(q[0] + q[1]))
-    hand_pos = cas.MX(2, 1)
-    hand_pos[0] = l2 * cas.sin(q[0] + q[1]) + l1 * cas.sin(q[0])
-    hand_pos[1] = l2 * cas.sin(q[0] + q[1])
-    tau_force_field = -F_forceField @ hand_pos
-    return tau_force_field
+    def get_muscle_force(self, q, qdot):
+        """
+        Fa: active muscle force [N]
+        Fp: passive muscle force [N]
+        lMtilde: normalized fiber lenght [-]
+        vMtilde: optimal fiber lenghts per second at which muscle is lengthening or shortening [-]
+        FMltilde: force-length multiplier [-]
+        FMvtilde: force-velocity multiplier [-]
+        Fce: Active muscle force [N]
+        Fpe: Passive elastic force [N]
+        Fm: Passive viscous force [N]
+        """
+        theta_shoulder = q[0]
+        theta_elbow = q[1]
+        dtheta_shoulder = qdot[0]
+        dtheta_elbow = qdot[1]
 
-def get_excitation_with_feedback(K, EE, EE_ref, wS):
-    return K @ ((EE - EE_ref) + wS)
+        # Normalized muscle fiber length (without tendon)
+        l_full = self.a_shoulder * theta_shoulder + self.b_shoulder * cas.sin(
+            self.c_shoulder * theta_shoulder) / self.c_shoulder + self.a_elbow * theta_elbow + self.b_elbow * cas.sin(
+            self.c_elbow * theta_elbow) / self.c_elbow
+        lMtilde = l_full * self.l_multiplier + self.l_base
+
+        # Fiber velocity normalized by the optimal fiber length
+        nCoeff = self.a_shoulder.shape[0]
+        v_full = self.a_shoulder * dtheta_shoulder + self.b_shoulder * cas.cos(self.c_shoulder * theta_shoulder) * cas.repmat(
+            dtheta_shoulder, nCoeff, 1) + self.a_elbow * dtheta_elbow + self.b_elbow * cas.cos(self.c_elbow * theta_elbow) * cas.repmat(
+            dtheta_elbow, nCoeff, 1)
+        vMtilde = self.l_multiplier * v_full
+
+        vMtilde_normalizedToMaxVelocity = vMtilde / self.vMtilde_max
+
+        num3 = lMtilde - self.b23
+        den3 = self.b33 + self.b43 * lMtilde
+        FMtilde3 = self.b13 * cas.exp(-0.5 * num3 ** 2 / den3 ** 2)
+
+        num1 = lMtilde - self.b21
+        den1 = self.b31 + self.b41 * lMtilde
+        FMtilde1 = self.b11 * cas.exp(-0.5 * num1 ** 2 / den1 ** 2)
+
+        num2 = lMtilde - self.b22
+        den2 = self.b32 + self.b42 * lMtilde
+        FMtilde2 = self.b12 * cas.exp(-0.5 * num2 ** 2 / den2 ** 2)
+
+        FMltilde = FMtilde1 + FMtilde2 + FMtilde3
+
+        FMvtilde = self.e1 * cas.log(
+            (self.e2 @ vMtilde_normalizedToMaxVelocity + self.e3) + cas.sqrt(
+                (self.e2 @ vMtilde_normalizedToMaxVelocity + self.e3) ** 2 + 1)) + self.e4
+
+        # Active muscle force
+        Fce = FMltilde * FMvtilde
+
+        t5 = cas.exp(self.kpe * (lMtilde - 0.10e1) / self.e0)
+        Fpe = ((t5 - 0.10e1) - self.Fpparam[0]) / self.Fpparam[1]
+
+        # Muscle force + damping
+        Fpv = self.muscleDampingCoefficient * vMtilde_normalizedToMaxVelocity
+        Fa = self.Fiso * Fce
+        Fp = self.Fiso * (Fpe + Fpv)
+
+        return Fa, Fp
+
+
+    def torque_force_relationship(self, Fm, q):
+        theta_shoulder = q[0]
+        theta_elbow = q[1]
+        dM_matrix = cas.horzcat(self.a_shoulder + self.b_shoulder * cas.cos(self.c_shoulder @ theta_shoulder),
+                                self.a_elbow + self.b_elbow * cas.cos(self.c_elbow @ theta_elbow)).T
+        tau = dM_matrix @ Fm
+        return tau
+
+    def get_muscle_torque(self, q, qdot, mus_activations):
+        Fa, Fp = self.get_muscle_force(q, qdot)
+        Fm = mus_activations * Fa + Fp
+        muscles_tau = self.torque_force_relationship(Fm, q)
+        return muscles_tau
+
+    def get_force_field(self, q, force_field_magnitude):
+        F_forceField = force_field_magnitude * (self.l1 * cas.cos(q[0]) + self.l2 * cas.cos(q[0] + q[1]))
+        hand_pos = cas.MX(2, 1)
+        hand_pos[0] = self.l2 * cas.sin(q[0] + q[1]) + self.l1 * cas.sin(q[0])
+        hand_pos[1] = self.l2 * cas.sin(q[0] + q[1])
+        tau_force_field = -F_forceField @ hand_pos
+        return tau_force_field
+
+    def get_excitation_with_feedback(self, K, EE, EE_ref, wS):
+        return K @ ((EE - EE_ref) + wS)
+
+    def end_effector_position(self, q):
+        theta_shoulder = q[0]
+        theta_elbow = q[1]
+        ee_pos = cas.vertcat(cas.cos(theta_shoulder) * self.l1 + cas.cos(theta_shoulder + theta_elbow) * self.l2,
+                             cas.sin(theta_shoulder) * self.l1 + cas.sin(theta_shoulder + theta_elbow) * self.l2)
+        return ee_pos
+
+    def end_effector_velocity(self, q, qdot):
+        theta_shoulder = q[0]
+        theta_elbow = q[1]
+        a = theta_shoulder + theta_elbow
+        dtheta_shoulder = qdot[0]
+        dtheta_elbow = qdot[1]
+        da = dtheta_shoulder + dtheta_elbow
+        ee_vel = cas.vertcat(dtheta_shoulder * cas.sin(theta_shoulder) * self.l1 + da * cas.sin(a) * self.l2,
+                             -dtheta_shoulder * cas.cos(theta_shoulder) * self.l1 - da * cas.cos(a) * self.l2)
+        return ee_vel
+
 
 def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
@@ -216,14 +261,6 @@ def stochastic_forward_dynamics(
     force_field_magnitude,
     with_gains,
 ) -> DynamicsEvaluation:
-
-    tau_coef = 0.1500
-
-    m2 = 1
-    l1 = 0.3
-    lc2 = 0.16
-    I1 = 0.025
-    I2 = 0.045
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -240,25 +277,25 @@ def stochastic_forward_dynamics(
                 K_matrix[s0, s1] = k[s0*6 + s1]
         K_matrix = K_matrix.T
 
-        hand_pos = end_effector_position(q)
-        hand_vel = end_effector_velocity(q, qdot)
+        hand_pos = nlp.model.end_effector_position(q)
+        hand_vel = nlp.model.end_effector_velocity(q, qdot)
         ee = cas.vertcat(hand_pos, hand_vel)
 
-        mus_excitations_fb += get_excitation_with_feedback(K_matrix, ee, ee_ref, wS)
+        mus_excitations_fb += nlp.model.get_excitation_with_feedback(K_matrix, ee, ee_ref, wS)
 
-    muscles_tau = get_muscle_torque(q, qdot, mus_activations)
+    muscles_tau = nlp.model.get_muscle_torque(q, qdot, mus_activations)
 
-    tau_force_field = get_force_field(q, force_field_magnitude)
+    tau_force_field = nlp.model.get_force_field(q, force_field_magnitude)
 
     torques_computed = muscles_tau + wM + tau_force_field
     dq_computed = qdot  ### Do not use "DynamicsFunctions.compute_qdot(nlp, q, qdot)" it introduces errors!!
-    dactivations_computed = (mus_excitations_fb - mus_activations) / tau_coef
+    dactivations_computed = (mus_excitations_fb - mus_activations) / nlp.model.tau_coef
 
     friction = np.array([[0.05, 0.025], [0.025, 0.05]])
 
-    a1 = I1 + I2 + m2 * l1 ** 2
-    a2 = m2 * l1 * lc2
-    a3 = I2
+    a1 = nlp.model.I1 + nlp.model.I2 + nlp.model.m2 * nlp.model.l1 ** 2
+    a2 = nlp.model.m2 * nlp.model.l1 * nlp.model.lc2
+    a3 = nlp.model.I2
 
     theta_elbow = q[1]
     dtheta_shoulder = qdot[0]
@@ -317,8 +354,8 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     return out
 
 def get_ee(controller: PenaltyController, q, qdot) -> cas.MX:
-    hand_pos = end_effector_position(q)
-    hand_vel = end_effector_velocity(q, qdot)
+    hand_pos = controller.model.end_effector_position(q)
+    hand_vel = controller.model.end_effector_velocity(q, qdot)
     ee = cas.vertcat(hand_pos, hand_vel)
     return ee
 
@@ -386,8 +423,8 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     cov_sym_dict["cov"].cx_start = cov_sym
     cov_matrix = controllers[-1].restore_matrix_from_vector(cov_sym_dict, controllers[-1].states.cx_start.shape[0], controllers[-1].states.cx_start.shape[0], Node.START, "cov")
 
-    hand_pos = end_effector_position(Q)
-    hand_vel = end_effector_velocity(Q, Qdot)
+    hand_pos = controllers[0].model.end_effector_position(Q)
+    hand_vel = controllers[0].model.end_effector_velocity(Q, Qdot)
 
     jac_marker_q = cas.jacobian(hand_pos, Q)
     jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(Q, Qdot))
@@ -405,32 +442,6 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
     return val
-
-def end_effector_position(q):
-    l1 = 0.3
-    l2 = 0.33
-
-    theta_shoulder = q[0]
-    theta_elbow = q[1]
-    ee_pos = cas.vertcat(cas.cos(theta_shoulder)*l1 + cas.cos(theta_shoulder + theta_elbow)*l2,
-                        cas.sin(theta_shoulder)*l1 + cas.sin(theta_shoulder + theta_elbow)*l2)
-    return ee_pos
-
-
-def end_effector_velocity(q, qdot):
-    l1 = 0.3
-    l2 = 0.33
-
-    theta_shoulder = q[0]
-    theta_elbow = q[1]
-    a = theta_shoulder + theta_elbow
-    dtheta_shoulder = qdot[0]
-    dtheta_elbow = qdot[1]
-    da = dtheta_shoulder + dtheta_elbow
-
-    ee_vel = cas.vertcat(dtheta_shoulder * cas.sin(theta_shoulder)*l1 + da*cas.sin(a)*l2,
-            -dtheta_shoulder * cas.cos(theta_shoulder)*l1 - da * cas.cos(a)*l2)
-    return ee_vel
 
 def expected_feedback_effort(controllers: list[PenaltyController], wS_magnitude: cas.DM) -> cas.MX:
     """
@@ -455,8 +466,8 @@ def expected_feedback_effort(controllers: list[PenaltyController], wS_magnitude:
     K_matrix = K_matrix.T
 
     # Compute the expected effort
-    hand_pos = end_effector_position(controllers[0].states["q"].cx_start)
-    hand_vel = end_effector_velocity(controllers[0].states["q"].cx_start, controllers[0].states["qdot"].cx_start)
+    hand_pos = controllers[0].model.end_effector_position(controllers[0].states["q"].cx_start)
+    hand_vel = controllers[0].model.end_effector_velocity(controllers[0].states["q"].cx_start, controllers[0].states["qdot"].cx_start)
     trace_k_sensor_k = cas.trace(K_matrix @ sensory_noise_matrix @ K_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
     e_fb = K_matrix @ ((ee - ee_ref) + wS_magnitude)
@@ -484,7 +495,7 @@ def zero_acceleration(controller: PenaltyController, wM: np.ndarray, wS: np.ndar
 
 def track_final_marker(controller: PenaltyController) -> cas.MX:
     q = controller.states["q"].cx_start
-    ee_pos = end_effector_position(q)
+    ee_pos = controller.model.end_effector_position(q)
     return ee_pos
 
 def leuven_trapezoidal(controllers: list[PenaltyController], force_field_magnitude) -> cas.MX:
@@ -505,7 +516,6 @@ def leuven_trapezoidal(controllers: list[PenaltyController], force_field_magnitu
     return out * 1e3
 
 def prepare_socp(
-    biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
     ee_final_position: np.ndarray,
@@ -539,7 +549,7 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = LeuvenArmModel()
 
     shoulder_pos_initial = 0.349065850398866
     shoulder_pos_final = 0.959931088596881
@@ -747,8 +757,7 @@ def main():
 
     problem_type = "CIRCLE"
     force_field_magnitude = 0
-    socp = prepare_socp(biorbd_model_path=biorbd_model_path,
-                        final_time=final_time,
+    socp = prepare_socp(final_time=final_time,
                         n_shooting=n_shooting,
                         ee_final_position=ee_final_position,
                         wM_magnitude=wM_magnitude,
@@ -821,10 +830,11 @@ def main():
 
     # --- Plot the results --- #
     if PLOT_SOL_FLAG:
+        model = LeuvenArmModel()
         Q_sym = cas.MX.sym('Q', 2, 1)
         Qdot_sym = cas.MX.sym('Qdot', 2, 1)
-        hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [end_effector_position(Q_sym)])
-        hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [end_effector_velocity(Q_sym, Qdot_sym)])
+        hand_pos_fcn = cas.Function("hand_pos", [Q_sym], [model.end_effector_position(Q_sym)])
+        hand_vel_fcn = cas.Function("hand_vel", [Q_sym, Qdot_sym], [model.end_effector_velocity(Q_sym, Qdot_sym)])
 
         states = socp.nlp[0].states.cx_start
         controls = socp.nlp[0].controls.cx_start
