@@ -148,7 +148,9 @@ def test_biorbd_model():
 
     list_markers_velocities = models.marker_velocities(q, qdot)
     assert isinstance(list_markers_velocities, list)
-    marker_velocities = Function("Markerdot", [], [list_markers_velocities[i] for i in range(len(list_markers_velocities))])()["o0"]
+    marker_velocities = Function(
+        "Markerdot", [], [list_markers_velocities[i] for i in range(len(list_markers_velocities))]
+    )()["o0"]
 
     with pytest.raises(RuntimeError, match="All dof must have their actuators set"):
         Function("TauMax", [], [models.tau_max(q, qdot)])()[
