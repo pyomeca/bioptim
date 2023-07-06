@@ -167,7 +167,7 @@ class BioModel(Protocol):
     def marker(self, q, marker_index: int, reference_frame_idx: int = None) -> MX:
         """Get the position of a marker"""
 
-    def markers(self, q) -> MX:
+    def markers(self, q) -> list[MX]:
         """Get the markers of the model"""
 
     @property
@@ -183,7 +183,7 @@ class BioModel(Protocol):
         """Get the number of rigid contacts"""
         return -1
 
-    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
+    def marker_velocities(self, q, qdot, reference_index=None) -> list[MX]:
         """Get the marker velocities of the model"""
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
