@@ -166,11 +166,11 @@ class Solver:
 
         @property
         def dual_inf_tol(self):
-            return self._constr_viol_tol
+            return self._dual_inf_tol
 
         @property
         def constr_viol_tol(self):
-            return self._tol
+            return self._constr_viol_tol
 
         @property
         def compl_inf_tol(self):
@@ -256,10 +256,10 @@ class Solver:
             self._tol = val
 
         def set_dual_inf_tol(self, val: float):
-            self._constr_viol_tol = val
+            self._dual_inf_tol = val
 
         def set_constr_viol_tol(self, val: float):
-            self._tol = val
+            self._constr_viol_tol = val
 
         def set_compl_inf_tol(self, val: float):
             self._compl_inf_tol = val
