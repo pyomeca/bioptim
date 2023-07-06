@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, DM
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
@@ -997,82 +997,27 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
-        def covariance_matrix_continuity_implicit(penalty: PenaltyOption, controller: PenaltyController | list):
+        def covariance_matrix_continuity_implicit(penalty: PenaltyOption, controller: PenaltyController, wM_magnitude: DM, wS_magnitude: DM):
 
             nx = controller.states.cx_start.shape[0]
-            P_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
-            A_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
-            A_end_matrix = MX(controller.states["q"].cx.shape[0], controller.states["q"].cx.shape[0])
-            i = 0
-            for dof_1 in range(controller.states["q"].cx.shape[0]):
-                for dof_2 in range(controller.states["q"].cx.shape[0]):
-                    P_matrix[dof_1, dof_2] = controller.update_values["cov"].cx_start[i]
-                    A_matrix[dof_1, dof_2] = controller.stochastic_variables["a"].cx_start[i]
-                    A_end_matrix[dof_1, dof_2] = controller.stochastic_variables["a"].cx_end[i]
-                    i += 1
+            P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "cov")
+            A_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "a")
+            C_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "c")
+            M_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
 
-            sigma_w = 10 ** (-1)  # How do we choose?
+            sigma_w = vertcat(wS_magnitude, wM_magnitude)
             dt = 1 / controller.ns
-            dg_dw = -controller.stochastic_variables["c"].cx_start * dt
-            dg_dx = - (A_matrix * dt / 2 + MX_eye(A_matrix.shape[0])) # intégration trapézoidale ??
-            dg_dz = MX_eye(A_matrix.shape[0]) - A_end_matrix * dt / 2  # ???
-            mk = dg_dz ** (-1)
+            dg_dw = - dt * C_matrix
+            dg_dx = - MX_eye(A_matrix.shape[0]) - dt / 2 * A_matrix
 
-            pk = mk @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ mk.T
-            p_implicit_deffect = pk - P_matrix  # TODO: This computes p at node k+1
+            p_next = M_matrix @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
+            p_implicit_deffect = p_next - P_matrix
 
             penalty.expand = controller.get_nlp.dynamics_type.expand
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
             out_vector = controller.restore_vector_from_matrix(p_implicit_deffect)
-            return out_vector
-
-        @staticmethod
-        def covariance_matrix_continuity_explicit(penalty: PenaltyOption, controller: PenaltyController | list):
-
-            from ..examples.stochastic_optimal_control.arm_reaching_muscle_driven import stochastic_forward_dynamics
-            import numpy as np
-
-            wM_numerical = np.array([0.025, 0.025])
-            wPq_numerical = np.array([9e-6, 9e-6])
-            wPqdot_numerical = np.array([0.000576, 0.000576])
-
-            nx = controller.states.cx.shape[0]
-            P_matrix = controller.restore_matrix_from_vector(controller.update_values, nx, nx, Node.START, "cov")
-            M_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
-            P_matrix_end = controller.restore_matrix_from_vector(controller.update_values, nx, nx, Node.END, "cov")
-
-            sigma_w = 10 ** (-1)  # How do we choose?
-            dt = controller.tf / controller.ns
-            wM = MX.sym("wM", controller.states['q'].cx.shape[0])
-            wP = MX.sym("wP", controller.states['q'].cx.shape[0])
-            wPdot = MX.sym("wPdot", controller.states['q'].cx.shape[0])
-            dx = stochastic_forward_dynamics(controller.states.cx_start, controller.controls.cx_start,
-                                     controller.parameters.cx_start, controller.update_values.cx_start, controller.get_nlp, wM, wP, wPdot)
-
-
-            dg_dw = jacobian(dx.dxdt, wM)
-            ddx_dx = jacobian(dx.dxdt, controller.states.cx_start)
-            dg_dx = - (ddx_dx*dt/2 + MX_eye(ddx_dx.shape[0]))
-
-            p_after = M_matrix @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
-            func_eval = Function("p_after", [controller.states.cx_start, controller.controls.cx_start,
-                                                    controller.parameters.cx_start, controller.stochastic_variables.cx_start, wM, wP, wPdot], [p_after])(controller.states.cx_start,
-                                                                                                         controller.controls.cx_start,
-                                                                                                         controller.parameters.cx_start,
-                                                                                                         controller.stochastic_variables.cx_start,
-                                                                                                         wM_numerical,
-                                                                                                         wPq_numerical,
-                                                                                                         wPqdot_numerical)
-
-            continuity = P_matrix_end - func_eval
-
-            penalty.expand = controller.get_nlp.dynamics_type.expand
-            penalty.explicit_derivative = True
-            penalty.multi_thread = True
-
-            out_vector = controller.restore_vector_from_matrix(continuity)
             return out_vector
 
         @staticmethod
